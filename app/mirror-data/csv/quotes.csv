@@ -1,0 +1,5 @@
+﻿id;number;customer_id;customer_name;date;expiry_date;status;subtotal;vat_total;total;notes;created_at;updated_at
+b3f5df04-01a8-4f9a-a798-e1237809cf21;DEV-2024-008;0934bebc-eb83-4680-bd04-5e816670588c;Global Services;2026-07-09;2026-08-08;sent;5000;1000;6000;Proposition pour contrat annuel;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+7045ad4a-7bae-4137-8534-480a66da3052;DEV-2024-007;7ef4c0eb-e95a-4b4b-be5a-08bfb351f822;Startup Lab;2026-06-29;2026-07-29;accepted;2500;500;3000;Devis accepte - en cours de facturation;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+f2acbc90-b3f8-4ed8-8e5d-5a4d03b1d0a5;DEV-2024-006;3294a70a-f9bd-48b6-bc2a-ba1c9957eeef;Societe ABC;2026-06-19;2026-07-04;expired;1500;300;1800;Devis expire sans reponse;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+6529670a-04bd-4c92-a05d-29a5444c32bf;DEV-2024-005;61003430-2e2e-41ef-953e-9abeac57853b;Entreprise DEF;2026-06-09;2026-06-29;rejected;3000;600;3600;Devis refuse - budget insuffisant;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00

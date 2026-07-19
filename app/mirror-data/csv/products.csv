@@ -1,0 +1,6 @@
+﻿id;name;sku;description;type;sale_price;purchase_price;vat_rate;stock_quantity;reorder_level;unit;category;active;created_at;updated_at
+8392cde3-d04d-4b53-b98f-ea3e5e828f9f;Licence Logiciel Pro;LIC-PRO-001;Licence annuelle logiciel Pro;service;1200;0;20;0;0;licence;Logiciels;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+36e7aefc-4bb8-45f9-aece-90ac5adf9f19;Consultation Technique;CON-001;Journee de consultation technique;service;800;0;20;0;0;jour;Services;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+6396f836-ebfc-4879-9ccd-7813f23582d7;Ordinateur Portable;ORD-PORT-001;Ordinateur portable 15 pouces;stock;950;650;20;15;5;unite;Materiel;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+813a6ac5-324c-4dd6-92f9-049d04722920;Souris Sans Fil;ACC-SOUR-001;Souris sans fil ergonomique;stock;35;18;20;50;10;unite;Accessoires;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+16a76d6b-f3e1-4618-a7c1-a11480df5d7f;Abonnement Support;ABO-SUP-001;Abonnement support mensuel;service;150;0;20;0;0;mois;Services;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00

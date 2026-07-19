@@ -1,0 +1,15 @@
+{
+  "name": "compta-mirror-daemon",
+  "version": "1.0.0",
+  "description": "Daemon de synchronisation miroir - réplique Supabase vers un dossier local",
+  "type": "module",
+  "main": "daemon.mjs",
+  "scripts": {
+    "start": "node daemon.mjs",
+    "start:dev": "node daemon.mjs --verbose",
+    "sync:once": "node daemon.mjs --once"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

@@ -1,0 +1,46 @@
+﻿id;account_id;date;description;reference;type;amount;category;reconciled;matched;invoice_id;purchase_invoice_id;created_at
+332c001b-8d82-478f-9f41-902b34689608;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-08;Virement recu - Societe XYZ;VIR-IN-001;credit;2500;Ventes;true;true;;;2026-07-09T07:55:55.308105+00:00
+044c0e82-d9dc-4e65-9f67-8ffccc62c955;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-07;Prelevement - Cloud Services Pro;PRLV-001;debit;75;Achats;true;true;;;2026-07-09T07:55:55.308105+00:00
+35bd0674-a861-4e35-9a75-93cab9c73e46;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-06;Virement recu - Global Services;VIR-IN-002;credit;5000;Ventes;true;true;;;2026-07-09T07:55:55.308105+00:00
+55f9359d-6a32-44f0-b169-fc2727c9dc9a;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-04;Paiement salaires - Decembre;SAL-001;debit;28000;Salaires;true;true;;;2026-07-09T07:55:55.308105+00:00
+8beac0cb-6cd0-401c-9121-d85779be05b8;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-02;Loyer bureau - Decembre;LOY-001;debit;1200;Loyer;true;true;;;2026-07-09T07:55:55.308105+00:00
+69aea180-7611-4dde-ac79-1d328f9133cf;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-29;Virement recu - Startup Lab;VIR-IN-003;credit;750;Ventes;true;true;;;2026-07-09T07:55:55.308105+00:00
+18266cb2-32b1-481b-894c-18c0160eb695;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-27;Achat materiel - Fournisseur GHI;ACH-001;debit;890;Achats;false;false;;;2026-07-09T07:55:55.308105+00:00
+5987be70-bf59-4424-865c-cc3affba92f0;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-24;Frais bancaires;FRA-001;debit;15;Frais bancaires;false;false;;;2026-07-09T07:55:55.308105+00:00
+691d4aaa-43a0-47b7-99ea-2e9e0883a448;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-21;Remboursement assurance;RMB-001;credit;340;Autres;false;false;;;2026-07-09T07:55:55.308105+00:00
+f13a4719-fc4f-4ca8-9c97-1484b259ad8d;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-19;Abonnement logiciel - Cloud Pro;ABO-001;debit;75;Abonnements;true;true;;;2026-07-09T07:55:55.308105+00:00
+41445f05-8d3c-4ce7-ac49-49f3378e9a36;18cab33b-c28f-4976-a5b2-0b9f7bffc1dc;2026-06-09;Virement epargne mensuel;VIR-EP-001;debit;500;Transfert;true;true;;;2026-07-09T07:55:55.308105+00:00
+e111e653-f81e-40b3-96ca-7a86a7529184;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-07-04;Repas client - Restaurant;CB-001;debit;85;Repas;false;false;;;2026-07-09T07:55:55.308105+00:00
+85de2117-75ee-4b61-a735-d143128149ca;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-29;Achat fournitures bureau;CB-002;debit;120;Fournitures;true;true;;;2026-07-09T07:55:55.308105+00:00
+0e4f4458-e19d-45ee-b1be-37129d944eab;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-24;Abonnement en ligne;CB-003;debit;35;Abonnements;true;true;;;2026-07-09T07:55:55.308105+00:00
+2153463a-02a5-4342-b25e-8e5fee63b13b;b91d9272-21db-482c-9f2b-1f1bac698ab3;2026-07-08;Encaissement espece - vente directe;CAI-001;credit;50;Ventes;true;true;;;2026-07-09T07:55:55.308105+00:00
+edfdb1ee-3f41-46ac-9281-6a67802773b9;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-08;Virement recu - Societe XYZ;VIR-IN-001;credit;2500;Ventes;true;true;;;2026-07-09T10:03:06.535299+00:00
+7fb6c577-1582-48f4-b91d-dea1afaf46ec;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-07;Prelevement - Cloud Services Pro;PRLV-001;debit;75;Achats;true;true;;;2026-07-09T10:03:06.535299+00:00
+5706a7cb-af10-4ffa-a3d6-9aac0ace3b90;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-06;Virement recu - Global Services;VIR-IN-002;credit;5000;Ventes;true;true;;;2026-07-09T10:03:06.535299+00:00
+95699ac9-7a89-4dc0-a373-1ec409e47a5e;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-04;Paiement salaires - Decembre;SAL-001;debit;28000;Salaires;true;true;;;2026-07-09T10:03:06.535299+00:00
+b7b8295c-f1ef-4351-8ddf-c5d864efc667;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-02;Loyer bureau - Decembre;LOY-001;debit;1200;Loyer;true;true;;;2026-07-09T10:03:06.535299+00:00
+41938a31-fbad-43f1-be16-28b130bfe42c;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-29;Virement recu - Startup Lab;VIR-IN-003;credit;750;Ventes;true;true;;;2026-07-09T10:03:06.535299+00:00
+b7bf6525-51c5-4b06-be28-2de8426befa0;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-27;Achat materiel - Fournisseur GHI;ACH-001;debit;890;Achats;false;false;;;2026-07-09T10:03:06.535299+00:00
+d3bd99f2-f293-4b23-9734-bb2443743884;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-24;Frais bancaires;FRA-001;debit;15;Frais bancaires;false;false;;;2026-07-09T10:03:06.535299+00:00
+717a8f68-97af-4bdc-9171-b71096479a22;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-21;Remboursement assurance;RMB-001;credit;340;Autres;false;false;;;2026-07-09T10:03:06.535299+00:00
+db2911ed-555d-401f-bab3-64f278dd7aa0;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-19;Abonnement logiciel - Cloud Pro;ABO-001;debit;75;Abonnements;true;true;;;2026-07-09T10:03:06.535299+00:00
+70961619-0382-4245-a0ef-e358bc3ffe2c;18cab33b-c28f-4976-a5b2-0b9f7bffc1dc;2026-06-09;Virement epargne mensuel;VIR-EP-001;debit;500;Transfert;true;true;;;2026-07-09T10:03:06.535299+00:00
+b512fa2d-65b1-4326-9822-9f2004506336;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-07-04;Repas client - Restaurant;CB-001;debit;85;Repas;false;false;;;2026-07-09T10:03:06.535299+00:00
+6af0648b-0ee1-47cf-921f-4208c02a2c8b;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-29;Achat fournitures bureau;CB-002;debit;120;Fournitures;true;true;;;2026-07-09T10:03:06.535299+00:00
+012222af-ce5d-4a50-9aa6-a51c191ca1b4;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-24;Abonnement en ligne;CB-003;debit;35;Abonnements;true;true;;;2026-07-09T10:03:06.535299+00:00
+b5c8772e-6afa-488d-8c36-d07bd1c785f5;b91d9272-21db-482c-9f2b-1f1bac698ab3;2026-07-08;Encaissement espece - vente directe;CAI-001;credit;50;Ventes;true;true;;;2026-07-09T10:03:06.535299+00:00
+30cac668-7005-49dc-b6da-10c4106e3f87;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-08;Virement recu - Societe XYZ;VIR-IN-001;credit;2500;Ventes;true;true;;;2026-07-09T10:05:09.006374+00:00
+543bad4b-16a6-4ac2-b22a-32db6e2bba88;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-07;Prelevement - Cloud Services Pro;PRLV-001;debit;75;Achats;true;true;;;2026-07-09T10:05:09.006374+00:00
+75bb4733-cfcd-47fb-a9b6-a4725a8000fd;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-06;Virement recu - Global Services;VIR-IN-002;credit;5000;Ventes;true;true;;;2026-07-09T10:05:09.006374+00:00
+3adf6f04-e889-43fb-967d-33d261ec2c0d;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-04;Paiement salaires - Decembre;SAL-001;debit;28000;Salaires;true;true;;;2026-07-09T10:05:09.006374+00:00
+de63ade9-36b8-48f7-9792-35abfca431d9;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-07-02;Loyer bureau - Decembre;LOY-001;debit;1200;Loyer;true;true;;;2026-07-09T10:05:09.006374+00:00
+52a6823d-a452-42e6-9308-2cf76968bd00;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-29;Virement recu - Startup Lab;VIR-IN-003;credit;750;Ventes;true;true;;;2026-07-09T10:05:09.006374+00:00
+a834a07b-bd3c-4498-a1da-a4caa42671fb;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-27;Achat materiel - Fournisseur GHI;ACH-001;debit;890;Achats;false;false;;;2026-07-09T10:05:09.006374+00:00
+b4d1f29f-2639-4ce8-80e9-c1d20c1839da;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-24;Frais bancaires;FRA-001;debit;15;Frais bancaires;false;false;;;2026-07-09T10:05:09.006374+00:00
+7e5bd048-650d-46ac-969f-f75142870061;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-21;Remboursement assurance;RMB-001;credit;340;Autres;false;false;;;2026-07-09T10:05:09.006374+00:00
+08b18936-128b-41ff-a6b2-234c04051052;cde72066-9c43-4dec-bec2-f0817fcba0f9;2026-06-19;Abonnement logiciel - Cloud Pro;ABO-001;debit;75;Abonnements;true;true;;;2026-07-09T10:05:09.006374+00:00
+dee05389-7c4f-43a1-88c7-5da2a484ea2b;18cab33b-c28f-4976-a5b2-0b9f7bffc1dc;2026-06-09;Virement epargne mensuel;VIR-EP-001;debit;500;Transfert;true;true;;;2026-07-09T10:05:09.006374+00:00
+9b41be8e-b023-460d-8921-45dd8fd336b9;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-07-04;Repas client - Restaurant;CB-001;debit;85;Repas;false;false;;;2026-07-09T10:05:09.006374+00:00
+56e22564-5553-4067-a3e0-041aab981f3c;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-29;Achat fournitures bureau;CB-002;debit;120;Fournitures;true;true;;;2026-07-09T10:05:09.006374+00:00
+7b9f8a9c-56df-4f58-9647-6366a5e5de09;57a6b594-7b5c-440d-8655-aa302c06e64a;2026-06-24;Abonnement en ligne;CB-003;debit;35;Abonnements;true;true;;;2026-07-09T10:05:09.006374+00:00
+df18902a-3aca-439a-a71e-7d8629939af9;b91d9272-21db-482c-9f2b-1f1bac698ab3;2026-07-08;Encaissement espece - vente directe;CAI-001;credit;50;Ventes;true;true;;;2026-07-09T10:05:09.006374+00:00

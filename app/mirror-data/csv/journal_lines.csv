@@ -1,0 +1,72 @@
+﻿id;journal_id;account_code;account_name;debit;credit;description;line_order;created_at;account_general;account_tiers;third_party_id;lettrage_code;lettrage_date;piece_number;reference;analytic_section_id;analytic_amount;running_balance;reconciled;line_date
+f46e1187-08ab-436d-b1dc-cd75dfb701b8;0d59d476-a9d1-42c1-b783-98cbe24845fa;512000;Banque;2500;0;Encaissement client XYZ;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+31ff23e8-c69b-48e5-a19e-1a987423242d;0d59d476-a9d1-42c1-b783-98cbe24845fa;411000;Clients;0;2500;Solde facture FAC-2024-041;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+fdeb23b2-fe98-47df-84ab-face88193d13;09109cfd-53b9-465a-b077-f5bcc60cd62b;401000;Fournisseurs;450;0;Paiement Cloud Services Pro;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+4451ef4d-ab2d-4367-80ee-f85eae581d3c;09109cfd-53b9-465a-b077-f5bcc60cd62b;512000;Banque;0;450;Prelevement bancaire;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+4b591739-12b2-4759-bd77-e67ccc362122;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;411000;Clients;5000;0;Facture Global Services;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+3810a1f1-a4bd-4046-a41c-6d34a0740b69;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;707000;Ventes de marchandises;0;4166.67;Vente HT;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+b3eb8ec8-bfb9-4ab5-8d30-012585eb8c9f;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;445710;TVA collectee 20%;0;833.33;TVA collectee;2;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+7d5b3018-a5af-462f-9396-951449844d74;1da23082-b513-412d-b7c7-f9b0d0317821;641000;Salaires;28000;0;Salaires bruts Decembre;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+b80964b0-91f7-4b5c-aa18-c3e8b3ee94fd;1da23082-b513-412d-b7c7-f9b0d0317821;421000;Personnel - remunerations dues;0;28000;Net a payer;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+87ade2e4-9c25-4ebe-ba5f-f7a405b37816;00fe2594-41c1-49a1-a286-d07941a42783;613000;Locations;1000;0;Loyer bureau HT;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+a8a88639-19e8-4e37-8deb-f3101a7670d3;00fe2594-41c1-49a1-a286-d07941a42783;445660;TVA deductible sur biens et services;200;0;TVA deductible;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+9e2caf91-47ce-472a-b26f-492e2d23fc10;00fe2594-41c1-49a1-a286-d07941a42783;512000;Banque;0;1200;Prelevement loyer;2;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+de1a8396-d37b-4457-925d-645284124d0f;b9fa8cac-042e-49d2-8540-b0ecf668ba24;681100;Dotations aux amortissements;2500;0;Amortissement Q4;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+7ef893dd-f1b1-44f8-be85-1a609382b0b9;b9fa8cac-042e-49d2-8540-b0ecf668ba24;281000;Amortissements des immobilisations;0;2500;Amortissement cumule;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+45ee9f7f-87f8-4143-98c8-1e9b8ceb176a;58d18feb-b882-4f9b-b1fc-ce4837629ffe;607000;Achats de marchandises;100;0;Fournitures bureau HT;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+40d48865-a6de-41d0-b4bd-522dc8806df1;58d18feb-b882-4f9b-b1fc-ce4837629ffe;445660;TVA deductible sur biens et services;20;0;TVA deductible;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+f61e7724-8be8-487c-b8df-fba9a3bab0d1;58d18feb-b882-4f9b-b1fc-ce4837629ffe;514000;Banque - Carte de credit pro;0;120;Paiement CB;2;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+aaac3ad5-0ce4-41fb-a1bf-9a840a309db4;5c96e735-d4fc-4601-b83e-2550f20e96da;445710;TVA collectee 20%;17120;0;TVA collectee Q3;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+37487e2f-eb8c-47ea-806d-63f317471ba8;5c96e735-d4fc-4601-b83e-2550f20e96da;445660;TVA deductible sur biens et services;0;9800;TVA deductible Q3;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+31d7cff2-d807-4490-984c-c00ee323c55a;5c96e735-d4fc-4601-b83e-2550f20e96da;445200;TVA due intracommunautaire;0;1720;TVA a payer;2;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+e0e68bf7-21a2-4a5b-9d2f-7bc8c45075c5;5c96e735-d4fc-4601-b83e-2550f20e96da;512000;Banque;5600;0;Reglement TVA Q3;3;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+0f7024d0-469e-45c9-90f4-a62db89938ae;c090a9b2-76b8-4fae-8bde-ad70cf955f7e;681700;Dotations aux provisions;800;0;Provision client douteux;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+dabb3ccb-db4b-4ac9-b8d3-f7d569b5932d;c090a9b2-76b8-4fae-8bde-ad70cf955f7e;491000;Provisions pour depréciation des comptes clients;0;800;Provision;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+b2092130-6ee8-4808-9f11-531c5cbbd071;cbb10284-9cf4-4b68-9cb8-3a2428553447;622000;Honoraires;500;0;Honoraires comptable HT;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+fbd40b5f-b87b-4fa6-91e7-8f08823ff242;cbb10284-9cf4-4b68-9cb8-3a2428553447;445660;TVA deductible sur biens et services;100;0;TVA deductible;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+18e42cb5-513f-49e5-b7aa-e007d86c84db;cbb10284-9cf4-4b68-9cb8-3a2428553447;512000;Banque;0;600;Paiement honoraires;2;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+e208a2d5-01f5-4313-a226-b6fe67baad4e;144e4dc9-7b3f-4d77-92d5-c2a1f29c64d8;512000;Banque;2000;0;Recu subvention exploitation;0;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+d77fe0cb-a245-4842-aa08-d5be4f5cb7d1;144e4dc9-7b3f-4d77-92d5-c2a1f29c64d8;740000;Subventions d'exploitation;0;2000;Subvention recue;1;2026-07-09T10:03:06.535299+00:00;;;;;;;;;;;false;
+6f1edf5b-6c59-4196-9ce6-32d7e9681117;0d59d476-a9d1-42c1-b783-98cbe24845fa;512000;Banque;2500;0;Encaissement client XYZ;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+df82681b-86fc-49d3-b464-9dc918504ad0;0d59d476-a9d1-42c1-b783-98cbe24845fa;411000;Clients;0;2500;Solde facture FAC-2024-041;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+c5e19e25-e367-48ab-b869-d64d456f007d;09109cfd-53b9-465a-b077-f5bcc60cd62b;401000;Fournisseurs;450;0;Paiement Cloud Services Pro;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+776f47c5-9ec9-431b-ace6-065ff4979d07;09109cfd-53b9-465a-b077-f5bcc60cd62b;512000;Banque;0;450;Prelevement bancaire;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+e5ef07f1-3435-4b18-938f-ff764be3c7ac;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;411000;Clients;5000;0;Facture Global Services;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+5c8f132a-57f9-4a8b-a379-765a46223b6c;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;707000;Ventes de marchandises;0;4166.67;Vente HT;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+37780cc4-7b42-4326-85ca-6de8bbc6bd5e;002d6a79-72ba-462a-9e51-9ecfdc2e07e7;445710;TVA collectee 20%;0;833.33;TVA collectee;2;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+b9d8bf79-16c3-48a6-acbd-041525bc8149;1da23082-b513-412d-b7c7-f9b0d0317821;641000;Salaires;28000;0;Salaires bruts Decembre;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+95ecb492-adb7-4aa8-bc17-7510b546a184;1da23082-b513-412d-b7c7-f9b0d0317821;421000;Personnel - remunerations dues;0;28000;Net a payer;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+5031ad9b-3b27-4f47-84c0-67b864af8f45;00fe2594-41c1-49a1-a286-d07941a42783;613000;Locations;1000;0;Loyer bureau HT;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+663810d3-caac-4b68-ae43-3c14058917db;00fe2594-41c1-49a1-a286-d07941a42783;445660;TVA deductible sur biens et services;200;0;TVA deductible;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+83525dbc-7f00-44d1-ab81-456aebf58a13;00fe2594-41c1-49a1-a286-d07941a42783;512000;Banque;0;1200;Prelevement loyer;2;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+5ee7a3ca-918f-4b5a-89ba-d31322dfc7ae;b9fa8cac-042e-49d2-8540-b0ecf668ba24;681100;Dotations aux amortissements;2500;0;Amortissement Q4;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+7e537231-dff6-4299-9cea-395de1ca908c;b9fa8cac-042e-49d2-8540-b0ecf668ba24;281000;Amortissements des immobilisations;0;2500;Amortissement cumule;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+5b1f8a3c-d932-4b34-8f43-8f371b977f6e;58d18feb-b882-4f9b-b1fc-ce4837629ffe;607000;Achats de marchandises;100;0;Fournitures bureau HT;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+e6e9f136-ac81-4ea4-9c0f-10b3370ea8a6;58d18feb-b882-4f9b-b1fc-ce4837629ffe;445660;TVA deductible sur biens et services;20;0;TVA deductible;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+5a31e259-3098-48da-9213-683d9ed51125;58d18feb-b882-4f9b-b1fc-ce4837629ffe;514000;Banque - Carte de credit pro;0;120;Paiement CB;2;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+cdaed084-b8c5-4b11-9f56-56bde10f312e;5c96e735-d4fc-4601-b83e-2550f20e96da;445710;TVA collectee 20%;17120;0;TVA collectee Q3;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+7cccc0c0-a8f9-4d1d-a327-53b35fd82b4a;5c96e735-d4fc-4601-b83e-2550f20e96da;445660;TVA deductible sur biens et services;0;9800;TVA deductible Q3;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+269fcd61-416b-4212-b34e-7f2e4243b50f;5c96e735-d4fc-4601-b83e-2550f20e96da;445200;TVA due intracommunautaire;0;1720;TVA a payer;2;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+e80e198b-526b-44ca-8912-a6a003885e2c;5c96e735-d4fc-4601-b83e-2550f20e96da;512000;Banque;5600;0;Reglement TVA Q3;3;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+0091ad85-934e-49be-ba94-9dfb4c819905;c090a9b2-76b8-4fae-8bde-ad70cf955f7e;681700;Dotations aux provisions;800;0;Provision client douteux;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+6919f7a5-9757-4ef5-9873-3d18d85f571f;c090a9b2-76b8-4fae-8bde-ad70cf955f7e;491000;Provisions pour depréciation des comptes clients;0;800;Provision;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+7430f219-3821-41e7-922d-fbaad05c8fd2;cbb10284-9cf4-4b68-9cb8-3a2428553447;622000;Honoraires;500;0;Honoraires comptable HT;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+58ac298e-8e45-4dac-a709-8c047ed81e8d;cbb10284-9cf4-4b68-9cb8-3a2428553447;445660;TVA deductible sur biens et services;100;0;TVA deductible;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+88c069fa-5360-4700-b834-367b4993d787;cbb10284-9cf4-4b68-9cb8-3a2428553447;512000;Banque;0;600;Paiement honoraires;2;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+a19da0ac-63be-4708-ac7c-7919a1fc72bc;144e4dc9-7b3f-4d77-92d5-c2a1f29c64d8;512000;Banque;2000;0;Recu subvention exploitation;0;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+0ab9e504-d25e-46b9-b14e-6aa5a1b911db;144e4dc9-7b3f-4d77-92d5-c2a1f29c64d8;740000;Subventions d'exploitation;0;2000;Subvention recue;1;2026-07-09T10:05:09.006374+00:00;;;;;;;;;;;false;
+7ac99a16-53cf-4a46-b907-588d8f5a954a;5c1d3afb-b24a-4db7-abc4-fab0d7bad9de;607000;Achats de marchandises;1000;0;Achat marchandises;1;2026-07-13T15:33:02.163361+00:00;607000;;;;;P001;FAC-2025-001;;;;false;2025-01-15
+83ac6d41-f848-4009-93eb-5c97bcd61df6;5c1d3afb-b24a-4db7-abc4-fab0d7bad9de;445660;TVA déductible;200;0;TVA déductible 20%;2;2026-07-13T15:33:02.163361+00:00;445660;;;;;P001;FAC-2025-001;;;;false;2025-01-15
+2c8cf8bf-4c00-41d1-a2b8-e6c63e8740ff;5c1d3afb-b24a-4db7-abc4-fab0d7bad9de;512000;Banque;0;1200;Paiement bancaire;3;2026-07-13T15:33:02.163361+00:00;512000;;;;;P001;FAC-2025-001;;;;false;2025-01-15
+6eef0b23-f76c-4d12-9ceb-dc070b2cb659;03334f1b-7174-4e8d-9508-7c7a824cfebf;512000;Banque;2400;0;Encaissement bancaire;1;2026-07-13T15:33:02.865199+00:00;512000;;;;;P002;FAC-2025-002;;;;false;2025-02-10
+dfc14c12-a573-4d29-b8d8-c52e7cb7fc01;03334f1b-7174-4e8d-9508-7c7a824cfebf;411000;Clients;0;2400;Client - paiement reçu;2;2026-07-13T15:33:02.865199+00:00;411000;;;;;P002;FAC-2025-002;;;;false;2025-02-10
+cac8e3e2-d972-411a-8f38-7633b3ba644a;4f5d7385-4612-4c8e-a35f-d1cc653ea0b5;411000;Clients;2400;0;Client DUPONT;1;2026-07-13T15:33:03.238698+00:00;411000;;;;;P003;FAC-VT-001;;;;false;2025-01-20
+9f74ee1b-fdef-4d51-8683-2322da3381c0;4f5d7385-4612-4c8e-a35f-d1cc653ea0b5;707000;Ventes de marchandises;0;2000;Vente marchandises HT;2;2026-07-13T15:33:03.238698+00:00;707000;;;;;P003;FAC-VT-001;;;;false;2025-01-20
+c53e8b6b-5318-4974-bcf3-e081611930f7;4f5d7385-4612-4c8e-a35f-d1cc653ea0b5;445710;TVA collectée 20%;0;400;TVA collectée;3;2026-07-13T15:33:03.238698+00:00;445710;;;;;P003;FAC-VT-001;;;;false;2025-01-20
+64061875-9561-4298-b281-ea21ac10bbfd;f8548960-be7a-4cfc-872c-3f2aaf1b593e;607000;Achats de marchandises;500;0;Fournitures bureau HT;1;2026-07-13T15:33:03.60056+00:00;607000;;;;;P004;FAC-AC-001;;;;false;2025-02-05
+0978222d-41a0-4ddb-8201-d0112a26a78d;f8548960-be7a-4cfc-872c-3f2aaf1b593e;445660;TVA déductible;100;0;TVA déductible 20%;2;2026-07-13T15:33:03.60056+00:00;445660;;;;;P004;FAC-AC-001;;;;false;2025-02-05
+e20cbb9d-4f2f-4425-8518-2eb6a2b6062a;f8548960-be7a-4cfc-872c-3f2aaf1b593e;401000;Fournisseurs;0;600;Fournisseur - facture à payer;3;2026-07-13T15:33:03.60056+00:00;401000;;;;;P004;FAC-AC-001;;;;false;2025-02-05
+b68831bb-5243-4857-9840-1f6ad28136ec;91a67344-1a88-49e1-86df-0802d6ab8d1e;530000;Caisse;300;0;Apport espèces;1;2026-07-13T15:33:04.054639+00:00;530000;;;;;P005;;;;;false;2025-01-08
+ee9e8f76-e804-49e2-be29-a1917d12d9c9;91a67344-1a88-49e1-86df-0802d6ab8d1e;512000;Banque;0;300;Retrait bancaire pour caisse;2;2026-07-13T15:33:04.054639+00:00;512000;;;;;P005;;;;;false;2025-01-08
+6ab5c6ee-c198-4696-9b4e-94153c743325;3bbc35aa-5b28-48a3-9ce1-30b8b61f8bb9;681000;Dotations aux amortissements;1000;0;Dotation annuelle;1;2026-07-13T15:33:04.698482+00:00;681000;;;;;P006;;;;;false;2025-03-15
+031e0850-da38-4848-aaa2-c46a1618c78e;3bbc35aa-5b28-48a3-9ce1-30b8b61f8bb9;281000;Amortissements des immobilisations;0;1000;Amortissements cumulés;2;2026-07-13T15:33:04.698482+00:00;281000;;;;;P006;;;;;false;2025-03-15

@@ -1,0 +1,16 @@
+﻿id;name;condition_field;condition_operator;condition_value;action_category;action_account_code;action_vat_rate;priority;active;created_at
+b3845756-6bad-467a-bc9c-4f322806c04b;Salaires mensuels;description;contains;SALAIRES;Salaires;641000;0;1;true;2026-07-09T07:55:55.308105+00:00
+e4012b4d-acd4-40c5-9386-108ae9461946;Loyer bureau;description;contains;LOYER;Loyer;613000;20;2;true;2026-07-09T07:55:55.308105+00:00
+5e3ebe42-df11-4e0a-85b4-38525068c8d9;Frais bancaires;description;contains;FRAIS BANCAIRES;Frais bancaires;627000;0;3;true;2026-07-09T07:55:55.308105+00:00
+2dfc1ceb-7678-4144-878e-f1abf803947f;Abonnements logiciels;description;contains;ABONNEMENT;Abonnements;611000;20;4;true;2026-07-09T07:55:55.308105+00:00
+e23e902a-fb24-42cc-ab4a-da9fefe9c8f1;Virements clients;type;equals;credit;Ventes;707000;20;5;true;2026-07-09T07:55:55.308105+00:00
+207a7bd9-cf0c-4e91-a087-a6cc41112cc3;Salaires mensuels;description;contains;SALAIRES;Salaires;641000;0;1;true;2026-07-09T10:03:06.535299+00:00
+0a2a2c07-9673-4784-98a1-3e169324ae22;Loyer bureau;description;contains;LOYER;Loyer;613000;20;2;true;2026-07-09T10:03:06.535299+00:00
+09be6eca-0501-4d77-ab5d-cbb2db20a515;Frais bancaires;description;contains;FRAIS BANCAIRES;Frais bancaires;627000;0;3;true;2026-07-09T10:03:06.535299+00:00
+610ff9be-2bac-493a-82aa-39f47c569f1d;Abonnements logiciels;description;contains;ABONNEMENT;Abonnements;611000;20;4;true;2026-07-09T10:03:06.535299+00:00
+23ed66c0-835a-4f7a-a87c-04a7274aeb85;Virements clients;type;equals;credit;Ventes;707000;20;5;true;2026-07-09T10:03:06.535299+00:00
+f4b53df2-781d-422c-91a1-5974428c9c57;Salaires mensuels;description;contains;SALAIRES;Salaires;641000;0;1;true;2026-07-09T10:05:09.006374+00:00
+f19697b8-932d-441a-9cb5-400f567ce931;Loyer bureau;description;contains;LOYER;Loyer;613000;20;2;true;2026-07-09T10:05:09.006374+00:00
+6b8697bb-0bab-48c6-988a-407ab6d10391;Frais bancaires;description;contains;FRAIS BANCAIRES;Frais bancaires;627000;0;3;true;2026-07-09T10:05:09.006374+00:00
+52583a90-50bd-431e-9c53-f51e3c180c80;Abonnements logiciels;description;contains;ABONNEMENT;Abonnements;611000;20;4;true;2026-07-09T10:05:09.006374+00:00
+59b7d695-b854-48d5-9bb1-b87b2829601d;Virements clients;type;equals;credit;Ventes;707000;20;5;true;2026-07-09T10:05:09.006374+00:00

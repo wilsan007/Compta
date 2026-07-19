@@ -1,0 +1,3 @@
+﻿id;number;customer_id;customer_name;date;status;subtotal;vat_total;total;reason;invoice_id;created_at
+adc9c8c3-9173-4cae-9f04-af4df6ca2306;AV-2024-003;3294a70a-f9bd-48b6-bc2a-ba1c9957eeef;Societe ABC;2026-06-24;applied;100;20;120;Remise commerciale - erreur de facturation;;2026-07-09T07:55:55.308105+00:00
+4f683ad7-fb49-4131-a17c-5f34021413b5;AV-2024-002;be6104b4-728f-4921-95b9-277250fdc1f0;Entreprise XYZ;2026-06-09;draft;250;50;300;Retour produit - en cours de validation;;2026-07-09T07:55:55.308105+00:00

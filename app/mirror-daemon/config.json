@@ -1,0 +1,8 @@
+{
+  "supabaseUrl": "https://ndtaedcgwnaopopugiql.supabase.co",
+  "supabaseKey": "sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK",
+  "mirrorDir": "./mirror-data",
+  "pollIntervalMs": 300000,
+  "syncOnStart": true,
+  "tenantId": "default"
+}

@@ -1,0 +1,65 @@
+﻿id;code;name;type;balance;vat_rate;description;parent_id;created_at
+e2e88121-63c7-4cdf-b251-a6f0e4dd2c74;101000;Capital social;equity;50000;0;Capital de depart;;2026-07-09T07:55:55.308105+00:00
+d4e0f96e-a430-4ac0-9eea-254a56c86d11;218000;Materiel informatique;asset;25000;20;Ordinateurs et serveurs;;2026-07-09T07:55:55.308105+00:00
+6f09a653-4d4c-4923-98a5-0dbb1c8b7e70;401000;Fournisseurs;liability;8900;0;Compte fournisseur global;;2026-07-09T07:55:55.308105+00:00
+17df2df4-4140-49da-91d7-f37d8bea42b9;411000;Clients;asset;12500;0;Compte client global;;2026-07-09T07:55:55.308105+00:00
+5c0c44f9-5420-4d27-afdb-213a1112ac11;512000;Banque;asset;45200;0;Compte bancaire principal;;2026-07-09T07:55:55.308105+00:00
+a81e5b14-60d0-4ace-ad1c-f37d634163ba;607000;Achats de marchandises;expense;32000;20;Achats produits;;2026-07-09T07:55:55.308105+00:00
+a76aea1c-de9f-4160-bb7c-4db7ec095f77;613000;Locations;expense;8400;20;Loyer bureau;;2026-07-09T07:55:55.308105+00:00
+b41ccdb4-b5e1-492b-8e47-efa3a7758377;641000;Salaires;expense;28000;0;Salaires bruts;;2026-07-09T07:55:55.308105+00:00
+624c1a64-43de-46e5-944f-6df9fede5b82;707000;Ventes de marchandises;income;85600;20;CA produits;;2026-07-09T07:55:55.308105+00:00
+7ed7a1fa-f15b-477c-a323-e92a9853542e;106000;Réserves;equity;12000;0;Réserves constituées;;2026-07-09T10:03:06.535299+00:00
+f6924245-479e-42ec-88ab-cf05212ff32e;108000;Compte de l'exploitant;equity;0;0;Apports exploitant;;2026-07-09T10:03:06.535299+00:00
+2d08ad92-d0f5-4813-8483-e8e9243e49f9;110000;Report à nouveau;equity;3500;0;Report à nouveau créditeur;;2026-07-09T10:03:06.535299+00:00
+68ee4848-e34e-4a4a-a515-b7add646b299;120000;Résultat de l'exercice;equity;0;0;Résultat annuel;;2026-07-09T10:03:06.535299+00:00
+2f4f7ae4-95f1-481a-915a-618bd3bd2097;131000;Subventions d'équipement;equity;15000;0;Subventions d'investissement reçues;;2026-07-09T10:03:06.535299+00:00
+d9e42353-962d-4471-99a9-8d4fbddbbb6e;139000;Subventions d'investissement inscrites au résultat;equity;3000;0;Quote-part des subventions virée au résultat;;2026-07-09T10:03:06.535299+00:00
+5ebd3245-5a87-41f5-b7a4-044afe1d73d1;151000;Provisions pour risques;liability;5000;0;Provisions pour litiges;;2026-07-09T10:03:06.535299+00:00
+0f5d1999-1bc3-4ba1-817a-836a933c1994;164000;Emprunts auprès des établissements de crédit;liability;20000;0;Emprunt bancaire;;2026-07-09T10:03:06.535299+00:00
+f8a641b5-15f7-44ad-b49d-abab48eca280;168000;Autres emprunts et dettes;liability;4500;0;Dettes financières diverses;;2026-07-09T10:03:06.535299+00:00
+766c0209-2548-4841-86d6-7241209263b2;205000;Concessions, brevets, licences;asset;8000;0;Logiciels et licences;;2026-07-09T10:03:06.535299+00:00
+6062c563-70d4-44dd-bc9d-c3af100e9953;211000;Terrains;asset;0;0;Terrains propriété;;2026-07-09T10:03:06.535299+00:00
+288a4576-4c2a-4119-ad7d-61a95c1e68db;213000;Constructions;asset;0;0;Bâtiments;;2026-07-09T10:03:06.535299+00:00
+73e53a32-2fcb-4768-b419-2a014bf9e3c7;215000;Installations techniques, matériel et outillage;asset;15000;0;Matériel de production;;2026-07-09T10:03:06.535299+00:00
+d31af64d-3405-43c1-9b75-9779da2085e1;218300;Mobilier;asset;6000;0;Mobilier de bureau;;2026-07-09T10:03:06.535299+00:00
+cfaee155-d525-4f75-969f-b067796455b5;281000;Amortissements des immobilisations;asset;-12000;0;Amortissements cumulés;;2026-07-09T10:03:06.535299+00:00
+3c238807-9b06-4bb5-83ff-fdb04bcbc7d0;310000;Matières premières;asset;8500;0;Stock matières premières;;2026-07-09T10:03:06.535299+00:00
+c731c3a2-5a87-4664-8a25-d846e74d9955;330000;En-cours de production;asset;3200;0;Travaux en cours;;2026-07-09T10:03:06.535299+00:00
+14f95b89-bc2a-4ce6-b4d5-38632662144b;350000;Produits finis;asset;12000;0;Stock produits finis;;2026-07-09T10:03:06.535299+00:00
+43e5202e-9ae6-4d57-b593-0c1dec5ec7fe;370000;Stocks de marchandises;asset;9500;0;Stock marchandises;;2026-07-09T10:03:06.535299+00:00
+72639055-48d2-410e-84a6-7d01680fa2c7;401100;Fournisseurs - achats de biens;liability;5200;0;Fournisseurs biens;;2026-07-09T10:03:06.535299+00:00
+9d4977fa-1c81-48d9-8ca9-30604c3212ea;401200;Fournisseurs - prestations de services;liability;3700;0;Fournisseurs services;;2026-07-09T10:03:06.535299+00:00
+ba8b2136-bd12-4bf0-bc7e-1eaadd6a1800;411100;Clients - ventes de biens;asset;9500;0;Clients biens;;2026-07-09T10:03:06.535299+00:00
+97821dce-502e-459e-821e-cca7abcc7121;411200;Clients - prestations de services;asset;3000;0;Clients services;;2026-07-09T10:03:06.535299+00:00
+4fb208ef-1928-40a0-8191-8cfd1cc13c5d;421000;Personnel - rémunérations dues;liability;14000;0;Salaires à payer;;2026-07-09T10:03:06.535299+00:00
+ba39462c-3afb-46f5-b021-6f2b681110ba;431000;Sécurité sociale;liability;6800;0;Cotisations URSSAF;;2026-07-09T10:03:06.535299+00:00
+84c49262-5093-4b86-a7dc-e3ab66eb5661;445200;TVA due intracommunautaire;liability;0;0;TVA acquisitions IC;;2026-07-09T10:03:06.535299+00:00
+e2e037e3-e80e-48c0-b52d-c116442806c0;445510;TVA collectée;liability;17120;0;TVA sur ventes;;2026-07-09T10:03:06.535299+00:00
+aa78bb0e-c7b3-441b-a8ad-594c07be5393;445660;TVA déductible sur biens et services;asset;9800;0;TVA récupérable;;2026-07-09T10:03:06.535299+00:00
+f10813da-92f2-4a58-a25e-90bf5a98c86a;445670;Crédit de TVA à reporter;asset;1200;0;Crédit TVA précédent;;2026-07-09T10:03:06.535299+00:00
+de3d9119-9d64-43ec-8418-5364f11c7415;445710;TVA collectée 20%;liability;17120;0;TVA collectée taux normal;;2026-07-09T10:03:06.535299+00:00
+8f6100e4-f486-4898-a963-14b38ede8324;445800;TVA à régulariser;liability;0;0;TVA en attente;;2026-07-09T10:03:06.535299+00:00
+7d1eb3c9-fe3f-4c5c-a7ec-5ebbe1bf2469;467000;Autres comptes débiteurs ou créditeurs;liability;2300;0;Comptes divers;;2026-07-09T10:03:06.535299+00:00
+c7643938-9fed-49e1-9bc7-bf8429f9264c;510000;Valeurs mobilières de placement;asset;0;0;Titres de placement;;2026-07-09T10:03:06.535299+00:00
+edf4b688-0edd-4f23-9104-df41c9a87dbc;512100;Banque - Compte épargne;asset;6700;0;Compte épargne;;2026-07-09T10:03:06.535299+00:00
+d38585f6-f3f9-4b25-8460-3df25245f50d;514000;Banque - Carte de crédit pro;asset;-1200;0;Carte de crédit professionnelle;;2026-07-09T10:03:06.535299+00:00
+51832201-8548-45e4-b238-f69d14e3684c;530000;Caisse;asset;200;0;Espèces en caisse;;2026-07-09T10:03:06.535299+00:00
+fd1bec59-01a8-4959-87fe-58dbace9c095;531000;Caisse - espèces;asset;200;0;Fonds de caisse;;2026-07-09T10:03:06.535299+00:00
+8bad8fc8-a133-43c6-9a1a-5c76d98299b5;580000;Virements internes;asset;0;0;Transferts inter-comptes;;2026-07-09T10:03:06.535299+00:00
+9cc07388-88d9-4613-a9a2-1f964c92a919;601000;Achats stockés - matières premières;expense;12000;20;Achats matières;;2026-07-09T10:03:06.535299+00:00
+518ac2be-018b-418b-a1d4-2e1e0d956e3d;611000;Sous-traitance générale;expense;5500;20;Sous-traitance;;2026-07-09T10:03:06.535299+00:00
+3788c821-2c5a-4fae-a499-634d36b1d564;615000;Entretien et réparations;expense;2300;20;Maintenance;;2026-07-09T10:03:06.535299+00:00
+8be9b22a-12d6-4457-9e14-163adabb5607;616000;Primes d'assurance;expense;3600;0;Assurances;;2026-07-09T10:03:06.535299+00:00
+90825909-2c28-43fd-8556-46f99680e701;618000;Documentation générale;expense;800;0;Abonnements presse;;2026-07-09T10:03:06.535299+00:00
+583c1510-1e9d-4883-9817-f00cdba9c2a2;622000;Honoraires;expense;4500;20;Comptable, avocat;;2026-07-09T10:03:06.535299+00:00
+60945def-08f3-42dd-bed0-ba43b5af5e2d;623000;Publicité, publications;expense;2800;20;Marketing;;2026-07-09T10:03:06.535299+00:00
+8b73b58c-5791-440e-8974-57e924f9af98;626000;Frais postaux et télécommunications;expense;1500;20;Tel, internet, courrier;;2026-07-09T10:03:06.535299+00:00
+30ec18df-48ba-41e6-ae05-a08b78c308e3;635000;Impôts et taxes divers;expense;3200;0;CFE, CVAE, taxes diverses;;2026-07-09T10:03:06.535299+00:00
+b0cb620d-e7e4-48e2-a9e1-b6b652f122c2;645000;Charges de sécurité sociale et prévoyance;expense;12500;0;Cotisations sociales;;2026-07-09T10:03:06.535299+00:00
+13ee0bb6-21fe-4a6e-b09f-d8c176b060dd;661000;Charges d'intérêts;expense;850;0;Agios et intérêts emprunts;;2026-07-09T10:03:06.535299+00:00
+d0599216-865c-4b67-8ef9-1456a80cfdab;701000;Ventes de produits finis;income;45000;20;Ventes production;;2026-07-09T10:03:06.535299+00:00
+e4ae2cc8-d607-44d5-b5c1-0fcd3990a97f;706000;Prestations de services;income;35000;20;Ventes services;;2026-07-09T10:03:06.535299+00:00
+2e6c5cb2-197a-48f4-bea9-4a6a3e9a3e3c;708000;Produits des activités annexes;income;4200;20;Ventes annexes;;2026-07-09T10:03:06.535299+00:00
+c5e6b6c9-88ef-44b2-8e4d-39f73f9a67a8;740000;Subventions d'exploitation;income;2000;0;Subventions d'exploitation reçues;;2026-07-09T10:03:06.535299+00:00
+c1803ae0-8735-472b-a89b-c988e427ded7;758000;Produits divers de gestion courante;income;1500;0;Produits divers;;2026-07-09T10:03:06.535299+00:00
+3d7f74d5-ce64-48ec-9b71-5113bf433e9d;771000;Produits exceptionnels sur opérations de gestion;income;800;0;Produits exceptionnels;;2026-07-09T10:03:06.535299+00:00

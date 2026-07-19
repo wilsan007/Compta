@@ -1,0 +1,5 @@
+﻿id;auth_id;name;email;role;active;last_login;created_at;updated_at
+bf5509e9-9b43-4614-bf86-d6ba9f825762;;Admin Demo;admin@compta.fr;admin;true;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+e8688d62-b76e-4bd1-8111-9f156f5d5ba2;;Marie Comptable;marie@compta.fr;accountant;true;2026-07-08T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+6694c413-8bf1-4d2b-a637-4dba25b19b54;;Jean Manager;jean@compta.fr;manager;true;2026-07-06T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00
+5cf45a15-d6e3-4ad6-acd1-38ed8f187ffb;;Sophie Viewer;sophie@compta.fr;viewer;false;;2026-07-09T07:55:55.308105+00:00;2026-07-09T07:55:55.308105+00:00

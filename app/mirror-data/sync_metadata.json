@@ -1,0 +1,15 @@
+{
+  "tenantId": "default",
+  "lastSyncAt": "2026-07-17T14:02:44.405Z",
+  "totalRows": 329,
+  "tableCount": 64,
+  "tablesWith": 21,
+  "tablesEmpty": 43,
+  "syncReason": "startup",
+  "supabaseUrl": "https://ndtaedcgwnaopopugiql.supabase.co",
+  "files": {
+    "sql": "sql/full-export.sql",
+    "json": "json/full-export.json",
+    "csvDir": "csv/"
+  }
+}

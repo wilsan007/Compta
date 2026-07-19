@@ -1,0 +1,6 @@
+﻿id;code;name;type;account_counterpart;bank_account_id;default_entry_template_id;status;locked;created_at;updated_at
+2b8ff93a-513e-402a-a533-091fb9d7e2c2;BQ;Banque;bank;512000;cde72066-9c43-4dec-bec2-f0817fcba0f9;;active;false;2026-07-13T15:28:10.684979+00:00;2026-07-13T15:28:10.684979+00:00
+83dc00f8-9117-45b5-8246-b5de9adea5dd;CA;Caisse;cash;530000;b91d9272-21db-482c-9f2b-1f1bac698ab3;;active;false;2026-07-13T15:28:31.597946+00:00;2026-07-13T15:28:31.597946+00:00
+accd8112-7fb7-46bb-a35e-034b1364d90e;VT;Ventes;sale;411000;;;active;false;2026-07-13T15:28:32.114856+00:00;2026-07-13T15:28:32.114856+00:00
+e22c526e-e573-4d86-976c-f8bcc014691b;AC;Achats;purchase;401000;;;active;false;2026-07-13T15:29:04.807185+00:00;2026-07-13T15:29:04.807185+00:00
+e1aa06fb-5813-44cc-b562-acc4a01d343e;OD;Opérations diverses;general;;;;active;false;2026-07-13T15:29:05.364891+00:00;2026-07-13T15:29:05.364891+00:00
