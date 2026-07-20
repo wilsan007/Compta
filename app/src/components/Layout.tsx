@@ -253,6 +253,7 @@ export const navGroups = [
           { label: 'Equipe & roles', path: '/settings/team' },
           { label: 'Devises', path: '/settings/currencies' },
           { label: 'Intégrations', path: '/settings/integrations' },
+          { label: 'Import de données', path: '/settings/import' },
           { label: 'Export des données', path: '/settings/data-export' },
           { label: 'Journal d\'audit', path: '/system/audit-log' },
         ],

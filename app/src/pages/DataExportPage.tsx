@@ -7,6 +7,7 @@ import {
   type ExportResult,
 } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
+import { useAuth } from '@/lib/auth'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -23,6 +24,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function DataExportPage() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<ExportResult[] | null>(null)
   const [exportedAt, setExportedAt] = useState('')
@@ -34,16 +36,17 @@ export function DataExportPage() {
   const [installing, setInstalling] = useState(false)
 
   const loadMirrorStatus = useCallback(async () => {
+    if (!user?.tenantId) return
     setMirrorLoading(true)
     try {
-      const status = await getMirrorServerStatus('default')
+      const status = await getMirrorServerStatus(user.tenantId)
       setMirrorStatus(status)
     } catch (err) {
       console.error('Error loading mirror status:', err)
     } finally {
       setMirrorLoading(false)
     }
-  }, [])
+  }, [user?.tenantId])
 
   useEffect(() => {
     loadMirrorStatus()
@@ -52,10 +55,14 @@ export function DataExportPage() {
   }, [loadMirrorStatus])
 
   async function handleInstallMirror(platform: 'mac' | 'windows') {
+    if (!user?.tenantId) {
+      toast('error', 'Erreur', 'Aucune entreprise associée à votre compte')
+      return
+    }
     setInstalling(true)
     try {
       const result = await preRegisterMirrorServer({
-        tenant_id: 'default',
+        tenant_id: user.tenantId,
         install_platform: platform,
       })
       if (!result.success) {
@@ -71,10 +78,10 @@ export function DataExportPage() {
 
       const installerCode = platform === 'mac'
         ? generateMacInstaller({
-            supabaseUrl, supabaseKey, tenantId: 'default', installToken: result.install_token!, daemonCode,
+            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!, daemonCode,
           })
         : generateWindowsInstaller({
-            supabaseUrl, supabaseKey, tenantId: 'default', installToken: result.install_token!, daemonCode,
+            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!, daemonCode,
           })
 
       const filename = platform === 'mac' ? 'install-compta-mirror.sh' : 'install-compta-mirror.ps1'

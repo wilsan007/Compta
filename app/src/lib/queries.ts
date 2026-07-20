@@ -4079,6 +4079,14 @@ export async function createTenantForUser(data: {
     return { success: false, error: tuErr.message }
   }
 
+  // Seed reference data (chart of accounts, journals, currencies, fiscal year,
+  // company settings) so the app is immediately usable. Non-fatal: if it fails,
+  // the tenant still exists and the user can import/create data manually.
+  const { error: bootstrapErr } = await supabase.rpc('bootstrap_tenant', { p_tenant_id: tenant.id })
+  if (bootstrapErr) {
+    console.error('bootstrap_tenant failed:', bootstrapErr.message)
+  }
+
   return { success: true, tenant: tenant as Tenant }
 }
 
@@ -4223,6 +4231,51 @@ export async function reinviteUser(tenantUserId: string, email: string): Promise
 
   if (inviteError) return { success: false, error: inviteError.message }
   return { success: true }
+}
+
+// Called after an invited user clicks the magic link and lands on /accept-invitation.
+// Links the authenticated auth.users id to the pending tenant_users row, activates it,
+// and optionally sets a password so the user can log in with email/password later.
+export async function acceptInvitation(password?: string): Promise<{ success: boolean; error?: string; tenantName?: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { success: false, error: 'Lien invalide ou expiré. Redemandez une invitation.' }
+
+  const authId = session.user.id
+  const email = session.user.email
+  if (!email) return { success: false, error: 'Email introuvable dans la session.' }
+
+  // Find the pending (or already-linked) invitation for this email
+  const { data: tenantUser, error: findError } = await supabase
+    .from('tenant_users')
+    .select('id, tenant_id, status, tenants:tenant_id (name)')
+    .eq('email', email)
+    .neq('status', 'revoked')
+    .maybeSingle()
+
+  if (findError) return { success: false, error: findError.message }
+  if (!tenantUser) return { success: false, error: "Aucune invitation trouvée pour cet email." }
+
+  // Link auth_id + activate
+  const { error: updateError } = await supabase
+    .from('tenant_users')
+    .update({
+      auth_id: authId,
+      status: 'active',
+      accepted_at: new Date().toISOString(),
+      last_login: new Date().toISOString(),
+    })
+    .eq('id', tenantUser.id)
+
+  if (updateError) return { success: false, error: updateError.message }
+
+  // Optionally set a password for future email/password logins
+  if (password && password.length >= 6) {
+    const { error: pwError } = await supabase.auth.updateUser({ password })
+    if (pwError) return { success: false, error: `Compte activé mais mot de passe non défini: ${pwError.message}` }
+  }
+
+  const tenantName = (tenantUser as any).tenants?.name || null
+  return { success: true, tenantName }
 }
 
 export function hasPermission(

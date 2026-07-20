@@ -16,6 +16,7 @@ interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
   signOut: () => Promise<void>
   reloadUser: () => Promise<void>
   hasRole: (...roles: TenantUser['role'][]) => boolean
@@ -122,6 +123,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/onboarding`,
+        },
+      })
+      if (error) return { error: error.message, needsConfirmation: false }
+      // If no session is returned, email confirmation is required before login
+      const needsConfirmation = !data.session
+      return { error: null, needsConfirmation }
+    } catch (err: any) {
+      return { error: err.message || "Erreur lors de l'inscription", needsConfirmation: false }
+    }
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setTenantId(null)
@@ -159,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, reloadUser: loadUser, hasRole, canPerform }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, reloadUser: loadUser, hasRole, canPerform }}>
       {children}
     </AuthContext.Provider>
   )

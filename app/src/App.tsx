@@ -90,8 +90,11 @@ import { BIReportingPage } from '@/pages/BIReportingPage'
 import { BudgetTrackingPage } from '@/pages/BudgetTrackingPage'
 import { BudgetCommitmentsPage } from '@/pages/BudgetCommitmentsPage'
 import { DataExportPage } from '@/pages/DataExportPage'
+import { ImportPage } from '@/pages/ImportPage'
 import { TeamPage } from '@/pages/TeamPage'
 import { OnboardingPage } from '@/pages/OnboardingPage'
+import { SignupPage } from '@/pages/SignupPage'
+import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { AuditLogPage } from '@/pages/AuditLogPage'
 import { TrainingPage } from '@/pages/TrainingPage'
 
@@ -103,6 +106,8 @@ function App() {
           <BrowserRouter>
             <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
 
           <Route element={<ProtectedLayout />}>
@@ -230,6 +235,7 @@ function App() {
           <Route path="/settings/users" element={<SettingsPage />} />
           <Route path="/settings/integrations" element={<SettingsPage />} />
           <Route path="/settings/data-export" element={<DataExportPage />} />
+          <Route path="/settings/import" element={<ImportPage />} />
           <Route path="/settings/team" element={<TeamPage />} />
           <Route path="/settings/currencies" element={<CurrenciesPage />} />
           <Route path="/system/fiscal-years" element={<FiscalYearsPage />} />

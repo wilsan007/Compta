@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { Building2, Lock, Mail, AlertCircle } from 'lucide-react'
@@ -85,6 +85,13 @@ export function LoginPage() {
               {loading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-[var(--color-text-secondary)]">
+            Pas encore de compte ?{' '}
+            <Link to="/signup" className="text-[var(--color-primary)] font-medium">
+              Créer un compte
+            </Link>
+          </p>
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
