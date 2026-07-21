@@ -1,0 +1,81 @@
+{
+  "depPlans": {
+    "title": "Plans d'amortissement",
+    "breadcrumb1": "Comptabilité",
+    "new": "Nouveau plan",
+    "asset": "Immobilisation",
+    "assetId": "ID immobilisation",
+    "type": "Type",
+    "method": "Méthode",
+    "duration": "Durée (mois)",
+    "netValue": "Valeur nette",
+    "active": "Actif",
+    "empty": "Aucun plan d'amortissement",
+    "created": "Plan créé avec succès",
+    "types": {
+      "economic": "Économique",
+      "fiscal": "Fiscal",
+      "derogatory": "Dérogatoire",
+      "exceptional": "Exceptionnel"
+    },
+    "methods": {
+      "linear": "Linéaire",
+      "degressive": "Dégressif",
+      "variable": "Variable",
+      "manual": "Manuel"
+    }
+  },
+  "families": {
+    "title": "Familles d'immobilisations",
+    "breadcrumb1": "Comptabilité",
+    "new": "Nouvelle famille",
+    "code": "Code",
+    "name": "Nom",
+    "account": "Compte par défaut",
+    "duration": "Durée par défaut (mois)",
+    "empty": "Aucune famille",
+    "created": "Famille créée avec succès"
+  },
+  "revaluations": {
+    "title": "Réévaluations",
+    "breadcrumb1": "Comptabilité",
+    "new": "Nouvelle réévaluation",
+    "asset": "Immobilisation",
+    "assetId": "ID immobilisation",
+    "date": "Date",
+    "oldValue": "Ancienne valeur",
+    "newValue": "Nouvelle valeur",
+    "difference": "Différence",
+    "empty": "Aucune réévaluation",
+    "created": "Réévaluation créée avec succès"
+  },
+  "batchDisposals": {
+    "title": "Cessions en lot",
+    "breadcrumb1": "Comptabilité",
+    "new": "Nouvelle cession",
+    "number": "Numéro de lot",
+    "date": "Date",
+    "assets": "Nb immobilisations",
+    "proceeds": "Produit de cession",
+    "gainLoss": "Plus/moins-value",
+    "status": "Statut",
+    "process": "Traiter",
+    "empty": "Aucune cession en lot",
+    "created": "Cession créée avec succès",
+    "statuses": {
+      "draft": "Brouillon",
+      "processed": "Traitée",
+      "cancelled": "Annulée"
+    }
+  },
+  "fromEntry": {
+    "title": "Créer depuis écriture",
+    "breadcrumb1": "Comptabilité",
+    "entryId": "ID de l'écure",
+    "create": "Créer l'immobilisation",
+    "created": "Immobilisation créée avec succès",
+    "notFound": "Écriture introuvable",
+    "noAssetLine": "Aucune ligne d'immobilisation trouvée dans l'écriture",
+    "defaultName": "Immobilisation depuis écriture"
+  }
+}

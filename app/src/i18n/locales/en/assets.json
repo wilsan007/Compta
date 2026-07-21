@@ -1,0 +1,81 @@
+{
+  "depPlans": {
+    "title": "Depreciation plans",
+    "breadcrumb1": "Accounting",
+    "new": "New plan",
+    "asset": "Asset",
+    "assetId": "Asset ID",
+    "type": "Type",
+    "method": "Method",
+    "duration": "Duration (months)",
+    "netValue": "Net value",
+    "active": "Active",
+    "empty": "No depreciation plans",
+    "created": "Plan created successfully",
+    "types": {
+      "economic": "Economic",
+      "fiscal": "Fiscal",
+      "derogatory": "Derogatory",
+      "exceptional": "Exceptional"
+    },
+    "methods": {
+      "linear": "Straight-line",
+      "degressive": "Declining balance",
+      "variable": "Variable",
+      "manual": "Manual"
+    }
+  },
+  "families": {
+    "title": "Asset families",
+    "breadcrumb1": "Accounting",
+    "new": "New family",
+    "code": "Code",
+    "name": "Name",
+    "account": "Default account",
+    "duration": "Default duration (months)",
+    "empty": "No asset families",
+    "created": "Family created successfully"
+  },
+  "revaluations": {
+    "title": "Asset revaluations",
+    "breadcrumb1": "Accounting",
+    "new": "New revaluation",
+    "asset": "Asset",
+    "assetId": "Asset ID",
+    "date": "Date",
+    "oldValue": "Old value",
+    "newValue": "New value",
+    "difference": "Difference",
+    "empty": "No revaluations",
+    "created": "Revaluation created successfully"
+  },
+  "batchDisposals": {
+    "title": "Batch disposals",
+    "breadcrumb1": "Accounting",
+    "new": "New disposal",
+    "number": "Batch number",
+    "date": "Date",
+    "assets": "Asset count",
+    "proceeds": "Disposal proceeds",
+    "gainLoss": "Gain/loss",
+    "status": "Status",
+    "process": "Process",
+    "empty": "No batch disposals",
+    "created": "Disposal created successfully",
+    "statuses": {
+      "draft": "Draft",
+      "processed": "Processed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "fromEntry": {
+    "title": "Create from entry",
+    "breadcrumb1": "Accounting",
+    "entryId": "Entry ID",
+    "create": "Create asset",
+    "created": "Asset created successfully",
+    "notFound": "Entry not found",
+    "noAssetLine": "No asset line found in the entry",
+    "defaultName": "Asset from entry"
+  }
+}

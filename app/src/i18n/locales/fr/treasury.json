@@ -193,5 +193,139 @@
       "cancel": "Annuler",
       "create": "Créer"
     }
+  },
+  "mcf": {
+    "title": "Mouvements comptables futurs",
+    "breadcrumb1": "Trésorerie",
+    "new": "Nouveau mouvement",
+    "description": "Description",
+    "accountCode": "Compte",
+    "amount": "Montant",
+    "type": "Type",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "expectedDate": "Date prévue",
+    "status": "Statut",
+    "incorporated": "Intégré",
+    "pending": "En attente",
+    "incorporate": "Intégrer",
+    "empty": "Aucun mouvement futur",
+    "created": "Mouvement créé avec succès",
+    "types": {
+      "debit": "Débit",
+      "credit": "Crédit"
+    }
+  },
+  "transfers": {
+    "title": "Virements de trésorerie",
+    "breadcrumb1": "Trésorerie",
+    "new": "Nouveau virement",
+    "number": "Numéro",
+    "from": "De",
+    "to": "Vers",
+    "fromAccount": "Compte source",
+    "toAccount": "Compte destinataire",
+    "amount": "Montant",
+    "date": "Date",
+    "status": "Statut",
+    "execute": "Exécuter",
+    "empty": "Aucun virement",
+    "created": "Virement créé avec succès",
+    "statuses": {
+      "draft": "Brouillon",
+      "executed": "Exécuté",
+      "cancelled": "Annulé"
+    }
+  },
+  "creditLines": {
+    "title": "Lignes de crédit",
+    "breadcrumb1": "Trésorerie",
+    "new": "Nouvelle ligne",
+    "name": "Nom",
+    "type": "Type",
+    "limit": "Plafond",
+    "used": "Utilisé",
+    "rate": "Taux",
+    "status": "Statut",
+    "empty": "Aucune ligne de crédit",
+    "created": "Ligne créée avec succès",
+    "types": {
+      "credit_line": "Ligne de crédit",
+      "loan": "Prêt",
+      "overdraft": "Découvert"
+    },
+    "statuses": {
+      "active": "Active",
+      "closed": "Clôturée",
+      "suspended": "Suspendue"
+    }
+  },
+  "investments": {
+    "title": "Placements",
+    "breadcrumb1": "Trésorerie",
+    "new": "Nouveau placement",
+    "name": "Nom",
+    "type": "Type",
+    "institution": "Institution",
+    "initial": "Montant initial",
+    "initialAmount": "Montant initial",
+    "current": "Valeur actuelle",
+    "currentValue": "Valeur actuelle",
+    "rate": "Taux",
+    "status": "Statut",
+    "empty": "Aucun placement",
+    "created": "Placement créé avec succès",
+    "types": {
+      "opcv": "OPCV",
+      "bond": "Obligation",
+      "stock": "Action",
+      "term_deposit": "Dépôt à terme"
+    },
+    "statuses": {
+      "active": "Actif",
+      "matured": "Échu",
+      "sold": "Vendu"
+    }
+  },
+  "valueDates": {
+    "title": "Dates de valeur",
+    "breadcrumb1": "Trésorerie",
+    "account": "Compte",
+    "operationDate": "Date d'opération",
+    "valueDate": "Date de valeur",
+    "amount": "Montant",
+    "type": "Type",
+    "empty": "Aucun suivi de date de valeur"
+  },
+  "recurring": {
+    "title": "Opérations récurrentes",
+    "breadcrumb1": "Trésorerie",
+    "new": "Nouvelle opération",
+    "description": "Description",
+    "amount": "Montant",
+    "type": "Type",
+    "frequency": "Fréquence",
+    "nextDate": "Prochaine date",
+    "empty": "Aucune opération récurrente",
+    "created": "Opération créée avec succès",
+    "types": {
+      "incoming": "Entrant",
+      "outgoing": "Sortant"
+    },
+    "freq": {
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "quarterly": "Trimestriel",
+      "yearly": "Annuel"
+    }
+  },
+  "consolidated": {
+    "title": "Trésorerie consolidée",
+    "breadcrumb1": "Trésorerie",
+    "date": "Date",
+    "assets": "Actifs",
+    "liabilities": "Passifs",
+    "netPosition": "Position nette",
+    "empty": "Aucune donnée consolidée"
   }
 }

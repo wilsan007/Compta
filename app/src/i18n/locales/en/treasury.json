@@ -193,5 +193,139 @@
       "cancel": "Cancel",
       "create": "Create"
     }
+  },
+  "mcf": {
+    "title": "Future accounting movements",
+    "breadcrumb1": "Treasury",
+    "new": "New movement",
+    "description": "Description",
+    "accountCode": "Account",
+    "amount": "Amount",
+    "type": "Type",
+    "debit": "Debit",
+    "credit": "Credit",
+    "expectedDate": "Expected date",
+    "status": "Status",
+    "incorporated": "Incorporated",
+    "pending": "Pending",
+    "incorporate": "Incorporate",
+    "empty": "No future movements",
+    "created": "Movement created successfully",
+    "types": {
+      "debit": "Debit",
+      "credit": "Credit"
+    }
+  },
+  "transfers": {
+    "title": "Treasury transfers",
+    "breadcrumb1": "Treasury",
+    "new": "New transfer",
+    "number": "Number",
+    "from": "From",
+    "to": "To",
+    "fromAccount": "From account",
+    "toAccount": "To account",
+    "amount": "Amount",
+    "date": "Date",
+    "status": "Status",
+    "execute": "Execute",
+    "empty": "No transfers",
+    "created": "Transfer created successfully",
+    "statuses": {
+      "draft": "Draft",
+      "executed": "Executed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "creditLines": {
+    "title": "Credit lines",
+    "breadcrumb1": "Treasury",
+    "new": "New credit line",
+    "name": "Name",
+    "type": "Type",
+    "limit": "Limit",
+    "used": "Used",
+    "rate": "Rate",
+    "status": "Status",
+    "empty": "No credit lines",
+    "created": "Credit line created successfully",
+    "types": {
+      "credit_line": "Credit line",
+      "loan": "Loan",
+      "overdraft": "Overdraft"
+    },
+    "statuses": {
+      "active": "Active",
+      "closed": "Closed",
+      "suspended": "Suspended"
+    }
+  },
+  "investments": {
+    "title": "Investments",
+    "breadcrumb1": "Treasury",
+    "new": "New investment",
+    "name": "Name",
+    "type": "Type",
+    "institution": "Institution",
+    "initial": "Initial amount",
+    "initialAmount": "Initial amount",
+    "current": "Current value",
+    "currentValue": "Current value",
+    "rate": "Rate",
+    "status": "Status",
+    "empty": "No investments",
+    "created": "Investment created successfully",
+    "types": {
+      "opcv": "UCITS",
+      "bond": "Bond",
+      "stock": "Stock",
+      "term_deposit": "Term deposit"
+    },
+    "statuses": {
+      "active": "Active",
+      "matured": "Matured",
+      "sold": "Sold"
+    }
+  },
+  "valueDates": {
+    "title": "Value dates",
+    "breadcrumb1": "Treasury",
+    "account": "Account",
+    "operationDate": "Operation date",
+    "valueDate": "Value date",
+    "amount": "Amount",
+    "type": "Type",
+    "empty": "No value date tracking"
+  },
+  "recurring": {
+    "title": "Recurring operations",
+    "breadcrumb1": "Treasury",
+    "new": "New recurring",
+    "description": "Description",
+    "amount": "Amount",
+    "type": "Type",
+    "frequency": "Frequency",
+    "nextDate": "Next date",
+    "empty": "No recurring operations",
+    "created": "Recurring operation created successfully",
+    "types": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing"
+    },
+    "freq": {
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly"
+    }
+  },
+  "consolidated": {
+    "title": "Consolidated treasury",
+    "breadcrumb1": "Treasury",
+    "date": "Date",
+    "assets": "Assets",
+    "liabilities": "Liabilities",
+    "netPosition": "Net position",
+    "empty": "No consolidated data"
   }
 }

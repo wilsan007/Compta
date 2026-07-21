@@ -238,5 +238,110 @@
       "out": "Sortie",
       "adjustment": "Ajustement"
     }
+  },
+  "locations": {
+    "title": "Emplacements de stock",
+    "breadcrumb1": "Stock",
+    "new": "Nouvel emplacement",
+    "code": "Code",
+    "zone": "Zone",
+    "aisle": "Allée",
+    "shelf": "Étagère",
+    "empty": "Aucun emplacement",
+    "created": "Emplacement créé avec succès"
+  },
+  "quality": {
+    "title": "Contrôles qualité",
+    "breadcrumb1": "Stock",
+    "new": "Nouveau contrôle",
+    "product": "Produit",
+    "productId": "ID produit",
+    "status": "Statut",
+    "date": "Date",
+    "notes": "Notes",
+    "empty": "Aucun contrôle qualité",
+    "created": "Contrôle créé avec succès",
+    "pass": "Conforme",
+    "fail": "Non conforme",
+    "statuses": {
+      "pending": "En attente",
+      "passed": "Conforme",
+      "failed": "Non conforme"
+    }
+  },
+  "picking": {
+    "title": "Bons de préparation",
+    "breadcrumb1": "Stock",
+    "new": "Nouveau bon",
+    "number": "Numéro",
+    "status": "Statut",
+    "date": "Date",
+    "empty": "Aucun bon de préparation",
+    "created": "Bon créé avec succès",
+    "start": "Démarrer",
+    "complete": "Terminer",
+    "statuses": {
+      "draft": "Brouillon",
+      "in_progress": "En cours",
+      "completed": "Terminé"
+    }
+  },
+  "serials": {
+    "title": "Numéros de série",
+    "breadcrumb1": "Stock",
+    "new": "Nouveau numéro",
+    "product": "Produit",
+    "productId": "ID produit",
+    "number": "Numéro de série",
+    "status": "Statut",
+    "empty": "Aucun numéro de série",
+    "created": "Numéro créé avec succès",
+    "statuses": {
+      "in_stock": "En stock",
+      "sold": "Vendu",
+      "returned": "Retourné",
+      "warranty": "Garantie"
+    }
+  },
+  "batches": {
+    "title": "Lots produits",
+    "breadcrumb1": "Stock",
+    "new": "Nouveau lot",
+    "product": "Produit",
+    "productId": "ID produit",
+    "number": "Numéro de lot",
+    "quantity": "Quantité",
+    "expiry": "Date d'expiration",
+    "status": "Statut",
+    "empty": "Aucun lot",
+    "created": "Lot créé avec succès",
+    "statuses": {
+      "active": "Actif",
+      "expired": "Expiré",
+      "quarantine": "Quarantaine"
+    }
+  },
+  "substitutes": {
+    "title": "Produits de substitution",
+    "breadcrumb1": "Stock",
+    "new": "Nouvelle substitution",
+    "product": "Produit",
+    "productId": "ID produit",
+    "substitute": "Substitut",
+    "substituteId": "ID substitut",
+    "priority": "Priorité",
+    "empty": "Aucune substitution",
+    "created": "Substitution créée avec succès"
+  },
+  "dormant": {
+    "title": "Stock dormant",
+    "breadcrumb1": "Stock",
+    "product": "Produit",
+    "sku": "SKU",
+    "warehouse": "Entrepôt",
+    "quantity": "Quantité",
+    "lastUpdate": "Dernière mise à jour",
+    "daysThreshold": "Seuil (jours)",
+    "empty": "Aucun stock dormant"
   }
 }

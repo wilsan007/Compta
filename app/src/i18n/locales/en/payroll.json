@@ -1,0 +1,197 @@
+{
+  "components": {
+    "title": "Payroll components",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New component",
+    "code": "Code",
+    "name": "Name",
+    "type": "Type",
+    "calcType": "Calculation type",
+    "rateEmployer": "Employer rate",
+    "rateEmployee": "Employee rate",
+    "active": "Active",
+    "empty": "No payroll components",
+    "created": "Component created successfully",
+    "types": {
+      "gross": "Gross",
+      "deduction": "Deduction",
+      "contribution": "Contribution",
+      "tax": "Tax",
+      "net": "Net",
+      "benefit": "Benefit"
+    },
+    "calcTypes": {
+      "fixed": "Fixed amount",
+      "percentage": "Percentage",
+      "formula": "Formula",
+      "bracket": "Bracket"
+    }
+  },
+  "templates": {
+    "title": "Payroll templates",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New template",
+    "name": "Name",
+    "category": "Category",
+    "empty": "No payroll templates",
+    "created": "Template created successfully",
+    "categories": {
+      "standard": "Standard",
+      "cadre": "Executive",
+      "non_cadre": "Non-executive",
+      "apprenti": "Apprentice",
+      "stagiaire": "Intern"
+    }
+  },
+  "advances": {
+    "title": "Salary advances",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New advance",
+    "employee": "Employee",
+    "employeeId": "Employee ID",
+    "amount": "Amount",
+    "date": "Date",
+    "status": "Status",
+    "deduct": "Deduct",
+    "empty": "No salary advances",
+    "created": "Advance created successfully",
+    "statuses": {
+      "pending": "Pending",
+      "deducted": "Deducted",
+      "cancelled": "Cancelled"
+    }
+  },
+  "dsn": {
+    "title": "DSN",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New DSN",
+    "period": "Period",
+    "type": "Type",
+    "status": "Status",
+    "transmit": "Transmit",
+    "empty": "No DSN",
+    "created": "DSN created successfully",
+    "types": {
+      "mensuelle": "Monthly",
+      "arret": "Sick leave",
+      "reprise": "Return to work",
+      "fin_contrat": "End of contract"
+    },
+    "statuses": {
+      "generated": "Generated",
+      "transmitted": "Transmitted",
+      "rejected": "Rejected"
+    }
+  },
+  "dpae": {
+    "title": "DPAE",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New DPAE",
+    "employee": "Employee",
+    "employeeId": "Employee ID",
+    "hireDate": "Hire date",
+    "contractType": "Contract type",
+    "position": "Position",
+    "status": "Status",
+    "empty": "No DPAE",
+    "created": "DPAE created successfully",
+    "statuses": {
+      "pending": "Pending",
+      "transmitted": "Transmitted",
+      "rejected": "Rejected"
+    }
+  },
+  "legalWatch": {
+    "title": "Legal watch",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New article",
+    "category": "Category",
+    "source": "Source",
+    "date": "Date",
+    "relevance": "Relevance",
+    "markRead": "Mark as read",
+    "empty": "No legal watch articles",
+    "created": "Article created successfully",
+    "relevanceLevels": {
+      "info": "Information",
+      "important": "Important",
+      "urgent": "Urgent"
+    }
+  },
+  "expenseReports": {
+    "title": "Expense reports",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New expense report",
+    "number": "Number",
+    "employee": "Employee",
+    "employeeId": "Employee ID",
+    "amount": "Amount",
+    "status": "Status",
+    "approve": "Approve",
+    "empty": "No expense reports",
+    "created": "Expense report created successfully",
+    "statuses": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "reimbursed": "Reimbursed"
+    }
+  },
+  "recalls": {
+    "title": "Pay recalls",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New recall",
+    "employee": "Employee",
+    "employeeId": "Employee ID",
+    "period": "Reference period",
+    "amount": "Amount",
+    "status": "Status",
+    "empty": "No pay recalls",
+    "created": "Recall created successfully",
+    "statuses": {
+      "pending": "Pending",
+      "processed": "Processed",
+      "paid": "Paid"
+    }
+  },
+  "archives": {
+    "title": "Payroll archives",
+    "breadcrumb1": "HR & Payroll",
+    "employee": "Employee",
+    "period": "Period",
+    "type": "Type",
+    "retention": "Retention until",
+    "empty": "No archives",
+    "types": {
+      "payslip": "Payslip",
+      "dsn": "DSN",
+      "contract": "Contract",
+      "other": "Other"
+    }
+  },
+  "interviews": {
+    "title": "Interviews",
+    "breadcrumb1": "HR & Payroll",
+    "new": "New interview",
+    "employee": "Employee",
+    "employeeId": "Employee ID",
+    "type": "Type",
+    "date": "Date",
+    "status": "Status",
+    "conduct": "Conduct interview",
+    "empty": "No interviews",
+    "created": "Interview created successfully",
+    "types": {
+      "annual": "Annual",
+      "mid_year": "Mid-year",
+      "professional": "Professional",
+      "exit": "Exit"
+    },
+    "statuses": {
+      "scheduled": "Scheduled",
+      "conducted": "Conducted",
+      "cancelled": "Cancelled"
+    }
+  }
+}

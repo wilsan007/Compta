@@ -1,0 +1,197 @@
+{
+  "components": {
+    "title": "مكونات الرواتب",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "مكون جديد",
+    "code": "الرمز",
+    "name": "الاسم",
+    "type": "النوع",
+    "calcType": "نوع الحساب",
+    "rateEmployer": "نسبة المشغل",
+    "rateEmployee": "نسبة الموظف",
+    "active": "نشط",
+    "empty": "لا توجد مكونات رواتب",
+    "created": "تم إنشاء المكون بنجاح",
+    "types": {
+      "gross": "الإجمالي",
+      "deduction": "خصم",
+      "contribution": "مساهمة",
+      "tax": "ضريبة",
+      "net": "الصافي",
+      "benefit": "ميزة"
+    },
+    "calcTypes": {
+      "fixed": "مبلغ ثابت",
+      "percentage": "نسبة مئوية",
+      "formula": "صيغة",
+      "bracket": "شرائح"
+    }
+  },
+  "templates": {
+    "title": "قوالب الرواتب",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "قالب جديد",
+    "name": "الاسم",
+    "category": "الفئة",
+    "empty": "لا توجد قوالب رواتب",
+    "created": "تم إنشاء القالب بنجاح",
+    "categories": {
+      "standard": "قياسي",
+      "cadre": "إطار",
+      "non_cadre": "غير إطار",
+      "apprenti": "متدرب",
+      "stagiaire": "تلميذ"
+    }
+  },
+  "advances": {
+    "title": "السلف على الراتب",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "سلفة جديدة",
+    "employee": "الموظف",
+    "employeeId": "معرف الموظف",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "deduct": "خصم",
+    "empty": "لا توجد سلف",
+    "created": "تم إنشاء السلفة بنجاح",
+    "statuses": {
+      "pending": "في الانتظار",
+      "deducted": "مخصومة",
+      "cancelled": "ملغاة"
+    }
+  },
+  "dsn": {
+    "title": "DSN",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "DSN جديدة",
+    "period": "الفترة",
+    "type": "النوع",
+    "status": "الحالة",
+    "transmit": "إرسال",
+    "empty": "لا توجد DSN",
+    "created": "تم إنشاء DSN بنجاح",
+    "types": {
+      "mensuelle": "شهرية",
+      "arret": "توقف العمل",
+      "reprise": "استئناف العمل",
+      "fin_contrat": "نهاية العقد"
+    },
+    "statuses": {
+      "generated": "مُنشأة",
+      "transmitted": "مُرسلة",
+      "rejected": "مرفوضة"
+    }
+  },
+  "dpae": {
+    "title": "DPAE",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "DPAE جديدة",
+    "employee": "الموظف",
+    "employeeId": "معرف الموظف",
+    "hireDate": "تاريخ التوظيف",
+    "contractType": "نوع العقد",
+    "position": "المنصب",
+    "status": "الحالة",
+    "empty": "لا توجد DPAE",
+    "created": "تم إنشاء DPAE بنجاح",
+    "statuses": {
+      "pending": "في الانتظار",
+      "transmitted": "مُرسلة",
+      "rejected": "مرفوضة"
+    }
+  },
+  "legalWatch": {
+    "title": "المراقبة القانونية",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "مقال جديد",
+    "category": "الفئة",
+    "source": "المصدر",
+    "date": "التاريخ",
+    "relevance": "الأهمية",
+    "markRead": "وضع علامة مقروء",
+    "empty": "لا توجد مقالات مراقبة قانونية",
+    "created": "تم إنشاء المقال بنجاح",
+    "relevanceLevels": {
+      "info": "معلومة",
+      "important": "مهم",
+      "urgent": "عاجل"
+    }
+  },
+  "expenseReports": {
+    "title": "تقارير المصاريف",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "تقرير جديد",
+    "number": "الرقم",
+    "employee": "الموظف",
+    "employeeId": "معرف الموظف",
+    "amount": "المبلغ",
+    "status": "الحالة",
+    "approve": "موافقة",
+    "empty": "لا توجد تقارير مصاريف",
+    "created": "تم إنشاء التقرير بنجاح",
+    "statuses": {
+      "draft": "مسودة",
+      "submitted": "مُقدمة",
+      "approved": "موافق عليها",
+      "rejected": "مرفوضة",
+      "reimbursed": "مُعوضة"
+    }
+  },
+  "recalls": {
+    "title": "استدعاءات الرواتب",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "استدعاء جديد",
+    "employee": "الموظف",
+    "employeeId": "معرف الموظف",
+    "period": "فترة المرجع",
+    "amount": "المبلغ",
+    "status": "الحالة",
+    "empty": "لا توجد استدعاءات رواتب",
+    "created": "تم إنشاء الاستدعاء بنجاح",
+    "statuses": {
+      "pending": "في الانتظار",
+      "processed": "مُعالج",
+      "paid": "مدفوع"
+    }
+  },
+  "archives": {
+    "title": "أرشيف الرواتب",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "employee": "الموظف",
+    "period": "الفترة",
+    "type": "النوع",
+    "retention": "الاحتفاظ حتى",
+    "empty": "لا يوجد أرشيف",
+    "types": {
+      "payslip": "قسيمة راتب",
+      "dsn": "DSN",
+      "contract": "عقد",
+      "other": "أخرى"
+    }
+  },
+  "interviews": {
+    "title": "المقابلات",
+    "breadcrumb1": "الموارد البشرية والرواتب",
+    "new": "مقابلة جديدة",
+    "employee": "الموظف",
+    "employeeId": "معرف الموظف",
+    "type": "النوع",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "conduct": "إجراء المقابلة",
+    "empty": "لا توجد مقابلات",
+    "created": "تم إنشاء المقابلة بنجاح",
+    "types": {
+      "annual": "سنوي",
+      "mid_year": "نصف سنوي",
+      "professional": "مهني",
+      "exit": "مغادرة"
+    },
+    "statuses": {
+      "scheduled": "مُجدول",
+      "conducted": "مُجرى",
+      "cancelled": "ملغى"
+    }
+  }
+}

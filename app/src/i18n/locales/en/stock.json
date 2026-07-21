@@ -238,5 +238,110 @@
       "out": "Out",
       "adjustment": "Adjustment"
     }
+  },
+  "locations": {
+    "title": "Warehouse locations",
+    "breadcrumb1": "Stock",
+    "new": "New location",
+    "code": "Code",
+    "zone": "Zone",
+    "aisle": "Aisle",
+    "shelf": "Shelf",
+    "empty": "No locations",
+    "created": "Location created successfully"
+  },
+  "quality": {
+    "title": "Quality checks",
+    "breadcrumb1": "Stock",
+    "new": "New check",
+    "product": "Product",
+    "productId": "Product ID",
+    "status": "Status",
+    "date": "Date",
+    "notes": "Notes",
+    "empty": "No quality checks",
+    "created": "Check created successfully",
+    "pass": "Pass",
+    "fail": "Fail",
+    "statuses": {
+      "pending": "Pending",
+      "passed": "Passed",
+      "failed": "Failed"
+    }
+  },
+  "picking": {
+    "title": "Pick lists",
+    "breadcrumb1": "Stock",
+    "new": "New pick list",
+    "number": "Number",
+    "status": "Status",
+    "date": "Date",
+    "empty": "No pick lists",
+    "created": "Pick list created successfully",
+    "start": "Start",
+    "complete": "Complete",
+    "statuses": {
+      "draft": "Draft",
+      "in_progress": "In progress",
+      "completed": "Completed"
+    }
+  },
+  "serials": {
+    "title": "Serial numbers",
+    "breadcrumb1": "Stock",
+    "new": "New serial",
+    "product": "Product",
+    "productId": "Product ID",
+    "number": "Serial number",
+    "status": "Status",
+    "empty": "No serial numbers",
+    "created": "Serial number created successfully",
+    "statuses": {
+      "in_stock": "In stock",
+      "sold": "Sold",
+      "returned": "Returned",
+      "warranty": "Warranty"
+    }
+  },
+  "batches": {
+    "title": "Product batches",
+    "breadcrumb1": "Stock",
+    "new": "New batch",
+    "product": "Product",
+    "productId": "Product ID",
+    "number": "Batch number",
+    "quantity": "Quantity",
+    "expiry": "Expiry date",
+    "status": "Status",
+    "empty": "No batches",
+    "created": "Batch created successfully",
+    "statuses": {
+      "active": "Active",
+      "expired": "Expired",
+      "quarantine": "Quarantine"
+    }
+  },
+  "substitutes": {
+    "title": "Product substitutes",
+    "breadcrumb1": "Stock",
+    "new": "New substitute",
+    "product": "Product",
+    "productId": "Product ID",
+    "substitute": "Substitute",
+    "substituteId": "Substitute ID",
+    "priority": "Priority",
+    "empty": "No substitutes",
+    "created": "Substitute created successfully"
+  },
+  "dormant": {
+    "title": "Dormant stock",
+    "breadcrumb1": "Stock",
+    "product": "Product",
+    "sku": "SKU",
+    "warehouse": "Warehouse",
+    "quantity": "Quantity",
+    "lastUpdate": "Last update",
+    "daysThreshold": "Threshold (days)",
+    "empty": "No dormant stock"
   }
 }

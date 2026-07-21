@@ -1,0 +1,197 @@
+{
+  "components": {
+    "title": "Composants de paie",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouveau composant",
+    "code": "Code",
+    "name": "Nom",
+    "type": "Type",
+    "calcType": "Type de calcul",
+    "rateEmployer": "Taux employeur",
+    "rateEmployee": "Taux salarié",
+    "active": "Actif",
+    "empty": "Aucun composant de paie",
+    "created": "Composant créé avec succès",
+    "types": {
+      "gross": "Brut",
+      "deduction": "Déduction",
+      "contribution": "Cotisation",
+      "tax": "Impôt",
+      "net": "Net",
+      "benefit": "Avantage"
+    },
+    "calcTypes": {
+      "fixed": "Montant fixe",
+      "percentage": "Pourcentage",
+      "formula": "Formule",
+      "bracket": "Barème"
+    }
+  },
+  "templates": {
+    "title": "Modèles de paie",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouveau modèle",
+    "name": "Nom",
+    "category": "Catégorie",
+    "empty": "Aucun modèle de paie",
+    "created": "Modèle créé avec succès",
+    "categories": {
+      "standard": "Standard",
+      "cadre": "Cadre",
+      "non_cadre": "Non-cadre",
+      "apprenti": "Apprenti",
+      "stagiaire": "Stagiaire"
+    }
+  },
+  "advances": {
+    "title": "Avances sur salaire",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvelle avance",
+    "employee": "Salarié",
+    "employeeId": "ID salarié",
+    "amount": "Montant",
+    "date": "Date",
+    "status": "Statut",
+    "deduct": "Déduire",
+    "empty": "Aucune avance",
+    "created": "Avance créée avec succès",
+    "statuses": {
+      "pending": "En attente",
+      "deducted": "Déduite",
+      "cancelled": "Annulée"
+    }
+  },
+  "dsn": {
+    "title": "DSN",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvelle DSN",
+    "period": "Période",
+    "type": "Type",
+    "status": "Statut",
+    "transmit": "Transmettre",
+    "empty": "Aucune DSN",
+    "created": "DSN créée avec succès",
+    "types": {
+      "mensuelle": "Mensuelle",
+      "arret": "Arrêt de travail",
+      "reprise": "Reprise",
+      "fin_contrat": "Fin de contrat"
+    },
+    "statuses": {
+      "generated": "Générée",
+      "transmitted": "Transmise",
+      "rejected": "Rejetée"
+    }
+  },
+  "dpae": {
+    "title": "DPAE",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvelle DPAE",
+    "employee": "Salarié",
+    "employeeId": "ID salarié",
+    "hireDate": "Date d'embauche",
+    "contractType": "Type de contrat",
+    "position": "Poste",
+    "status": "Statut",
+    "empty": "Aucune DPAE",
+    "created": "DPAE créée avec succès",
+    "statuses": {
+      "pending": "En attente",
+      "transmitted": "Transmise",
+      "rejected": "Rejetée"
+    }
+  },
+  "legalWatch": {
+    "title": "Veille légale",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvel article",
+    "category": "Catégorie",
+    "source": "Source",
+    "date": "Date",
+    "relevance": "Pertinence",
+    "markRead": "Marquer comme lu",
+    "empty": "Aucun article de veille",
+    "created": "Article créé avec succès",
+    "relevanceLevels": {
+      "info": "Information",
+      "important": "Important",
+      "urgent": "Urgent"
+    }
+  },
+  "expenseReports": {
+    "title": "Notes de frais",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvelle note de frais",
+    "number": "Numéro",
+    "employee": "Salarié",
+    "employeeId": "ID salarié",
+    "amount": "Montant",
+    "status": "Statut",
+    "approve": "Approuver",
+    "empty": "Aucune note de frais",
+    "created": "Note de frais créée avec succès",
+    "statuses": {
+      "draft": "Brouillon",
+      "submitted": "Soumise",
+      "approved": "Approuvée",
+      "rejected": "Rejetée",
+      "reimbursed": "Remboursée"
+    }
+  },
+  "recalls": {
+    "title": "Rappels de salaire",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouveau rappel",
+    "employee": "Salarié",
+    "employeeId": "ID salarié",
+    "period": "Période de référence",
+    "amount": "Montant",
+    "status": "Statut",
+    "empty": "Aucun rappel de salaire",
+    "created": "Rappel créé avec succès",
+    "statuses": {
+      "pending": "En attente",
+      "processed": "Traité",
+      "paid": "Payé"
+    }
+  },
+  "archives": {
+    "title": "Archives de paie",
+    "breadcrumb1": "Paie & RH",
+    "employee": "Salarié",
+    "period": "Période",
+    "type": "Type",
+    "retention": "Conservation jusqu'au",
+    "empty": "Aucune archive",
+    "types": {
+      "payslip": "Bulletin de paie",
+      "dsn": "DSN",
+      "contract": "Contrat",
+      "other": "Autre"
+    }
+  },
+  "interviews": {
+    "title": "Entretiens",
+    "breadcrumb1": "Paie & RH",
+    "new": "Nouvel entretien",
+    "employee": "Salarié",
+    "employeeId": "ID salarié",
+    "type": "Type",
+    "date": "Date",
+    "status": "Statut",
+    "conduct": "Mener l'entretien",
+    "empty": "Aucun entretien",
+    "created": "Entretien créé avec succès",
+    "types": {
+      "annual": "Annuel",
+      "mid_year": "Mi-année",
+      "professional": "Professionnel",
+      "exit": "De départ"
+    },
+    "statuses": {
+      "scheduled": "Planifié",
+      "conducted": "Effectué",
+      "cancelled": "Annulé"
+    }
+  }
+}

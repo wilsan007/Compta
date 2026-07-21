@@ -13,6 +13,8 @@ import frTreasury from './locales/fr/treasury.json'
 import frStock from './locales/fr/stock.json'
 import frProduction from './locales/fr/production.json'
 import frHr from './locales/fr/hr.json'
+import frPayroll from './locales/fr/payroll.json'
+import frAssets from './locales/fr/assets.json'
 import frReports from './locales/fr/reports.json'
 import frSettings from './locales/fr/settings.json'
 import frErrors from './locales/fr/errors.json'
@@ -29,6 +31,8 @@ import enTreasury from './locales/en/treasury.json'
 import enStock from './locales/en/stock.json'
 import enProduction from './locales/en/production.json'
 import enHr from './locales/en/hr.json'
+import enPayroll from './locales/en/payroll.json'
+import enAssets from './locales/en/assets.json'
 import enReports from './locales/en/reports.json'
 import enSettings from './locales/en/settings.json'
 import enErrors from './locales/en/errors.json'
@@ -45,6 +49,8 @@ import arTreasury from './locales/ar/treasury.json'
 import arStock from './locales/ar/stock.json'
 import arProduction from './locales/ar/production.json'
 import arHr from './locales/ar/hr.json'
+import arPayroll from './locales/ar/payroll.json'
+import arAssets from './locales/ar/assets.json'
 import arReports from './locales/ar/reports.json'
 import arSettings from './locales/ar/settings.json'
 import arErrors from './locales/ar/errors.json'
@@ -61,7 +67,7 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; flag: s
 
 export const ALL_NAMESPACES = [
   'common', 'nav', 'auth', 'sales', 'purchases', 'accounting',
-  'banking', 'treasury', 'stock', 'production', 'hr', 'reports', 'settings', 'errors', 'features',
+  'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features',
 ] as const
 
 i18n
@@ -81,6 +87,8 @@ i18n
         stock: frStock,
         production: frProduction,
         hr: frHr,
+        payroll: frPayroll,
+        assets: frAssets,
         reports: frReports,
         settings: frSettings,
         errors: frErrors,
@@ -98,6 +106,8 @@ i18n
         stock: enStock,
         production: enProduction,
         hr: enHr,
+        payroll: enPayroll,
+        assets: enAssets,
         reports: enReports,
         settings: enSettings,
         errors: enErrors,
@@ -115,6 +125,8 @@ i18n
         stock: arStock,
         production: arProduction,
         hr: arHr,
+        payroll: arPayroll,
+        assets: arAssets,
         reports: arReports,
         settings: arSettings,
         errors: arErrors,

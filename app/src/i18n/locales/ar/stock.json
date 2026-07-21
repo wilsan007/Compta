@@ -238,5 +238,110 @@
       "out": "إخراج",
       "adjustment": "تسوية"
     }
+  },
+  "locations": {
+    "title": "مواقع المستودعات",
+    "breadcrumb1": "المخزون",
+    "new": "موقع جديد",
+    "code": "الرمز",
+    "zone": "المنطقة",
+    "aisle": "الممر",
+    "shelf": "الرف",
+    "empty": "لا توجد مواقع",
+    "created": "تم إنشاء الموقع بنجاح"
+  },
+  "quality": {
+    "title": "فحوصات الجودة",
+    "breadcrumb1": "المخزون",
+    "new": "فحص جديد",
+    "product": "المنتج",
+    "productId": "معرف المنتج",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "notes": "ملاحظات",
+    "empty": "لا توجد فحوصات جودة",
+    "created": "تم إنشاء الفحص بنجاح",
+    "pass": "مطابق",
+    "fail": "غير مطابق",
+    "statuses": {
+      "pending": "في الانتظار",
+      "passed": "مطابق",
+      "failed": "غير مطابق"
+    }
+  },
+  "picking": {
+    "title": "قوائم الانتقاء",
+    "breadcrumb1": "المخزون",
+    "new": "قائمة جديدة",
+    "number": "الرقم",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "empty": "لا توجد قوائم انتقاء",
+    "created": "تم إنشاء القائمة بنجاح",
+    "start": "بدء",
+    "complete": "إكمال",
+    "statuses": {
+      "draft": "مسودة",
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    }
+  },
+  "serials": {
+    "title": "الأرقام التسلسلية",
+    "breadcrumb1": "المخزون",
+    "new": "رقم جديد",
+    "product": "المنتج",
+    "productId": "معرف المنتج",
+    "number": "الرقم التسلسلي",
+    "status": "الحالة",
+    "empty": "لا توجد أرقام تسلسلية",
+    "created": "تم إنشاء الرقم بنجاح",
+    "statuses": {
+      "in_stock": "في المخزون",
+      "sold": "مباع",
+      "returned": "مرتجع",
+      "warranty": "ضمان"
+    }
+  },
+  "batches": {
+    "title": "دفعات المنتجات",
+    "breadcrumb1": "المخزون",
+    "new": "دفعة جديدة",
+    "product": "المنتج",
+    "productId": "معرف المنتج",
+    "number": "رقم الدفعة",
+    "quantity": "الكمية",
+    "expiry": "تاريخ الانتهاء",
+    "status": "الحالة",
+    "empty": "لا توجد دفعات",
+    "created": "تم إنشاء الدفعة بنجاح",
+    "statuses": {
+      "active": "نشط",
+      "expired": "منتهي",
+      "quarantine": "حجر صحي"
+    }
+  },
+  "substitutes": {
+    "title": "بدائل المنتجات",
+    "breadcrumb1": "المخزون",
+    "new": "بديل جديد",
+    "product": "المنتج",
+    "productId": "معرف المنتج",
+    "substitute": "البديل",
+    "substituteId": "معرف البديل",
+    "priority": "الأولوية",
+    "empty": "لا توجد بدائل",
+    "created": "تم إنشاء البديل بنجاح"
+  },
+  "dormant": {
+    "title": "المخزون الخامل",
+    "breadcrumb1": "المخزون",
+    "product": "المنتج",
+    "sku": "SKU",
+    "warehouse": "المستودع",
+    "quantity": "الكمية",
+    "lastUpdate": "آخر تحديث",
+    "daysThreshold": "الحد (أيام)",
+    "empty": "لا يوجد مخزون خامل"
   }
 }

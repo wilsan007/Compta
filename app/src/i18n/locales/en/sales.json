@@ -244,5 +244,68 @@
     "searchPlaceholder": "Search by name, email, VAT...",
     "importCustomers": "Import customers",
     "exportCustomers": "Export customers"
+  },
+  "prospects": {
+    "title": "Prospects",
+    "breadcrumb1": "Sales",
+    "new": "New prospect",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "contactName": "Contact name",
+    "source": "Source",
+    "status": "Status",
+    "empty": "No prospects",
+    "created": "Prospect created successfully",
+    "convert": "Convert to customer",
+    "convertConfirm": "Convert this prospect to a customer?",
+    "converted": "Prospect converted to customer"
+  },
+  "reps": {
+    "title": "Representatives",
+    "breadcrumb1": "Sales",
+    "new": "New representative",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "commission": "Commission (%)",
+    "territory": "Territory",
+    "empty": "No representatives",
+    "created": "Representative created successfully"
+  },
+  "docTemplates": {
+    "title": "Document templates",
+    "breadcrumb1": "Settings",
+    "new": "New template",
+    "name": "Name",
+    "type": "Type",
+    "color": "Colors",
+    "empty": "No document templates",
+    "created": "Template created successfully",
+    "types": {
+      "invoice": "Invoice",
+      "quote": "Quote",
+      "delivery_note": "Delivery note",
+      "credit_note": "Credit note"
+    }
+  },
+  "schedules": {
+    "title": "Delivery schedules",
+    "breadcrumb1": "Sales",
+    "new": "New schedule",
+    "customer": "Customer",
+    "customerId": "Customer ID",
+    "product": "Product",
+    "productId": "Product ID",
+    "frequency": "Frequency",
+    "quantity": "Quantity",
+    "startDate": "Start date",
+    "empty": "No delivery schedules",
+    "created": "Schedule created successfully",
+    "freq": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
   }
 }

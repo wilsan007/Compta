@@ -244,5 +244,68 @@
     "searchPlaceholder": "Rechercher par nom, email, TVA...",
     "importCustomers": "Importer des clients",
     "exportCustomers": "Exporter les clients"
+  },
+  "prospects": {
+    "title": "Prospects",
+    "breadcrumb1": "Ventes",
+    "new": "Nouveau prospect",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "contactName": "Nom du contact",
+    "source": "Source",
+    "status": "Statut",
+    "empty": "Aucun prospect",
+    "created": "Prospect créé avec succès",
+    "convert": "Convertir en client",
+    "convertConfirm": "Convertir ce prospect en client ?",
+    "converted": "Prospect converti en client"
+  },
+  "reps": {
+    "title": "Représentants",
+    "breadcrumb1": "Ventes",
+    "new": "Nouveau représentant",
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "commission": "Commission (%)",
+    "territory": "Secteur",
+    "empty": "Aucun représentant",
+    "created": "Représentant créé avec succès"
+  },
+  "docTemplates": {
+    "title": "Modèles de documents",
+    "breadcrumb1": "Paramètres",
+    "new": "Nouveau modèle",
+    "name": "Nom",
+    "type": "Type",
+    "color": "Couleurs",
+    "empty": "Aucun modèle de document",
+    "created": "Modèle créé avec succès",
+    "types": {
+      "invoice": "Facture",
+      "quote": "Devis",
+      "delivery_note": "Bon de livraison",
+      "credit_note": "Avoir"
+    }
+  },
+  "schedules": {
+    "title": "Plannings de livraison",
+    "breadcrumb1": "Ventes",
+    "new": "Nouveau planning",
+    "customer": "Client",
+    "customerId": "ID client",
+    "product": "Produit",
+    "productId": "ID produit",
+    "frequency": "Fréquence",
+    "quantity": "Quantité",
+    "startDate": "Date de début",
+    "empty": "Aucun planning de livraison",
+    "created": "Planning créé avec succès",
+    "freq": {
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel"
+    }
   }
 }

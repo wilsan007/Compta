@@ -1,0 +1,81 @@
+{
+  "depPlans": {
+    "title": "خطط الإهلاك",
+    "breadcrumb1": "المحاسبة",
+    "new": "خطة جديدة",
+    "asset": "الأصل",
+    "assetId": "معرف الأصل",
+    "type": "النوع",
+    "method": "الطريقة",
+    "duration": "المدة (أشهر)",
+    "netValue": "القيمة الصافية",
+    "active": "نشط",
+    "empty": "لا توجد خطط إهلاك",
+    "created": "تم إنشاء الخطة بنجاح",
+    "types": {
+      "economic": "اقتصادي",
+      "fiscal": "ضريبي",
+      "derogatory": "استثنائي",
+      "exceptional": "استثنائي"
+    },
+    "methods": {
+      "linear": "خطي",
+      "degressive": "تنازلي",
+      "variable": "متغير",
+      "manual": "يدوي"
+    }
+  },
+  "families": {
+    "title": "فئات الأصول",
+    "breadcrumb1": "المحاسبة",
+    "new": "فئة جديدة",
+    "code": "الرمز",
+    "name": "الاسم",
+    "account": "الحساب الافتراضي",
+    "duration": "المدة الافتراضية (أشهر)",
+    "empty": "لا توجد فئات أصول",
+    "created": "تم إنشاء الفئة بنجاح"
+  },
+  "revaluations": {
+    "title": "إعادة تقييم الأصول",
+    "breadcrumb1": "المحاسبة",
+    "new": "إعادة تقييم جديدة",
+    "asset": "الأصل",
+    "assetId": "معرف الأصل",
+    "date": "التاريخ",
+    "oldValue": "القيمة القديمة",
+    "newValue": "القيمة الجديدة",
+    "difference": "الفرق",
+    "empty": "لا توجد إعادة تقييم",
+    "created": "تم إنشاء إعادة التقييم بنجاح"
+  },
+  "batchDisposals": {
+    "title": "التخلص الدفعي",
+    "breadcrumb1": "المحاسبة",
+    "new": "تخلص جديد",
+    "number": "رقم الدفعة",
+    "date": "التاريخ",
+    "assets": "عدد الأصول",
+    "proceeds": "عائد التخلص",
+    "gainLoss": "ربح/خسارة",
+    "status": "الحالة",
+    "process": "معالجة",
+    "empty": "لا يوجد تخلص دفعي",
+    "created": "تم إنشاء التخلص بنجاح",
+    "statuses": {
+      "draft": "مسودة",
+      "processed": "مُعالج",
+      "cancelled": "ملغى"
+    }
+  },
+  "fromEntry": {
+    "title": "إنشاء من قيد",
+    "breadcrumb1": "المحاسبة",
+    "entryId": "معرف القيد",
+    "create": "إنشاء أصل",
+    "created": "تم إنشاء الأصل بنجاح",
+    "notFound": "القيد غير موجود",
+    "noAssetLine": "لا يوجد بند أصل في القيد",
+    "defaultName": "أصل من قيد"
+  }
+}

@@ -193,5 +193,139 @@
       "cancel": "إلغاء",
       "create": "إنشاء"
     }
+  },
+  "mcf": {
+    "title": "الحركات المحاسبية المستقبلية",
+    "breadcrumb1": "الخزينة",
+    "new": "حركة جديدة",
+    "description": "الوصف",
+    "accountCode": "الحساب",
+    "amount": "المبلغ",
+    "type": "النوع",
+    "debit": "مدين",
+    "credit": "دائن",
+    "expectedDate": "التاريخ المتوقع",
+    "status": "الحالة",
+    "incorporated": "مدمج",
+    "pending": "في الانتظار",
+    "incorporate": "دمج",
+    "empty": "لا توجد حركات مستقبلية",
+    "created": "تم إنشاء الحركة بنجاح",
+    "types": {
+      "debit": "مدين",
+      "credit": "دائن"
+    }
+  },
+  "transfers": {
+    "title": "تحويلات الخزينة",
+    "breadcrumb1": "الخزينة",
+    "new": "تحويل جديد",
+    "number": "الرقم",
+    "from": "من",
+    "to": "إلى",
+    "fromAccount": "الحساب المصدر",
+    "toAccount": "الحساب الوجهة",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "execute": "تنفيذ",
+    "empty": "لا توجد تحويلات",
+    "created": "تم إنشاء التحويل بنجاح",
+    "statuses": {
+      "draft": "مسودة",
+      "executed": "منفذ",
+      "cancelled": "ملغى"
+    }
+  },
+  "creditLines": {
+    "title": "خطوط الائتمان",
+    "breadcrumb1": "الخزينة",
+    "new": "خط جديد",
+    "name": "الاسم",
+    "type": "النوع",
+    "limit": "السقف",
+    "used": "المستخدم",
+    "rate": "النسبة",
+    "status": "الحالة",
+    "empty": "لا توجد خطوط ائتمان",
+    "created": "تم إنشاء الخط بنجاح",
+    "types": {
+      "credit_line": "خط ائتمان",
+      "loan": "قرض",
+      "overdraft": "سحب على المكشوف"
+    },
+    "statuses": {
+      "active": "نشط",
+      "closed": "مغلق",
+      "suspended": "معلق"
+    }
+  },
+  "investments": {
+    "title": "الاستثمارات",
+    "breadcrumb1": "الخزينة",
+    "new": "استثمار جديد",
+    "name": "الاسم",
+    "type": "النوع",
+    "institution": "المؤسسة",
+    "initial": "المبلغ الأولي",
+    "initialAmount": "المبلغ الأولي",
+    "current": "القيمة الحالية",
+    "currentValue": "القيمة الحالية",
+    "rate": "النسبة",
+    "status": "الحالة",
+    "empty": "لا توجد استثمارات",
+    "created": "تم إنشاء الاستثمار بنجاح",
+    "types": {
+      "opcv": "صندوق استثمار",
+      "bond": "سند",
+      "stock": "سهم",
+      "term_deposit": "وديعة لأجل"
+    },
+    "statuses": {
+      "active": "نشط",
+      "matured": "منتهي",
+      "sold": "مباع"
+    }
+  },
+  "valueDates": {
+    "title": "تواريخ القيمة",
+    "breadcrumb1": "الخزينة",
+    "account": "الحساب",
+    "operationDate": "تاريخ العملية",
+    "valueDate": "تاريخ القيمة",
+    "amount": "المبلغ",
+    "type": "النوع",
+    "empty": "لا يوجد تتبع لتواريخ القيمة"
+  },
+  "recurring": {
+    "title": "العمليات المتكررة",
+    "breadcrumb1": "الخزينة",
+    "new": "عملية جديدة",
+    "description": "الوصف",
+    "amount": "المبلغ",
+    "type": "النوع",
+    "frequency": "التكرار",
+    "nextDate": "التاريخ التالي",
+    "empty": "لا توجد عمليات متكررة",
+    "created": "تم إنشاء العملية بنجاح",
+    "types": {
+      "incoming": "وارد",
+      "outgoing": "صادر"
+    },
+    "freq": {
+      "weekly": "أسبوعي",
+      "monthly": "شهري",
+      "quarterly": "ربع سنوي",
+      "yearly": "سنوي"
+    }
+  },
+  "consolidated": {
+    "title": "الخزينة الموحدة",
+    "breadcrumb1": "الخزينة",
+    "date": "التاريخ",
+    "assets": "الأصول",
+    "liabilities": "الخصوم",
+    "netPosition": "الصافي",
+    "empty": "لا توجد بيانات موحدة"
   }
 }
