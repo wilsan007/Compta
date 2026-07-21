@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Breadcrumb } from '@/components/ui'
 import {
   Plus, Search, BookOpen as JournalIcon, FileSearch, Users2, IdCard, Wallet,
@@ -27,41 +28,42 @@ function TileButton({ tile, onClick }: { tile: Tile; onClick: () => void }) {
 
 export function AccountingHomePage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('accounting')
 
   const sections: { title: string; tiles: Tile[] }[] = [
     {
-      title: 'Gestion quotidienne',
+      title: t('home.dailyManagement'),
       tiles: [
-        { label: "Ajout d'une pièce", icon: <Plus className="w-5 h-5" />, path: '/accounting/journal-entries' },
-        { label: "Visualisation / modification d'une pièce", icon: <FileSearch className="w-5 h-5" />, path: '/accounting/journal-entries' },
-        { label: 'Journaux de saisie', icon: <JournalIcon className="w-5 h-5" />, path: '/accounting/traitement' },
-        { label: "Recherche d'écritures", icon: <Search className="w-5 h-5" />, path: '/accounting/treatment/search' },
+        { label: t('home.addPiece'), icon: <Plus className="w-5 h-5" />, path: '/accounting/journal-entries' },
+        { label: t('home.viewEditPiece'), icon: <FileSearch className="w-5 h-5" />, path: '/accounting/journal-entries' },
+        { label: t('home.entryJournals'), icon: <JournalIcon className="w-5 h-5" />, path: '/accounting/traitement' },
+        { label: t('home.searchEntries'), icon: <Search className="w-5 h-5" />, path: '/accounting/treatment/search' },
       ],
     },
     {
-      title: 'Gestion des tiers',
+      title: t('home.thirdPartyManagement'),
       tiles: [
-        { label: 'Plan tiers', icon: <IdCard className="w-5 h-5" />, path: '/accounting/third-party' },
-        { label: 'Gestion des comptes tiers', icon: <Users2 className="w-5 h-5" />, path: '/accounting/third-party' },
-        { label: 'Génération des règlements', icon: <Wallet className="w-5 h-5" />, path: '/accounting/payment-generation' },
+        { label: t('home.thirdPartyPlan'), icon: <IdCard className="w-5 h-5" />, path: '/accounting/third-party' },
+        { label: t('home.thirdPartyAccounts'), icon: <Users2 className="w-5 h-5" />, path: '/accounting/third-party' },
+        { label: t('home.paymentGeneration'), icon: <Wallet className="w-5 h-5" />, path: '/accounting/payment-generation' },
       ],
     },
     {
-      title: 'Gestion des comptes généraux',
+      title: t('home.generalAccountsManagement'),
       tiles: [
-        { label: 'Plan comptable', icon: <Database className="w-5 h-5" />, path: '/accounting/chart-accounts' },
-        { label: 'Gestion des comptes généraux', icon: <Settings2 className="w-5 h-5" />, path: '/accounting/chart-accounts' },
-        { label: 'Balance des comptes', icon: <PieChart className="w-5 h-5" />, path: '/accounting/trial-balance' },
+        { label: t('home.chartOfAccounts'), icon: <Database className="w-5 h-5" />, path: '/accounting/chart-accounts' },
+        { label: t('home.generalAccounts'), icon: <Settings2 className="w-5 h-5" />, path: '/accounting/chart-accounts' },
+        { label: t('home.accountsBalance'), icon: <PieChart className="w-5 h-5" />, path: '/accounting/trial-balance' },
       ],
     },
   ]
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Accueil' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('home.title') }]} />
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--color-text)]">Comptabilité — Accueil</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Accès rapide aux opérations courantes, comme sur le poste de travail Sage 100</p>
+        <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('home.pageTitle')}</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('home.pageSubtitle')}</p>
       </div>
 
       <div className="space-y-10">

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankTransactions, getBankAccounts, updateBankTransaction } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -8,6 +9,8 @@ import { useToast } from '@/lib/toast'
 
 export function BankReconciliationPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
 const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,7 +36,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       await updateBankTransaction(id, { reconciled: !current, matched: !current })
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('error'), err.message || tCommon('error'))
     }
   }
 
@@ -44,12 +47,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Banque' }, { label: 'Rapprochement' }]} />
-      <PageHeader title="Rapprochement bancaire" subtitle="Réconciliez vos transactions bancaires" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('reconciliation.title') }]} />
+      <PageHeader title={t('reconciliation.title')} subtitle={t('reconciliation.subtitle')} />
 
       <div className="mb-4 flex items-center gap-3">
         <Select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} className="max-w-xs" options={[
-          { value: '', label: 'Tous les comptes' },
+          { value: '', label: t('reconciliation.allAccounts') },
           ...accounts.map(a => ({ value: a.id, label: a.name })),
         ]} />
       </div>
@@ -57,19 +60,19 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)]">Solde bancaire</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('reconciliation.bankBalance')}</p>
             <p className="text-2xl font-bold font-mono">{formatCurrency(accountBalance)}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)]">Non réconcilié</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('reconciliation.unreconciledAmount')}</p>
             <p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(Math.abs(totalUnreconciled))}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)]">Transactions en attente</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('reconciliation.pendingCount')}</p>
             <p className="text-2xl font-bold">{unreconciled.length}</p>
           </div>
         </Card>
@@ -79,23 +82,23 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         <SkeletonTable rows={5} cols={5} />
       ) : (
         <>
-          <h3 className="text-sm font-semibold mb-2">En attente de rapprochement ({unreconciled.length})</h3>
+          <h3 className="text-sm font-semibold mb-2">{t('reconciliation.pendingTitle', { count: unreconciled.length })}</h3>
           {unreconciled.length === 0 ? (
-            <EmptyState icon={<CheckCircle className="w-8 h-8" />} title="Tout est réconcilié" description="Aucune transaction en attente." />
+            <EmptyState icon={<CheckCircle className="w-8 h-8" />} title={t('reconciliation.fullyReconciled')} description={t('reconciliation.fullyReconciledDesc')} />
           ) : (
             <Card className="mb-6">
-              <Table headers={['Date', 'Description', 'Type', 'Montant', 'Action']}>
-                {unreconciled.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell>{formatDate(t.date)}</TableCell>
-                    <TableCell className="max-w-xs truncate">{t.description}</TableCell>
-                    <TableCell><Badge variant={t.type === 'credit' ? 'success' : 'danger'}>{t.type === 'credit' ? 'Crédit' : 'Débit'}</Badge></TableCell>
-                    <TableCell className={`font-mono ${t.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                      {t.type === 'credit' ? '+' : '-'}{formatCurrency(Number(t.amount))}
+              <Table headers={[t('transactions.date'), t('transactions.description'), t('transactions.type'), t('transactions.amount'), t('reconciliation.action')]}>
+                {unreconciled.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{formatDate(tx.date)}</TableCell>
+                    <TableCell className="max-w-xs truncate">{tx.description}</TableCell>
+                    <TableCell><Badge variant={tx.type === 'credit' ? 'success' : 'danger'}>{tx.type === 'credit' ? t('transactions.types.credit') : t('transactions.types.debit')}</Badge></TableCell>
+                    <TableCell className={`font-mono ${tx.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                      {tx.type === 'credit' ? '+' : '-'}{formatCurrency(Number(tx.amount))}
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" onClick={() => handleReconcile(t.id, false)}>
-                        <CheckCircle className="w-3 h-3" /> Réconcilier
+                      <Button size="sm" onClick={() => handleReconcile(tx.id, false)}>
+                        <CheckCircle className="w-3 h-3" /> {t('reconciliation.reconcileBtn')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -106,18 +109,18 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
 
           {reconciled.length > 0 && (
             <>
-              <h3 className="text-sm font-semibold mb-2">Réconciliées ({reconciled.length})</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('reconciliation.reconciledTitle', { count: reconciled.length })}</h3>
               <Card>
-                <Table headers={['Date', 'Description', 'Type', 'Montant', 'Action']}>
-                  {reconciled.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>{formatDate(t.date)}</TableCell>
-                      <TableCell className="max-w-xs truncate">{t.description}</TableCell>
-                      <TableCell><Badge variant="neutral">{t.type === 'credit' ? 'Crédit' : 'Débit'}</Badge></TableCell>
-                      <TableCell className="font-mono text-right">{formatCurrency(Number(t.amount))}</TableCell>
+                <Table headers={[t('transactions.date'), t('transactions.description'), t('transactions.type'), t('transactions.amount'), t('reconciliation.action')]}>
+                  {reconciled.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell>{formatDate(tx.date)}</TableCell>
+                      <TableCell className="max-w-xs truncate">{tx.description}</TableCell>
+                      <TableCell><Badge variant="neutral">{tx.type === 'credit' ? t('transactions.types.credit') : t('transactions.types.debit')}</Badge></TableCell>
+                      <TableCell className="font-mono text-right">{formatCurrency(Number(tx.amount))}</TableCell>
                       <TableCell>
-                        <button onClick={() => handleReconcile(t.id, true)} className="text-xs text-[var(--color-danger)] flex items-center gap-1">
-                          <XCircle className="w-3 h-3" /> Annuler
+                        <button onClick={() => handleReconcile(tx.id, true)} className="text-xs text-[var(--color-danger)] flex items-center gap-1">
+                          <XCircle className="w-3 h-3" /> {t('reconciliation.cancel')}
                         </button>
                       </TableCell>
                     </TableRow>

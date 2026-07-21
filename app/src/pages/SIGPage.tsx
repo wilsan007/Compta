@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import { getSIGData, getFiscalYears } from '@/lib/queries'
 import { TrendingUp } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 
 export function SIGPage() {
+  const { t } = useTranslation('accounting')
+  const { formatCurrency } = useLocale()
   const [data, setData] = useState<any[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
@@ -66,40 +69,40 @@ export function SIGPage() {
     const resultatNet = resultatExploitation + resultatFinancier + resultatExceptionnel
 
     return [
-      { label: 'Ventes de marchandises (70)', value: ventes, isTotal: false },
-      { label: 'Marge commerciale', value: margeCommerciale, isTotal: true },
-      { label: 'Production stockée (71)', value: productionStockee, isTotal: false },
-      { label: 'Immobilisations (72)', value: immobilisations, isTotal: false },
-      { label: 'Autres produits (74/75/78/79)', value: autresProduits, isTotal: false },
-      { label: 'Valeur ajoutée', value: valeurAjoutee, isTotal: true },
-      { label: 'Achats (60)', value: -achats, isTotal: false },
-      { label: 'Variations de stock (603)', value: -variationsStock, isTotal: false },
-      { label: 'Services extérieurs (61)', value: -servicesExt, isTotal: false },
-      { label: 'Autres charges (62/63/65)', value: -autresCharges, isTotal: false },
-      { label: 'Impôts et taxes (69)', value: -impots, isTotal: false },
-      { label: 'Excédent Brut d\'Exploitation (EBE)', value: ebe, isTotal: true },
-      { label: 'Dotations aux amortissements (68)', value: -dotations, isTotal: false },
-      { label: 'Résultat d\'exploitation', value: resultatExploitation, isTotal: true },
-      { label: 'Charges financières (66)', value: -chargesFinancieres, isTotal: false },
-      { label: 'Résultat financier', value: resultatFinancier, isTotal: true },
-      { label: 'Charges exceptionnelles (67)', value: -chargesExceptionnelles, isTotal: false },
-      { label: 'Résultat exceptionnel', value: resultatExceptionnel, isTotal: true },
-      { label: 'RÉSULTAT NET', value: resultatNet, isTotal: true, isFinal: true },
+      { label: t('sig.salesGoods'), value: ventes, isTotal: false },
+      { label: t('sig.commercialMargin'), value: margeCommerciale, isTotal: true },
+      { label: t('sig.storedProduction'), value: productionStockee, isTotal: false },
+      { label: t('sig.immobilizations'), value: immobilisations, isTotal: false },
+      { label: t('sig.otherProducts'), value: autresProduits, isTotal: false },
+      { label: t('sig.addedValue'), value: valeurAjoutee, isTotal: true },
+      { label: t('sig.purchases'), value: -achats, isTotal: false },
+      { label: t('sig.stockVariation'), value: -variationsStock, isTotal: false },
+      { label: t('sig.externalServices'), value: -servicesExt, isTotal: false },
+      { label: t('sig.otherCharges'), value: -autresCharges, isTotal: false },
+      { label: t('sig.taxes'), value: -impots, isTotal: false },
+      { label: t('sig.ebe'), value: ebe, isTotal: true },
+      { label: t('sig.depreciation'), value: -dotations, isTotal: false },
+      { label: t('sig.operatingResult'), value: resultatExploitation, isTotal: true },
+      { label: t('sig.financialCharges'), value: -chargesFinancieres, isTotal: false },
+      { label: t('sig.financialResult'), value: resultatFinancier, isTotal: true },
+      { label: t('sig.exceptionalCharges'), value: -chargesExceptionnelles, isTotal: false },
+      { label: t('sig.exceptionalResult'), value: resultatExceptionnel, isTotal: true },
+      { label: t('sig.netResultFinal'), value: resultatNet, isTotal: true, isFinal: true },
     ]
-  }, [data])
+  }, [data, t])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'États' }, { label: 'SIG' }]} />
-      <PageHeader title="Soldes Intermédiaires de Gestion" subtitle="SIG — Compte de résultat en cascade" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: 'SIG' }]} />
+      <PageHeader title={t('sig.title')} subtitle={t('sig.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-56">
           <Select
-            label="Exercice"
+            label={t('sig.fiscalYear')}
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            options={[{ value: '', label: 'Tous' }, ...years.map((y) => ({ value: y.id, label: y.code }))]}
+            options={[{ value: '', label: t('sig.all') }, ...years.map((y) => ({ value: y.id, label: y.code }))]}
           />
         </div>
       </div>
@@ -109,12 +112,12 @@ export function SIGPage() {
       ) : data.length === 0 ? (
         <EmptyState
           icon={<TrendingUp className="w-8 h-8" />}
-          title="Aucune donnée"
-          description="Aucune écriture sur les comptes de classe 6 et 7 trouvée."
+          title={t('sig.noData')}
+          description={t('sig.noDataDescription')}
         />
       ) : (
         <Card>
-          <Table headers={['Rubrique', 'Montant']}>
+          <Table headers={[t('sig.category'), t('sig.amountCol')]}>
             {sig.map((row, i) => (
               <TableRow key={i}>
                 <TableCell className={row.isFinal ? 'font-bold text-base' : row.isTotal ? 'font-semibold' : 'text-sm'}>

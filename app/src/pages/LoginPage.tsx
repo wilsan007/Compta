@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { Building2, Lock, Mail, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export function LoginPage() {
+  const { t } = useTranslation('auth')
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -16,7 +18,7 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !password.trim()) {
-      setError('Veuillez saisir votre email et mot de passe')
+      setError(t('fillEmailPassword'))
       return
     }
     setLoading(true)
@@ -37,7 +39,7 @@ export function LoginPage() {
             <Building2 className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">ERP Compta</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">Connectez-vous pour accéder à votre espace</p>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
         </div>
 
         <div className="card p-6 space-y-4">
@@ -50,7 +52,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Email</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -58,7 +60,7 @@ export function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@entreprise.fr"
+                  placeholder={t('emailPlaceholder')}
                   className="input pl-10"
                   autoComplete="email"
                 />
@@ -66,7 +68,7 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Mot de passe</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -82,20 +84,20 @@ export function LoginPage() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? t('signingIn') : t('signIn')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            Pas encore de compte ?{' '}
+            {t('noAccount')}{' '}
             <Link to="/signup" className="text-[var(--color-primary)] font-medium">
-              Créer un compte
+              {t('createAccount')}
             </Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
-          ERP Compta — Solution de gestion d'entreprise
+          ERP Compta — {t('tagline')}
         </p>
       </div>
     </div>

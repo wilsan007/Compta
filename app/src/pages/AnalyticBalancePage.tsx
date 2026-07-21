@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
 import { getAnalyticBalance } from '@/lib/queries'
 import { PieChart } from 'lucide-react'
 
 export function AnalyticBalancePage() {
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -27,36 +30,36 @@ export function AnalyticBalancePage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'États' }, { label: 'Balance analytique' }]} />
-      <PageHeader title="Balance analytique" subtitle="Répartition par section analytique" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('analyticBalance.breadcrumb') }, { label: t('analyticBalance.title') }]} />
+      <PageHeader title={t('analyticBalance.title')} subtitle={t('analyticBalance.subtitle')} />
 
       {loading ? (
         <SkeletonTable rows={6} cols={5} />
       ) : data.length === 0 ? (
         <EmptyState
           icon={<PieChart className="w-8 h-8" />}
-          title="Aucune donnée analytique"
-          description="Aucune ligne avec imputation analytique trouvée."
+          title={t('analyticBalance.noData')}
+          description={t('analyticBalance.noDataDescription')}
         />
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Total débit</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('analyticBalance.totalDebit')}</p>
               <p className="text-lg font-bold font-mono">{formatCurrency(totalDebit)}</p>
             </div>
             <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Total crédit</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('analyticBalance.totalCredit')}</p>
               <p className="text-lg font-bold font-mono">{formatCurrency(totalCredit)}</p>
             </div>
             <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Total analytique</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('analyticBalance.totalAnalytic')}</p>
               <p className="text-lg font-bold font-mono text-[var(--color-primary)]">{formatCurrency(totalAnalytic)}</p>
             </div>
           </div>
 
           <Card>
-            <Table headers={['Code', 'Section', 'Débit', 'Crédit', 'Montant analytique', 'Solde']}>
+            <Table headers={[t('analyticBalance.code'), t('analyticBalance.section'), t('analyticBalance.debit'), t('analyticBalance.credit'), t('analyticBalance.analyticAmount'), t('analyticBalance.balance')]}>
               {data.map((d) => (
                 <TableRow key={d.sectionId}>
                   <TableCell className="font-mono text-xs font-semibold">{d.sectionCode}</TableCell>
@@ -68,7 +71,7 @@ export function AnalyticBalancePage() {
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell colSpan={2} className="font-bold">TOTAUX</TableCell>
+                <TableCell colSpan={2} className="font-bold">{tCommon('common.total')}</TableCell>
                 <TableCell className="font-mono font-bold text-xs text-right">{formatCurrency(totalDebit)}</TableCell>
                 <TableCell className="font-mono font-bold text-xs text-right">{formatCurrency(totalCredit)}</TableCell>
                 <TableCell className="font-mono font-bold text-xs text-[var(--color-primary)] text-right">{formatCurrency(totalAnalytic)}</TableCell>

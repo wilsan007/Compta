@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select } from '@/components/ui'
 import { getEmployees } from '@/lib/queries'
 import { formatDate } from '@/lib/utils'
@@ -20,6 +21,9 @@ interface Training {
 }
 
 export function TrainingPage() {
+  const { t } = useTranslation('hr')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
   const [trainings, setTrainings] = useState<Training[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -84,69 +88,69 @@ export function TrainingPage() {
   if (loading) return <SkeletonTable rows={6} />
 
   const statusLabels: Record<string, string> = {
-    planned: 'Planifiée', in_progress: 'En cours', completed: 'Terminée', cancelled: 'Annulée',
+    planned: t('training.statuses.planned'), in_progress: t('training.statuses.in_progress'), completed: t('training.statuses.completed'), cancelled: t('training.statuses.cancelled'),
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'RH', path: '/hr/training' }, { label: 'Formations' }]} />
-      <PageHeader title="Formations & compétences" subtitle="Gestion des formations et compétences des salariés" action={
-        <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Nouvelle formation</Button>
+      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('training.title') }]} />
+      <PageHeader title={t('training.title')} subtitle={t('training.subtitle')} action={
+        <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> {t('training.new')}</Button>
       } />
 
       {showForm && (
         <Card className="mb-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">{editing ? 'Modifier' : 'Nouvelle'} formation</h3>
+            <h3 className="font-semibold">{editing ? t('training.edit') : t('training.new')}</h3>
             <button onClick={() => setShowForm(false)}><X className="w-4 h-4" /></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select label="Salarié" value={form.employee_id || ''} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} options={[
-              { value: '', label: '— Sélectionner —' },
+            <Select label={t('training.employee')} value={form.employee_id || ''} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} options={[
+              { value: '', label: tCommon('form.selectPlaceholder') || '—' },
               ...employees.map(e => ({ value: e.id, label: e.name })),
             ]} required />
-            <Input label="Intitulé" value={form.title || ''} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            <Input label="Organisme" value={form.provider || ''} onChange={(e) => setForm({ ...form, provider: e.target.value })} />
-            <Select label="Statut" value={form.status || 'planned'} onChange={(e) => setForm({ ...form, status: e.target.value as Training['status'] })} options={[
-              { value: 'planned', label: 'Planifiée' },
-              { value: 'in_progress', label: 'En cours' },
-              { value: 'completed', label: 'Terminée' },
-              { value: 'cancelled', label: 'Annulée' },
+            <Input label={t('training.trainingTitle')} value={form.title || ''} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+            <Input label={t('training.provider')} value={form.provider || ''} onChange={(e) => setForm({ ...form, provider: e.target.value })} />
+            <Select label={t('training.status')} value={form.status || 'planned'} onChange={(e) => setForm({ ...form, status: e.target.value as Training['status'] })} options={[
+              { value: 'planned', label: t('training.statuses.planned') },
+              { value: 'in_progress', label: t('training.statuses.in_progress') },
+              { value: 'completed', label: t('training.statuses.completed') },
+              { value: 'cancelled', label: t('training.statuses.cancelled') },
             ]} />
-            <Input label="Date début" type="date" value={form.start_date || ''} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
-            <Input label="Date fin" type="date" value={form.end_date || ''} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-            <Input label="Coût (€)" type="number" value={String(form.cost || 0)} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
-            <Input label="Compétences acquises" value={form.skills || ''} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
+            <Input label={t('training.startDate')} type="date" value={form.start_date || ''} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+            <Input label={t('training.endDate')} type="date" value={form.end_date || ''} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+            <Input label={t('training.cost')} type="number" value={String(form.cost || 0)} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
+            <Input label={t('training.skills')} value={form.skills || ''} onChange={(e) => setForm({ ...form, skills: e.target.value })} />
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="secondary" onClick={() => setShowForm(false)}>Annuler</Button>
-            <Button onClick={handleSave}>{editing ? 'Modifier' : 'Créer'}</Button>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('actions.cancel')}</Button>
+            <Button onClick={handleSave}>{editing ? t('training.edit') : t('training.create')}</Button>
           </div>
         </Card>
       )}
 
       {trainings.length === 0 ? (
-        <EmptyState title="Aucune formation" description="Aucune formation n'a été enregistrée." icon={<GraduationCap className="w-8 h-8" />} />
+        <EmptyState title={t('training.noTrainings')} description={t('training.noTrainingsDescription')} icon={<GraduationCap className="w-8 h-8" />} />
       ) : (
         <Card>
-          <Table headers={['Salarié', 'Formation', 'Organisme', 'Période', 'Coût', 'Statut', 'Actions']}>
+          <Table headers={[t('training.employee'), t('training.trainingTitle'), t('training.provider'), t('training.startDate'), t('training.cost'), t('training.status'), tCommon('table.actions')]}>
             <tbody>
-              {trainings.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell>{t.employee_name}</TableCell>
-                  <TableCell className="font-medium">{t.title}</TableCell>
-                  <TableCell>{t.provider || '—'}</TableCell>
-                  <TableCell className="text-xs">{formatDate(t.start_date)} → {formatDate(t.end_date)}</TableCell>
-                  <TableCell className="text-right">{t.cost > 0 ? `${t.cost.toFixed(2)} €` : '—'}</TableCell>
+              {trainings.map((tr) => (
+                <TableRow key={tr.id}>
+                  <TableCell>{tr.employee_name}</TableCell>
+                  <TableCell className="font-medium">{tr.title}</TableCell>
+                  <TableCell>{tr.provider || '—'}</TableCell>
+                  <TableCell className="text-xs">{formatDate(tr.start_date)} → {formatDate(tr.end_date)}</TableCell>
+                  <TableCell className="text-right">{tr.cost > 0 ? `${tr.cost.toFixed(2)} €` : '—'}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                      {statusLabels[t.status] || t.status}
+                      {statusLabels[tr.status] || tr.status}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(t)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(t.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </TableCell>
                 </TableRow>

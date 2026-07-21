@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPaymentOrders, createPaymentOrder, updatePaymentOrder, deletePaymentOrder, getBankAccounts, getThirdPartyAccounts } from '@/lib/queries'
 import { Plus, Trash2, X, CheckCircle2, Ban, FileText } from 'lucide-react'
 import type { PaymentOrder, BankAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-
-const typeLabels: Record<string, string> = {
-  sepa_transfer: 'Virement SEPA',
-  check: 'Chèque',
-  cash: 'Espèces',
-  card: 'Carte',
-  other: 'Autre',
-}
 
 const statusLabels: Record<string, string> = {
   draft: 'Brouillon',
@@ -23,6 +16,8 @@ const statusLabels: Record<string, string> = {
 
 export function PaymentOrdersPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('treasury')
+  const { t: tCommon } = useTranslation('common')
 const [orders, setOrders] = useState<PaymentOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -43,13 +38,13 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaymentOrder(id, { status: status as any }); await load() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cet ordre de paiement ?')) return
+    if (!window.confirm(t('paymentOrders.deleteConfirm'))) return
     try { await deletePaymentOrder(id); await load() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.amount), 0)
@@ -57,28 +52,28 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Trésorerie' }, { label: 'Ordres de paiement' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('paymentOrders.title') }]} />
       <PageHeader
-        title="Ordres de paiement"
-        subtitle={`${orders.length} ordre(s) — ${formatCurrency(totalAmount)} total`}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel ordre</Button>}
+        title={t('paymentOrders.title')}
+        subtitle={t('paymentOrders.count', { count: orders.length, total: formatCurrency(totalAmount) })}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('paymentOrders.new')}</Button>}
       />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-48">
-          <Select label="Statut" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); }}
+          <Select label={t('paymentOrders.statusFilter')} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); }}
             options={[
-              { value: '', label: 'Tous' },
-              { value: 'draft', label: 'Brouillon' },
-              { value: 'approved', label: 'Approuvé' },
-              { value: 'executed', label: 'Exécuté' },
-              { value: 'cancelled', label: 'Annulé' },
+              { value: '', label: t('paymentOrders.all') },
+              { value: 'draft', label: t('paymentOrders.statuses.draft') },
+              { value: 'approved', label: t('paymentOrders.statuses.approved') },
+              { value: 'executed', label: t('paymentOrders.statuses.executed') },
+              { value: 'cancelled', label: t('paymentOrders.statuses.cancelled') },
             ]}
           />
         </div>
-        <Button variant="secondary" onClick={load}>Actualiser</Button>
+        <Button variant="secondary" onClick={load}>{t('paymentOrders.refresh')}</Button>
         <div className="ml-auto text-sm text-[var(--color-text-secondary)]">
-          En attente: <strong className="font-mono">{formatCurrency(pendingAmount)}</strong>
+          {t('paymentOrders.pending')} <strong className="font-mono">{formatCurrency(pendingAmount)}</strong>
         </div>
       </div>
 
@@ -87,17 +82,17 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
       ) : orders.length === 0 ? (
         <EmptyState
           icon={<FileText className="w-8 h-8" />}
-          title="Aucun ordre de paiement"
-          description="Créez votre premier ordre de paiement."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel ordre</Button>}
+          title={t('paymentOrders.noOrders')}
+          description={t('paymentOrders.noOrdersDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('paymentOrders.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['N°', 'Type', 'Bénéficiaire', 'Montant', 'Date', 'Statut', 'Actions']}>
+          <Table headers={[t('paymentOrders.number'), t('paymentOrders.type'), t('paymentOrders.beneficiary'), t('paymentOrders.amount'), t('paymentOrders.date'), t('paymentOrders.status'), t('paymentOrders.actions')]}>
             {orders.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="font-mono text-xs">{o.number}</TableCell>
-                <TableCell className="text-xs">{typeLabels[o.type] || o.type}</TableCell>
+                <TableCell className="text-xs">{t(`paymentOrders.types.${o.type}`) || o.type}</TableCell>
                 <TableCell className="text-sm">{o.third_party_name || '—'}</TableCell>
                 <TableCell className="font-mono text-right">{formatCurrency(Number(o.amount))}</TableCell>
                 <TableCell className="text-xs">{formatDate(o.payment_date)}</TableCell>
@@ -107,17 +102,17 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
                     onChange={(e) => handleStatusChange(o.id, e.target.value)}
                     className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                   >
-                    {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`paymentOrders.statuses.${k}`)}</option>)}
                   </select>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {o.status === 'draft' && (
-                      <button onClick={() => handleStatusChange(o.id, 'approved')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" title="Approuver">
+                      <button onClick={() => handleStatusChange(o.id, 'approved')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" title={t('paymentOrders.approve')}>
                         <CheckCircle2 className="w-4 h-4" />
                       </button>
                     )}
-                    <button onClick={() => handleStatusChange(o.id, 'cancelled')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title="Annuler">
+                    <button onClick={() => handleStatusChange(o.id, 'cancelled')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('paymentOrders.cancelBtn')}>
                       <Ban className="w-4 h-4" />
                     </button>
                     <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
@@ -139,6 +134,8 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 }
 
 function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('treasury')
+  const { t: tCommon } = useTranslation('common')
   const [type, setType] = useState<'sepa_transfer' | 'check' | 'cash' | 'card' | 'other'>('sepa_transfer')
   const { toast } = useToast()
   const [bankAccountId, setBankAccountId] = useState('')
@@ -181,7 +178,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('error'), err.message || tCommon('error'))
     } finally {
       setSaving(false)
     }
@@ -191,45 +188,45 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvel ordre de paiement</h2>
+          <h2 className="text-lg font-semibold">{t('paymentOrders.form.title')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Select label="Type" value={type} onChange={(e) => setType(e.target.value as any)} options={[
-            { value: 'sepa_transfer', label: 'Virement SEPA' },
-            { value: 'check', label: 'Chèque' },
-            { value: 'cash', label: 'Espèces' },
-            { value: 'card', label: 'Carte' },
-            { value: 'other', label: 'Autre' },
+          <Select label={t('paymentOrders.form.type')} value={type} onChange={(e) => setType(e.target.value as any)} options={[
+            { value: 'sepa_transfer', label: t('paymentOrders.types.sepa_transfer') },
+            { value: 'check', label: t('paymentOrders.types.check') },
+            { value: 'cash', label: t('paymentOrders.types.cash') },
+            { value: 'card', label: t('paymentOrders.types.card') },
+            { value: 'other', label: t('paymentOrders.types.other') },
           ]} />
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Compte bancaire</label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('paymentOrders.form.bankAccount')}</label>
             <select className="input" value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}>
-              <option value="">— Sélectionner —</option>
+              <option value="">{t('paymentOrders.form.selectPlaceholder')}</option>
               {bankAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Bénéficiaire (tiers)</label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('paymentOrders.form.beneficiary')}</label>
             <select className="input" value={thirdPartyId} onChange={(e) => {
               setThirdPartyId(e.target.value)
-              const tp = tiers.find((t) => t.id === e.target.value)
+              const tp = tiers.find((tp) => tp.id === e.target.value)
               setThirdPartyName(tp?.name || '')
             }}>
-              <option value="">— Sélectionner —</option>
-              {tiers.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.name}</option>)}
+              <option value="">{t('paymentOrders.form.selectPlaceholder')}</option>
+              {tiers.map((tp) => <option key={tp.id} value={tp.id}>{tp.code} — {tp.name}</option>)}
             </select>
           </div>
-          <Input label="IBAN (optionnel)" value={thirdPartyIban} onChange={(e) => setThirdPartyIban(e.target.value)} placeholder="FR76..." />
+          <Input label={t('paymentOrders.form.iban')} value={thirdPartyIban} onChange={(e) => setThirdPartyIban(e.target.value)} placeholder={t('paymentOrders.form.ibanPlaceholder')} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Montant" type="number" step="0.01" required value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-            <Input label="Date de paiement" type="date" required value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+            <Input label={t('paymentOrders.form.amount')} type="number" step="0.01" required value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
+            <Input label={t('paymentOrders.form.paymentDate')} type="date" required value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
           </div>
-          <Input label="Référence" value={reference} onChange={(e) => setReference(e.target.value)} />
-          <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input label={t('paymentOrders.form.reference')} value={reference} onChange={(e) => setReference(e.target.value)} />
+          <Input label={t('paymentOrders.form.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{t('paymentOrders.form.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : t('paymentOrders.form.create')}</Button>
           </div>
         </form>
       </div>

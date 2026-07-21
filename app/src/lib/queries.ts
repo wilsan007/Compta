@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, User, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, User, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductAttribute, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, PickListLine, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollComponentRate, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, ExpenseReportLine, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetBatchDisposalLine, AssetSplit, AssetSplitComponent } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -60,6 +60,57 @@ export async function updateCompanySettings(id: string, updates: Partial<Company
   const { data, error } = await tud(supabase.from('company_settings').update(updates), 'company_settings', tid).eq('id', id).select().single()
   if (error) throw error
   return data as CompanySettings
+}
+
+// ============ Legislation Packs (global reference, NOT tenant-scoped) ============
+export async function getLegislationPacks() {
+  const { data, error } = await supabase
+    .from('legislation_packs')
+    .select('*')
+    .eq('active', true)
+    .order('country_name', { ascending: true })
+  if (error) throw error
+  return data as LegislationPack[]
+}
+
+export async function getLegislationPack(code: string) {
+  const { data, error } = await supabase.from('legislation_packs').select('*').eq('code', code).single()
+  if (error) throw error
+  return data as LegislationPack
+}
+
+// Resolve the pack that applies to the current tenant (from company_settings),
+// falling back to the default pack when the tenant has none configured.
+export async function getActiveLegislationPack() {
+  try {
+    const settings = await getCompanySettings()
+    if (settings?.legislation_pack_code) {
+      return await getLegislationPack(settings.legislation_pack_code)
+    }
+  } catch {
+    // no settings yet — fall through to default
+  }
+  const { data, error } = await supabase
+    .from('legislation_packs')
+    .select('*')
+    .eq('is_default', true)
+    .limit(1)
+    .maybeSingle()
+  if (error) throw error
+  return (data as LegislationPack) || null
+}
+
+// VAT rates in force for a pack at a given date (versioned by effective_from/to).
+export async function getApplicableVatRates(packCode: string, atDate: string = new Date().toISOString().slice(0, 10)) {
+  const { data, error } = await supabase
+    .from('tax_rates')
+    .select('*')
+    .eq('pack_code', packCode)
+    .lte('effective_from', atDate)
+    .or(`effective_to.is.null,effective_to.gte.${atDate}`)
+    .order('rate', { ascending: false })
+  if (error) throw error
+  return data as TaxRate[]
 }
 
 // ============ Users ============
@@ -408,6 +459,17 @@ export async function updatePurchaseInvoice(id: string, updates: Partial<Purchas
   const { data, error } = await tud(supabase.from('purchase_invoices').update(updates), 'purchase_invoices', tid).eq('id', id).select().single()
   if (error) throw error
   return data as PurchaseInvoice
+}
+
+export async function updatePurchaseInvoiceApproval(id: string, status: 'approved' | 'rejected') {
+  const tid = await getTenantId()
+  const updates: Record<string, any> = {
+    approval_status: status,
+    approved_at: status === 'approved' ? new Date().toISOString() : null,
+  }
+  const { data, error } = await tud(supabase.from('purchase_invoices').update(updates), 'purchase_invoices', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data
 }
 
 // ============ Bank Accounts ============
@@ -2926,7 +2988,7 @@ export async function deleteBOMLine(id: string) {
 // ============ Sprint 6: Manufacturing Orders ============
 export async function getManufacturingOrders(status?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('manufacturing_orders').select('*').order('created_at', { ascending: false })
+  let q = supabase.from('manufacturing_orders').select('*, boms(name, code), products(name, sku), warehouses(name), routings(name, code)').order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (status) q = q.eq('status', status)
   const { data, error } = await q
@@ -3962,6 +4024,7 @@ export interface Tenant {
   status: string
   plan: string
   trial_ends_at: string | null
+  enabled_modules: string[]
   created_at: string
 }
 
@@ -4031,6 +4094,8 @@ export async function createTenantForUser(data: {
   currency?: string
   email?: string
   phone?: string
+  legislation_pack_code?: string
+  enabled_modules?: string[]
 }): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Non connecté' }
@@ -4052,6 +4117,9 @@ export async function createTenantForUser(data: {
       currency: data.currency || 'EUR',
       email: data.email || userEmail,
       phone: data.phone || null,
+      legislation_pack_code: data.legislation_pack_code || null,
+      country_code: data.legislation_pack_code || null,
+      enabled_modules: data.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system'],
       status: 'active',
       plan: 'trial',
       trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -4120,6 +4188,21 @@ export async function getCurrentTenantUser(): Promise<TenantUser | null> {
   return data as TenantUser
 }
 
+export async function getTenantEnabledModules(): Promise<string[]> {
+  const tenant = await getCurrentTenant()
+  if (!tenant) return ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system']
+  return tenant.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system']
+}
+
+export async function updateTenantModules(tenantId: string, modules: string[]): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('tenants')
+    .update({ enabled_modules: modules, updated_at: new Date().toISOString() })
+    .eq('id', tenantId)
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
 export async function getTenantUsers(tenantId: string): Promise<TenantUser[]> {
   const { data, error } = await supabase
     .from('tenant_users')
@@ -4134,48 +4217,49 @@ export async function getTenantUsers(tenantId: string): Promise<TenantUser[]> {
 export async function inviteUser(data: {
   tenantId: string
   email: string
+  password?: string
   name: string
   role: TenantUser['role']
   permissions?: Record<string, string[]>
   invitedBy?: string
-}): Promise<{ success: boolean; error?: string }> {
-  const { error: dbError } = await supabase
-    .from('tenant_users')
-    .insert({
-      tenant_id: data.tenantId,
-      email: data.email,
-      name: data.name,
-      role: data.role,
-      permissions: data.permissions || {},
-      status: 'pending',
-      invited_by: data.invitedBy || null,
-    })
+}): Promise<{ success: boolean; error?: string; message?: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { success: false, error: 'Non connecté' }
 
-  if (dbError) {
-    if (dbError.code === '23505') {
-      return { success: false, error: 'Cet email est déjà invité dans cette entreprise.' }
-    }
-    return { success: false, error: dbError.message }
-  }
-
-  const redirectTo = `${window.location.origin}/accept-invitation`
-  const { error: inviteError } = await supabase.auth.signInWithOtp({
-    email: data.email,
-    options: {
-      emailRedirectTo: redirectTo,
-      data: {
-        tenant_id: data.tenantId,
+  try {
+    const { data: result, error } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: data.email,
+        password: data.password || '',
         name: data.name,
         role: data.role,
+        permissions: data.permissions || {},
+        tenant_id: data.tenantId,
+        invited_by: data.invitedBy || null,
       },
-    },
-  })
+    })
 
-  if (inviteError) {
-    return { success: false, error: `Utilisateur cree mais email non envoye: ${inviteError.message}` }
+    if (error) {
+      // Try to extract the error message from the function response body
+      let msg = error.message
+      try {
+        const ctx = (error as any).context
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.json()
+          if (body?.error) msg = body.error
+        }
+      } catch { /* keep default message */ }
+      return { success: false, error: msg || 'Erreur lors de la création' }
+    }
+
+    if (result?.error) {
+      return { success: false, error: result.error }
+    }
+
+    return { success: true, message: result?.message }
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Erreur réseau' }
   }
-
-  return { success: true }
 }
 
 export async function updateUserRole(
@@ -4215,7 +4299,7 @@ export async function reactivateUser(tenantUserId: string): Promise<{ success: b
   return { success: true }
 }
 
-export async function reinviteUser(tenantUserId: string, email: string): Promise<{ success: boolean; error?: string }> {
+export async function reinviteUser(tenantUserId: string, email: string): Promise<{ success: boolean; error?: string; emailSent?: boolean }> {
   const { error: updateError } = await supabase
     .from('tenant_users')
     .update({ status: 'pending' })
@@ -4223,14 +4307,19 @@ export async function reinviteUser(tenantUserId: string, email: string): Promise
 
   if (updateError) return { success: false, error: updateError.message }
 
-  const redirectTo = `${window.location.origin}/accept-invitation`
-  const { error: inviteError } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo },
-  })
+  let emailSent = false
+  try {
+    const redirectTo = `${window.location.origin}/accept-invitation`
+    const { error: inviteError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo },
+    })
+    emailSent = !inviteError
+  } catch {
+    // Email service might not be configured
+  }
 
-  if (inviteError) return { success: false, error: inviteError.message }
-  return { success: true }
+  return { success: true, emailSent }
 }
 
 // Called after an invited user clicks the magic link and lands on /accept-invitation.
@@ -4352,3 +4441,2151 @@ export const PERMISSION_ACTIONS = [
   { value: 'update', label: 'Modifier' },
   { value: 'delete', label: 'Supprimer' },
 ] as const
+
+// ============ Production Module: Routings ============
+export async function getRoutings() {
+  const tid = await getTenantId()
+  let q = supabase.from('routings').select('*, products(name, sku)').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createRouting(r: Omit<Routing, 'id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('routings').insert(ti(r, 'routings', tid)).select().single()
+  if (error) throw error
+  return data as Routing
+}
+
+export async function updateRouting(id: string, updates: Partial<Routing>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('routings').update(updates), 'routings', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Routing
+}
+
+export async function deleteRouting(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('routings').delete(), 'routings', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getRoutingOperations(routingId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('routing_operations').select('*, work_centers(name), machines(name), toolings(name), suppliers(name)').eq('routing_id', routingId).order('sequence')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createRoutingOperation(op: Omit<RoutingOperation, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('routing_operations').insert(ti(op, 'routing_operations', tid)).select().single()
+  if (error) throw error
+  return data as RoutingOperation
+}
+
+export async function updateRoutingOperation(id: string, updates: Partial<RoutingOperation>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('routing_operations').update(updates), 'routing_operations', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as RoutingOperation
+}
+
+export async function deleteRoutingOperation(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('routing_operations').delete(), 'routing_operations', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function renumberRoutingOperation(id: string, newSequence: number) {
+  return updateRoutingOperation(id, { sequence: newSequence })
+}
+
+export async function renumberAllOperations(routingId: string) {
+  const ops = await getRoutingOperations(routingId)
+  for (let i = 0; i < ops.length; i++) {
+    await updateRoutingOperation(ops[i].id, { sequence: (i + 1) * 10 })
+  }
+}
+
+// ============ Production Module: Work Centers ============
+export async function getWorkCenters() {
+  const tid = await getTenantId()
+  let q = supabase.from('work_centers').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as WorkCenter[]
+}
+
+export async function createWorkCenter(wc: Omit<WorkCenter, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('work_centers').insert(ti(wc, 'work_centers', tid)).select().single()
+  if (error) throw error
+  return data as WorkCenter
+}
+
+export async function deleteWorkCenter(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('work_centers').delete(), 'work_centers', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Machines ============
+export async function getMachines() {
+  const tid = await getTenantId()
+  let q = supabase.from('machines').select('*, work_centers(name)').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createMachine(m: Omit<Machine, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('machines').insert(ti(m, 'machines', tid)).select().single()
+  if (error) throw error
+  return data as Machine
+}
+
+export async function updateMachine(id: string, updates: Partial<Machine>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('machines').update(updates), 'machines', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Machine
+}
+
+export async function deleteMachine(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('machines').delete(), 'machines', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Toolings ============
+export async function getToolings() {
+  const tid = await getTenantId()
+  let q = supabase.from('toolings').select('*, machines(name)').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createTooling(t: Omit<Tooling, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('toolings').insert(ti(t, 'toolings', tid)).select().single()
+  if (error) throw error
+  return data as Tooling
+}
+
+export async function updateTooling(id: string, updates: Partial<Tooling>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('toolings').update(updates), 'toolings', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Tooling
+}
+
+export async function deleteTooling(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('toolings').delete(), 'toolings', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: OF Labels ============
+export async function getOFLabels(moId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('of_labels').select('*, products(name, sku)').eq('manufacturing_order_id', moId).order('label_number')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createOFLabel(label: Omit<OFLabel, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('of_labels').insert(ti(label, 'of_labels', tid)).select().single()
+  if (error) throw error
+  return data as OFLabel
+}
+
+export async function updateOFLabel(id: string, updates: Partial<OFLabel>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('of_labels').update(updates), 'of_labels', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as OFLabel
+}
+
+export async function deleteOFLabel(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('of_labels').delete(), 'of_labels', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function generateOFLabels(moId: string, count: number, plannedQtyPerLabel: number, productId: string | null) {
+  const existing = await getOFLabels(moId)
+  const startNum = existing.length + 1
+  for (let i = 0; i < count; i++) {
+    await createOFLabel({
+      manufacturing_order_id: moId,
+      label_number: `LBL-${String(startNum + i).padStart(3, '0')}`,
+      product_id: productId,
+      planned_quantity: plannedQtyPerLabel,
+      actual_quantity: 0,
+      is_complete: false,
+      is_declared: false,
+    })
+  }
+}
+
+// ============ Production Module: OF Lots ============
+export async function getOFLots(moId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('of_lots').select('*, products(name, sku)').eq('manufacturing_order_id', moId).order('lot_number')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createOFLot(lot: Omit<OFLot, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('of_lots').insert(ti(lot, 'of_lots', tid)).select().single()
+  if (error) throw error
+  return data as OFLot
+}
+
+export async function deleteOFLot(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('of_lots').delete(), 'of_lots', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: OF Consumptions ============
+export async function getOFConsumptions(moId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('of_consumptions').select('*, products(name, sku)').eq('manufacturing_order_id', moId).order('consumption_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createOFConsumption(cons: Omit<OFConsumption, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('of_consumptions').insert(ti(cons, 'of_consumptions', tid)).select().single()
+  if (error) throw error
+  return data as OFConsumption
+}
+
+export async function deleteOFConsumption(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('of_consumptions').delete(), 'of_consumptions', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Manufacturing Order Detail ============
+export async function getManufacturingOrder(id: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('manufacturing_orders').select('*, boms(name, code), products(name, sku), warehouses(name), routings(name, code)').eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.single()
+  if (error) throw error
+  return data as any
+}
+
+export async function getSubManufacturingOrders(parentId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('manufacturing_orders').select('*').eq('parent_mo_id', parentId).order('number')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ManufacturingOrder[]
+}
+
+// ============ Production Module: Subcontracting Orders ============
+export async function getSTOrders() {
+  const tid = await getTenantId()
+  let q = supabase.from('st_orders').select('*, suppliers(name), products(name, sku), manufacturing_orders(number)').order('order_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createSTOrder(order: Omit<STOrder, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('st_orders').insert(ti(order, 'st_orders', tid)).select().single()
+  if (error) throw error
+  return data as STOrder
+}
+
+export async function updateSTOrder(id: string, updates: Partial<STOrder>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('st_orders').update(updates), 'st_orders', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as STOrder
+}
+
+export async function deleteSTOrder(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('st_orders').delete(), 'st_orders', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Subcontracting Shipments ============
+export async function getSTShipments() {
+  const tid = await getTenantId()
+  let q = supabase.from('st_shipments').select('*, st_orders(number, suppliers(name)), warehouses(name)').order('shipment_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createSTShipment(ship: Omit<STShipment, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('st_shipments').insert(ti(ship, 'st_shipments', tid)).select().single()
+  if (error) throw error
+  return data as STShipment
+}
+
+export async function deleteSTShipment(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('st_shipments').delete(), 'st_shipments', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getSTShipmentLines(shipId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('st_shipment_lines').select('*, products(name, sku)').eq('st_shipment_id', shipId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createSTShipmentLine(line: Omit<STShipmentLine, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('st_shipment_lines').insert(ti(line, 'st_shipment_lines', tid)).select().single()
+  if (error) throw error
+  return data as STShipmentLine
+}
+
+export async function deleteSTShipmentLine(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('st_shipment_lines').delete(), 'st_shipment_lines', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Subcontracting Receipts ============
+export async function getSTReceipts() {
+  const tid = await getTenantId()
+  let q = supabase.from('st_receipts').select('*, st_orders(number, suppliers(name)), warehouses(name)').order('receipt_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createSTReceipt(receipt: Omit<STReceipt, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('st_receipts').insert(ti(receipt, 'st_receipts', tid)).select().single()
+  if (error) throw error
+  return data as STReceipt
+}
+
+export async function deleteSTReceipt(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('st_receipts').delete(), 'st_receipts', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getSTReceiptLines(receiptId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('st_receipt_lines').select('*, products(name, sku)').eq('st_receipt_id', receiptId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createSTReceiptLine(line: Omit<STReceiptLine, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('st_receipt_lines').insert(ti(line, 'st_receipt_lines', tid)).select().single()
+  if (error) throw error
+  return data as STReceiptLine
+}
+
+export async function deleteSTReceiptLine(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('st_receipt_lines').delete(), 'st_receipt_lines', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: Subcontracting Supervisor ============
+export async function getSTSupervisorData() {
+  const tid = await getTenantId()
+  let oq = supabase.from('st_orders').select('*, suppliers(name), products(name, sku), st_shipments(number, shipment_date, status), st_receipts(number, receipt_date, status, quantity_received)').order('order_date', { ascending: false })
+  if (tid) oq = oq.eq('tenant_id', tid)
+  const { data, error } = await oq
+  if (error) throw error
+  return data as any[]
+}
+
+// ============ Production Module: MRP Runs ============
+export async function getMRPRuns() {
+  const tid = await getTenantId()
+  let q = supabase.from('mrp_runs').select('*').order('run_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as MRPRun[]
+}
+
+export async function createMRPRun(run: Omit<MRPRun, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('mrp_runs').insert(ti(run, 'mrp_runs', tid)).select().single()
+  if (error) throw error
+  return data as MRPRun
+}
+
+export async function deleteMRPRun(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('mrp_runs').delete(), 'mrp_runs', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: MRP Proposals ============
+export async function getMRPProposals(runId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('mrp_proposals').select('*, products(name, sku, exclude_from_mrp), boms(code, name), suppliers(name)').eq('mrp_run_id', runId).order('net_need', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function updateMRPProposal(id: string, updates: Partial<MRPProposal>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('mrp_proposals').update(updates), 'mrp_proposals', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as MRPProposal
+}
+
+export async function deleteMRPProposal(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('mrp_proposals').delete(), 'mrp_proposals', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: MRP Pending Docs ============
+export async function getMRPPendingDocs() {
+  const tid = await getTenantId()
+  let q = supabase.from('mrp_pending_docs').select('*, products(name, sku)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function deleteMRPPendingDoc(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('mrp_pending_docs').delete(), 'mrp_pending_docs', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Production Module: MRP Calculation Algorithm ============
+export async function runMRPCalculation(): Promise<MRPRun> {
+  const tid = await getTenantId()
+  const runNumber = `MRP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+
+  const run = await createMRPRun({
+    run_number: runNumber,
+    run_date: new Date().toISOString(),
+    status: 'running',
+    parameters: { generated_at: new Date().toISOString() },
+    summary: null,
+  })
+
+  try {
+    const [products, boms, bomLines, stockQtys, openMOs, openPOs] = await Promise.all([
+      getProducts(),
+      getBOMs(),
+      tid ? supabase.from('bom_lines').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('bom_lines').select('*').then(r => r.data || []),
+      tid ? supabase.from('stock_quantities').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('stock_quantities').select('*').then(r => r.data || []),
+      tid ? supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).then(r => r.data || []) : supabase.from('manufacturing_orders').select('*').in('status', ['planned', 'in_progress']).then(r => r.data || []),
+      tid ? supabase.from('purchase_orders').select('*').eq('tenant_id', tid).in('status', ['draft', 'sent']).then(r => r.data || []) : supabase.from('purchase_orders').select('*').in('status', ['draft', 'sent']).then(r => r.data || []),
+    ])
+
+    // Build stock map: product_id -> total quantity
+    const stockMap: Record<string, number> = {}
+    for (const sq of stockQtys as any[]) {
+      stockMap[sq.product_id] = (stockMap[sq.product_id] || 0) + Number(sq.quantity || 0)
+    }
+
+    // Build open MO map: product_id -> total quantity (from MO product_id or BOM product_id)
+    const openMOMap: Record<string, number> = {}
+    for (const mo of openMOs as any[]) {
+      if (mo.product_id) openMOMap[mo.product_id] = (openMOMap[mo.product_id] || 0) + Number(mo.quantity || 0)
+      if (mo.bom_id) {
+        const bom = (boms as any[]).find((b) => b.id === mo.bom_id)
+        if (bom?.product_id) openMOMap[bom.product_id] = (openMOMap[bom.product_id] || 0) + Number(mo.quantity || 0)
+      }
+    }
+
+    // Build open PO map: product_id -> total quantity
+    const openPOMap: Record<string, number> = {}
+    for (const po of openPOs as any[]) {
+      if (po.product_id) openPOMap[po.product_id] = (openPOMap[po.product_id] || 0) + Number(po.quantity || 0)
+    }
+
+    // Build BOM line map: product_id -> [{component_id, quantity}]
+    const bomLineMap: Record<string, any[]> = {}
+    for (const bl of bomLines as any[]) {
+      if (!bomLineMap[bl.bom_id]) bomLineMap[bl.bom_id] = []
+      bomLineMap[bl.bom_id].push({ product_id: bl.product_id, quantity: Number(bl.quantity) })
+    }
+
+    // Build BOM map: product_id -> bom
+    const bomByProduct: Record<string, any> = {}
+    for (const bom of boms as any[]) {
+      if (bom.product_id) bomByProduct[bom.product_id] = bom
+    }
+
+    // Calculate gross needs: sum of all MO quantities * BOM line quantities
+    const grossNeeds: Record<string, number> = {}
+    for (const mo of openMOs as any[]) {
+      if (mo.bom_id && bomLineMap[mo.bom_id]) {
+        for (const line of bomLineMap[mo.bom_id]) {
+          grossNeeds[line.product_id] = (grossNeeds[line.product_id] || 0) + line.quantity * Number(mo.quantity || 0)
+        }
+      }
+      if (mo.product_id) {
+        grossNeeds[mo.product_id] = (grossNeeds[mo.product_id] || 0) + Number(mo.quantity || 0)
+      }
+    }
+
+    // Generate proposals
+    const proposals: Omit<MRPProposal, 'id' | 'created_at'>[] = []
+    for (const product of products as any[]) {
+      if (product.exclude_from_mrp) continue
+
+      const grossNeed = grossNeeds[product.id] || 0
+      if (grossNeed <= 0) continue
+
+      const stock = stockMap[product.id] || 0
+      const openOrders = (openMOMap[product.id] || 0) + (openPOMap[product.id] || 0)
+      const netNeed = Math.max(0, grossNeed - stock - openOrders)
+
+      if (netNeed <= 0) continue
+
+      const hasBOM = bomByProduct[product.id]
+      const proposalType = hasBOM ? 'manufacture' : 'purchase'
+      const suggestedQty = Math.ceil(netNeed)
+
+      proposals.push({
+        mrp_run_id: run.id,
+        product_id: product.id,
+        proposal_type: proposalType as any,
+        gross_need: grossNeed,
+        stock_available: stock,
+        open_orders: openOrders,
+        net_need: netNeed,
+        suggested_quantity: suggestedQty,
+        suggested_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+        bom_id: hasBOM?.id || null,
+        supplier_id: product.supplier_id || null,
+        status: 'pending',
+        notes: null,
+      })
+    }
+
+    // Insert proposals
+    for (const p of proposals) {
+      await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))
+    }
+
+    // Update run with summary
+    const summary = {
+      total_products: products.length,
+      products_with_needs: proposals.length,
+      total_net_need: proposals.reduce((sum, p) => sum + p.net_need, 0),
+      manufacture_count: proposals.filter((p) => p.proposal_type === 'manufacture').length,
+      purchase_count: proposals.filter((p) => p.proposal_type === 'purchase').length,
+    }
+    await updateMRPRun(run.id, { status: 'completed', summary })
+
+    return { ...run, status: 'completed', summary }
+  } catch (err) {
+    await updateMRPRun(run.id, { status: 'cancelled' })
+    throw err
+  }
+}
+
+async function updateMRPRun(id: string, updates: Partial<MRPRun>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('mrp_runs').update(updates as any), 'mrp_runs', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as MRPRun
+}
+
+// ============ Production Module: Production Forecasts ============
+export async function getProductionForecasts() {
+  const tid = await getTenantId()
+  let q = supabase.from('production_forecasts').select('*, products(name, sku)').order('start_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createProductionForecast(f: Omit<ProductionForecast, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('production_forecasts').insert(ti(f, 'production_forecasts', tid)).select().single()
+  if (error) throw error
+  return data as ProductionForecast
+}
+
+export async function deleteProductionForecast(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('production_forecasts').delete(), 'production_forecasts', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function importForecastsFromInvoices(period: string, startDate: string, endDate: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('invoices').select('*, invoice_lines(product_id, quantity)').eq('status', 'paid').gte('issue_date', startDate).lte('issue_date', endDate)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: invoices, error } = await q
+  if (error) throw error
+
+  const productQtyMap: Record<string, number> = {}
+  for (const inv of invoices || []) {
+    for (const line of (inv as any).invoice_lines || []) {
+      if (line.product_id) {
+        productQtyMap[line.product_id] = (productQtyMap[line.product_id] || 0) + Number(line.quantity || 0)
+      }
+    }
+  }
+
+  const products = await getProducts()
+  let count = 0
+  for (const product of products as any[]) {
+    if (product.exclude_from_mrp) continue
+    const qty = productQtyMap[product.id] || 0
+    if (qty <= 0) continue
+
+    const num = `PREV-${period}-${String(count + 1).padStart(3, '0')}`
+    await supabase.from('production_forecasts').insert(ti({
+      forecast_number: num, period, start_date: startDate, end_date: endDate,
+      product_id: product.id, forecasted_quantity: qty, actual_quantity: 0,
+      reliability_rate: 0, source: 'invoice_import', notes: null,
+    }, 'production_forecasts', tid))
+    count++
+  }
+  return count
+}
+
+export async function calculateForecastReliability(forecastId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('production_forecasts').select('*').eq('id', forecastId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: forecast } = await q.single()
+  if (!forecast) throw new Error('Forecast not found')
+
+  const forecasted = Number((forecast as any).forecasted_quantity || 0)
+  const actual = Number((forecast as any).actual_quantity || 0)
+  const reliability = forecasted > 0 ? Math.min(100, Math.round((actual / forecasted) * 100 * 100) / 100) : 0
+
+  const { data, error } = await tud(supabase.from('production_forecasts').update({ reliability_rate: reliability }), 'production_forecasts', tid).eq('id', forecastId).select().single()
+  if (error) throw error
+  return data as ProductionForecast
+}
+
+// ============ Production Module: Planning ============
+export async function getPlanningSlots() {
+  const tid = await getTenantId()
+  let q = supabase.from('planning_slots').select('*, manufacturing_orders(number, quantity, status, boms(name)), routing_operations(name, sequence), machines(name, code), work_centers(name)').order('planned_start', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createPlanningSlot(slot: Omit<PlanningSlot, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('planning_slots').insert(ti(slot, 'planning_slots', tid)).select().single()
+  if (error) throw error
+  return data as PlanningSlot
+}
+
+export async function updatePlanningSlot(id: string, updates: Partial<PlanningSlot>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('planning_slots').update(updates), 'planning_slots', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PlanningSlot
+}
+
+export async function deletePlanningSlot(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('planning_slots').delete(), 'planning_slots', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function checkMaterialAvailability(slotId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('planning_slots').select('*, manufacturing_orders(bom_id, quantity)').eq('id', slotId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: slot } = await q.single()
+  if (!slot) throw new Error('Slot not found')
+
+  const mo = (slot as any).manufacturing_orders
+  if (!mo?.bom_id) {
+    await updatePlanningSlot(slotId, { material_available: true, material_check_date: new Date().toISOString() })
+    return { available: true, missing: [] }
+  }
+
+  const bomLines = await getBOMLines(mo.bom_id)
+  let stockQ = supabase.from('stock_quantities').select('product_id, quantity')
+  if (tid) stockQ = stockQ.eq('tenant_id', tid)
+  const stockQtys = await stockQ.then(r => r.data || [])
+  const stockMap: Record<string, number> = {}
+  for (const sq of stockQtys as any[]) {
+    stockMap[sq.product_id] = (stockMap[sq.product_id] || 0) + Number(sq.quantity || 0)
+  }
+
+  const missing: { product_id: string; needed: number; available: number }[] = []
+  for (const line of bomLines) {
+    const needed = Number(line.quantity) * Number(mo.quantity || 0)
+    const available = stockMap[line.product_id] || 0
+    if (available < needed) {
+      missing.push({ product_id: line.product_id, needed, available })
+    }
+  }
+
+  const available = missing.length === 0
+  await updatePlanningSlot(slotId, { material_available: available, material_check_date: new Date().toISOString() })
+  return { available, missing }
+}
+
+export async function autoScheduleMOs() {
+  const tid = await getTenantId()
+  const [mos, machines, routings, routingOps] = await Promise.all([
+    getManufacturingOrders('planned'),
+    supabase.from('machines').select('*').eq('status', 'active').then(r => r.data || []),
+    tid ? supabase.from('routings').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('routings').select('*').then(r => r.data || []),
+    tid ? supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).then(r => r.data || []) : supabase.from('routing_operations').select('*').order('sequence', { ascending: true }).then(r => r.data || []),
+  ])
+
+  let scheduled = 0
+  const now = new Date()
+  let currentTime = new Date(now)
+
+  for (const mo of mos as any[]) {
+    const routing = (routings as any[]).find((r) => r.id === mo.routing_id)
+    if (!routing) continue
+
+    const ops = (routingOps as any[]).filter((op) => op.routing_id === routing.id)
+    if (ops.length === 0) continue
+
+    const availableMachines = machines as any[]
+    if (availableMachines.length === 0) continue
+
+    let slotStart = new Date(currentTime)
+    for (let i = 0; i < ops.length; i++) {
+      const op = ops[i]
+      const machine = availableMachines[i % availableMachines.length]
+      const setupTime = Number(op.setup_time || 0)
+      const runTime = Number(op.run_time || 0) * Number(mo.quantity || 1)
+      const slotEnd = new Date(slotStart.getTime() + (setupTime + runTime) * 60000)
+
+      await supabase.from('planning_slots').insert(ti({
+        manufacturing_order_id: mo.id,
+        routing_operation_id: op.id,
+        machine_id: machine.id,
+        work_center_id: op.work_center_id || null,
+        planned_start: slotStart.toISOString(),
+        planned_end: slotEnd.toISOString(),
+        setup_time: setupTime,
+        run_time: runTime,
+        status: 'scheduled',
+        material_available: true,
+        material_check_date: null,
+      }, 'planning_slots', tid))
+
+      slotStart = new Date(slotEnd)
+    }
+
+    await updateManufacturingOrder(mo.id, { status: 'in_progress' } as any)
+    currentTime = new Date(slotStart)
+    scheduled++
+  }
+
+  return scheduled
+}
+
+// ============ Production Module: Article Interrogation ============
+export async function getProductStock(productId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_quantities').select('*, warehouses(name)').eq('product_id', productId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function getProductSupplierPrices(productId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('price_list_lines').select('*, price_lists(name, type), suppliers(name)').eq('product_id', productId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data as any[]).filter((line) => line.price_lists?.type === 'purchase')
+}
+
+export async function getProductDocuments(productId: string) {
+  const tid = await getTenantId()
+  const [invoices, purchaseOrders, manufacturingOrders, salesOrders] = await Promise.all([
+    tid ? supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).then(r => r.data || []),
+    tid ? supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).then(r => r.data || []),
+    tid ? supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).then(r => r.data || []),
+    tid ? supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).then(r => r.data || []),
+  ])
+
+  const docs: any[] = []
+  for (const line of invoices as any[]) {
+    if (line.invoices) docs.push({ type: 'Facture', number: line.invoices.number, date: line.invoices.issue_date, quantity: line.quantity, status: line.invoices.status })
+  }
+  for (const line of purchaseOrders as any[]) {
+    if (line.purchase_orders) docs.push({ type: 'Commande achat', number: line.purchase_orders.number, date: line.purchase_orders.order_date, quantity: line.quantity, status: line.purchase_orders.status })
+  }
+  for (const mo of manufacturingOrders as any[]) {
+    docs.push({ type: 'OF', number: mo.number, date: mo.planned_date, quantity: mo.quantity, status: mo.status })
+  }
+  for (const line of salesOrders as any[]) {
+    if (line.sales_orders) docs.push({ type: 'Commande vente', number: line.sales_orders.number, date: line.sales_orders.order_date, quantity: line.quantity, status: line.sales_orders.status })
+  }
+  return docs.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+}
+
+export async function getProductBOMs(productId: string) {
+  const tid = await getTenantId()
+  const [asFinished, asComponent] = await Promise.all([
+    tid ? supabase.from('boms').select('*').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('boms').select('*').eq('product_id', productId).then(r => r.data || []),
+    tid ? supabase.from('bom_lines').select('*, boms(code, name)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('bom_lines').select('*, boms(code, name)').eq('product_id', productId).then(r => r.data || []),
+  ])
+  return { asFinished: asFinished as any[], asComponent: asComponent as any[] }
+}
+
+// ============ Production Module: Complémentaires ============
+export async function getProductEquivalences(productId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('product_equivalences').select('*, products!product_equivalences_product_id_fkey(name, sku), products!product_equivalences_equivalent_product_id_fkey(name, sku)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createProductEquivalence(eq: Omit<ProductEquivalence, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('product_equivalences').insert(ti(eq, 'product_equivalences', tid)).select().single()
+  if (error) throw error
+  return data as ProductEquivalence
+}
+
+export async function deleteProductEquivalence(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('product_equivalences').delete(), 'product_equivalences', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getWorkflows() {
+  const tid = await getTenantId()
+  let q = supabase.from('workflows').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Workflow[]
+}
+
+export async function createWorkflow(wf: Omit<Workflow, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('workflows').insert(ti(wf, 'workflows', tid)).select().single()
+  if (error) throw error
+  return data as Workflow
+}
+
+export async function updateWorkflow(id: string, updates: Partial<Workflow>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('workflows').update(updates), 'workflows', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Workflow
+}
+
+export async function deleteWorkflow(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('workflows').delete(), 'workflows', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getOFDocumentAccess() {
+  const tid = await getTenantId()
+  let q = supabase.from('of_document_access').select('*, users(email, full_name)').order('document_type')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+
+export async function createOFDocumentAccess(acc: Omit<OFDocumentAccess, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('of_document_access').insert(ti(acc, 'of_document_access', tid)).select().single()
+  if (error) throw error
+  return data as OFDocumentAccess
+}
+
+export async function updateOFDocumentAccess(id: string, updates: Partial<OFDocumentAccess>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('of_document_access').update(updates), 'of_document_access', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as OFDocumentAccess
+}
+
+export async function deleteOFDocumentAccess(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('of_document_access').delete(), 'of_document_access', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function checkOFDocumentAccess(userId: string, documentType: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('of_document_access').select('*').eq('user_id', userId).eq('document_type', documentType)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.maybeSingle()
+  if (error) throw error
+  if (!data) return { can_view: true, can_print: true, can_export: true }
+  return { can_view: (data as any).can_view, can_print: (data as any).can_print, can_export: (data as any).can_export }
+}
+
+// ============ Recurring Entries (Écritures d'abonnement) ============
+export async function getRecurringEntries() {
+  const tid = await getTenantId()
+  let q = supabase.from('recurring_entries').select('*').order('next_generation_date', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as RecurringEntry[]
+}
+
+export async function createRecurringEntry(entry: Omit<RecurringEntry, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('recurring_entries')
+    .insert({ ...entry, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as RecurringEntry
+}
+
+export async function updateRecurringEntry(id: string, updates: Partial<RecurringEntry>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('recurring_entries')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as RecurringEntry
+}
+
+export async function deleteRecurringEntry(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('recurring_entries')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+export async function generateRecurringEntry(id: string) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .rpc('generate_recurring_entry', { p_entry_id: id, p_tenant_id: tid })
+  if (error) throw error
+  return data
+}
+
+// ============ Regularization Entries (CCA/PCA/PRC/CRC) ============
+export async function getRegularizationEntries(type?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('regularization_entries').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (type) q = q.eq('type', type)
+  const { data, error } = await q
+  if (error) throw error
+  return data as RegularizationEntry[]
+}
+
+export async function createRegularizationEntry(entry: Omit<RegularizationEntry, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'used_amount' | 'remaining_amount' | 'created_entry_id' | 'extourne_entry_id'>) {
+  const tid = await getTenantId()
+  const payload = { ...entry, tenant_id: tid, used_amount: 0, remaining_amount: entry.amount }
+  const { data, error } = await supabase
+    .from('regularization_entries')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) throw error
+  return data as RegularizationEntry
+}
+
+export async function updateRegularizationEntry(id: string, updates: Partial<RegularizationEntry>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('regularization_entries')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as RegularizationEntry
+}
+
+export async function deleteRegularizationEntry(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('regularization_entries')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Currency Revaluation ============
+export async function getCurrencyRevaluations() {
+  const tid = await getTenantId()
+  let q = supabase.from('currency_revaluations').select('*').order('period_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CurrencyRevaluation[]
+}
+
+export async function createCurrencyRevaluation(entry: Omit<CurrencyRevaluation, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'entry_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('currency_revaluations')
+    .insert({ ...entry, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as CurrencyRevaluation
+}
+
+export async function deleteCurrencyRevaluation(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('currency_revaluations')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Payment Link Generation ============
+export async function generatePaymentLink(reminderId: string) {
+  const token = crypto.randomUUID()
+  const url = `${window.location.origin}/pay/${token}`
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('collection_reminders')
+    .update({
+      payment_link_token: token,
+      payment_link_url: url,
+      payment_link_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      payment_status: 'pending',
+    })
+    .eq('id', reminderId)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// ============ Analytic Plans ============
+export async function getAnalyticPlans() {
+  const tid = await getTenantId()
+  let q = supabase.from('analytic_plans').select('*').order('code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AnalyticPlan[]
+}
+
+export async function createAnalyticPlan(plan: Omit<AnalyticPlan, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('analytic_plans')
+    .insert({ ...plan, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as AnalyticPlan
+}
+
+export async function deleteAnalyticPlan(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('analytic_plans')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Distribution Grills ============
+export async function getDistributionGrills() {
+  const tid = await getTenantId()
+  let q = supabase.from('distribution_grills').select('*, lines:distribution_grill_lines(*)').order('name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[] as DistributionGrill[]
+}
+
+export async function createDistributionGrill(grill: Omit<DistributionGrill, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'lines'> & { lines: Omit<DistributionGrillLine, 'id' | 'grill_id' | 'created_at'>[] }) {
+  const tid = await getTenantId()
+  const { lines, ...grillData } = grill
+  const { data, error } = await supabase
+    .from('distribution_grills')
+    .insert({ ...grillData, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  const grillId = (data as any).id
+  if (lines && lines.length > 0) {
+    const { error: lineError } = await supabase
+      .from('distribution_grill_lines')
+      .insert(lines.map(l => ({ ...l, grill_id: grillId })))
+    if (lineError) throw lineError
+  }
+  return data
+}
+
+export async function deleteDistributionGrill(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('distribution_grills')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Bank Reconciliation Rules (AFB) ============
+export async function getBankReconciliationRules() {
+  const tid = await getTenantId()
+  let q = supabase.from('bank_reconciliation_rules').select('*').order('priority', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as BankReconciliationRule[]
+}
+
+export async function createBankReconciliationRule(rule: Omit<BankReconciliationRule, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('bank_reconciliation_rules')
+    .insert({ ...rule, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as BankReconciliationRule
+}
+
+export async function deleteBankReconciliationRule(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('bank_reconciliation_rules')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Bank Statement Imports ============
+export async function getBankStatementImports() {
+  const tid = await getTenantId()
+  let q = supabase.from('bank_statement_imports').select('*').order('imported_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as BankStatementImport[]
+}
+
+export async function createBankStatementImport(imp: Omit<BankStatementImport, 'id' | 'tenant_id' | 'imported_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('bank_statement_imports')
+    .insert({ ...imp, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as BankStatementImport
+}
+
+// ============ EDI-TVA Submission ============
+export async function submitEdiTva(vatReturnId: string) {
+  const tid = await getTenantId()
+  const ediId = `EDI-${Date.now()}`
+  const { data, error } = await supabase
+    .from('vat_returns')
+    .update({
+      edi_tva_id: ediId,
+      edi_status: 'submitted',
+      edi_submitted_at: new Date().toISOString(),
+    })
+    .eq('id', vatReturnId)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// ============ TVS (Taxe Véhicules de Société) ============
+export async function getTvsDeclarations() {
+  const tid = await getTenantId()
+  let q = supabase.from('tvs_declarations').select('*').order('fiscal_year', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TvsDeclaration[]
+}
+
+export async function createTvsDeclaration(decl: Omit<TvsDeclaration, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'filed_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('tvs_declarations')
+    .insert({ ...decl, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as TvsDeclaration
+}
+
+export async function deleteTvsDeclaration(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('tvs_declarations')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Fiscal Backups ============
+export async function getFiscalBackups() {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_backups').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FiscalBackup[]
+}
+
+export async function createFiscalBackup(backup: Omit<FiscalBackup, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('fiscal_backups')
+    .insert({ ...backup, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as FiscalBackup
+}
+
+export async function deleteFiscalBackup(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('fiscal_backups')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Phase 2: GesCom — Product Variants ============
+export async function getProductVariants(productId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('product_variants').select('*, products(name, sku)').order('sku')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createProductVariant(v: Omit<ProductVariant, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('product_variants').insert(ti(v, 'product_variants', tid)).select().single()
+  if (error) throw error
+  return data as ProductVariant
+}
+export async function updateProductVariant(id: string, updates: Partial<ProductVariant>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('product_variants').update(updates), 'product_variants', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ProductVariant
+}
+export async function deleteProductVariant(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('product_variants').delete(), 'product_variants', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Product Serial Numbers ============
+export async function getProductSerialNumbers(productId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('product_serial_numbers').select('*, products(name, sku)').order('serial_number')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createProductSerialNumber(s: Omit<ProductSerialNumber, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('product_serial_numbers').insert(ti(s, 'product_serial_numbers', tid)).select().single()
+  if (error) throw error
+  return data as ProductSerialNumber
+}
+export async function deleteProductSerialNumber(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('product_serial_numbers').delete(), 'product_serial_numbers', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Product Batches ============
+export async function getProductBatches(productId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('product_batches').select('*, products(name, sku)').order('batch_number')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createProductBatch(b: Omit<ProductBatch, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('product_batches').insert(ti(b, 'product_batches', tid)).select().single()
+  if (error) throw error
+  return data as ProductBatch
+}
+export async function deleteProductBatch(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('product_batches').delete(), 'product_batches', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Warehouse Locations ============
+export async function getWarehouseLocations(warehouseId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('warehouse_locations').select('*, warehouses(name)').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (warehouseId) q = q.eq('warehouse_id', warehouseId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createWarehouseLocation(l: Omit<WarehouseLocation, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('warehouse_locations').insert(ti(l, 'warehouse_locations', tid)).select().single()
+  if (error) throw error
+  return data as WarehouseLocation
+}
+export async function deleteWarehouseLocation(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('warehouse_locations').delete(), 'warehouse_locations', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Quality Checks ============
+export async function getQualityChecks() {
+  const tid = await getTenantId()
+  let q = supabase.from('quality_checks').select('*, products(name, sku)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createQualityCheck(qc: Omit<QualityCheck, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('quality_checks').insert(ti(qc, 'quality_checks', tid)).select().single()
+  if (error) throw error
+  return data as QualityCheck
+}
+export async function updateQualityCheck(id: string, updates: Partial<QualityCheck>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('quality_checks').update(updates), 'quality_checks', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as QualityCheck
+}
+
+// ============ Phase 2: Pick Lists ============
+export async function getPickLists() {
+  const tid = await getTenantId()
+  let q = supabase.from('pick_lists').select('*, warehouses(name)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createPickList(p: Omit<PickList, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('pick_lists').insert(ti(p, 'pick_lists', tid)).select().single()
+  if (error) throw error
+  return data as PickList
+}
+export async function updatePickList(id: string, updates: Partial<PickList>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('pick_lists').update(updates), 'pick_lists', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PickList
+}
+
+// ============ Phase 2: Sales Representatives ============
+export async function getSalesRepresentatives() {
+  const tid = await getTenantId()
+  let q = supabase.from('sales_representatives').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as SalesRepresentative[]
+}
+export async function createSalesRepresentative(r: Omit<SalesRepresentative, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('sales_representatives').insert(ti(r, 'sales_representatives', tid)).select().single()
+  if (error) throw error
+  return data as SalesRepresentative
+}
+export async function updateSalesRepresentative(id: string, updates: Partial<SalesRepresentative>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('sales_representatives').update(updates), 'sales_representatives', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as SalesRepresentative
+}
+export async function deleteSalesRepresentative(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('sales_representatives').delete(), 'sales_representatives', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Prospects ============
+export async function getProspects() {
+  const tid = await getTenantId()
+  let q = supabase.from('prospects').select('*, sales_representatives(name)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createProspect(p: Omit<Prospect, 'id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('prospects').insert(ti(p, 'prospects', tid)).select().single()
+  if (error) throw error
+  return data as Prospect
+}
+export async function updateProspect(id: string, updates: Partial<Prospect>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('prospects').update(updates), 'prospects', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Prospect
+}
+export async function deleteProspect(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('prospects').delete(), 'prospects', tid).eq('id', id)
+  if (error) throw error
+}
+export async function convertProspectToCustomer(id: string, customerData: Partial<Customer>) {
+  const tid = await getTenantId()
+  const { data: cust, error: custErr } = await supabase.from('customers').insert(ti(customerData as any, 'customers', tid)).select().single()
+  if (custErr) throw custErr
+  await tud(supabase.from('prospects').update({ status: 'converted', converted_customer_id: cust.id }), 'prospects', tid).eq('id', id)
+  return cust as Customer
+}
+
+// ============ Phase 2: Product Substitutes ============
+export async function getProductSubstitutes(productId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('product_substitutes').select('*, products!product_substitutes_product_id_fkey(name, sku), products!product_substitutes_substitute_id_fkey(name as sub_name, sku as sub_sku)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (productId) q = q.eq('product_id', productId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createProductSubstitute(s: Omit<ProductSubstitute, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('product_substitutes').insert(ti(s, 'product_substitutes', tid)).select().single()
+  if (error) throw error
+  return data as ProductSubstitute
+}
+export async function deleteProductSubstitute(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('product_substitutes').delete(), 'product_substitutes', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Delivery Schedules ============
+export async function getDeliverySchedules() {
+  const tid = await getTenantId()
+  let q = supabase.from('delivery_schedules').select('*, customers(name), products(name, sku)').order('start_date')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createDeliverySchedule(d: Omit<DeliverySchedule, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('delivery_schedules').insert(ti(d, 'delivery_schedules', tid)).select().single()
+  if (error) throw error
+  return data as DeliverySchedule
+}
+export async function deleteDeliverySchedule(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('delivery_schedules').delete(), 'delivery_schedules', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Recurring Invoice Templates ============
+export async function getRecurringInvoiceTemplates() {
+  const tid = await getTenantId()
+  let q = supabase.from('recurring_invoice_templates').select('*, customers(name)').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createRecurringInvoiceTemplate(t: Omit<RecurringInvoiceTemplate, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('recurring_invoice_templates').insert(ti(t, 'recurring_invoice_templates', tid)).select().single()
+  if (error) throw error
+  return data as RecurringInvoiceTemplate
+}
+export async function deleteRecurringInvoiceTemplate(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('recurring_invoice_templates').delete(), 'recurring_invoice_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 2: Document Templates ============
+export async function getDocumentTemplates() {
+  const tid = await getTenantId()
+  let q = supabase.from('document_templates').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as DocumentTemplate[]
+}
+export async function createDocumentTemplate(t: Omit<DocumentTemplate, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('document_templates').insert(ti(t, 'document_templates', tid)).select().single()
+  if (error) throw error
+  return data as DocumentTemplate
+}
+export async function updateDocumentTemplate(id: string, updates: Partial<DocumentTemplate>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('document_templates').update(updates), 'document_templates', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as DocumentTemplate
+}
+export async function deleteDocumentTemplate(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('document_templates').delete(), 'document_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Treasury — MCF ============
+export async function getFutureAccountingMovements() {
+  const tid = await getTenantId()
+  let q = supabase.from('future_accounting_movements').select('*').order('expected_date')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FutureAccountingMovement[]
+}
+export async function createFutureAccountingMovement(m: Omit<FutureAccountingMovement, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('future_accounting_movements').insert(ti(m, 'future_accounting_movements', tid)).select().single()
+  if (error) throw error
+  return data as FutureAccountingMovement
+}
+export async function updateFutureAccountingMovement(id: string, updates: Partial<FutureAccountingMovement>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('future_accounting_movements').update(updates), 'future_accounting_movements', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as FutureAccountingMovement
+}
+export async function deleteFutureAccountingMovement(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('future_accounting_movements').delete(), 'future_accounting_movements', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Treasury Transfers ============
+export async function getTreasuryTransfers() {
+  const tid = await getTenantId()
+  let q = supabase.from('treasury_transfers').select('*, ba1:bank_accounts!treasury_transfers_from_account_id_fkey(name), ba2:bank_accounts!treasury_transfers_to_account_id_fkey(name)').order('transfer_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createTreasuryTransfer(t: Omit<TreasuryTransfer, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('treasury_transfers').insert(ti(t, 'treasury_transfers', tid)).select().single()
+  if (error) throw error
+  return data as TreasuryTransfer
+}
+export async function updateTreasuryTransfer(id: string, updates: Partial<TreasuryTransfer>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('treasury_transfers').update(updates), 'treasury_transfers', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as TreasuryTransfer
+}
+export async function deleteTreasuryTransfer(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('treasury_transfers').delete(), 'treasury_transfers', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Credit Lines ============
+export async function getCreditLines() {
+  const tid = await getTenantId()
+  let q = supabase.from('credit_lines').select('*, bank_accounts(name)').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createCreditLine(c: Omit<CreditLine, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('credit_lines').insert(ti(c, 'credit_lines', tid)).select().single()
+  if (error) throw error
+  return data as CreditLine
+}
+export async function updateCreditLine(id: string, updates: Partial<CreditLine>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('credit_lines').update(updates), 'credit_lines', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as CreditLine
+}
+export async function deleteCreditLine(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('credit_lines').delete(), 'credit_lines', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Investments ============
+export async function getInvestments() {
+  const tid = await getTenantId()
+  let q = supabase.from('investments').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Investment[]
+}
+export async function createInvestment(i: Omit<Investment, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('investments').insert(ti(i, 'investments', tid)).select().single()
+  if (error) throw error
+  return data as Investment
+}
+export async function updateInvestment(id: string, updates: Partial<Investment>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('investments').update(updates), 'investments', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Investment
+}
+export async function deleteInvestment(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('investments').delete(), 'investments', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Value Date Tracking ============
+export async function getValueDateTrackings() {
+  const tid = await getTenantId()
+  let q = supabase.from('value_date_tracking').select('*, bank_accounts(name)').order('value_date')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createValueDateTracking(v: Omit<ValueDateTracking, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('value_date_tracking').insert(ti(v, 'value_date_tracking', tid)).select().single()
+  if (error) throw error
+  return data as ValueDateTracking
+}
+
+// ============ Phase 3: Treasury Recurring ============
+export async function getTreasuryRecurring() {
+  const tid = await getTenantId()
+  let q = supabase.from('treasury_recurring').select('*, bank_accounts(name)').order('next_date')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createTreasuryRecurring(t: Omit<TreasuryRecurring, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('treasury_recurring').insert(ti(t, 'treasury_recurring', tid)).select().single()
+  if (error) throw error
+  return data as TreasuryRecurring
+}
+export async function deleteTreasuryRecurring(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('treasury_recurring').delete(), 'treasury_recurring', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 3: Consolidated Treasury ============
+export async function getConsolidatedTreasury() {
+  const tid = await getTenantId()
+  let q = supabase.from('consolidated_treasury').select('*').order('consolidation_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ConsolidatedTreasury[]
+}
+
+// ============ Phase 4: Payroll Components ============
+export async function getPayrollComponents() {
+  const tid = await getTenantId()
+  let q = supabase.from('payroll_components').select('*').order('display_order')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PayrollComponent[]
+}
+export async function createPayrollComponent(c: Omit<PayrollComponent, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payroll_components').insert(ti(c, 'payroll_components', tid)).select().single()
+  if (error) throw error
+  return data as PayrollComponent
+}
+export async function updatePayrollComponent(id: string, updates: Partial<PayrollComponent>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('payroll_components').update(updates), 'payroll_components', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PayrollComponent
+}
+export async function deletePayrollComponent(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('payroll_components').delete(), 'payroll_components', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 4: Payroll Templates ============
+export async function getPayrollTemplates() {
+  const tid = await getTenantId()
+  let q = supabase.from('payroll_templates').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PayrollTemplate[]
+}
+export async function createPayrollTemplate(t: Omit<PayrollTemplate, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payroll_templates').insert(ti(t, 'payroll_templates', tid)).select().single()
+  if (error) throw error
+  return data as PayrollTemplate
+}
+export async function deletePayrollTemplate(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('payroll_templates').delete(), 'payroll_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 4: Salary Advances ============
+export async function getSalaryAdvances() {
+  const tid = await getTenantId()
+  let q = supabase.from('salary_advances').select('*, employees(first_name, last_name)').order('advance_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createSalaryAdvance(s: Omit<SalaryAdvance, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('salary_advances').insert(ti(s, 'salary_advances', tid)).select().single()
+  if (error) throw error
+  return data as SalaryAdvance
+}
+export async function updateSalaryAdvance(id: string, updates: Partial<SalaryAdvance>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('salary_advances').update(updates), 'salary_advances', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as SalaryAdvance
+}
+
+// ============ Phase 4: Pay Recalls ============
+export async function getPayRecalls() {
+  const tid = await getTenantId()
+  let q = supabase.from('pay_recalls').select('*, employees(first_name, last_name)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createPayRecall(r: Omit<PayRecall, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('pay_recalls').insert(ti(r, 'pay_recalls', tid)).select().single()
+  if (error) throw error
+  return data as PayRecall
+}
+
+// ============ Phase 4: DSN Declarations ============
+export async function getDsnDeclarations() {
+  const tid = await getTenantId()
+  let q = supabase.from('dsn_declarations').select('*').order('period', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as DsnDeclaration[]
+}
+export async function createDsnDeclaration(d: Omit<DsnDeclaration, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('dsn_declarations').insert(ti(d, 'dsn_declarations', tid)).select().single()
+  if (error) throw error
+  return data as DsnDeclaration
+}
+export async function updateDsnDeclaration(id: string, updates: Partial<DsnDeclaration>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('dsn_declarations').update(updates), 'dsn_declarations', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as DsnDeclaration
+}
+
+// ============ Phase 4: DPAE Records ============
+export async function getDpaeRecords() {
+  const tid = await getTenantId()
+  let q = supabase.from('dpae_records').select('*, employees(first_name, last_name)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createDpaeRecord(d: Omit<DpaeRecord, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('dpae_records').insert(ti(d, 'dpae_records', tid)).select().single()
+  if (error) throw error
+  return data as DpaeRecord
+}
+
+// ============ Phase 4: Work Hardship ============
+export async function getWorkHardship(employeeId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('work_hardship').select('*, employees(first_name, last_name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createWorkHardship(w: Omit<WorkHardship, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('work_hardship').insert(ti(w, 'work_hardship', tid)).select().single()
+  if (error) throw error
+  return data as WorkHardship
+}
+
+// ============ Phase 4: Career History ============
+export async function getCareerHistory(employeeId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('career_history').select('*, employees(first_name, last_name)').order('start_date')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createCareerHistory(c: Omit<CareerHistory, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('career_history').insert(ti(c, 'career_history', tid)).select().single()
+  if (error) throw error
+  return data as CareerHistory
+}
+
+// ============ Phase 4: CPF Accounts ============
+export async function getCpfAccounts(employeeId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('cpf_accounts').select('*, employees(first_name, last_name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function updateCpfAccount(id: string, updates: Partial<CpfAccount>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('cpf_accounts').update(updates), 'cpf_accounts', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as CpfAccount
+}
+
+// ============ Phase 4: Payroll Archives ============
+export async function getPayrollArchives() {
+  const tid = await getTenantId()
+  let q = supabase.from('payroll_archives').select('*, employees(first_name, last_name)').order('period', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createPayrollArchive(a: Omit<PayrollArchive, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payroll_archives').insert(ti(a, 'payroll_archives', tid)).select().single()
+  if (error) throw error
+  return data as PayrollArchive
+}
+
+// ============ Phase 4: Legal Watch ============
+export async function getLegalWatch() {
+  const tid = await getTenantId()
+  let q = supabase.from('legal_watch').select('*').order('published_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LegalWatch[]
+}
+export async function createLegalWatch(l: Omit<LegalWatch, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('legal_watch').insert(ti(l, 'legal_watch', tid)).select().single()
+  if (error) throw error
+  return data as LegalWatch
+}
+export async function updateLegalWatch(id: string, updates: Partial<LegalWatch>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('legal_watch').update(updates), 'legal_watch', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as LegalWatch
+}
+
+// ============ Phase 4: Employee Documents ============
+export async function getEmployeeDocuments(employeeId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('employee_documents').select('*, employees(first_name, last_name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createEmployeeDocument(d: Omit<EmployeeDocument, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('employee_documents').insert(ti(d, 'employee_documents', tid)).select().single()
+  if (error) throw error
+  return data as EmployeeDocument
+}
+
+// ============ Phase 4: Expense Reports ============
+export async function getExpenseReports() {
+  const tid = await getTenantId()
+  let q = supabase.from('expense_reports').select('*, employees(first_name, last_name)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createExpenseReport(e: Omit<ExpenseReport, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('expense_reports').insert(ti(e, 'expense_reports', tid)).select().single()
+  if (error) throw error
+  return data as ExpenseReport
+}
+export async function updateExpenseReport(id: string, updates: Partial<ExpenseReport>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('expense_reports').update(updates), 'expense_reports', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ExpenseReport
+}
+
+// ============ Phase 4: Interviews ============
+export async function getInterviews(employeeId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('interviews').select('*, employees(first_name, last_name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createInterview(i: Omit<Interview, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('interviews').insert(ti(i, 'interviews', tid)).select().single()
+  if (error) throw error
+  return data as Interview
+}
+export async function updateInterview(id: string, updates: Partial<Interview>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('interviews').update(updates), 'interviews', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Interview
+}
+
+// ============ Phase 5: Asset Depreciation Plans ============
+export async function getAssetDepreciationPlans(assetId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_depreciation_plans').select('*, fixed_assets(name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (assetId) q = q.eq('asset_id', assetId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createAssetDepreciationPlan(p: Omit<AssetDepreciationPlan, 'id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_depreciation_plans').insert(ti(p, 'asset_depreciation_plans', tid)).select().single()
+  if (error) throw error
+  return data as AssetDepreciationPlan
+}
+export async function updateAssetDepreciationPlan(id: string, updates: Partial<AssetDepreciationPlan>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('asset_depreciation_plans').update(updates), 'asset_depreciation_plans', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as AssetDepreciationPlan
+}
+
+// ============ Phase 5: Asset Families ============
+export async function getAssetFamilies() {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_families').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AssetFamily[]
+}
+export async function createAssetFamily(f: Omit<AssetFamily, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_families').insert(ti(f, 'asset_families', tid)).select().single()
+  if (error) throw error
+  return data as AssetFamily
+}
+export async function updateAssetFamily(id: string, updates: Partial<AssetFamily>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('asset_families').update(updates), 'asset_families', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as AssetFamily
+}
+export async function deleteAssetFamily(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('asset_families').delete(), 'asset_families', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 5: Asset Revaluations ============
+export async function getAssetRevaluations(assetId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_revaluations').select('*, fixed_assets(name)').order('revaluation_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (assetId) q = q.eq('asset_id', assetId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createAssetRevaluation(r: Omit<AssetRevaluation, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_revaluations').insert(ti(r, 'asset_revaluations', tid)).select().single()
+  if (error) throw error
+  return data as AssetRevaluation
+}
+
+// ============ Phase 5: Asset Documents ============
+export async function getAssetDocuments(assetId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_documents').select('*, fixed_assets(name)')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (assetId) q = q.eq('asset_id', assetId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createAssetDocument(d: Omit<AssetDocument, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_documents').insert(ti(d, 'asset_documents', tid)).select().single()
+  if (error) throw error
+  return data as AssetDocument
+}
+export async function deleteAssetDocument(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('asset_documents').delete(), 'asset_documents', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 5: Asset Free Fields ============
+export async function getAssetFreeFields(assetId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_free_fields').select('*')
+  if (tid) q = q.eq('tenant_id', tid)
+  if (assetId) q = q.eq('asset_id', assetId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AssetFreeField[]
+}
+export async function createAssetFreeField(f: Omit<AssetFreeField, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_free_fields').insert(ti(f, 'asset_free_fields', tid)).select().single()
+  if (error) throw error
+  return data as AssetFreeField
+}
+
+// ============ Phase 5: Asset Batch Disposals ============
+export async function getAssetBatchDisposals() {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_batch_disposals').select('*').order('disposal_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AssetBatchDisposal[]
+}
+export async function createAssetBatchDisposal(b: Omit<AssetBatchDisposal, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_batch_disposals').insert(ti(b, 'asset_batch_disposals', tid)).select().single()
+  if (error) throw error
+  return data as AssetBatchDisposal
+}
+export async function updateAssetBatchDisposal(id: string, updates: Partial<AssetBatchDisposal>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('asset_batch_disposals').update(updates), 'asset_batch_disposals', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as AssetBatchDisposal
+}
+
+// ============ Phase 5: Asset Splits ============
+export async function getAssetSplits() {
+  const tid = await getTenantId()
+  let q = supabase.from('asset_splits').select('*, fixed_assets(name)').order('split_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createAssetSplit(s: Omit<AssetSplit, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('asset_splits').insert(ti(s, 'asset_splits', tid)).select().single()
+  if (error) throw error
+  return data as AssetSplit
+}

@@ -1,19 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts } from '@/lib/queries'
 import { Search, ChevronDown, ChevronRight, Filter, X } from 'lucide-react'
 import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount } from '@/types'
 
-const statusDetailLabels: Record<string, string> = {
-  open: 'Ouvert',
-  printed: 'Imprimé',
-  closed: 'Clôturé',
-  draft: 'Brouillon',
-  posted: 'Validé',
-}
-
 export function SearchEntriesPage() {
+  const { t } = useTranslation('accounting')
+  const { formatCurrency, formatDate } = useLocale()
   const [journals, setJournals] = useState<Journal[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
@@ -106,13 +101,13 @@ export function SearchEntriesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Recherche d\'écritures' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('search.title') }]} />
       <PageHeader
-        title="Recherche d'écritures"
-        subtitle="Recherche multi-critères dans les écritures comptables"
+        title={t('search.title')}
+        subtitle={t('search.subtitleMulti')}
         action={
           <Button variant="secondary" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="w-4 h-4" /> {showFilters ? 'Masquer les filtres' : 'Afficher les filtres'}
+            <Filter className="w-4 h-4" /> {showFilters ? t('search.hideFilters') : t('search.showFilters')}
           </Button>
         }
       />
@@ -122,40 +117,40 @@ export function SearchEntriesPage() {
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-4 gap-3">
               <Select
-                label="Journal"
+                label={t('search.journal')}
                 value={criteria.journalCode}
                 onChange={(e) => updateCriteria('journalCode', e.target.value)}
-                options={[{ value: '', label: 'Tous' }, ...journals.map((j) => ({ value: j.code, label: `${j.code} — ${j.name}` }))]}
+                options={[{ value: '', label: t('search.all') }, ...journals.map((j) => ({ value: j.code, label: `${j.code} — ${j.name}` }))]}
               />
-              <Input label="Date du" type="date" value={criteria.dateFrom} onChange={(e) => updateCriteria('dateFrom', e.target.value)} />
-              <Input label="Date au" type="date" value={criteria.dateTo} onChange={(e) => updateCriteria('dateTo', e.target.value)} />
-              <Input label="N° pièce" value={criteria.pieceNumber} onChange={(e) => updateCriteria('pieceNumber', e.target.value)} placeholder="Ex: ACH-0001" />
+              <Input label={t('search.dateFrom')} type="date" value={criteria.dateFrom} onChange={(e) => updateCriteria('dateFrom', e.target.value)} />
+              <Input label={t('search.dateTo')} type="date" value={criteria.dateTo} onChange={(e) => updateCriteria('dateTo', e.target.value)} />
+              <Input label={t('search.pieceNumber')} value={criteria.pieceNumber} onChange={(e) => updateCriteria('pieceNumber', e.target.value)} placeholder="Ex: ACH-0001" />
             </div>
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Compte général</label>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('search.generalAccount')}</label>
                 <select className="input" value={criteria.accountCode} onChange={(e) => updateCriteria('accountCode', e.target.value)}>
-                  <option value="">Tous</option>
+                  <option value="">{t('search.all')}</option>
                   {accounts.map((a) => <option key={a.id} value={a.code}>{a.code} — {a.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Compte tiers</label>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('search.thirdPartyAccount')}</label>
                 <select className="input" value={criteria.accountTiers} onChange={(e) => updateCriteria('accountTiers', e.target.value)}>
-                  <option value="">Tous</option>
-                  {thirdParties.map((t) => <option key={t.id} value={t.code}>{t.code} — {t.name}</option>)}
+                  <option value="">{t('search.all')}</option>
+                  {thirdParties.map((tp) => <option key={tp.id} value={tp.code}>{tp.code} — {tp.name}</option>)}
                 </select>
               </div>
-              <Input label="Montant min" type="number" step="0.01" value={criteria.amountMin} onChange={(e) => updateCriteria('amountMin', e.target.value)} placeholder="0.00" />
-              <Input label="Montant max" type="number" step="0.01" value={criteria.amountMax} onChange={(e) => updateCriteria('amountMax', e.target.value)} placeholder="0.00" />
+              <Input label={t('search.amountMin')} type="number" step="0.01" value={criteria.amountMin} onChange={(e) => updateCriteria('amountMin', e.target.value)} placeholder="0.00" />
+              <Input label={t('search.amountMax')} type="number" step="0.01" value={criteria.amountMax} onChange={(e) => updateCriteria('amountMax', e.target.value)} placeholder="0.00" />
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <Input label="Description (contient)" value={criteria.description} onChange={(e) => updateCriteria('description', e.target.value)} placeholder="Mot-clé..." />
+              <Input label={t('search.descriptionContains')} value={criteria.description} onChange={(e) => updateCriteria('description', e.target.value)} placeholder="..." />
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={resetSearch}><X className="w-4 h-4" /> Réinitialiser</Button>
+              <Button variant="secondary" onClick={resetSearch}><X className="w-4 h-4" /> {t('search.reset')}</Button>
               <Button onClick={handleSearch} disabled={loading}>
-                <Search className="w-4 h-4" /> {loading ? 'Recherche...' : 'Rechercher'}
+                <Search className="w-4 h-4" /> {loading ? t('search.searching') : t('search.searchBtn')}
               </Button>
             </div>
           </div>
@@ -166,7 +161,7 @@ export function SearchEntriesPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              {results.length} résultat(s) — Total débit: {formatCurrency(totalDebit)} | Total crédit: {formatCurrency(totalCredit)}
+              {t('search.resultsCount', { count: results.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
             </p>
           </div>
           {loading ? (
@@ -174,12 +169,12 @@ export function SearchEntriesPage() {
           ) : results.length === 0 ? (
             <EmptyState
               icon={<Search className="w-8 h-8" />}
-              title="Aucune écriture trouvée"
-              description="Modifiez vos critères de recherche et réessayez."
+              title={t('search.noResults')}
+              description={t('search.noResultsDescription')}
             />
           ) : (
             <Card>
-              <Table headers={['', 'N°', 'Date', 'Journal', 'Description', 'Statut', 'Débit', 'Crédit']}>
+              <Table headers={['', t('entries.number'), t('entries.date'), t('entries.journal'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit')]}>
                 {results.map((entry) => (
                   <div key={entry.id}>
                     <TableRow onClick={() => toggleExpand(entry.id)}>
@@ -194,7 +189,7 @@ export function SearchEntriesPage() {
                       <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                       <TableCell>
                         <Badge variant="neutral">
-                          {statusDetailLabels[entry.status_detail || entry.status] || entry.status}
+                          {t(`saisie.statusDetailLabels.${entry.status_detail || entry.status}`, { defaultValue: entry.status })}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>

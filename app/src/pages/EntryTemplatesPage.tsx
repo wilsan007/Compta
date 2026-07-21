@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntryTemplate, getJournals } from '@/lib/queries'
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
@@ -6,6 +7,8 @@ import type { EntryTemplate, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function EntryTemplatesPage() {
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [templates, setTemplates] = useState<EntryTemplate[]>([])
   const [journals, setJournals] = useState<Journal[]>([])
@@ -20,11 +23,11 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
 
   async function loadData() {
     try {
-      const [t, j] = await Promise.all([
+      const [tpl, j] = await Promise.all([
         getEntryTemplates(),
         getJournals().catch(() => []),
       ])
-      setTemplates(t || [])
+      setTemplates(tpl || [])
       setJournals(j || [])
     } catch (err) {
       console.error('Error loading templates:', err)
@@ -33,10 +36,10 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
     }
   }
 
-  const filtered = templates.filter((t) => {
+  const filtered = templates.filter((tpl) => {
     return !search ||
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      (t.description || '').toLowerCase().includes(search.toLowerCase())
+      tpl.name.toLowerCase().includes(search.toLowerCase()) ||
+      (tpl.description || '').toLowerCase().includes(search.toLowerCase())
   })
 
   function getJournalName(code: string | null) {
@@ -56,22 +59,22 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer ce modèle de saisie ?')) return
+    if (!window.confirm(t('templates.deleteConfirm'))) return
     try {
       await deleteEntryTemplate(id)
       await loadData()
     } catch (err) {
-      toast('error', 'Erreur', 'Erreur lors de la suppression')
+      toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Structure' }, { label: 'Modèles de saisie' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('templates.breadcrumb') }, { label: t('templates.title') }]} />
       <PageHeader
-        title="Modèles de saisie"
-        subtitle={`${templates.length} modèle(s) — pré-remplissage automatique des écritures`}
-        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau modèle</Button>}
+        title={t('templates.title')}
+        subtitle={t('templates.subtitle', { count: templates.length })}
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('templates.new')}</Button>}
       />
 
       <div className="flex gap-3 mb-4">
@@ -79,7 +82,7 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
-            placeholder="Rechercher un modèle..."
+            placeholder={t('templates.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -91,27 +94,27 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<LayoutTemplate className="w-8 h-8" />}
-          title="Aucun modèle trouvé"
-          description="Créez des modèles pour pré-remplir automatiquement vos saisies d'écritures."
-          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau modèle</Button>}
+          title={t('templates.noTemplates')}
+          description={t('templates.noTemplatesDescription')}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('templates.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['Nom', 'Journal', 'Description', 'Lignes', 'Défaut', 'Statut', 'Actions']}>
-            {filtered.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell className="font-medium">{t.name}</TableCell>
-                <TableCell className="text-xs">{getJournalName(t.journal_code)}</TableCell>
-                <TableCell className="text-xs text-[var(--color-text-secondary)]">{t.description || '—'}</TableCell>
-                <TableCell className="font-mono">{t.template_lines?.length || 0}</TableCell>
-                <TableCell>{t.is_default ? <Badge variant="primary"><Star className="w-3 h-3 inline mr-1" />Défaut</Badge> : '—'}</TableCell>
-                <TableCell>{t.active ? <Badge variant="success">Actif</Badge> : <Badge variant="neutral">Inactif</Badge>}</TableCell>
+          <Table headers={[tCommon('common.name'), t('templates.journal'), tCommon('common.description'), t('templates.lines'), t('templates.default'), tCommon('common.status'), tCommon('table.actions')]}>
+            {filtered.map((tpl) => (
+              <TableRow key={tpl.id}>
+                <TableCell className="font-medium">{tpl.name}</TableCell>
+                <TableCell className="text-xs">{getJournalName(tpl.journal_code)}</TableCell>
+                <TableCell className="text-xs text-[var(--color-text-secondary)]">{tpl.description || '—'}</TableCell>
+                <TableCell className="font-mono">{tpl.template_lines?.length || 0}</TableCell>
+                <TableCell>{tpl.is_default ? <Badge variant="primary"><Star className="w-3 h-3 inline mr-1" />{t('templates.defaultLabel')}</Badge> : '—'}</TableCell>
+                <TableCell>{tpl.active ? <Badge variant="success">{tCommon('common.active')}</Badge> : <Badge variant="neutral">{tCommon('common.inactive')}</Badge>}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(t)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
+                    <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -148,8 +151,10 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
-  const [name, setName] = useState(template?.name || '')
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const [name, setName] = useState(template?.name || '')
   const [journalCode, setJournalCode] = useState(template?.journal_code || '')
   const [description, setDescription] = useState(template?.description || '')
   const [isDefault, setIsDefault] = useState(template?.is_default || false)
@@ -190,7 +195,7 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
       }
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -200,35 +205,35 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{template ? 'Modifier le modèle' : 'Nouveau modèle de saisie'}</h2>
+          <h2 className="text-lg font-semibold">{template ? t('templates.edit') : t('templates.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Nom" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Achat marchandises TTC" />
-            <Select label="Journal associé" value={journalCode} onChange={(e) => setJournalCode(e.target.value)} options={[
-              { value: '', label: '— Aucun —' },
+            <Input label={tCommon('common.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="" />
+            <Select label={t('templates.journal')} value={journalCode} onChange={(e) => setJournalCode(e.target.value)} options={[
+              { value: '', label: t('templates.none') },
               ...journals.map((j) => ({ value: j.code, label: `${j.code} — ${j.name}` })),
             ]} />
           </div>
-          <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-[var(--color-text-secondary)]">Lignes du modèle</label>
-              <Button variant="ghost" size="sm" onClick={addLine}><Plus className="w-3 h-3" /> Ajouter une ligne</Button>
+              <label className="text-sm font-medium text-[var(--color-text-secondary)]">{t('templates.lines')}</label>
+              <Button variant="ghost" size="sm" onClick={addLine}><Plus className="w-3 h-3" /> {tCommon('actions.addLine')}</Button>
             </div>
             <div className="space-y-2">
               {lines.map((line, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end p-2 bg-[var(--color-neutral-50)] rounded-lg">
                   <div className="col-span-3">
-                    <input className="input text-xs" placeholder="Cpte général" value={line.account_general} onChange={(e) => updateLine(idx, 'account_general', e.target.value)} />
+                    <input className="input text-xs" placeholder={t('saisie.accountGeneral')} value={line.account_general} onChange={(e) => updateLine(idx, 'account_general', e.target.value)} />
                   </div>
                   <div className="col-span-3">
-                    <input className="input text-xs" placeholder="Cpte tiers" value={line.account_tiers} onChange={(e) => updateLine(idx, 'account_tiers', e.target.value)} />
+                    <input className="input text-xs" placeholder={t('saisie.accountThirdParty')} value={line.account_tiers} onChange={(e) => updateLine(idx, 'account_tiers', e.target.value)} />
                   </div>
                   <div className="col-span-3">
-                    <input className="input text-xs" placeholder="Libellé" value={line.label} onChange={(e) => updateLine(idx, 'label', e.target.value)} />
+                    <input className="input text-xs" placeholder={tCommon('common.label')} value={line.label} onChange={(e) => updateLine(idx, 'label', e.target.value)} />
                   </div>
                   <div className="col-span-2">
                     <div className="grid grid-cols-2 gap-1">
@@ -249,17 +254,17 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
-              Modèle par défaut
+              {t('templates.isDefault')}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-              Actif
+              {tCommon('common.active')}
             </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

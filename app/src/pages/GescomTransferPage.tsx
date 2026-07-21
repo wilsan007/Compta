@@ -4,8 +4,12 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries'
 import { ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/lib/toast'
+import { useTranslation } from 'react-i18next'
 
 export function GescomTransferPage() {
+  const { t } = useTranslation('stock')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
 const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -54,44 +58,44 @@ const [data, setData] = useState<any>(null)
       setResults(res)
       setSelected(new Set())
       await loadData()
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setTransferring(false) }
   }
 
   const pendingItems = [
-    ...(data?.invoices || []).filter((i: any) => !i.transferred).map((i: any) => ({ key: `sales-${i.id}`, label: i.number, type: 'Vente', amount: Number(i.total), date: i.date, transferred: false })),
-    ...(data?.purchaseInvoices || []).filter((p: any) => !p.transferred).map((p: any) => ({ key: `purchase-${p.id}`, label: p.number, type: 'Achat', amount: Number(p.total), date: p.date, transferred: false })),
+    ...(data?.invoices || []).filter((i: any) => !i.transferred).map((i: any) => ({ key: `sales-${i.id}`, label: i.number, type: t('transfer.sales'), amount: Number(i.total), date: i.date, transferred: false })),
+    ...(data?.purchaseInvoices || []).filter((p: any) => !p.transferred).map((p: any) => ({ key: `purchase-${p.id}`, label: p.number, type: t('transfer.purchase'), amount: Number(p.total), date: p.date, transferred: false })),
   ]
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Stock' }, { label: 'Transfert comptable' }]} />
-      <PageHeader title="Transfert GesCom → Compta" subtitle={`${data?.pendingCount || 0} document(s) en attente`}
-        action={<div className="flex gap-2"><Button variant="secondary" onClick={selectAllPending}>Tout sélectionner</Button><Button onClick={handleTransfer} disabled={selected.size === 0 || transferring}><ArrowRightLeft className="w-4 h-4" /> {transferring ? '...' : `Transférer (${selected.size})`}</Button></div>} />
+      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('transfer.title') }]} />
+      <PageHeader title={t('transfer.gescomTitle')} subtitle={t('transfer.pendingDocs', { count: data?.pendingCount || 0 })}
+        action={<div className="flex gap-2"><Button variant="secondary" onClick={selectAllPending}>{t('transfer.selectAll')}</Button><Button onClick={handleTransfer} disabled={selected.size === 0 || transferring}><ArrowRightLeft className="w-4 h-4" /> {transferring ? '...' : `${t('transfer.transfer')} (${selected.size})`}</Button></div>} />
 
       {results && (
         <Card className="mb-4">
           <div className="p-4">
-            <h3 className="text-sm font-semibold mb-2">Résultats du transfert</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('transfer.transferResults')}</h3>
             <div className="space-y-1">
               {results.map((r) => (
                 <div key={r.number} className="flex items-center gap-2 text-xs">
                   {r.success ? <CheckCircle2 className="w-4 h-4 text-[var(--color-success)]" /> : <AlertCircle className="w-4 h-4 text-[var(--color-danger)]" />}
                   <span className="font-mono">{r.number}</span>
-                  {r.success ? <span className="text-[var(--color-success)]">Transféré</span> : <span className="text-[var(--color-danger)]">{r.error}</span>}
+                  {r.success ? <span className="text-[var(--color-success)]">{t('transfer.transferred')}</span> : <span className="text-[var(--color-danger)]">{r.error}</span>}
                 </div>
               ))}
             </div>
-            <Button variant="secondary" className="mt-3" onClick={() => setResults(null)}>Fermer</Button>
+            <Button variant="secondary" className="mt-3" onClick={() => setResults(null)}>{t('transfer.close')}</Button>
           </div>
         </Card>
       )}
 
       {loading ? <SkeletonTable rows={6} cols={5} /> : pendingItems.length === 0 ? (
-        <EmptyState icon={<CheckCircle2 className="w-8 h-8" />} title="Tout est transféré" description="Aucun document en attente de transfert." />
+        <EmptyState icon={<CheckCircle2 className="w-8 h-8" />} title={t('transfer.allTransferred')} description={t('transfer.noPending')} />
       ) : (
         <Card>
-          <Table headers={['', 'N°', 'Type', 'Date', 'Montant', 'Statut']}>
+          <Table headers={['', t('transfer.number'), t('transfer.type'), t('transfer.date'), t('transfer.amount'), t('transfer.status')]}>
             {pendingItems.map((item) => (
               <TableRow key={item.key}>
                 <TableCell>
@@ -101,7 +105,7 @@ const [data, setData] = useState<any>(null)
                 <TableCell className="text-xs">{item.type}</TableCell>
                 <TableCell className="text-xs">{formatDate(item.date)}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(item.amount)}</TableCell>
-                <TableCell><Badge variant="warning">En attente</Badge></TableCell>
+                <TableCell><Badge variant="warning">{t('transfer.pending')}</Badge></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -110,26 +114,26 @@ const [data, setData] = useState<any>(null)
 
       {!loading && data && (
         <div className="mt-6 grid grid-cols-2 gap-6">
-          <Card title="Factures déjà transférées">
-            <Table headers={['N°', 'Date', 'Montant', 'Statut']}>
+          <Card title={t('transfer.transferredInvoices')}>
+            <Table headers={[t('transfer.number'), t('transfer.date'), t('transfer.amount'), t('transfer.status')]}>
               {(data.invoices || []).filter((i: any) => i.transferred).slice(0, 10).map((inv: any) => (
                 <TableRow key={inv.id}>
                   <TableCell className="font-mono text-xs">{inv.number}</TableCell>
                   <TableCell className="text-xs">{formatDate(inv.date)}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(inv.total))}</TableCell>
-                  <TableCell><Badge variant="success">Transféré</Badge></TableCell>
+                  <TableCell><Badge variant="success">{t('transfer.transferred')}</Badge></TableCell>
                 </TableRow>
               ))}
             </Table>
           </Card>
-          <Card title="Factures d'achat transférées">
-            <Table headers={['N°', 'Date', 'Montant', 'Statut']}>
+          <Card title={t('transfer.transferredPurchases')}>
+            <Table headers={[t('transfer.number'), t('transfer.date'), t('transfer.amount'), t('transfer.status')]}>
               {(data.purchaseInvoices || []).filter((p: any) => p.transferred).slice(0, 10).map((pur: any) => (
                 <TableRow key={pur.id}>
                   <TableCell className="font-mono text-xs">{pur.number}</TableCell>
                   <TableCell className="text-xs">{formatDate(pur.date)}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(pur.total))}</TableCell>
-                  <TableCell><Badge variant="success">Transféré</Badge></TableCell>
+                  <TableCell><Badge variant="success">{t('transfer.transferred')}</Badge></TableCell>
                 </TableRow>
               ))}
             </Table>

@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth'
 import { Layout } from '@/components/Layout'
 import type { TenantUser } from '@/lib/queries'
@@ -11,13 +12,14 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
+  const { t } = useTranslation('nav')
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--color-text-secondary)]">Chargement...</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('common:common.loading')}</p>
         </div>
       </div>
     )
@@ -40,10 +42,9 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-[var(--color-text)] mb-2">Accès refusé</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-text)] mb-2">{t('layout.accessDenied')}</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
-            Votre rôle ({user.role}) ne permet pas cet accès.
+            {t('layout.accessDeniedMessage', { role: user.role })}
           </p>
         </div>
       </div>

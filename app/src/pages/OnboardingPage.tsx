@@ -1,16 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
-import { createTenantForUser } from '@/lib/queries'
-import { Building2, AlertCircle, CheckCircle2, MapPin, FileText, Phone } from 'lucide-react'
+import { createTenantForUser, getLegislationPacks, getApplicableVatRates } from '@/lib/queries'
+import type { LegislationPack, TaxRate } from '@/types'
+import { Building2, AlertCircle, CheckCircle2, MapPin, FileText, Phone, Scale, LayoutGrid } from 'lucide-react'
+import { COUNTRIES, CURRENCIES } from '@/lib/countries'
+import { SearchableSelect } from '@/components/SearchableSelect'
 
 export function OnboardingPage() {
-  const { reloadUser } = useAuth()
+  const { t } = useTranslation('auth')
+  const { user, reloadUser } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [legislationPacks, setLegislationPacks] = useState<LegislationPack[]>([])
+  const [selectedPack, setSelectedPack] = useState<LegislationPack | null>(null)
+  const [packTaxRates, setPackTaxRates] = useState<TaxRate[]>([])
+
+  useEffect(() => {
+    getLegislationPacks().then(setLegislationPacks).catch(() => {})
+  }, [])
+
+  // When a legislation pack is selected, auto-fill currency/country and fetch VAT rates
+  useEffect(() => {
+    if (!selectedPack) return
+    setForm((prev) => ({
+      ...prev,
+      currency: selectedPack.currency,
+      country: selectedPack.country_name,
+      legislation_pack_code: selectedPack.code,
+    }))
+    getApplicableVatRates(selectedPack.code).then(setPackTaxRates).catch(() => setPackTaxRates([]))
+  }, [selectedPack])
 
   const [form, setForm] = useState({
     name: '',
@@ -24,17 +48,43 @@ export function OnboardingPage() {
     currency: 'EUR',
     email: '',
     phone: '',
+    legislation_pack_code: '',
   })
+
+  const [selectedModules, setSelectedModules] = useState<string[]>([
+    'home', 'accounting', 'commercial', 'treasury', 'system',
+  ])
+
+  const selectableModules = [
+    { id: 'accounting', icon: '📚', color: 'indigo' },
+    { id: 'commercial', icon: '🛒', color: 'emerald' },
+    { id: 'treasury', icon: '💰', color: 'amber' },
+    { id: 'stock', icon: '📦', color: 'violet' },
+    { id: 'production', icon: '🏭', color: 'rose' },
+    { id: 'hr', icon: '👥', color: 'cyan' },
+    { id: 'dashboards', icon: '📊', color: 'teal' },
+    { id: 'reporting', icon: '📈', color: 'fuchsia' },
+  ]
+
+  function toggleModule(moduleId: string) {
+    setSelectedModules((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((m) => m !== moduleId)
+        : [...prev, moduleId],
+    )
+  }
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
+  const [created, setCreated] = useState(false)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     if (!form.name.trim()) {
-      setError("Le nom de l'entreprise est obligatoire")
+      setError(t('onboarding.companyNameRequired'))
       return
     }
     setLoading(true)
@@ -50,23 +100,36 @@ export function OnboardingPage() {
       currency: form.currency || 'EUR',
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
+      legislation_pack_code: form.legislation_pack_code || undefined,
+      enabled_modules: ['home', ...selectedModules, 'system'],
     })
     if (!success || createError) {
-      setError(createError || 'Erreur lors de la création')
+      setError(createError || t('onboarding.createError'))
       setLoading(false)
       return
     }
     await reloadUser()
-    navigate('/')
+    setCreated(true)
   }
+
+  // Redirect to dashboard only after user state has been refreshed with tenantId
+  useEffect(() => {
+    if (created && user?.tenantId) {
+      navigate('/', { replace: true })
+    }
+  }, [created, user, navigate])
 
   function nextStep() {
     if (step === 1 && !form.name.trim()) {
-      setError("Le nom de l'entreprise est obligatoire")
+      setError(t('onboarding.companyNameRequired'))
+      return
+    }
+    if (step === 4 && selectedModules.length === 0) {
+      setError(t('onboarding.selectAtLeastOneModule'))
       return
     }
     setError(null)
-    setStep((s) => Math.min(s + 1, 3))
+    setStep((s) => Math.min(s + 1, 5))
   }
 
   function prevStep() {
@@ -75,9 +138,11 @@ export function OnboardingPage() {
   }
 
   const steps = [
-    { num: 1, label: 'Entreprise', icon: Building2 },
-    { num: 2, label: 'Adresse', icon: MapPin },
-    { num: 3, label: 'Confirmation', icon: CheckCircle2 },
+    { num: 1, label: t('onboarding.steps.company'), icon: Building2 },
+    { num: 2, label: t('onboarding.legislation'), icon: Scale },
+    { num: 3, label: t('onboarding.steps.address'), icon: MapPin },
+    { num: 4, label: t('onboarding.steps.modules'), icon: LayoutGrid },
+    { num: 5, label: t('onboarding.steps.confirmation'), icon: CheckCircle2 },
   ]
 
   return (
@@ -87,9 +152,9 @@ export function OnboardingPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] text-white mb-4">
             <Building2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">Bienvenue sur ERP Compta</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('onboarding.title')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Configurez votre entreprise en quelques étapes pour commencer
+            {t('onboarding.subtitle')}
           </p>
         </div>
 
@@ -121,7 +186,7 @@ export function OnboardingPage() {
           })}
         </div>
 
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
+        <form onSubmit={step === 5 ? handleSubmit : (e) => e.preventDefault()} className="card p-6 space-y-4">
           {error && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-[rgba(222,53,11,0.08)] border border-[var(--color-danger)] text-sm text-[var(--color-danger)]">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -134,7 +199,7 @@ export function OnboardingPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-[var(--color-text)]">
-                  Nom de l'entreprise <span className="text-[var(--color-danger)]">*</span>
+                  {t('onboarding.companyName')} <span className="text-[var(--color-danger)]">*</span>
                 </label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
@@ -151,7 +216,7 @@ export function OnboardingPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-text)]">Raison sociale</label>
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.legalName')}</label>
                 <input
                   type="text"
                   value={form.legal_name}
@@ -163,7 +228,7 @@ export function OnboardingPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">SIREN</label>
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.siren')}</label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                     <input
@@ -176,7 +241,7 @@ export function OnboardingPage() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">N° TVA</label>
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.vatNumber')}</label>
                   <input
                     type="text"
                     value={form.vat_number}
@@ -189,44 +254,115 @@ export function OnboardingPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">Devise</label>
-                  <select
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.currency')}</label>
+                  <SearchableSelect
                     value={form.currency}
-                    onChange={(e) => update('currency', e.target.value)}
-                    className="input"
-                  >
-                    <option value="EUR">Euro (€)</option>
-                    <option value="USD">Dollar US ($)</option>
-                    <option value="GBP">Livre (£)</option>
-                    <option value="CHF">Franc suisse (CHF)</option>
-                    <option value="MAD">Dirham marocain (MAD)</option>
-                    <option value="XOF">Franc CFA (XOF)</option>
-                  </select>
+                    onChange={(v) => update('currency', v)}
+                    options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
+                    searchPlaceholder={t('onboarding.searchCurrency')}
+                    placeholder={t('onboarding.selectCurrency')}
+                    className="w-full"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">Pays</label>
-                  <select
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.country')}</label>
+                  <SearchableSelect
                     value={form.country}
-                    onChange={(e) => update('country', e.target.value)}
-                    className="input"
-                  >
-                    <option value="France">France</option>
-                    <option value="Belgique">Belgique</option>
-                    <option value="Suisse">Suisse</option>
-                    <option value="Maroc">Maroc</option>
-                    <option value="Sénégal">Sénégal</option>
-                    <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-                  </select>
+                    onChange={(v) => update('country', v)}
+                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                    searchPlaceholder={t('onboarding.searchCountry')}
+                    placeholder={t('onboarding.selectCountry')}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 2: Address & Contact */}
+          {/* Step 2: Legislation pack */}
           {step === 2 && (
             <div className="space-y-4">
+              <div className="text-center mb-2">
+                <Scale className="w-8 h-8 mx-auto text-[var(--color-primary)] mb-2" />
+                <h3 className="text-sm font-semibold text-[var(--color-text)]">{t('onboarding.legislation')}</h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('onboarding.legislationSubtitle')}</p>
+              </div>
+
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-text)]">Adresse</label>
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.legislationPack')}</label>
+                <SearchableSelect
+                  value={form.legislation_pack_code}
+                  onChange={(code) => {
+                    const pack = legislationPacks.find((p) => p.code === code)
+                    if (pack) setSelectedPack(pack)
+                    update('legislation_pack_code', code)
+                  }}
+                  options={legislationPacks.map((p) => ({
+                    value: p.code,
+                    label: `${p.country_name} — ${p.accounting_standard} (${p.currency})`,
+                  }))}
+                  searchPlaceholder={t('onboarding.legislationPackPlaceholder')}
+                  placeholder={t('onboarding.legislationPackPlaceholder')}
+                  className="w-full"
+                />
+                <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.legislationPackHint')}</p>
+              </div>
+
+              {selectedPack && (
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[var(--color-neutral-50)] border border-[var(--color-neutral-200)]">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.country')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{selectedPack.country_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.standard')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{selectedPack.accounting_standard}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.currency')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{selectedPack.currency}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.fiscalYearStart')}</p>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{selectedPack.fiscal_year_start}</p>
+                  </div>
+                </div>
+              )}
+
+              {packTaxRates.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-[var(--color-text-secondary)]">{t('onboarding.taxRates')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {packTaxRates.map((rate) => (
+                      <span
+                        key={rate.id}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          rate.is_default
+                            ? 'bg-[var(--color-primary)] text-white'
+                            : 'bg-[var(--color-neutral-100)] text-[var(--color-text)]'
+                        }`}
+                      >
+                        {rate.name} — {rate.rate.toFixed(1)}%
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPack && (
+                <div className="p-3 rounded-lg bg-[rgba(0,135,90,0.08)] border border-[var(--color-success)] text-xs text-[var(--color-text-secondary)]">
+                  <p>{t('onboarding.autoLoadedChart')}</p>
+                  <p>{t('onboarding.autoLoadedVat')}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Address & Contact */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.address')}</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                   <input
@@ -242,7 +378,7 @@ export function OnboardingPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">Code postal</label>
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.zipCode')}</label>
                   <input
                     type="text"
                     value={form.postal_code}
@@ -252,7 +388,7 @@ export function OnboardingPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">Ville</label>
+                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.city')}</label>
                   <input
                     type="text"
                     value={form.city}
@@ -264,7 +400,7 @@ export function OnboardingPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-text)]">Email</label>
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.email')}</label>
                 <input
                   type="email"
                   value={form.email}
@@ -275,7 +411,7 @@ export function OnboardingPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-text)]">Téléphone</label>
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.phone')}</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                   <input
@@ -290,63 +426,132 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
+          {/* Step 4: Module selection */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="text-center mb-2">
+                <LayoutGrid className="w-8 h-8 mx-auto text-[var(--color-primary)] mb-2" />
+                <h3 className="text-sm font-semibold text-[var(--color-text)]">{t('onboarding.modulesTitle')}</h3>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('onboarding.modulesSubtitle')}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {selectableModules.map((mod) => {
+                  const isSelected = selectedModules.includes(mod.id)
+                  const modColorVar = `--mod-${mod.color}`
+                  const modColorBg = `--mod-${mod.color}-bg`
+                  return (
+                    <button
+                      key={mod.id}
+                      type="button"
+                      onClick={() => toggleModule(mod.id)}
+                      className={`relative flex items-center gap-3 p-4 rounded-xl border transition-all duration-200 text-left overflow-hidden ${
+                        isSelected
+                          ? 'border-transparent shadow-md'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-neutral-300)] hover:shadow-sm'
+                      }`}
+                      style={isSelected ? { background: `var(${modColorBg})`, borderColor: `var(${modColorVar})` } : undefined}
+                    >
+                      <span className="text-2xl flex-shrink-0">{mod.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-sm font-medium truncate"
+                          style={isSelected ? { color: `var(${modColorVar})` } : undefined}
+                        >
+                          {t(`onboarding.moduleNames.${mod.id}`)}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-secondary)] truncate">
+                          {t(`onboarding.moduleDescriptions.${mod.id}`)}
+                        </p>
+                      </div>
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          isSelected ? 'border-transparent' : 'border-[var(--color-neutral-300)]'
+                        }`}
+                        style={isSelected ? { background: `var(${modColorVar})` } : undefined}
+                      >
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-xs text-[var(--color-text-secondary)]">
+                <p>{t('onboarding.modulesHint')}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Confirmation */}
+          {step === 5 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 rounded-lg bg-[rgba(0,135,90,0.08)] border border-[var(--color-success)]">
                 <CheckCircle2 className="w-5 h-5 text-[var(--color-success)] flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-[var(--color-text)]">Prêt à créer votre entreprise</p>
+                  <p className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.readyToCreate')}</p>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                    Vérifiez les informations ci-dessous et cliquez sur « Créer »
+                    {t('onboarding.readyToCreateDescription')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                  <span className="text-[var(--color-text-secondary)]">Nom</span>
+                  <span className="text-[var(--color-text-secondary)]">{t('onboarding.companyName')}</span>
                   <span className="font-medium text-[var(--color-text)]">{form.name}</span>
                 </div>
                 {form.legal_name && form.legal_name !== form.name && (
                   <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                    <span className="text-[var(--color-text-secondary)]">Raison sociale</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.legalName')}</span>
                     <span className="font-medium text-[var(--color-text)]">{form.legal_name}</span>
                   </div>
                 )}
                 {form.siren && (
                   <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                    <span className="text-[var(--color-text-secondary)]">SIREN</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.siren')}</span>
                     <span className="font-medium text-[var(--color-text)]">{form.siren}</span>
                   </div>
                 )}
                 {form.vat_number && (
                   <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                    <span className="text-[var(--color-text-secondary)]">N° TVA</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.vatNumber')}</span>
                     <span className="font-medium text-[var(--color-text)]">{form.vat_number}</span>
                   </div>
                 )}
                 {form.address && (
                   <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                    <span className="text-[var(--color-text-secondary)]">Adresse</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.address')}</span>
                     <span className="font-medium text-[var(--color-text)] text-right">
                       {form.address}{form.postal_code ? `, ${form.postal_code}` : ''}{form.city ? ` ${form.city}` : ''}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                  <span className="text-[var(--color-text-secondary)]">Pays / Devise</span>
+                  <span className="text-[var(--color-text-secondary)]">{t('onboarding.countryCurrency')}</span>
                   <span className="font-medium text-[var(--color-text)]">{form.country} / {form.currency}</span>
+                </div>
+                {form.legislation_pack_code && (
+                  <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.legislationPack')}</span>
+                    <span className="font-medium text-[var(--color-text)]">{form.legislation_pack_code}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
+                  <span className="text-[var(--color-text-secondary)]">{t('onboarding.selectedModules')}</span>
+                  <span className="font-medium text-[var(--color-text)] text-right">
+                    {selectedModules.map((m) => t(`onboarding.moduleNames.${m}`)).join(', ')}
+                  </span>
                 </div>
                 {form.email && (
                   <div className="flex justify-between py-2 border-b border-[var(--color-neutral-100)]">
-                    <span className="text-[var(--color-text-secondary)]">Email</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.email')}</span>
                     <span className="font-medium text-[var(--color-text)]">{form.email}</span>
                   </div>
                 )}
                 {form.phone && (
                   <div className="flex justify-between py-2">
-                    <span className="text-[var(--color-text-secondary)]">Téléphone</span>
+                    <span className="text-[var(--color-text-secondary)]">{t('onboarding.phone')}</span>
                     <span className="font-medium text-[var(--color-text)]">{form.phone}</span>
                   </div>
                 )}
@@ -354,8 +559,7 @@ export function OnboardingPage() {
 
               <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-xs text-[var(--color-text-secondary)]">
                 <p>
-                  Votre compte sera créé avec un essai gratuit de 30 jours.
-                  Vous serez l'administrateur de cette entreprise et pourrez inviter des collaborateurs.
+                  {t('onboarding.trialInfo')}
                 </p>
               </div>
             </div>
@@ -365,26 +569,26 @@ export function OnboardingPage() {
           <div className="flex items-center justify-between pt-2">
             {step > 1 ? (
               <Button type="button" variant="secondary" onClick={prevStep} disabled={loading}>
-                Retour
+                {t('onboarding.back')}
               </Button>
             ) : (
               <div />
             )}
 
-            {step < 3 ? (
+            {step < 5 ? (
               <Button type="button" onClick={nextStep} disabled={loading}>
-                Continuer
+                {t('onboarding.continue')}
               </Button>
             ) : (
               <Button type="submit" disabled={loading}>
-                {loading ? 'Création...' : 'Créer mon entreprise'}
+                {loading ? t('onboarding.creatingCompany') : t('onboarding.create')}
               </Button>
             )}
           </div>
         </form>
 
         <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
-          ERP Compta — Solution de gestion d'entreprise
+          ERP Compta — {t('onboarding.tagline')}
         </p>
       </div>
     </div>

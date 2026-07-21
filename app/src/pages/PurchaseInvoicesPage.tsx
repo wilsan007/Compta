@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
 import { getPurchaseInvoices, getSuppliers, createPurchaseInvoice, updatePurchaseInvoice, getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
@@ -8,6 +9,8 @@ import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControl
 
 export function PurchaseInvoicesPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
@@ -42,17 +45,17 @@ export function PurchaseInvoicesPage() {
       const inv = invoices.find(i => i.id === id)
       if (!inv) return
       await updatePurchaseInvoice(id, { status: 'paid', amount_paid: inv.total, amount_due: 0 })
-      toast('success', 'Facture marquée comme payée')
+      toast('success', t('purchaseInvoices.markedPaid'))
       await loadInvoices()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
   }
 
   function handleExportCSV() {
-    const headers = ['Numéro', 'Fournisseur', 'Date', 'Échéance', 'Statut', 'Total', 'À payer']
+    const headers = [t('purchaseInvoices.number'), t('purchaseInvoices.supplier'), tCommon('common.date'), t('purchaseInvoices.dueDate'), tCommon('common.status'), t('purchaseInvoices.total'), t('purchaseInvoices.toPay')]
     const rows = filtered.map((inv) => [
       inv.number || '',
       inv.supplier_name || '',
@@ -63,15 +66,15 @@ export function PurchaseInvoicesPage() {
       Number(inv.amount_due || 0),
     ])
     exportToCSV(`factures-achat-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
-    toast('info', 'Export CSV', `${filtered.length} facture(s) exportée(s)`)
+    toast('info', tCommon('toast.exportCSV'), tCommon('toast.exportedCount', { count: filtered.length }))
   }
 
   const statusMap: Record<string, { variant: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'; label: string }> = {
-    draft: { variant: 'neutral', label: 'Brouillon' },
-    received: { variant: 'primary', label: 'Reçue' },
-    paid: { variant: 'success', label: 'Payée' },
-    overdue: { variant: 'danger', label: 'En retard' },
-    cancelled: { variant: 'neutral', label: 'Annulée' },
+    draft: { variant: 'neutral', label: t('invoices.statuses.draft') as string },
+    received: { variant: 'primary', label: t('invoices.statuses.received') as string },
+    paid: { variant: 'success', label: t('invoices.statuses.paid') as string },
+    overdue: { variant: 'danger', label: t('invoices.statuses.overdue') as string },
+    cancelled: { variant: 'neutral', label: t('invoices.statuses.cancelled') as string },
   }
 
   const filtered = invoices.filter((inv) =>
@@ -86,12 +89,12 @@ export function PurchaseInvoicesPage() {
     <div className="animate-fade-in">
       <AutoBreadcrumb />
       <PageHeader
-        title="Factures d'achat"
-        subtitle={`${invoices.length} facture(s) • ${formatCurrency(totalAmount)} total • ${formatCurrency(totalDue)} à payer`}
+        title={t('purchaseInvoices.title')}
+        subtitle={`${invoices.length} ${t('purchaseInvoices.invoices')} • ${formatCurrency(totalAmount)} ${tCommon('common.total')} • ${formatCurrency(totalDue)} ${t('purchaseInvoices.toPay')}`}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> Exporter</Button>
-            <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle facture d'achat</Button>
+            <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
+            <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.new')}</Button>
           </div>
         }
       />
@@ -101,7 +104,7 @@ export function PurchaseInvoicesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
-            placeholder="Rechercher par numéro ou fournisseur..."
+            placeholder={t('purchaseInvoices.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -112,14 +115,14 @@ export function PurchaseInvoicesPage() {
         ) : filtered.length > 0 ? (
           <SortableTable
             headers={[
-              { label: 'Numéro', key: 'number', sortable: true },
-              { label: 'Fournisseur', key: 'supplier_name', sortable: true },
-              { label: 'Date', key: 'date', sortable: true },
-              { label: 'Échéance', key: 'due_date', sortable: true },
-              { label: 'Statut', key: 'status', sortable: true },
-              { label: 'Total', key: 'total', sortable: true, className: 'text-right' },
-              { label: 'À payer', key: 'amount_due', sortable: true, className: 'text-right' },
-              { label: 'Actions' },
+              { label: t('purchaseInvoices.number'), key: 'number', sortable: true },
+              { label: t('purchaseInvoices.supplier'), key: 'supplier_name', sortable: true },
+              { label: tCommon('common.date'), key: 'date', sortable: true },
+              { label: t('purchaseInvoices.dueDate'), key: 'due_date', sortable: true },
+              { label: tCommon('common.status'), key: 'status', sortable: true },
+              { label: t('purchaseInvoices.total'), key: 'total', sortable: true, className: 'text-right' },
+              { label: t('purchaseInvoices.toPay'), key: 'amount_due', sortable: true, className: 'text-right' },
+              { label: tCommon('table.actions') },
             ]}
             data={filtered as any}
             initialSortKey="date"
@@ -139,11 +142,11 @@ export function PurchaseInvoicesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setViewing(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title="Voir">
+                      <button onClick={() => setViewing(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.view')}>
                         <Eye className="w-4 h-4" />
                       </button>
                       {inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                        <button onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title="Marquer payée">
+                        <button onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('purchaseInvoices.markPaid')}>
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
@@ -156,9 +159,9 @@ export function PurchaseInvoicesPage() {
         ) : (
           <EmptyState
             icon={<Package className="w-8 h-8" />}
-            title="Aucune facture d'achat"
-            description="Enregistrez votre première facture fournisseur"
-            action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Enregistrer un achat</Button>}
+            title={t('purchaseInvoices.noInvoices')}
+            description={t('purchaseInvoices.noInvoicesDescription')}
+            action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.recordPurchase')}</Button>}
           />
         )}
       </Card>
@@ -183,6 +186,8 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
 }) {
   const [supplierId, setSupplierId] = useState('')
   const { toast } = useToast()
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
   const [number, setNumber] = useState('ACH-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(3, '0'))
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
@@ -217,12 +222,12 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!supplierId) { toast('warning', 'Sélection requise', 'Sélectionnez un fournisseur'); return }
-    if (!total || Number(total) <= 0) { toast('warning', 'Montant invalide', 'Le montant doit être positif'); return }
+    if (!supplierId) { toast('warning', tCommon('toast.warning'), t('purchaseInvoices.selectSupplier')); return }
+    if (!total || Number(total) <= 0) { toast('warning', tCommon('toast.warning'), t('purchaseInvoices.invalidAmount')); return }
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!window.confirm(`Attention: cette facture de ${formatCurrency(totalNum)} dépasse le disponible budgétaire de ${formatCurrency(budgetCheck.overshoot_amount)}. Continuer quand même?`)) {
+        if (!window.confirm(t('purchaseInvoices.budgetExceedWarning', { amount: formatCurrency(totalNum), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
           setSaving(false)
           return
         }
@@ -255,10 +260,10 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
           notes: null,
         })
       }
-      toast('success', 'Facture d\'achat créée', `Facture ${number} enregistrée`)
+      toast('success', t('purchaseInvoices.created'), t('purchaseInvoices.createdMsg', { number }))
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -268,51 +273,51 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle facture d'achat</h2>
+          <h2 className="text-lg font-semibold">{t('purchaseInvoices.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label="Numéro" required value={number} onChange={(e) => setNumber(e.target.value)} />
-          <Combobox label="Fournisseur" required value={supplierId} onChange={(v) => setSupplierId(v)} placeholder="Sélectionner un fournisseur..." options={suppliers.map(s => ({ value: s.id, label: s.name }))} />
-          <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label="Échéance" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          <Input label="Montant total (€)" type="number" step="0.01" required value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" />
+          <Input label={t('purchaseInvoices.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+          <Combobox label={t('purchaseInvoices.supplier')} required value={supplierId} onChange={(v) => setSupplierId(v)} placeholder={t('purchaseInvoices.selectSupplierPlaceholder')} options={suppliers.map(s => ({ value: s.id, label: s.name }))} />
+          <Input label={tCommon('common.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          <Input label={t('purchaseInvoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Input label={t('purchaseInvoices.totalAmount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Compte budgétaire</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('purchaseInvoices.budgetAccount')}</label>
               <select className="input" value={accountCode} onChange={(e) => setAccountCode(e.target.value)}>
-                <option value="">— Aucun —</option>
+                <option value="">— {tCommon('common.none')} —</option>
                 {expenseAccounts.map(a => <option key={a.id} value={a.code}>{a.code} — {a.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Exercice</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('purchaseInvoices.fiscalYear')}</label>
               <select className="input" value={fiscalYearId} onChange={(e) => setFiscalYearId(e.target.value)}>
-                <option value="">— Tous —</option>
+                <option value="">— {tCommon('common.all')} —</option>
                 {years.map(y => <option key={y.id} value={y.id}>{y.code}</option>)}
               </select>
             </div>
           </div>
-          {checking && <p className="text-xs text-[var(--color-text-secondary)]">Vérification budgétaire...</p>}
+          {checking && <p className="text-xs text-[var(--color-text-secondary)]">{t('purchaseInvoices.budgetChecking')}</p>}
           {budgetCheck && (
             <div className={`rounded-lg p-3 text-sm ${budgetCheck.would_exceed ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
               <div className="flex items-start gap-2">
                 {budgetCheck.would_exceed && <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
                 <div className="space-y-1">
-                  <div className="flex justify-between"><span>Budget total:</span><span className="font-mono">{formatCurrency(budgetCheck.budget_total)}</span></div>
-                  <div className="flex justify-between"><span>Réalisé:</span><span className="font-mono">{formatCurrency(budgetCheck.realized)}</span></div>
-                  <div className="flex justify-between"><span>Engagé:</span><span className="font-mono">{formatCurrency(budgetCheck.committed)}</span></div>
-                  <div className="flex justify-between font-semibold"><span>Disponible:</span><span className="font-mono">{formatCurrency(budgetCheck.available)}</span></div>
+                  <div className="flex justify-between"><span>{t('purchaseInvoices.budgetTotal')}:</span><span className="font-mono">{formatCurrency(budgetCheck.budget_total)}</span></div>
+                  <div className="flex justify-between"><span>{t('purchaseInvoices.realized')}:</span><span className="font-mono">{formatCurrency(budgetCheck.realized)}</span></div>
+                  <div className="flex justify-between"><span>{t('purchaseInvoices.committed')}:</span><span className="font-mono">{formatCurrency(budgetCheck.committed)}</span></div>
+                  <div className="flex justify-between font-semibold"><span>{t('purchaseInvoices.available')}:</span><span className="font-mono">{formatCurrency(budgetCheck.available)}</span></div>
                   {budgetCheck.would_exceed && (
-                    <div className="flex justify-between font-bold"><span>Dépassement:</span><span className="font-mono">{formatCurrency(budgetCheck.overshoot_amount)}</span></div>
+                    <div className="flex justify-between font-bold"><span>{t('purchaseInvoices.overshoot')}:</span><span className="font-mono">{formatCurrency(budgetCheck.overshoot_amount)}</span></div>
                   )}
                 </div>
               </div>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button variant="secondary" type="button" onClick={onClose}>Annuler</Button>
-            <Button type="submit" loading={saving}>Créer</Button>
+            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" loading={saving}>{tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>
@@ -321,21 +326,23 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
 }
 
 function PurchaseInvoiceDetailModal({ invoice, onClose }: { invoice: PurchaseInvoice; onClose: () => void }) {
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Facture {invoice.number}</h2>
+          <h2 className="text-lg font-semibold">{t('purchaseInvoices.invoice')} {invoice.number}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-3">
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Fournisseur</span><span className="font-medium">{invoice.supplier_name || 'N/A'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Date</span><span>{formatDate(invoice.date)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Échéance</span><span>{formatDate(invoice.due_date)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Statut</span><Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(invoice.status)}</Badge></div>
-          <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">Total</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Payé</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Reste à payer</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.supplier')}</span><span className="font-medium">{invoice.supplier_name || 'N/A'}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{tCommon('common.date')}</span><span>{formatDate(invoice.date)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.dueDate')}</span><span>{formatDate(invoice.due_date)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{tCommon('common.status')}</span><Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(invoice.status)}</Badge></div>
+          <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.paid')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.remainingToPay')}</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
         </div>
       </div>
     </div>

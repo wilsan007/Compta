@@ -1,18 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getJournals, createJournal, updateJournal, deleteJournal, getBankAccounts, getEntryTemplates } from '@/lib/queries'
 import { BookCopy, Plus, Pencil, Trash2, X, Search, Lock } from 'lucide-react'
 import type { Journal, BankAccount, EntryTemplate } from '@/types'
 import { useToast } from '@/lib/toast'
-
-const journalTypeLabels: Record<string, string> = {
-  purchase: 'Achats',
-  sale: 'Ventes',
-  bank: 'Banque',
-  cash: 'Caisse',
-  general: 'Opérations diverses',
-  analytic: 'Analytique',
-}
 
 const journalTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   purchase: 'warning',
@@ -25,6 +17,8 @@ const journalTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutr
 
 export function JournalsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
 const [journals, setJournals] = useState<Journal[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
@@ -74,13 +68,13 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer ce journal ? Les écritures liées ne seront pas supprimées.')) return
+    if (!window.confirm(t('journals.deleteConfirm'))) return
     try {
       await deleteJournal(id)
       await loadData()
     } catch (err) {
       console.error('Error deleting journal:', err)
-      toast('error', 'Erreur', 'Erreur lors de la suppression')
+      toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
 
@@ -92,11 +86,11 @@ const [journals, setJournals] = useState<Journal[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Structure' }, { label: 'Codes journaux' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('home.structure') }, { label: t('journals.title') }]} />
       <PageHeader
-        title="Codes journaux"
-        subtitle={`${journals.length} journal(s) — référentiel central de la saisie comptable`}
-        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau journal</Button>}
+        title={t('journals.title')}
+        subtitle={t('journals.subtitle', { count: journals.length })}
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('journals.new')}</Button>}
       />
 
       <div className="flex gap-3 mb-4">
@@ -104,7 +98,7 @@ const [journals, setJournals] = useState<Journal[]>([])
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
-            placeholder="Rechercher par code ou nom..."
+            placeholder={t('journals.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -114,13 +108,13 @@ const [journals, setJournals] = useState<Journal[]>([])
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
-          <option value="">Tous les types</option>
-          <option value="purchase">Achats</option>
-          <option value="sale">Ventes</option>
-          <option value="bank">Banque</option>
-          <option value="cash">Caisse</option>
-          <option value="general">Opérations diverses</option>
-          <option value="analytic">Analytique</option>
+          <option value="">{t('journals.allTypes')}</option>
+          <option value="purchase">{t('journals.types.purchase')}</option>
+          <option value="sale">{t('journals.types.sale')}</option>
+          <option value="bank">{t('journals.types.bank')}</option>
+          <option value="cash">{t('journals.types.cash')}</option>
+          <option value="general">{t('journals.types.general')}</option>
+          <option value="analytic">{t('journals.types.analytic')}</option>
         </select>
       </div>
 
@@ -129,31 +123,31 @@ const [journals, setJournals] = useState<Journal[]>([])
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<BookCopy className="w-8 h-8" />}
-          title="Aucun journal trouvé"
-          description="Créez votre premier code journal pour commencer la saisie comptable."
-          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau journal</Button>}
+          title={t('journals.noJournals')}
+          description={t('journals.noJournalsDescription')}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('journals.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['Code', 'Nom', 'Type', 'Contrepartie', 'Banque', 'Statut', 'Actions']}>
+          <Table headers={[t('journals.code'), t('journals.name'), t('journals.type'), t('journals.counterpart'), t('journals.bankAccount'), tCommon('common.status'), tCommon('table.actions')]}>
             {filtered.map((journal) => (
               <TableRow key={journal.id}>
                 <TableCell className="font-mono font-semibold">{journal.code}</TableCell>
                 <TableCell>{journal.name}</TableCell>
                 <TableCell>
                   <Badge variant={journalTypeBadge[journal.type] || 'neutral'}>
-                    {journalTypeLabels[journal.type] || journal.type}
+                    {t(`journals.types.${journal.type}`, { defaultValue: journal.type })}
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{journal.account_counterpart || '—'}</TableCell>
                 <TableCell>{getBankName(journal.bank_account_id)}</TableCell>
                 <TableCell>
                   {journal.locked ? (
-                    <Badge variant="danger"><Lock className="w-3 h-3 inline mr-1" />Verrouillé</Badge>
+                    <Badge variant="danger"><Lock className="w-3 h-3 inline mr-1" />{t('journals.locked')}</Badge>
                   ) : journal.status === 'active' ? (
-                    <Badge variant="success">Actif</Badge>
+                    <Badge variant="success">{tCommon('common.active')}</Badge>
                   ) : (
-                    <Badge variant="neutral">Inactif</Badge>
+                    <Badge variant="neutral">{tCommon('common.inactive')}</Badge>
                   )}
                 </TableCell>
                 <TableCell>
@@ -194,6 +188,8 @@ function JournalForm({ journal, bankAccounts, templates, onClose, onSaved }: {
 }) {
   const [code, setCode] = useState(journal?.code || '')
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState(journal?.name || '')
   const [type, setType] = useState<Journal['type']>(journal?.type || 'general')
   const [accountCounterpart, setAccountCounterpart] = useState(journal?.account_counterpart || '')
@@ -223,7 +219,7 @@ function JournalForm({ journal, bankAccounts, templates, onClose, onSaved }: {
       }
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -233,42 +229,42 @@ function JournalForm({ journal, bankAccounts, templates, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{journal ? 'Modifier le journal' : 'Nouveau journal'}</h2>
+          <h2 className="text-lg font-semibold">{journal ? t('journals.edit') : t('journals.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex: ACH" />
-            <Select label="Type" value={type} onChange={(e) => setType(e.target.value as Journal['type'])} options={[
-              { value: 'purchase', label: 'Achats' },
-              { value: 'sale', label: 'Ventes' },
-              { value: 'bank', label: 'Banque' },
-              { value: 'cash', label: 'Caisse' },
-              { value: 'general', label: 'Opérations diverses' },
-              { value: 'analytic', label: 'Analytique' },
+            <Input label={t('journals.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="ACH" />
+            <Select label={t('journals.type')} value={type} onChange={(e) => setType(e.target.value as Journal['type'])} options={[
+              { value: 'purchase', label: t('journals.types.purchase') },
+              { value: 'sale', label: t('journals.types.sale') },
+              { value: 'bank', label: t('journals.types.bank') },
+              { value: 'cash', label: t('journals.types.cash') },
+              { value: 'general', label: t('journals.types.general') },
+              { value: 'analytic', label: t('journals.types.analytic') },
             ]} />
           </div>
-          <Input label="Nom" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Journal des achats" />
+          <Input label={t('journals.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('journals.namePlaceholder')} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Compte de contrepartie" value={accountCounterpart} onChange={(e) => setAccountCounterpart(e.target.value)} placeholder="Ex: 401000" />
-            <Select label="Statut" value={status} onChange={(e) => setStatus(e.target.value as Journal['status'])} options={[
-              { value: 'active', label: 'Actif' },
-              { value: 'inactive', label: 'Inactif' },
+            <Input label={t('journals.counterpartAccount')} value={accountCounterpart} onChange={(e) => setAccountCounterpart(e.target.value)} placeholder="401000" />
+            <Select label={tCommon('common.status')} value={status} onChange={(e) => setStatus(e.target.value as Journal['status'])} options={[
+              { value: 'active', label: tCommon('common.active') },
+              { value: 'inactive', label: tCommon('common.inactive') },
             ]} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Compte bancaire lié" value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} options={[
-              { value: '', label: '— Aucun —' },
+            <Select label={t('journals.linkedBankAccount')} value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} options={[
+              { value: '', label: t('journals.none') },
               ...bankAccounts.map((b) => ({ value: b.id, label: `${b.name} (${b.bank_name})` })),
             ]} />
-            <Select label="Modèle de saisie par défaut" value={defaultTemplateId} onChange={(e) => setDefaultTemplateId(e.target.value)} options={[
-              { value: '', label: '— Aucun —' },
+            <Select label={t('journals.defaultTemplate')} value={defaultTemplateId} onChange={(e) => setDefaultTemplateId(e.target.value)} options={[
+              { value: '', label: t('journals.none') },
               ...templates.map((t) => ({ value: t.id, label: t.name })),
             ]} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

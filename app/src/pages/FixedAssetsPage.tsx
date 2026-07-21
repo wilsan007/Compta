@@ -1,21 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, calculateDepreciation, calculateAllDepreciation, getAssetDepreciations, disposeFixedAsset } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX } from 'lucide-react'
 import type { FixedAsset, AssetDepreciation } from '@/types'
 import { useToast } from '@/lib/toast'
-
-const statusLabels: Record<string, string> = { active: 'Actif', disposed: 'Cédé', fully_depreciated: 'Amorti' }
-
-const depTypeLabels: Record<string, string> = {
-  depreciation: 'Amortissement',
-  disposal: 'Cession',
-  dotation: 'Dotation',
-}
+import { useStatusLabels } from '@/lib/statusUtils'
 
 export function FixedAssetsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { getStatusLabel } = useStatusLabels()
   const [assets, setAssets] = useState<FixedAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -53,12 +50,12 @@ export function FixedAssetsPage() {
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm('Supprimer cette immobilisation ?')) return
+  if (!window.confirm(tCommon('form.confirmDelete'))) return
     try {
       await deleteFixedAsset(id)
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
     }
   }
 
@@ -67,7 +64,7 @@ export function FixedAssetsPage() {
       await updateFixedAsset(id, { status: status as any })
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
@@ -78,17 +75,17 @@ export function FixedAssetsPage() {
       setDepreciations((prev) => ({ ...prev, [id]: deps }))
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
   async function handleCalculateAll() {
     try {
       const results = await calculateAllDepreciation()
-      toast('success', 'Recalcul terminé', `${results.length} immobilisation(s) recalculée(s)`)
+      toast('success', t('assets.recalcComplete'), t('assets.recalcCompleteMsg', { count: results.length }))
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
@@ -98,29 +95,29 @@ export function FixedAssetsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Structure' }, { label: 'Immobilisations' }]} />
+      <Breadcrumb items={[{ label: t('assets.title') }]} />
       <PageHeader
-        title="Immobilisations"
-        subtitle="Gérez vos actifs, amortissements et cessions"
-        action={<div className="flex gap-2"><Button variant="secondary" onClick={handleCalculateAll}><Calculator className="w-4 h-4" /> Calculer amortissements</Button><Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle immobilisation</Button></div>}
+        title={t('assets.title')}
+        subtitle={t('assets.subtitle')}
+        action={<div className="flex gap-2"><Button variant="secondary" onClick={handleCalculateAll}><Calculator className="w-4 h-4" /> {t('assets.calculateDepreciation')}</Button><Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('assets.new')}</Button></div>}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)]">Valeur d'achat totale</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('assets.totalPurchaseValue')}</p>
             <p className="text-2xl font-bold font-mono">{formatCurrency(totalPurchase)}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1"><TrendingDown className="w-4 h-4 text-[var(--color-danger)]" /> Amortissement cumulé</p>
+            <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1"><TrendingDown className="w-4 h-4 text-[var(--color-danger)]" /> {t('assets.cumulativeDepreciation')}</p>
             <p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalDepreciation)}</p>
           </div>
         </Card>
         <Card>
           <div className="p-4">
-            <p className="text-sm text-[var(--color-text-secondary)]">Valeur nette actuelle</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('assets.currentNetValue')}</p>
             <p className="text-2xl font-bold font-mono">{formatCurrency(totalValue)}</p>
           </div>
         </Card>
@@ -131,13 +128,13 @@ export function FixedAssetsPage() {
       ) : assets.length === 0 ? (
         <EmptyState
           icon={<Building className="w-8 h-8" />}
-          title="Aucune immobilisation"
-          description="Ajoutez votre première immobilisation."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle immobilisation</Button>}
+          title={t('assets.noAssets')}
+          description={t('assets.noAssetsDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('assets.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['Code', 'Nom', 'Catégorie', 'Date achat', 'Valeur achat', 'Valeur nette', 'Amortissement', 'Statut', 'Actions']}>
+          <Table headers={[t('assets.code'), t('assets.name'), t('assets.category'), t('assets.purchaseDate'), t('assets.purchaseValue'), t('assets.netValue'), t('assets.depreciation'), tCommon('common.status'), tCommon('table.actions')]}>
             {assets.map((a) => {
               const depreciation = Number(a.purchase_value) - Number(a.current_value)
               const isExpanded = expanded.has(a.id)
@@ -165,16 +162,16 @@ export function FixedAssetsPage() {
                         onChange={(e) => handleStatusChange(a.id, e.target.value)}
                         className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                       >
-                        {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        {['active', 'disposed', 'fully_depreciated'].map((k) => <option key={k} value={k}>{getStatusLabel(k)}</option>)}
                       </select>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <button onClick={() => handleCalculateDepreciation(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Calculer amortissement">
+                        <button onClick={() => handleCalculateDepreciation(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('assets.calculateDepreciation')}>
                           <Calculator className="w-4 h-4" />
                         </button>
                         {a.status === 'active' && (
-                          <button onClick={() => setShowDisposal(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title="Céder">
+                          <button onClick={() => setShowDisposal(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('assets.dispose')}>
                             <PackageX className="w-4 h-4" />
                           </button>
                         )}
@@ -186,14 +183,14 @@ export function FixedAssetsPage() {
                   </TableRow>
                   {isExpanded && (
                     <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
-                      <h4 className="text-xs font-semibold mb-2 text-[var(--color-text-secondary)]">Historique des amortissements</h4>
+                      <h4 className="text-xs font-semibold mb-2 text-[var(--color-text-secondary)]">{t('assets.depreciationHistory')}</h4>
                       {assetDeps.length === 0 ? (
-                        <p className="text-xs text-[var(--color-text-secondary)]">Aucun amortissement enregistré. Cliquez sur l'icône calculatrice pour générer.</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{t('assets.noDepreciation')}</p>
                       ) : (
-                        <Table headers={['Type', 'Période', 'Montant', 'Cumul', 'VNC', 'N° écriture']}>
+                        <Table headers={[tCommon('common.type'), t('assets.period'), t('assets.amount'), t('assets.cumulative'), t('assets.netBookValue'), t('assets.entryNumber')]}>
                           {assetDeps.map((d) => (
                             <TableRow key={d.id}>
-                              <TableCell className="text-xs">{depTypeLabels[d.depreciation_type] || d.depreciation_type}</TableCell>
+                              <TableCell className="text-xs">{t(`assets.depTypes.${d.depreciation_type}`, { defaultValue: d.depreciation_type })}</TableCell>
                               <TableCell className="text-xs">P{d.period} {d.fiscal_year_code || ''}</TableCell>
                               <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(d.amount))}</TableCell>
                               <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(d.cumulative_amount))}</TableCell>
@@ -225,6 +222,8 @@ export function FixedAssetsPage() {
 
 function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [disposalValue, setDisposalValue] = useState(0)
   const [disposalDate, setDisposalDate] = useState(new Date().toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
@@ -238,7 +237,7 @@ function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose:
       await disposeFixedAsset(asset.id, disposalValue, disposalDate)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -248,24 +247,24 @@ function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose:
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Cession: {asset.name}</h2>
+          <h2 className="text-lg font-semibold">{t('assets.disposal')}: {asset.name}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm space-y-1">
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">Valeur d'achat:</span><span className="font-mono">{formatCurrency(Number(asset.purchase_value))}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">Valeur nette comptable:</span><span className="font-mono">{formatCurrency(Number(asset.current_value))}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('assets.purchaseValue')}:</span><span className="font-mono">{formatCurrency(Number(asset.purchase_value))}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('assets.netBookValue')}:</span><span className="font-mono">{formatCurrency(Number(asset.current_value))}</span></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Prix de cession" type="number" step="0.01" required value={disposalValue} onChange={(e) => setDisposalValue(Number(e.target.value))} />
-            <Input label="Date de cession" type="date" required value={disposalDate} onChange={(e) => setDisposalDate(e.target.value)} />
+            <Input label={t('assets.disposalPrice')} type="number" step="0.01" required value={disposalValue} onChange={(e) => setDisposalValue(Number(e.target.value))} />
+            <Input label={t('assets.disposalDate')} type="date" required value={disposalDate} onChange={(e) => setDisposalDate(e.target.value)} />
           </div>
           <div className={`p-3 rounded-lg text-sm ${gainLoss >= 0 ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'}`}>
-            {gainLoss >= 0 ? 'Plus-value' : 'Moins-value'}: <strong className="font-mono">{formatCurrency(Math.abs(gainLoss))}</strong>
+            {gainLoss >= 0 ? t('assets.capitalGain') : t('assets.capitalLoss')}: <strong className="font-mono">{formatCurrency(Math.abs(gainLoss))}</strong>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Valider la cession'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : t('assets.confirmDisposal')}</Button>
           </div>
         </form>
       </div>
@@ -275,6 +274,8 @@ function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose:
 
 function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [category, setCategory] = useState('')
@@ -303,7 +304,7 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -313,35 +314,35 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle immobilisation</h2>
+          <h2 className="text-lg font-semibold">{t('assets.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Nom" required value={name} onChange={(e) => setName(e.target.value)} />
-            <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="IMMO-001" />
+            <Input label={t('assets.name')} required value={name} onChange={(e) => setName(e.target.value)} />
+            <Input label={t('assets.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="IMMO-001" />
           </div>
-          <Input label="Catégorie" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex: Matériel informatique" />
+          <Input label={t('assets.category')} value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t('assets.categoryPlaceholder')} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Date d'achat" type="date" required value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
-            <Input label="Valeur d'achat" type="number" step="0.01" required value={purchaseValue} onChange={(e) => setPurchaseValue(Number(e.target.value))} />
+            <Input label={t('assets.purchaseDate')} type="date" required value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
+            <Input label={t('assets.purchaseValue')} type="number" step="0.01" required value={purchaseValue} onChange={(e) => setPurchaseValue(Number(e.target.value))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Durée (années)" type="number" value={usefulLife} onChange={(e) => setUsefulLife(Number(e.target.value))} />
-            <Input label="Valeur résiduelle" type="number" step="0.01" value={residualValue} onChange={(e) => setResidualValue(Number(e.target.value))} />
+            <Input label={t('assets.usefulLifeYears')} type="number" value={usefulLife} onChange={(e) => setUsefulLife(Number(e.target.value))} />
+            <Input label={t('assets.residualValue')} type="number" step="0.01" value={residualValue} onChange={(e) => setResidualValue(Number(e.target.value))} />
           </div>
-          <Select label="Méthode d'amortissement" value={depMethod} onChange={(e) => setDepMethod(e.target.value)} options={[
-            { value: 'straight_line', label: 'Linéaire' },
-            { value: 'declining_balance', label: 'Dégressif' },
-            { value: 'units_of_production', label: 'Unités produites' },
+          <Select label={t('assets.depreciationMethod')} value={depMethod} onChange={(e) => setDepMethod(e.target.value)} options={[
+            { value: 'straight_line', label: t('assets.depMethods.straight_line') },
+            { value: 'declining_balance', label: t('assets.depMethods.declining_balance') },
+            { value: 'units_of_production', label: t('assets.depMethods.units_of_production') },
           ]} />
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm">
-            <span className="text-[var(--color-text-secondary)]">Valeur actuelle estimée: </span>
+            <span className="text-[var(--color-text-secondary)]">{t('assets.estimatedCurrentValue')}: </span>
             <span className="font-mono font-bold">{formatCurrency(Math.max(currentValue, residualValue))}</span>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

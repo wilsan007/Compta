@@ -127,6 +127,29 @@ EOF
   echo ""
 fi
 
+# Créer un raccourci sur le Bureau vers le dossier de données
+MIRROR_DIR="$(node -e "const p=require('path');const h=require('os').homedir();let d=require('./config.json').mirrorDir||'~/Desktop/Compta-Donnees';if(d.startsWith('~/'))d=p.join(h,d.slice(2));console.log(d)" 2>/dev/null || echo "$HOME/Desktop/Compta-Donnees")"
+SHORTCUT_PATH="$HOME/Desktop/Compta-Donnees"
+
+if [ ! -d "$MIRROR_DIR" ]; then
+  mkdir -p "$MIRROR_DIR"
+fi
+
+# Sur macOS, créer un alias (lien symbolique) sur le Bureau si pas déjà là
+if [ "$(uname)" = "Darwin" ] && [ "$MIRROR_DIR" != "$SHORTCUT_PATH" ]; then
+  if [ ! -e "$SHORTCUT_PATH" ]; then
+    ln -s "$MIRROR_DIR" "$SHORTCUT_PATH" 2>/dev/null || true
+    echo "Raccourci créé sur le Bureau: $SHORTCUT_PATH"
+  fi
+fi
+
+# Créer un raccourci vers le visualiseur HTML sur le Bureau
+HTML_SHORTCUT="$HOME/Desktop/Mes-Donnees-Compta.html"
+if [ -f "$MIRROR_DIR/index.html" ]; then
+  ln -sf "$MIRROR_DIR/index.html" "$HTML_SHORTCUT" 2>/dev/null || true
+  echo "Raccourci visualiseur créé: $HTML_SHORTCUT"
+fi
+
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║  INSTALLATION TERMINÉE                               ║"
 echo "╠══════════════════════════════════════════════════════╣"
@@ -137,8 +160,15 @@ echo "║  - À l'ouverture de session                          ║"
 echo "║  - Toutes les 5 minutes (configurable)               ║"
 echo "║  - Quand internet revient après une coupure          ║"
 echo "║                                                      ║"
-echo "║  Données synchronisées dans:                         ║"
-echo "║  $SCRIPT_DIR/mirror-data/                            ║"
+echo "║  📁 Données sur le Bureau:                           ║"
+echo "║  $MIRROR_DIR/                                        ║"
+echo "║                                                      ║"
+echo "║  🖥️  Visualiseur: double-cliquez sur                  ║"
+echo "║  Mes-Donnees-Compta.html sur le Bureau               ║"
+echo "║                                                      ║"
+echo "║  📊 Formats disponibles:                              ║"
+echo "║  - index.html (visualiseur web)                      ║"
+echo "║  - csv/ (Excel) • sql/ (PostgreSQL) • json/ (API)    ║"
 echo "║                                                      ║"
 echo "║  Logs: $SCRIPT_DIR/daemon.log                        ║"
 echo "║                                                      ║"

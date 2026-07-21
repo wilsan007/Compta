@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
@@ -11,6 +12,8 @@ import { useToast } from '@/lib/toast'
 
 export function LettragePage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
 const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
   const [unlettered, setUnlettered] = useState<any[]>([])
@@ -66,11 +69,11 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   }
 
   async function handleLettrer() {
-    if (selected.size < 2) { toast('warning', 'Attention', 'Sélectionnez au moins 2 lignes à lettrer.'); return }
+    if (selected.size < 2) { toast('warning', tCommon('common.warning'), t('lettrage.selectTwoLines')); return }
     const totalD = unlettered.filter((l) => selected.has(l.id)).reduce((s, l) => s + Number(l.debit), 0)
     const totalC = unlettered.filter((l) => selected.has(l.id)).reduce((s, l) => s + Number(l.credit), 0)
     if (Math.abs(totalD - totalC) > 0.01) {
-      toast('error', 'Écritures non équilibrées', `Débit: ${formatCurrency(totalD)}, Crédit: ${formatCurrency(totalC)}`)
+      toast('error', t('lettrage.unbalanced'), `${t('entries.debit')}: ${formatCurrency(totalD)}, ${t('entries.credit')}: ${formatCurrency(totalC)}`)
       return
     }
     try {
@@ -78,17 +81,17 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       await applyLettrage(Array.from(selected), code)
       await loadLines()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
   async function handleDelettrer(lineIds: string[]) {
-    if (!window.confirm('Délettrer ces lignes ?')) return
+    if (!window.confirm(t('lettrage.unletterConfirm'))) return
     try {
       await removeLettrage(lineIds)
       await loadLines()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
@@ -118,7 +121,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       }
     }
     if (count > 0) await loadLines()
-    toast(count > 0 ? 'success' : 'info', 'Lettrage automatique', count > 0 ? `${count} lettrage(s) automatique(s) effectué(s).` : 'Aucun lettrage automatique possible.')
+    toast(count > 0 ? 'success' : 'info', t('lettrage.autoLetter'), count > 0 ? t('lettrage.autoLetterSuccess', { count }) : t('lettrage.autoLetterNone'))
   }
 
   const filteredThirdParties = useMemo(() => {
@@ -145,8 +148,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Lettrage' }]} />
-        <PageHeader title="Lettrage" subtitle="Chargement..." />
+        <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('lettrage.title') }]} />
+        <PageHeader title={t('lettrage.title')} subtitle={t('lettrage.subtitle')} />
         <SkeletonTable rows={6} cols={6} />
       </div>
     )
@@ -154,8 +157,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Lettrage' }]} />
-      <PageHeader title="Lettrage" subtitle="Interrogation & lettrage des comptes tiers" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('lettrage.title') }]} />
+      <PageHeader title={t('lettrage.title')} subtitle={t('lettrage.subtitle')} />
 
       <div className="grid grid-cols-3 gap-4">
         {/* Left: Third party selector */}
@@ -164,18 +167,18 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
             <div className="p-4 space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
-                <input className="input pl-10" placeholder="Rechercher un tiers..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input className="input pl-10" placeholder={t('lettrage.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <select className="input cursor-pointer" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                <option value="">Tous les types</option>
-                <option value="customer">Clients</option>
-                <option value="supplier">Fournisseurs</option>
-                <option value="employee">Employés</option>
-                <option value="other">Autres</option>
+                <option value="">{t('thirdParty.allTypes')}</option>
+                <option value="customer">{t('thirdParty.customers')}</option>
+                <option value="supplier">{t('thirdParty.suppliers')}</option>
+                <option value="employee">{t('thirdParty.employees')}</option>
+                <option value="other">{t('thirdParty.others')}</option>
               </select>
               <div className="max-h-[60vh] overflow-y-auto divide-y divide-[var(--color-border)]">
                 {filteredThirdParties.length === 0 ? (
-                  <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">Aucun tiers trouvé</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] text-center py-4">{t('lettrage.noThirdParty')}</p>
                 ) : (
                   filteredThirdParties.map((tp) => (
                     <button key={tp.id} onClick={() => setSelectedTiers(tp.code)}
@@ -184,7 +187,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                       <div className="text-sm truncate">{tp.name}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant={tp.type === 'customer' ? 'success' : tp.type === 'supplier' ? 'warning' : 'neutral'}>
-                          {tp.type === 'customer' ? 'Client' : tp.type === 'supplier' ? 'Fournisseur' : tp.type}
+                          {tp.type === 'customer' ? t('thirdParty.types.customer') : tp.type === 'supplier' ? t('thirdParty.types.supplier') : tp.type}
                         </Badge>
                       </div>
                     </button>
@@ -198,8 +201,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
         {/* Right: Lines for selected third party */}
         <div className="col-span-2">
           {!selectedTiers ? (
-            <EmptyState icon={<Link2 className="w-8 h-8" />} title="Sélectionnez un compte tiers"
-              description="Choisissez un tiers dans la liste de gauche pour afficher ses écritures et procéder au lettrage." />
+            <EmptyState icon={<Link2 className="w-8 h-8" />} title={t('lettrage.selectThirdParty')}
+              description={t('lettrage.selectThirdPartyDescription')} />
           ) : loadingLines ? (
             <SkeletonTable rows={6} cols={6} />
           ) : (
@@ -211,23 +214,23 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                     <div>
                       <h3 className="font-semibold text-sm">{selectedTiersObj?.code} — {selectedTiersObj?.name}</h3>
                       <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                        {unlettered.length} ligne(s) non lettrée(s) — Solde: {formatCurrency(unletteredBalance)}
+                        {t('lettrage.unletteredCount', { count: unlettered.length, balance: formatCurrency(unletteredBalance) })}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" onClick={handleAutoLettrer} disabled={unlettered.length < 2}>
-                        <Wand2 className="w-3 h-3" /> Lettrage auto
+                        <Wand2 className="w-3 h-3" /> {t('lettrage.autoLetter')}
                       </Button>
                       <Button size="sm" onClick={handleLettrer} disabled={selected.size < 2}>
-                        <Link2 className="w-3 h-3" /> Lettrer ({selected.size})
+                        <Link2 className="w-3 h-3" /> {t('lettrage.letter')} ({selected.size})
                       </Button>
                     </div>
                   </div>
                 </div>
                 {unlettered.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">Aucune écriture non lettrée pour ce tiers.</div>
+                  <div className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('lettrage.noUnlettered')}</div>
                 ) : (
-                  <Table headers={['✓', 'Date', 'N° pièce', 'Journal', 'Libellé', 'Débit', 'Crédit']}>
+                  <Table headers={['✓', t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit')]}>
                     {unlettered.map((line) => (
                       <TableRow key={line.id}>
                         <TableCell className="w-8">
@@ -249,9 +252,9 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
               {Object.keys(letteredGroups).length > 0 && (
                 <Card>
                   <div className="p-4 border-b border-[var(--color-border)]">
-                    <h3 className="font-semibold text-sm">Écritures lettrées</h3>
+                    <h3 className="font-semibold text-sm">{t('lettrage.lettered')}</h3>
                   </div>
-                  <Table headers={['Code', 'Date', 'N° pièce', 'Journal', 'Libellé', 'Débit', 'Crédit', 'Actions']}>
+                  <Table headers={[t('lettrage.letterCode'), t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
                     {Object.entries(letteredGroups).map(([code, lines]) => (
                       <div key={code}>
                         {lines.map((line, idx) => (
@@ -266,7 +269,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                             <TableCell>
                               {idx === 0 && (
                                 <button onClick={() => handleDelettrer(lines.map((l) => l.id))}
-                                  className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title="Délettrer">
+                                  className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={t('lettrage.unletter')}>
                                   <Unlink className="w-3.5 h-3.5" />
                                 </button>
                               )}

@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries'
@@ -7,6 +8,8 @@ import type { JournalEntry } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function BrouillardPage() {
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,17 +44,17 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       await updateEntryStatusDetail(id, 'printed')
       await load()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette écriture ?')) return
+    if (!window.confirm(t('brouillard.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await load()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
     }
   }
 
@@ -66,21 +69,21 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'États' }, { label: 'Brouillard' }]} />
-      <PageHeader title="Brouillard" subtitle="Écritures non imprimées" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('brouillard.breadcrumb') }, { label: t('brouillard.title') }]} />
+      <PageHeader title={t('brouillard.title')} subtitle={t('brouillard.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-56">
           <Select
-            label="Journal"
+            label={t('brouillard.journal')}
             value={journalFilter}
             onChange={(e) => setJournalFilter(e.target.value)}
-            options={[{ value: '', label: 'Tous' }, ...journals.map((j: string) => ({ value: j, label: j }))]}
+            options={[{ value: '', label: tCommon('common.all') }, ...journals.map((j: string) => ({ value: j, label: j }))]}
           />
         </div>
         <div className="flex gap-4 ml-auto text-sm">
-          <span className="text-[var(--color-text-secondary)]">Total débit: <strong className="font-mono">{formatCurrency(totalDebit)}</strong></span>
-          <span className="text-[var(--color-text-secondary)]">Total crédit: <strong className="font-mono">{formatCurrency(totalCredit)}</strong></span>
+          <span className="text-[var(--color-text-secondary)]">{t('brouillard.totalDebit')}: <strong className="font-mono">{formatCurrency(totalDebit)}</strong></span>
+          <span className="text-[var(--color-text-secondary)]">{t('brouillard.totalCredit')}: <strong className="font-mono">{formatCurrency(totalCredit)}</strong></span>
         </div>
       </div>
 
@@ -89,12 +92,12 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<FileEdit className="w-8 h-8" />}
-          title="Aucune écriture en brouillard"
-          description="Toutes les écritures ont été imprimées ou aucune écriture n'a été saisie."
+          title={t('brouillard.noEntries')}
+          description={t('brouillard.noEntriesDescription')}
         />
       ) : (
         <Card>
-          <Table headers={['', 'N°', 'Date', 'Journal', 'Description', 'Débit', 'Crédit', 'Actions']}>
+          <Table headers={['', t('brouillard.entryNumber'), tCommon('common.date'), t('brouillard.journal'), tCommon('common.description'), t('brouillard.debit'), t('brouillard.credit'), tCommon('table.actions')]}>
             {filtered.map((entry) => (
               <Fragment key={entry.id}>
                 <TableRow onClick={() => toggle(entry.id)}>
@@ -111,10 +114,10 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Imprimer">
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('brouillard.print')}>
                         <Printer className="w-4 h-4" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title="Supprimer">
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

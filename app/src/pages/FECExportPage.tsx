@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getFiscalYears, getFECData } from '@/lib/queries'
-import { Download, FileText } from 'lucide-react'
-import type { FiscalYear } from '@/types'
+import { getFiscalYears, getFECData, getCompanySettings } from '@/lib/queries'
+import { validateFECData, generateFECFileName, downloadFEC, type FECValidationResult } from '@/lib/fecValidator'
+import { useToast } from '@/lib/toast'
+import { Download, FileText, ShieldCheck, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
+import type { FiscalYear, CompanySettings } from '@/types'
 
 function escapeFECField(value: any): string {
   if (value === null || value === undefined) return ''
@@ -50,18 +53,25 @@ function generateFECText(entries: any[]): string {
 }
 
 export function FECExportPage() {
+  const { t } = useTranslation('features')
+  const { toast } = useToast()
   const [years, setYears] = useState<FiscalYear[]>([])
+  const [company, setCompany] = useState<CompanySettings | null>(null)
   const [selectedYear, setSelectedYear] = useState('')
   const [loading, setLoading] = useState(false)
   const [entries, setEntries] = useState<any[]>([])
-  const [exported, setExported] = useState(false)
+  const [validation, setValidation] = useState<FECValidationResult | null>(null)
 
   useEffect(() => { loadYears() }, [])
 
   async function loadYears() {
     try {
-      const data = await getFiscalYears()
+      const [data, comp] = await Promise.all([
+        getFiscalYears(),
+        getCompanySettings().catch(() => null),
+      ])
       setYears(data || [])
+      setCompany(comp)
     } catch (err) {
       console.error('Error loading fiscal years:', err)
     }
@@ -70,10 +80,11 @@ export function FECExportPage() {
   async function loadFEC() {
     if (!selectedYear) return
     setLoading(true)
-    setExported(false)
+    setValidation(null)
     try {
       const data = await getFECData(selectedYear)
       setEntries(data || [])
+      setValidation(validateFECData(data || []))
     } catch (err) {
       console.error('Error loading FEC data:', err)
     } finally {
@@ -84,43 +95,35 @@ export function FECExportPage() {
   function handleExport() {
     const year = years.find((y) => y.id === selectedYear)
     const fecText = generateFECText(entries)
-    const blob = new Blob([fecText], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `FEC_${year?.code || 'exercice'}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
-    setExported(true)
+    const endYear = (year?.end_date || year?.code || '').replace(/-/g, '').substring(0, 8) || 'exercice'
+    const filename = generateFECFileName(company?.siret || company?.vat_number || '', endYear)
+    downloadFEC(fecText, filename)
+    toast('success', t('fec.exported'), t('fec.exportedDesc', { filename }))
   }
 
-  const totalLines = entries.reduce((s, e) => s + (e.journal_lines?.length || 0), 0)
-  const totalDebit = entries.reduce((s, e) =>
-    s + (e.journal_lines?.reduce((ls: number, l: any) => ls + Number(l.debit), 0) || 0), 0)
-  const totalCredit = entries.reduce((s, e) =>
-    s + (e.journal_lines?.reduce((ls: number, l: any) => ls + Number(l.credit), 0) || 0), 0)
+  const stats = validation?.stats
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'États' }, { label: 'Export FEC' }]} />
-      <PageHeader title="Export FEC" subtitle="Fichier des Écritures Comptables (DGFIP)" />
+      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'États' }, { label: t('fec.title') }]} />
+      <PageHeader title={t('fec.title')} subtitle={t('fec.subtitle')} />
 
       <Card className="mb-4">
-        <div className="p-4 flex gap-3 items-end">
+        <div className="p-4 flex gap-3 items-end flex-wrap">
           <div className="w-56">
             <Select
-              label="Exercice"
+              label={t('fec.fiscalYear')}
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              options={years.map((y) => ({ value: y.id, label: y.code }))}
+              options={[{ value: '', label: t('fec.selectYear') }, ...years.map((y) => ({ value: y.id, label: y.code }))]}
             />
           </div>
           <Button onClick={loadFEC} disabled={loading || !selectedYear}>
-            <FileText className="w-4 h-4" /> {loading ? 'Chargement...' : 'Générer'}
+            <ShieldCheck className="w-4 h-4" /> {loading ? t('fec.validating') : t('fec.validate')}
           </Button>
-          {entries.length > 0 && (
+          {entries.length > 0 && validation?.isValid && (
             <Button variant="secondary" onClick={handleExport}>
-              <Download className="w-4 h-4" /> Exporter FEC.txt
+              <Download className="w-4 h-4" /> {t('fec.export')}
             </Button>
           )}
         </div>
@@ -128,40 +131,87 @@ export function FECExportPage() {
 
       {loading ? (
         <SkeletonTable rows={4} cols={4} />
+      ) : years.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="w-8 h-8" />}
+          title={t('fec.noYears')}
+          description={t('fec.noYearsDesc')}
+        />
       ) : entries.length === 0 ? (
         <EmptyState
           icon={<FileText className="w-8 h-8" />}
-          title="Aucune donnée FEC"
-          description="Sélectionnez un exercice et cliquez sur Générer."
+          title={t('fec.noData')}
+          description={t('fec.subtitle')}
         />
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Écritures</p>
-              <p className="text-lg font-bold">{entries.length}</p>
-            </div>
-            <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Lignes</p>
-              <p className="text-lg font-bold">{totalLines}</p>
-            </div>
-            <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Total débit</p>
-              <p className="text-lg font-bold font-mono">{totalDebit.toFixed(2)}</p>
-            </div>
-            <div className="card p-4">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Total crédit</p>
-              <p className="text-lg font-bold font-mono">{totalCredit.toFixed(2)}</p>
-            </div>
-          </div>
-          {exported && (
-            <div className="p-3 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-sm text-[var(--color-success)]">
-              Fichier FEC exporté avec succès.
+          {validation && (
+            <div className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${validation.isValid ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/10 border-[var(--color-danger)]/30 text-[var(--color-danger)]'}`}>
+              {validation.isValid ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              {validation.isValid ? t('fec.valid') : t('fec.invalid')}
             </div>
           )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="card p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fec.totalEntries')}</p>
+              <p className="text-lg font-bold">{stats?.totalEntries ?? 0}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fec.totalLines')}</p>
+              <p className="text-lg font-bold">{stats?.totalLines ?? 0}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fec.totalDebit')}</p>
+              <p className="text-lg font-bold font-mono">{(stats?.totalDebit ?? 0).toFixed(2)}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fec.totalCredit')}</p>
+              <p className="text-lg font-bold font-mono">{(stats?.totalCredit ?? 0).toFixed(2)}</p>
+            </div>
+          </div>
+
+          {validation && validation.errors.length > 0 && (
+            <Card>
+              <div className="p-4">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-danger)]">
+                  <XCircle className="w-4 h-4" /> {t('fec.errors')} ({validation.errors.length})
+                </h3>
+                <div className="max-h-56 overflow-y-auto text-sm">
+                  {validation.errors.map((err, i) => (
+                    <div key={i} className="py-1.5 border-b border-[var(--color-border)] last:border-0 flex gap-2">
+                      <span className="font-mono text-xs text-[var(--color-text-secondary)] w-16 flex-shrink-0">{t('fec.line')} {err.line}</span>
+                      <span className="font-medium w-28 flex-shrink-0">{err.field}</span>
+                      <span>{err.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {validation && validation.warnings.length > 0 && (
+            <Card>
+              <div className="p-4">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-warning)]">
+                  <AlertTriangle className="w-4 h-4" /> {t('fec.warnings')} ({validation.warnings.length})
+                </h3>
+                <div className="max-h-40 overflow-y-auto text-sm">
+                  {validation.warnings.slice(0, 50).map((w, i) => (
+                    <div key={i} className="py-1.5 border-b border-[var(--color-border)] last:border-0 flex gap-2">
+                      <span className="font-mono text-xs text-[var(--color-text-secondary)] w-16 flex-shrink-0">{t('fec.line')} {w.line}</span>
+                      <span className="font-medium w-28 flex-shrink-0">{w.field}</span>
+                      <span>{w.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+
           <Card>
             <div className="p-4">
-              <h3 className="text-sm font-semibold mb-2">Aperçu (5 premières écritures)</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('fec.stats')}</h3>
               <pre className="text-xs font-mono overflow-x-auto bg-[var(--color-neutral-50)] p-3 rounded-lg max-h-96">
                 {generateFECText(entries.slice(0, 5))}
               </pre>

@@ -5,8 +5,13 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
+import { useLegislation } from '@/lib/legislation'
+import { useTranslation } from 'react-i18next'
 
 export function PurchaseCreditNotesPage() {
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
 const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -36,26 +41,26 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cet avoir ?')) return
-    try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    if (!window.confirm(t('creditNotes.deleteConfirm'))) return
+    try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Achats' }, { label: 'Avoirs fournisseurs' }]} />
+      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('creditNotes.title') }]} />
       <PageHeader
-        title="Avoirs fournisseurs"
-        subtitle="Notes de crédit reçues de vos fournisseurs"
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel avoir</Button>}
+        title={t('creditNotes.title')}
+        subtitle={t('creditNotes.subtitle')}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('creditNotes.new')}</Button>}
       />
 
       {loading ? (
         <SkeletonTable rows={4} cols={6} />
       ) : creditNotes.length === 0 ? (
-        <EmptyState icon={<Receipt className="w-8 h-8" />} title="Aucun avoir" description="Aucun avoir fournisseur enregistré." action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel avoir</Button>} />
+        <EmptyState icon={<Receipt className="w-8 h-8" />} title={t('creditNotes.noCreditNotes')} description={t('creditNotes.noCreditNotesDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('creditNotes.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={['', 'Numéro', 'Date', 'Fournisseur', 'Montant', 'Statut', 'Actions']}>
+          <Table headers={['', t('creditNotes.number'), t('creditNotes.date'), t('creditNotes.supplier'), t('creditNotes.amount'), t('creditNotes.status'), t('creditNotes.actions')]}>
             {creditNotes.map((cn) => (
               <div key={cn.id}>
                 <TableRow onClick={() => toggleExpand(cn.id)}>
@@ -66,7 +71,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                   <TableCell>{formatDate(cn.date)}</TableCell>
                   <TableCell>{cn.supplier_name || 'N/A'}</TableCell>
                   <TableCell className="font-mono text-[var(--color-success)] text-right">{formatCurrency(Number(cn.total))}</TableCell>
-                  <TableCell><Badge variant={cn.status === 'applied' ? 'success' : 'warning'}>{cn.status === 'applied' ? 'Appliqué' : 'Brouillon'}</Badge></TableCell>
+                  <TableCell><Badge variant={cn.status === 'applied' ? 'success' : 'warning'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
                   <TableCell>
                     <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                       <Trash2 className="w-4 h-4" />
@@ -82,7 +87,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                   </tr>
                 ))}
                 {cn.reason && (
-                  <tr className="bg-[var(--color-neutral-50)]"><TableCell /><TableCell colSpan={6} className="text-xs italic text-[var(--color-text-secondary)]">Motif: {cn.reason}</TableCell></tr>
+                  <tr className="bg-[var(--color-neutral-50)]"><TableCell /><TableCell colSpan={6} className="text-xs italic text-[var(--color-text-secondary)]">{t('creditNotes.reasonLabel')}: {cn.reason}</TableCell></tr>
                 )}
               </div>
             ))}
@@ -98,13 +103,16 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
 }
 
 function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { suppliers: Supplier[]; invoices: PurchaseInvoice[]; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('purchases')
+  const { t: tCommon } = useTranslation('common')
   const [number, setNumber] = useState('AVF-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
   const { toast } = useToast()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [supplierId, setSupplierId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [reason, setReason] = useState('')
-  const [lines, setLines] = useState([{ description: '', quantity: 1, unit_price: 0, vat_rate: 20, total: 0, vat_total: 0 }])
+  const { defaultVatRate } = useLegislation()
+  const [lines, setLines] = useState([{ description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 }])
   const [saving, setSaving] = useState(false)
 
   const subtotal = lines.reduce((s, l) => s + l.total, 0)
@@ -140,28 +148,28 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
         })),
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') } finally { setSaving(false) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvel avoir fournisseur</h2>
+          <h2 className="text-lg font-semibold">{t('creditNotes.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Numéro" required value={number} onChange={(e) => setNumber(e.target.value)} />
-            <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input label={t('creditNotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Fournisseur" required value={supplierId} onChange={(e) => { setSupplierId(e.target.value); setInvoiceId('') }} options={[
-              { value: '', label: 'Sélectionner' },
+            <Select label={t('creditNotes.supplier')} required value={supplierId} onChange={(e) => { setSupplierId(e.target.value); setInvoiceId('') }} options={[
+              { value: '', label: tCommon('form.selectPlaceholder') },
               ...suppliers.map(s => ({ value: s.id, label: s.name })),
             ]} />
-            <Select label="Facture liée (optionnel)" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} options={[
-              { value: '', label: 'Aucune' },
+            <Select label={t('creditNotes.linkedInvoiceOptional')} value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} options={[
+              { value: '', label: t('creditNotes.none') },
               ...supplierInvoices.map(i => ({ value: i.id, label: `${i.number} - ${formatCurrency(Number(i.total))}` })),
             ]} />
           </div>
@@ -169,18 +177,18 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
             <table className="app-table min-w-[760px]">
               <thead className="bg-[var(--color-neutral-50)]">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold">Description</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">Qté</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">Prix unit.</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">TVA%</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">Total</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('creditNotes.total')}</th>
                   <th className="w-8"></th>
                 </tr>
               </thead>
               <tbody>
                 {lines.map((line, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
-                    <td className="px-3 py-2"><input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder="Description" /></td>
+                    <td className="px-3 py-2"><input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder={t('invoices.description')} /></td>
                     <td className="px-3 py-2"><input type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
                     <td className="px-3 py-2"><input type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
                     <td className="px-3 py-2"><input type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
@@ -190,17 +198,17 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
                 ))}
               </tbody>
             </table>
-            <button type="button" onClick={() => setLines(prev => [...prev, { description: '', quantity: 1, unit_price: 0, vat_rate: 20, total: 0, vat_total: 0 }])} className="w-full py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-neutral-50)] border-t border-[var(--color-border)]">+ Ajouter une ligne</button>
+            <button type="button" onClick={() => setLines(prev => [...prev, { description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 }])} className="w-full py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-neutral-50)] border-t border-[var(--color-border)]">+ {t('invoices.addLine')}</button>
           </div>
           <div className="flex justify-end gap-6 text-sm">
-            <div><span className="text-[var(--color-text-secondary)]">Sous-total: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>
-            <div><span className="text-[var(--color-text-secondary)]">TVA: </span><span className="font-mono font-semibold">{formatCurrency(vatTotal)}</span></div>
-            <div><span className="text-[var(--color-text-secondary)]">Total: </span><span className="font-mono font-bold text-base">{formatCurrency(total)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('creditNotes.subtotal')}: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('creditNotes.vat')}: </span><span className="font-mono font-semibold">{formatCurrency(vatTotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('creditNotes.total')}: </span><span className="font-mono font-bold text-base">{formatCurrency(total)}</span></div>
           </div>
-          <Input label="Motif" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Raison de l'avoir" />
+          <Input label={t('creditNotes.reasonLabel')} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('creditNotes.reason')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

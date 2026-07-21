@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPaySlips, getPayRuns, getEmployees, generatePaySlipsForRun, updatePaySlip, deletePaySlip } from '@/lib/queries'
@@ -10,6 +11,9 @@ const statusLabels: Record<string, string> = { draft: 'Brouillon', approved: 'Ap
 
 export function PaySlipsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('hr')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
 const [slips, setSlips] = useState<any[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -37,20 +41,20 @@ const [slips, setSlips] = useState<any[]>([])
     try {
       await generatePaySlipsForRun(runId, employees, run)
       await loadData()
-      toast('success', 'Succès', 'Bulletins générés avec succès')
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+      toast('success', tCommon('common.success'), t('paySlips.title'))
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setGenerating(false) }
   }
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaySlip(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer ce bulletin ?')) return
+    if (!window.confirm(tCommon('form.confirmDelete'))) return
     try { await deletePaySlip(id); await loadData() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   function toggleExpand(id: string) {
@@ -69,19 +73,19 @@ const [slips, setSlips] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Paie & RH' }, { label: 'Bulletins de paie' }]} />
-      <PageHeader title="Bulletins de paie" subtitle={`${slips.length} bulletin(s)`} />
+      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('paySlips.title') }]} />
+      <PageHeader title={t('paySlips.title')} subtitle={t('paySlips.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-64">
-          <Select label="Campagne de paie" value={runFilter} onChange={(e) => setRunFilter(e.target.value)} options={[
-            { value: '', label: 'Toutes' }, ...payRuns.map((r) => ({ value: r.id, label: r.number })),
+          <Select label={t('payRuns.title')} value={runFilter} onChange={(e) => setRunFilter(e.target.value)} options={[
+            { value: '', label: tCommon('table.all') }, ...payRuns.map((r) => ({ value: r.id, label: r.number })),
           ]} />
         </div>
       </div>
 
       {loading ? <SkeletonTable rows={6} cols={6} /> : slips.length === 0 ? (
-        <EmptyState icon={<FileText className="w-8 h-8" />} title="Aucun bulletin" description="Générez les bulletins depuis une campagne de paie." />
+        <EmptyState icon={<FileText className="w-8 h-8" />} title={t('paySlips.noPaySlips')} description={t('paySlips.noPaySlipsDescription')} />
       ) : (
         <div className="space-y-4">
           {(Object.entries(grouped) as any[]).map(([runId, runSlips]: [string, any[]]) => {
@@ -94,20 +98,20 @@ const [slips, setSlips] = useState<any[]>([])
                     <button onClick={() => toggleExpand(runId)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
-                    <span className="font-semibold">{run?.number || 'Sans campagne'}</span>
-                    <span className="text-xs text-[var(--color-text-secondary)]">{runSlips.length} bulletin(s)</span>
+                    <span className="font-semibold">{run?.number || t('paySlips.title')}</span>
+                    <span className="text-xs text-[var(--color-text-secondary)]">{runSlips.length} {t('paySlips.title').toLowerCase()}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono">{formatCurrency(runSlips.reduce((s, sl) => s + Number(sl.net_salary), 0))}</span>
                     {run && runSlips.length === 0 && (
                       <Button size="sm" onClick={() => handleGenerate(run.id)} disabled={generating}>
-                        <Sparkles className="w-3.5 h-3.5" /> {generating ? '...' : 'Générer'}
+                        <Sparkles className="w-3.5 h-3.5" /> {generating ? '...' : t('payRuns.generate')}
                       </Button>
                     )}
                   </div>
                 </div>
                 {isExpanded && (
-                  <Table headers={['N°', 'Employé', 'Période', 'Brut', 'Cotisations', 'Net', 'Statut', 'Actions']}>
+                  <Table headers={[t('payRuns.number'), t('paySlips.employee'), t('paySlips.period'), t('paySlips.grossSalary'), t('paySlips.deductions'), t('paySlips.netSalary'), t('paySlips.status'), tCommon('table.actions')]}>
                     {runSlips.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell className="font-mono text-xs">{s.number}</TableCell>
@@ -119,7 +123,7 @@ const [slips, setSlips] = useState<any[]>([])
                         <TableCell>
                           <select value={s.status} onChange={(e) => handleStatusChange(s.id, e.target.value)}
                             className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                            {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`paySlips.statuses.${k}`) || statusLabels[k]}</option>)}
                           </select>
                         </TableCell>
                         <TableCell>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import {
   getFiscalYears, getJournalPeriodStatus,
@@ -20,6 +21,8 @@ interface ClosureEntry {
 
 export function JournalClosurePage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
 const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
   const [journals, setJournals] = useState<Journal[]>([])
@@ -85,33 +88,33 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   async function handleCloseJournal(journalCode: string, periodId: string) {
   const cell = getCellStatus(journalCode, periodId)
     if (cell.entryCount === 0) {
-      toast('info', 'Information', 'Aucune écriture à clôturer pour ce journal et cette période.')
+      toast('info', tCommon('toast.info'), t('closure.noEntriesToClose'))
       return
     }
     if (!cell.balanced) {
-      toast('info', 'Information', 'Les écritures ne sont pas équilibrées. Impossible de clôturer.')
+      toast('info', tCommon('toast.info'), t('closure.entriesNotBalanced'))
       return
     }
-    if (!confirm(`Clôturer le journal ${journalCode} pour cette période ? La saisie sera bloquée.`)) return
+    if (!confirm(t('closure.closeJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await closeJournalPeriod(journalCode, periodId)
       await loadMatrix()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
   }
 
   async function handleReopenJournal(journalCode: string, periodId: string) {
-    if (!confirm(`Réouvrir le journal ${journalCode} pour cette période ?`)) return
+    if (!confirm(t('closure.reopenJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await reopenJournalPeriod(journalCode, periodId)
       await loadMatrix()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -123,29 +126,29 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
     const periodEntries = entries.filter((e) => e.fiscal_period_id === periodId)
     const allClosed = periodEntries.length > 0 && periodEntries.every((e) => e.status_detail === 'closed')
     if (periodEntries.length > 0 && !allClosed) {
-      toast('info', 'Information', 'Tous les journaux doivent être clôturés avant de clôturer la période.')
+      toast('info', tCommon('toast.info'), t('closure.allJournalsMustBeClosed'))
       return
     }
-    if (!confirm(`Clôturer la période ${period.period_label} ? La saisie sera bloquée pour tous les journaux.`)) return
+    if (!confirm(t('closure.closePeriodConfirm', { label: period.period_label }))) return
     setActionLoading(`period-${periodId}`)
     try {
       await closeFiscalPeriod(periodId)
       await loadMatrix()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
   }
 
   async function handleReopenPeriod(periodId: string) {
-    if (!window.confirm('Réouvrir cette période ?')) return
+    if (!window.confirm(t('closure.reopenPeriodConfirm'))) return
     setActionLoading(`period-${periodId}`)
     try {
       await reopenFiscalPeriod(periodId)
       await loadMatrix()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -156,8 +159,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Clôture des journaux' }]} />
-        <PageHeader title="Clôture des journaux" subtitle="Chargement..." />
+        <Breadcrumb items={[{ label: t('closure.title') }]} />
+        <PageHeader title={t('closure.title')} subtitle={tCommon('common.loading')} />
         <SkeletonTable rows={6} cols={6} />
       </div>
     )
@@ -165,16 +168,16 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Clôture des journaux' }]} />
+      <Breadcrumb items={[{ label: t('closure.title') }]} />
       <PageHeader
-        title="Clôture des journaux"
-        subtitle="Gestion des clôtures par journal et par période"
+        title={t('closure.title')}
+        subtitle={t('closure.subtitle')}
       />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-56">
           <Select
-            label="Exercice"
+            label={t('closure.fiscalYear')}
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             options={fiscalYears.map((y) => ({ value: y.id, label: y.code }))}
@@ -182,7 +185,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
         </div>
         {selectedYearObj && (
           <Badge variant={selectedYearObj.status === 'open' ? 'success' : 'danger'}>
-            {selectedYearObj.status === 'open' ? 'Exercice ouvert' : 'Exercice clôturé'}
+            {selectedYearObj.status === 'open' ? t('closure.yearOpen') : t('closure.yearClosed')}
           </Badge>
         )}
       </div>
@@ -190,8 +193,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       {!selectedYear || journals.length === 0 ? (
         <EmptyState
           icon={<Lock className="w-8 h-8" />}
-          title="Aucune donnée"
-          description="Sélectionnez un exercice ou créez des journaux et périodes."
+          title={t('closure.noData')}
+          description={t('closure.noDataDescription')}
         />
       ) : loadingMatrix ? (
         <SkeletonTable rows={6} cols={8} />
@@ -200,20 +203,20 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
           {/* Period status bar */}
           <Card>
             <div className="p-4">
-              <h3 className="text-sm font-semibold mb-3">Statut des périodes</h3>
+              <h3 className="text-sm font-semibold mb-3">{t('closure.periodStatus')}</h3>
               <div className="flex flex-wrap gap-2">
                 {periods.map((period) => (
                   <div key={period.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border)]">
                     <span className="text-sm font-medium">{period.period_label}</span>
                     <Badge variant={period.status === 'open' ? 'success' : 'danger'}>
-                      {period.status === 'open' ? 'Ouverte' : 'Clôturée'}
+                      {period.status === 'open' ? t('closure.open') : t('closure.closed')}
                     </Badge>
                     {period.status === 'open' ? (
                       <button
                         onClick={() => handleClosePeriod(period.id)}
                         disabled={actionLoading === `period-${period.id}`}
                         className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
-                        title="Clôturer la période"
+                        title={t('closure.closePeriod')}
                       >
                         <Lock className="w-3.5 h-3.5" />
                       </button>
@@ -222,7 +225,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
                         onClick={() => handleReopenPeriod(period.id)}
                         disabled={actionLoading === `period-${period.id}`}
                         className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]"
-                        title="Réouvrir la période"
+                        title={t('closure.reopenPeriod')}
                       >
                         <Unlock className="w-3.5 h-3.5" />
                       </button>
@@ -240,7 +243,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
                 <thead>
                   <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                     <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2 sticky left-0 bg-[var(--color-neutral-50)]">
-                      Journal
+                      {t('closure.journal')}
                     </th>
                     {periods.map((p) => (
                       <th key={p.id} className="text-center text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 min-w-[100px]">
@@ -268,14 +271,14 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
                             ) : (
                               <div className="flex flex-col items-center gap-1">
                                 <Badge variant={isClosed ? 'danger' : 'success'}>
-                                  {isClosed ? 'Clôturé' : 'Ouvert'}
+                                  {isClosed ? t('closure.closed') : t('closure.open')}
                                 </Badge>
                                 {!cell.balanced && (
-                                  <span title="Écritures non équilibrées">
+                                  <span title={t('closure.entriesNotBalanced')}>
                                     <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)]" />
                                   </span>
                                 )}
-                                <span className="text-xs text-[var(--color-text-secondary)]">{cell.entryCount} écr.</span>
+                                <span className="text-xs text-[var(--color-text-secondary)]">{cell.entryCount} {t('closure.entries')}</span>
                                 {!periodClosed && (
                                   <button
                                     onClick={() => isClosed
@@ -283,7 +286,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
                                       : handleCloseJournal(journal.code, period.id)}
                                     disabled={actionLoading === cellKey}
                                     className={`p-1 rounded hover:bg-[var(--color-neutral-100)] ${isClosed ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}
-                                    title={isClosed ? 'Réouvrir' : 'Clôturer'}
+                                    title={isClosed ? t('closure.reopen') : t('closure.close')}
                                   >
                                     {isClosed ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                                   </button>
@@ -303,22 +306,22 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
           {/* Summary */}
           <Card>
             <div className="p-4">
-              <h3 className="text-sm font-semibold mb-3">Résumé</h3>
+              <h3 className="text-sm font-semibold mb-3">{tCommon('common.summary')}</h3>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Journaux actifs</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('closure.activeJournals')}</p>
                   <p className="text-lg font-semibold">{journals.length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Périodes</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('closure.periods')}</p>
                   <p className="text-lg font-semibold">{periods.length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Écritures total</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('closure.totalEntries')}</p>
                   <p className="text-lg font-semibold">{entries.length}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Écritures clôturées</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('closure.closedEntries')}</p>
                   <p className="text-lg font-semibold">{entries.filter((e) => e.status_detail === 'closed').length}</p>
                 </div>
               </div>

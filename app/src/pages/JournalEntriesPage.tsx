@@ -1,15 +1,11 @@
 import { Fragment, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-
-const statusLabels: Record<string, string> = {
-  draft: 'Brouillon',
-  posted: 'Validé',
-}
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -18,6 +14,8 @@ const statusBadge: Record<string, 'warning' | 'success'> = {
 
 export function JournalEntriesPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
 const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,12 +51,12 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette écriture ?')) return
+    if (!window.confirm(t('entries.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await loadData()
     } catch (err) {
-      toast('error', 'Erreur', 'Erreur lors de la suppression')
+      toast('error', tCommon('toast.error'), t('entries.deleteError'))
     }
   }
 
@@ -67,11 +65,11 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Journaux' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('entries.title') }]} />
       <PageHeader
-        title="Saisie & Journaux"
-        subtitle={`${entries.length} écriture(s) — Total débit: ${formatCurrency(totalDebit)} | Total crédit: ${formatCurrency(totalCredit)}`}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle écriture</Button>}
+        title={t('entries.title')}
+        subtitle={t('entries.subtitleCount', { count: entries.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
       />
 
       {loading ? (
@@ -79,13 +77,13 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       ) : entries.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="w-8 h-8" />}
-          title="Aucune écriture"
-          description="Saisissez votre première écriture comptable."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle écriture</Button>}
+          title={t('entries.noEntries')}
+          description={t('entries.noEntriesDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['', 'Numéro', 'Date', 'Description', 'Statut', 'Débit', 'Crédit', 'Actions']}>
+          <Table headers={['', t('entries.number'), t('entries.date'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
             {entries.map((entry) => (
               <Fragment key={entry.id}>
                 <TableRow onClick={() => toggleExpand(entry.id)}>
@@ -97,7 +95,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="font-mono font-semibold">{entry.number}</TableCell>
                   <TableCell>{formatDate(entry.date)}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.description}</TableCell>
-                  <TableCell><Badge variant={statusBadge[entry.status]}>{statusLabels[entry.status]}</Badge></TableCell>
+                  <TableCell><Badge variant={statusBadge[entry.status]}>{t(`entries.statusLabels.${entry.status}`)}</Badge></TableCell>
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>
@@ -145,8 +143,10 @@ interface LineDraft {
 }
 
 function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[]; onClose: () => void; onSaved: () => void }) {
-  const [number, setNumber] = useState(`JE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`)
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const [number, setNumber] = useState(`JE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`)
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [reference, setReference] = useState('')
@@ -183,7 +183,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!isBalanced) {
-      toast('info', 'Information', 'Les écritures ne sont pas équilibrées. Débit et crédit doivent être égaux.')
+      toast('info', tCommon('common.info'), t('saisie.notBalanced'))
       return
     }
     setSaving(true)
@@ -209,7 +209,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -219,25 +219,25 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle écriture comptable</h2>
+          <h2 className="text-lg font-semibold">{t('entries.newEntryTitle')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <Input label="Numéro" required value={number} onChange={(e) => setNumber(e.target.value)} />
-            <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-            <Input label="Référence" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Optionnel" />
+            <Input label={t('entries.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('entries.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input label={t('entries.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t('entries.referenceOptional')} />
           </div>
-          <Input label="Description" required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Objet de l'écriture" />
+          <Input label={t('entries.description')} required value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('entries.entryObject')} />
 
           <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
             <table className="app-table min-w-[760px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2">Compte</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2">Libellé ligne</th>
-                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2 w-32">Débit</th>
-                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2 w-32">Crédit</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2">{t('entries.account')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2">{t('entries.lineLabel')}</th>
+                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2 w-32">{t('entries.debit')}</th>
+                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-3 py-2 w-32">{t('entries.credit')}</th>
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -250,7 +250,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                         value={line.account_code}
                         onChange={(e) => updateLine(idx, 'account_code', e.target.value)}
                       >
-                        <option value="">— Sélectionner —</option>
+                        <option value="">{t('entries.selectAccount')}</option>
                         {accounts.map((a) => (
                           <option key={a.id} value={a.code}>{a.code} — {a.name}</option>
                         ))}
@@ -261,7 +261,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                         className="input text-sm py-1"
                         value={line.description}
                         onChange={(e) => updateLine(idx, 'description', e.target.value)}
-                        placeholder="Libellé"
+                        placeholder={t('entries.description')}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -296,7 +296,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={2} className="px-3 py-2">
                     <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Ajouter une ligne
+                      <Plus className="w-3 h-3" /> {t('entries.addLine')}
                     </button>
                   </td>
                   <td className="px-3 py-2 text-right font-mono font-semibold text-sm">{formatCurrency(totalDebit)}</td>
@@ -306,13 +306,13 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                 <tr className="bg-[var(--color-neutral-50)]">
                   <td colSpan={2} className="px-3 py-2 text-sm font-medium">
                     {isBalanced ? (
-                      <span className="text-[var(--color-success)]">✓ Écriture équilibrée</span>
+                      <span className="text-[var(--color-success)]">✓ {t('entries.balanced')}</span>
                     ) : (
                       <span className="text-[var(--color-danger)]">Δ {formatCurrency(Math.abs(totalDebit - totalCredit))}</span>
                     )}
                   </td>
                   <td colSpan={3} className="px-3 py-2 text-right text-sm text-[var(--color-text-secondary)]">
-                    Différence: {formatCurrency(totalDebit - totalCredit)}
+                    {t('entries.difference')}: {formatCurrency(totalDebit - totalCredit)}
                   </td>
                 </tr>
               </tfoot>
@@ -320,8 +320,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving || !isBalanced}>{saving ? 'Enregistrement...' : 'Enregistrer l\'écriture'}</Button>
+            <Button variant="secondary" onClick={onClose}>{t('entries.cancel')}</Button>
+            <Button type="submit" disabled={saving || !isBalanced}>{saving ? t('entries.saving') : t('entries.save')}</Button>
           </div>
         </form>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
@@ -10,15 +11,6 @@ import { Wallet, CheckSquare, Square, Landmark } from 'lucide-react'
 import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount } from '@/types'
 
 type TiersType = 'customer' | 'supplier'
-
-const methodOptions = [
-  { value: 'transfer', label: 'Virement' },
-  { value: 'check', label: 'Chèque' },
-  { value: 'cash', label: 'Espèces' },
-  { value: 'card', label: 'Carte' },
-  { value: 'direct_debit', label: 'Prélèvement' },
-  { value: 'other', label: 'Autre' },
-]
 
 interface SelectableInvoice {
   id: string
@@ -32,6 +24,8 @@ interface SelectableInvoice {
 
 export function PaymentGenerationPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [tiersType, setTiersType] = useState<TiersType>('supplier')
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [banks, setBanks] = useState<BankAccount[]>([])
@@ -149,7 +143,7 @@ export function PaymentGenerationPage() {
 
   async function handleGenerate() {
     if (selectedRows.length === 0) {
-      toast('warning', 'Sélection requise', 'Sélectionnez au moins une facture à régler.')
+      toast('warning', t('paymentGeneration.selectionRequired'), t('paymentGeneration.selectAtLeastOne'))
       return
     }
     setGenerating(true)
@@ -194,10 +188,10 @@ export function PaymentGenerationPage() {
           } as any)
         }
       }
-      toast('success', 'Règlements générés', `${selectedRows.length} règlement(s) généré(s) avec succès.`)
+      toast('success', t('paymentGeneration.generated'), t('paymentGeneration.generatedDesc', { count: selectedRows.length }))
       await handleSearch()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec de la génération')
+      toast('error', tCommon('error'), err.message || t('paymentGeneration.generateError'))
     } finally {
       setGenerating(false)
     }
@@ -207,45 +201,52 @@ export function PaymentGenerationPage() {
     <div>
       <AutoBreadcrumb />
       <PageHeader
-        title="Génération des règlements"
-        subtitle="Sélection multi-critères et règlement groupé des factures tiers"
+        title={t('paymentGeneration.title')}
+        subtitle={t('paymentGeneration.subtitle')}
       />
 
       <Card className="mb-4">
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-4 gap-3">
             <Select
-              label="Type de tiers"
+              label={t('paymentGeneration.tiersType')}
               value={tiersType}
               onChange={(e) => { setTiersType(e.target.value as TiersType); setTiersFilter(''); setHasSearched(false); setSelected(new Set()) }}
               options={[
-                { value: 'supplier', label: 'Fournisseurs' },
-                { value: 'customer', label: 'Clients' },
+                { value: 'supplier', label: t('paymentGeneration.suppliers') },
+                { value: 'customer', label: t('paymentGeneration.customers') },
               ]}
             />
-            <Input label="Date d'écriture du" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-            <Input label="à" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input label={t('paymentGeneration.dateFrom')} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input label={t('paymentGeneration.dateTo')} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Compte tiers</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">{t('paymentGeneration.thirdParty')}</label>
               <select className="input cursor-pointer" value={tiersFilter} onChange={(e) => setTiersFilter(e.target.value)}>
-                <option value="">Tous</option>
+                <option value="">{t('paymentGeneration.all')}</option>
                 {tiersOptions.map((t) => <option key={t.id} value={t.id}>{t.code} — {t.name}</option>)}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <Select label="Mode de règlement" value={method} onChange={(e) => setMethod(e.target.value)} options={methodOptions} />
+            <Select label={t('paymentGeneration.method')} value={method} onChange={(e) => setMethod(e.target.value)} options={[
+              { value: 'transfer', label: t('paymentGeneration.methods.transfer') },
+              { value: 'check', label: t('paymentGeneration.methods.check') },
+              { value: 'cash', label: t('paymentGeneration.methods.cash') },
+              { value: 'card', label: t('paymentGeneration.methods.card') },
+              { value: 'direct_debit', label: t('paymentGeneration.methods.direct_debit') },
+              { value: 'other', label: t('paymentGeneration.methods.other') },
+            ]} />
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Compte bancaire</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">{t('paymentGeneration.bankAccount')}</label>
               <select className="input cursor-pointer" value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}>
-                <option value="">— Sélectionner —</option>
+                <option value="">{t('paymentGeneration.selectPlaceholder')}</option>
                 {banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
-            <Input label="Date de règlement" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+            <Input label={t('paymentGeneration.paymentDate')} type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
             <div className="flex items-end">
               <Button onClick={handleSearch} loading={loading} className="w-full">
-                Rechercher les factures à régler
+                {t('paymentGeneration.search')}
               </Button>
             </div>
           </div>
@@ -256,10 +257,10 @@ export function PaymentGenerationPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              {rows.length} facture(s) éligible(s) — {selectedRows.length} sélectionnée(s) — Total : <strong className="font-mono">{formatCurrency(totalSelected)}</strong>
+              {t('paymentGeneration.eligible', { count: rows.length, selected: selectedRows.length, total: formatCurrency(totalSelected) })}
             </p>
             <Button onClick={handleGenerate} loading={generating} disabled={selectedRows.length === 0}>
-              <Wallet className="w-4 h-4" /> Générer {selectedRows.length || ''} règlement(s)
+              <Wallet className="w-4 h-4" /> {t('paymentGeneration.generateN', { count: selectedRows.length || '' })}
             </Button>
           </div>
 
@@ -268,17 +269,17 @@ export function PaymentGenerationPage() {
           ) : rows.length === 0 ? (
             <EmptyState
               icon={<Landmark className="w-8 h-8" />}
-              title="Aucune facture à régler"
-              description="Aucune facture ouverte ne correspond à ces critères de sélection."
+              title={t('paymentGeneration.noInvoices')}
+              description={t('paymentGeneration.noInvoicesDescription')}
             />
           ) : (
             <Card>
-              <Table headers={['', 'N° facture', 'Tiers', 'Date', 'Échéance', 'Reste à payer']}>
+              <Table headers={['', t('paymentGeneration.invoiceNumber'), t('paymentGeneration.tiers'), t('paymentGeneration.date'), t('paymentGeneration.dueDate'), t('paymentGeneration.amountDue')]}>
                 <TableRow onClick={toggleSelectAll}>
                   <TableCell className="w-8">
                     {selected.size === rows.length ? <CheckSquare className="w-4 h-4 text-[var(--color-primary)]" /> : <Square className="w-4 h-4 text-[var(--color-text-secondary)]" />}
                   </TableCell>
-                  <TableCell colSpan={5} className="text-xs text-[var(--color-text-secondary)] uppercase">Tout sélectionner</TableCell>
+                  <TableCell colSpan={5} className="text-xs text-[var(--color-text-secondary)] uppercase">{t('paymentGeneration.selectAllLabel')}</TableCell>
                 </TableRow>
                 {rows.map((r) => (
                   <TableRow key={r.id} onClick={() => toggleSelect(r.id)}>
@@ -291,7 +292,7 @@ export function PaymentGenerationPage() {
                     <TableCell className="text-xs">
                       {formatDate(r.dueDate)}
                       {r.dueDate && r.dueDate < new Date().toISOString().slice(0, 10) && (
-                        <Badge variant="danger">Échu</Badge>
+                        <Badge variant="danger">{t('paymentGeneration.overdue')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-right">{formatCurrency(r.amountDue)}</TableCell>

@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area,
 } from 'recharts'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface Stats {
   totalRevenue: number
@@ -46,6 +47,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 }
 
 export function DashboardPage() {
+  const { t } = useTranslation('common')
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [bankAccounts, setBankAccounts] = useState<any[]>([])
@@ -72,7 +74,7 @@ export function DashboardPage() {
         setActivities(activity)
       } catch (err) {
         console.error('Error loading dashboard:', err)
-        toast('info', 'Données de démonstration', 'Connectez votre base Supabase pour voir vos données réelles')
+        toast('info', t('dashboard.demoDataTitle'), t('dashboard.demoDataDesc'))
       } finally {
         setLoading(false)
         setTimeout(() => setAnimateKpis(true), 100)
@@ -85,18 +87,18 @@ export function DashboardPage() {
   const cashFlowData = chartData.cashFlow
 
   const statusMap: Record<string, { variant: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'; label: string }> = {
-    draft: { variant: 'neutral', label: 'Brouillon' },
-    sent: { variant: 'primary', label: 'Envoyée' },
-    viewed: { variant: 'primary', label: 'Vue' },
-    paid: { variant: 'success', label: 'Payée' },
-    overdue: { variant: 'danger', label: 'En retard' },
-    cancelled: { variant: 'neutral', label: 'Annulée' },
+    draft: { variant: 'neutral', label: t('status.draft') },
+    sent: { variant: 'primary', label: t('status.sent') },
+    viewed: { variant: 'primary', label: t('status.viewed') },
+    paid: { variant: 'success', label: t('status.paid') },
+    overdue: { variant: 'danger', label: t('status.overdue') },
+    cancelled: { variant: 'neutral', label: t('status.cancelled') },
   }
 
   if (loading) {
     return (
       <div>
-        <PageHeader title="Tableau de bord" subtitle="Vue d'ensemble de votre activité" />
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="card p-6 animate-pulse">
@@ -112,15 +114,15 @@ export function DashboardPage() {
   return (
     <div className="animate-fade-in">
       <PageHeader
-        title="Tableau de bord"
-        subtitle="Vue d'ensemble de votre activité"
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle')}
         action={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => toast('info', 'Export en cours', 'Le rapport sera téléchargé sous peu')}>
-              <Activity className="w-4 h-4" /> Exporter
+          <div className="flex flex-row items-center gap-2">
+            <Button variant="secondary" onClick={() => toast('info', t('dashboard.exporting'), t('dashboard.exportingDesc'))}>
+              <Activity className="w-4 h-4" /> {t('dashboard.export')}
             </Button>
-            <Button variant="primary" onClick={() => toast('success', 'Facture créée', 'Redirection vers le formulaire...')}>
-              <FileText className="w-4 h-4" /> Nouvelle facture
+            <Button variant="primary" onClick={() => toast('success', t('dashboard.invoiceCreated'), t('dashboard.invoiceCreatedDesc'))}>
+              <FileText className="w-4 h-4" /> {t('dashboard.newInvoice')}
             </Button>
           </div>
         }
@@ -130,7 +132,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className={cn('transition-all duration-500', animateKpis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4')}>
           <StatCard
-            label="Solde bancaire"
+            label={t('dashboard.bankBalance')}
             value={formatCurrency(stats?.bankBalance || 0)}
             icon={<Wallet className="w-5 h-5" />}
             color="primary"
@@ -138,7 +140,7 @@ export function DashboardPage() {
         </div>
         <div className={cn('transition-all duration-500 delay-75', animateKpis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4')}>
           <StatCard
-            label="Revenus totaux"
+            label={t('dashboard.totalRevenue')}
             value={formatCurrency(stats?.totalRevenue || 0)}
             icon={<TrendingUp className="w-5 h-5" />}
             color="success"
@@ -146,7 +148,7 @@ export function DashboardPage() {
         </div>
         <div className={cn('transition-all duration-500 delay-150', animateKpis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4')}>
           <StatCard
-            label="Créances en attente"
+            label={t('dashboard.outstandingInvoices')}
             value={formatCurrency(stats?.outstandingInvoice || 0)}
             icon={<AlertCircle className="w-5 h-5" />}
             color="warning"
@@ -154,7 +156,7 @@ export function DashboardPage() {
         </div>
         <div className={cn('transition-all duration-500 delay-200', animateKpis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4')}>
           <StatCard
-            label="Dettes fournisseurs"
+            label={t('dashboard.outstandingBills')}
             value={formatCurrency(stats?.outstandingBills || 0)}
             icon={<ArrowDownCircle className="w-5 h-5" />}
             color="danger"
@@ -165,7 +167,7 @@ export function DashboardPage() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Revenue vs Expenses - Area Chart */}
-        <Card title="Revenus vs Dépenses" subtitle={`${new Date().getFullYear()} - année en cours`} className="lg:col-span-2">
+        <Card title={t('dashboard.revenueVsExpenses')} subtitle={`${new Date().getFullYear()} - ${t('dashboard.currentYear')}`} className="lg:col-span-2">
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={monthlyData}>
               <defs>
@@ -190,14 +192,14 @@ export function DashboardPage() {
                 }}
                 formatter={(value: number) => formatCurrency(value)}
               />
-              <Area type="monotone" dataKey="revenus" stroke="var(--color-primary)" strokeWidth={2} fill="url(#colorRevenus)" name="Revenus" />
-              <Area type="monotone" dataKey="depenses" stroke="var(--color-neutral-400)" strokeWidth={2} fill="url(#colorDepenses)" name="Dépenses" />
+              <Area type="monotone" dataKey="revenus" stroke="var(--color-primary)" strokeWidth={2} fill="url(#colorRevenus)" name={t('dashboard.revenue')} />
+              <Area type="monotone" dataKey="depenses" stroke="var(--color-neutral-400)" strokeWidth={2} fill="url(#colorDepenses)" name={t('dashboard.expenses')} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
 
         {/* Cash Flow Pie */}
-        <Card title="Flux de trésorerie" subtitle="Cette année">
+        <Card title={t('dashboard.cashFlow')} subtitle={t('dashboard.thisYear')}>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={cashFlowData} cx="50%" cy="50%" outerRadius={70} dataKey="value">
@@ -226,8 +228,8 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {/* Activity Feed */}
         <Card
-          title="Activité récente"
-          subtitle="Dernières actions"
+          title={t('dashboard.recentActivity')}
+          subtitle={t('dashboard.lastActions')}
           className="lg:col-span-1"
           action={
             <div className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse"></div>
@@ -260,8 +262,8 @@ export function DashboardPage() {
             }) : (
               <EmptyState
                 icon={<Activity className="w-8 h-8" />}
-                title="Aucune activité récente"
-                description="Les actions récentes apparaîtront ici"
+                title={t('dashboard.noActivity')}
+                description={t('dashboard.noActivityDesc')}
               />
             )}
           </div>
@@ -269,12 +271,12 @@ export function DashboardPage() {
 
         {/* Recent Invoices */}
         <Card
-          title="Factures récentes"
+          title={t('dashboard.recentInvoices')}
           className="lg:col-span-2"
-          action={<Link to="/sales/invoices"><Button variant="ghost" size="sm">Voir tout <ChevronRight className="w-3 h-3" /></Button></Link>}
+          action={<Link to="/sales/invoices"><Button variant="ghost" size="sm">{t('dashboard.seeAll')} <ChevronRight className="w-3 h-3" /></Button></Link>}
         >
           {recentInvoices.length > 0 ? (
-            <Table headers={['Numéro', 'Client', 'Date', 'Statut', 'Montant']}>
+            <Table headers={[t('dashboard.colNumber'), t('dashboard.colCustomer'), t('dashboard.colDate'), t('dashboard.colStatus'), t('dashboard.colAmount')]}>
               {recentInvoices.map((inv) => {
                 const st = statusMap[inv.status] || statusMap.draft
                 return (
@@ -291,9 +293,9 @@ export function DashboardPage() {
           ) : (
             <EmptyState
               icon={<FileText className="w-8 h-8" />}
-              title="Aucune facture"
-              description="Créez votre première facture pour commencer"
-              action={<Link to="/sales/invoices"><Button variant="primary" size="sm">Créer une facture</Button></Link>}
+              title={t('dashboard.noInvoices')}
+              description={t('dashboard.noInvoicesDesc')}
+              action={<Link to="/sales/invoices"><Button variant="primary" size="sm">{t('dashboard.createInvoice')}</Button></Link>}
             />
           )}
         </Card>
@@ -301,7 +303,7 @@ export function DashboardPage() {
 
       {/* Bank Accounts + AI Insight */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <Card title="Comptes bancaires" className="lg:col-span-2">
+        <Card title={t('dashboard.bankAccounts')} className="lg:col-span-2">
           {bankAccounts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {bankAccounts.map((acc) => (
@@ -312,7 +314,7 @@ export function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[var(--color-text)]">{acc.name}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)]">{acc.bank_name || 'Banque'}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">{acc.bank_name || t('dashboard.bank')}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -327,9 +329,9 @@ export function DashboardPage() {
           ) : (
             <EmptyState
               icon={<Banknote className="w-8 h-8" />}
-              title="Aucun compte bancaire"
-              description="Connectez votre premier compte bancaire"
-              action={<Link to="/banking/accounts"><Button variant="primary" size="sm">Ajouter un compte</Button></Link>}
+              title={t('dashboard.noBankAccounts')}
+              description={t('dashboard.noBankAccountsDesc')}
+              action={<Link to="/banking/accounts"><Button variant="primary" size="sm">{t('dashboard.addAccount')}</Button></Link>}
             />
           )}
         </Card>
@@ -341,38 +343,38 @@ export function DashboardPage() {
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[var(--color-text)]">Insight IA</p>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">Analyse automatique</p>
+              <p className="text-sm font-semibold text-[var(--color-text)]">{t('dashboard.aiInsight')}</p>
+              <p className="text-[10px] text-[var(--color-text-secondary)]">{t('dashboard.autoAnalysis')}</p>
             </div>
           </div>
           <div className="space-y-3">
             <div className={cn('p-3 rounded-lg border-l-2', stats && stats.bankBalance > 0 ? 'bg-[rgba(0,135,90,0.08)] border-[var(--color-success)]' : 'bg-[var(--color-neutral-50)] border-[var(--color-neutral-200)]')}>
               <p className="text-xs font-medium flex items-center gap-1 mb-1" style={{ color: stats && stats.bankBalance > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
-                <CheckCircle className="w-3 h-3" /> {stats && stats.bankBalance > 0 ? 'Trésorerie positive' : 'Trésorerie à surveiller'}
+                <CheckCircle className="w-3 h-3" /> {stats && stats.bankBalance > 0 ? t('dashboard.positiveCash') : t('dashboard.watchCash')}
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                Solde bancaire: {formatCurrency(stats?.bankBalance || 0)}
+                {t('dashboard.bankBalanceLabel')}: {formatCurrency(stats?.bankBalance || 0)}
               </p>
             </div>
             <div className={cn('p-3 rounded-lg border-l-2', chartData.overdueCount > 0 ? 'bg-[rgba(255,149,0,0.08)] border-[var(--color-warning)]' : 'bg-[rgba(0,135,90,0.08)] border-[var(--color-success)]')}>
               <p className="text-xs font-medium flex items-center gap-1 mb-1" style={{ color: chartData.overdueCount > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>
-                <AlertCircle className="w-3 h-3" /> {chartData.overdueCount > 0 ? `${chartData.overdueCount} facture(s) en retard` : 'Aucune facture en retard'}
+                <AlertCircle className="w-3 h-3" /> {chartData.overdueCount > 0 ? `${chartData.overdueCount} ${t('dashboard.overdueInvoices')}` : t('dashboard.noOverdue')}
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                {chartData.overdueCount > 0 ? `Total: ${formatCurrency(chartData.overdueTotal)} à relancer.` : 'Toutes vos factures sont à jour.'}
+                {chartData.overdueCount > 0 ? t('dashboard.overdueTotal', { amount: formatCurrency(chartData.overdueTotal) }) : t('dashboard.allUpToDate')}
               </p>
             </div>
             <div className="p-3 rounded-lg bg-[rgba(0,102,204,0.08)] border-l-2 border-[var(--color-primary)]">
               <p className="text-xs font-medium text-[var(--color-primary)] flex items-center gap-1 mb-1">
-                <Zap className="w-3 h-3" /> Créances vs Dettes
+                <Zap className="w-3 h-3" /> {t('dashboard.receivablesVsPayables')}
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">
-                Créances: {formatCurrency(stats?.totalDebtors || 0)} / Dettes: {formatCurrency(stats?.totalCreditors || 0)}
+                {t('dashboard.receivables')}: {formatCurrency(stats?.totalDebtors || 0)} / {t('dashboard.payables')}: {formatCurrency(stats?.totalCreditors || 0)}
               </p>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="w-full mt-3">
-            Voir tous les insights <ChevronRight className="w-3 h-3" />
+            {t('dashboard.seeAllInsights')} <ChevronRight className="w-3 h-3" />
           </Button>
         </Card>
       </div>
@@ -380,10 +382,10 @@ export function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Nouvelle facture', desc: 'Créer et envoyer', icon: FileText, color: 'rgba(0,102,204,0.1)', iconColor: 'text-[var(--color-primary)]', path: '/sales/invoices' },
-          { label: 'Nouveau client', desc: 'Ajouter un client', icon: Users, color: 'rgba(0,135,90,0.1)', iconColor: 'text-[var(--color-success)]', path: '/sales/customers' },
-          { label: 'Facture d\'achat', desc: 'Enregistrer un achat', icon: Package, color: 'rgba(255,149,0,0.1)', iconColor: 'text-[var(--color-warning)]', path: '/purchases/invoices' },
-          { label: 'Rapprochement', desc: 'Rapprocher la banque', icon: Banknote, color: 'rgba(222,53,11,0.1)', iconColor: 'text-[var(--color-danger)]', path: '/banking/reconciliation' },
+          { label: t('dashboard.qaNewInvoice'), desc: t('dashboard.qaNewInvoiceDesc'), icon: FileText, color: 'rgba(0,102,204,0.1)', iconColor: 'text-[var(--color-primary)]', path: '/sales/invoices' },
+          { label: t('dashboard.qaNewCustomer'), desc: t('dashboard.qaNewCustomerDesc'), icon: Users, color: 'rgba(0,135,90,0.1)', iconColor: 'text-[var(--color-success)]', path: '/sales/customers' },
+          { label: t('dashboard.qaPurchaseInvoice'), desc: t('dashboard.qaPurchaseInvoiceDesc'), icon: Package, color: 'rgba(255,149,0,0.1)', iconColor: 'text-[var(--color-warning)]', path: '/purchases/invoices' },
+          { label: t('dashboard.qaReconciliation'), desc: t('dashboard.qaReconciliationDesc'), icon: Banknote, color: 'rgba(222,53,11,0.1)', iconColor: 'text-[var(--color-danger)]', path: '/banking/reconciliation' },
         ].map((action) => (
           <Link key={action.path} to={action.path}>
             <div className="card p-4 flex items-center gap-3 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer">

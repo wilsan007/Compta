@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Search, ArrowRight, Plus, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { navGroups } from './Layout'
+import { getEnabledNavGroups } from './Sidebar'
 
 interface Command {
   id: string
@@ -17,6 +18,7 @@ interface Command {
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('nav')
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -24,41 +26,43 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const commands: Command[] = useMemo(() => {
     const cmds: Command[] = []
     // Auto-generate from navGroups
-    for (const group of navGroups) {
+    for (const group of getEnabledNavGroups()) {
       for (const item of group.items) {
+        const label = t(item.labelKey)
         cmds.push({
           id: item.path,
-          label: item.label,
+          label,
           icon: item.icon,
           path: item.path,
-          category: group.label,
-          keywords: item.label.toLowerCase(),
+          category: t(group.groupKey),
+          keywords: label.toLowerCase(),
         })
         for (const sub of item.subItems) {
           if (sub.path === item.path) continue // skip duplicates of parent
+          const subLabel = t(sub.labelKey)
           cmds.push({
             id: sub.path,
-            label: sub.label,
+            label: subLabel,
             icon: item.icon,
             path: sub.path,
-            category: group.label,
-            keywords: sub.label.toLowerCase(),
+            category: t(group.groupKey),
+            keywords: subLabel.toLowerCase(),
           })
         }
       }
     }
     // Add quick actions
     const quickActions: Command[] = [
-      { id: 'new-invoice', label: 'Nouvelle facture', icon: Plus, path: '/sales/invoices', category: 'Actions rapides', keywords: 'créer facture new invoice' },
-      { id: 'new-customer', label: 'Nouveau client', icon: Plus, path: '/sales/customers', category: 'Actions rapides', keywords: 'créer client new customer' },
-      { id: 'new-quote', label: 'Nouveau devis', icon: Plus, path: '/sales/quotes', category: 'Actions rapides', keywords: 'créer devis new quote' },
-      { id: 'new-product', label: 'Nouveau produit', icon: Plus, path: '/purchases/products', category: 'Actions rapides', keywords: 'créer produit new product' },
-      { id: 'new-employee', label: 'Nouvel employé', icon: Plus, path: '/hr/employees', category: 'Actions rapides', keywords: 'créer employé new employee' },
-      { id: 'new-supplier', label: 'Nouveau fournisseur', icon: Plus, path: '/purchases/suppliers', category: 'Actions rapides', keywords: 'créer fournisseur new supplier' },
-      { id: 'ai-assistant', label: 'Assistant IA', icon: Sparkles, category: 'Actions rapides', keywords: 'ai copilot assistant', action: () => {} },
+      { id: 'new-invoice', label: t('commandPalette.newInvoice'), icon: Plus, path: '/sales/invoices', category: t('commandPalette.quickActions'), keywords: 'créer facture new invoice' },
+      { id: 'new-customer', label: t('commandPalette.newCustomer'), icon: Plus, path: '/sales/customers', category: t('commandPalette.quickActions'), keywords: 'créer client new customer' },
+      { id: 'new-quote', label: t('commandPalette.newQuote'), icon: Plus, path: '/sales/quotes', category: t('commandPalette.quickActions'), keywords: 'créer devis new quote' },
+      { id: 'new-product', label: t('commandPalette.newProduct'), icon: Plus, path: '/purchases/products', category: t('commandPalette.quickActions'), keywords: 'créer produit new product' },
+      { id: 'new-employee', label: t('commandPalette.newEmployee'), icon: Plus, path: '/hr/employees', category: t('commandPalette.quickActions'), keywords: 'créer employé new employee' },
+      { id: 'new-supplier', label: t('commandPalette.newSupplier'), icon: Plus, path: '/purchases/suppliers', category: t('commandPalette.quickActions'), keywords: 'créer fournisseur new supplier' },
+      { id: 'ai-assistant', label: t('layout.aiAssistant'), icon: Sparkles, category: t('commandPalette.quickActions'), keywords: 'ai copilot assistant', action: () => {} },
     ]
     return [...cmds, ...quickActions]
-  }, [])
+  }, [t])
 
   const filtered = useMemo(() => {
     if (!query) return commands
@@ -118,7 +122,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             <input
               ref={inputRef}
               className="flex-1 bg-transparent border-none outline-none text-base text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)]"
-              placeholder="Rechercher une page, une action..."
+              placeholder={t('commandPalette.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -130,7 +134,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <div className="max-h-[400px] overflow-y-auto p-2">
             {filtered.length === 0 ? (
               <div className="py-8 text-center text-[var(--color-text-secondary)] text-sm">
-                Aucun résultat pour "{query}"
+                {t('commandPalette.noResults', { query })}
               </div>
             ) : (
               categories.map((cat) => (
@@ -167,8 +171,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-2 border-t border-[var(--color-border)] text-xs text-[var(--color-text-secondary)]">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1"><kbd className="bg-[var(--color-neutral-100)] px-1.5 py-0.5 rounded">↑↓</kbd> Naviguer</span>
-              <span className="flex items-center gap-1"><kbd className="bg-[var(--color-neutral-100)] px-1.5 py-0.5 rounded">↵</kbd> Sélectionner</span>
+              <span className="flex items-center gap-1"><kbd className="bg-[var(--color-neutral-100)] px-1.5 py-0.5 rounded">↑↓</kbd> {t('commandPalette.navigate')}</span>
+              <span className="flex items-center gap-1"><kbd className="bg-[var(--color-neutral-100)] px-1.5 py-0.5 rounded">↵</kbd> {t('commandPalette.select')}</span>
             </div>
             <span>Compta v0.2</span>
           </div>

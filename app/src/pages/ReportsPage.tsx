@@ -1,16 +1,19 @@
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, StatCard, Breadcrumb } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import { TrendingUp, TrendingDown, DollarSign, FileText, Download } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts'
 
 export function ReportsPage() {
+  const { t } = useTranslation('accounting')
+  const { formatCurrency } = useLocale()
   const plData = [
-    { category: 'Revenus', amount: 85600 },
-    { category: 'Coût des ventes', amount: -32000 },
-    { category: 'Salaires', amount: -28000 },
-    { category: 'Loyer', amount: -8400 },
-    { category: 'Marketing', amount: -5200 },
-    { category: 'Autres dépenses', amount: -3800 },
+    { category: t('financialReports.revenues'), amount: 85600 },
+    { category: t('financialReports.costOfSales'), amount: -32000 },
+    { category: t('financialReports.salaries'), amount: -28000 },
+    { category: t('financialReports.rent'), amount: -8400 },
+    { category: t('financialReports.marketing'), amount: -5200 },
+    { category: t('financialReports.otherExpenses'), amount: -3800 },
   ]
 
   const monthlyTrend = [
@@ -29,21 +32,21 @@ export function ReportsPage() {
 
   return (
     <div className="animate-fade-in">
-      <Breadcrumb items={[{ label: 'Rapports' }]} />
+      <Breadcrumb items={[{ label: t('home.reports') }]} />
       <PageHeader
-        title="Rapports financiers"
-        subtitle="Analyse de la performance de votre entreprise"
-        action={<Button variant="secondary"><Download className="w-4 h-4" /> Exporter</Button>}
+        title={t('financialReports.title')}
+        subtitle={t('financialReports.subtitle')}
+        action={<Button variant="secondary"><Download className="w-4 h-4" /> {t('financialReports.export')}</Button>}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Revenus totaux" value={formatCurrency(totalRevenue)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
-        <StatCard label="Dépenses totales" value={formatCurrency(totalExpenses)} icon={<TrendingDown className="w-5 h-5" />} color="danger" />
-        <StatCard label="Résultat net" value={formatCurrency(netProfit)} icon={<DollarSign className="w-5 h-5" />} color="primary" />
+        <StatCard label={t('financialReports.totalRevenue')} value={formatCurrency(totalRevenue)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
+        <StatCard label={t('financialReports.totalExpenses')} value={formatCurrency(totalExpenses)} icon={<TrendingDown className="w-5 h-5" />} color="danger" />
+        <StatCard label={t('financialReports.netProfit')} value={formatCurrency(netProfit)} icon={<DollarSign className="w-5 h-5" />} color="primary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <Card title="Compte de résultat" subtitle="Répartition par catégorie">
+        <Card title={t('financialReports.incomeStatement')} subtitle={t('financialReports.byCategory')}>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={plData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -55,7 +58,7 @@ export function ReportsPage() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title="Tendance mensuelle" subtitle="Revenus, dépenses et profit">
+        <Card title={t('financialReports.monthlyTrend')} subtitle={t('financialReports.revenuesExpensesProfit')}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -63,16 +66,16 @@ export function ReportsPage() {
               <YAxis stroke="var(--color-text-secondary)" style={{ fontSize: 12 }} tickFormatter={(v) => `${v / 1000}k`} />
               <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="revenus" stroke="var(--color-primary)" strokeWidth={2} name="Revenus" />
-              <Line type="monotone" dataKey="depenses" stroke="var(--color-danger)" strokeWidth={2} name="Dépenses" />
-              <Line type="monotone" dataKey="profit" stroke="var(--color-success)" strokeWidth={2} name="Profit" />
+              <Line type="monotone" dataKey="revenus" stroke="var(--color-primary)" strokeWidth={2} name={t('financialReports.legendRevenues')} />
+              <Line type="monotone" dataKey="depenses" stroke="var(--color-danger)" strokeWidth={2} name={t('financialReports.legendExpenses')} />
+              <Line type="monotone" dataKey="profit" stroke="var(--color-success)" strokeWidth={2} name={t('financialReports.legendProfit')} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
       </div>
 
-      <Card title="Détail du compte de résultat">
-        <Table headers={['Catégorie', 'Montant', '% du total']}>
+      <Card title={t('financialReports.incomeDetail')}>
+        <Table headers={[t('financialReports.category'), t('financialReports.amount'), t('financialReports.percentTotal')]}>
           {plData.map((row) => (
             <TableRow key={row.category}>
               <TableCell className="font-medium">{row.category}</TableCell>
@@ -85,7 +88,7 @@ export function ReportsPage() {
             </TableRow>
           ))}
           <TableRow key="total">
-            <TableCell className="font-bold">Résultat net</TableCell>
+            <TableCell className="font-bold">{t('financialReports.netProfit')}</TableCell>
             <TableCell className="font-bold text-[var(--color-primary)] text-right">{formatCurrency(netProfit)}</TableCell>
             <TableCell className="text-[var(--color-text-secondary)]">—</TableCell>
           </TableRow>
@@ -94,10 +97,10 @@ export function ReportsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         {[
-          { label: 'Bilan', icon: FileText, path: '/reports/balance-sheet' },
-          { label: 'Balance générale', icon: FileText, path: '/reports/trial-balance' },
-          { label: 'Flux de trésorerie', icon: FileText, path: '/reports/cash-flow' },
-          { label: 'TVA', icon: FileText, path: '/reports/vat' },
+          { label: t('financialReports.balanceSheet'), icon: FileText, path: '/reports/balance-sheet' },
+          { label: t('financialReports.trialBalance'), icon: FileText, path: '/reports/trial-balance' },
+          { label: t('financialReports.cashFlow'), icon: FileText, path: '/reports/cash-flow' },
+          { label: t('financialReports.vat'), icon: FileText, path: '/reports/vat' },
         ].map((r) => (
           <Card key={r.path} className="p-4 hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">

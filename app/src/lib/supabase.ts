@@ -39,6 +39,31 @@ const TENANT_TABLES = new Set([
   'collection_reminders', 'contracts',
   'customer_payments', 'supplier_payments',
   'payment_orders', 'legal_declarations',
+  'routings', 'routing_operations', 'work_centers', 'machines', 'toolings',
+  'of_labels', 'of_lots', 'of_consumptions',
+  'st_orders', 'st_shipments', 'st_shipment_lines', 'st_receipts', 'st_receipt_lines',
+  'mrp_runs', 'mrp_proposals', 'mrp_pending_docs',
+  'production_forecasts',
+  'planning_slots',
+  'product_equivalences', 'workflows', 'of_document_access',
+  // Phase 2: GesCom
+  'product_attributes', 'product_variants', 'product_serial_numbers', 'product_batches',
+  'warehouse_locations', 'quality_checks', 'pick_lists', 'pick_list_lines',
+  'sales_representatives', 'prospects', 'product_substitutes',
+  'delivery_schedules', 'recurring_invoice_templates', 'document_templates',
+  // Phase 3: Treasury
+  'future_accounting_movements', 'treasury_transfers', 'credit_lines', 'investments',
+  'value_date_tracking', 'treasury_recurring', 'consolidated_treasury',
+  // Phase 4: Payroll & HR
+  'payroll_components', 'payroll_component_rates', 'payroll_templates',
+  'salary_advances', 'pay_recalls', 'dsn_declarations', 'dpae_records',
+  'work_hardship', 'career_history', 'cpf_accounts', 'payroll_archives',
+  'legal_watch', 'employee_documents', 'expense_reports', 'expense_report_lines',
+  'interviews',
+  // Phase 5: Fixed Assets
+  'asset_depreciation_plans', 'asset_families', 'asset_revaluations',
+  'asset_documents', 'asset_free_fields', 'asset_batch_disposals', 'asset_batch_disposal_lines',
+  'asset_splits', 'asset_split_components',
 ])
 
 const EXEMPT_TABLES = new Set([

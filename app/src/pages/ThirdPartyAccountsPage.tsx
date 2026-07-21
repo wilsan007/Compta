@@ -5,14 +5,8 @@ import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount
 import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
+import { useTranslation } from 'react-i18next'
 import type { ThirdPartyAccount, Customer, Supplier, ChartAccount } from '@/types'
-
-const typeLabels: Record<string, string> = {
-  customer: 'Client',
-  supplier: 'Fournisseur',
-  employee: 'Salarié',
-  other: 'Autre',
-}
 
 const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   customer: 'success',
@@ -22,6 +16,7 @@ const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | '
 }
 
 export function ThirdPartyAccountsPage() {
+  const { t } = useTranslation('accounting')
   const navigate = useNavigate()
   const [accounts, setAccounts] = useState<ThirdPartyAccount[]>([])
   const { toast } = useToast()
@@ -80,26 +75,26 @@ export function ThirdPartyAccountsPage() {
   async function handleDelete(id: string) {
     try {
       await deleteThirdPartyAccount(id)
-      toast('success', 'Compte tiers supprimé')
+      toast('success', t('thirdParty.deleted'))
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'Erreur lors de la suppression')
+      toast('error', t('thirdParty.deleteError'), err.message || '')
     }
   }
 
   function handleExportCSV() {
-    const headers = ['Code', 'Nom', 'Type', 'Compte général', 'Lié à', 'Solde', 'Lettrage']
+    const headers = [t('thirdParty.code'), t('thirdParty.name'), t('thirdParty.type'), t('thirdParty.generalAccount'), t('thirdParty.linkedTo'), t('thirdParty.balance'), t('thirdParty.lettrage')]
     const rows = filtered.map((a) => [
       a.code,
       a.name,
-      typeLabels[a.type] || a.type,
+      t(`thirdParty.types.${a.type}`) || a.type,
       a.account_general_code || '',
       getLinkedName(a),
       Number(a.balance || 0),
       a.lettrage_code || '',
     ])
     exportToCSV(`plan-tiers-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
-    toast('info', 'Export CSV', `${filtered.length} compte(s) exporté(s)`)
+    toast('info', t('thirdParty.exportCSV'), t('thirdParty.exported', { count: filtered.length }))
   }
 
   function getLinkedName(a: ThirdPartyAccount) {
@@ -133,12 +128,12 @@ export function ThirdPartyAccountsPage() {
     <div>
       <AutoBreadcrumb />
       <PageHeader
-        title="Plan tiers unifié"
-        subtitle={`${accounts.length} compte(s) tiers — clients, fournisseurs, salariés`}
+        title={t('thirdParty.title')}
+        subtitle={t('thirdParty.subtitle', { count: accounts.length })}
         action={
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> Exporter</Button>
-            <Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau compte tiers</Button>
+          <div className="flex flex-row items-center gap-2">
+            <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {t('thirdParty.export')}</Button>
+            <Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('thirdParty.new')}</Button>
           </div>
         }
       />
@@ -148,7 +143,7 @@ export function ThirdPartyAccountsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
-            placeholder="Rechercher par code ou nom..."
+            placeholder={t('thirdParty.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -158,11 +153,11 @@ export function ThirdPartyAccountsPage() {
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
-          <option value="">Tous les types</option>
-          <option value="customer">Clients</option>
-          <option value="supplier">Fournisseurs</option>
-          <option value="employee">Salariés</option>
-          <option value="other">Autres</option>
+          <option value="">{t('thirdParty.allTypes')}</option>
+          <option value="customer">{t('thirdParty.customers')}</option>
+          <option value="supplier">{t('thirdParty.suppliers')}</option>
+          <option value="employee">{t('thirdParty.employees')}</option>
+          <option value="other">{t('thirdParty.others')}</option>
         </select>
       </div>
 
@@ -171,22 +166,22 @@ export function ThirdPartyAccountsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<Users2 className="w-8 h-8" />}
-          title="Aucun compte tiers trouvé"
-          description="Le plan tiers unifie les comptes auxiliaires (clients, fournisseurs, salariés) pour le lettrage et l'interrogation."
-          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau compte tiers</Button>}
+          title={t('thirdParty.noThirdParty')}
+          description={t('thirdParty.noThirdPartyDescription')}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('thirdParty.new')}</Button>}
         />
       ) : (
         <Card>
           <SortableTable
             headers={[
-              { label: 'Code', key: 'code', sortable: true },
-              { label: 'Nom', key: 'name', sortable: true },
-              { label: 'Type', key: 'type', sortable: true },
-              { label: 'Cpte général', key: 'account_general_code', sortable: true },
-              { label: 'Lié à' },
-              { label: 'Solde', key: 'balance', sortable: true, className: 'text-right' },
-              { label: 'Lettrage', key: 'lettrage_code', sortable: true },
-              { label: 'Actions' },
+              { label: t('thirdParty.code'), key: 'code', sortable: true },
+              { label: t('thirdParty.name'), key: 'name', sortable: true },
+              { label: t('thirdParty.type'), key: 'type', sortable: true },
+              { label: t('thirdParty.generalAccount'), key: 'account_general_code', sortable: true },
+              { label: t('thirdParty.linkedTo') },
+              { label: t('thirdParty.balance'), key: 'balance', sortable: true, className: 'text-right' },
+              { label: t('thirdParty.lettrage'), key: 'lettrage_code', sortable: true },
+              { label: t('thirdParty.actions') },
             ]}
             data={filtered as any}
             initialSortKey="code"
@@ -194,7 +189,7 @@ export function ThirdPartyAccountsPage() {
               <TableRow key={a.id}>
                 <TableCell className="font-mono font-semibold">{a.code}</TableCell>
                 <TableCell>{a.name}</TableCell>
-                <TableCell><Badge variant={typeBadge[a.type] || 'neutral'}>{typeLabels[a.type] || a.type}</Badge></TableCell>
+                <TableCell><Badge variant={typeBadge[a.type] || 'neutral'}>{t(`thirdParty.types.${a.type}`) || a.type}</Badge></TableCell>
                 <TableCell className="font-mono text-xs">{a.account_general_code || '—'}</TableCell>
                 <TableCell className="text-xs">
                   {a.customer_id || a.supplier_id ? (
@@ -205,33 +200,33 @@ export function ThirdPartyAccountsPage() {
                 <TableCell className="font-mono text-xs">{a.lettrage_code || '—'}</TableCell>
                 <TableCell>
                   <div className="relative flex gap-2">
-                    <button onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title="Modifier le compte">
+                    <button onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={t('thirdParty.editAccount')}>
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setDeleteTarget(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title="Supprimer">
+                    <button onClick={() => setDeleteTarget(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={t('thirdParty.deleteConfirmLabel')}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setOpenMenuId(openMenuId === a.id ? null : a.id)}
                       className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
-                      title="Que souhaitez-vous faire ?"
+                      title={t('thirdParty.whatToDo')}
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
                     {openMenuId === a.id && (
                       <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg py-1">
-                        <p className="px-3 py-1.5 text-xs text-[var(--color-text-secondary)]">Que souhaitez-vous faire pour {a.code} ?</p>
+                        <p className="px-3 py-1.5 text-xs text-[var(--color-text-secondary)]">{t('thirdParty.whatToDoFor', { code: a.code })}</p>
                         <button onClick={() => { setOpenMenuId(null); openEdit(a) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--color-neutral-100)]">
-                          <Settings className="w-4 h-4" /> Gérer le compte
+                          <Settings className="w-4 h-4" /> {t('thirdParty.manageAccount')}
                         </button>
                         <button onClick={() => handleSaisirFacture(a)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--color-neutral-100)]">
-                          <FilePlus2 className="w-4 h-4" /> Saisir une facture ou un règlement
+                          <FilePlus2 className="w-4 h-4" /> {t('thirdParty.enterInvoice')}
                         </button>
                         <button onClick={() => handleReglerFacture(a)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--color-neutral-100)]">
-                          <Wallet className="w-4 h-4" /> Régler une facture
+                          <Wallet className="w-4 h-4" /> {t('thirdParty.payInvoice')}
                         </button>
                         <button onClick={() => handleGenererReleves(a)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-[var(--color-neutral-100)]">
-                          <FileBarChart className="w-4 h-4" /> Générer les relevés
+                          <FileBarChart className="w-4 h-4" /> {t('thirdParty.generateStatements')}
                         </button>
                       </div>
                     )}
@@ -256,9 +251,9 @@ export function ThirdPartyAccountsPage() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Supprimer le compte tiers"
-        message={`Voulez-vous vraiment supprimer le compte ${deleteTarget?.code} — ${deleteTarget?.name} ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title={t('thirdParty.delete')}
+        message={t('thirdParty.deleteConfirm', { code: deleteTarget?.code, name: deleteTarget?.name })}
+        confirmLabel={t('thirdParty.deleteConfirmLabel')}
         onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
         onCancel={() => setDeleteTarget(null)}
       />
@@ -274,6 +269,7 @@ function ThirdPartyForm({ account, customers, suppliers, chartAccounts, onClose,
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useTranslation('accounting')
   const [code, setCode] = useState(account?.code || '')
   const { toast } = useToast()
   const [name, setName] = useState(account?.name || '')
@@ -306,14 +302,14 @@ function ThirdPartyForm({ account, customers, suppliers, chartAccounts, onClose,
       }
       if (account) {
         await updateThirdPartyAccount(account.id, data)
-        toast('success', 'Compte tiers modifié')
+        toast('success', t('thirdParty.updated'))
       } else {
         await createThirdPartyAccount(data as any)
-        toast('success', 'Compte tiers créé')
+        toast('success', t('thirdParty.saved'))
       }
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec de la sauvegarde')
+      toast('error', t('thirdParty.saveError'), err.message || '')
     } finally {
       setSaving(false)
     }
@@ -323,48 +319,48 @@ function ThirdPartyForm({ account, customers, suppliers, chartAccounts, onClose,
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{account ? 'Modifier le compte tiers' : 'Nouveau compte tiers'}</h2>
+          <h2 className="text-lg font-semibold">{account ? t('thirdParty.edit') : t('thirdParty.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex: 411CLI001" />
-            <Select label="Type" value={type} onChange={(e) => setType(e.target.value as ThirdPartyAccount['type'])} options={[
-              { value: 'customer', label: 'Client' },
-              { value: 'supplier', label: 'Fournisseur' },
-              { value: 'employee', label: 'Salarié' },
-              { value: 'other', label: 'Autre' },
+            <Input label={t('thirdParty.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex: 411CLI001" />
+            <Select label={t('thirdParty.type')} value={type} onChange={(e) => setType(e.target.value as ThirdPartyAccount['type'])} options={[
+              { value: 'customer', label: t('thirdParty.types.customer') },
+              { value: 'supplier', label: t('thirdParty.types.supplier') },
+              { value: 'employee', label: t('thirdParty.types.employee') },
+              { value: 'other', label: t('thirdParty.types.other') },
             ]} />
           </div>
-          <Input label="Nom" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Client ABC SARL" />
-          <Select label="Compte général (classe 4)" value={accountGeneralCode} onChange={(e) => setAccountGeneralCode(e.target.value)} options={[
-            { value: '', label: '— Aucun —' },
+          <Input label={t('thirdParty.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Client ABC SARL" />
+          <Select label={t('thirdParty.generalAccountClass4')} value={accountGeneralCode} onChange={(e) => setAccountGeneralCode(e.target.value)} options={[
+            { value: '', label: t('thirdParty.none') },
             ...tierAccounts.map((a) => ({ value: a.code, label: `${a.code} — ${a.name}` })),
           ]} />
           {type === 'customer' && (
-            <Select label="Client lié" value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
-              { value: '', label: '— Aucun —' },
+            <Select label={t('thirdParty.linkedCustomer')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
+              { value: '', label: t('thirdParty.none') },
               ...customers.map((c) => ({ value: c.id, label: c.name })),
             ]} />
           )}
           {type === 'supplier' && (
-            <Select label="Fournisseur lié" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} options={[
-              { value: '', label: '— Aucun —' },
+            <Select label={t('thirdParty.linkedSupplier')} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} options={[
+              { value: '', label: t('thirdParty.none') },
               ...suppliers.map((s) => ({ value: s.id, label: s.name })),
             ]} />
           )}
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)} />
+            <Input label={t('thirdParty.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} />
             <div className="flex items-end">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-                Actif
+                {t('thirdParty.active')}
               </label>
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" loading={saving}>Enregistrer</Button>
+            <Button variant="secondary" onClick={onClose}>{t('thirdParty.cancel')}</Button>
+            <Button type="submit" loading={saving}>{t('thirdParty.save')}</Button>
           </div>
         </form>
       </div>

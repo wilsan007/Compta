@@ -15,6 +15,7 @@ import {
   Upload, Download, FileSpreadsheet, ArrowRight, ArrowLeft, CheckCircle2,
   AlertCircle, Loader2, ListOrdered, Sparkles, Eye, Columns3, Brain,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type Step = 'select' | 'upload' | 'map' | 'result'
 
@@ -29,6 +30,7 @@ interface ImportResult {
 }
 
 export function ImportPage() {
+  const { t } = useTranslation('settings')
   const { user } = useAuth()
   const { toast } = useToast()
   const [step, setStep] = useState<Step>('select')
@@ -87,7 +89,7 @@ export function ImportPage() {
         const ws = wb.Sheets[wb.SheetNames[0]]
         const json = XLSX.utils.sheet_to_json<ParsedRow>(ws, { defval: '' })
         if (json.length === 0) {
-          toast('error', 'Fichier vide', 'Aucune ligne détectée dans le fichier.')
+          toast('error', t('import.emptyFile'), t('import.emptyFileDesc'))
           return
         }
         const fileHeaders = Object.keys(json[0])
@@ -102,15 +104,15 @@ export function ImportPage() {
         setAutoMapping(result)
         setMapping(result.mapping)
         if (result.confidence >= 0.8) {
-          toast('success', 'Colonnes détectées', `${result.suggestions.length}/${activeModule.fields.length} champs mappés automatiquement.`)
+          toast('success', t('import.columnsDetected'), t('import.fieldsMapped', { mapped: result.suggestions.length, total: activeModule.fields.length }))
         } else if (result.confidence >= 0.5) {
-          toast('info', 'Mapping partiel', `${result.suggestions.length}/${activeModule.fields.length} champs détectés. Vérifiez les colonnes manquantes.`)
+          toast('info', t('import.partialMapping'), `${result.suggestions.length}/${activeModule.fields.length}`)
         } else {
-          toast('warning', 'Mapping manuel requis', 'Peu de colonnes reconnues. Associez manuellement les champs.')
+          toast('warning', t('import.manualMappingRequired'), t('import.manualMappingRequired'))
         }
         setStep('map')
       } catch (err: any) {
-        toast('error', 'Erreur de lecture', err.message || 'Fichier illisible')
+        toast('error', t('import.readError'), err.message || t('import.readError'))
       }
     }
     reader.readAsArrayBuffer(file)
@@ -131,7 +133,7 @@ export function ImportPage() {
         const raw = sourceCol ? row[sourceCol] : undefined
         const { value, error } = coerceValue(field, raw)
         if (error) {
-          errors.push(`Ligne ${idx + 2}: ${error}`)
+          errors.push(t('import.lineError', { line: idx + 2, error }))
           rowHasError = true
         } else if (value !== null && value !== undefined) {
           record[field.key] = value
@@ -153,7 +155,7 @@ export function ImportPage() {
       const batch = payload.slice(i, i + 200)
       const { error } = await supabase.from(activeModule.table).insert(batch)
       if (error) {
-        errors.push(`Lot ${i / 200 + 1}: ${error.message}`)
+        errors.push(t('import.batchError', { batch: i / 200 + 1, error: error.message }))
       } else {
         inserted += batch.length
       }
@@ -166,7 +168,7 @@ export function ImportPage() {
     })
     setStep('result')
     setImporting(false)
-    if (inserted > 0) toast('success', 'Import terminé', `${inserted} ligne(s) importée(s)`)
+    if (inserted > 0) toast('success', t('import.importSuccess'), `${inserted}`)
   }
 
   async function handleAIFallback() {
@@ -183,7 +185,7 @@ export function ImportPage() {
         edgeUrl,
       )
       if (!result) {
-        toast('error', 'IA indisponible', "Le service d'auto-détection IA n'est pas accessible. Associez les colonnes manuellement.")
+        toast('error', t('import.aiUnavailable'), t('import.aiUnavailableDesc'))
         setAiLoading(false)
         return
       }
@@ -206,7 +208,7 @@ export function ImportPage() {
               fieldKey: key,
               sourceColumn: col,
               confidence: result.confidence,
-              reason: result.reasoning[key] || 'détecté par IA',
+              reason: result.reasoning[key] || t('import.detectedByAI'),
             })),
         ],
         unmappedFields: activeModule.fields
@@ -214,9 +216,9 @@ export function ImportPage() {
           .map((f) => f.key),
         unmappedColumns: headers.filter((h) => !Object.values(mergedMapping).includes(h)),
       })
-      toast('success', 'Détection IA terminée', `${Object.keys(result.mapping).length} champ(s) détecté(s) par l'IA.`)
+      toast('success', t('import.aiDone'), `${Object.keys(result.mapping).length}`)
     } catch (err: any) {
-      toast('error', 'Erreur IA', err.message || "Erreur lors de l'analyse IA")
+      toast('error', t('import.aiError'), err.message || t('import.aiError'))
     }
     setAiLoading(false)
   }
@@ -225,17 +227,17 @@ export function ImportPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Paramètres' }, { label: 'Import de données' }]} />
+      <Breadcrumb items={[{ label: t('import.breadcrumb') }, { label: t('import.breadcrumb2') }]} />
       <PageHeader
-        title="Import de données"
-        subtitle="Importez vos données existantes depuis Excel ou CSV, module par module"
+        title={t('import.title')}
+        subtitle={t('import.subtitleFull')}
       />
 
       {!canImport && (
         <Card>
           <div className="p-6 flex items-center gap-3 text-[var(--color-text-secondary)]">
             <AlertCircle className="w-5 h-5 text-[var(--color-danger)]" />
-            <span>Seuls les administrateurs et comptables peuvent importer des données.</span>
+            <span>{t('import.permissionDenied')}</span>
           </div>
         </Card>
       )}
@@ -246,9 +248,7 @@ export function ImportPage() {
             <div className="p-4 flex items-start gap-3">
               <ListOrdered className="w-5 h-5 text-[var(--color-primary)] flex-shrink-0 mt-0.5" />
               <div className="text-sm text-[var(--color-text-secondary)]">
-                <strong className="text-[var(--color-text)]">Ordre d'import recommandé.</strong> Importez
-                dans l'ordre affiché : le plan comptable d'abord, puis les tiers (clients/fournisseurs),
-                puis les produits. Les factures et écritures s'appuient sur ces référentiels.
+                <strong className="text-[var(--color-text)]">{t('import.recommendedOrder')}</strong> {t('import.recommendedOrderDesc')}
               </div>
             </div>
           </Card>
@@ -258,16 +258,16 @@ export function ImportPage() {
               <Card key={mod.id}>
                 <div className="p-5">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="primary">Étape {mod.order}</Badge>
+                    <Badge variant="primary">{t('import.step')} {mod.order}</Badge>
                     <h3 className="font-semibold text-[var(--color-text)]">{mod.label}</h3>
                   </div>
                   <p className="text-sm text-[var(--color-text-secondary)] mb-4">{mod.description}</p>
                   <div className="flex gap-2">
                     <Button onClick={() => startModule(mod)}>
-                      <Upload className="w-4 h-4" /> Importer
+                      <Upload className="w-4 h-4" /> {t('import.importBtn')}
                     </Button>
                     <Button variant="secondary" onClick={() => downloadTemplate(mod)}>
-                      <Download className="w-4 h-4" /> Modèle Excel
+                      <Download className="w-4 h-4" /> {t('import.templateBtn')}
                     </Button>
                   </div>
                 </div>
@@ -281,10 +281,10 @@ export function ImportPage() {
         <Card>
           <div className="p-6">
             <h3 className="font-semibold text-[var(--color-text)] mb-1">
-              Importer : {activeModule.label}
+              {t('import.importModule', { label: activeModule.label })}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-              Téléchargez le modèle, remplissez-le, puis chargez votre fichier (.xlsx ou .csv).
+              {t('import.uploadDesc')}
             </p>
 
             <div
@@ -292,8 +292,8 @@ export function ImportPage() {
               onClick={() => fileInputRef.current?.click()}
             >
               <FileSpreadsheet className="w-10 h-10 mx-auto text-[var(--color-text-secondary)] mb-3" />
-              <p className="text-sm font-medium text-[var(--color-text)]">Cliquez pour choisir un fichier</p>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">Formats acceptés : .xlsx, .xls, .csv</p>
+              <p className="text-sm font-medium text-[var(--color-text)]">{t('import.clickToChoose')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('import.acceptedFormats')}</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -305,10 +305,10 @@ export function ImportPage() {
 
             <div className="flex gap-2 mt-6">
               <Button variant="secondary" onClick={reset}>
-                <ArrowLeft className="w-4 h-4" /> Retour
+                <ArrowLeft className="w-4 h-4" /> {t('import.back')}
               </Button>
               <Button variant="secondary" onClick={() => downloadTemplate(activeModule)}>
-                <Download className="w-4 h-4" /> Télécharger le modèle
+                <Download className="w-4 h-4" /> {t('import.downloadTemplate')}
               </Button>
             </div>
           </div>
@@ -324,19 +324,19 @@ export function ImportPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-semibold text-[var(--color-text)]">
-                    Détection automatique
+                    {t('import.autoDetection')}
                   </span>
                   <Badge variant={confidenceVariant(autoMapping.confidence)}>
                     {Math.round(autoMapping.confidence * 100)}% — {confidenceLabel(autoMapping.confidence)}
                   </Badge>
                 </div>
                 <p className="text-xs text-[var(--color-text-secondary)]">
-                  {autoMapping.suggestions.length}/{activeModule.fields.length} champs mappés automatiquement.
+                  {t('import.fieldsMapped', { mapped: autoMapping.suggestions.length, total: activeModule.fields.length })}
                   {autoMapping.unmappedFields.length > 0 && (
-                    <> {autoMapping.unmappedFields.length} champ(s) à associer manuellement.</>
+                    <> {t('import.fieldsToMap', { count: autoMapping.unmappedFields.length })}</>
                   )}
                   {autoMapping.unmappedColumns.length > 0 && (
-                    <> {autoMapping.unmappedColumns.length} colonne(s) non assignée(s).</>
+                    <> {t('import.unassignedColumns', { count: autoMapping.unmappedColumns.length })}</>
                   )}
                 </p>
               </div>
@@ -347,9 +347,9 @@ export function ImportPage() {
                     disabled={aiLoading}
                   >
                     {aiLoading ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> Analyse IA...</>
+                      <><Loader2 className="w-4 h-4 animate-spin" /> {t('import.aiAnalysis')}</>
                     ) : (
-                      <><Brain className="w-4 h-4" /> Auto-détection IA</>
+                      <><Brain className="w-4 h-4" /> {t('import.aiDetection')}</>
                     )}
                   </Button>
                 )}
@@ -357,7 +357,7 @@ export function ImportPage() {
                   variant="secondary"
                   onClick={() => setShowPreview((v) => !v)}
                 >
-                  <Eye className="w-4 h-4" /> {showPreview ? 'Masquer' : 'Aperçu'}
+                  <Eye className="w-4 h-4" /> {showPreview ? t('import.hide') : t('import.preview')}
                 </Button>
               </div>
             </div>
@@ -368,7 +368,7 @@ export function ImportPage() {
             <Card className="mb-4">
               <div className="p-4">
                 <h4 className="text-sm font-semibold text-[var(--color-text)] mb-3">
-                  Aperçu des 5 premières lignes
+                  {t('import.previewRows')}
                 </h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -386,7 +386,7 @@ export function ImportPage() {
                           >
                             {h}
                             {autoMapping.unmappedColumns.includes(h) && (
-                              <span className="block text-[9px] text-[var(--color-text-secondary)]">non assignée</span>
+                              <span className="block text-[9px] text-[var(--color-text-secondary)]">{t('import.unassigned')}</span>
                             )}
                           </th>
                         ))}
@@ -416,12 +416,12 @@ export function ImportPage() {
               <div className="p-4 flex items-start gap-3">
                 <Columns3 className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <span className="font-medium text-[var(--color-text)]">Colonnes non reconnues : </span>
+                  <span className="font-medium text-[var(--color-text)]">{t('import.unrecognizedColumns')} </span>
                   <span className="text-[var(--color-text-secondary)]">
                     {autoMapping.unmappedColumns.join(', ')}
                   </span>
                   <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                    Ces colonnes de votre fichier n'ont été associées à aucun champ. Si elles contiennent des données utiles, associez-les manuellement ci-dessous.
+                    {t('import.unrecognizedDesc')}
                   </p>
                 </div>
               </div>
@@ -432,10 +432,10 @@ export function ImportPage() {
           <Card>
             <div className="p-6">
               <h3 className="font-semibold text-[var(--color-text)] mb-1">
-                Correspondance des colonnes — {rows.length} ligne(s)
+                {t('import.columnMapping', { count: rows.length })}
               </h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-                Vérifiez l'auto-détection et ajustez si nécessaire. Les champs marqués * sont obligatoires.
+                {t('import.mappingDesc')}
               </p>
 
               <div className="space-y-3">
@@ -466,7 +466,7 @@ export function ImportPage() {
                           value={mapping[field.key] || ''}
                           onChange={(e) => setMapping((prev) => ({ ...prev, [field.key]: e.target.value }))}
                           options={[
-                            { value: '', label: '— Ignorer —' },
+                            { value: '', label: t('import.ignore') },
                             ...headers.map((h) => ({ value: h, label: h })),
                           ]}
                         />
@@ -479,7 +479,7 @@ export function ImportPage() {
                             </Badge>
                           </div>
                         ) : (
-                          <span className="text-xs text-[var(--color-text-secondary)] italic">non détecté</span>
+                          <span className="text-xs text-[var(--color-text-secondary)] italic">{t('import.notDetected')}</span>
                         )}
                       </div>
                       {sug && sug.reason && isMapped && (
@@ -495,11 +495,11 @@ export function ImportPage() {
 
               <div className="flex gap-2 mt-6">
                 <Button variant="secondary" onClick={() => setStep('upload')}>
-                  <ArrowLeft className="w-4 h-4" /> Retour
+                  <ArrowLeft className="w-4 h-4" /> {t('import.back')}
                 </Button>
                 <Button onClick={handleImport} disabled={importing}>
                   {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                  Importer {rows.length} ligne(s)
+                  {t('import.importRows', { count: rows.length })}
                 </Button>
               </div>
             </div>
@@ -517,9 +517,9 @@ export function ImportPage() {
                 <AlertCircle className="w-8 h-8 text-[var(--color-danger)]" />
               )}
               <div>
-                <h3 className="font-semibold text-[var(--color-text)]">Import terminé</h3>
+                <h3 className="font-semibold text-[var(--color-text)]">{t('import.importDone')}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">
-                  {result.inserted} ligne(s) importée(s), {result.failed} en échec.
+                  {t('import.importResult', { inserted: result.inserted, failed: result.failed })}
                 </p>
               </div>
             </div>
@@ -527,7 +527,7 @@ export function ImportPage() {
             {result.errors.length > 0 && (
               <div className="border border-[var(--color-border)] rounded-lg p-3 max-h-64 overflow-y-auto bg-[var(--color-neutral-50)]">
                 <p className="text-sm font-medium text-[var(--color-danger)] mb-2">
-                  Erreurs ({result.errors.length}) :
+                  {t('import.errorsLabel', { count: result.errors.length })}
                 </p>
                 <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
                   {result.errors.map((err, i) => (
@@ -538,7 +538,7 @@ export function ImportPage() {
             )}
 
             <div className="flex gap-2 mt-6">
-              <Button onClick={reset}>Importer un autre module</Button>
+              <Button onClick={reset}>{t('import.importAnother')}</Button>
             </div>
           </div>
         </Card>

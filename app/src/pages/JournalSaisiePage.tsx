@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, evaluateExpression } from '@/lib/utils'
 import {
   getJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods,
   createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry,
@@ -13,12 +14,6 @@ import {
 import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const statusDetailLabels: Record<string, string> = {
-  open: 'Ouvert',
-  printed: 'Imprimé',
-  closed: 'Clôturé',
-}
-
 const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
   open: 'success',
   printed: 'warning',
@@ -27,13 +22,13 @@ const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
 
 type StatusFilter = 'all' | 'opened' | 'not_opened' | 'not_printed' | 'printed' | 'closed'
 
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
-  { key: 'all', label: 'Tous' },
-  { key: 'opened', label: 'Ouverts' },
-  { key: 'not_opened', label: 'Non ouverts' },
-  { key: 'not_printed', label: 'Non imprimés' },
-  { key: 'printed', label: 'Imprimés' },
-  { key: 'closed', label: 'Clôturés totalement' },
+const STATUS_FILTERS: { key: StatusFilter }[] = [
+  { key: 'all' },
+  { key: 'opened' },
+  { key: 'not_opened' },
+  { key: 'not_printed' },
+  { key: 'printed' },
+  { key: 'closed' },
 ]
 
 // Derive a status for a (journal × période) cell from its entries
@@ -58,6 +53,8 @@ function matchesFilter(status: 'empty' | 'open' | 'printed' | 'closed', filter: 
 
 export function JournalSaisiePage() {
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
 const [journals, setJournals] = useState<Journal[]>([])
   const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [periods, setPeriods] = useState<FiscalPeriod[]>([])
@@ -132,12 +129,12 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette écriture ?')) return
+    if (!window.confirm(tCommon('form.confirmDelete'))) return
     try {
       await deleteJournalEntry(id)
       await loadEntries()
     } catch (err) {
-      toast('error', 'Erreur', 'Erreur lors de la suppression')
+      toast('error', tCommon('toast.error'), t('saisie.deleteError'))
     }
   }
 
@@ -146,17 +143,17 @@ const [journals, setJournals] = useState<Journal[]>([])
       await updateEntryStatusDetail(id, 'printed')
       await loadEntries()
     } catch (err) {
-      toast('error', 'Erreur', 'Erreur lors du changement de statut')
+      toast('error', tCommon('toast.error'), t('saisie.statusChangeError'))
     }
   }
 
   async function handleClose(id: string) {
-    if (!window.confirm('Clôturer cette écriture ? Elle ne pourra plus être modifiée.')) return
+    if (!window.confirm(t('saisie.closeConfirm'))) return
     try {
       await updateEntryStatusDetail(id, 'closed')
       await loadEntries()
     } catch (err) {
-      toast('error', 'Erreur', 'Erreur lors de la clôture')
+      toast('error', tCommon('toast.error'), t('saisie.closeError'))
     }
   }
 
@@ -181,8 +178,8 @@ const [journals, setJournals] = useState<Journal[]>([])
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Saisie des journaux' }]} />
-        <PageHeader title="Saisie des journaux" subtitle="Chargement..." />
+        <Breadcrumb items={[{ label: t('saisie.title') }]} />
+        <PageHeader title={t('saisie.title')} subtitle={tCommon('common.loading')} />
         <SkeletonTable rows={6} cols={6} />
       </div>
     )
@@ -202,16 +199,16 @@ const [journals, setJournals] = useState<Journal[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Traitement' }, { label: 'Saisie des journaux' }]} />
+      <Breadcrumb items={[{ label: t('saisie.title') }]} />
       <PageHeader
-        title="Saisie des journaux"
-        subtitle={`${journals.length} journal(x) — ${gridRows.length} ligne(s) affichée(s)`}
+        title={t('saisie.title')}
+        subtitle={`${journals.length} ${t('saisie.journalsCount')} — ${gridRows.length} ${t('saisie.rowsShown')}`}
       />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-56">
           <Select
-            label="Exercice"
+            label={t('saisie.fiscalYear')}
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             options={fiscalYears.map((y) => ({ value: y.id, label: y.code }))}
@@ -219,15 +216,15 @@ const [journals, setJournals] = useState<Journal[]>([])
         </div>
         <div className="w-56">
           <Select
-            label="Période"
+            label={t('saisie.period')}
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            options={[{ value: '', label: 'Toutes les périodes' }, ...periods.map((p) => ({ value: p.id, label: p.period_label }))]}
+            options={[{ value: '', label: t('saisie.allPeriods') }, ...periods.map((p) => ({ value: p.id, label: p.period_label }))]}
           />
         </div>
         {selectedPeriodObj && (
           <Badge variant={selectedPeriodObj.status === 'open' ? 'success' : 'danger'}>
-            {selectedPeriodObj.status === 'open' ? 'Période ouverte' : 'Période clôturée'}
+            {selectedPeriodObj.status === 'open' ? t('saisie.periodOpen') : t('saisie.periodClosed')}
           </Badge>
         )}
       </div>
@@ -235,8 +232,8 @@ const [journals, setJournals] = useState<Journal[]>([])
       {journals.length === 0 ? (
         <EmptyState
           icon={<PenTool className="w-8 h-8" />}
-          title="Aucun journal configuré"
-          description="Créez d'abord des codes journaux dans Structure > Codes journaux."
+          title={t('saisie.noJournals')}
+          description={t('saisie.noJournalsDescription')}
         />
       ) : (
         <div className="flex gap-4">
@@ -254,7 +251,7 @@ const [journals, setJournals] = useState<Journal[]>([])
                         : 'hover:bg-[var(--color-neutral-100)] text-[var(--color-text-primary)]'
                     }`}
                   >
-                    {f.label}
+                    {t(`saisie.statusFilters.${f.key}`)}
                   </button>
                 ))}
               </div>
@@ -264,7 +261,7 @@ const [journals, setJournals] = useState<Journal[]>([])
           {/* Journal × Période grid */}
           <div className="flex-1 min-w-0">
             <Card>
-              <Table headers={['Posit.', 'Période', 'Code', 'Intitulé du journal', 'Écritures', 'Actions']}>
+              <Table headers={[t('saisie.position'), t('saisie.period'), t('saisie.code'), t('saisie.journalName'), t('saisie.entries'), tCommon('table.actions')]}>
                 {gridRows.map(({ period, journal, count, status }) => {
                   const periodOpen = period.status === 'open'
                   return (
@@ -274,7 +271,7 @@ const [journals, setJournals] = useState<Journal[]>([])
                           <span className="text-[var(--color-text-secondary)] text-xs">—</span>
                         ) : (
                           <Badge variant={statusDetailBadge[status] || 'success'}>
-                            {statusDetailLabels[status] || 'Ouvert'}
+                            {t(`saisie.statusDetailLabels.${status}`, { defaultValue: status })}
                           </Badge>
                         )}
                       </TableCell>
@@ -288,7 +285,7 @@ const [journals, setJournals] = useState<Journal[]>([])
                           onClick={() => { setActiveJournal(journal); setActivePeriod(period); setShowSaisie(true) }}
                           disabled={!periodOpen}
                         >
-                          <PenTool className="w-3 h-3" /> Saisir
+                          <PenTool className="w-3 h-3" /> {t('saisie.enter')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -302,9 +299,9 @@ const [journals, setJournals] = useState<Journal[]>([])
 
       {entries.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase mb-3">Écritures de la période</h3>
+          <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase mb-3">{t('saisie.periodEntries')}</h3>
           <Card>
-            <Table headers={['', 'N°', 'Date', 'Journal', 'Description', 'Statut', 'Débit', 'Crédit', 'Actions']}>
+            <Table headers={['', t('saisie.number'), tCommon('common.date'), t('saisie.journal'), tCommon('common.description'), tCommon('common.status'), t('saisie.debit'), t('saisie.credit'), tCommon('table.actions')]}>
               {entries.map((entry) => (
                 <Fragment key={entry.id}>
                   <TableRow onClick={() => toggleExpand(entry.id)}>
@@ -319,7 +316,7 @@ const [journals, setJournals] = useState<Journal[]>([])
                     <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                     <TableCell>
                       <Badge variant={statusDetailBadge[entry.status_detail || 'open'] || 'warning'}>
-                        {statusDetailLabels[entry.status_detail || 'open'] || 'Ouvert'}
+                        {t(`saisie.statusDetailLabels.${entry.status_detail || 'open'}`, { defaultValue: entry.status_detail || 'open' })}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
@@ -328,13 +325,13 @@ const [journals, setJournals] = useState<Journal[]>([])
                       <div className="flex gap-1">
                         {entry.status_detail !== 'closed' && (
                           <>
-                            <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} title="Imprimer" className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
+                            <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} title={t('saisie.print')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
                               <Printer className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleClose(entry.id) }} title="Clôturer" className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                            <button onClick={(e) => { e.stopPropagation(); handleClose(entry.id) }} title={t('saisie.close')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                               <Lock className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} title="Supprimer" className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} title={tCommon('actions.delete')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </>
@@ -398,6 +395,8 @@ function SaisieForm({
 }) {
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
@@ -452,7 +451,14 @@ function SaisieForm({
   function updateLine(idx: number, field: keyof LineDraft, value: string) {
     setLines(lines.map((l, i) => {
       if (i !== idx) return l
-      const updated = { ...l, [field]: value }
+      let processedValue = value
+      if (field === 'debit' || field === 'credit') {
+        const evaluated = evaluateExpression(value)
+        if (evaluated !== null) {
+          processedValue = String(evaluated)
+        }
+      }
+      const updated = { ...l, [field]: processedValue }
       if (field === 'account_general') {
         const acc = accounts.find((a) => a.code === value)
         updated.account_name = acc?.name || ''
@@ -509,7 +515,7 @@ function SaisieForm({
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
     if (!isBalanced) {
-      toast('info', 'Information', 'Les écritures ne sont pas équilibrées. Débit et crédit doivent être égaux.')
+      toast('info', tCommon('toast.info'), t('saisie.notBalanced'))
       return
     }
     setSaving(true)
@@ -558,7 +564,7 @@ function SaisieForm({
       })
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -567,26 +573,24 @@ function SaisieForm({
   return (
     <div>
       <Breadcrumb items={[
-        { label: 'Comptabilité' },
-        { label: 'Traitement' },
-        { label: 'Saisie des journaux' },
+        { label: t('saisie.title') },
         { label: `${journal.code} — ${period.period_label}` },
       ]} />
       <PageHeader
-        title={`Saisie — ${journal.code} ${journal.name}`}
-        subtitle={`Période : ${period.period_label} ${fiscalYear.code} — ${period.status === 'open' ? 'Ouverte' : 'Clôturée'}`}
-        action={<Button variant="secondary" onClick={onClose}><X className="w-4 h-4" /> Retour</Button>}
+        title={t('saisie.saisieTitle', { code: journal.code, name: journal.name })}
+        subtitle={t('saisie.saisieSubtitle', { period: period.period_label, year: fiscalYear.code, status: period.status === 'open' ? t('saisie.open') : t('saisie.closed') })}
+        action={<Button variant="secondary" onClick={onClose}><X className="w-4 h-4" /> {tCommon('actions.back')}</Button>}
       />
 
       {isBankOrCash && (
         <Card className="mb-4">
           <div className="p-4 grid grid-cols-3 gap-4">
             <div className="rounded-lg bg-[var(--color-neutral-50)] p-3">
-              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">Ancien solde</p>
+              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">{t('saisie.previousBalance')}</p>
               <p className="text-lg font-bold font-mono">{formatCurrency(balance.ancienSolde)}</p>
             </div>
             <div className="rounded-lg bg-[var(--color-neutral-50)] p-3">
-              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">Mouvements</p>
+              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">{t('saisie.movements')}</p>
               <div className="text-sm font-mono">
                 <span className="text-[var(--color-success)]">+{formatCurrency(balance.mouvementDebit)}</span>
                 {' / '}
@@ -594,7 +598,7 @@ function SaisieForm({
               </div>
             </div>
             <div className="rounded-lg bg-[var(--color-neutral-50)] p-3">
-              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">Nouveau solde</p>
+              <p className="text-xs text-[var(--color-text-secondary)] uppercase mb-1">{t('saisie.newBalance')}</p>
               <p className="text-lg font-bold font-mono text-[var(--color-primary)]">{formatCurrency(balance.nouveauSolde)}</p>
             </div>
           </div>
@@ -603,10 +607,10 @@ function SaisieForm({
 
       <Card className="mb-4">
         <div className="p-4 grid grid-cols-4 gap-4">
-          <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label="N° pièce" value={pieceNumber} onChange={(e) => setPieceNumber(e.target.value)} placeholder="Auto" />
-          <Input label="N° facture" value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder="Optionnel" />
-          <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Objet de l'écriture" />
+          <Input label={tCommon('common.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          <Input label={t('saisie.pieceNumber')} value={pieceNumber} onChange={(e) => setPieceNumber(e.target.value)} placeholder={t('saisie.auto')} />
+          <Input label={t('saisie.invoiceNumber')} value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder={tCommon('form.optional')} />
+          <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('saisie.entryObject')} />
         </div>
       </Card>
 
@@ -614,17 +618,17 @@ function SaisieForm({
         <div className="p-4 flex items-end gap-3">
           <div className="flex-1">
             <Select
-              label="Modèle de saisie"
+              label={t('saisie.entryTemplate')}
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(e.target.value)}
               options={[
-                { value: '', label: '— Aucun —' },
+                { value: '', label: t('saisie.none') },
                 ...templates.filter((t) => !t.journal_code || t.journal_code === journal.code).map((t) => ({ value: t.id, label: t.name })),
               ]}
             />
           </div>
           <Button variant="secondary" onClick={applyTemplate} disabled={!selectedTemplate}>
-            <Wand2 className="w-4 h-4" /> Appliquer le modèle
+            <Wand2 className="w-4 h-4" /> {t('saisie.applyTemplate')}
           </Button>
         </div>
       </Card>
@@ -635,15 +639,15 @@ function SaisieForm({
             <table className="app-table min-w-[760px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-14">Jour</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">N° pièce</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">N° facture</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">Référence</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">Cpte gén.</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">Cpte tiers</th>
-                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">Libellé</th>
-                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">Débit</th>
-                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">Crédit</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-14">{t('saisie.day')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">{t('saisie.pieceNumber')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">{t('saisie.invoiceNumber')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">{tCommon('common.reference')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">{t('saisie.accountGeneral')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">{t('saisie.accountThirdParty')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">{tCommon('common.label')}</th>
+                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">{t('saisie.debit')}</th>
+                  <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">{t('saisie.credit')}</th>
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -663,7 +667,7 @@ function SaisieForm({
                         className="input text-xs py-1 w-22"
                         value={line.piece_number}
                         onChange={(e) => updateLine(idx, 'piece_number', e.target.value)}
-                        placeholder="Auto"
+                        placeholder={t('saisie.auto')}
                       />
                     </td>
                     <td className="px-1 py-1.5">
@@ -709,7 +713,7 @@ function SaisieForm({
                         className="input text-xs py-1"
                         value={line.description}
                         onChange={(e) => updateLine(idx, 'description', e.target.value)}
-                        placeholder="Libellé"
+                        placeholder={tCommon('common.label')}
                       />
                     </td>
                     <td className="px-2 py-1.5">
@@ -744,12 +748,12 @@ function SaisieForm({
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={6} className="px-2 py-2">
                     <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Ajouter une ligne
+                      <Plus className="w-3 h-3" /> {t('saisie.addLine')}
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right">
                     <button type="button" onClick={equilibrate} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
-                      <CheckCircle2 className="w-3 h-3" /> Équilibrer
+                      <CheckCircle2 className="w-3 h-3" /> {t('saisie.balanc')}
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right font-mono font-semibold text-sm">{formatCurrency(totalDebit)}</td>
@@ -759,13 +763,13 @@ function SaisieForm({
                 <tr className="bg-[var(--color-neutral-50)]">
                   <td colSpan={7} className="px-2 py-2 text-sm font-medium">
                     {isBalanced ? (
-                      <span className="text-[var(--color-success)]">✓ Écriture équilibrée</span>
+                      <span className="text-[var(--color-success)]">✓ {t('saisie.balanced')}</span>
                     ) : (
                       <span className="text-[var(--color-danger)]">Δ {formatCurrency(Math.abs(totalDebit - totalCredit))}</span>
                     )}
                   </td>
                   <td colSpan={3} className="px-2 py-2 text-right text-sm text-[var(--color-text-secondary)]">
-                    Différence: {formatCurrency(totalDebit - totalCredit)}
+                    {t('saisie.difference')}: {formatCurrency(totalDebit - totalCredit)}
                   </td>
                 </tr>
               </tfoot>
@@ -773,9 +777,9 @@ function SaisieForm({
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button onClick={() => handleSubmit()} disabled={saving || !isBalanced}>
-              {saving ? 'Enregistrement...' : 'Enregistrer l\'écriture'}
+              {saving ? t('saisie.saving') : t('saisie.saveEntry')}
             </Button>
           </div>
         </div>

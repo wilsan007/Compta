@@ -1,15 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCreditNotes, createCreditNote, updateCreditNote, deleteCreditNote, getCustomers, getInvoices } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import type { CreditNote, Customer, Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
+import { useLegislation } from '@/lib/legislation'
 
-const statusLabels: Record<string, string> = {
-  draft: 'Brouillon',
-  applied: 'Appliqué',
-}
+const statusKeys: string[] = ['draft', 'applied']
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   draft: 'warning',
@@ -18,6 +17,8 @@ const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' |
 
 export function CreditNotesPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('sales')
+  const { t: tCommon } = useTranslation('common')
 const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -51,12 +52,12 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cet avoir ?')) return
+    if (!window.confirm(tCommon('form.confirmDelete'))) return
     try {
       await deleteCreditNote(id)
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
     }
   }
 
@@ -65,17 +66,17 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
       await updateCreditNote(id, { status: 'applied' })
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Ventes' }, { label: 'Avoirs' }]} />
+      <Breadcrumb items={[{ label: t('creditNotes.title') }]} />
       <PageHeader
-        title="Avoirs clients"
-        subtitle="Gérez les notes de crédit clients"
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel avoir</Button>}
+        title={t('creditNotes.title')}
+        subtitle={t('creditNotes.subtitle')}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('creditNotes.new')}</Button>}
       />
 
       {loading ? (
@@ -83,13 +84,13 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
       ) : creditNotes.length === 0 ? (
         <EmptyState
           icon={<Receipt className="w-8 h-8" />}
-          title="Aucun avoir"
-          description="Créez votre premier avoir client."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvel avoir</Button>}
+          title={t('creditNotes.noCreditNotes')}
+          description={t('creditNotes.noCreditNotesDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('creditNotes.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['', 'Numéro', 'Date', 'Client', 'Montant', 'Statut', 'Actions']}>
+          <Table headers={['', t('creditNotes.number'), t('creditNotes.date'), t('creditNotes.customer'), t('creditNotes.amount'), t('creditNotes.status'), tCommon('table.actions')]}>
             {creditNotes.map((cn) => (
               <div key={cn.id}>
                 <TableRow onClick={() => toggleExpand(cn.id)}>
@@ -100,17 +101,17 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
                   </TableCell>
                   <TableCell className="font-mono font-semibold">{cn.number}</TableCell>
                   <TableCell>{formatDate(cn.date)}</TableCell>
-                  <TableCell>{cn.customer_name || 'N/A'}</TableCell>
+                  <TableCell>{cn.customer_name || '—'}</TableCell>
                   <TableCell className="font-mono text-[var(--color-danger)] text-right">-{formatCurrency(Number(cn.total))}</TableCell>
-                  <TableCell><Badge variant={statusBadge[cn.status]}>{statusLabels[cn.status]}</Badge></TableCell>
+                  <TableCell><Badge variant={statusBadge[cn.status]}>{translateStatus(cn.status)}</Badge></TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {cn.status === 'draft' && (
-                        <button onClick={(e) => { e.stopPropagation(); handleApply(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" title="Appliquer">
+                        <button onClick={(e) => { e.stopPropagation(); handleApply(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" title={tCommon('actions.apply')}>
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title="Supprimer">
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -122,13 +123,13 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
                     <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">{line.quantity}x</TableCell>
                     <TableCell colSpan={2} className="text-xs text-[var(--color-text-secondary)]">{line.description}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(line.total))}</TableCell>
-                    <TableCell className="font-mono text-xs text-right">TVA: {formatCurrency(Number(line.vat_total))}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{t('invoices.vatAmount')}: {formatCurrency(Number(line.vat_total))}</TableCell>
                     <TableCell />
                   </tr>
                 ))}
                 {cn.reason && (
                   <tr className="bg-[var(--color-neutral-50)]">
-                    <TableCell /><TableCell colSpan={6} className="text-xs text-[var(--color-text-secondary)] italic">Motif: {cn.reason}</TableCell>
+                    <TableCell /><TableCell colSpan={6} className="text-xs text-[var(--color-text-secondary)] italic">{t('creditNotes.reason')}: {cn.reason}</TableCell>
                   </tr>
                 )}
               </div>
@@ -157,12 +158,15 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
 }) {
   const [number, setNumber] = useState('AV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
   const { toast } = useToast()
+  const { t } = useTranslation('sales')
+  const { t: tCommon } = useTranslation('common')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [customerId, setCustomerId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [reason, setReason] = useState('')
+  const { defaultVatRate } = useLegislation()
   const [lines, setLines] = useState<{ description: string; quantity: number; unit_price: number; vat_rate: number; total: number; vat_total: number }[]>([
-    { description: '', quantity: 1, unit_price: 0, vat_rate: 20, total: 0, vat_total: 0 },
+    { description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 },
   ])
   const [saving, setSaving] = useState(false)
 
@@ -183,7 +187,7 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
   }
 
   function addLine() {
-    setLines(prev => [...prev, { description: '', quantity: 1, unit_price: 0, vat_rate: 20, total: 0, vat_total: 0 }])
+    setLines(prev => [...prev, { description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 }])
   }
 
   function removeLine(idx: number) {
@@ -219,7 +223,7 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -229,21 +233,21 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvel avoir client</h2>
+          <h2 className="text-lg font-semibold">{t('creditNotes.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Numéro" required value={number} onChange={(e) => setNumber(e.target.value)} />
-            <Input label="Date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input label={t('creditNotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Client" required value={customerId} onChange={(e) => { setCustomerId(e.target.value); setInvoiceId('') }} options={[
-              { value: '', label: 'Sélectionner un client' },
+            <Select label={t('creditNotes.customer')} required value={customerId} onChange={(e) => { setCustomerId(e.target.value); setInvoiceId('') }} options={[
+              { value: '', label: tCommon('form.selectOption') },
               ...customers.map(c => ({ value: c.id, label: c.name })),
             ]} />
-            <Select label="Facture liée (optionnel)" value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} options={[
-              { value: '', label: 'Aucune' },
+            <Select label={`${t('creditNotes.invoice')} (${tCommon('form.optional')})`} value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} options={[
+              { value: '', label: tCommon('filters.all') },
               ...customerInvoices.map(i => ({ value: i.id, label: `${i.number} - ${formatCurrency(Number(i.total))}` })),
             ]} />
           </div>
@@ -252,11 +256,11 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
             <table className="app-table min-w-[760px]">
               <thead className="bg-[var(--color-neutral-50)]">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-semibold">Description</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">Qté</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">Prix unit.</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">TVA%</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">Total</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.total')}</th>
                   <th className="w-8"></th>
                 </tr>
               </thead>
@@ -264,7 +268,7 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
                 {lines.map((line, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
                     <td className="px-3 py-2">
-                      <input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder="Description" />
+                      <input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder={t('invoices.description')} />
                     </td>
                     <td className="px-3 py-2">
                       <input type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
@@ -284,21 +288,21 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
               </tbody>
             </table>
             <button type="button" onClick={addLine} className="w-full py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-neutral-50)] border-t border-[var(--color-border)]">
-              + Ajouter une ligne
+              + {t('invoices.addLine')}
             </button>
           </div>
 
           <div className="flex justify-end gap-6 text-sm">
-            <div><span className="text-[var(--color-text-secondary)]">Sous-total: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>
-            <div><span className="text-[var(--color-text-secondary)]">TVA: </span><span className="font-mono font-semibold">{formatCurrency(vatTotal)}</span></div>
-            <div><span className="text-[var(--color-text-secondary)]">Total: </span><span className="font-mono font-bold text-base">{formatCurrency(total)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.subtotal')}: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.vatAmount')}: </span><span className="font-mono font-semibold">{formatCurrency(vatTotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}: </span><span className="font-mono font-bold text-base">{formatCurrency(total)}</span></div>
           </div>
 
-          <Input label="Motif" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Raison de l'avoir" />
+          <Input label={t('creditNotes.reason')} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('creditNotes.reason')} />
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Créer l\'avoir'}</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('creditNotes.create')}</Button>
           </div>
         </form>
       </div>

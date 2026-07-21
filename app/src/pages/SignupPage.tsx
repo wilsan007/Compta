@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { Building2, Lock, Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export function SignupPage() {
+  const { t } = useTranslation('auth')
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -18,15 +20,15 @@ export function SignupPage() {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !password.trim()) {
-      setError('Veuillez saisir votre email et mot de passe')
+      setError(t('fillEmailPassword'))
       return
     }
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères')
+      setError(t('passwordTooShort'))
       return
     }
     if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas')
+      setError(t('passwordMismatch'))
       return
     }
     setLoading(true)
@@ -52,13 +54,12 @@ export function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-success)] text-white mb-4">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">Vérifiez votre email</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-            Un email de confirmation a été envoyé à <strong>{email}</strong>. Cliquez sur le lien
-            pour activer votre compte, puis configurez votre entreprise.
-          </p>
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('verifyEmail')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-2"
+            dangerouslySetInnerHTML={{ __html: t('verifyEmailDescription', { email }) }}
+          />
           <Link to="/login" className="inline-block mt-6 text-sm text-[var(--color-primary)] font-medium">
-            Retour à la connexion
+            {t('password.backToLogin')}
           </Link>
         </div>
       </div>
@@ -72,9 +73,9 @@ export function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] text-white mb-4">
             <Building2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">Créer un compte</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('signup.title')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Créez votre espace entreprise en quelques secondes
+            {t('signup.subtitle')}
           </p>
         </div>
 
@@ -88,7 +89,7 @@ export function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Email professionnel</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('signup.professionalEmail')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -104,7 +105,7 @@ export function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Mot de passe</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('signup.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -112,7 +113,7 @@ export function SignupPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Au moins 6 caractères"
+                  placeholder={t('signup.passwordPlaceholder')}
                   className="input pl-10"
                   autoComplete="new-password"
                 />
@@ -120,7 +121,7 @@ export function SignupPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">Confirmer le mot de passe</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('signup.confirmPassword')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -136,20 +137,20 @@ export function SignupPage() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Création...' : 'Créer mon compte'}
+              {loading ? t('signup.creatingShort') : t('signup.createAccount')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            Vous avez déjà un compte ?{' '}
+            {t('signup.haveAccount')}{' '}
             <Link to="/login" className="text-[var(--color-primary)] font-medium">
-              Se connecter
+              {t('signup.signIn')}
             </Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
-          ERP Compta — Solution de gestion d'entreprise
+          ERP Compta — {t('signup.tagline')}
         </p>
       </div>
     </div>

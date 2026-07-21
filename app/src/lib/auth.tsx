@@ -86,6 +86,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      // Check if there's a pending invitation for this email
+      const userEmail = session.user.email
+      if (userEmail) {
+        const { data: pendingInvite } = await supabase
+          .from('tenant_users')
+          .select('id, tenant_id, status, tenants:tenant_id (name)')
+          .eq('email', userEmail)
+          .eq('status', 'pending')
+          .maybeSingle()
+
+        if (pendingInvite) {
+          // User has a pending invitation — redirect to accept page
+          setTenantId(null)
+          setUser({
+            id: session.user.id,
+            email: userEmail,
+            name: userEmail,
+            role: 'viewer',
+            tenantId: null,
+            tenantName: null,
+            permissions: {},
+          })
+          // Redirect to accept-invitation page
+          if (window.location.pathname !== '/accept-invitation') {
+            window.location.href = '/accept-invitation'
+          }
+          return
+        }
+      }
+
       // Last resort fallback
       setTenantId(null)
       setUser({

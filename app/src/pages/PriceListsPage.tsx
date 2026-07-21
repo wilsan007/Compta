@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries'
@@ -8,6 +9,8 @@ import { useToast } from '@/lib/toast'
 
 export function PriceListsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('inventory')
+  const { t: tCommon } = useTranslation('common')
 const [lists, setLists] = useState<PriceList[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,28 +46,28 @@ const [lists, setLists] = useState<PriceList[]>([])
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm('Supprimer cette liste de prix ?')) return
+  if (!window.confirm(tCommon('form.confirmDelete'))) return
     try { await deletePriceList(id); await loadData() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }
 
   async function handleDeleteLine(lineId: string, listId: string) {
     try { await deletePriceListLine(lineId); const lns = await getPriceListLines(listId); setLines((prev) => ({ ...prev, [listId]: lns })) }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Stock' }, { label: 'Listes de prix' }]} />
-      <PageHeader title="Listes de prix" subtitle={`${lists.length} liste(s)`}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle liste</Button>} />
+      <Breadcrumb items={[{ label: t('priceLists.title') }]} />
+      <PageHeader title={t('priceLists.title')} subtitle={`${lists.length} ${t('priceLists.title').toLowerCase()}`}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('priceLists.new')}</Button>} />
 
       {loading ? <SkeletonTable rows={4} cols={5} /> : lists.length === 0 ? (
-        <EmptyState icon={<Tag className="w-8 h-8" />} title="Aucune liste de prix" description="Créez votre première liste de prix."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle liste</Button>} />
+        <EmptyState icon={<Tag className="w-8 h-8" />} title={t('priceLists.noPriceLists')} description={t('priceLists.noPriceListsDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('priceLists.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={['Nom', 'Type', 'Devise', 'Validité', 'Actions']}>
+          <Table headers={[t('priceLists.name'), t('priceLists.type'), t('priceLists.currency'), t('priceLists.validity'), tCommon('table.actions')]}>
             {lists.map((l) => (
               <div key={l.id}>
                 <TableRow>
@@ -76,12 +79,12 @@ const [lists, setLists] = useState<PriceList[]>([])
                       {l.name}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs">{l.type === 'sales' ? 'Vente' : 'Achat'}</TableCell>
+                  <TableCell className="text-xs">{l.type === 'sales' ? t('priceLists.sales') : t('priceLists.purchase')}</TableCell>
                   <TableCell className="text-xs">{l.currency}</TableCell>
                   <TableCell className="text-xs">{l.valid_from ? formatDate(l.valid_from) : '—'} → {l.valid_to ? formatDate(l.valid_to) : '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={() => setShowLineForm(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Ajouter ligne">
+                      <button onClick={() => setShowLineForm(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={tCommon('actions.add')}>
                         <Plus className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleDelete(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
@@ -93,9 +96,9 @@ const [lists, setLists] = useState<PriceList[]>([])
                 {expanded.has(l.id) && (
                   <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
                     {(lines[l.id] || []).length === 0 ? (
-                      <p className="text-xs text-[var(--color-text-secondary)]">Aucune ligne. Cliquez sur + pour ajouter un produit.</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">{t('priceLists.noLines')}</p>
                     ) : (
-                      <Table headers={['Produit', 'Prix', 'Qté min', 'Remise %', 'Actions']}>
+                      <Table headers={[t('priceLists.product'), t('priceLists.price'), t('priceLists.minQty'), t('priceLists.discount'), tCommon('table.actions')]}>
                         {(lines[l.id] || []).map((line) => (
                           <TableRow key={line.id}>
                             <TableCell className="text-sm">{line.products?.name || '—'}</TableCell>
@@ -128,6 +131,8 @@ const [lists, setLists] = useState<PriceList[]>([])
 function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState('')
   const { toast } = useToast()
+  const { t } = useTranslation('inventory')
+  const { t: tCommon } = useTranslation('common')
   const [code, setCode] = useState('')
   const [type, setType] = useState('sales')
   const [validFrom, setValidFrom] = useState('')
@@ -140,7 +145,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     try {
       await createPriceList({ name, code: code || null, type: type as any, currency: 'EUR', valid_from: validFrom || null, valid_to: validTo || null, active: true, is_default: false } as any)
       onSaved()
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
@@ -148,22 +153,22 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle liste de prix</h2>
+          <h2 className="text-lg font-semibold">{t('priceLists.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label="Nom" required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input label={t('priceLists.name')} required value={name} onChange={(e) => setName(e.target.value)} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} />
-            <Select label="Type" value={type} onChange={(e) => setType(e.target.value)} options={[{ value: 'sales', label: 'Vente' }, { value: 'purchase', label: 'Achat' }]} />
+            <Input label={t('priceLists.code')} value={code} onChange={(e) => setCode(e.target.value)} />
+            <Select label={t('priceLists.type')} value={type} onChange={(e) => setType(e.target.value)} options={[{ value: 'sales', label: t('priceLists.sales') }, { value: 'purchase', label: t('priceLists.purchase') }]} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Valable depuis" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
-            <Input label="Valable jusqu'au" type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+            <Input label={t('priceLists.validFrom')} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
+            <Input label={t('priceLists.validTo')} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>
@@ -174,6 +179,8 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceListId: string; products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { toast } = useToast()
+  const { t } = useTranslation('inventory')
+  const { t: tCommon } = useTranslation('common')
   const [unitPrice, setUnitPrice] = useState(0)
   const [minQuantity, setMinQuantity] = useState(1)
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -185,7 +192,7 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
     try {
       await createPriceListLine({ price_list_id: priceListId, product_id: productId, unit_price: unitPrice, min_quantity: minQuantity, discount_percent: discountPercent } as any)
       onSaved()
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
@@ -193,25 +200,25 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Ajouter un produit</h2>
+          <h2 className="text-lg font-semibold">{t('priceLists.addProduct')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Produit</label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('priceLists.product')}</label>
             <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)} required>
-              <option value="">— Sélectionner —</option>
+              <option value="">— {tCommon('form.selectOption')} —</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Input label="Prix unitaire" type="number" step="0.01" required value={unitPrice} onChange={(e) => setUnitPrice(Number(e.target.value))} />
-            <Input label="Qté min" type="number" step="0.01" value={minQuantity} onChange={(e) => setMinQuantity(Number(e.target.value))} />
-            <Input label="Remise %" type="number" step="0.01" value={discountPercent} onChange={(e) => setDiscountPercent(Number(e.target.value))} />
+            <Input label={t('priceLists.unitPrice')} type="number" step="0.01" required value={unitPrice} onChange={(e) => setUnitPrice(Number(e.target.value))} />
+            <Input label={t('priceLists.minQty')} type="number" step="0.01" value={minQuantity} onChange={(e) => setMinQuantity(Number(e.target.value))} />
+            <Input label={t('priceLists.discount')} type="number" step="0.01" value={discountPercent} onChange={(e) => setDiscountPercent(Number(e.target.value))} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Ajouter'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.add')}</Button>
           </div>
         </form>
       </div>

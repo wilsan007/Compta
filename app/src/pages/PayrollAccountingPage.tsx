@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries'
@@ -11,6 +12,9 @@ const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> 
 
 export function PayrollAccountingPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('hr')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
 const [entries, setEntries] = useState<any[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,29 +37,29 @@ const [entries, setEntries] = useState<any[]>([])
     try {
       await transferPayrollToAccounting(entry.id, entry)
       await loadData()
-      toast('success', 'Succès', 'OD de paie transférée en comptabilité')
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+      toast('success', tCommon('common.success'), t('payrollAccounting.generatedEntries'))
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setTransferring(null) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette OD de paie ?')) return
+    if (!window.confirm(tCommon('form.confirmDelete'))) return
     try { await deletePayrollAccountingEntry(id); await loadData() }
-    catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Paie & RH' }, { label: 'OD de paie' }]} />
-      <PageHeader title="OD de paie" subtitle={`${entries.length} écriture(s)`}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle OD</Button>} />
+      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('payrollAccounting.title') }]} />
+      <PageHeader title={t('payrollAccounting.title')} subtitle={t('payrollAccounting.subtitle')}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payrollAccounting.generate')}</Button>} />
 
       {loading ? <SkeletonTable rows={4} cols={6} /> : entries.length === 0 ? (
-        <EmptyState icon={<Calculator className="w-8 h-8" />} title="Aucune OD de paie" description="Créez votre première écriture de paie."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle OD</Button>} />
+        <EmptyState icon={<Calculator className="w-8 h-8" />} title={t('payrollAccounting.noEntries')} description={t('payrollAccounting.subtitle')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payrollAccounting.generate')}</Button>} />
       ) : (
         <Card>
-          <Table headers={['N°', 'Campagne', 'Période', 'Brut', 'Charges patronales', 'Net', 'Statut', 'Actions']}>
+          <Table headers={[t('payRuns.number'), t('payRuns.title'), t('payRuns.period'), t('payRuns.grossTotal'), t('paySlips.employerCharges'), t('payRuns.netTotal'), t('payRuns.status'), tCommon('table.actions')]}>
             {entries.map((e) => (
               <TableRow key={e.id}>
                 <TableCell className="font-mono text-xs">{e.number}</TableCell>
@@ -64,12 +68,12 @@ const [entries, setEntries] = useState<any[]>([])
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.gross_total))}</TableCell>
                 <TableCell className="font-mono text-xs text-[var(--color-danger)] text-right">{formatCurrency(Number(e.employer_contributions_total))}</TableCell>
                 <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(e.net_total))}</TableCell>
-                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{statusLabels[e.status] || e.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{t(`payrollAccounting.statuses.${e.status}`) || statusLabels[e.status] || e.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {e.status === 'draft' && (
                       <button onClick={() => handleTransfer(e)} disabled={transferring === e.id}
-                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Transférer en compta">
+                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payrollAccounting.validate')}>
                         {transferring === e.id ? <CheckCircle2 className="w-4 h-4" /> : <ArrowRightLeft className="w-4 h-4" />}
                       </button>
                     )}
@@ -90,6 +94,8 @@ const [entries, setEntries] = useState<any[]>([])
 }
 
 function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation('hr')
+  const { t: tCommon } = useTranslation('common')
   const [payRunId, setPayRunId] = useState('')
   const { toast } = useToast()
   const [periodDate, setPeriodDate] = useState(new Date().toISOString().split('T')[0])
@@ -111,7 +117,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
         journal_entry_id: null, status: 'draft',
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', 'Erreur', err.message || 'échec') }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -119,29 +125,29 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle OD de paie</h2>
+          <h2 className="text-lg font-semibold">{t('payrollAccounting.title')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Campagne de paie</label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payrollAccounting.selectPayRun')}</label>
             <select className="input" value={payRunId} onChange={(e) => setPayRunId(e.target.value)} required>
-              <option value="">— Sélectionner —</option>
+              <option value="">{tCommon('form.selectPlaceholder') || '—'}</option>
               {payRuns.map((r) => <option key={r.id} value={r.id}>{r.number} ({formatDate(r.period_start)} → {formatDate(r.period_end)})</option>)}
             </select>
           </div>
-          <Input label="Date d'écriture" type="date" required value={periodDate} onChange={(e) => setPeriodDate(e.target.value)} />
+          <Input label={t('payrollAccounting.title')} type="date" required value={periodDate} onChange={(e) => setPeriodDate(e.target.value)} />
           {selectedRun && (
             <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] space-y-1 text-sm">
-              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">Brut total:</span><span className="font-mono font-bold">{formatCurrency(Number(selectedRun.gross_total))}</span></div>
-              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">Charges patronales (42%):</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(selectedRun.gross_total) * 0.42)}</span></div>
-              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">Cotisations salariales:</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(selectedRun.tax_total))}</span></div>
-              <div className="flex justify-between border-t border-[var(--color-border)] pt-1"><span className="font-semibold">Net à payer:</span><span className="font-mono font-bold text-[var(--color-success)]">{formatCurrency(Number(selectedRun.net_total))}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.grossTotal')}:</span><span className="font-mono font-bold">{formatCurrency(Number(selectedRun.gross_total))}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('paySlips.employerCharges')} (42%):</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(selectedRun.gross_total) * 0.42)}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('paySlips.deductions')}:</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(selectedRun.tax_total))}</span></div>
+              <div className="flex justify-between border-t border-[var(--color-border)] pt-1"><span className="font-semibold">{t('paySlips.netSalary')}:</span><span className="font-mono font-bold text-[var(--color-success)]">{formatCurrency(Number(selectedRun.net_total))}</span></div>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

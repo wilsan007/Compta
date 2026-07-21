@@ -1,0 +1,27 @@
+{
+  "name": "Compta - Gestion comptable",
+  "short_name": "Compta",
+  "description": "ERP comptable, commercial, stock et production pour PME industrielles",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0066cc",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "lang": "fr",
+  "dir": "ltr"
+}

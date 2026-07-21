@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getVatReturns, createVatReturn, updateVatReturn, deleteVatReturn, calcVatFromEntries } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -6,10 +7,10 @@ import { FileText, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const statusLabels: Record<string, string> = { draft: 'Brouillon', submitted: 'Soumise', paid: 'Payée' }
-
 export function VatReturnsPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
 const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -34,27 +35,27 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       await updateVatReturn(id, updates)
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', t('vat.error'), err.message || tCommon('error'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer cette déclaration ?')) return
+    if (!window.confirm(t('vat.deleteConfirm'))) return
     try {
       await deleteVatReturn(id)
       await loadData()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', t('vat.error'), err.message || tCommon('error'))
     }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Rapports' }, { label: 'TVA' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('vat.title') }]} />
       <PageHeader
-        title="Déclarations de TVA"
-        subtitle="Calculez et déclarez votre TVA"
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle déclaration</Button>}
+        title={t('vat.title')}
+        subtitle={t('vat.subtitle')}
+        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('vat.new')}</Button>}
       />
 
       {loading ? (
@@ -62,13 +63,13 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       ) : vatReturns.length === 0 ? (
         <EmptyState
           icon={<FileText className="w-8 h-8" />}
-          title="Aucune déclaration"
-          description="Créez votre première déclaration de TVA."
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouvelle déclaration</Button>}
+          title={t('vat.noDeclarations')}
+          description={t('vat.noDeclarationsDescription')}
+          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('vat.new')}</Button>}
         />
       ) : (
         <Card>
-          <Table headers={['Période', 'Statut', 'TVA collectée', 'TVA déductible', 'TVA nette', 'Ventes', 'Achats', 'Actions']}>
+          <Table headers={[t('vat.period'), t('vat.status'), t('vat.collectedVat'), t('vat.deductibleVat'), t('vat.netVat'), t('vat.sales'), t('vat.purchases'), t('vat.actions')]}>
             {vatReturns.map((v) => (
               <TableRow key={v.id}>
                 <TableCell className="text-xs">{formatDate(v.period_start)} → {formatDate(v.period_end)}</TableCell>
@@ -78,7 +79,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
                     onChange={(e) => handleStatusChange(v.id, e.target.value)}
                     className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                   >
-                    {Object.entries(statusLabels).map(([k, val]) => <option key={k} value={k}>{val}</option>)}
+                    {Object.entries({ draft: t('vat.statusLabels.draft'), submitted: t('vat.statusLabels.submitted'), paid: t('vat.statusLabels.paid') }).map(([k, val]) => <option key={k} value={k}>{val}</option>)}
                   </select>
                 </TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(v.box1_output_vat))}</TableCell>
@@ -108,6 +109,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
 
 function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast()
+  const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
   const [outputVat, setOutputVat] = useState(0)
@@ -121,7 +124,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
 
   async function handleAutoCalc() {
     if (!periodStart || !periodEnd) {
-      toast('warning', 'Attention', 'Sélectionnez d\'abord les dates de période')
+      toast('warning', tCommon('warning'), t('vat.selectDatesFirst'))
       return
     }
     setCalculating(true)
@@ -132,7 +135,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       setTotalSales(result.totalSales)
       setTotalPurchases(result.totalPurchases)
     } catch (err: any) {
-      toast('error', 'Erreur calcul', err.message || 'échec')
+      toast('error', t('vat.calcError'), err.message || tCommon('error'))
     } finally {
       setCalculating(false)
     }
@@ -156,7 +159,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', t('vat.error'), err.message || tCommon('error'))
     } finally {
       setSaving(false)
     }
@@ -166,34 +169,34 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouvelle déclaration TVA</h2>
+          <h2 className="text-lg font-semibold">{t('vat.newReturn')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Début de période" type="date" required value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
-            <Input label="Fin de période" type="date" required value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+            <Input label={t('vat.periodStart')} type="date" required value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            <Input label={t('vat.periodEnd')} type="date" required value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
           </div>
           <Button type="button" variant="secondary" onClick={handleAutoCalc} disabled={calculating}>
-            <Calculator className="w-4 h-4" /> {calculating ? 'Calcul...' : 'Calcul auto depuis écritures'}
+            <Calculator className="w-4 h-4" /> {calculating ? t('vat.calculating') : t('vat.autoCalc')}
           </Button>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="TVA collectée (ventes)" type="number" step="0.01" value={outputVat} onChange={(e) => setOutputVat(Number(e.target.value))} />
-            <Input label="TVA déductible (achats)" type="number" step="0.01" value={inputVat} onChange={(e) => setInputVat(Number(e.target.value))} />
+            <Input label={t('vat.outputVatLabel')} type="number" step="0.01" value={outputVat} onChange={(e) => setOutputVat(Number(e.target.value))} />
+            <Input label={t('vat.inputVatLabel')} type="number" step="0.01" value={inputVat} onChange={(e) => setInputVat(Number(e.target.value))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Total ventes HT" type="number" step="0.01" value={totalSales} onChange={(e) => setTotalSales(Number(e.target.value))} />
-            <Input label="Total achats HT" type="number" step="0.01" value={totalPurchases} onChange={(e) => setTotalPurchases(Number(e.target.value))} />
+            <Input label={t('vat.totalSalesLabel')} type="number" step="0.01" value={totalSales} onChange={(e) => setTotalSales(Number(e.target.value))} />
+            <Input label={t('vat.totalPurchasesLabel')} type="number" step="0.01" value={totalPurchases} onChange={(e) => setTotalPurchases(Number(e.target.value))} />
           </div>
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm">
-            <span className="text-[var(--color-text-secondary)]">TVA nette à payer: </span>
+            <span className="text-[var(--color-text-secondary)]">{t('vat.netVatPayable')}: </span>
             <span className={`font-mono font-bold ${netVat >= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}`}>
               {formatCurrency(netVat)}
             </span>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : 'Créer'}</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>{t('vat.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? '...' : t('vat.createBtn')}</Button>
           </div>
         </form>
       </div>

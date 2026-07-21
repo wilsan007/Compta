@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
 import { getBankAccounts, getBankTransactions, getBankRules } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -7,6 +8,9 @@ import { useToast } from '@/lib/toast'
 
 export function BankingDashboardPage() {
   const { toast } = useToast()
+  const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
+  const { t: tNav } = useTranslation('nav')
 const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [rules, setRules] = useState<BankRule[]>([])
@@ -15,11 +19,11 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [a, t, r] = await Promise.all([getBankAccounts(), getBankTransactions(), getBankRules()])
+      const [a, txns, r] = await Promise.all([getBankAccounts(), getBankTransactions(), getBankRules()])
       setAccounts(a)
-      setTransactions(t)
+      setTransactions(txns)
       setRules(r)
-    } catch (err) { console.error(err); toast('error', 'Erreur', 'Erreur lors du chargement') } finally { setLoading(false) }
+    } catch (err) { console.error(err); toast('error', tCommon('error'), err.message || tCommon('error')) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
@@ -31,24 +35,24 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Tableaux de bord' }, { label: 'Banque' }]} />
-      <PageHeader title="Tableau de bord — Banque" subtitle="Vue d'ensemble de votre trésorerie" />
+      <Breadcrumb items={[{ label: tNav('sections.dashboards') }, { label: t('title') }]} />
+      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       {loading ? (
         <SkeletonTable rows={4} cols={4} />
       ) : (
         <>
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">Solde total</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalBalance)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">Entrées</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalInflow)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">Sorties</p><p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalOutflow)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">Non réconciliées</p><p className="text-2xl font-bold text-[var(--color-warning)]">{unreconciled.length}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalBalance')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalBalance)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.inflow')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalInflow)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.outflow')}</p><p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalOutflow)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.unreconciled')}</p><p className="text-2xl font-bold text-[var(--color-warning)]">{unreconciled.length}</p></div></Card>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <Card>
-              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">Comptes bancaires</h3>
-              <Table headers={['Nom', 'Banque', 'Solde', 'Devise']}>
+              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">{t('dashboard.bankAccounts')}</h3>
+              <Table headers={[t('dashboard.name'), t('dashboard.bank'), t('dashboard.balance'), t('dashboard.currency')]}>
                 {accounts.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium text-sm">{a.name}</TableCell>
@@ -61,16 +65,16 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
             </Card>
 
             <Card>
-              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">Transactions récentes</h3>
-              <Table headers={['Date', 'Description', 'Montant', 'Rapprochée']}>
-                {transactions.slice(0, 5).map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="text-xs">{formatDate(t.date)}</TableCell>
-                    <TableCell className="text-sm max-w-xs truncate">{t.description}</TableCell>
-                    <TableCell className={`font-mono text-xs ${t.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                      {t.type === 'credit' ? '+' : '-'}{formatCurrency(Number(t.amount))}
+              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">{t('dashboard.recentTransactions')}</h3>
+              <Table headers={[t('transactions.date'), t('transactions.description'), t('transactions.amount'), t('transactions.reconciled')]}>
+                {transactions.slice(0, 5).map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell className="text-xs">{formatDate(tx.date)}</TableCell>
+                    <TableCell className="text-sm max-w-xs truncate">{tx.description}</TableCell>
+                    <TableCell className={`font-mono text-xs ${tx.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                      {tx.type === 'credit' ? '+' : '-'}{formatCurrency(Number(tx.amount))}
                     </TableCell>
-                    <TableCell><Badge variant={t.reconciled ? 'success' : 'warning'}>{t.reconciled ? 'Oui' : 'Non'}</Badge></TableCell>
+                    <TableCell><Badge variant={tx.reconciled ? 'success' : 'warning'}>{tx.reconciled ? t('transactions.yes') : t('transactions.no')}</Badge></TableCell>
                   </TableRow>
                 ))}
               </Table>
@@ -79,17 +83,17 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
           <div className="mt-6">
             <Card>
-              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">Règles actives ({rules.filter(r => r.active).length})</h3>
-              <Table headers={['Nom', 'Condition', 'Catégorie', 'Statut']}>
+              <h3 className="text-sm font-semibold p-4 border-b border-[var(--color-border)]">{t('dashboard.activeRules', { count: rules.filter(r => r.active).length })}</h3>
+              <Table headers={[t('dashboard.name'), t('dashboard.condition'), t('dashboard.category'), t('dashboard.status')]}>
                 {rules.slice(0, 5).map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="text-sm font-medium">{r.name}</TableCell>
                     <TableCell className="text-xs">{r.condition_field} {r.condition_operator} "{r.condition_value}"</TableCell>
                     <TableCell className="text-xs">{r.action_category}</TableCell>
-                    <TableCell><Badge variant={r.active ? 'success' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge></TableCell>
+                    <TableCell><Badge variant={r.active ? 'success' : 'neutral'}>{r.active ? t('dashboard.active') : t('dashboard.inactive')}</Badge></TableCell>
                   </TableRow>
                 ))}
-                {rules.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">Aucune règle</TableCell></TableRow>}
+                {rules.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">{t('dashboard.noRules')}</TableCell></TableRow>}
               </Table>
             </Card>
           </div>

@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2 } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-
-const accountTypeLabels: Record<string, string> = {
-  asset: 'Actif',
-  liability: 'Passif',
-  equity: 'Capitaux propres',
-  income: 'Produits',
-  expense: 'Charges',
-}
 
 const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   asset: 'primary',
@@ -22,18 +15,9 @@ const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutr
   expense: 'danger',
 }
 
-const classLabels: Record<string, string> = {
-  '1': 'Classe 1 — Capitaux',
-  '2': 'Classe 2 — Immobilisations',
-  '3': 'Classe 3 — Stocks',
-  '4': 'Classe 4 — Tiers',
-  '5': 'Classe 5 — Financiers',
-  '6': 'Classe 6 — Charges',
-  '7': 'Classe 7 — Produits',
-  '8': 'Classe 8 — Spéciaux',
-}
-
 export function ChartAccountsPage() {
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
@@ -121,14 +105,14 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           <TableCell className="text-sm">{account.name}</TableCell>
           <TableCell>
             <Badge variant={accountTypeBadge[account.type] || 'neutral'}>
-              {accountTypeLabels[account.type] || account.type}
+              {t(`chartAccounts.types.${account.type}`, { defaultValue: account.type })}
             </Badge>
           </TableCell>
           <TableCell className="text-xs">
             {isTiersAccount && (
               <span className="flex items-center gap-1 text-[var(--color-primary)]">
                 <Link2 className="w-3.5 h-3.5" />
-                {tiersCount > 0 ? `${tiersCount} tiers` : 'Compte tiers'}
+                {tiersCount > 0 ? t('chartAccounts.tiersCount', { count: tiersCount }) : t('chartAccounts.tiersAccount')}
               </span>
             )}
           </TableCell>
@@ -169,23 +153,23 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Supprimer ce compte ?')) return
+    if (!window.confirm(t('chartAccounts.deleteConfirm'))) return
     try {
       await deleteChartAccount(id)
       await loadAccounts()
     } catch (err) {
       console.error('Error deleting account:', err)
-      toast('error', 'Erreur', 'Erreur lors de la suppression')
+      toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Comptabilité' }, { label: 'Structure' }, { label: 'Plan comptable' }]} />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('chartAccounts.breadcrumb') }, { label: t('chartAccounts.title') }]} />
       <PageHeader
-        title="Plan comptable"
-        subtitle={`${accounts.length} compte(s) — PCG français — Hiérarchique`}
-        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau compte</Button>}
+        title={t('chartAccounts.title')}
+        subtitle={t('chartAccounts.subtitle', { count: accounts.length })}
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('chartAccounts.new')}</Button>}
       />
 
       <div className="flex gap-3 mb-4">
@@ -193,7 +177,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
-            placeholder="Rechercher par code ou libellé..."
+            placeholder={t('chartAccounts.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -203,15 +187,15 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           value={filterClass}
           onChange={(e) => setFilterClass(e.target.value)}
         >
-          <option value="">Toutes les classes</option>
-          <option value="1">Classe 1 — Capitaux</option>
-          <option value="2">Classe 2 — Immobilisations</option>
-          <option value="3">Classe 3 — Stocks</option>
-          <option value="4">Classe 4 — Tiers</option>
-          <option value="5">Classe 5 — Financiers</option>
-          <option value="6">Classe 6 — Charges</option>
-          <option value="7">Classe 7 — Produits</option>
-          <option value="8">Classe 8 — Spéciaux</option>
+          <option value="">{t('chartAccounts.allClasses')}</option>
+          <option value="1">{t('chartAccounts.classLabels.1')}</option>
+          <option value="2">{t('chartAccounts.classLabels.2')}</option>
+          <option value="3">{t('chartAccounts.classLabels.3')}</option>
+          <option value="4">{t('chartAccounts.classLabels.4')}</option>
+          <option value="5">{t('chartAccounts.classLabels.5')}</option>
+          <option value="6">{t('chartAccounts.classLabels.6')}</option>
+          <option value="7">{t('chartAccounts.classLabels.7')}</option>
+          <option value="8">{t('chartAccounts.classLabels.8')}</option>
         </select>
       </div>
 
@@ -220,15 +204,15 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
       ) : sortedClasses.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="w-8 h-8" />}
-          title="Aucun compte trouvé"
-          description="Ajoutez votre premier compte comptable ou ajustez vos filtres."
-          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> Nouveau compte</Button>}
+          title={t('chartAccounts.noAccounts')}
+          description={t('chartAccounts.noAccountsDescription')}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('chartAccounts.new')}</Button>}
         />
       ) : (
         <div className="space-y-6">
           {sortedClasses.map((cls) => (
-            <Card key={cls} title={classLabels[cls] || `Classe ${cls}`}>
-              <Table headers={['Code', 'Libellé', 'Type', 'Lien tiers', 'Solde', 'Actions']}>
+            <Card key={cls} title={t(`chartAccounts.classLabels.${cls}`, { defaultValue: `Classe ${cls}` })}>
+              <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), tCommon('common.balance'), tCommon('table.actions')]}>
                 {grouped[cls].map((account) => renderAccount(account, 0))}
               </Table>
             </Card>
@@ -249,8 +233,10 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
 }
 
 function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAccount | null; accounts: ChartAccount[]; onClose: () => void; onSaved: () => void }) {
-  const [code, setCode] = useState(account?.code || '')
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const [code, setCode] = useState(account?.code || '')
   const [name, setName] = useState(account?.name || '')
   const [type, setType] = useState<'asset' | 'liability' | 'equity' | 'income' | 'expense'>(account?.type || 'asset')
   const [balance, setBalance] = useState(String(account?.balance || 0))
@@ -275,7 +261,7 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
       }
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -285,36 +271,36 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{account ? 'Modifier le compte' : 'Nouveau compte'}</h2>
+          <h2 className="text-lg font-semibold">{account ? t('chartAccounts.edit') : t('chartAccounts.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex: 411000" />
-            <Select label="Type" value={type} onChange={(e) => setType(e.target.value as 'asset' | 'liability' | 'equity' | 'income' | 'expense')} options={[
-              { value: 'asset', label: 'Actif' },
-              { value: 'liability', label: 'Passif' },
-              { value: 'equity', label: 'Capitaux propres' },
-              { value: 'income', label: 'Produits' },
-              { value: 'expense', label: 'Charges' },
+            <Input label={tCommon('common.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="411000" />
+            <Select label={tCommon('common.type')} value={type} onChange={(e) => setType(e.target.value as 'asset' | 'liability' | 'equity' | 'income' | 'expense')} options={[
+              { value: 'asset', label: t('chartAccounts.types.asset') },
+              { value: 'liability', label: t('chartAccounts.types.liability') },
+              { value: 'equity', label: t('chartAccounts.types.equity') },
+              { value: 'income', label: t('chartAccounts.types.revenue') },
+              { value: 'expense', label: t('chartAccounts.types.expense') },
             ]} />
           </div>
-          <Input label="Libellé" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Clients" />
+          <Input label={tCommon('common.label')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="" />
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Compte parent (hiérarchie)</label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.parent')}</label>
             <select className="input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-              <option value="">— Aucun (racine) —</option>
+              <option value="">{t('chartAccounts.noParent')}</option>
               {parentOptions.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Solde initial" type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
-            <Input label="Taux TVA (%)" type="text" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="Ex: 20" />
+            <Input label={t('chartAccounts.initialBalance')} type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
+            <Input label={t('chartAccounts.vatRate')} type="text" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
           </div>
-          <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

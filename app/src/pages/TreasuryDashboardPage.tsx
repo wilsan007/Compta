@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getTreasuryDashboard } from '@/lib/queries'
 import { Wallet, TrendingUp, TrendingDown, Clock } from 'lucide-react'
 
 export function TreasuryDashboardPage() {
+  const { t } = useTranslation('treasury')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -24,8 +26,8 @@ export function TreasuryDashboardPage() {
   if (loading) {
     return (
       <div>
-        <Breadcrumb items={[{ label: 'Trésorerie' }, { label: 'Tableau de bord' }]} />
-        <PageHeader title="Tableau de bord trésorerie" subtitle="Chargement..." />
+        <Breadcrumb items={[{ label: t('title') }, { label: t('dashboard.title') }]} />
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
         <SkeletonTable rows={4} cols={4} />
       </div>
     )
@@ -35,15 +37,15 @@ export function TreasuryDashboardPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Trésorerie' }, { label: 'Tableau de bord' }]} />
-      <PageHeader title="Tableau de bord trésorerie" subtitle="Vue d'ensemble des liquidités et prévisions" />
+      <Breadcrumb items={[{ label: t('title') }, { label: t('dashboard.title') }]} />
+      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       <div className="grid grid-cols-4 gap-4 mb-6">
         <Card>
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Wallet className="w-5 h-5 text-[var(--color-primary)]" />
-              <p className="text-sm text-[var(--color-text-secondary)]">Solde total</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalBalance')}</p>
             </div>
             <p className="text-2xl font-bold font-mono">{formatCurrency(totalBalance || 0)}</p>
           </div>
@@ -52,7 +54,7 @@ export function TreasuryDashboardPage() {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-5 h-5 text-[var(--color-success)]" />
-              <p className="text-sm text-[var(--color-text-secondary)]">Encaissements 90j</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.inflow90')}</p>
             </div>
             <p className="text-2xl font-bold font-mono text-[var(--color-success)]">
               {formatCurrency(forecastBuckets?.reduce((s: number, b: any) => s + b.incoming, 0) || 0)}
@@ -63,7 +65,7 @@ export function TreasuryDashboardPage() {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className="w-5 h-5 text-[var(--color-danger)]" />
-              <p className="text-sm text-[var(--color-text-secondary)]">Décaissements 90j</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.outflow90')}</p>
             </div>
             <p className="text-2xl font-bold font-mono text-[var(--color-danger)]">
               {formatCurrency(forecastBuckets?.reduce((s: number, b: any) => s + b.outgoing, 0) || 0)}
@@ -74,7 +76,7 @@ export function TreasuryDashboardPage() {
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-[var(--color-warning)]" />
-              <p className="text-sm text-[var(--color-text-secondary)]">Paiements en attente</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingPayments')}</p>
             </div>
             <p className="text-2xl font-bold font-mono">{pendingPayments?.length || 0}</p>
           </div>
@@ -82,8 +84,8 @@ export function TreasuryDashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-6 mb-6">
-        <Card title="Comptes bancaires">
-          <Table headers={['Banque', 'Type', 'Solde']}>
+        <Card title={t('dashboard.bankAccounts')}>
+          <Table headers={[t('dashboard.bank'), t('dashboard.type'), t('dashboard.balance')]}>
             {(accounts || []).map((acc: any) => (
               <TableRow key={acc.id}>
                 <TableCell className="font-medium">{acc.name}</TableCell>
@@ -94,8 +96,8 @@ export function TreasuryDashboardPage() {
           </Table>
         </Card>
 
-        <Card title="Prévision 90 jours">
-          <Table headers={['Période', 'Encaissements', 'Décaissements', 'Net']}>
+        <Card title={t('dashboard.forecast90')}>
+          <Table headers={[t('dashboard.period'), t('dashboard.incoming'), t('dashboard.outgoing'), t('dashboard.net')]}>
             {(forecastBuckets || []).map((b: any) => (
               <TableRow key={b.label}>
                 <TableCell className="font-medium">{b.label}</TableCell>
@@ -110,11 +112,11 @@ export function TreasuryDashboardPage() {
         </Card>
       </div>
 
-      <Card title="Paiements en attente">
+      <Card title={t('dashboard.pendingPayments')}>
         {(pendingPayments || []).length === 0 ? (
-          <EmptyState icon={<Clock className="w-8 h-8" />} title="Aucun paiement en attente" description="Tous les paiements ont été exécutés." />
+          <EmptyState icon={<Clock className="w-8 h-8" />} title={t('dashboard.noPending')} description={t('dashboard.noPendingDesc')} />
         ) : (
-          <Table headers={['N°', 'Bénéficiaire', 'Montant', 'Date', 'Statut']}>
+          <Table headers={[t('dashboard.number'), t('dashboard.beneficiary'), t('dashboard.amount'), t('dashboard.date'), t('dashboard.status')]}>
             {(pendingPayments || []).map((p: any) => (
               <TableRow key={p.id}>
                 <TableCell className="font-mono text-xs">{p.number}</TableCell>
@@ -123,7 +125,7 @@ export function TreasuryDashboardPage() {
                 <TableCell className="text-xs">{formatDate(p.payment_date)}</TableCell>
                 <TableCell>
                   <Badge variant={p.status === 'approved' ? 'warning' : 'neutral'}>
-                    {p.status === 'approved' ? 'Approuvé' : 'Brouillon'}
+                    {p.status === 'approved' ? t('dashboard.statusApproved') : t('dashboard.statusDraft')}
                   </Badge>
                 </TableCell>
               </TableRow>

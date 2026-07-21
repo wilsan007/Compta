@@ -1,8 +1,10 @@
 {
   "supabaseUrl": "https://ndtaedcgwnaopopugiql.supabase.co",
   "supabaseKey": "sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK",
-  "mirrorDir": "./mirror-data",
+  "mirrorDir": "~/Desktop/Compta-Donnees",
   "pollIntervalMs": 300000,
   "syncOnStart": true,
-  "tenantId": "default"
+  "tenantId": "default",
+  "encrypt": false,
+  "encryptionKey": ""
 }

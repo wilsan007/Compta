@@ -17,10 +17,10 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { join, dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { hostname, platform, release, networkInterfaces } from 'os'
-import { randomUUID } from 'crypto'
+import { hostname, platform, release, networkInterfaces, homedir } from 'os'
+import { randomUUID, createCipheriv, createDecipheriv, scryptSync } from 'crypto'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const configPath = join(__dirname, 'config.json')
@@ -31,7 +31,16 @@ const ONCE = process.argv.includes('--once')
 const REGISTER = process.argv.includes('--register')
 const FORCE = process.argv.includes('--force')
 
-const { supabaseUrl, supabaseKey, mirrorDir, pollIntervalMs, syncOnStart, tenantId } = config
+const { supabaseUrl, supabaseKey, pollIntervalMs, syncOnStart, tenantId } = config
+
+// Resolve mirrorDir: expand ~ to home directory, fallback to Desktop
+let mirrorDir = config.mirrorDir || '~/Desktop/Compta-Donnees'
+if (mirrorDir.startsWith('~/')) {
+  mirrorDir = join(homedir(), mirrorDir.slice(2))
+}
+
+const ENCRYPT = config.encrypt === true && config.encryptionKey
+const ENC_KEY = config.encryptionKey || ''
 
 // ============ Machine identification ============
 function getMachineId() {
@@ -93,6 +102,11 @@ const TABLES = [
   'purchase_credit_notes', 'purchase_credit_lines',
   'price_lists', 'price_list_lines',
   'boms', 'bom_lines', 'manufacturing_orders',
+  'routings', 'routing_operations', 'work_centers', 'machines', 'toolings',
+  'of_labels', 'of_lots', 'of_consumptions',
+  'st_orders', 'st_shipments', 'st_shipment_lines', 'st_receipts', 'st_receipt_lines',
+  'mrp_runs', 'mrp_proposals', 'mrp_pending_docs',
+  'production_forecasts', 'planning_slots',
   'audit_log',
 ]
 
@@ -193,6 +207,147 @@ function generateCsv(table) {
   return [headers, ...rows].join('\n')
 }
 
+// ============ Encryption ============
+function encryptBuffer(data, key) {
+  const keyBuf = scryptSync(key, 'compta-salt', 32)
+  const iv = randomUUID().replace(/-/g, '').slice(0, 16)
+  const cipher = createCipheriv('aes-256-cbc', keyBuf, Buffer.from(iv, 'hex'))
+  const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+  return Buffer.concat([Buffer.from(iv, 'hex'), encrypted])
+}
+
+function encryptFile(filePath, key) {
+  if (!key) return
+  const data = readFileSync(filePath)
+  const enc = encryptBuffer(data, key)
+  writeFileSync(filePath + '.enc', enc)
+  // Overwrite original with placeholder
+  writeFileSync(filePath, 'Fichier chiffré — voir .enc')
+}
+
+// ============ HTML Viewer Generator ============
+function generateHtmlViewer(tables, exportedAt) {
+  const tablesWithData = tables.filter(t => t.rowCount > 0)
+  const tablesEmpty = tables.filter(t => t.rowCount === 0)
+  const totalRows = tables.reduce((s, t) => s + t.rowCount, 0)
+
+  const tableCards = tablesWithData.map(t => {
+    const previewRows = t.rows.slice(0, 5)
+    const cols = t.columns.slice(0, 8) // Show first 8 columns
+    const headerCells = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')
+    const bodyRows = previewRows.map(row =>
+      `<tr>${cols.map(c => {
+        const v = row[c]
+        const display = v === null || v === undefined ? '<span class="null">—</span>' : escapeHtml(typeof v === 'object' ? JSON.stringify(v) : String(v).slice(0, 50))
+        return `<td>${display}</td>`
+      }).join('')}</tr>`
+    ).join('')
+
+    return `
+    <div class="table-card" onclick="toggleTable('${t.tableName}')">
+      <div class="table-header">
+        <span class="table-name">${t.tableName}</span>
+        <span class="table-count">${t.rowCount} lignes</span>
+        <span class="table-toggle">▼</span>
+      </div>
+      <div class="table-preview" id="preview-${t.tableName}">
+        <table>
+          <thead><tr>${headerCells}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+        ${t.columns.length > 8 ? `<p class="more-cols">+ ${t.columns.length - 8} colonnes non affichées</p>` : ''}
+        ${t.rowCount > 5 ? `<p class="more-rows">+ ${t.rowCount - 5} lignes — voir CSV complet</p>` : ''}
+      </div>
+    </div>`
+  }).join('')
+
+  const emptyBadges = tablesEmpty.map(t => `<span class="empty-badge">${t.tableName}</span>`).join('')
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compta — Données locales (${tenantId})</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+  .header { background: linear-gradient(135deg, #4F46E5, #7C3AED); color: white; padding: 24px 32px; }
+  .header h1 { font-size: 24px; margin-bottom: 4px; }
+  .header .meta { font-size: 13px; opacity: 0.85; }
+  .header .meta span { margin-right: 16px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat { background: white; border-radius: 12px; padding: 16px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1; min-width: 180px; }
+  .stat .num { font-size: 28px; font-weight: 700; color: #4F46E5; }
+  .stat .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .section-title { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+  .table-card { background: white; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; cursor: pointer; transition: box-shadow 0.2s; }
+  .table-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .table-header { display: flex; align-items: center; padding: 14px 20px; gap: 12px; }
+  .table-name { font-weight: 600; font-size: 14px; font-family: 'SF Mono', Monaco, monospace; color: #1a1a1a; }
+  .table-count { font-size: 12px; color: #666; background: #f0f0f0; padding: 2px 10px; border-radius: 20px; }
+  .table-toggle { margin-left: auto; font-size: 12px; color: #999; transition: transform 0.2s; }
+  .table-card.open .table-toggle { transform: rotate(180deg); }
+  .table-preview { display: none; padding: 0 20px 16px; }
+  .table-card.open .table-preview { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 8px 12px; background: #fafafa; border-bottom: 2px solid #eee; font-weight: 600; color: #555; white-space: nowrap; }
+  td { padding: 6px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  tr:hover td { background: #f9f9ff; }
+  .null { color: #ccc; }
+  .more-cols, .more-rows { font-size: 11px; color: #999; margin-top: 8px; font-style: italic; }
+  .empty-section { margin-top: 24px; }
+  .empty-badge { display: inline-block; font-size: 11px; color: #999; background: #f5f5f5; padding: 3px 10px; border-radius: 20px; margin: 2px; font-family: monospace; }
+  .footer { text-align: center; padding: 32px; color: #999; font-size: 12px; }
+  .sync-badge { display: inline-flex; align-items: center; gap: 6px; background: #ECFDF5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .sync-badge .dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Données Compta — Serveur Miroir Local</h1>
+  <div class="meta">
+    <span>🏢 Tenant: ${escapeHtml(tenantId)}</span>
+    <span>📅 Dernière sync: ${exportedAt}</span>
+    <span>🌐 Source: ${escapeHtml(supabaseUrl)}</span>
+    <span class="sync-badge"><span class="dot"></span> Synchronisé</span>
+  </div>
+</div>
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="num">${totalRows}</div><div class="label">Total lignes</div></div>
+    <div class="stat"><div class="num">${tablesWithData.length}</div><div class="label">Tables avec données</div></div>
+    <div class="stat"><div class="num">${tables.length}</div><div class="label">Tables total</div></div>
+    <div class="stat"><div class="num">${tables.reduce((s, t) => s + t.columns.length, 0)}</div><div class="label">Colonnes total</div></div>
+  </div>
+
+  <div class="section-title">📊 Tables avec données (${tablesWithData.length})</div>
+  ${tableCards}
+
+  <div class="section-title empty-section">📭 Tables vides (${tablesEmpty.length})</div>
+  <div>${emptyBadges}</div>
+
+  <div class="footer">
+    <p>Ces données sont stockées localement sur cet ordinateur.</p>
+    <p>Formats disponibles: CSV (Excel) • SQL (PostgreSQL) • JSON (API)</p>
+    <p>Synchronisation automatique toutes les ${pollIntervalMs / 1000}s</p>
+  </div>
+</div>
+<script>
+  function toggleTable(name) {
+    const card = event.currentTarget
+    card.classList.toggle('open')
+  }
+</script>
+</body>
+</html>`
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 // ============ Sync logic ============
 let lastSyncAt = null
 let syncRunning = false
@@ -268,6 +423,12 @@ async function syncAll(reason = 'scheduled') {
   const jsonPath = join(jsonDir, 'full-export.json')
   writeFileSync(jsonPath, JSON.stringify(jsonPayload, null, 2), 'utf-8')
 
+  // Write HTML viewer
+  const html = generateHtmlViewer(tables, now)
+  const htmlPath = join(mirrorDir, 'index.html')
+  writeFileSync(htmlPath, html, 'utf-8')
+  logVerbose(`  HTML écrit: ${htmlPath} (${(html.length / 1024).toFixed(1)} Ko)`)
+
   // Write sync metadata
   const metadata = {
     tenantId,
@@ -278,7 +439,9 @@ async function syncAll(reason = 'scheduled') {
     tablesEmpty: tables.filter(t => t.rowCount === 0).length,
     syncReason: reason,
     supabaseUrl,
+    encrypted: ENCRYPT,
     files: {
+      html: 'index.html',
       sql: 'sql/full-export.sql',
       json: 'json/full-export.json',
       csvDir: 'csv/',
@@ -297,6 +460,7 @@ async function syncAll(reason = 'scheduled') {
     ``,
     `## Structure du dossier`,
     ``,
+    `- \`index.html\` — **Visualiseur web** — double-cliquez pour ouvrir dans votre navigateur`,
     `- \`sql/full-export.sql\` — Dump SQL complet (importable dans PostgreSQL)`,
     `- \`csv/<table>.csv\` — Un fichier CSV par table avec données`,
     `- \`json/full-export.json\` — Export JSON complet`,
@@ -318,6 +482,19 @@ async function syncAll(reason = 'scheduled') {
     `4. Toutes vos données sont restaurées`,
   ].join('\n')
   writeFileSync(join(mirrorDir, 'README.md'), readme, 'utf-8')
+
+  // Encrypt files if enabled
+  if (ENCRYPT) {
+    logVerbose('  Chiffrement des fichiers...')
+    encryptFile(sqlPath, ENC_KEY)
+    encryptFile(jsonPath, ENC_KEY)
+    for (const table of tables) {
+      if (table.rowCount === 0) continue
+      const csvPath = join(csvDir, `${table.tableName}.csv`)
+      encryptFile(csvPath, ENC_KEY)
+    }
+    logVerbose('  Chiffrement terminé')
+  }
 
   log(`Sync terminée: ${totalRows} lignes, ${tables.filter(t => t.rowCount > 0).length} tables → ${mirrorDir}`)
   syncRunning = false

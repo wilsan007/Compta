@@ -1496,3 +1496,514 @@ DO $$ BEGIN
     CREATE POLICY "allow_all_budget_commitments" ON budget_commitments FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 1: Gamme + Machine + Outillage
+-- ============================================
+
+-- Routings (gammes opératoires)
+create table if not exists routings (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  code text not null,
+  name text not null,
+  description text,
+  product_id uuid references products(id) on delete set null,
+  version int default 1,
+  active boolean default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_routings_code on routings(code);
+create index if not exists idx_routings_product on routings(product_id);
+alter table routings enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_routings') THEN
+    CREATE POLICY "allow_all_routings" ON routings FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Work Centers (centres de charge)
+create table if not exists work_centers (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  code text not null,
+  name text not null,
+  capacity_hours_per_day numeric(5,1) default 8,
+  cost_per_hour numeric(15,2) default 0,
+  active boolean default true,
+  created_at timestamptz default now()
+);
+create index if not exists idx_work_centers_code on work_centers(code);
+alter table work_centers enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_work_centers') THEN
+    CREATE POLICY "allow_all_work_centers" ON work_centers FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Machines
+create table if not exists machines (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  code text not null,
+  name text not null,
+  work_center_id uuid references work_centers(id) on delete set null,
+  capacity_per_hour numeric(15,2) default 0,
+  status text default 'active' check (status in ('active','maintenance','inactive')),
+  purchase_date date,
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_machines_code on machines(code);
+create index if not exists idx_machines_work_center on machines(work_center_id);
+alter table machines enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_machines') THEN
+    CREATE POLICY "allow_all_machines" ON machines FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Toolings (outillages)
+create table if not exists toolings (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  code text not null,
+  name text not null,
+  machine_id uuid references machines(id) on delete set null,
+  max_pieces int default 0,
+  initial_counter int default 0,
+  current_counter int default 0,
+  status text default 'active' check (status in ('active','worn','inactive')),
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_toolings_code on toolings(code);
+create index if not exists idx_toolings_machine on toolings(machine_id);
+alter table toolings enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_toolings') THEN
+    CREATE POLICY "allow_all_toolings" ON toolings FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Routing Operations (opérations d'une gamme)
+create table if not exists routing_operations (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  routing_id uuid not null references routings(id) on delete cascade,
+  sequence int not null default 10,
+  name text not null,
+  description text,
+  work_center_id uuid references work_centers(id) on delete set null,
+  machine_id uuid references machines(id) on delete set null,
+  tooling_id uuid references toolings(id) on delete set null,
+  setup_time_min int default 0,
+  run_time_min int default 0,
+  is_subcontracted boolean default false,
+  supplier_id uuid references suppliers(id) on delete set null,
+  st_unit text,
+  st_quantity numeric(15,2) default 1,
+  created_at timestamptz default now()
+);
+create index if not exists idx_routing_operations_routing on routing_operations(routing_id);
+create index if not exists idx_routing_operations_sequence on routing_operations(sequence);
+alter table routing_operations enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_routing_operations') THEN
+    CREATE POLICY "allow_all_routing_operations" ON routing_operations FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ALTER existing tables to add routing_id
+alter table boms add column if not exists routing_id uuid references routings(id) on delete set null;
+alter table manufacturing_orders add column if not exists routing_id uuid references routings(id) on delete set null;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 4: OF Enhancements
+-- ============================================
+
+-- OF Labels (étiquettes cartons)
+create table if not exists of_labels (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  manufacturing_order_id uuid not null references manufacturing_orders(id) on delete cascade,
+  label_number text not null unique,
+  product_id uuid references products(id) on delete set null,
+  planned_quantity numeric(15,2) default 0,
+  actual_quantity numeric(15,2) default 0,
+  is_complete boolean default false,
+  is_declared boolean default false,
+  created_at timestamptz default now()
+);
+create index if not exists idx_of_labels_mo on of_labels(manufacturing_order_id);
+alter table of_labels enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_of_labels') THEN
+    CREATE POLICY "allow_all_of_labels" ON of_labels FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- OF Lots (lots d'OF avec péremption)
+create table if not exists of_lots (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  manufacturing_order_id uuid not null references manufacturing_orders(id) on delete cascade,
+  lot_number text not null,
+  product_id uuid references products(id) on delete set null,
+  quantity numeric(15,2) default 0,
+  production_date date,
+  expiry_date date,
+  custom_expiry_date date,
+  expiry_type text check (expiry_type in ('DLUO','DDM','DLC')),
+  created_at timestamptz default now()
+);
+create index if not exists idx_of_lots_mo on of_lots(manufacturing_order_id);
+alter table of_lots enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_of_lots') THEN
+    CREATE POLICY "allow_all_of_lots" ON of_lots FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- OF Consumptions (consommation différée)
+create table if not exists of_consumptions (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  manufacturing_order_id uuid not null references manufacturing_orders(id) on delete cascade,
+  product_id uuid not null references products(id) on delete cascade,
+  quantity numeric(15,2) not null default 0,
+  unit text default 'unit',
+  consumption_date date not null default current_date,
+  is_deferred boolean default false,
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_of_consumptions_mo on of_consumptions(manufacturing_order_id);
+alter table of_consumptions enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_of_consumptions') THEN
+    CREATE POLICY "allow_all_of_consumptions" ON of_consumptions FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ALTER manufacturing_orders to add Sprint 4 columns
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS origin text default 'manual' check (origin in ('manual','mrp','sub_level'));
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS parent_mo_id uuid references manufacturing_orders(id) on delete set null;
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS lot_number text;
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS expiry_date date;
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS custom_expiry_date date;
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS expiry_type text check (expiry_type in ('DLUO','DDM','DLC'));
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS label_enabled boolean default false;
+ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS additional_text text;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 3: Amalgam
+-- ============================================
+ALTER TABLE boms ADD COLUMN IF NOT EXISTS bom_type text default 'standard' check (bom_type in ('standard','amalgam'));
+
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_amalgam boolean default false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS units_per_carton int;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS st_unit text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS purchase_unit text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS st_multiple numeric(15,2) default 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS shelf_life_days int;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS exclude_from_mrp boolean default false;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 2: Sous-traitance
+-- ============================================
+
+-- Subcontracting Orders (commandes de sous-traitance)
+create table if not exists st_orders (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  number text not null unique,
+  supplier_id uuid not null references suppliers(id) on delete restrict,
+  manufacturing_order_id uuid references manufacturing_orders(id) on delete set null,
+  routing_operation_id uuid references routing_operations(id) on delete set null,
+  product_id uuid references products(id) on delete set null,
+  quantity numeric(15,2) not null default 0,
+  unit text default 'unit',
+  unit_price numeric(15,2) default 0,
+  total_price numeric(15,2) default 0,
+  status text default 'draft' check (status in ('draft','sent','in_progress','received','cancelled')),
+  order_date date not null default current_date,
+  expected_date date,
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_st_orders_supplier on st_orders(supplier_id);
+create index if not exists idx_st_orders_mo on st_orders(manufacturing_order_id);
+create index if not exists idx_st_orders_status on st_orders(status);
+alter table st_orders enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_st_orders') THEN
+    CREATE POLICY "allow_all_st_orders" ON st_orders FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Subcontracting Shipments (expéditions vers sous-traitant)
+create table if not exists st_shipments (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  number text not null unique,
+  st_order_id uuid not null references st_orders(id) on delete cascade,
+  shipment_date date not null default current_date,
+  warehouse_id uuid references warehouses(id) on delete set null,
+  status text default 'pending' check (status in ('pending','shipped','returned')),
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_st_shipments_order on st_shipments(st_order_id);
+alter table st_shipments enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_st_shipments') THEN
+    CREATE POLICY "allow_all_st_shipments" ON st_shipments FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Subcontracting Shipment Lines (matières expédiées)
+create table if not exists st_shipment_lines (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  st_shipment_id uuid not null references st_shipments(id) on delete cascade,
+  product_id uuid not null references products(id) on delete cascade,
+  quantity numeric(15,2) not null default 0,
+  unit text default 'unit',
+  created_at timestamptz default now()
+);
+create index if not exists idx_st_shipment_lines_shipment on st_shipment_lines(st_shipment_id);
+alter table st_shipment_lines enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_st_shipment_lines') THEN
+    CREATE POLICY "allow_all_st_shipment_lines" ON st_shipment_lines FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Subcontracting Receipts (réceptions de sous-traitance)
+create table if not exists st_receipts (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  number text not null unique,
+  st_order_id uuid not null references st_orders(id) on delete cascade,
+  receipt_date date not null default current_date,
+  warehouse_id uuid references warehouses(id) on delete set null,
+  quantity_received numeric(15,2) default 0,
+  quantity_returned numeric(15,2) default 0,
+  status text default 'pending' check (status in ('pending','received','partial','cancelled')),
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_st_receipts_order on st_receipts(st_order_id);
+alter table st_receipts enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_st_receipts') THEN
+    CREATE POLICY "allow_all_st_receipts" ON st_receipts FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Subcontracting Receipt Lines (produits reçus + matières retournées)
+create table if not exists st_receipt_lines (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  st_receipt_id uuid not null references st_receipts(id) on delete cascade,
+  product_id uuid not null references products(id) on delete cascade,
+  quantity numeric(15,2) not null default 0,
+  unit text default 'unit',
+  line_type text default 'received' check (line_type in ('received','returned')),
+  created_at timestamptz default now()
+);
+create index if not exists idx_st_receipt_lines_receipt on st_receipt_lines(st_receipt_id);
+alter table st_receipt_lines enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_st_receipt_lines') THEN
+    CREATE POLICY "allow_all_st_receipt_lines" ON st_receipt_lines FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 5: CBN/MRP
+-- ============================================
+
+-- MRP Runs (lancements de calcul des besoins nets)
+create table if not exists mrp_runs (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  run_number text not null unique,
+  run_date timestamptz default now(),
+  status text default 'completed' check (status in ('running','completed','cancelled')),
+  parameters jsonb,
+  summary jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists idx_mrp_runs_date on mrp_runs(run_date);
+alter table mrp_runs enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_mrp_runs') THEN
+    CREATE POLICY "allow_all_mrp_runs" ON mrp_runs FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- MRP Proposals (propositions d'approvisionnement/fabrication)
+create table if not exists mrp_proposals (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  mrp_run_id uuid not null references mrp_runs(id) on delete cascade,
+  product_id uuid not null references products(id) on delete cascade,
+  proposal_type text check (proposal_type in ('purchase','manufacture','subcontract')),
+  gross_need numeric(15,2) not null default 0,
+  stock_available numeric(15,2) default 0,
+  open_orders numeric(15,2) default 0,
+  net_need numeric(15,2) not null default 0,
+  suggested_quantity numeric(15,2) default 0,
+  suggested_date date,
+  bom_id uuid references boms(id) on delete set null,
+  supplier_id uuid references suppliers(id) on delete set null,
+  status text default 'pending' check (status in ('pending','approved','rejected','converted')),
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_mrp_proposals_run on mrp_proposals(mrp_run_id);
+create index if not exists idx_mrp_proposals_product on mrp_proposals(product_id);
+create index if not exists idx_mrp_proposals_status on mrp_proposals(status);
+alter table mrp_proposals enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_mrp_proposals') THEN
+    CREATE POLICY "allow_all_mrp_proposals" ON mrp_proposals FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- MRP Pending Documents (documents en attente de traitement)
+create table if not exists mrp_pending_docs (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  doc_type text not null check (doc_type in ('purchase_order','manufacturing_order','subcontract_order')),
+  doc_id uuid,
+  product_id uuid references products(id) on delete set null,
+  quantity numeric(15,2) default 0,
+  status text default 'pending' check (status in ('pending','processed','cancelled')),
+  created_at timestamptz default now()
+);
+create index if not exists idx_mrp_pending_status on mrp_pending_docs(status);
+alter table mrp_pending_docs enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_mrp_pending_docs') THEN
+    CREATE POLICY "allow_all_mrp_pending_docs" ON mrp_pending_docs FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 6: Prévisions
+-- ============================================
+create table if not exists production_forecasts (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  forecast_number text not null unique,
+  period text not null,
+  start_date date not null,
+  end_date date not null,
+  product_id uuid references products(id) on delete set null,
+  forecasted_quantity numeric(15,3) not null default 0,
+  actual_quantity numeric(15,3) default 0,
+  reliability_rate numeric(5,2) default 0,
+  source text default 'manual' check (source in ('manual','invoice_import')),
+  notes text,
+  created_at timestamptz default now()
+);
+create index if not exists idx_forecasts_period on production_forecasts(period);
+create index if not exists idx_forecasts_product on production_forecasts(product_id);
+alter table production_forecasts enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_production_forecasts') THEN
+    CREATE POLICY "allow_all_production_forecasts" ON production_forecasts FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 7: Planification
+-- ============================================
+create table if not exists planning_slots (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  manufacturing_order_id uuid not null references manufacturing_orders(id) on delete cascade,
+  routing_operation_id uuid references routing_operations(id) on delete set null,
+  machine_id uuid references machines(id) on delete set null,
+  work_center_id uuid references work_centers(id) on delete set null,
+  planned_start timestamptz,
+  planned_end timestamptz,
+  setup_time numeric(15,2) default 0,
+  run_time numeric(15,2) default 0,
+  status text default 'planned' check (status in ('planned','scheduled','in_progress','completed')),
+  material_available boolean default true,
+  material_check_date timestamptz,
+  created_at timestamptz default now()
+);
+create index if not exists idx_planning_mo on planning_slots(manufacturing_order_id);
+create index if not exists idx_planning_machine on planning_slots(machine_id);
+create index if not exists idx_planning_dates on planning_slots(planned_start, planned_end);
+alter table planning_slots enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_planning_slots') THEN
+    CREATE POLICY "allow_all_planning_slots" ON planning_slots FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ============================================
+-- PRODUCTION MODULE — Sprint 9: Complémentaires
+-- ============================================
+
+-- Product Equivalences (cas d'emploi: affichage des équivalences)
+create table if not exists product_equivalences (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  product_id uuid not null references products(id) on delete cascade,
+  equivalent_product_id uuid not null references products(id) on delete cascade,
+  conversion_ratio numeric(15,4) default 1,
+  created_at timestamptz default now()
+);
+create index if not exists idx_equiv_product on product_equivalences(product_id);
+alter table product_equivalences enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_equivalences') THEN
+    CREATE POLICY "allow_all_product_equivalences" ON product_equivalences FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- Workflows (tâches automatisées: MRP, prévisions, etc.)
+create table if not exists workflows (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  name text not null,
+  description text,
+  workflow_type text check (workflow_type in ('mrp','forecast','planning','custom')),
+  schedule text,
+  last_run timestamptz,
+  status text default 'active' check (status in ('active','inactive')),
+  created_at timestamptz default now()
+);
+alter table workflows enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_workflows') THEN
+    CREATE POLICY "allow_all_workflows" ON workflows FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- OF Document Access (droits d'accès aux éditions du dossier de fabrication)
+create table if not exists of_document_access (
+  id uuid primary key default uuid_generate_v4(),
+  tenant_id uuid,
+  user_id uuid not null references users(id) on delete cascade,
+  document_type text not null,
+  can_view boolean default true,
+  can_print boolean default false,
+  can_export boolean default false,
+  created_at timestamptz default now()
+);
+create index if not exists idx_of_doc_access_user on of_document_access(user_id);
+alter table of_document_access enable row level security;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_of_document_access') THEN
+    CREATE POLICY "allow_all_of_document_access" ON of_document_access FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;

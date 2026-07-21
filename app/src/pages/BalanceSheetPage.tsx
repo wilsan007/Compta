@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell } from '@/components/ui'
 import { getBalanceSheet } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
 
 export function BalanceSheetPage() {
+  const { t } = useTranslation('accounting')
   const [data, setData] = useState<{ assets: any[]; liabilities: any[]; equity: any[] } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -26,17 +28,17 @@ export function BalanceSheetPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Rapports' }, { label: 'Bilan' }]} />
-      <PageHeader title="Bilan" subtitle="Vue d'ensemble du patrimoine de l'entreprise" />
+      <Breadcrumb items={[{ label: t('balanceSheet.breadcrumb') }, { label: t('balanceSheet.title') }]} />
+      <PageHeader title={t('balanceSheet.title')} subtitle={t('balanceSheet.subtitle')} />
 
       {loading ? (
         <SkeletonTable rows={6} cols={3} />
       ) : (
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-semibold mb-3">ACTIF</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('balanceSheet.assets')}</h3>
             <Card>
-              <Table headers={['Code', 'Compte', 'Montant']}>
+              <Table headers={[t('balanceSheet.code'), t('balanceSheet.account'), t('balanceSheet.amount')]}>
                 {(data?.assets || []).map((a) => (
                   <TableRow key={a.code}>
                     <TableCell className="font-mono text-xs">{a.code}</TableCell>
@@ -45,16 +47,16 @@ export function BalanceSheetPage() {
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell /><TableCell className="font-bold">Total Actif</TableCell>
+                  <TableCell /><TableCell className="font-bold">{t('balanceSheet.totalAssets')}</TableCell>
                   <TableCell className="font-mono text-right font-bold text-base">{formatCurrency(totalAssets)}</TableCell>
                 </TableRow>
               </Table>
             </Card>
           </div>
           <div>
-            <h3 className="text-sm font-semibold mb-3">PASSIF</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('balanceSheet.liabilities')}</h3>
             <Card>
-              <Table headers={['Code', 'Compte', 'Montant']}>
+              <Table headers={[t('balanceSheet.code'), t('balanceSheet.account'), t('balanceSheet.amount')]}>
                 {(data?.liabilities || []).map((l) => (
                   <TableRow key={l.code}>
                     <TableCell className="font-mono text-xs">{l.code}</TableCell>
@@ -70,7 +72,7 @@ export function BalanceSheetPage() {
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell /><TableCell className="font-bold">Total Passif + Capitaux</TableCell>
+                  <TableCell /><TableCell className="font-bold">{t('balanceSheet.totalLiabilitiesEquity')}</TableCell>
                   <TableCell className="font-mono text-right font-bold text-base">{formatCurrency(totalLiabilities + totalEquity)}</TableCell>
                 </TableRow>
               </Table>

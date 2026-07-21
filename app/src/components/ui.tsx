@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation, Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Loader2, X, Search, Check } from 'lucide-react'
@@ -38,6 +39,7 @@ interface StatCardProps {
 }
 
 export function StatCard({ label, value, icon, trend, color = 'primary' }: StatCardProps) {
+  const { t } = useTranslation('common')
   const colorMap = {
     primary: 'text-[var(--color-primary)] bg-[rgba(0,102,204,0.1)]',
     success: 'text-[var(--color-success)] bg-[rgba(0,135,90,0.1)]',
@@ -61,7 +63,7 @@ export function StatCard({ label, value, icon, trend, color = 'primary' }: StatC
           <span className={cn('text-xs font-medium', trend.positive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]')}>
             {trend.positive ? '↑' : '↓'} {trend.value}
           </span>
-          <span className="text-xs text-[var(--color-text-secondary)]">vs période précédente</span>
+          <span className="text-xs text-[var(--color-text-secondary)]">{t('common.vsPreviousPeriod')}</span>
         </div>
       )}
     </div>
@@ -226,6 +228,7 @@ export function SortableTable<T extends Record<string, any>>({
   pageSize = 25,
   emptyState,
 }: SortableTableProps<T>) {
+  const { t } = useTranslation('common')
   const [sortKey, setSortKey] = useState<string | undefined>(initialSortKey)
   const [sortDir, setSortDir] = useState<SortDirection>(initialSortDir)
   const [page, setPage] = useState(0)
@@ -239,7 +242,7 @@ export function SortableTable<T extends Record<string, any>>({
       if (av == null) return 1
       if (bv == null) return -1
       if (typeof av === 'number' && typeof bv === 'number') return av - bv
-      return String(av).localeCompare(String(bv), 'fr')
+      return String(av).localeCompare(String(bv), undefined)
     })
     return sortDir === 'desc' ? sortedData.reverse() : sortedData
   }, [data, sortKey, sortDir])
@@ -297,7 +300,7 @@ export function SortableTable<T extends Record<string, any>>({
             ) : (
               <tr>
                 <td colSpan={headers.length} className="px-4 py-12 text-center text-sm text-[var(--color-text-secondary)]">
-                  {emptyState || 'Aucune donnée'}
+                  {emptyState || t('table.empty')}
                 </td>
               </tr>
             )}
@@ -307,7 +310,7 @@ export function SortableTable<T extends Record<string, any>>({
       {sorted.length > pageSize && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border)]">
           <span className="text-xs text-[var(--color-text-secondary)]">
-            {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, sorted.length)} sur {sorted.length}
+            {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, sorted.length)} {t('table.of')} {sorted.length}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -486,116 +489,127 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
 // ============================================
 // AUTO BREADCRUMB (derived from route)
 // ============================================
-const routeLabels: Record<string, string> = {
-  '': 'Tableau de bord',
-  'dashboard': 'Tableaux de bord',
-  'workspace': 'Mon espace',
-  'sales': 'Ventes',
-  'customers': 'Clients',
-  'invoices': 'Factures',
-  'quotes': 'Devis',
-  'credits': 'Avoirs',
-  'recurring': 'Factures récurrentes',
-  'orders': 'Commandes',
-  'delivery-notes': 'Bons de livraison',
-  'payments': 'Règlements',
-  'purchases': 'Achats',
-  'suppliers': 'Fournisseurs',
-  'products': 'Produits & Services',
-  'automation': 'Automatisation',
-  'goods-receipts': 'Réceptions',
-  'accounting': 'Comptabilité',
-  'home': 'Accueil',
-  'chart-accounts': 'Plan comptable',
-  'third-party': 'Plan tiers',
-  'payment-generation': 'Génération des règlements',
-  'journals': 'Journaux',
-  'entry-templates': 'Modèles de saisie',
-  'journal-entries': 'Saisie des journaux',
-  'general-ledger': 'Grand livre',
-  'trial-balance': 'Balance générale',
-  'brouillard': 'Brouillard',
-  'aged-balance': 'Balance âgée',
-  'echeancier': 'Échéancier',
-  'sig': 'SIG',
-  'analytic-balance': 'Balance analytique',
-  'fec': 'Export FEC',
-  'lettrage': 'Lettrage',
-  'search': 'Recherche',
-  'journal-closure': 'Clôture des journaux',
-  'fiscal-year-closure': 'Clôture d\'exercice',
-  'fixed-assets': 'Immobilisations',
-  'projects': 'Projets',
-  'budgets': 'Budgets',
-  'analytic': 'Sections analytiques',
-  'structure': 'Structure',
-  'traitement': 'Traitement',
-  'etats': 'États',
-  'states': 'États',
-  'banking': 'Banque',
-  'banking/accounts': 'Comptes bancaires',
-  'banking/transactions': 'Transactions',
-  'banking/reconciliation': 'Rapprochement',
-  'banking/rules': 'Règles bancaires',
-  'treasury': 'Trésorerie',
-  'forecast': 'Prévisions',
-  'payment-orders': 'Ordres de paiement',
-  'collections': 'Recouvrement',
-  'stock': 'Stock',
-  'quantities': 'Quantités',
-  'movements': 'Mouvements',
-  'warehouses': 'Dépôts',
-  'inventory': 'Inventaire',
-  'reorder': 'Réapprovisionnement',
-  'price-lists': 'Listes de prix',
-  'transfer': 'Transfert comptable',
-  'boms': 'Nomenclatures',
-  'manufacturing': 'Ordres de fabrication',
-  'hr': 'Ressources humaines',
-  'employees': 'Employés',
-  'pay-runs': 'Campagnes de paie',
-  'pay-slips': 'Bulletins de paie',
-  'payroll-accounting': 'OD de paie',
-  'timesheets': 'Feuilles de temps',
-  'leave-requests': 'Congés',
-  'contracts': 'Contrats',
-  'declarations': 'Déclarations',
-  'training': 'Formations',
-  'reporting': 'Reporting',
-  'financial': 'Tableau de bord financier',
-  'bi': 'BI Reporting',
-  'budget': 'Suivi budgétaire',
-  'reports': 'Rapports',
-  'profit-loss': 'Compte de résultat',
-  'balance-sheet': 'Bilan',
-  'cash-flow': 'Flux de trésorerie',
-  'vat': 'TVA',
-  'settings': 'Paramètres',
-  'company': 'Entreprise',
-  'users': 'Utilisateurs',
-  'currencies': 'Devises',
-  'integrations': 'Intégrations',
-  'system': 'Système',
-  'audit-log': 'Journal d\'audit',
-  'fiscal-years': 'Exercices & périodes',
+const routeLabelKeys: Record<string, string> = {
+  '': 'items.dashboard',
+  'dashboard': 'groups.dashboards',
+  'workspace': 'items.myWorkspace',
+  'sales': 'items.sales',
+  'customers': 'items.customers',
+  'invoices': 'items.invoices',
+  'quotes': 'items.quotes',
+  'credits': 'items.creditNotes',
+  'recurring': 'items.recurringInvoices',
+  'orders': 'items.salesOrders',
+  'delivery-notes': 'items.deliveryNotes',
+  'payments': 'items.customerPayments',
+  'purchases': 'items.purchases',
+  'suppliers': 'items.suppliers',
+  'products': 'items.productsServices',
+  'automation': 'items.invoiceAutomation',
+  'goods-receipts': 'items.goodsReceipts',
+  'accounting': 'groups.accounting',
+  'home': 'items.accountingHome',
+  'chart-accounts': 'items.chartAccounts',
+  'third-party': 'items.thirdParty',
+  'payment-generation': 'items.paymentGeneration',
+  'journals': 'items.journals',
+  'entry-templates': 'items.entryTemplates',
+  'journal-entries': 'items.journalEntry',
+  'general-ledger': 'items.generalLedger',
+  'trial-balance': 'items.trialBalance',
+  'brouillard': 'items.brouillard',
+  'aged-balance': 'items.agedBalance',
+  'echeancier': 'items.echeancier',
+  'sig': 'items.sig',
+  'analytic-balance': 'items.analyticBalance',
+  'fec': 'items.fecExport',
+  'lettrage': 'items.lettrage',
+  'search': 'items.searchEntries',
+  'journal-closure': 'items.journalClosure',
+  'fiscal-year-closure': 'items.fiscalYearClosure',
+  'fixed-assets': 'items.fixedAssets',
+  'projects': 'items.projects',
+  'budgets': 'items.budgets',
+  'analytic': 'items.analyticSections',
+  'structure': 'items.structure',
+  'traitement': 'items.processing',
+  'etats': 'items.states',
+  'states': 'items.states',
+  'banking': 'items.bankingDashboard',
+  'banking/accounts': 'items.banks',
+  'banking/transactions': 'items.bankTransactions',
+  'banking/reconciliation': 'items.bankReconciliation',
+  'banking/rules': 'items.bankRules',
+  'treasury': 'groups.treasury',
+  'forecast': 'items.forecasts',
+  'payment-orders': 'items.paymentOrders',
+  'collections': 'items.collections',
+  'stock': 'groups.stock',
+  'quantities': 'items.stockQuantities',
+  'movements': 'items.stockMovements',
+  'warehouses': 'items.warehouses',
+  'inventory': 'items.inventory',
+  'reorder': 'items.reorder',
+  'price-lists': 'items.priceLists',
+  'transfer': 'items.gescomTransfer',
+  'boms': 'items.bom',
+  'manufacturing': 'items.manufacturingOrders',
+  'production': 'groups.production',
+  'routings': 'items.routings',
+  'machines': 'items.machines',
+  'toolings': 'items.toolings',
+  'subcontracting': 'items.subcontracting',
+  'supervisor': 'items.subcontractingSupervisor',
+  'mrp': 'items.mrp',
+  'forecasts': 'items.forecasts',
+  'planning': 'items.planning',
+  'hr': 'groups.hr',
+  'employees': 'items.employees',
+  'pay-runs': 'items.payRuns',
+  'pay-slips': 'items.paySlips',
+  'payroll-accounting': 'items.payrollAccounting',
+  'timesheets': 'items.timesheets',
+  'leave-requests': 'items.leaveRequests',
+  'contracts': 'items.contracts',
+  'declarations': 'items.declarations',
+  'training': 'items.training',
+  'reporting': 'groups.reporting',
+  'financial': 'items.financialDashboard',
+  'bi': 'items.biReporting',
+  'budget': 'items.budgetTracking',
+  'reports': 'items.reports',
+  'profit-loss': 'items.profitLoss',
+  'balance-sheet': 'items.balanceSheet',
+  'cash-flow': 'items.cashFlow',
+  'vat': 'items.vat',
+  'settings': 'items.settings',
+  'company': 'items.company',
+  'users': 'items.usersMenu',
+  'currencies': 'items.currencies',
+  'integrations': 'items.integrations',
+  'system': 'groups.system',
+  'audit-log': 'items.auditLog',
+  'fiscal-years': 'items.fiscalYears',
 }
 
 export function useAutoBreadcrumb(): { label: string; path?: string }[] {
   const location = useLocation()
+  const { t: tNav } = useTranslation('nav')
   return useMemo(() => {
     const segments = location.pathname.split('/').filter(Boolean)
-    const items: { label: string; path?: string }[] = [{ label: 'Accueil', path: '/' }]
+    const items: { label: string; path?: string }[] = [{ label: tNav('groups.home'), path: '/' }]
     let currentPath = ''
     for (const seg of segments) {
       currentPath += '/' + seg
-      const label = routeLabels[seg] || routeLabels[currentPath.slice(1)] || seg.charAt(0).toUpperCase() + seg.slice(1)
+      const key = routeLabelKeys[seg] || routeLabelKeys[currentPath.slice(1)]
+      const label = key ? tNav(key) : seg.charAt(0).toUpperCase() + seg.slice(1)
       items.push({ label, path: currentPath })
     }
     if (items.length > 1) {
       items[items.length - 1].path = undefined
     }
     return items
-  }, [location.pathname])
+  }, [location.pathname, tNav])
 }
 
 export function AutoBreadcrumb() {
@@ -618,8 +632,11 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  open, title, message, confirmLabel = 'Confirmer', cancelLabel = 'Annuler', variant = 'danger', onConfirm, onCancel,
+  open, title, message, confirmLabel, cancelLabel, variant = 'danger', onConfirm, onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation('common')
+  const cLabel = confirmLabel || t('actions.confirm')
+  const cancelLbl = cancelLabel || t('actions.cancel')
   if (!open) return null
   return (
     <div className="fixed inset-0 bg-black/40 z-[9995] flex items-center justify-center p-4">
@@ -634,8 +651,8 @@ export function ConfirmDialog({
           <p className="text-sm text-[var(--color-text-secondary)]">{message}</p>
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" size="sm" onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={variant} size="sm" onClick={onConfirm}>{confirmLabel}</Button>
+          <Button variant="secondary" size="sm" onClick={onCancel}>{cancelLbl}</Button>
+          <Button variant={variant} size="sm" onClick={onConfirm}>{cLabel}</Button>
         </div>
       </div>
     </div>
@@ -655,7 +672,9 @@ interface ComboboxProps {
   className?: string
 }
 
-export function Combobox({ label, value, onChange, options, placeholder = 'Rechercher...', required, className }: ComboboxProps) {
+export function Combobox({ label, value, onChange, options, placeholder, required, className }: ComboboxProps) {
+  const { t } = useTranslation('common')
+  const ph = placeholder || t('common.searchPlaceholder')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -690,7 +709,7 @@ export function Combobox({ label, value, onChange, options, placeholder = 'Reche
           onClick={() => setOpen((v) => !v)}
           className="input w-full text-left flex items-center justify-between"
         >
-          <span className={cn(!selected && 'text-[var(--color-text-secondary)]')}>{selected?.label || placeholder}</span>
+          <span className={cn(!selected && 'text-[var(--color-text-secondary)]')}>{selected?.label || ph}</span>
           <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" />
         </button>
         {open && (
@@ -702,14 +721,14 @@ export function Combobox({ label, value, onChange, options, placeholder = 'Reche
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={placeholder}
+                  placeholder={ph}
                   className="w-full pl-7 pr-2 py-1.5 text-sm bg-[var(--color-neutral-50)] rounded-md border-none outline-none focus:ring-1 focus:ring-[var(--color-primary)] text-[var(--color-text)]"
                 />
               </div>
             </div>
             <div className="overflow-y-auto flex-1">
               {filtered.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-[var(--color-text-secondary)] text-center">Aucun résultat</p>
+                <p className="px-3 py-4 text-sm text-[var(--color-text-secondary)] text-center">{t('common.noResults')}</p>
               ) : (
                 filtered.map((opt) => (
                   <button

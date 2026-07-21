@@ -5,33 +5,38 @@ import { formatCurrency, translateStatus } from '@/lib/utils'
 import { LayoutGrid, TrendingUp, TrendingDown, Wallet, Users, Package, FolderKanban, ShoppingCart, X, Plus } from 'lucide-react'
 import type { Invoice, Quote, BankAccount, BankTransaction, Product, Employee, Project, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
+import { useTranslation } from 'react-i18next'
 
-interface WidgetConfig {
-  id: string
-  title: string
-  icon: React.ComponentType<{ className?: string }>
-  visible: boolean
+const widgetMeta: Record<string, { titleKey: string; icon: React.ComponentType<{ className?: string }> }> = {
+  'sales-summary': { titleKey: 'workspace.widgets.salesSummary', icon: TrendingUp },
+  'purchases-summary': { titleKey: 'workspace.widgets.purchasesSummary', icon: ShoppingCart },
+  'bank-summary': { titleKey: 'workspace.widgets.bankSummary', icon: Wallet },
+  'recent-invoices': { titleKey: 'workspace.widgets.recentInvoices', icon: LayoutGrid },
+  'low-stock': { titleKey: 'workspace.widgets.lowStock', icon: Package },
+  'employees-summary': { titleKey: 'workspace.widgets.employees', icon: Users },
+  'projects-summary': { titleKey: 'workspace.widgets.activeProjects', icon: FolderKanban },
+  'recent-quotes': { titleKey: 'workspace.widgets.recentQuotes', icon: TrendingDown },
 }
 
-const defaultWidgets: WidgetConfig[] = [
-  { id: 'sales-summary', title: 'Ventes — Résumé', icon: TrendingUp, visible: true },
-  { id: 'purchases-summary', title: 'Achats — Résumé', icon: ShoppingCart, visible: true },
-  { id: 'bank-summary', title: 'Trésorerie', icon: Wallet, visible: true },
-  { id: 'recent-invoices', title: 'Factures récentes', icon: LayoutGrid, visible: true },
-  { id: 'low-stock', title: 'Stock bas', icon: Package, visible: true },
-  { id: 'employees-summary', title: 'Employés', icon: Users, visible: true },
-  { id: 'projects-summary', title: 'Projets actifs', icon: FolderKanban, visible: true },
-  { id: 'recent-quotes', title: 'Devis récents', icon: TrendingDown, visible: false },
-]
+const defaultWidgetIds = ['sales-summary', 'purchases-summary', 'bank-summary', 'recent-invoices', 'low-stock', 'employees-summary', 'projects-summary', 'recent-quotes']
+const defaultVisible = ['sales-summary', 'purchases-summary', 'bank-summary', 'recent-invoices', 'low-stock', 'employees-summary', 'projects-summary']
 
 export function WorkspacePage() {
+  const { t } = useTranslation('common')
   const { toast } = useToast()
-const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
+const [widgetIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('compta-workspace-widgets')
     if (saved) {
-      try { return JSON.parse(saved) } catch { return defaultWidgets }
+      try { return JSON.parse(saved) } catch { return defaultWidgetIds }
     }
-    return defaultWidgets
+    return defaultWidgetIds
+  })
+const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('compta-workspace-visible')
+    if (saved) {
+      try { return JSON.parse(saved) } catch { return Object.fromEntries(defaultWidgetIds.map(id => [id, defaultVisible.includes(id)])) }
+    }
+    return Object.fromEntries(defaultWidgetIds.map(id => [id, defaultVisible.includes(id)]))
   })
   const [showConfig, setShowConfig] = useState(false)
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -59,25 +64,26 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
       setEmployees(e)
       setProjects(pr)
       setPurchaseInvoices(pi)
-    } catch (err) { console.error(err); toast('error', 'Erreur', 'Erreur lors du chargement de l\'espace de travail') } finally { setLoading(false) }
-  }, [])
+    } catch (err) { console.error(err); toast('error', t('workspace.loadError'), t('workspace.loadErrorDesc')) } finally { setLoading(false) }
+  }, [toast, t])
 
   useEffect(() => { loadData() }, [loadData])
 
   function toggleWidget(id: string) {
-    setWidgets(prev => {
-      const updated = prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w)
-      localStorage.setItem('compta-workspace-widgets', JSON.stringify(updated))
+    setWidgetVisible(prev => {
+      const updated = { ...prev, [id]: !prev[id] }
+      localStorage.setItem('compta-workspace-visible', JSON.stringify(updated))
       return updated
     })
   }
 
   function resetWidgets() {
-    setWidgets(defaultWidgets)
-    localStorage.setItem('compta-workspace-widgets', JSON.stringify(defaultWidgets))
+    const reset = Object.fromEntries(defaultWidgetIds.map(id => [id, defaultVisible.includes(id)]))
+    setWidgetVisible(reset)
+    localStorage.setItem('compta-workspace-visible', JSON.stringify(reset))
   }
 
-  const visibleWidgets = widgets.filter(w => w.visible)
+  const visibleWidgets = widgetIds.filter(id => widgetVisible[id])
 
   const totalSales = invoices.reduce((s, i) => s + Number(i.total), 0)
   const totalPaid = invoices.reduce((s, i) => s + Number(i.amount_paid), 0)
@@ -95,34 +101,34 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
       case 'sales-summary':
         return (
           <div className="space-y-2 p-4">
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Total facturé</span><span className="font-mono font-bold">{formatCurrency(totalSales)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Encaissé</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">En attente</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</span></div>
-            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">Factures</span><span className="font-bold">{invoices.length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalBilled')}</span><span className="font-mono font-bold">{formatCurrency(totalSales)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.collected')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.pending')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</span></div>
+            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.invoices')}</span><span className="font-bold">{invoices.length}</span></div>
           </div>
         )
       case 'purchases-summary':
         return (
           <div className="space-y-2 p-4">
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Total achats</span><span className="font-mono font-bold">{formatCurrency(totalPurchases)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Payé</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_paid), 0))}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">À payer</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
-            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">Factures d'achat</span><span className="font-bold">{purchaseInvoices.length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalPurchases')}</span><span className="font-mono font-bold">{formatCurrency(totalPurchases)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.paid')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_paid), 0))}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.toPay')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
+            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.purchaseInvoices')}</span><span className="font-bold">{purchaseInvoices.length}</span></div>
           </div>
         )
       case 'bank-summary':
         return (
           <div className="space-y-2 p-4">
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Solde total</span><span className="font-mono font-bold text-base">{formatCurrency(totalBankBalance)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalBalance')}</span><span className="font-mono font-bold text-base">{formatCurrency(totalBankBalance)}</span></div>
             {bankAccounts.slice(0, 3).map(a => (
               <div key={a.id} className="flex justify-between text-xs"><span className="text-[var(--color-text-secondary)]">{a.name}</span><span className="font-mono">{formatCurrency(Number(a.balance))}</span></div>
             ))}
-            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">Transactions</span><span className="font-bold">{transactions.length}</span></div>
+            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.transactions')}</span><span className="font-bold">{transactions.length}</span></div>
           </div>
         )
       case 'recent-invoices':
         return (
-          <Table headers={['Numéro', 'Client', 'Montant', 'Statut']}>
+          <Table headers={[t('workspace.number'), t('workspace.customer'), t('workspace.amount'), t('workspace.status')]}>
             {invoices.slice(0, 5).map(inv => (
               <TableRow key={inv.id}>
                 <TableCell className="font-mono text-xs">{inv.number}</TableCell>
@@ -131,12 +137,12 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
                 <TableCell><Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(inv.status)}</Badge></TableCell>
               </TableRow>
             ))}
-            {invoices.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">Aucune facture</TableCell></TableRow>}
+            {invoices.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">{t('workspace.noInvoices')}</TableCell></TableRow>}
           </Table>
         )
       case 'low-stock':
         return (
-          <Table headers={['Produit', 'Stock', 'Seuil']}>
+          <Table headers={[t('workspace.product'), t('workspace.stock'), t('workspace.threshold')]}>
             {lowStockProducts.slice(0, 5).map(p => (
               <TableRow key={p.id}>
                 <TableCell className="text-sm">{p.name}</TableCell>
@@ -144,21 +150,21 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
                 <TableCell className="font-mono text-xs">{p.reorder_level}</TableCell>
               </TableRow>
             ))}
-            {lowStockProducts.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-[var(--color-text-secondary)] text-sm">Aucun stock bas</TableCell></TableRow>}
+            {lowStockProducts.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-[var(--color-text-secondary)] text-sm">{t('workspace.noLowStock')}</TableCell></TableRow>}
           </Table>
         )
       case 'employees-summary':
         return (
           <div className="space-y-2 p-4">
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Total employés</span><span className="font-bold">{employees.length}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">Actifs</span><span className="font-bold text-[var(--color-success)]">{activeEmployees.length}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">En congé</span><span className="font-bold text-[var(--color-warning)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
-            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">Masse salariale</span><span className="font-mono font-bold">{formatCurrency(activeEmployees.reduce((s, e) => s + Number(e.salary), 0))}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalEmployees')}</span><span className="font-bold">{employees.length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.active')}</span><span className="font-bold text-[var(--color-success)]">{activeEmployees.length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.onLeave')}</span><span className="font-bold text-[var(--color-warning)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
+            <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.payroll')}</span><span className="font-mono font-bold">{formatCurrency(activeEmployees.reduce((s, e) => s + Number(e.salary), 0))}</span></div>
           </div>
         )
       case 'projects-summary':
         return (
-          <Table headers={['Projet', 'Budget', 'Rentabilité']}>
+          <Table headers={[t('workspace.project'), t('workspace.budget'), t('workspace.profitability')]}>
             {activeProjects.slice(0, 5).map(p => {
               const profit = Number(p.budget) - Number(p.actual_cost)
               return (
@@ -169,12 +175,12 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
                 </TableRow>
               )
             })}
-            {activeProjects.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-[var(--color-text-secondary)] text-sm">Aucun projet actif</TableCell></TableRow>}
+            {activeProjects.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-[var(--color-text-secondary)] text-sm">{t('workspace.noActiveProjects')}</TableCell></TableRow>}
           </Table>
         )
       case 'recent-quotes':
         return (
-          <Table headers={['Numéro', 'Client', 'Montant', 'Statut']}>
+          <Table headers={[t('workspace.number'), t('workspace.customer'), t('workspace.amount'), t('workspace.status')]}>
             {quotes.slice(0, 5).map(q => (
               <TableRow key={q.id}>
                 <TableCell className="font-mono text-xs">{q.number}</TableCell>
@@ -183,7 +189,7 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
                 <TableCell><Badge variant={q.status === 'accepted' ? 'success' : 'warning'}>{translateStatus(q.status)}</Badge></TableCell>
               </TableRow>
             ))}
-            {quotes.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">Aucun devis</TableCell></TableRow>}
+            {quotes.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-[var(--color-text-secondary)] text-sm">{t('workspace.noQuotes')}</TableCell></TableRow>}
           </Table>
         )
       default:
@@ -193,16 +199,16 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Tableaux de bord' }, { label: 'Mon espace' }]} />
+      <Breadcrumb items={[{ label: t('workspace.breadcrumb') }, { label: t('workspace.breadcrumb2') }]} />
       <PageHeader
-        title="Mon espace de travail"
-        subtitle="Personnalisez votre tableau de bord avec des widgets"
+        title={t('workspace.title')}
+        subtitle={t('workspace.subtitle')}
         action={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowConfig(!showConfig)}>
-              <LayoutGrid className="w-4 h-4" /> Configurer
+              <LayoutGrid className="w-4 h-4" /> {t('workspace.configure')}
             </Button>
-            <Button variant="secondary" onClick={resetWidgets}>Réinitialiser</Button>
+            <Button variant="secondary" onClick={resetWidgets}>{t('workspace.reset')}</Button>
           </div>
         }
       />
@@ -210,45 +216,54 @@ const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
       {showConfig && (
         <Card className="mb-6">
           <div className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Widgets disponibles</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('workspace.availableWidgets')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {widgets.map(w => (
+              {widgetIds.map(id => {
+                const meta = widgetMeta[id]
+                const visible = widgetVisible[id]
+                const Icon = meta?.icon || LayoutGrid
+                return (
                 <button
-                  key={w.id}
-                  onClick={() => toggleWidget(w.id)}
+                  key={id}
+                  onClick={() => toggleWidget(id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                    w.visible
+                    visible
                       ? 'border-[var(--color-primary)] bg-[rgba(0,102,204,0.05)] text-[var(--color-primary)]'
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'
                   }`}
                 >
-                  <w.icon className="w-4 h-4" />
-                  <span className="flex-1 text-left">{w.title}</span>
-                  {w.visible ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                  <Icon className="w-4 h-4" />
+                  <span className="flex-1 text-left">{t(meta?.titleKey || id)}</span>
+                  {visible ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                 </button>
-              ))}
+                )
+              })}
             </div>
           </div>
         </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {visibleWidgets.map(w => (
-          <Card key={w.id}>
+        {visibleWidgets.map(id => {
+          const meta = widgetMeta[id]
+          const Icon = meta?.icon || LayoutGrid
+          return (
+          <Card key={id}>
             <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border)]">
-              <w.icon className="w-4 h-4 text-[var(--color-primary)]" />
-              <h3 className="text-sm font-semibold">{w.title}</h3>
+              <Icon className="w-4 h-4 text-[var(--color-primary)]" />
+              <h3 className="text-sm font-semibold">{t(meta?.titleKey || id)}</h3>
             </div>
-            {renderWidget(w.id)}
+            {renderWidget(id)}
           </Card>
-        ))}
+          )
+        })}
       </div>
 
       {visibleWidgets.length === 0 && (
         <Card>
           <div className="p-12 text-center">
             <LayoutGrid className="w-12 h-12 mx-auto mb-3 text-[var(--color-text-secondary)]" />
-            <p className="text-[var(--color-text-secondary)]">Aucun widget affiché. Cliquez sur "Configurer" pour ajouter des widgets.</p>
+            <p className="text-[var(--color-text-secondary)]">{t('workspace.noWidgets')}</p>
           </div>
         </Card>
       )}

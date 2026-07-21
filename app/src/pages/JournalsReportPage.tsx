@@ -1,11 +1,14 @@
 import { Fragment, useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Input, Button } from '@/components/ui'
 import { getJournalsReport } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import { Search } from 'lucide-react'
 import type { JournalEntry } from '@/types'
 
 export function JournalsReportPage() {
+  const { t } = useTranslation('accounting')
+  const { formatCurrency, formatDate } = useLocale()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [startDate, setStartDate] = useState('')
@@ -39,14 +42,14 @@ export function JournalsReportPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Rapports' }, { label: 'Journaux' }]} />
-      <PageHeader title="Rapport des journaux" subtitle="Consultez vos écritures de journal par période" />
+      <Breadcrumb items={[{ label: t('home.reports') }, { label: t('journalsReport.title') }]} />
+      <PageHeader title={t('journalsReport.title')} subtitle={t('journalsReport.subtitle')} />
 
       <div className="mb-4 flex items-center gap-3">
-        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder="Date début" />
-        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder="Date fin" />
-        <Button variant="secondary" onClick={loadData}><Search className="w-4 h-4" /> Filtrer</Button>
-        <span className="text-sm text-[var(--color-text-secondary)]">{entries.length} écriture(s)</span>
+        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder={t('journalsReport.startDate')} />
+        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder={t('journalsReport.endDate')} />
+        <Button variant="secondary" onClick={loadData}><Search className="w-4 h-4" /> {t('journalsReport.filter')}</Button>
+        <span className="text-sm text-[var(--color-text-secondary)]">{t('journalsReport.entriesCount', { count: entries.length })}</span>
       </div>
 
       {loading ? (
@@ -56,20 +59,20 @@ export function JournalsReportPage() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Card>
               <div className="p-4">
-                <p className="text-sm text-[var(--color-text-secondary)]">Total débit</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('journalsReport.totalDebit')}</p>
                 <p className="text-xl font-bold font-mono">{formatCurrency(totalDebit)}</p>
               </div>
             </Card>
             <Card>
               <div className="p-4">
-                <p className="text-sm text-[var(--color-text-secondary)]">Total crédit</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">{t('journalsReport.totalCredit')}</p>
                 <p className="text-xl font-bold font-mono">{formatCurrency(totalCredit)}</p>
               </div>
             </Card>
           </div>
 
           <Card>
-            <Table headers={['', 'Numéro', 'Date', 'Description', 'Débit', 'Crédit', 'Statut']}>
+            <Table headers={['', t('journalsReport.number'), t('journalsReport.date'), t('journalsReport.description'), t('journalsReport.debit'), t('journalsReport.credit'), t('journalsReport.status')]}>
               {entries.map((e) => (
                 <Fragment key={e.id}>
                   <TableRow onClick={() => toggleExpand(e.id)}>
@@ -81,7 +84,7 @@ export function JournalsReportPage() {
                     <TableCell className="text-sm">{e.description}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.total_debit))}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.total_credit))}</TableCell>
-                    <TableCell className="text-xs">{e.status === 'posted' ? '✅ Postée' : '⏸ Brouillon'}</TableCell>
+                    <TableCell className="text-xs">{e.status === 'posted' ? `✅ ${t('journalsReport.posted')}` : `⏸ ${t('journalsReport.draft')}`}</TableCell>
                   </TableRow>
                   {expanded.has(e.id) && e.journal_lines?.map((line) => (
                     <tr key={line.id} className="bg-[var(--color-neutral-50)]">
@@ -96,7 +99,7 @@ export function JournalsReportPage() {
                 </Fragment>
               ))}
               {entries.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-[var(--color-text-secondary)]">Aucune écriture</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-[var(--color-text-secondary)]">{t('journalsReport.noEntries')}</TableCell></TableRow>
               )}
             </Table>
           </Card>

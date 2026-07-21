@@ -3,6 +3,7 @@ import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, S
 import { formatCurrency } from '@/lib/utils'
 import { getInvoices, getPurchaseInvoices, getBankAccounts, getJournalEntries, getCustomers, getSuppliers, getProducts } from '@/lib/queries'
 import { Download, FileSpreadsheet, BarChart3, TrendingUp, TrendingDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface ReportData {
   totalRevenue: number
@@ -18,6 +19,7 @@ interface ReportData {
 }
 
 export function BIReportingPage() {
+  const { t } = useTranslation('reports')
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [reportType, setReportType] = useState('summary')
@@ -49,18 +51,18 @@ export function BIReportingPage() {
 
   function exportData() {
     if (!data) return
-    const headers = ['Indicateur', 'Valeur']
+    const headers = [t('bi.indicator'), t('bi.value')]
     const rows: [string, string][] = [
-      ['Chiffre d\'affaires', data.totalRevenue.toFixed(2)],
-      ['Dépenses', data.totalExpenses.toFixed(2)],
-      ['Marge brute', data.grossMargin.toFixed(2)],
-      ['Solde bancaire', data.bankBalance.toFixed(2)],
-      ['Nombre de clients', String(data.customerCount)],
-      ['Nombre de fournisseurs', String(data.supplierCount)],
-      ['Nombre de produits', String(data.productCount)],
-      ['Nombre de factures', String(data.invoiceCount)],
-      ['Nombre de factures d\'achat', String(data.purchaseInvoiceCount)],
-      ['Nombre d\'écritures', String(data.journalEntryCount)],
+      [t('bi.revenue'), data.totalRevenue.toFixed(2)],
+      [t('bi.expenses'), data.totalExpenses.toFixed(2)],
+      [t('bi.grossMargin'), data.grossMargin.toFixed(2)],
+      [t('bi.bankBalance'), data.bankBalance.toFixed(2)],
+      [t('bi.customers'), String(data.customerCount)],
+      [t('bi.suppliers'), String(data.supplierCount)],
+      [t('bi.products'), String(data.productCount)],
+      [t('bi.customerInvoices'), String(data.invoiceCount)],
+      [t('bi.supplierInvoices'), String(data.purchaseInvoiceCount)],
+      [t('bi.journalEntries'), String(data.journalEntryCount)],
     ]
     const csv = [headers, ...rows].map(r => r.join(';')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -72,20 +74,20 @@ export function BIReportingPage() {
   }
 
   if (loading) return <SkeletonTable rows={6} />
-  if (!data) return <EmptyState title="Aucune donnée" description="Les données ne sont pas disponibles." />
+  if (!data) return <EmptyState title={t('bi.noData')} description={t('bi.noDataDesc')} />
 
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Reporting', path: '/reporting/bi' }, { label: 'BI Reporting' }]} />
-      <PageHeader title="BI Reporting" subtitle="Rapports personnalisés et export" action={
+      <Breadcrumb items={[{ label: t('title'), path: '/reporting/bi' }, { label: t('bi.title') }]} />
+      <PageHeader title={t('bi.title')} subtitle={t('bi.subtitle')} action={
         <div className="flex items-center gap-2">
           <Select value={reportType} onChange={(e) => setReportType(e.target.value)} options={[
-            { value: 'summary', label: 'Synthèse générale' },
-            { value: 'sales', label: 'Ventes' },
-            { value: 'purchases', label: 'Achats' },
-            { value: 'financial', label: 'Financier' },
+            { value: 'summary', label: t('bi.reportTypes.summary') },
+            { value: 'sales', label: t('bi.reportTypes.sales') },
+            { value: 'purchases', label: t('bi.reportTypes.purchases') },
+            { value: 'financial', label: t('bi.reportTypes.financial') },
           ]} />
-          <Button variant="secondary" onClick={exportData}><Download className="w-4 h-4 mr-2" /> Export CSV</Button>
+          <Button variant="secondary" onClick={exportData}><Download className="w-4 h-4 mr-2" /> {t('bi.exportCsv')}</Button>
         </div>
       } />
 
@@ -94,7 +96,7 @@ export function BIReportingPage() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-50"><TrendingUp className="w-5 h-5 text-green-600" /></div>
             <div>
-              <p className="text-sm text-gray-500">Chiffre d'affaires</p>
+              <p className="text-sm text-gray-500">{t('bi.revenue')}</p>
               <p className="text-xl font-bold">{formatCurrency(data.totalRevenue)}</p>
             </div>
           </div>
@@ -103,7 +105,7 @@ export function BIReportingPage() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-red-50"><TrendingDown className="w-5 h-5 text-red-600" /></div>
             <div>
-              <p className="text-sm text-gray-500">Dépenses</p>
+              <p className="text-sm text-gray-500">{t('bi.expenses')}</p>
               <p className="text-xl font-bold">{formatCurrency(data.totalExpenses)}</p>
             </div>
           </div>
@@ -112,7 +114,7 @@ export function BIReportingPage() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-50"><BarChart3 className="w-5 h-5 text-blue-600" /></div>
             <div>
-              <p className="text-sm text-gray-500">Marge brute</p>
+              <p className="text-sm text-gray-500">{t('bi.grossMargin')}</p>
               <p className="text-xl font-bold">{formatCurrency(data.grossMargin)}</p>
             </div>
           </div>
@@ -120,16 +122,16 @@ export function BIReportingPage() {
       </div>
 
       <Card>
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileSpreadsheet className="w-5 h-5" /> Données détaillées</h3>
-        <Table headers={['Indicateur', 'Valeur']}>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileSpreadsheet className="w-5 h-5" /> {t('bi.detailedData')}</h3>
+        <Table headers={[t('bi.indicator'), t('bi.value')]}>
           <tbody>
-            <TableRow><TableCell>Clients</TableCell><TableCell className="text-right font-medium">{data.customerCount}</TableCell></TableRow>
-            <TableRow><TableCell>Fournisseurs</TableCell><TableCell className="text-right font-medium">{data.supplierCount}</TableCell></TableRow>
-            <TableRow><TableCell>Produits</TableCell><TableCell className="text-right font-medium">{data.productCount}</TableCell></TableRow>
-            <TableRow><TableCell>Factures clients</TableCell><TableCell className="text-right font-medium">{data.invoiceCount}</TableCell></TableRow>
-            <TableRow><TableCell>Factures fournisseurs</TableCell><TableCell className="text-right font-medium">{data.purchaseInvoiceCount}</TableCell></TableRow>
-            <TableRow><TableCell>Écritures comptables</TableCell><TableCell className="text-right font-medium">{data.journalEntryCount}</TableCell></TableRow>
-            <TableRow><TableCell>Solde bancaire total</TableCell><TableCell className="text-right font-medium">{formatCurrency(data.bankBalance)}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.customers')}</TableCell><TableCell className="text-right font-medium">{data.customerCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.suppliers')}</TableCell><TableCell className="text-right font-medium">{data.supplierCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.products')}</TableCell><TableCell className="text-right font-medium">{data.productCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.customerInvoices')}</TableCell><TableCell className="text-right font-medium">{data.invoiceCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.supplierInvoices')}</TableCell><TableCell className="text-right font-medium">{data.purchaseInvoiceCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.journalEntries')}</TableCell><TableCell className="text-right font-medium">{data.journalEntryCount}</TableCell></TableRow>
+            <TableRow><TableCell>{t('bi.bankBalance')}</TableCell><TableCell className="text-right font-medium">{formatCurrency(data.bankBalance)}</TableCell></TableRow>
           </tbody>
         </Table>
       </Card>

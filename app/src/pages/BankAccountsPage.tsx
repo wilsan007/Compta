@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, StatCard, Breadcrumb, SkeletonCard, Input, Select } from '@/components/ui'
 import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -7,6 +8,8 @@ import type { BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function BankAccountsPage() {
+  const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
 const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,11 +59,11 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
   return (
     <div className="animate-fade-in">
-      <Breadcrumb items={[{ label: 'Banque', path: '/banking' }, { label: 'Comptes bancaires' }]} />
+      <Breadcrumb items={[{ label: t('accounts.title'), path: '/banking' }]} />
       <PageHeader
-        title="Comptes bancaires"
-        subtitle={`${accounts.length} compte(s) • Solde total: ${formatCurrency(totalBalance)}`}
-        action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Nouveau compte</Button>}
+        title={t('accounts.title')}
+        subtitle={`${accounts.length} ${t('accounts.accounts')} • ${t('accounts.totalBalance')}: ${formatCurrency(totalBalance)}`}
+        action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('accounts.new')}</Button>}
       />
 
       {loading ? (
@@ -72,13 +75,13 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            <StatCard label="Solde total" value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
-            <StatCard label="Transactions" value={String(transactions.length)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
-            <StatCard label="Comptes connectés" value={String(accounts.filter((a) => a.connected).length)} icon={<Landmark className="w-5 h-5" />} color="warning" />
+            <StatCard label={t('accounts.totalBalance')} value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
+            <StatCard label={tCommon('common.transactions')} value={String(transactions.length)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
+            <StatCard label={t('accounts.connectedAccounts')} value={String(accounts.filter((a) => a.connected).length)} icon={<Landmark className="w-5 h-5" />} color="warning" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card title="Comptes" className="lg:col-span-1">
+        <Card title={t('accounts.accounts')} className="lg:col-span-1">
           {accounts.length > 0 ? (
             <div className="space-y-2">
               {accounts.map((acc) => (
@@ -107,19 +110,19 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
           ) : (
             <EmptyState
               icon={<Banknote className="w-8 h-8" />}
-              title="Aucun compte"
-              description="Ajoutez votre premier compte bancaire"
-              action={<Button variant="primary" size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Ajouter</Button>}
+              title={t('accounts.noAccounts')}
+              description={t('accounts.noAccountsDescription')}
+              action={<Button variant="primary" size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {tCommon('actions.add')}</Button>}
             />
           )}
         </Card>
 
         <Card 
-          title="Transactions" 
+          title={tCommon('common.transactions')} 
           className="lg:col-span-2"
         >
           {transactions.length > 0 ? (
-            <Table headers={['Date', 'Description', 'Référence', 'Type', 'Montant', 'Statut']}>
+            <Table headers={[tCommon('common.date'), tCommon('common.description'), tCommon('common.reference'), tCommon('common.type'), tCommon('common.amount'), tCommon('common.status')]}>
               {transactions.slice(0, 20).map((txn) => (
                 <TableRow key={txn.id}>
                   <TableCell>{formatDate(txn.date)}</TableCell>
@@ -128,7 +131,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   <TableCell>
                     <span className={`flex items-center gap-1 text-xs ${txn.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                       {txn.type === 'credit' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {txn.type === 'credit' ? 'Crédit' : 'Débit'}
+                      {txn.type === 'credit' ? t('accounts.credit') : t('accounts.debit')}
                     </span>
                   </TableCell>
                   <TableCell className={txn.type === 'credit' ? 'text-[var(--color-success)] font-medium text-right' : 'text-[var(--color-danger)] font-medium text-right'}>
@@ -136,7 +139,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   </TableCell>
                   <TableCell>
                     <Badge variant={txn.reconciled ? 'success' : 'neutral'}>
-                      {txn.reconciled ? 'Rapproché' : 'En attente'}
+                      {txn.reconciled ? t('accounts.reconciled') : tCommon('status.pending')}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -145,8 +148,8 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
           ) : (
             <EmptyState
               icon={<TrendingUp className="w-8 h-8" />}
-              title="Aucune transaction"
-              description="Les transactions apparaîtront ici une fois le compte connecté"
+              title={t('accounts.noTransactions')}
+              description={t('accounts.noTransactionsDescription')}
             />
           )}
         </Card>
@@ -164,6 +167,8 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 function BankAccountForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   
   const { toast } = useToast()
+  const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
 const [name, setName] = useState('')
   const [bankName, setBankName] = useState('')
   const [type, setType] = useState('chequing')
@@ -173,7 +178,7 @@ const [name, setName] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) { toast('warning', 'Attention', 'Le nom du compte est obligatoire'); return }
+    if (!name.trim()) { toast('warning', tCommon('toast.warning'), t('accounts.nameRequired')); return }
     setSaving(true)
     try {
       await createBankAccount({
@@ -187,7 +192,7 @@ const [name, setName] = useState('')
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', 'Erreur', err.message || 'échec')
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -197,29 +202,29 @@ const [name, setName] = useState('')
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Nouveau compte bancaire</h2>
+          <h2 className="text-lg font-semibold">{t('accounts.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label="Nom du compte" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Compte principal" />
-          <Input label="Banque" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="BNP Paribas" />
-          <Select label="Type" value={type} onChange={(e) => setType(e.target.value)} options={[
-            { value: 'chequing', label: 'Courant' },
-            { value: 'savings', label: 'Épargne' },
-            { value: 'credit_card', label: 'Carte de crédit' },
-            { value: 'cash', label: 'Caisse' },
-            { value: 'loan', label: 'Prêt' },
-            { value: 'other', label: 'Autre' },
+          <Input label={t('accounts.accountName')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('accounts.accountNamePlaceholder')} />
+          <Input label={t('accounts.bankName')} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="BNP Paribas" />
+          <Select label={tCommon('common.type')} value={type} onChange={(e) => setType(e.target.value)} options={[
+            { value: 'chequing', label: t('accounts.types.chequing') },
+            { value: 'savings', label: t('accounts.types.savings') },
+            { value: 'credit_card', label: t('accounts.types.credit_card') },
+            { value: 'cash', label: t('accounts.types.cash') },
+            { value: 'loan', label: t('accounts.types.loan') },
+            { value: 'other', label: tCommon('common.other') },
           ]} />
-          <Input label="Solde initial (€)" type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" />
-          <Select label="Devise" value={currency} onChange={(e) => setCurrency(e.target.value)} options={[
+          <Input label={t('accounts.initialBalance')} type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" />
+          <Select label={tCommon('common.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} options={[
             { value: 'EUR', label: 'EUR (€)' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'GBP', label: 'GBP (£)' },
           ]} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button variant="secondary" type="button" onClick={onClose}>Annuler</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Créer'}</Button>
+            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

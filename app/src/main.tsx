@@ -1,7 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './i18n'
+import { initRtl } from './i18n'
 import App from './App.tsx'
+
+initRtl()
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

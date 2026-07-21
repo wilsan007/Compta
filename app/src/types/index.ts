@@ -352,8 +352,44 @@ export interface CompanySettings {
   phone: string
   website: string
   logo_url: string
+  country_code: string | null
+  legislation_pack_code: string | null
   created_at: string
   updated_at: string
+}
+
+export type TaxCategory = 'standard' | 'intermediate' | 'reduced' | 'super_reduced' | 'zero' | 'exempt'
+
+export interface LegislationPack {
+  code: string
+  name: string
+  country_code: string
+  country_name: string
+  accounting_standard: string
+  currency: string
+  currency_decimals: number
+  date_format: string
+  locale: string
+  fiscal_year_start: string
+  tax_id_label: string
+  tax_id_secondary_label: string | null
+  is_default: boolean
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface TaxRate {
+  id: string
+  pack_code: string
+  name: string
+  category: TaxCategory
+  rate: number
+  account_code: string | null
+  is_default: boolean
+  effective_from: string
+  effective_to: string | null
+  created_at: string
 }
 
 export interface DashboardStats {
@@ -847,6 +883,8 @@ export interface BOM {
   quantity: number
   unit: string
   active: boolean
+  bom_type: 'standard' | 'amalgam'
+  routing_id: string | null
   created_at: string
 }
 
@@ -870,6 +908,15 @@ export interface ManufacturingOrder {
   end_date: string | null
   warehouse_id: string | null
   notes: string | null
+  origin: 'manual' | 'mrp' | 'sub_level'
+  parent_mo_id: string | null
+  routing_id: string | null
+  lot_number: string | null
+  expiry_date: string | null
+  custom_expiry_date: string | null
+  expiry_type: 'DLUO' | 'DDM' | 'DLC' | null
+  label_enabled: boolean
+  additional_text: string | null
   created_at: string
 }
 
@@ -967,5 +1014,1053 @@ export interface AuditLog {
   description: string | null
   metadata: Record<string, any> | null
   ip_address: string | null
+  created_at: string
+}
+
+// ============ Production Module: Gamme & Machine ============
+
+export interface Routing {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  product_id: string | null
+  version: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface RoutingOperation {
+  id: string
+  routing_id: string
+  sequence: number
+  name: string
+  description: string | null
+  work_center_id: string | null
+  machine_id: string | null
+  tooling_id: string | null
+  setup_time_min: number
+  run_time_min: number
+  is_subcontracted: boolean
+  supplier_id: string | null
+  st_unit: string | null
+  st_quantity: number
+  created_at: string
+}
+
+export interface WorkCenter {
+  id: string
+  code: string
+  name: string
+  capacity_hours_per_day: number
+  cost_per_hour: number
+  active: boolean
+  created_at: string
+}
+
+export interface Machine {
+  id: string
+  code: string
+  name: string
+  work_center_id: string | null
+  capacity_per_hour: number
+  status: 'active' | 'maintenance' | 'inactive'
+  purchase_date: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface Tooling {
+  id: string
+  code: string
+  name: string
+  machine_id: string | null
+  max_pieces: number
+  initial_counter: number
+  current_counter: number
+  status: 'active' | 'worn' | 'inactive'
+  notes: string | null
+  created_at: string
+}
+
+// ============ Production Module: OF Enhancements ============
+
+export interface OFLabel {
+  id: string
+  manufacturing_order_id: string
+  label_number: string
+  product_id: string | null
+  planned_quantity: number
+  actual_quantity: number
+  is_complete: boolean
+  is_declared: boolean
+  created_at: string
+}
+
+export interface OFLot {
+  id: string
+  manufacturing_order_id: string
+  lot_number: string
+  product_id: string | null
+  quantity: number
+  production_date: string | null
+  expiry_date: string | null
+  custom_expiry_date: string | null
+  expiry_type: 'DLUO' | 'DDM' | 'DLC' | null
+  created_at: string
+}
+
+export interface OFConsumption {
+  id: string
+  manufacturing_order_id: string
+  product_id: string
+  quantity: number
+  unit: string
+  consumption_date: string
+  is_deferred: boolean
+  notes: string | null
+  created_at: string
+}
+
+// ============ Production Module: Sous-traitance ============
+
+export interface STOrder {
+  id: string
+  number: string
+  supplier_id: string
+  manufacturing_order_id: string | null
+  routing_operation_id: string | null
+  product_id: string | null
+  quantity: number
+  unit: string
+  unit_price: number
+  total_price: number
+  status: 'draft' | 'sent' | 'in_progress' | 'received' | 'cancelled'
+  order_date: string
+  expected_date: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface STShipment {
+  id: string
+  number: string
+  st_order_id: string
+  shipment_date: string
+  warehouse_id: string | null
+  status: 'pending' | 'shipped' | 'returned'
+  notes: string | null
+  created_at: string
+}
+
+export interface STShipmentLine {
+  id: string
+  st_shipment_id: string
+  product_id: string
+  quantity: number
+  unit: string
+  created_at: string
+}
+
+export interface STReceipt {
+  id: string
+  number: string
+  st_order_id: string
+  receipt_date: string
+  warehouse_id: string | null
+  quantity_received: number
+  quantity_returned: number
+  status: 'pending' | 'received' | 'partial' | 'cancelled'
+  notes: string | null
+  created_at: string
+}
+
+export interface STReceiptLine {
+  id: string
+  st_receipt_id: string
+  product_id: string
+  quantity: number
+  unit: string
+  line_type: 'received' | 'returned'
+  created_at: string
+}
+
+// ============ Production Module: CBN/MRP ============
+
+export interface MRPRun {
+  id: string
+  run_number: string
+  run_date: string
+  status: 'running' | 'completed' | 'cancelled'
+  parameters: Record<string, any> | null
+  summary: Record<string, any> | null
+  created_at: string
+}
+
+export interface MRPProposal {
+  id: string
+  mrp_run_id: string
+  product_id: string
+  proposal_type: 'purchase' | 'manufacture' | 'subcontract'
+  gross_need: number
+  stock_available: number
+  open_orders: number
+  net_need: number
+  suggested_quantity: number
+  suggested_date: string | null
+  bom_id: string | null
+  supplier_id: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'converted'
+  notes: string | null
+  created_at: string
+}
+
+export interface MRPPendingDoc {
+  id: string
+  doc_type: 'purchase_order' | 'manufacturing_order' | 'subcontract_order'
+  doc_id: string | null
+  product_id: string | null
+  quantity: number
+  status: 'pending' | 'processed' | 'cancelled'
+  created_at: string
+}
+
+// ============ Production Module: Prévisions ============
+
+export interface ProductionForecast {
+  id: string
+  forecast_number: string
+  period: string
+  start_date: string
+  end_date: string
+  product_id: string | null
+  forecasted_quantity: number
+  actual_quantity: number
+  reliability_rate: number
+  source: 'manual' | 'invoice_import'
+  notes: string | null
+  created_at: string
+}
+
+// ============ Production Module: Planification ============
+
+export interface PlanningSlot {
+  id: string
+  manufacturing_order_id: string
+  routing_operation_id: string | null
+  machine_id: string | null
+  work_center_id: string | null
+  planned_start: string | null
+  planned_end: string | null
+  setup_time: number
+  run_time: number
+  status: 'planned' | 'scheduled' | 'in_progress' | 'completed'
+  material_available: boolean
+  material_check_date: string | null
+  created_at: string
+}
+
+// ============ Production Module: Complémentaires ============
+
+export interface ProductEquivalence {
+  id: string
+  product_id: string
+  equivalent_product_id: string
+  conversion_ratio: number
+  created_at: string
+}
+
+export interface Workflow {
+  id: string
+  name: string
+  description: string | null
+  workflow_type: 'mrp' | 'forecast' | 'planning' | 'custom'
+  schedule: string | null
+  last_run: string | null
+  status: 'active' | 'inactive'
+  created_at: string
+}
+
+export interface OFDocumentAccess {
+  id: string
+  user_id: string
+  document_type: string
+  can_view: boolean
+  can_print: boolean
+  can_export: boolean
+  created_at: string
+}
+
+export interface RecurringEntryLine {
+  account_code: string
+  description: string
+  debit: number
+  credit: number
+}
+
+export interface RecurringEntry {
+  id: string
+  tenant_id: string
+  name: string
+  description: string | null
+  journal_id: string
+  journal_code: string | null
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  day_of_month: number
+  start_date: string
+  end_date: string | null
+  next_generation_date: string
+  last_generation_date: string | null
+  lines: RecurringEntryLine[]
+  status: 'active' | 'paused' | 'expired'
+  total_debit: number
+  total_credit: number
+  created_at: string
+  updated_at: string
+}
+
+export interface RegularizationEntry {
+  id: string
+  tenant_id: string
+  type: 'CCA' | 'PCA' | 'PRC' | 'CRC'
+  fiscal_year_id: string | null
+  account_code: string
+  third_party_code: string | null
+  description: string
+  invoice_number: string | null
+  invoice_date: string | null
+  invoice_amount: number
+  start_date: string
+  end_date: string
+  amount: number
+  used_amount: number
+  remaining_amount: number
+  status: 'pending' | 'regularized' | 'extourned'
+  journal_id: string | null
+  journal_code: string | null
+  created_entry_id: string | null
+  extourne_entry_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CurrencyRevaluation {
+  id: string
+  tenant_id: string
+  fiscal_year_id: string | null
+  period_date: string
+  account_code: string
+  third_party_code: string | null
+  currency: string
+  original_rate: number
+  new_rate: number
+  original_amount: number
+  original_amount_eur: number
+  revalued_amount_eur: number
+  gain_loss: number
+  type: 'receivable' | 'payable'
+  status: 'pending' | 'posted'
+  entry_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AnalyticPlan {
+  id: string
+  tenant_id: string
+  code: string
+  name: string
+  description: string | null
+  is_default: boolean
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DistributionGrillLine {
+  id: string
+  grill_id: string
+  section_code: string
+  percentage: number
+  created_at: string
+}
+
+export interface DistributionGrill {
+  id: string
+  tenant_id: string
+  name: string
+  description: string | null
+  account_code: string
+  journal_code: string | null
+  active: boolean
+  lines: DistributionGrillLine[]
+  created_at: string
+  updated_at: string
+}
+
+export interface BankReconciliationRule {
+  id: string
+  tenant_id: string
+  name: string
+  afb_code: string
+  description: string | null
+  match_pattern: string | null
+  counterpart_account: string | null
+  journal_code: string | null
+  priority: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BankStatementImport {
+  id: string
+  tenant_id: string
+  bank_account_id: string
+  filename: string
+  format: string
+  file_size: number | null
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  imported_count: number
+  error_message: string | null
+  imported_at: string
+}
+
+export interface TvsDeclaration {
+  id: string
+  tenant_id: string
+  fiscal_year: number
+  vehicle_registration: string
+  vehicle_type: string | null
+  co2_emissions: number | null
+  first_registration_date: string | null
+  amount_co2: number
+  amount_age: number
+  amount_total: number
+  status: 'draft' | 'filed' | 'paid'
+  filed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FiscalBackup {
+  id: string
+  tenant_id: string
+  fiscal_year_id: string | null
+  backup_type: 'manual' | 'automatic'
+  status: 'pending' | 'completed' | 'failed'
+  file_url: string | null
+  file_size: number | null
+  created_by: string | null
+  created_at: string
+}
+
+// ============ Phase 2: GesCom ============
+
+export interface ProductAttribute {
+  id: string
+  tenant_id: string | null
+  name: string
+  type: 'select' | 'text' | 'number' | 'color'
+  options: any[]
+  created_at: string
+}
+
+export interface ProductVariant {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  sku: string
+  attributes: Record<string, any>
+  price_override: number | null
+  barcode: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface ProductSerialNumber {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  serial_number: string
+  status: 'in_stock' | 'sold' | 'returned' | 'warranty'
+  warranty_expiry: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface ProductBatch {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  batch_number: string
+  quantity: number
+  expiry_date: string | null
+  status: 'active' | 'expired' | 'quarantine'
+  created_at: string
+}
+
+export interface WarehouseLocation {
+  id: string
+  tenant_id: string | null
+  warehouse_id: string
+  zone: string | null
+  aisle: string | null
+  shelf: string | null
+  code: string
+  description: string | null
+  created_at: string
+}
+
+export interface QualityCheck {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  reference_type: 'goods_receipt' | 'delivery_note' | 'production' | 'manual'
+  reference_id: string | null
+  status: 'pending' | 'passed' | 'failed' | 'partial'
+  checked_by: string | null
+  checked_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface PickList {
+  id: string
+  tenant_id: string | null
+  number: string
+  reference_type: 'sales_order' | 'delivery_note' | 'production'
+  reference_id: string | null
+  warehouse_id: string | null
+  status: 'draft' | 'in_progress' | 'completed' | 'cancelled'
+  picked_by: string | null
+  picked_at: string | null
+  created_at: string
+}
+
+export interface PickListLine {
+  id: string
+  tenant_id: string | null
+  pick_list_id: string
+  product_id: string
+  location_id: string | null
+  quantity_to_pick: number
+  quantity_picked: number
+  barcode: string | null
+  created_at: string
+}
+
+export interface SalesRepresentative {
+  id: string
+  tenant_id: string | null
+  name: string
+  email: string | null
+  phone: string | null
+  commission_rate: number
+  territory: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface Prospect {
+  id: string
+  tenant_id: string | null
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  city: string | null
+  postal_code: string | null
+  country: string | null
+  contact_name: string | null
+  source: string | null
+  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
+  assigned_rep_id: string | null
+  notes: string | null
+  converted_customer_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductSubstitute {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  substitute_id: string
+  priority: number
+  created_at: string
+}
+
+export interface DeliverySchedule {
+  id: string
+  tenant_id: string | null
+  customer_id: string | null
+  product_id: string
+  frequency: 'daily' | 'weekly' | 'monthly'
+  quantity: number
+  start_date: string
+  end_date: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface RecurringInvoiceTemplate {
+  id: string
+  tenant_id: string | null
+  name: string
+  customer_id: string | null
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  next_date: string
+  lines: any[]
+  active: boolean
+  created_at: string
+}
+
+export interface DocumentTemplate {
+  id: string
+  tenant_id: string | null
+  name: string
+  document_type: 'invoice' | 'quote' | 'delivery_note' | 'credit_note' | 'purchase_order' | 'statement'
+  logo_url: string | null
+  primary_color: string
+  secondary_color: string
+  template_config: Record<string, any>
+  is_default: boolean
+  created_at: string
+}
+
+// ============ Phase 3: Treasury ============
+
+export interface FutureAccountingMovement {
+  id: string
+  tenant_id: string | null
+  description: string
+  account_code: string
+  third_party_id: string | null
+  amount: number
+  movement_type: 'debit' | 'credit'
+  expected_date: string
+  source_type: 'invoice' | 'purchase_invoice' | 'payroll' | 'loan' | 'manual' | 'recurring' | null
+  source_id: string | null
+  incorporated: boolean
+  incorporated_entry_id: string | null
+  created_at: string
+}
+
+export interface TreasuryTransfer {
+  id: string
+  tenant_id: string | null
+  number: string
+  from_account_id: string
+  to_account_id: string
+  amount: number
+  transfer_date: string
+  value_date: string | null
+  status: 'draft' | 'executed' | 'cancelled'
+  journal_entry_id: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface CreditLine {
+  id: string
+  tenant_id: string | null
+  bank_account_id: string | null
+  name: string
+  type: 'credit_line' | 'loan' | 'overdraft'
+  limit_amount: number
+  used_amount: number
+  interest_rate: number
+  start_date: string | null
+  end_date: string | null
+  monthly_payment: number
+  status: 'active' | 'closed' | 'suspended'
+  notes: string | null
+  created_at: string
+}
+
+export interface Investment {
+  id: string
+  tenant_id: string | null
+  name: string
+  type: 'opcv' | 'bond' | 'stock' | 'term_deposit' | 'other'
+  institution: string | null
+  initial_amount: number
+  current_value: number
+  acquisition_date: string | null
+  maturity_date: string | null
+  interest_rate: number
+  status: 'active' | 'matured' | 'sold'
+  notes: string | null
+  created_at: string
+}
+
+export interface ValueDateTracking {
+  id: string
+  tenant_id: string | null
+  bank_account_id: string
+  transaction_id: string | null
+  operation_date: string
+  value_date: string
+  amount: number
+  transaction_type: 'debit' | 'credit' | null
+  notes: string | null
+  created_at: string
+}
+
+export interface TreasuryRecurring {
+  id: string
+  tenant_id: string | null
+  description: string
+  bank_account_id: string | null
+  amount: number
+  type: 'incoming' | 'outgoing'
+  frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  next_date: string
+  end_date: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface ConsolidatedTreasury {
+  id: string
+  tenant_id: string | null
+  consolidation_date: string
+  total_assets: number
+  total_liabilities: number
+  net_position: number
+  details: any[]
+  created_at: string
+}
+
+// ============ Phase 4: Payroll & HR ============
+
+export interface PayrollComponent {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  type: 'gross' | 'deduction' | 'contribution' | 'tax' | 'net' | 'benefit' | 'information'
+  calculation_type: 'fixed' | 'percentage' | 'formula' | 'bracket'
+  default_value: number
+  rate_employer: number
+  rate_employee: number
+  ceiling_amount: number | null
+  ceiling_basis: string | null
+  tax_deductible: boolean
+  display_order: number
+  active: boolean
+  created_at: string
+}
+
+export interface PayrollComponentRate {
+  id: string
+  tenant_id: string | null
+  component_id: string
+  legislation_pack: string | null
+  rate_employer: number
+  rate_employee: number
+  ceiling_amount: number | null
+  effective_date: string
+  end_date: string | null
+  created_at: string
+}
+
+export interface PayrollTemplate {
+  id: string
+  tenant_id: string | null
+  name: string
+  category: 'standard' | 'cadre' | 'non_cadre' | 'apprenti' | 'stagiaire' | 'interim'
+  component_ids: any[]
+  description: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface SalaryAdvance {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  amount: number
+  advance_date: string
+  deduction_month: string | null
+  status: 'pending' | 'deducted' | 'cancelled'
+  notes: string | null
+  created_at: string
+}
+
+export interface PayRecall {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  reference_period: string
+  recall_amount: number
+  reason: string | null
+  status: 'pending' | 'processed' | 'cancelled'
+  processed_pay_run_id: string | null
+  created_at: string
+}
+
+export interface DsnDeclaration {
+  id: string
+  tenant_id: string | null
+  period: string
+  type: 'mensuelle' | 'arret' | 'reprise' | 'fin_contrat'
+  status: 'draft' | 'generated' | 'transmitted' | 'accepted' | 'rejected'
+  file_url: string | null
+  generated_at: string | null
+  transmitted_at: string | null
+  response_code: string | null
+  response_message: string | null
+  created_at: string
+}
+
+export interface DpaeRecord {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  hire_date: string
+  contract_type: string | null
+  position: string | null
+  status: 'pending' | 'transmitted' | 'accepted' | 'rejected'
+  transmitted_at: string | null
+  response_code: string | null
+  created_at: string
+}
+
+export interface WorkHardship {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  exposure_type: string
+  exposure_level: 'low' | 'medium' | 'high' | null
+  start_date: string | null
+  end_date: string | null
+  points: number
+  notes: string | null
+  created_at: string
+}
+
+export interface CareerHistory {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  position: string | null
+  department: string | null
+  salary: number | null
+  start_date: string
+  end_date: string | null
+  change_type: 'hire' | 'promotion' | 'transfer' | 'salary_change' | 'departure' | null
+  notes: string | null
+  created_at: string
+}
+
+export interface CpfAccount {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  balance_hours: number
+  balance_amount: number
+  history: any[]
+  created_at: string
+  updated_at: string
+}
+
+export interface PayrollArchive {
+  id: string
+  tenant_id: string | null
+  employee_id: string | null
+  period: string
+  archive_type: 'payslip' | 'dsn' | 'dpae' | 'contract' | 'other'
+  file_url: string
+  file_encrypted: boolean
+  retention_until: string | null
+  created_at: string
+}
+
+export interface LegalWatch {
+  id: string
+  tenant_id: string | null
+  title: string
+  category: string | null
+  source: string | null
+  summary: string | null
+  content_url: string | null
+  published_date: string | null
+  relevance: 'info' | 'important' | 'critical' | null
+  read: boolean
+  created_at: string
+}
+
+export interface EmployeeDocument {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  document_type: 'payslip' | 'contract' | 'dpae' | 'dsn' | 'certificate' | 'other'
+  file_url: string
+  file_name: string | null
+  distributed_at: string | null
+  acknowledged_at: string | null
+  created_at: string
+}
+
+export interface ExpenseReport {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  number: string
+  period: string | null
+  total_amount: number
+  total_vat: number
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'
+  submitted_at: string | null
+  approved_by: string | null
+  approved_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface ExpenseReportLine {
+  id: string
+  tenant_id: string | null
+  expense_report_id: string
+  date: string
+  description: string
+  category: string | null
+  amount: number
+  vat_rate: number
+  vat_amount: number
+  receipt_url: string | null
+  created_at: string
+}
+
+export interface Interview {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  type: 'annual' | 'mid_year' | 'professional' | 'exit' | 'other'
+  scheduled_date: string | null
+  conducted_at: string | null
+  conducted_by: string | null
+  objectives: string | null
+  feedback: string | null
+  rating: number | null
+  status: 'scheduled' | 'conducted' | 'cancelled'
+  created_at: string
+}
+
+// ============ Phase 5: Fixed Assets ============
+
+export interface AssetDepreciationPlan {
+  id: string
+  tenant_id: string | null
+  asset_id: string
+  plan_type: 'economic' | 'fiscal' | 'derogatory' | 'exceptional'
+  depreciation_method: 'linear' | 'degressive' | 'variable' | 'manual'
+  duration_months: number
+  residual_value: number
+  annual_rate: number | null
+  start_date: string
+  end_date: string | null
+  accumulated_depreciation: number
+  current_net_value: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AssetFamily {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  parent_id: string | null
+  default_account: string | null
+  default_depreciation_account: string | null
+  default_duration_months: number | null
+  default_method: 'linear' | 'degressive' | 'variable' | 'manual'
+  depreciation_rate: number | null
+  description: string | null
+  created_at: string
+}
+
+export interface AssetRevaluation {
+  id: string
+  tenant_id: string | null
+  asset_id: string
+  revaluation_date: string
+  old_value: number
+  new_value: number
+  difference: number
+  reason: string | null
+  journal_entry_id: string | null
+  created_at: string
+}
+
+export interface AssetDocument {
+  id: string
+  tenant_id: string | null
+  asset_id: string
+  document_type: 'invoice' | 'contract' | 'photo' | 'other' | null
+  file_url: string
+  file_name: string | null
+  description: string | null
+  created_at: string
+}
+
+export interface AssetFreeField {
+  id: string
+  tenant_id: string | null
+  asset_id: string
+  field_key: string
+  field_value: string | null
+  field_type: 'text' | 'number' | 'date' | 'boolean' | 'select'
+  field_category: 'free' | 'statistical'
+  created_at: string
+}
+
+export interface AssetBatchDisposal {
+  id: string
+  tenant_id: string | null
+  batch_number: string
+  disposal_date: string
+  total_assets: number
+  total_proceeds: number
+  total_gain_loss: number
+  status: 'draft' | 'processed' | 'cancelled'
+  journal_entry_id: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface AssetBatchDisposalLine {
+  id: string
+  tenant_id: string | null
+  batch_id: string
+  asset_id: string
+  disposal_type: 'sale' | 'scrapping' | 'donation' | 'transfer' | null
+  proceeds: number
+  net_book_value: number
+  gain_loss: number
+  created_at: string
+}
+
+export interface AssetSplit {
+  id: string
+  tenant_id: string | null
+  original_asset_id: string
+  split_date: string
+  reason: string | null
+  created_at: string
+}
+
+export interface AssetSplitComponent {
+  id: string
+  tenant_id: string | null
+  split_id: string
+  new_asset_id: string
+  allocated_value: number
+  allocated_percentage: number
   created_at: string
 }
