@@ -23,7 +23,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       setAccounts(a)
       setTransactions(txns)
       setRules(r)
-    } catch (err) { console.error(err); toast('error', tCommon('error'), err.message || tCommon('error')) } finally { setLoading(false) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('error'), err.message || tCommon('error')) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])

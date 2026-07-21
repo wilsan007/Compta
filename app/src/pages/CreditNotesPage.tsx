@@ -8,8 +8,6 @@ import type { CreditNote, Customer, Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 
-const statusKeys: string[] = ['draft', 'applied']
-
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   draft: 'warning',
   applied: 'success',

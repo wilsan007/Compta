@@ -48,17 +48,13 @@ async function login(page: Page, request: APIRequestContext) {
   await passwordInput.fill(TEST_PASSWORD)
   await submitBtn.click()
 
-  // Wait for either navigation away from login or error message
-  try {
-    await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 30000 })
+  // Wait for navigation away from login
+  await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 30000 })
+  // Wait extra time for loadUser to complete and settle
+  await page.waitForTimeout(5000)
+  // If redirected back to login, wait a bit more and check again
+  if (page.url().includes('/login')) {
     await page.waitForTimeout(3000)
-  } catch {
-    // Log console errors for debugging
-    console.log('Console errors during login:', consoleErrors.join('\n'))
-    // Check for error message on page
-    const pageText = await page.locator('body').textContent()
-    console.log('Page text after login attempt:', pageText?.substring(0, 300))
-    throw new Error(`Login failed. Console errors: ${consoleErrors.join('; ')}`)
   }
 }
 

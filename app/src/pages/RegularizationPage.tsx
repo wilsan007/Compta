@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRegularizationEntries, createRegularizationEntry, updateRegularizationEntry, deleteRegularizationEntry } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Pencil, Zap, Undo2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap } from 'lucide-react'
 import type { RegularizationEntry } from '@/types'
 import { useToast } from '@/lib/toast'
 

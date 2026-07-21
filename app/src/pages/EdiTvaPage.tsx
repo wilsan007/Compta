@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { getVatReturns, submitEdiTva } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
 import { Send, FileCheck } from 'lucide-react'
