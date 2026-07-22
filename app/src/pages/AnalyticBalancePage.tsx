@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getAnalyticBalance } from '@/lib/queries'
+import { getAnalyticBalance, getAnalyticPlans } from '@/lib/queries'
 import { PieChart } from 'lucide-react'
 
 export function AnalyticBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const [data, setData] = useState<any[]>([])
+  const [plans, setPlans] = useState<any[]>([])
+  const [selectedPlan, setSelectedPlan] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])
 
   async function load() {
     try {
-      const res = await getAnalyticBalance()
+      const [res, p] = await Promise.all([
+        getAnalyticBalance(),
+        getAnalyticPlans().catch(() => []),
+      ])
       setData(res)
+      setPlans(p || [])
     } catch (err) {
       console.error('Error loading analytic balance:', err)
     } finally {
@@ -24,18 +30,32 @@ export function AnalyticBalancePage() {
     }
   }
 
-  const totalDebit = data.reduce((s, d) => s + d.totalDebit, 0)
-  const totalCredit = data.reduce((s, d) => s + d.totalCredit, 0)
-  const totalAnalytic = data.reduce((s, d) => s + d.totalAnalytic, 0)
+  const filtered = selectedPlan ? data.filter((d) => d.planId === selectedPlan || d.plan_id === selectedPlan) : data
+  const totalDebit = filtered.reduce((s, d) => s + d.totalDebit, 0)
+  const totalCredit = filtered.reduce((s, d) => s + d.totalCredit, 0)
+  const totalAnalytic = filtered.reduce((s, d) => s + d.totalAnalytic, 0)
 
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('analyticBalance.breadcrumb') }, { label: t('analyticBalance.title') }]} />
       <PageHeader title={t('analyticBalance.title')} subtitle={t('analyticBalance.subtitle')} />
 
+      {plans.length > 0 && (
+        <Card className="mb-4">
+          <div className="p-4">
+            <Select
+              label={t('analyticBalance.plan')}
+              value={selectedPlan}
+              onChange={(e) => setSelectedPlan(e.target.value)}
+              options={[{ value: '', label: tCommon('common.all') }, ...plans.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))]}
+            />
+          </div>
+        </Card>
+      )}
+
       {loading ? (
         <SkeletonTable rows={6} cols={5} />
-      ) : data.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={<PieChart className="w-8 h-8" />}
           title={t('analyticBalance.noData')}
@@ -60,7 +80,7 @@ export function AnalyticBalancePage() {
 
           <Card>
             <Table headers={[t('analyticBalance.code'), t('analyticBalance.section'), t('analyticBalance.debit'), t('analyticBalance.credit'), t('analyticBalance.analyticAmount'), t('analyticBalance.balance')]}>
-              {data.map((d) => (
+              {filtered.map((d) => (
                 <TableRow key={d.sectionId}>
                   <TableCell className="font-mono text-xs font-semibold">{d.sectionCode}</TableCell>
                   <TableCell className="text-sm">{d.sectionName}</TableCell>

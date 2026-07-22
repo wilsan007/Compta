@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Button, exportToCSV } from '@/components/ui'
 import { getTrialBalanceFiltered, getChartAccounts, getJournals } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
-import { Scale } from 'lucide-react'
+import { Scale, Download } from 'lucide-react'
 import type { ChartAccount, Journal } from '@/types'
 
 export function TrialBalancePage() {
@@ -77,6 +77,20 @@ export function TrialBalancePage() {
 
   const sortedClasses = Object.keys(grouped).sort()
 
+  function handleExportCSV() {
+    const headers = [t('chartAccounts.code'), t('chartAccounts.name'), t('chartAccounts.type'), t('entries.totalDebit'), t('entries.totalCredit'), t('trialBalance.closingDebit'), t('trialBalance.closingCredit')]
+    const rows = enriched.map((b) => [
+      b.account_code,
+      accountMap.get(b.account_code)?.name || '',
+      b.type || '',
+      b.total_debit || 0,
+      b.total_credit || 0,
+      b.solde_debiteur || 0,
+      b.solde_crediteur || 0,
+    ])
+    exportToCSV(`trial-balance-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: t('trialBalance.title') }]} />
@@ -94,6 +108,11 @@ export function TrialBalancePage() {
             </select>
           </div>
           <Button onClick={loadBalance} disabled={loading}>{tCommon('common.refresh')}</Button>
+          {balances.length > 0 && (
+            <Button variant="secondary" onClick={handleExportCSV}>
+              <Download className="w-4 h-4" /> {t('trialBalance.exportCSV')}
+            </Button>
+          )}
         </div>
       </Card>
 

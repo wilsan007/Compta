@@ -23,6 +23,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [tolerance, setTolerance] = useState('0.01')
 
   useEffect(() => { loadThirdParties() }, [])
 
@@ -72,8 +73,9 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
     if (selected.size < 2) { toast('warning', tCommon('common.warning'), t('lettrage.selectTwoLines')); return }
     const totalD = unlettered.filter((l) => selected.has(l.id)).reduce((s, l) => s + Number(l.debit), 0)
     const totalC = unlettered.filter((l) => selected.has(l.id)).reduce((s, l) => s + Number(l.credit), 0)
-    if (Math.abs(totalD - totalC) > 0.01) {
-      toast('error', t('lettrage.unbalanced'), `${t('entries.debit')}: ${formatCurrency(totalD)}, ${t('entries.credit')}: ${formatCurrency(totalC)}`)
+    const tol = Number(tolerance) || 0.01
+    if (Math.abs(totalD - totalC) > tol) {
+      toast('error', t('lettrage.unbalanced'), `${t('entries.debit')}: ${formatCurrency(totalD)}, ${t('entries.credit')}: ${formatCurrency(totalC)}, ${t('lettrage.difference')}: ${formatCurrency(Math.abs(totalD - totalC))}`)
       return
     }
     try {
@@ -217,7 +219,17 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                         {t('lettrage.unletteredCount', { count: unlettered.length, balance: formatCurrency(unletteredBalance) })}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-end">
+                      <div className="w-28">
+                        <label className="block text-xs text-[var(--color-text-secondary)] mb-1">{t('lettrage.tolerance')}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="input text-xs py-1"
+                          value={tolerance}
+                          onChange={(e) => setTolerance(e.target.value)}
+                        />
+                      </div>
                       <Button size="sm" variant="secondary" onClick={handleAutoLettrer} disabled={unlettered.length < 2}>
                         <Wand2 className="w-3 h-3" /> {t('lettrage.autoLetter')}
                       </Button>

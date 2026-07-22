@@ -2,20 +2,22 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getChartAccounts, getJournals, getGeneralLedgerFiltered } from '@/lib/queries'
+import { getChartAccounts, getJournals, getGeneralLedgerFiltered, getThirdPartyAccounts } from '@/lib/queries'
 import { BookOpen } from 'lucide-react'
-import type { ChartAccount, Journal } from '@/types'
+import type { ChartAccount, Journal, ThirdPartyAccount } from '@/types'
 
 export function GeneralLedgerPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [journals, setJournals] = useState<Journal[]>([])
+  const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [movements, setMovements] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingRef, setLoadingRef] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState('')
   const [journalCode, setJournalCode] = useState('')
+  const [tiersCode, setTiersCode] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
@@ -23,9 +25,10 @@ export function GeneralLedgerPage() {
 
   async function loadRef() {
     try {
-      const [accs, jrnls] = await Promise.all([getChartAccounts(), getJournals()])
+      const [accs, jrnls, tp] = await Promise.all([getChartAccounts(), getJournals(), getThirdPartyAccounts().catch(() => [])])
       setAccounts(accs || [])
       setJournals(jrnls || [])
+      setThirdParties(tp || [])
     } catch (err) {
       console.error('Error loading ref data:', err)
     } finally {
@@ -37,11 +40,14 @@ export function GeneralLedgerPage() {
     if (!selectedAccount) return
     setLoading(true)
     try {
-      const data = await getGeneralLedgerFiltered(selectedAccount, {
+      let data = await getGeneralLedgerFiltered(selectedAccount, {
         journalCode: journalCode || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
       })
+      if (tiersCode && data) {
+        data = data.filter((m: any) => m.third_party_account === tiersCode || m.journal_entries?.journal_lines?.some((l: any) => l.third_party_account === tiersCode))
+      }
       setMovements(data || [])
     } catch (err) {
       console.error('Error loading general ledger:', err)
@@ -79,6 +85,15 @@ export function GeneralLedgerPage() {
           <div className="grid grid-cols-2 gap-2">
             <Input label={t('generalLedger.from')} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             <Input label={t('generalLedger.to')} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+        </div>
+        <div className="p-4 pt-0">
+          <div className="w-80">
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('generalLedger.thirdParty')}</label>
+            <select className="input" value={tiersCode} onChange={(e) => setTiersCode(e.target.value)}>
+              <option value="">{tCommon('common.all')}</option>
+              {thirdParties.map((tp) => <option key={tp.id} value={tp.code}>{tp.code} — {tp.name}</option>)}
+            </select>
           </div>
         </div>
         <div className="px-4 pb-4">

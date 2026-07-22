@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts } from '@/lib/queries'
+import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries'
 import { Plus, Pencil, Trash2, X, Target } from 'lucide-react'
 import type { Budget, FiscalYear, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -17,6 +17,7 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Budget | null>(null)
+  const [realized, setRealized] = useState<Record<string, number[]>>({})
 
   useEffect(() => { load() }, [])
 
@@ -26,6 +27,23 @@ const [budgets, setBudgets] = useState<Budget[]>([])
       setBudgets(b || [])
       setYears(fy || [])
       setAccounts(accs || [])
+
+      const realizedMap: Record<string, number[]> = {}
+      for (const budget of (b || [])) {
+        if (budget.account_code) {
+          try {
+            const tb = await getTrialBalanceFiltered({ journalCode: budget.account_code })
+            const accBalance = tb.find((row: any) => row.account_code === budget.account_code)
+            if (accBalance) {
+              const total = Number(accBalance.total_debit) || 0
+              realizedMap[budget.id] = Array.from({ length: 12 }, () => {
+                return total / 12
+              })
+            }
+          } catch {}
+        }
+      }
+      setRealized(realizedMap)
     } catch (err) {
       console.error('Error loading budgets:', err)
     } finally {
@@ -97,6 +115,33 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                       <TableCell key={k} className="font-mono text-xs text-right">{formatCurrency(Number((b as any)[k]))}</TableCell>
                     ))}
                   </TableRow>
+                  {realized[b.id] && (
+                    <>
+                      <TableRow>
+                        <TableCell colSpan={12} className="font-semibold text-xs text-[var(--color-text-secondary)] uppercase py-1">{t('budgets.realized')}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        {realized[b.id].map((val, i) => (
+                          <TableCell key={i} className="font-mono text-xs text-right text-[var(--color-primary)]">{formatCurrency(val)}</TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell colSpan={12} className="font-semibold text-xs text-[var(--color-text-secondary)] uppercase py-1">{t('budgets.variance')}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        {['period_1','period_2','period_3','period_4','period_5','period_6','period_7','period_8','period_9','period_10','period_11','period_12'].map((k, i) => {
+                          const budgetVal = Number((b as any)[k])
+                          const realVal = realized[b.id][i] || 0
+                          const variance = budgetVal - realVal
+                          return (
+                            <TableCell key={k} className={`font-mono text-xs text-right ${variance >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                              {formatCurrency(variance)}
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    </>
+                  )}
                 </Table>
               </Card>
             )

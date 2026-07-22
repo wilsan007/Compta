@@ -124,7 +124,46 @@
     "importChart": "Importer un plan comptable",
     "exportChart": "Exporter le plan comptable",
     "loadTemplate": "Charger un modèle",
-    "frenchPCG": "Plan comptable général français (PCG)"
+    "frenchPCG": "Plan comptable général français (PCG)",
+    "tabs": {
+      "compte": "Compte",
+      "complement": "Complément",
+      "exerciseN1": "Exercice N-1",
+      "exerciseN": "Exercice N",
+      "exerciseN1plus": "Exercice N+1",
+      "freeInfo": "Informations libres"
+    },
+    "accountNumber": "N° de compte",
+    "designation": "Désignation",
+    "racine": "Racine",
+    "classe": "Classe",
+    "nature": "Nature",
+    "natures": {
+      "asset": "Charge/Produit/Bilan",
+      "liability": "Passif",
+      "equity": "Capitaux propres",
+      "income": "Produit",
+      "expense": "Charge"
+    },
+    "defaultTaxCode": "Code taxe par défaut",
+    "nbLines": "Nb lignes",
+    "pageBreak": "Saut lignes/page",
+    "regrouping": "Regroupement",
+    "analyticEntry": "Saisie analytique",
+    "echeanceEntry": "Saisie échéance",
+    "tiersEntry": "Saisie compte tiers",
+    "debitN1": "Débit N-1",
+    "creditN1": "Crédit N-1",
+    "exerciseHint": "Les reports à nouveaux génèrent des écritures dans le journal d'OD.",
+    "debitN": "Débit N",
+    "creditN": "Crédit N",
+    "soldeN": "Solde N",
+    "debitN1plus": "Débit N+1",
+    "creditN1plus": "Crédit N+1",
+    "exerciseFutureHint": "Exercice non encore ouvert. Saisie indicative.",
+    "freeFieldLabel": "Libellé libre {{n}}",
+    "freeFieldValue": "Valeur libre {{n}}",
+    "freeInfoHint": "Jusqu'à 10 champs personnalisés."
   },
   "thirdParty": {
     "title": "Plan tiers unifié",
@@ -181,7 +220,42 @@
     "none": "— Aucun —",
     "cancel": "Annuler",
     "save": "Enregistrer",
-    "generalAccountClass4": "Compte général (classe 4)"
+    "generalAccountClass4": "Compte général (classe 4)",
+    "tabs": {
+      "fiche": "Fiche principale",
+      "banques": "Banques",
+      "modeles": "Modèles",
+      "complement": "Complément",
+      "statistiques": "Statistiques",
+      "freeInfo": "Informations libres"
+    },
+    "address": "Adresse",
+    "postalCode": "Code postal",
+    "city": "Ville",
+    "country": "Pays",
+    "siret": "SIRET",
+    "vatIntra": "TVA intracommunautaire",
+    "iban": "IBAN",
+    "bic": "BIC/SWIFT",
+    "bankCode": "Code banque",
+    "branchCode": "Code guichet",
+    "accountNumber": "N° de compte",
+    "key": "Clé",
+    "multiRibHint": "Multi-RIB : possibilité d'enregistrer plusieurs coordonnées bancaires.",
+    "echeanceModel": "Modèle d'échéancement",
+    "paymentCondition": "Conditions de règlement",
+    "paymentMode": "Mode de règlement",
+    "encoursAutorise": "Encours autorisé",
+    "relanceNiveau": "Niveau de relance",
+    "relanceModel": "Modèle de relance",
+    "delaiPaiement": "Délai de paiement",
+    "escompte": "Escompte",
+    "contactName": "Contact",
+    "zoneGeo": "Zone géographique",
+    "categorie": "Catégorie",
+    "freeFieldLabel": "Libellé libre {{n}}",
+    "freeFieldValue": "Valeur libre {{n}}",
+    "freeInfoHint": "Champs personnalisés supplémentaires."
   },
   "journals": {
     "title": "Codes journaux",
@@ -218,7 +292,29 @@
     "counterpartAccount": "Compte de contrepartie",
     "linkedBankAccount": "Compte bancaire lié",
     "defaultTemplate": "Modèle de saisie par défaut",
-    "none": "— Aucun —"
+    "none": "— Aucun —",
+    "tabs": {
+      "complement": "Complément",
+      "banque": "Banque",
+      "modele": "Modèle",
+      "droits": "Droits"
+    },
+    "compteAttente": "Compte d'attente",
+    "racinesAutorisees": "Racines autorisées",
+    "numerotation": "Numérotation",
+    "numerotationManual": "Manuelle",
+    "numerotationAuto": "Automatique",
+    "numerotationContinuous": "Continue",
+    "rib": "RIB",
+    "reconciliationMode": "Mode de rapprochement",
+    "reconciliationManual": "Manuel",
+    "reconciliationAuto": "Automatique",
+    "templateHint": "Le modèle de saisie par défaut sera utilisé lors de la création d'écritures dans ce journal.",
+    "templateLines": "Lignes du modèle",
+    "templateJournal": "Journal",
+    "templateIsDefault": "Modèle par défaut",
+    "authorizedUsers": "Utilisateurs autorisés",
+    "rightsHint": "Seuls les utilisateurs autorisés peuvent saisir dans ce journal."
   },
   "fiscalYears": {
     "title": "Exercices & périodes fiscales",
@@ -332,7 +428,16 @@
     "searchPlaceholder": "Rechercher un modèle...",
     "noTemplates": "Aucun modèle trouvé",
     "noTemplatesDescription": "Créez des modèles pour pré-remplir automatiquement vos saisies d'écritures.",
-    "createFirst": "Créer mon premier modèle"
+    "createFirst": "Créer mon premier modèle",
+    "amountType": "Type de montant",
+    "amountTypeInput": "À saisir",
+    "amountTypeFixed": "Montant fixe",
+    "amountTypePercent": "Pourcentage",
+    "amountTypeBalance": "Solde/Équilibre",
+    "amountTypeCalcVat": "Calcul TVA",
+    "vatCode": "Code TVA",
+    "analyticSection": "Section analytique",
+    "fixedAmount": "Montant fixe"
   },
   "generalLedger": {
     "title": "Grand livre",
@@ -369,6 +474,7 @@
     "total": "Totaux",
     "noData": "Aucune donnée pour cette période",
     "export": "Exporter la balance",
+    "exportCSV": "Export CSV",
     "showZeroBalances": "Afficher les soldes nuls",
     "groupByClass": "Regrouper par classe",
     "classLabels": {
@@ -405,7 +511,9 @@
     "noThirdParty": "Aucun tiers trouvé",
     "selectThirdPartyDescription": "Choisissez un tiers dans la liste de gauche pour afficher ses écritures et procéder au lettrage.",
     "unletteredCount": "{{count}} ligne(s) non lettrée(s) — Solde: {{balance}}",
-    "noUnlettered": "Aucune écriture non lettrée pour ce tiers."
+    "noUnlettered": "Aucune écriture non lettrée pour ce tiers.",
+    "tolerance": "Tolérance",
+    "difference": "Écart"
   },
   "search": {
     "title": "Recherche d'écritures",
@@ -436,7 +544,8 @@
     "searching": "Recherche...",
     "searchBtn": "Rechercher",
     "resultsCount": "{{count}} résultat(s) — Total débit: {{debit}} | Total crédit: {{credit}}",
-    "noResultsDescription": "Modifiez vos critères de recherche et réessayez."
+    "noResultsDescription": "Modifiez vos critères de recherche et réessayez.",
+    "exportCSV": "Export CSV"
   },
   "journalsReport": {
     "breadcrumb": "Rapports",
@@ -554,7 +663,15 @@
     "difference": "Différence",
     "saving": "Enregistrement...",
     "saveEntry": "Enregistrer l'écriture",
-    "notBalanced": "Les écritures ne sont pas équilibrées. Débit et crédit doivent être égaux."
+    "notBalanced": "Les écritures ne sont pas équilibrées. Débit et crédit doivent être égaux.",
+    "vatCode": "Code TVA",
+    "analyticSection": "Section analytique",
+    "vatRates": {
+      "rate0": "0%",
+      "rate55": "5,5%",
+      "rate10": "10%",
+      "rate20": "20%"
+    }
   },
   "journalClosure": {
     "title": "Clôture des journaux",
@@ -604,7 +721,12 @@
     "selectYearAndTarget": "Sélectionnez l'exercice à clôturer et le nouvel exercice",
     "targetMustDiffer": "L'exercice cible doit être différent",
     "openingLinesGenerated": "{{count}} ligne(s) de report à nouveau générée(s).",
-    "breadcrumb": "Clôture exercice"
+    "breadcrumb": "Clôture exercice",
+    "resultTitle": "Résultat de la clôture",
+    "openingLines": "Lignes d'ouverture",
+    "closingLines": "Lignes de clôture",
+    "resultAmount": "Résultat de l'exercice",
+    "openingEntriesPreview": "Aperçu des écritures d'ouverture"
   },
   "brouillard": {
     "title": "Brouillard",
@@ -624,7 +746,8 @@
     "deleteConfirm": "Supprimer cette écriture ?",
     "noEntries": "Aucune écriture en brouillard",
     "noEntriesDescription": "Toutes les écritures ont été imprimées ou aucune écriture n'a été saisie.",
-    "export": "Exporter le brouillard"
+    "export": "Exporter le brouillard",
+    "status": "Statut"
   },
   "agedBalance": {
     "title": "Balance âgée tiers",
@@ -987,7 +1110,10 @@
     "createFirst": "Créer ma première immobilisation",
     "searchPlaceholder": "Rechercher par nom, code...",
     "dispose": "Céder l'immobilisation",
-    "calculateDepreciation": "Calculer les amortissements"
+    "calculateDepreciation": "Calculer les amortissements",
+    "derogatoryDepreciation": "Amortissement dérogatoire",
+    "subventionAmount": "Montant subvention",
+    "subventionAccount": "Compte de subvention"
   },
   "analyticBalance": {
     "title": "Balance analytique",
@@ -1003,7 +1129,8 @@
     "totalCredit": "Total crédit",
     "totalAnalytic": "Total analytique",
     "noData": "Aucune donnée analytique",
-    "noDataDescription": "Aucune ligne avec imputation analytique trouvée."
+    "noDataDescription": "Aucune ligne avec imputation analytique trouvée.",
+    "plan": "Plan analytique"
   },
   "analyticSections": {
     "title": "Sections analytiques",
@@ -1026,7 +1153,20 @@
       "project": "Projet",
       "department": "Département",
       "other": "Autre"
-    }
+    },
+    "tabs": {
+      "section": "Section",
+      "complement": "Complément"
+    },
+    "plan": "Plan analytique",
+    "defaultPlan": "Plan par défaut",
+    "parentSection": "Section parente",
+    "noParent": "— Aucune (racine) —",
+    "level": "Niveau",
+    "type": "Type",
+    "typeSection": "Section",
+    "typeTotal": "Total",
+    "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique."
   },
   "balanceSheet": {
     "title": "Bilan",

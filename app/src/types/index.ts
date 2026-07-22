@@ -542,12 +542,26 @@ export interface FiscalPeriod {
 }
 
 // ============ Entry Templates (modèles de saisie) ============
+export type TemplateAmountType = 'input' | 'fixed' | 'percent' | 'balance' | 'calc_vat'
+
+export interface TemplateLine {
+  account_general: string
+  account_tiers: string
+  label: string
+  debit_pct: number
+  credit_pct: number
+  amount_type: TemplateAmountType
+  fixed_amount: number | null
+  vat_code: string | null
+  analytic_section: string | null
+}
+
 export interface EntryTemplate {
   id: string
   name: string
   journal_code: string | null
   description: string | null
-  template_lines: any[] | null
+  template_lines: TemplateLine[] | null
   is_default: boolean
   active: boolean
   created_at: string

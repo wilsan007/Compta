@@ -284,6 +284,9 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [usefulLife, setUsefulLife] = useState(5)
   const [residualValue, setResidualValue] = useState(0)
   const [depMethod, setDepMethod] = useState('straight_line')
+  const [derogatoryDep, setDerogatoryDep] = useState(false)
+  const [subventionAmount, setSubventionAmount] = useState(0)
+  const [subventionAccount, setSubventionAccount] = useState('')
   const [saving, setSaving] = useState(false)
 
   const currentValue = purchaseValue - ((purchaseValue - residualValue) / Math.max(usefulLife, 1)) * Math.min(usefulLife, Math.floor((Date.now() - new Date(purchaseDate).getTime()) / (365.25 * 86400000)))
@@ -300,6 +303,9 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         depreciation_method: depMethod,
         useful_life_years: usefulLife,
         residual_value: residualValue,
+        derogatory_depreciation: derogatoryDep,
+        subvention_amount: subventionAmount > 0 ? subventionAmount : null,
+        subvention_account: subventionAccount || null,
         status: 'active',
       } as any)
       onSaved()
@@ -336,6 +342,16 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             { value: 'declining_balance', label: t('assets.depMethods.declining_balance') },
             { value: 'units_of_production', label: t('assets.depMethods.units_of_production') },
           ]} />
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={derogatoryDep} onChange={(e) => setDerogatoryDep(e.target.checked)} />
+              {t('assets.derogatoryDepreciation')}
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <Input label={t('assets.subventionAmount')} type="number" step="0.01" value={subventionAmount} onChange={(e) => setSubventionAmount(Number(e.target.value))} placeholder="0.00" />
+              <Input label={t('assets.subventionAccount')} value={subventionAccount} onChange={(e) => setSubventionAccount(e.target.value)} placeholder="131000" />
+            </div>
+          </div>
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm">
             <span className="text-[var(--color-text-secondary)]">{t('assets.estimatedCurrentValue')}: </span>
             <span className="font-mono font-bold">{formatCurrency(Math.max(currentValue, residualValue))}</span>

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries'
 import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight } from 'lucide-react'
@@ -110,6 +110,11 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="text-xs">{formatDate(entry.date)}</TableCell>
                   <TableCell className="font-mono text-xs">{entry.journal_code}</TableCell>
                   <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
+                  <TableCell>
+                    <Badge variant={entry.status_detail === 'printed' ? 'warning' : entry.status_detail === 'closed' ? 'danger' : 'success'}>
+                      {t(`saisie.statusDetailLabels.${entry.status_detail || entry.status}`, { defaultValue: entry.status_detail || entry.status })}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>

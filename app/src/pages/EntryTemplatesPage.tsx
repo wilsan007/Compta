@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntryTemplate, getJournals } from '@/lib/queries'
+import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntryTemplate, getJournals, getChartAccounts, getThirdPartyAccounts, getAnalyticSections } from '@/lib/queries'
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
-import type { EntryTemplate, Journal } from '@/types'
+import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function EntryTemplatesPage() {
@@ -137,13 +137,15 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
   )
 }
 
-interface TemplateLineData {
-  account_general: string
-  account_tiers: string
-  label: string
-  debit_pct: number
-  credit_pct: number
-}
+const AMOUNT_TYPES: TemplateAmountType[] = ['input', 'fixed', 'percent', 'balance', 'calc_vat']
+
+const VAT_RATES = [
+  { code: '', label: '—' },
+  { code: 'V0', label: '0% — Exonéré' },
+  { code: 'V5.5', label: '5.5% — Réduit' },
+  { code: 'V10', label: '10% — Intermédiaire' },
+  { code: 'V20', label: '20% — Normal' },
+]
 
 function TemplateForm({ template, journals, onClose, onSaved }: {
   template: EntryTemplate | null
@@ -159,20 +161,35 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
   const [description, setDescription] = useState(template?.description || '')
   const [isDefault, setIsDefault] = useState(template?.is_default || false)
   const [active, setActive] = useState(template?.active ?? true)
-  const [lines, setLines] = useState<TemplateLineData[]>(
-    (template?.template_lines as TemplateLineData[]) || [{ account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0 }]
+  const [lines, setLines] = useState<TemplateLine[]>(
+    (template?.template_lines as TemplateLine[]) || [{ account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0, amount_type: 'input' as TemplateAmountType, fixed_amount: null, vat_code: null, analytic_section: null }]
   )
   const [saving, setSaving] = useState(false)
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [thirdParties, setThirdParties] = useState<any[]>([])
+  const [analyticSections, setAnalyticSections] = useState<any[]>([])
+
+  useEffect(() => {
+    Promise.all([
+      getChartAccounts().catch(() => []),
+      getThirdPartyAccounts().catch(() => []),
+      getAnalyticSections().catch(() => []),
+    ]).then(([a, tp, as]) => {
+      setAccounts(a || [])
+      setThirdParties(tp || [])
+      setAnalyticSections(as || [])
+    })
+  }, [])
 
   function addLine() {
-    setLines([...lines, { account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0 }])
+    setLines([...lines, { account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0, amount_type: 'input', fixed_amount: null, vat_code: null, analytic_section: null }])
   }
 
   function removeLine(idx: number) {
     setLines(lines.filter((_, i) => i !== idx))
   }
 
-  function updateLine(idx: number, field: keyof TemplateLineData, value: string | number) {
+  function updateLine(idx: number, field: keyof TemplateLine, value: string | number | null) {
     setLines(lines.map((l, i) => i === idx ? { ...l, [field]: value } : l))
   }
 
@@ -201,14 +218,25 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
     }
   }
 
+  function amountTypeLabel(type: TemplateAmountType): string {
+    const labels: Record<TemplateAmountType, string> = {
+      input: t('templates.amountTypeInput'),
+      fixed: t('templates.amountTypeFixed'),
+      percent: t('templates.amountTypePercent'),
+      balance: t('templates.amountTypeBalance'),
+      calc_vat: t('templates.amountTypeCalcVat'),
+    }
+    return labels[type] || type
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
+      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '56rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{template ? t('templates.edit') : t('templates.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Input label={tCommon('common.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="" />
             <Select label={t('templates.journal')} value={journalCode} onChange={(e) => setJournalCode(e.target.value)} options={[
@@ -225,26 +253,114 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
             </div>
             <div className="space-y-2">
               {lines.map((line, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-end p-2 bg-[var(--color-neutral-50)] rounded-lg">
-                  <div className="col-span-3">
-                    <input className="input text-xs" placeholder={t('saisie.accountGeneral')} value={line.account_general} onChange={(e) => updateLine(idx, 'account_general', e.target.value)} />
-                  </div>
-                  <div className="col-span-3">
-                    <input className="input text-xs" placeholder={t('saisie.accountThirdParty')} value={line.account_tiers} onChange={(e) => updateLine(idx, 'account_tiers', e.target.value)} />
-                  </div>
-                  <div className="col-span-3">
-                    <input className="input text-xs" placeholder={tCommon('common.label')} value={line.label} onChange={(e) => updateLine(idx, 'label', e.target.value)} />
-                  </div>
-                  <div className="col-span-2">
-                    <div className="grid grid-cols-2 gap-1">
-                      <input className="input text-xs" type="number" placeholder="D%" value={line.debit_pct} onChange={(e) => updateLine(idx, 'debit_pct', Number(e.target.value))} />
-                      <input className="input text-xs" type="number" placeholder="C%" value={line.credit_pct} onChange={(e) => updateLine(idx, 'credit_pct', Number(e.target.value))} />
+                <div key={idx} className="p-3 bg-[var(--color-neutral-50)] rounded-lg space-y-2">
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{t('saisie.accountGeneral')}</label>
+                      <select
+                        className="input text-xs"
+                        value={line.account_general}
+                        onChange={(e) => updateLine(idx, 'account_general', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {accounts.map((a) => (
+                          <option key={a.id} value={a.code}>{a.code} — {a.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-3">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{t('saisie.accountThirdParty')}</label>
+                      <select
+                        className="input text-xs"
+                        value={line.account_tiers}
+                        onChange={(e) => updateLine(idx, 'account_tiers', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {thirdParties.map((tp) => (
+                          <option key={tp.id} value={tp.code}>{tp.code} — {tp.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-3">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{tCommon('common.label')}</label>
+                      <input className="input text-xs" value={line.label} onChange={(e) => updateLine(idx, 'label', e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{t('templates.amountType')}</label>
+                      <select
+                        className="input text-xs"
+                        value={line.amount_type}
+                        onChange={(e) => updateLine(idx, 'amount_type', e.target.value as TemplateAmountType)}
+                      >
+                        {AMOUNT_TYPES.map((at) => (
+                          <option key={at} value={at}>{amountTypeLabel(at)}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                  <div className="col-span-1">
-                    <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-3">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{t('templates.vatCode')}</label>
+                      <select
+                        className="input text-xs"
+                        value={line.vat_code || ''}
+                        onChange={(e) => updateLine(idx, 'vat_code', e.target.value || null)}
+                      >
+                        {VAT_RATES.map((v) => (
+                          <option key={v.code} value={v.code}>{v.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-3">
+                      <label className="text-xs text-[var(--color-text-secondary)]">{t('templates.analyticSection')}</label>
+                      <select
+                        className="input text-xs"
+                        value={line.analytic_section || ''}
+                        onChange={(e) => updateLine(idx, 'analytic_section', e.target.value || null)}
+                      >
+                        <option value="">—</option>
+                        {analyticSections.map((s) => (
+                          <option key={s.id} value={s.code}>{s.code} — {s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {line.amount_type === 'fixed' ? (
+                      <div className="col-span-3">
+                        <label className="text-xs text-[var(--color-text-secondary)]">{t('templates.fixedAmount')}</label>
+                        <input className="input text-xs" type="number" step="0.01" value={line.fixed_amount ?? ''} onChange={(e) => updateLine(idx, 'fixed_amount', e.target.value ? Number(e.target.value) : null)} />
+                      </div>
+                    ) : line.amount_type === 'percent' ? (
+                      <div className="col-span-3">
+                        <div className="grid grid-cols-2 gap-1">
+                          <div>
+                            <label className="text-xs text-[var(--color-text-secondary)]">D%</label>
+                            <input className="input text-xs" type="number" value={line.debit_pct} onChange={(e) => updateLine(idx, 'debit_pct', Number(e.target.value))} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-[var(--color-text-secondary)]">C%</label>
+                            <input className="input text-xs" type="number" value={line.credit_pct} onChange={(e) => updateLine(idx, 'credit_pct', Number(e.target.value))} />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="col-span-3">
+                        <div className="grid grid-cols-2 gap-1">
+                          <div>
+                            <label className="text-xs text-[var(--color-text-secondary)]">D%</label>
+                            <input className="input text-xs" type="number" value={line.debit_pct} onChange={(e) => updateLine(idx, 'debit_pct', Number(e.target.value))} disabled={line.amount_type === 'balance' || line.amount_type === 'calc_vat'} />
+                          </div>
+                          <div>
+                            <label className="text-xs text-[var(--color-text-secondary)]">C%</label>
+                            <input className="input text-xs" type="number" value={line.credit_pct} onChange={(e) => updateLine(idx, 'credit_pct', Number(e.target.value))} disabled={line.amount_type === 'balance' || line.amount_type === 'calc_vat'} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="col-span-3 flex items-end justify-end">
+                      <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

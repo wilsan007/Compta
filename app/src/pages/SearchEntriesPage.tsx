@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
 import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts } from '@/lib/queries'
-import { Search, ChevronDown, ChevronRight, Filter, X } from 'lucide-react'
+import { Search, ChevronDown, ChevronRight, Filter, X, Download } from 'lucide-react'
 import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount } from '@/types'
 
 export function SearchEntriesPage() {
@@ -99,6 +99,20 @@ export function SearchEntriesPage() {
   const totalDebit = results.reduce((s, e) => s + Number(e.total_debit), 0)
   const totalCredit = results.reduce((s, e) => s + Number(e.total_credit), 0)
 
+  function handleExportCSV() {
+    const headers = [t('entries.number'), t('entries.date'), t('entries.journal'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit')]
+    const rows = results.map((e) => [
+      e.piece_number || e.number || '',
+      e.date || '',
+      e.journal_code || '',
+      e.description || '',
+      e.status_detail || e.status || '',
+      Number(e.total_debit) || 0,
+      Number(e.total_credit) || 0,
+    ])
+    exportToCSV(`search-entries-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('search.title') }]} />
@@ -163,6 +177,11 @@ export function SearchEntriesPage() {
             <p className="text-sm text-[var(--color-text-secondary)]">
               {t('search.resultsCount', { count: results.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
             </p>
+            {results.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={handleExportCSV}>
+                <Download className="w-4 h-4" /> {t('search.exportCSV')}
+              </Button>
+            )}
           </div>
           {loading ? (
             <SkeletonTable rows={6} cols={7} />

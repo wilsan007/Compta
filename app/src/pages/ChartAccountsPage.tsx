@@ -236,6 +236,7 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState('compte')
   const [code, setCode] = useState(account?.code || '')
   const [name, setName] = useState(account?.name || '')
   const [type, setType] = useState<'asset' | 'liability' | 'equity' | 'income' | 'expense'>(account?.type || 'asset')
@@ -245,8 +246,11 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
   const [description, setDescription] = useState(account?.description || '')
   const [saving, setSaving] = useState(false)
 
+  const racine = code.substring(0, Math.min(code.length, 3))
+  const classe = code.charAt(0) || ''
+
   const parentOptions = accounts
-    .filter((a) => a.id !== account?.id && a.code.length < (code.length || 10))
+    .filter((a) => a.id !== account?.id && a.code.length < (code.length || 10) && (!code || a.code.charAt(0) === code.charAt(0)))
     .sort((a, b) => a.code.localeCompare(b.code))
 
   async function handleSubmit(e: React.FormEvent) {
@@ -267,38 +271,146 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
     }
   }
 
+  const tabs = [
+    { id: 'compte', label: t('chartAccounts.tabs.compte') },
+    { id: 'complement', label: t('chartAccounts.tabs.complement') },
+    { id: 'n1', label: t('chartAccounts.tabs.exerciseN1') },
+    { id: 'n', label: t('chartAccounts.tabs.exerciseN') },
+    { id: 'n1plus', label: t('chartAccounts.tabs.exerciseN1plus') },
+    { id: 'free', label: t('chartAccounts.tabs.freeInfo') },
+  ]
+
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
+      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{account ? t('chartAccounts.edit') : t('chartAccounts.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={tCommon('common.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="411000" />
-            <Select label={tCommon('common.type')} value={type} onChange={(e) => setType(e.target.value as 'asset' | 'liability' | 'equity' | 'income' | 'expense')} options={[
-              { value: 'asset', label: t('chartAccounts.types.asset') },
-              { value: 'liability', label: t('chartAccounts.types.liability') },
-              { value: 'equity', label: t('chartAccounts.types.equity') },
-              { value: 'income', label: t('chartAccounts.types.revenue') },
-              { value: 'expense', label: t('chartAccounts.types.expense') },
-            ]} />
+        <form onSubmit={handleSubmit}>
+          <div className="flex border-b border-[var(--color-border)] px-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+                    : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          <Input label={tCommon('common.label')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="" />
-          <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.parent')}</label>
-            <select className="input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-              <option value="">{t('chartAccounts.noParent')}</option>
-              {parentOptions.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
-            </select>
+
+          <div className="p-6 space-y-4">
+            {activeTab === 'compte' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('chartAccounts.accountNumber')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="411000" />
+                  <Input label={t('chartAccounts.designation')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <Input label={t('chartAccounts.racine')} value={racine} disabled placeholder="411" />
+                  <Input label={t('chartAccounts.classe')} value={classe} disabled placeholder="4" />
+                  <Select label={t('chartAccounts.nature')} value={type} onChange={(e) => setType(e.target.value as 'asset' | 'liability' | 'equity' | 'income' | 'expense')} options={[
+                    { value: 'asset', label: t('chartAccounts.natures.asset') },
+                    { value: 'liability', label: t('chartAccounts.natures.liability') },
+                    { value: 'equity', label: t('chartAccounts.natures.equity') },
+                    { value: 'income', label: t('chartAccounts.natures.income') },
+                    { value: 'expense', label: t('chartAccounts.natures.expense') },
+                  ]} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.parent')}</label>
+                  <select className="input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                    <option value="">{t('chartAccounts.noParent')}</option>
+                    {parentOptions.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'complement' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
+                  <Input label={t('chartAccounts.nbLines')} type="number" value="" onChange={() => {}} placeholder="0" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('chartAccounts.pageBreak')} type="number" value="" onChange={() => {}} placeholder="0" />
+                  <Input label={t('chartAccounts.regrouping')} value="" onChange={() => {}} placeholder="" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <label className="flex items-center gap-2 text-sm pt-6">
+                    <input type="checkbox" defaultChecked />
+                    {t('chartAccounts.analyticEntry')}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm pt-6">
+                    <input type="checkbox" defaultChecked />
+                    {t('chartAccounts.echeanceEntry')}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm pt-6">
+                    <input type="checkbox" defaultChecked />
+                    {t('chartAccounts.tiersEntry')}
+                  </label>
+                </div>
+                <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </>
+            )}
+
+            {activeTab === 'n1' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('chartAccounts.debitN1')} type="number" value="0" disabled />
+                  <Input label={t('chartAccounts.creditN1')} type="number" value="0" disabled />
+                </div>
+                <div className="text-sm text-[var(--color-text-secondary)] p-3 rounded-lg bg-[var(--color-neutral-50)]">
+                  {t('chartAccounts.exerciseHint')}
+                </div>
+              </>
+            )}
+
+            {activeTab === 'n' && (
+              <>
+                <div className="grid grid-cols-3 gap-4">
+                  <Input label={t('chartAccounts.debitN')} type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
+                  <Input label={t('chartAccounts.creditN')} type="number" value="0" disabled />
+                  <Input label={t('chartAccounts.soldeN')} type="number" value={balance} disabled />
+                </div>
+              </>
+            )}
+
+            {activeTab === 'n1plus' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('chartAccounts.debitN1plus')} type="number" value="0" disabled />
+                  <Input label={t('chartAccounts.creditN1plus')} type="number" value="0" disabled />
+                </div>
+                <div className="text-sm text-[var(--color-text-secondary)] p-3 rounded-lg bg-[var(--color-neutral-50)]">
+                  {t('chartAccounts.exerciseFutureHint')}
+                </div>
+              </>
+            )}
+
+            {activeTab === 'free' && (
+              <>
+                <div className="space-y-3">
+                  {Array.from({ length: 10 }, (_, i) => (
+                    <div key={i} className="grid grid-cols-2 gap-4">
+                      <Input label={t('chartAccounts.freeFieldLabel', { n: i + 1 })} value="" onChange={() => {}} placeholder="" />
+                      <Input label={t('chartAccounts.freeFieldValue', { n: i + 1 })} value="" onChange={() => {}} placeholder="" />
+                    </div>
+                  )).slice(0, 5)}
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)]">{t('chartAccounts.freeInfoHint')}</p>
+              </>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t('chartAccounts.initialBalance')} type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
-            <Input label={t('chartAccounts.vatRate')} type="text" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
-          </div>
-          <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
-          <div className="flex justify-end gap-3 pt-2">
+
+          <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
           </div>

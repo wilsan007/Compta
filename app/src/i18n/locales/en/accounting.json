@@ -123,7 +123,46 @@
     "importChart": "Import a chart of accounts",
     "exportChart": "Export chart of accounts",
     "loadTemplate": "Load a template",
-    "frenchPCG": "French General Chart of Accounts (PCG)"
+    "frenchPCG": "French General Chart of Accounts (PCG)",
+    "tabs": {
+      "compte": "Account",
+      "complement": "Additional",
+      "exerciseN1": "Fiscal Year N-1",
+      "exerciseN": "Fiscal Year N",
+      "exerciseN1plus": "Fiscal Year N+1",
+      "freeInfo": "Free Information"
+    },
+    "accountNumber": "Account number",
+    "designation": "Designation",
+    "racine": "Root",
+    "classe": "Class",
+    "nature": "Nature",
+    "natures": {
+      "asset": "Asset",
+      "liability": "Liability",
+      "equity": "Equity",
+      "income": "Revenue",
+      "expense": "Expense"
+    },
+    "defaultTaxCode": "Default tax code",
+    "nbLines": "Number of lines",
+    "pageBreak": "Lines per page break",
+    "regrouping": "Grouping",
+    "analyticEntry": "Analytic entry",
+    "echeanceEntry": "Due date entry",
+    "tiersEntry": "Third-party entry",
+    "debitN1": "Debit N-1",
+    "creditN1": "Credit N-1",
+    "exerciseHint": "Carry-forward entries generate postings in the OD journal.",
+    "debitN": "Debit N",
+    "creditN": "Credit N",
+    "soldeN": "Balance N",
+    "debitN1plus": "Debit N+1",
+    "creditN1plus": "Credit N+1",
+    "exerciseFutureHint": "Fiscal year not yet open. Indicative entry only.",
+    "freeFieldLabel": "Free label {{n}}",
+    "freeFieldValue": "Free value {{n}}",
+    "freeInfoHint": "Up to 10 custom fields."
   },
   "thirdParty": {
     "title": "Unified third-party chart",
@@ -180,7 +219,42 @@
     "none": "— None —",
     "cancel": "Cancel",
     "save": "Save",
-    "generalAccountClass4": "General account (class 4)"
+    "generalAccountClass4": "General account (class 4)",
+    "tabs": {
+      "fiche": "Main card",
+      "banques": "Banks",
+      "modeles": "Templates",
+      "complement": "Additional",
+      "statistiques": "Statistics",
+      "freeInfo": "Free Information"
+    },
+    "address": "Address",
+    "postalCode": "Postal code",
+    "city": "City",
+    "country": "Country",
+    "siret": "SIRET",
+    "vatIntra": "EU VAT number",
+    "iban": "IBAN",
+    "bic": "BIC/SWIFT",
+    "bankCode": "Bank code",
+    "branchCode": "Branch code",
+    "accountNumber": "Account number",
+    "key": "Key",
+    "multiRibHint": "Multi-RIB: multiple bank details can be registered.",
+    "echeanceModel": "Payment schedule template",
+    "paymentCondition": "Payment terms",
+    "paymentMode": "Payment method",
+    "encoursAutorise": "Authorized credit limit",
+    "relanceNiveau": "Collection level",
+    "relanceModel": "Collection template",
+    "delaiPaiement": "Payment delay",
+    "escompte": "Discount",
+    "contactName": "Contact",
+    "zoneGeo": "Geographic area",
+    "categorie": "Category",
+    "freeFieldLabel": "Free label {{n}}",
+    "freeFieldValue": "Free value {{n}}",
+    "freeInfoHint": "Additional custom fields."
   },
   "journals": {
     "title": "Journal codes",
@@ -217,7 +291,29 @@
     "counterpartAccount": "Counterpart account",
     "linkedBankAccount": "Linked bank account",
     "defaultTemplate": "Default entry template",
-    "none": "— None —"
+    "none": "— None —",
+    "tabs": {
+      "complement": "Additional",
+      "banque": "Bank",
+      "modele": "Template",
+      "droits": "Rights"
+    },
+    "compteAttente": "Suspense account",
+    "racinesAutorisees": "Authorized roots",
+    "numerotation": "Numbering",
+    "numerotationManual": "Manual",
+    "numerotationAuto": "Automatic",
+    "numerotationContinuous": "Continuous",
+    "rib": "RIB",
+    "reconciliationMode": "Reconciliation mode",
+    "reconciliationManual": "Manual",
+    "reconciliationAuto": "Automatic",
+    "templateHint": "The default entry template will be used when creating entries in this journal.",
+    "templateLines": "Template lines",
+    "templateJournal": "Journal",
+    "templateIsDefault": "Default template",
+    "authorizedUsers": "Authorized users",
+    "rightsHint": "Only authorized users can post entries in this journal."
   },
   "fiscalYears": {
     "title": "Fiscal years & periods",
@@ -331,7 +427,16 @@
     "searchPlaceholder": "Search a template...",
     "noTemplates": "No template found",
     "noTemplatesDescription": "Create templates to auto-fill your entry inputs.",
-    "createFirst": "Create my first template"
+    "createFirst": "Create my first template",
+    "amountType": "Amount type",
+    "amountTypeInput": "Manual input",
+    "amountTypeFixed": "Fixed amount",
+    "amountTypePercent": "Percentage",
+    "amountTypeBalance": "Balance",
+    "amountTypeCalcVat": "VAT calculation",
+    "vatCode": "VAT code",
+    "analyticSection": "Analytic section",
+    "fixedAmount": "Fixed amount"
   },
   "generalLedger": {
     "title": "General ledger",
@@ -349,6 +454,7 @@
     "balance": "Balance",
     "noMovements": "No movement in this period",
     "noMovementsDescription": "Account {{code}} — {{name}} has no movement with these filters.",
+    "thirdParty": "Third party",
     "debitBalance": "Debit balance",
     "creditBalance": "Credit balance",
     "export": "Export general ledger"
@@ -368,6 +474,7 @@
     "total": "Totals",
     "noData": "No data for this period",
     "export": "Export balance",
+    "exportCSV": "Export CSV",
     "showZeroBalances": "Show zero balances",
     "groupByClass": "Group by class",
     "classLabels": {
@@ -404,7 +511,9 @@
     "noThirdParty": "No third party found",
     "selectThirdPartyDescription": "Select a third party from the left list to view entries and proceed with matching.",
     "unletteredCount": "{{count}} unmatched line(s) — Balance: {{balance}}",
-    "noUnlettered": "No unmatched entries for this third party."
+    "noUnlettered": "No unmatched entries for this third party.",
+    "tolerance": "Tolerance",
+    "difference": "Variance"
   },
   "search": {
     "title": "Entry search",
@@ -435,7 +544,8 @@
     "searching": "Searching...",
     "searchBtn": "Search",
     "resultsCount": "{{count}} result(s) — Total debit: {{debit}} | Total credit: {{credit}}",
-    "noResultsDescription": "Modify your search criteria and try again."
+    "noResultsDescription": "Modify your search criteria and try again.",
+    "exportCSV": "Export CSV"
   },
   "journalsReport": {
     "breadcrumb": "Reports",
@@ -554,6 +664,14 @@
     "saving": "Saving...",
     "saveEntry": "Save entry",
     "notBalanced": "Entries are not balanced. Debit and credit must be equal.",
+    "vatCode": "VAT code",
+    "analyticSection": "Analytic section",
+    "vatRates": {
+      "rate0": "0%",
+      "rate55": "5.5%",
+      "rate10": "10%",
+      "rate20": "20%"
+    },
     "calculatorHint": "Tip: type = followed by an expression (e.g. =1000+200*1.2) to auto-calculate"
   },
   "journalClosure": {
@@ -604,7 +722,12 @@
     "selectYearAndTarget": "Select the fiscal year to close and the new fiscal year",
     "targetMustDiffer": "The target fiscal year must be different",
     "openingLinesGenerated": "{{count}} carried forward line(s) generated.",
-    "breadcrumb": "Fiscal year closure"
+    "breadcrumb": "Fiscal year closure",
+    "resultTitle": "Closure result",
+    "openingLines": "Opening lines",
+    "closingLines": "Closing lines",
+    "resultAmount": "Fiscal year result",
+    "openingEntriesPreview": "Opening entries preview"
   },
   "brouillard": {
     "title": "Draft journal",
@@ -624,7 +747,8 @@
     "deleteConfirm": "Delete this entry?",
     "noEntries": "No draft entries",
     "noEntriesDescription": "All entries have been printed or no entry has been recorded.",
-    "export": "Export draft"
+    "export": "Export draft",
+    "status": "Status"
   },
   "agedBalance": {
     "title": "Aged third-party balance",
@@ -987,7 +1111,10 @@
     "createFirst": "Create my first fixed asset",
     "searchPlaceholder": "Search by name, code...",
     "dispose": "Dispose of fixed asset",
-    "calculateDepreciation": "Calculate depreciation"
+    "calculateDepreciation": "Calculate depreciation",
+    "derogatoryDepreciation": "Derogatory depreciation",
+    "subventionAmount": "Subvention amount",
+    "subventionAccount": "Subvention account"
   },
   "analyticBalance": {
     "title": "Analytic balance",
@@ -1003,7 +1130,8 @@
     "totalCredit": "Total credit",
     "totalAnalytic": "Total analytic",
     "noData": "No analytic data",
-    "noDataDescription": "No lines with analytic allocation found."
+    "noDataDescription": "No lines with analytic allocation found.",
+    "plan": "Analytic plan"
   },
   "analyticSections": {
     "title": "Analytic sections",
@@ -1026,7 +1154,20 @@
       "project": "Project",
       "department": "Department",
       "other": "Other"
-    }
+    },
+    "tabs": {
+      "section": "Section",
+      "complement": "Additional"
+    },
+    "plan": "Analytic plan",
+    "defaultPlan": "Default plan",
+    "parentSection": "Parent section",
+    "noParent": "— None (root) —",
+    "level": "Level",
+    "type": "Type",
+    "typeSection": "Section",
+    "typeTotal": "Total",
+    "complementHint": "Activate or deactivate this section. Inactive sections no longer appear in analytic entry."
   },
   "balanceSheet": {
     "title": "Balance sheet",

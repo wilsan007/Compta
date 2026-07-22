@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { getFiscalYears, closeFiscalYear } from '@/lib/queries'
+import { formatCurrency } from '@/lib/utils'
 import { Lock, AlertTriangle } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -15,6 +16,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
   const [closing, setClosing] = useState(false)
   const [selectedYear, setSelectedYear] = useState('')
   const [targetYear, setTargetYear] = useState('')
+  const [closureResult, setClosureResult] = useState<any>(null)
 
   useEffect(() => { load() }, [])
 
@@ -44,6 +46,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
     setClosing(true)
     try {
       const result = await closeFiscalYear(selectedYear, targetYear)
+      setClosureResult(result)
       toast('success', t('fiscalYearClosure.closed'), t('fiscalYearClosure.openingLinesGenerated', { count: result?.openingLinesCount || 0 }))
       await load()
     } catch (err: any) {
@@ -108,6 +111,55 @@ const [years, setYears] = useState<FiscalYear[]>([])
             <Card>
               <div className="p-4 space-y-4">
                 <h3 className="text-sm font-semibold">{t('fiscalYearClosure.closeYear', { code: selectedYearObj.code })}</h3>
+
+                {closureResult && (
+                  <div className="p-4 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 space-y-3">
+                    <h4 className="text-sm font-semibold text-[var(--color-success)]">{t('fiscalYearClosure.resultTitle')}</h4>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.openingLines')}</p>
+                        <p className="font-mono font-bold">{closureResult.openingLinesCount || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.closingLines')}</p>
+                        <p className="font-mono font-bold">{closureResult.closingLinesCount || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.resultAmount')}</p>
+                        <p className={`font-mono font-bold ${(closureResult.resultAmount || 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                          {formatCurrency(closureResult.resultAmount || 0)}
+                        </p>
+                      </div>
+                    </div>
+                    {closureResult.openingEntries && closureResult.openingEntries.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-2">{t('fiscalYearClosure.openingEntriesPreview')}</p>
+                        <div className="overflow-x-auto">
+                          <table className="app-table min-w-[500px]">
+                            <thead>
+                              <tr className="border-b border-[var(--color-border)]">
+                                <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('chartAccounts.code')}</th>
+                                <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{tCommon('common.description')}</th>
+                                <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('entries.debit')}</th>
+                                <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('entries.credit')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--color-border)]">
+                              {closureResult.openingEntries.map((e: any, i: number) => (
+                                <tr key={i}>
+                                  <td className="font-mono text-xs px-2 py-1">{e.account_code}</td>
+                                  <td className="text-xs px-2 py-1">{e.description || '—'}</td>
+                                  <td className="font-mono text-xs text-right px-2 py-1">{Number(e.debit) > 0 ? formatCurrency(Number(e.debit)) : ''}</td>
+                                  <td className="font-mono text-xs text-right px-2 py-1">{Number(e.credit) > 0 ? formatCurrency(Number(e.credit)) : ''}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30">
                   <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0" />
                   <p className="text-sm text-[var(--color-text-secondary)]">

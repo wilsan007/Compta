@@ -966,19 +966,36 @@ BEGIN
   -- 5d. ENTRY TEMPLATES (modeles de saisie)
   -- ============================================
   INSERT INTO entry_templates (name, journal_code, description, template_lines, is_default, active, tenant_id)
-  VALUES ('Vente standard', 'VT', 'Saisie vente standard', '[{"account":"411000","debit":true,"label":"Client"},{"account":"707000","debit":false,"label":"Vente"},{"account":"445710","debit":false,"label":"TVA collectee"}]'::jsonb, true, true, v_tenant_id);
+  VALUES ('Vente standard', 'VT', 'Saisie vente standard', '[
+    {"account_general":"411000","account_tiers":"","label":"Client","debit_pct":100,"credit_pct":0,"amount_type":"balance","vat_code":"","analytic_section":""},
+    {"account_general":"707000","account_tiers":"","label":"Vente de marchandises","debit_pct":0,"credit_pct":100,"amount_type":"input","vat_code":"V20","analytic_section":""},
+    {"account_general":"445710","account_tiers":"","label":"TVA collectee","debit_pct":0,"credit_pct":20,"amount_type":"calc_vat","vat_code":"V20","analytic_section":""}
+  ]'::jsonb, true, true, v_tenant_id);
 
   INSERT INTO entry_templates (name, journal_code, description, template_lines, is_default, active, tenant_id)
-  VALUES ('Achat standard', 'AC', 'Saisie achat standard', '[{"account":"607000","debit":true,"label":"Achat"},{"account":"445660","debit":true,"label":"TVA deductible"},{"account":"401000","debit":false,"label":"Fournisseur"}]'::jsonb, true, true, v_tenant_id);
+  VALUES ('Achat standard', 'AC', 'Saisie achat standard', '[
+    {"account_general":"607000","account_tiers":"","label":"Achat de marchandises","debit_pct":100,"credit_pct":0,"amount_type":"input","vat_code":"V20","analytic_section":""},
+    {"account_general":"445660","account_tiers":"","label":"TVA deductible","debit_pct":20,"credit_pct":0,"amount_type":"calc_vat","vat_code":"V20","analytic_section":""},
+    {"account_general":"401000","account_tiers":"","label":"Fournisseur","debit_pct":0,"credit_pct":120,"amount_type":"balance","vat_code":"","analytic_section":""}
+  ]'::jsonb, true, true, v_tenant_id);
 
   INSERT INTO entry_templates (name, journal_code, description, template_lines, is_default, active, tenant_id)
-  VALUES ('Encaissement bancaire', 'BQ', 'Encaissement client sur banque', '[{"account":"512000","debit":true,"label":"Banque"},{"account":"411000","debit":false,"label":"Client"}]'::jsonb, true, true, v_tenant_id);
+  VALUES ('Encaissement bancaire', 'BQ', 'Encaissement client sur banque', '[
+    {"account_general":"512000","account_tiers":"","label":"Banque","debit_pct":100,"credit_pct":0,"amount_type":"input","vat_code":"","analytic_section":""},
+    {"account_general":"411000","account_tiers":"","label":"Client","debit_pct":0,"credit_pct":100,"amount_type":"balance","vat_code":"","analytic_section":""}
+  ]'::jsonb, true, true, v_tenant_id);
 
   INSERT INTO entry_templates (name, journal_code, description, template_lines, is_default, active, tenant_id)
-  VALUES ('Decaissement bancaire', 'BQ', 'Paiement fournisseur sur banque', '[{"account":"401000","debit":true,"label":"Fournisseur"},{"account":"512000","debit":false,"label":"Banque"}]'::jsonb, false, true, v_tenant_id);
+  VALUES ('Decaissement bancaire', 'BQ', 'Paiement fournisseur sur banque', '[
+    {"account_general":"401000","account_tiers":"","label":"Fournisseur","debit_pct":100,"credit_pct":0,"amount_type":"input","vat_code":"","analytic_section":""},
+    {"account_general":"512000","account_tiers":"","label":"Banque","debit_pct":0,"credit_pct":100,"amount_type":"balance","vat_code":"","analytic_section":""}
+  ]'::jsonb, false, true, v_tenant_id);
 
   INSERT INTO entry_templates (name, journal_code, description, template_lines, is_default, active, tenant_id)
-  VALUES ('OD diverse', 'OD', 'Operation diverse standard', '[{"account":"613000","debit":true,"label":"Debit"},{"account":"512000","debit":false,"label":"Credit"}]'::jsonb, true, true, v_tenant_id);
+  VALUES ('OD diverse', 'OD', 'Operation diverse standard', '[
+    {"account_general":"613000","account_tiers":"","label":"Location","debit_pct":100,"credit_pct":0,"amount_type":"input","vat_code":"","analytic_section":""},
+    {"account_general":"512000","account_tiers":"","label":"Banque","debit_pct":0,"credit_pct":100,"amount_type":"balance","vat_code":"","analytic_section":""}
+  ]'::jsonb, true, true, v_tenant_id);
 
   -- ============================================
   -- 6. FISCAL YEAR 2025 (CLOSED)

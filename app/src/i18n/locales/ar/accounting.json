@@ -123,7 +123,46 @@
     "importChart": "استيراد مخطط حسابات",
     "exportChart": "تصدير مخطط الحسابات",
     "loadTemplate": "تحميل قالب",
-    "frenchPCG": "المخطط المحاسبي العام الفرنسي (PCG)"
+    "frenchPCG": "المخطط المحاسبي العام الفرنسي (PCG)",
+    "tabs": {
+      "compte": "الحساب",
+      "complement": "معلومات إضافية",
+      "exerciseN1": "السنة المالية N-1",
+      "exerciseN": "السنة المالية N",
+      "exerciseN1plus": "السنة المالية N+1",
+      "freeInfo": "معلومات حرة"
+    },
+    "accountNumber": "رقم الحساب",
+    "designation": "التسمية",
+    "racine": "الجذر",
+    "classe": "الفئة",
+    "nature": "الطبيعة",
+    "natures": {
+      "asset": "أصل",
+      "liability": "خصم",
+      "equity": "حقوق الملكية",
+      "income": "إيراد",
+      "expense": "مصروف"
+    },
+    "defaultTaxCode": "رمز الضريبة الافتراضي",
+    "nbLines": "عدد الأسطر",
+    "pageBreak": "أسطر لكل صفحة",
+    "regrouping": "تجميع",
+    "analyticEntry": "إدخال تحليلي",
+    "echeanceEntry": "إدخال تاريخ الاستحقاق",
+    "tiersEntry": "إدخال حساب طرف ثالث",
+    "debitN1": "مدين N-1",
+    "creditN1": "دائن N-1",
+    "exerciseHint": "تقارير الأرصدة الافتتاحية تنشئ قيوداً في يومية العمليات المتنوعة.",
+    "debitN": "مدين N",
+    "creditN": "دائن N",
+    "soldeN": "الرصيد N",
+    "debitN1plus": "مدين N+1",
+    "creditN1plus": "دائن N+1",
+    "exerciseFutureHint": "السنة المالية لم تفتح بعد. إدخال إرشادي فقط.",
+    "freeFieldLabel": "تسمية حرة {{n}}",
+    "freeFieldValue": "قيمة حرة {{n}}",
+    "freeInfoHint": "حتى 10 حقول مخصصة."
   },
   "thirdParty": {
     "title": "مخطط الأطراف الثالثة الموحد",
@@ -180,7 +219,42 @@
     "none": "— لا شيء —",
     "cancel": "إلغاء",
     "save": "حفظ",
-    "generalAccountClass4": "الحساب العام (الفئة 4)"
+    "generalAccountClass4": "الحساب العام (الفئة 4)",
+    "tabs": {
+      "fiche": "البطاقة الرئيسية",
+      "banques": "البنوك",
+      "modeles": "النماذج",
+      "complement": "معلومات إضافية",
+      "statistiques": "الإحصائيات",
+      "freeInfo": "معلومات حرة"
+    },
+    "address": "العنوان",
+    "postalCode": "الرمز البريدي",
+    "city": "المدينة",
+    "country": "البلد",
+    "siret": "سيري (SIRET)",
+    "vatIntra": "الرقم الضريبي الأوروبي",
+    "iban": "آيبان (IBAN)",
+    "bic": "بيك/SWIFT",
+    "bankCode": "رمز البنك",
+    "branchCode": "رمز الفرع",
+    "accountNumber": "رقم الحساب",
+    "key": "المفتاح",
+    "multiRibHint": "متعدد الحسابات البنكية: يمكن تسجيل عدة تفاصيل بنكية.",
+    "echeanceModel": "نموذج جدول الاستحقاق",
+    "paymentCondition": "شروط الدفع",
+    "paymentMode": "طريقة الدفع",
+    "encoursAutorise": "حد الائتمان المصرح",
+    "relanceNiveau": "مستوى التحصيل",
+    "relanceModel": "نموذج التحصيل",
+    "delaiPaiement": "مهلة الدفع",
+    "escompte": "خصم",
+    "contactName": "جهة الاتصال",
+    "zoneGeo": "المنطقة الجغرافية",
+    "categorie": "الفئة",
+    "freeFieldLabel": "تسمية حرة {{n}}",
+    "freeFieldValue": "قيمة حرة {{n}}",
+    "freeInfoHint": "حقول مخصصة إضافية."
   },
   "journals": {
     "title": "رموز اليوميات",
@@ -217,7 +291,29 @@
     "counterpartAccount": "حساب المقابل",
     "linkedBankAccount": "الحساب البنكي المرتبط",
     "defaultTemplate": "قالب الإدخال الافتراضي",
-    "none": "— لا شيء —"
+    "none": "— لا شيء —",
+    "tabs": {
+      "complement": "معلومات إضافية",
+      "banque": "البنك",
+      "modele": "النموذج",
+      "droits": "الصلاحيات"
+    },
+    "compteAttente": "حساب الانتظار",
+    "racinesAutorisees": "الجذور المصرحة",
+    "numerotation": "الترقيم",
+    "numerotationManual": "يدوي",
+    "numerotationAuto": "تلقائي",
+    "numerotationContinuous": "مستمر",
+    "rib": "ريب (RIB)",
+    "reconciliationMode": "وضع المطابقة",
+    "reconciliationManual": "يدوي",
+    "reconciliationAuto": "تلقائي",
+    "templateHint": "سيتم استخدام قالب الإدخال الافتراضي عند إنشاء قيود في هذه اليومية.",
+    "templateLines": "بنود القالب",
+    "templateJournal": "اليومية",
+    "templateIsDefault": "قالب افتراضي",
+    "authorizedUsers": "المستخدمون المصرح لهم",
+    "rightsHint": "فقط المستخدمون المصرح لهم يمكنهم إدخال القيود في هذه اليومية."
   },
   "fiscalYears": {
     "title": "السنوات المالية والفترات",
@@ -331,7 +427,16 @@
     "searchPlaceholder": "البحث عن قالب...",
     "noTemplates": "لم يتم العثور على قالب",
     "noTemplatesDescription": "أنشئ قوالب لتعبئة إدخالات القيود تلقائياً.",
-    "createFirst": "إنشاء أول قالب"
+    "createFirst": "إنشاء أول قالب",
+    "amountType": "نوع المبلغ",
+    "amountTypeInput": "إدخال يدوي",
+    "amountTypeFixed": "مبلغ ثابت",
+    "amountTypePercent": "نسبة مئوية",
+    "amountTypeBalance": "رصيد/توازن",
+    "amountTypeCalcVat": "حساب الضريبة",
+    "vatCode": "رمز الضريبة",
+    "analyticSection": "القسم التحليلي",
+    "fixedAmount": "مبلغ ثابت"
   },
   "generalLedger": {
     "title": "دفتر الأستاذ العام",
@@ -349,6 +454,7 @@
     "balance": "الرصيد",
     "noMovements": "لا توجد حركات في هذه الفترة",
     "noMovementsDescription": "الحساب {{code}} — {{name}} لا يحتوي على حركات بهذه المرشحات.",
+    "thirdParty": "الطرف الثالث",
     "debitBalance": "رصيد مدين",
     "creditBalance": "رصيد دائن",
     "export": "تصدير دفتر الأستاذ"
@@ -368,6 +474,7 @@
     "total": "الإجماليات",
     "noData": "لا توجد بيانات لهذه الفترة",
     "export": "تصدير الميزان",
+    "exportCSV": "تصدير CSV",
     "showZeroBalances": "عرض الأرصدة الصفرية",
     "groupByClass": "تجميع حسب الفئة",
     "classLabels": {
@@ -404,7 +511,9 @@
     "noThirdParty": "لم يتم العثور على طرف ثالث",
     "selectThirdPartyDescription": "اختر طرفاً ثالثاً من القائمة اليسرى لعرض القيود وإجراء المطابقة.",
     "unletteredCount": "{{count}} سطر غير مطابق — الرصيد: {{balance}}",
-    "noUnlettered": "لا توجد قيود غير مطابقة لهذا الطرف."
+    "noUnlettered": "لا توجد قيود غير مطابقة لهذا الطرف.",
+    "tolerance": "التفاوت المسموح",
+    "difference": "الفرق"
   },
   "search": {
     "title": "البحث عن القيود",
@@ -435,7 +544,8 @@
     "searching": "جار البحث...",
     "searchBtn": "بحث",
     "resultsCount": "{{count}} نتيجة — إجمالي المدين: {{debit}} | إجمالي الدائن: {{credit}}",
-    "noResultsDescription": "عدّل معايير البحث وحاول مرة أخرى."
+    "noResultsDescription": "عدّل معايير البحث وحاول مرة أخرى.",
+    "exportCSV": "تصدير CSV"
   },
   "journalsReport": {
     "breadcrumb": "التقارير",
@@ -554,6 +664,14 @@
     "saving": "جار الحفظ...",
     "saveEntry": "حفظ القيد",
     "notBalanced": "القيود غير متوازنة. يجب أن يكون المدين والدائن متساويين.",
+    "vatCode": "رمز الضريبة",
+    "analyticSection": "القسم التحليلي",
+    "vatRates": {
+      "rate0": "0%",
+      "rate55": "5.5%",
+      "rate10": "10%",
+      "rate20": "20%"
+    },
     "calculatorHint": "نصيحة: اكتب = متبوع بتعبير (مثال: =1000+200*1.2) للحساب التلقائي"
   },
   "journalClosure": {
@@ -604,7 +722,12 @@
     "selectYearAndTarget": "حدد السنة المالية المراد إقفالها والسنة المالية الجديدة",
     "targetMustDiffer": "يجب أن تكون السنة المالية المستهدفة مختلفة",
     "openingLinesGenerated": "تم توليد {{count}} سطر(وط) ترحيل.",
-    "breadcrumb": "إقفال السنة المالية"
+    "breadcrumb": "إقفال السنة المالية",
+    "resultTitle": "نتيجة الإقفال",
+    "openingLines": "بنود الافتتاح",
+    "closingLines": "بنود الإقفال",
+    "resultAmount": "نتيجة السنة المالية",
+    "openingEntriesPreview": "معاينة قيود الافتتاح"
   },
   "brouillard": {
     "title": "مسودة اليومية",
@@ -624,7 +747,8 @@
     "deleteConfirm": "حذف هذا القيد؟",
     "noEntries": "لا توجد قيود مسودة",
     "noEntriesDescription": "تمت طباعة جميع القيود أو لم يتم إدخال أي قيد.",
-    "export": "تصدير المسودة"
+    "export": "تصدير المسودة",
+    "status": "الحالة"
   },
   "agedBalance": {
     "title": "ميزان الأطراف الثالثة حسب العمر",
@@ -987,7 +1111,10 @@
     "createFirst": "إنشاء أول أصل ثابت",
     "searchPlaceholder": "البحث بالاسم، الرمز...",
     "dispose": "التصرف في الأصل الثابت",
-    "calculateDepreciation": "حساب الإهلاك"
+    "calculateDepreciation": "حساب الإهلاك",
+    "derogatoryDepreciation": "إهلاك استثنائي",
+    "subventionAmount": "مبلغ الإعانة",
+    "subventionAccount": "حساب الإعانة"
   },
   "analyticBalance": {
     "title": "الميزان التحليلي",
@@ -1003,7 +1130,8 @@
     "totalCredit": "إجمالي الدائن",
     "totalAnalytic": "إجمالي تحليلي",
     "noData": "لا توجد بيانات تحليلية",
-    "noDataDescription": "لم يتم العثور على بنود بتخصيص تحليلي."
+    "noDataDescription": "لم يتم العثور على بنود بتخصيص تحليلي.",
+    "plan": "الخطة التحليلية"
   },
   "analyticSections": {
     "title": "الأقسام التحليلية",
@@ -1026,7 +1154,20 @@
       "project": "مشروع",
       "department": "قسم",
       "other": "أخرى"
-    }
+    },
+    "tabs": {
+      "section": "القسم",
+      "complement": "معلومات إضافية"
+    },
+    "plan": "المخطط التحليلي",
+    "defaultPlan": "المخطط الافتراضي",
+    "parentSection": "القسم الأصلي",
+    "noParent": "— لا شيء (جذر) —",
+    "level": "المستوى",
+    "type": "النوع",
+    "typeSection": "قسم",
+    "typeTotal": "إجمالي",
+    "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي."
   },
   "balanceSheet": {
     "title": "الميزانية",

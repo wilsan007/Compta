@@ -6,12 +6,12 @@ import {
   getJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods,
   createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry,
   getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber,
-  getJournalPeriodBalance,
+  getJournalPeriodBalance, getAnalyticSections,
 } from '@/lib/queries'
 import {
   Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2,
 } from 'lucide-react'
-import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount } from '@/types'
+import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount, AnalyticSection } from '@/types'
 import { useToast } from '@/lib/toast'
 
 const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -375,12 +375,15 @@ interface LineDraft {
   piece_number: string
   invoice_number: string
   reference: string
+  vat_code: string
+  analytic_section: string
 }
 
 function blankLine(overrides: Partial<LineDraft> = {}): LineDraft {
   return {
     jour: '', account_general: '', account_name: '', account_tiers: '', description: '',
-    debit: '', credit: '', piece_number: '', invoice_number: '', reference: '', ...overrides,
+    debit: '', credit: '', piece_number: '', invoice_number: '', reference: '',
+    vat_code: '', analytic_section: '', ...overrides,
   }
 }
 
@@ -399,6 +402,7 @@ function SaisieForm({
   const { t: tCommon } = useTranslation('common')
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
+  const [analyticSections, setAnalyticSections] = useState<AnalyticSection[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [pieceNumber, setPieceNumber] = useState('')
@@ -421,15 +425,17 @@ function SaisieForm({
 
   async function loadFormData() {
     try {
-      const [accs, tmpls, tp] = await Promise.all([
+      const [accs, tmpls, tp, sections] = await Promise.all([
         getChartAccounts(),
         getEntryTemplates(),
         getThirdPartyAccounts(),
+        getAnalyticSections().catch(() => []),
         getNextPieceNumber(journal.code),
       ])
       setAccounts(accs || [])
       setTemplates(tmpls || [])
       setThirdParties(tp || [])
+      setAnalyticSections(sections || [])
       setPieceNumber(tmpls ? '' : '')
     } catch (err) {
       console.error('Error loading form data:', err)
@@ -475,8 +481,10 @@ function SaisieForm({
       account_name: accounts.find((a) => a.code === tl.account_general)?.name || '',
       account_tiers: tl.account_tiers || '',
       description: tl.label || '',
-      debit: tl.debit_pct ? String(tl.debit_pct) : '',
-      credit: tl.credit_pct ? String(tl.credit_pct) : '',
+      debit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.debit_pct ? String(tl.debit_pct) : ''),
+      credit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.credit_pct ? String(tl.credit_pct) : ''),
+      vat_code: tl.vat_code || '',
+      analytic_section: tl.analytic_section || '',
     }))
     setLines(newLines.length > 0 ? newLines : [blankLine()])
   }
@@ -545,6 +553,8 @@ function SaisieForm({
             reference: ref,
             line_order: idx,
             line_date: lineDate,
+            vat_code: l.vat_code || null,
+            analytic_section: l.analytic_section || null,
           }
         })
       await createSaisieEntry({
@@ -636,7 +646,7 @@ function SaisieForm({
       <Card>
         <div className="p-4">
           <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
-            <table className="app-table min-w-[760px]">
+            <table className="app-table min-w-[960px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-14">{t('saisie.day')}</th>
@@ -648,6 +658,8 @@ function SaisieForm({
                   <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2">{tCommon('common.label')}</th>
                   <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">{t('saisie.debit')}</th>
                   <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-28">{t('saisie.credit')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-24">{t('saisie.vatCode')}</th>
+                  <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-2 w-32">{t('saisie.analyticSection')}</th>
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -735,6 +747,31 @@ function SaisieForm({
                       />
                     </td>
                     <td className="px-1 py-1.5">
+                      <select
+                        className="input text-xs py-1 w-24"
+                        value={line.vat_code}
+                        onChange={(e) => updateLine(idx, 'vat_code', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        <option value="0">{t('saisie.vatRates.rate0')}</option>
+                        <option value="5.5">{t('saisie.vatRates.rate55')}</option>
+                        <option value="10">{t('saisie.vatRates.rate10')}</option>
+                        <option value="20">{t('saisie.vatRates.rate20')}</option>
+                      </select>
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <select
+                        className="input text-xs py-1 w-32"
+                        value={line.analytic_section}
+                        onChange={(e) => updateLine(idx, 'analytic_section', e.target.value)}
+                      >
+                        <option value="">—</option>
+                        {analyticSections.map((s) => (
+                          <option key={s.id} value={s.code}>{s.code} — {s.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-1 py-1.5">
                       {lines.length > 2 && (
                         <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                           <X className="w-3.5 h-3.5" />
@@ -758,10 +795,10 @@ function SaisieForm({
                   </td>
                   <td className="px-2 py-2 text-right font-mono font-semibold text-sm">{formatCurrency(totalDebit)}</td>
                   <td className="px-2 py-2 text-right font-mono font-semibold text-sm">{formatCurrency(totalCredit)}</td>
-                  <td />
+                  <td colSpan={3} />
                 </tr>
                 <tr className="bg-[var(--color-neutral-50)]">
-                  <td colSpan={7} className="px-2 py-2 text-sm font-medium">
+                  <td colSpan={9} className="px-2 py-2 text-sm font-medium">
                     {isBalanced ? (
                       <span className="text-[var(--color-success)]">✓ {t('saisie.balanced')}</span>
                     ) : (

@@ -131,9 +131,10 @@ interface InputProps {
   required?: boolean
   className?: string
   step?: string
+  disabled?: boolean
 }
 
-export function Input({ label, type = 'text', value, onChange, placeholder, required, className, step }: InputProps) {
+export function Input({ label, type = 'text', value, onChange, placeholder, required, className, step, disabled }: InputProps) {
   return (
     <div className={className}>
       {label && (
@@ -147,6 +148,7 @@ export function Input({ label, type = 'text', value, onChange, placeholder, requ
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        disabled={disabled}
         required={required}
         className="input"
       />
