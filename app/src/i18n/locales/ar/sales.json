@@ -243,7 +243,14 @@
     "createFirst": "إنشاء أول عميل",
     "searchPlaceholder": "البحث بالاسم، البريد، الضريبة...",
     "importCustomers": "استيراد عملاء",
-    "exportCustomers": "تصدير العملاء"
+    "exportCustomers": "تصدير العملاء",
+    "placeholders": {
+      "name": "شركة ABC",
+      "contactName": "جان دوبون",
+      "email": "contact@company.com",
+      "phone": "0612345678",
+      "address": "12 شارع السلام، 75001 باريس"
+    }
   },
   "prospects": {
     "title": "العملاء المحتملون",
@@ -259,7 +266,14 @@
     "created": "تم إنشاء العميل المحتمل بنجاح",
     "convert": "تحويل إلى عميل",
     "convertConfirm": "تحويل هذا العميل المحتمل إلى عميل؟",
-    "converted": "تم تحويل العميل المحتمل إلى عميل"
+    "converted": "تم تحويل العميل المحتمل إلى عميل",
+    "statuses": {
+      "new": "جديد",
+      "contacted": "تم التواصل",
+      "qualified": "مؤهل",
+      "converted": "تم التحويل",
+      "lost": "فقد"
+    }
   },
   "reps": {
     "title": "الممثلون",

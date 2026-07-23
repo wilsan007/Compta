@@ -47,17 +47,17 @@ export function FiscalBackupPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('common.confirmDelete'))) return
+    if (!window.confirm(tCommon('form.confirmDelete'))) return
     try {
       await deleteFiscalBackup(id)
-      toast('success', tCommon('common.success'), tCommon('common.deleted'))
+      toast('success', tCommon('common.success'), tCommon('toast.deleted'))
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 
-  const tableHeaders = [t('fiscalBackup.type'), t('fiscalBackup.status'), t('fiscalBackup.date'), t('fiscalBackup.size'), tCommon('common.table.actions')]
+  const tableHeaders = [t('fiscalBackup.type'), t('fiscalBackup.status'), t('fiscalBackup.date'), t('fiscalBackup.size'), tCommon('table.actions')]
 
   return (
     <div>
@@ -91,7 +91,7 @@ export function FiscalBackupPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs">{formatDate(backup.created_at)}</TableCell>
-                <TableCell className="text-xs font-mono">{backup.file_size ? `${(backup.file_size / 1024).toFixed(0)} KB` : '—'}</TableCell>
+                <TableCell className="text-xs font-mono">{backup.file_size ? `${(backup.file_size / 1024).toFixed(0)} ${tCommon('common.kb')}` : '—'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     {backup.file_url && (

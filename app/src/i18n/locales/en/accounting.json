@@ -60,19 +60,26 @@
     "newJournal": "New journal",
     "closePeriod": "Close period",
     "viewReports": "View statements",
-    "dailyManagement": "Daily management",
+    "dailyEntry": "Daily Entry & Processing",
     "addPiece": "Add a document",
-    "viewEditPiece": "View / edit a document",
-    "entryJournals": "Entry journals",
     "searchEntries": "Search entries",
-    "thirdPartyManagement": "Third-party management",
+    "lettrage": "Letter matching",
+    "recurringEntries": "Recurring entries",
+    "thirdPartyPayments": "Third-party & Payments",
     "thirdPartyPlan": "Third-party plan",
-    "thirdPartyAccounts": "Manage third-party accounts",
     "paymentGeneration": "Payment generation",
-    "generalAccountsManagement": "General accounts management",
+    "paymentReminders": "Payment reminders",
+    "bankReconciliation": "Bank reconciliation",
+    "accountsStructure": "Accounts & Structure",
     "chartOfAccounts": "Chart of accounts",
-    "generalAccounts": "Manage general accounts",
-    "accountsBalance": "Accounts balance"
+    "accountsBalance": "Accounts balance",
+    "entryTemplates": "Entry templates",
+    "fixedAssets": "Fixed assets",
+    "statesClosures": "Statements, Closures & Declarations",
+    "generalLedger": "General ledger",
+    "fecExport": "FEC export",
+    "ediTva": "VAT declaration",
+    "journalClosure": "Journal closure"
   },
   "chartAccounts": {
     "title": "General chart of accounts",
@@ -162,7 +169,13 @@
     "exerciseFutureHint": "Fiscal year not yet open. Indicative entry only.",
     "freeFieldLabel": "Free label {{n}}",
     "freeFieldValue": "Free value {{n}}",
-    "freeInfoHint": "Up to 10 custom fields."
+    "freeInfoHint": "Up to 10 custom fields.",
+    "classLabel": "Class {{cls}}",
+    "accountCount": "{{count}} account(s)",
+    "activeAccounts": "{{count}} active",
+    "showAll": "Show all",
+    "hideZeroBalances": "Hide zero balances",
+    "resultsCount": "{{shown}} of {{total}} — {{active}} active"
   },
   "thirdParty": {
     "title": "Unified third-party chart",
@@ -254,7 +267,10 @@
     "categorie": "Category",
     "freeFieldLabel": "Free label {{n}}",
     "freeFieldValue": "Free value {{n}}",
-    "freeInfoHint": "Additional custom fields."
+    "freeInfoHint": "Additional custom fields.",
+    "placeholders": {
+      "contactName": "John Smith"
+    }
   },
   "journals": {
     "title": "Journal codes",

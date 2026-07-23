@@ -20,15 +20,19 @@ export function SignupPage() {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !password.trim()) {
-      setError(t('fillEmailPassword'))
+      setError(t('login.fillEmailPassword'))
       return
     }
-    if (password.length < 6) {
-      setError(t('passwordTooShort'))
+    if (password.length < 8) {
+      setError(t('signup.passwordTooShort'))
+      return
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError(t('signup.passwordTooWeak'))
       return
     }
     if (password !== confirmPassword) {
-      setError(t('passwordMismatch'))
+      setError(t('signup.passwordMismatch'))
       return
     }
     setLoading(true)
@@ -54,10 +58,10 @@ export function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-success)] text-white mb-4">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('verifyEmail')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-2"
-            dangerouslySetInnerHTML={{ __html: t('verifyEmailDescription', { email }) }}
-          />
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('signup.verifyEmail')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+            {t('signup.verifyEmailDescription', { email })}
+          </p>
           <Link to="/login" className="inline-block mt-6 text-sm text-[var(--color-primary)] font-medium">
             {t('password.backToLogin')}
           </Link>

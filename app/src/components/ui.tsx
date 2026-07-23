@@ -342,11 +342,12 @@ export function SortableTable<T extends Record<string, any>>({
 interface TableRowProps {
   children: ReactNode
   onClick?: () => void
+  className?: string
 }
 
-export function TableRow({ children, onClick }: TableRowProps) {
+export function TableRow({ children, onClick, className }: TableRowProps) {
   return (
-    <tr onClick={onClick} className={cn('align-middle hover:bg-[var(--color-neutral-50)] transition-colors', onClick && 'cursor-pointer')}>
+    <tr onClick={onClick} className={cn('align-middle hover:bg-[var(--color-neutral-50)] transition-colors', onClick && 'cursor-pointer', className)}>
       {children}
     </tr>
   )

@@ -1,9 +1,12 @@
-import { type ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { type ReactNode, useMemo } from 'react'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth'
 import { Layout } from '@/components/Layout'
+import { navModules } from '@/components/Sidebar'
+import { useTenantModules } from '@/lib/useTenantModules'
 import type { TenantUser } from '@/lib/queries'
+import { Lock, ArrowLeft } from 'lucide-react'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -57,7 +60,65 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
 export function ProtectedLayout() {
   return (
     <ProtectedRoute>
-      <Layout />
+      <ModuleGuard>
+        <Layout />
+      </ModuleGuard>
     </ProtectedRoute>
   )
+}
+
+export function AdminRoute({ children }: { children: ReactNode }) {
+  return (
+    <ProtectedRoute roles={['admin']}>
+      {children}
+    </ProtectedRoute>
+  )
+}
+
+function getModuleIdForPathAll(pathname: string): string | null {
+  for (const mod of navModules) {
+    const allPaths = mod.sections
+      ? mod.sections.flatMap((s) => s.items.map((i) => i.path))
+      : mod.items?.map((i) => i.path) || []
+    for (const p of allPaths) {
+      if (p === '/' && pathname === '/') return mod.id
+      if (p !== '/' && pathname.startsWith(p)) return mod.id
+    }
+  }
+  return null
+}
+
+function ModuleGuard({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { t } = useTranslation('nav')
+  const { modules: enabledModules, loading } = useTenantModules()
+
+  const moduleId = useMemo(() => getModuleIdForPathAll(location.pathname), [location.pathname])
+  const isDisabled = !loading && moduleId !== null && !enabledModules.includes(moduleId)
+
+  if (isDisabled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="card p-8 text-center max-w-md">
+          <div className="w-12 h-12 rounded-full bg-[rgba(234,179,8,0.1)] flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-6 h-6 text-[var(--color-warning)]" />
+          </div>
+          <h2 className="text-lg font-semibold text-[var(--color-text)] mb-2">{t('layout.moduleDisabled')}</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+            {t('layout.moduleDisabledMessage')}
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t('layout.backHome')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
 }

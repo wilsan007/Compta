@@ -429,6 +429,17 @@ function getModuleIdForPath(pathname: string): string | null {
   return null
 }
 
+function getSubGroupForPath(mod: NavModule, pathname: string): string | null {
+  if (!mod.sections) return null
+  for (const sec of mod.sections) {
+    for (const item of sec.items) {
+      if (item.path === '/' && pathname === '/') return sec.subGroupKey || null
+      if (item.path !== '/' && pathname.startsWith(item.path)) return sec.subGroupKey || null
+    }
+  }
+  return null
+}
+
 let _enabledModuleIds: string[] | null = null
 
 export function setEnabledModuleIds(ids: string[]) {
@@ -500,6 +511,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
   const { t } = useTranslation('nav')
   const { modules: enabledModules } = useTenantModules()
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
+  const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [pinnedPaths, setPinnedPaths] = useState<string[]>([])
   const [hoveredModule, setHoveredModule] = useState<string | null>(null)
@@ -532,6 +544,13 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
     const modId = getModuleIdForPath(location.pathname)
     if (modId) {
       setExpandedModule(modId)
+      const mod = getEnabledNavModules().find((m) => m.id === modId)
+      if (mod?.sections) {
+        const subKey = getSubGroupForPath(mod, location.pathname)
+        if (subKey) {
+          setExpandedSubGroup(`${modId}:${subKey}`)
+        }
+      }
     }
   }, [location.pathname])
 
@@ -540,6 +559,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
     if (collapsed) {
       setSearchQuery('')
       setExpandedModule(null)
+      setExpandedSubGroup(null)
     }
   }, [collapsed])
 
@@ -565,9 +585,15 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
     if (collapsed) return
     if (mod.id === expandedModule) {
       setExpandedModule(null)
+      setExpandedSubGroup(null)
     } else {
       setExpandedModule(mod.id)
     }
+  }
+
+  function handleSubGroupClick(modId: string, subGroupKey: string) {
+    const key = `${modId}:${subGroupKey}`
+    setExpandedSubGroup((prev) => (prev === key ? null : key))
   }
 
   // Search results
@@ -617,6 +643,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
           {getEnabledNavModules().map((mod) => {
             const active = isModuleActive(mod)
             const colorVar = colorVarMap[mod.color]
+            const colorBg = colorBgMap[mod.color]
             return (
               <div
                 key={mod.id}
@@ -662,9 +689,17 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                 <NavLink
                                   to={sec.hubPath || mod.path}
                                   onClick={onCloseMobile}
-                                  className="flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] opacity-60 hover:opacity-100 transition-opacity"
+                                  className="flex items-center gap-2 px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider transition-all rounded-md mx-1"
+                                  style={{
+                                    color: `var(${colorVar})`,
+                                    borderLeft: `2px solid var(${colorVar})`,
+                                    background: `var(${colorBg})`,
+                                  }}
                                 >
                                   {t(sec.subGroupKey)}
+                                  <span className="text-[9px] normal-case font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `var(${colorVar})`, color: '#fff' }}>
+                                    {sec.items.length}
+                                  </span>
                                 </NavLink>
                               )}
                               {sec.items.map((item) => (
@@ -911,63 +946,108 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                   {isExpanded && hasItems && (
                     <div className="accordion-content ml-2 mt-0.5 mb-1">
                       {mod.sections ? (
-                        mod.sections.map((sec, secIdx) => (
+                        mod.sections.map((sec, secIdx) => {
+                          const subKey = sec.subGroupKey || ''
+                          const sectionKey = `${mod.id}:${subKey}`
+                          const isSubExpanded = expandedSubGroup === sectionKey
+                          const sectionActive = sec.items.some((item) => isActive(item.path))
+                          return (
                           <div key={secIdx} className="mb-1">
                             {sec.subGroupKey && (
-                              <NavLink
-                                to={sec.hubPath || mod.path}
-                                onClick={onCloseMobile}
-                                className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-3 pt-2 pb-1 opacity-60 hover:opacity-100 transition-opacity group/sub"
-                              >
-                                <span>{t(sec.subGroupKey)}</span>
-                                <ChevronRight className="w-2.5 h-2.5 opacity-0 group-hover/sub:opacity-100 transition-opacity" />
-                              </NavLink>
-                            )}
-                            {sec.items.map((item, itemIdx) => {
-                              const itemActive = isActive(item.path)
-                              const isPinned = pinnedPaths.includes(item.path)
-                              return (
-                                <div
-                                  key={item.path}
-                                  className="stagger-item group relative"
-                                  style={{ animationDelay: `${itemIdx * 30}ms` }}
+                              <div className="flex items-center group/sub rounded-lg overflow-hidden">
+                                <button
+                                  onClick={() => handleSubGroupClick(mod.id, subKey)}
+                                  className={cn(
+                                    'flex items-center gap-2 flex-1 text-[11px] font-bold uppercase tracking-wider px-3 py-2.5 rounded-lg transition-all',
+                                    sectionActive ? '' : 'opacity-70 hover:opacity-100'
+                                  )}
+                                  style={{
+                                    color: sectionActive ? `var(${colorVar})` : undefined,
+                                    background: isSubExpanded
+                                      ? `var(${colorBg})`
+                                      : sectionActive
+                                        ? `var(${colorBg})`
+                                        : 'var(--color-neutral-50)',
+                                    borderLeft: `3px solid var(${colorVar})`,
+                                    borderLeftColor: isSubExpanded || sectionActive ? `var(${colorVar})` : 'transparent',
+                                  }}
                                 >
+                                  <ChevronRight className={cn('w-3 h-3 chevron-rotate transition-transform', isSubExpanded && 'expanded')} />
+                                  <span className="flex-1 text-left">{t(sec.subGroupKey)}</span>
+                                  <span
+                                    className={cn(
+                                      'text-[9px] normal-case font-semibold px-1.5 py-0.5 rounded-full transition-colors',
+                                    )}
+                                    style={{
+                                      background: isSubExpanded || sectionActive ? `var(${colorVar})` : 'var(--color-neutral-200)',
+                                      color: isSubExpanded || sectionActive ? '#fff' : 'var(--color-text-secondary)',
+                                    }}
+                                  >
+                                    {sec.items.length}
+                                  </span>
+                                </button>
+                                {sec.hubPath && (
                                   <NavLink
-                                    to={item.path}
+                                    to={sec.hubPath}
                                     onClick={onCloseMobile}
-                                    className={cn(
-                                      'sub-link flex items-center gap-2 pl-3 pr-8 py-1.5 rounded-lg text-xs transition-colors',
-                                      itemActive
-                                        ? 'active font-medium'
-                                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
-                                    )}
-                                    style={itemActive ? { color: `var(${colorVar})`, background: `var(${colorBg})` } : undefined}
+                                    className="p-1.5 mr-1 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-neutral-100)] opacity-0 group-hover/sub:opacity-100 transition-all"
+                                    title={t(sec.subGroupKey)}
                                   >
-                                    <span
-                                      className="pinned-dot"
-                                      style={{
-                                        background: `var(${colorVar})`,
-                                        opacity: itemActive ? 1 : 0.25,
-                                      }}
-                                    />
-                                    <span className="truncate">{t(item.labelKey)}</span>
+                                    <ChevronRight className="w-3 h-3" />
                                   </NavLink>
-                                  <button
-                                    onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
-                                    className={cn(
-                                      'absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded transition-all',
-                                      isPinned
-                                        ? 'opacity-100 text-[var(--color-primary)]'
-                                        : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
-                                    )}
-                                  >
-                                    <Pin className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              )
-                            })}
+                                )}
+                              </div>
+                            )}
+                            {isSubExpanded && (
+                              <div className="space-y-0">
+                                {sec.items.map((item, itemIdx) => {
+                                  const itemActive = isActive(item.path)
+                                  const isPinned = pinnedPaths.includes(item.path)
+                                  return (
+                                    <div
+                                      key={item.path}
+                                      className="stagger-item group relative"
+                                      style={{ animationDelay: `${itemIdx * 30}ms` }}
+                                    >
+                                      <NavLink
+                                        to={item.path}
+                                        onClick={onCloseMobile}
+                                        className={cn(
+                                          'sub-link flex items-center gap-2 pl-3 pr-8 py-1.5 rounded-lg text-xs transition-colors',
+                                          itemActive
+                                            ? 'active font-medium'
+                                            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
+                                        )}
+                                        style={itemActive ? { color: `var(${colorVar})`, background: `var(${colorBg})` } : undefined}
+                                      >
+                                        <span
+                                          className="pinned-dot"
+                                          style={{
+                                            background: `var(${colorVar})`,
+                                            opacity: itemActive ? 1 : 0.25,
+                                          }}
+                                        />
+                                        <span className="truncate">{t(item.labelKey)}</span>
+                                      </NavLink>
+                                      <button
+                                        onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
+                                        className={cn(
+                                          'absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded transition-all',
+                                          isPinned
+                                            ? 'opacity-100 text-[var(--color-primary)]'
+                                            : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
+                                        )}
+                                      >
+                                        <Pin className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
                           </div>
-                        ))
+                          )
+                        })
                       ) : (
                         mod.items?.map((item, itemIdx) => {
                           const itemActive = isActive(item.path)

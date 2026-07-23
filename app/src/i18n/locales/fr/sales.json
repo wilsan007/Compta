@@ -243,7 +243,14 @@
     "createFirst": "Créer mon premier client",
     "searchPlaceholder": "Rechercher par nom, email, TVA...",
     "importCustomers": "Importer des clients",
-    "exportCustomers": "Exporter les clients"
+    "exportCustomers": "Exporter les clients",
+    "placeholders": {
+      "name": "Société ABC",
+      "contactName": "Jean Dupont",
+      "email": "contact@societe.fr",
+      "phone": "0612345678",
+      "address": "12 rue de la Paix, 75001 Paris"
+    }
   },
   "prospects": {
     "title": "Prospects",
@@ -259,7 +266,14 @@
     "created": "Prospect créé avec succès",
     "convert": "Convertir en client",
     "convertConfirm": "Convertir ce prospect en client ?",
-    "converted": "Prospect converti en client"
+    "converted": "Prospect converti en client",
+    "statuses": {
+      "new": "Nouveau",
+      "contacted": "Contacté",
+      "qualified": "Qualifié",
+      "converted": "Converti",
+      "lost": "Perdu"
+    }
   },
   "reps": {
     "title": "Représentants",

@@ -61,7 +61,7 @@ export function evaluateExpression(expr: string): number | null {
   if (!/^[\d\s+\-*/().,%]+$/.test(expression)) return null
   try {
     const sanitized = expression.replace(/,/g, '.').replace(/(\d+(?:\.\d+)?)%/g, '($1/100)')
-    const result = Function(`"use strict"; return (${sanitized})`)()
+    const result = safeEvalArithmetic(sanitized)
     if (typeof result === 'number' && isFinite(result)) {
       return Math.round(result * 100) / 100
     }
@@ -69,4 +69,65 @@ export function evaluateExpression(expr: string): number | null {
   } catch {
     return null
   }
+}
+
+function safeEvalArithmetic(expr: string): number {
+  let pos = 0
+  const ch = () => expr[pos]
+  const skipWs = () => { while (pos < expr.length && /\s/.test(ch())) pos++ }
+
+  function parseNumber(): number {
+    skipWs()
+    let start = pos
+    while (pos < expr.length && /[\d.]/.test(ch())) pos++
+    const num = parseFloat(expr.slice(start, pos))
+    if (isNaN(num)) throw new Error('Invalid number')
+    return num
+  }
+
+  function parseFactor(): number {
+    skipWs()
+    if (ch() === '(') {
+      pos++
+      const val = parseExpr()
+      skipWs()
+      if (ch() !== ')') throw new Error('Missing )')
+      pos++
+      return val
+    }
+    if (ch() === '-') { pos++; return -parseFactor() }
+    if (ch() === '+') { pos++; return parseFactor() }
+    return parseNumber()
+  }
+
+  function parseTerm(): number {
+    let val = parseFactor()
+    skipWs()
+    while (pos < expr.length && (ch() === '*' || ch() === '/')) {
+      const op = ch(); pos++
+      const rhs = parseFactor()
+      if (op === '*') val *= rhs
+      else { if (rhs === 0) throw new Error('Div by zero'); val /= rhs }
+      skipWs()
+    }
+    return val
+  }
+
+  function parseExpr(): number {
+    let val = parseTerm()
+    skipWs()
+    while (pos < expr.length && (ch() === '+' || ch() === '-')) {
+      const op = ch(); pos++
+      const rhs = parseTerm()
+      if (op === '+') val += rhs
+      else val -= rhs
+      skipWs()
+    }
+    return val
+  }
+
+  const result = parseExpr()
+  skipWs()
+  if (pos < expr.length) throw new Error('Unexpected trailing chars')
+  return result
 }

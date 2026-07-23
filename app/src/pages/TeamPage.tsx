@@ -170,8 +170,6 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState<TenantUser['role']>('viewer')
   const [permissions, setPermissions] = useState<Record<string, string[]>>({})
   const [saving, setSaving] = useState(false)
@@ -193,10 +191,9 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
 
   async function handleSubmit() {
     if (!email || !name) { toast('error', tCommon('toast.error'), t('team.missingFields')); return }
-    if (password && password.length < 6) { toast('error', tCommon('toast.error'), t('team.passwordTooShort')); return }
     setSaving(true)
     try {
-      const result = await inviteUser({ tenantId, email, password: password || undefined, name, role, permissions: showCustom ? permissions : undefined, invitedBy: invitedById })
+      const result = await inviteUser({ tenantId, email, name, role, permissions: showCustom ? permissions : undefined, invitedBy: invitedById })
       if (result.success) {
         toast('success', t('team.userCreated'), result.message || t('team.userCreatedMsg', { email }))
         onSaved()
@@ -219,30 +216,14 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1 block">{t('team.fullName')}</label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Jean Dupont" />
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('team.placeholders.fullName')} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{tCommon('common.email')}</label>
               <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jean@entreprise.com" />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{tCommon('common.password')} <span className="text-[var(--color-text-secondary)] text-xs">({t('team.passwordOptional')})</span></label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder={t('team.passwordMinLength')}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(s => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-                >
-                  {showPassword ? t('team.hide') : t('team.show')}
-                </button>
-              </div>
+            <div className="p-3 rounded-lg bg-[rgba(0,135,90,0.08)] border border-[var(--color-success)] text-xs text-[var(--color-text-secondary)]">
+              {t('team.inviteEmailInfo')}
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">{t('team.role')}</label>

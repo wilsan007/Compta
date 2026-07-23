@@ -20,6 +20,7 @@
     "xmlSize": "XML size",
     "xmlValid": "Compliant XML generated successfully.",
     "xmlPreview": "XML preview",
+    "kb": "KB",
     "noEligible": "No eligible invoice",
     "noEligibleDesc": "Draft or cancelled invoices cannot be issued electronically.",
     "eligibleInvoices": "Eligible invoices ({{count}})",
@@ -99,7 +100,16 @@
     "importSuccessDesc": "{{accounts}} accounts and {{entries}} entries imported",
     "importError": "Import error",
     "noFile": "Select a file first",
-    "reset": "Start over"
+    "reset": "Start over",
+    "maeDetected": "Sage 100 .mae file detected",
+    "maeDescription": "This is a Sage 100 binary backup file. Direct import is not possible from this format.",
+    "sqlServer": "SQL Server",
+    "database": "Database",
+    "creator": "Creator",
+    "importInstructions": "Import instructions",
+    "step1": "1. Open Sage 100 on the same workstation",
+    "step2": "2. Use File → Import → Import entries",
+    "step3": "3. Select the exported FEC file"
   },
   "accountantPortal": {
     "title": "Accountant Portal",
@@ -148,6 +158,7 @@
     "total": "Batch total",
     "count": "Selected transfers",
     "noPayments": "No eligible payment orders",
+    "xmlPreview": "SEPA XML",
     "noPaymentsDesc": "Draft or cancelled payment orders are not eligible for SEPA.",
     "generated": "SEPA file generated",
     "generatedDesc": "{{count}} transfer(s) — {{total}} EUR",

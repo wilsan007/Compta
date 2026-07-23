@@ -79,7 +79,7 @@ export function MachinesPage() {
             <EmptyState icon={<Cog className="w-8 h-8" />} title={t('machines.noMachines')} description={t('machines.addFirstMachine')}
               action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('machines.new')}</Button>} />
           ) : (
-            <Table headers={['Code', t('machines.name'), t('machines.workCenter'), t('machines.capacityPerHour'), t('machines.status'), t('common.actions')]}>
+            <Table headers={[t('common.code'), t('machines.name'), t('machines.workCenter'), t('machines.capacityPerHour'), t('machines.status'), t('common.actions')]}>
               {machines.map((m: any) => (
                 <TableRow key={m.id}>
                   <TableCell className="font-mono text-xs">{m.code}</TableCell>
@@ -104,7 +104,7 @@ export function MachinesPage() {
           {workCenters.length === 0 ? (
             <p className="text-xs text-[var(--color-text-secondary)]">{t('machines.noWorkCenters')}</p>
           ) : (
-            <Table headers={['Code', t('machines.name'), t('machines.capHDay'), t('machines.costH'), '']}>
+            <Table headers={[t('common.code'), t('machines.name'), t('machines.capHDay'), t('machines.costH'), '']}>
               {workCenters.map((wc) => (
                 <TableRow key={wc.id}>
                   <TableCell className="font-mono text-xs">{wc.code}</TableCell>
@@ -151,8 +151,8 @@ function MachineFormModal({ workCenters, onClose, onSaved }: { workCenters: Work
       <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">{t('machines.create')}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="MAC-001" required />
-          <Input label={t('machines.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Presse hydraulique" required />
+          <Input label={t('common.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="MAC-001" required />
+          <Input label={t('machines.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('machines.namePlaceholder')} required />
           <Select label={t('machines.workCenter')} value={workCenterId} onChange={(e) => setWorkCenterId(e.target.value)} options={[{ value: '', label: '—' }, ...workCenters.map((wc) => ({ value: wc.id, label: wc.name }))]} />
           <Input label={t('machines.capacityPerHour')} type="number" step="0.01" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
           <Select label={t('machines.status')} value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: 'active', label: getStatusLabel('active') }, { value: 'maintenance', label: getStatusLabel('maintenance') }, { value: 'inactive', label: getStatusLabel('inactive') }]} />
@@ -190,8 +190,8 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
       <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">{t('machines.workCenter')}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="CC-001" required />
-          <Input label={t('machines.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Atelier découpe" required />
+          <Input label={t('common.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="CC-001" required />
+          <Input label={t('machines.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('machines.workCenterPlaceholder')} required />
           <Input label={t('machines.capHDay')} type="number" step="0.1" value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} />
           <Input label={t('machines.costH')} type="number" step="0.01" value={costPerHour} onChange={(e) => setCostPerHour(Number(e.target.value))} />
           <div className="flex gap-2 justify-end pt-2">

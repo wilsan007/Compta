@@ -40,8 +40,12 @@ export function AcceptInvitationPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (password && password.length < 6) {
+    if (!password || password.length < 8) {
       setError(t('invitation.passwordTooShort'))
+      return
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError(t('invitation.passwordTooWeak'))
       return
     }
     if (password !== confirmPassword) {
@@ -109,7 +113,7 @@ export function AcceptInvitationPage() {
           )}
 
           <p className="text-sm text-[var(--color-text-secondary)]">
-            {t('invitation.setPassword')}
+            {t('invitation.mustSetPassword')}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,9 +123,10 @@ export function AcceptInvitationPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
                   type="password"
+                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('invitation.passwordPlaceholderOptional')}
+                  placeholder={t('invitation.passwordPlaceholder')}
                   className="input pl-10"
                   autoComplete="new-password"
                 />

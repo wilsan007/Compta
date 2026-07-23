@@ -146,7 +146,7 @@ export function EInvoicePage() {
             </div>
             <div className="card p-4">
               <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('eInvoice.xmlSize')}</p>
-              <p className="text-lg font-bold">{(preview.length / 1024).toFixed(1)} Ko</p>
+              <p className="text-lg font-bold">{(preview.length / 1024).toFixed(1)} {t('eInvoice.kb')}</p>
             </div>
           </div>
           <div className="p-3 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-sm text-[var(--color-success)] flex items-center gap-2">

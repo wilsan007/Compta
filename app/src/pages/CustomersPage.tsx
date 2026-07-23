@@ -207,11 +207,11 @@ function CustomerForm({ customer, onClose, onSaved }: {
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label={t('customers.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="Société ABC" />
-          <Input label={t('customers.contactName')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Jean Dupont" />
-          <Input label={t('customers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@societe.fr" />
-          <Input label={t('customers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0612345678" />
-          <Input label={t('customers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, 75001 Paris" />
+          <Input label={t('customers.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('customers.placeholders.name')} />
+          <Input label={t('customers.contactName')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('customers.placeholders.contactName')} />
+          <Input label={t('customers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('customers.placeholders.email')} />
+          <Input label={t('customers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('customers.placeholders.phone')} />
+          <Input label={t('customers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('customers.placeholders.address')} />
           <Input label={t('customers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder="FR12345678901" />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>

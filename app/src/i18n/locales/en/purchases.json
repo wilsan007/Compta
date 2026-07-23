@@ -252,7 +252,15 @@
     "updated": "Supplier updated successfully",
     "created": "Supplier created successfully",
     "deleteTitle": "Delete supplier",
-    "deleteConfirm": "Do you really want to delete supplier \"{{name}}\"?"
+    "deleteConfirm": "Do you really want to delete supplier \"{{name}}\"?",
+    "placeholders": {
+      "name": "Tech Supply Co",
+      "contactName": "John Smith",
+      "email": "contact@supplier.com",
+      "phone": "0612345678",
+      "address": "15 Commerce Street, 75011 Paris",
+      "vatNumber": "FR98765432109"
+    }
   },
   "automation": {
     "title": "Invoice automation",

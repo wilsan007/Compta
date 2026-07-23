@@ -48,7 +48,10 @@
     "noAccounts": "لا يوجد حساب بنكي",
     "noAccountsDescription": "لم تقم بإنشاء حساب بنكي بعد",
     "createFirst": "إنشاء أول حساب بنكي",
-    "searchPlaceholder": "البحث بالاسم، IBAN..."
+    "searchPlaceholder": "البحث بالاسم، IBAN...",
+    "placeholders": {
+      "bankName": "BNP Paribas"
+    }
   },
   "transactions": {
     "title": "المعاملات البنكية",

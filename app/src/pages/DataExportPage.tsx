@@ -72,8 +72,13 @@ export function DataExportPage() {
         return
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK'
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+      if (!supabaseUrl || !supabaseKey) {
+        toast('error', t('dataExport.loadError'), t('dataExport.missingConfig'))
+        return
+      }
 
       const daemonResp = await fetch('/mirror-daemon.mjs')
       const daemonCode = await daemonResp.text()
@@ -184,7 +189,7 @@ export function DataExportPage() {
           <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
           <div className="text-sm space-y-1">
             <p className="font-medium">{t('dataExport.sovereignty')}</p>
-            <p className="text-[var(--color-text-secondary)]" dangerouslySetInnerHTML={{ __html: t('dataExport.sovereigntyDesc') }} />
+            <p className="text-[var(--color-text-secondary)]">{t('dataExport.sovereigntyDesc')}</p>
           </div>
         </div>
       </div>

@@ -459,14 +459,14 @@
   }
   to {
     opacity: 1;
-    max-height: 800px;
+    max-height: 5000px;
     transform: translateY(0);
   }
 }
 
 .accordion-content {
   animation: accordion-expand 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Stagger animation for sub-items */

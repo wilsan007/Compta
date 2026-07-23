@@ -125,7 +125,9 @@
       "active": "Asset",
       "maintenance": "Maintenance",
       "inactive": "Inactive"
-    }
+    },
+    "namePlaceholder": "Machine name",
+    "workCenterPlaceholder": "Work center name"
   },
   "toolings": {
     "title": "Toolings",

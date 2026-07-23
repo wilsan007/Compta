@@ -209,11 +209,12 @@ function generateCsv(table) {
 
 // ============ Encryption ============
 function encryptBuffer(data, key) {
-  const keyBuf = scryptSync(key, 'compta-salt', 32)
+  const salt = randomUUID()
+  const keyBuf = scryptSync(key, salt, 32)
   const iv = randomUUID().replace(/-/g, '').slice(0, 16)
   const cipher = createCipheriv('aes-256-cbc', keyBuf, Buffer.from(iv, 'hex'))
   const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
-  return Buffer.concat([Buffer.from(iv, 'hex'), encrypted])
+  return Buffer.concat([Buffer.from(salt, 'utf-8'), Buffer.from([0]), Buffer.from(iv, 'hex'), encrypted])
 }
 
 function encryptFile(filePath, key) {

@@ -125,7 +125,9 @@
       "active": "أصل",
       "maintenance": "صيانة",
       "inactive": "غير نشط"
-    }
+    },
+    "namePlaceholder": "اسم الآلة",
+    "workCenterPlaceholder": "اسم مركز العمل"
   },
   "toolings": {
     "title": "الأدوات",

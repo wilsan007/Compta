@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, User, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -114,10 +114,13 @@ export async function getApplicableVatRates(packCode: string, atDate: string = n
 }
 
 // ============ Users ============
+// Deprecated: use getTenantUsers(tenantId) instead. Kept for backward compat but now tenant-scoped.
 export async function getUsers() {
-  const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false })
+  const tid = await getTenantId()
+  if (!tid) return []
+  const { data, error } = await supabase.from('tenant_users').select('*').eq('tenant_id', tid).order('created_at', { ascending: false })
   if (error) throw error
-  return data as User[]
+  return data as any[]
 }
 
 // ============ Chart of Accounts ============
@@ -685,12 +688,13 @@ export async function getProjects() {
 // ============ Dashboard Aggregates ============
 export async function getDashboardStats(): Promise<DashboardStats> {
   const tid = await getTenantId()
+  if (!tid) return { totalRevenue: 0, outstandingInvoice: 0, outstandingBills: 0, bankBalance: 0, totalDebtors: 0, totalCreditors: 0, invoiceCount: 0, billCount: 0 }
   const [invoices, purchaseInvoices, bankAccounts, customers, suppliers] = await Promise.all([
-    tid ? supabase.from('invoices').select('total, amount_due, status').eq('tenant_id', tid) : supabase.from('invoices').select('total, amount_due, status'),
-    tid ? supabase.from('purchase_invoices').select('total, amount_due, status').eq('tenant_id', tid) : supabase.from('purchase_invoices').select('total, amount_due, status'),
-    tid ? supabase.from('bank_accounts').select('balance').eq('tenant_id', tid) : supabase.from('bank_accounts').select('balance'),
-    tid ? supabase.from('customers').select('balance').eq('tenant_id', tid) : supabase.from('customers').select('balance'),
-    tid ? supabase.from('suppliers').select('balance').eq('tenant_id', tid) : supabase.from('suppliers').select('balance'),
+    supabase.from('invoices').select('total, amount_due, status').eq('tenant_id', tid),
+    supabase.from('purchase_invoices').select('total, amount_due, status').eq('tenant_id', tid),
+    supabase.from('bank_accounts').select('balance').eq('tenant_id', tid),
+    supabase.from('customers').select('balance').eq('tenant_id', tid),
+    supabase.from('suppliers').select('balance').eq('tenant_id', tid),
   ])
 
   const totalRevenue = (invoices.data || []).filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total), 0)
@@ -3444,11 +3448,12 @@ export async function checkBudgetAvailability(accountCode: string, amount: numbe
 // ============ Sprint 8: Financial Dashboard ============
 export async function getFinancialDashboard() {
   const tid = await getTenantId()
+  if (!tid) return { revenue: 0, expenses: 0, margin: 0, marginPct: 0, cashPosition: 0, pendingEntries: 0, totalEntries: 0, invoiceCount: 0, supplierInvoiceCount: 0 }
   const [invoices, purchaseInvoices, bankAccounts, journalEntries] = await Promise.all([
-    tid ? supabase.from('invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid) : supabase.from('invoices').select('total, status, date').eq('status', 'paid'),
-    tid ? supabase.from('purchase_invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid) : supabase.from('purchase_invoices').select('total, status, date').eq('status', 'paid'),
-    tid ? supabase.from('bank_accounts').select('balance, type').eq('tenant_id', tid) : supabase.from('bank_accounts').select('balance, type'),
-    tid ? supabase.from('journal_entries').select('number, date, status').eq('tenant_id', tid) : supabase.from('journal_entries').select('number, date, status'),
+    supabase.from('invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid),
+    supabase.from('purchase_invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid),
+    supabase.from('bank_accounts').select('balance, type').eq('tenant_id', tid),
+    supabase.from('journal_entries').select('number, date, status').eq('tenant_id', tid),
   ])
 
   const revenue = (invoices.data || []).reduce((s, i) => s + Number(i.total), 0)
@@ -4044,44 +4049,6 @@ export interface TenantUser {
   created_at: string
 }
 
-export async function createTenant(data: {
-  name: string
-  legal_name?: string
-  siren?: string
-  vat_number?: string
-  address?: string
-  city?: string
-  postal_code?: string
-  country?: string
-  currency?: string
-  email?: string
-  phone?: string
-}): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
-  const { data: tenant, error } = await supabase
-    .from('tenants')
-    .insert({
-      name: data.name,
-      legal_name: data.legal_name || data.name,
-      siren: data.siren || null,
-      vat_number: data.vat_number || null,
-      address: data.address || null,
-      city: data.city || null,
-      postal_code: data.postal_code || null,
-      country: data.country || 'France',
-      currency: data.currency || 'EUR',
-      email: data.email || null,
-      phone: data.phone || null,
-      status: 'active',
-      plan: 'trial',
-      trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    })
-    .select()
-    .single()
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, tenant: tenant as Tenant }
-}
-
 export async function createTenantForUser(data: {
   name: string
   legal_name?: string
@@ -4147,6 +4114,23 @@ export async function createTenantForUser(data: {
     return { success: false, error: tuErr.message }
   }
 
+  // Also create an employee record for the tenant admin
+  const { error: empErr } = await supabase
+    .from('employees')
+    .insert({
+      tenant_id: tenant.id,
+      name: data.name,
+      email: userEmail,
+      position: 'Admin',
+      department: 'Direction',
+      hire_date: new Date().toISOString().split('T')[0],
+      status: 'active',
+    })
+  if (empErr) {
+    console.error('Failed to create employee record for admin:', empErr.message)
+    // Non-fatal: tenant is still created
+  }
+
   // Seed reference data (chart of accounts, journals, currencies, fiscal year,
   // company settings) so the app is immediately usable. Non-fatal: if it fails,
   // the tenant still exists and the user can import/create data manually.
@@ -4194,7 +4178,24 @@ export async function getTenantEnabledModules(): Promise<string[]> {
   return tenant.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system']
 }
 
+async function requireAdminOfTenant(tenantId: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { ok: false, error: 'Non connecté' }
+  const { data: tu } = await supabase
+    .from('tenant_users')
+    .select('role, status, tenant_id')
+    .eq('auth_id', session.user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!tu) return { ok: false, error: 'Utilisateur non trouvé' }
+  if (tu.role !== 'admin') return { ok: false, error: 'Action réservée aux administrateurs' }
+  if (tu.tenant_id !== tenantId) return { ok: false, error: 'Vous ne pouvez agir que sur votre propre entreprise' }
+  return { ok: true }
+}
+
 export async function updateTenantModules(tenantId: string, modules: string[]): Promise<{ success: boolean; error?: string }> {
+  const guard = await requireAdminOfTenant(tenantId)
+  if (!guard.ok) return { success: false, error: guard.error }
   const { error } = await supabase
     .from('tenants')
     .update({ enabled_modules: modules, updated_at: new Date().toISOString() })
@@ -4204,6 +4205,11 @@ export async function updateTenantModules(tenantId: string, modules: string[]): 
 }
 
 export async function getTenantUsers(tenantId: string): Promise<TenantUser[]> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Non connecté')
+  const tid = await getTenantId()
+  if (!tid || tid !== tenantId) throw new Error('Accès non autorisé à ce tenant')
+
   const { data, error } = await supabase
     .from('tenant_users')
     .select('*')
@@ -4217,7 +4223,6 @@ export async function getTenantUsers(tenantId: string): Promise<TenantUser[]> {
 export async function inviteUser(data: {
   tenantId: string
   email: string
-  password?: string
   name: string
   role: TenantUser['role']
   permissions?: Record<string, string[]>
@@ -4226,16 +4231,23 @@ export async function inviteUser(data: {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Non connecté' }
 
+  // Defense-in-depth: verify caller is admin of this tenant before calling edge function
+  const guard = await requireAdminOfTenant(data.tenantId)
+  if (!guard.ok) return { success: false, error: guard.error }
+
+  // Get current locale for email localization
+  const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'en'
+
   try {
     const { data: result, error } = await supabase.functions.invoke('create-user', {
       body: {
         email: data.email,
-        password: data.password || '',
         name: data.name,
         role: data.role,
         permissions: data.permissions || {},
         tenant_id: data.tenantId,
         invited_by: data.invitedBy || null,
+        locale,
       },
     })
 
@@ -4267,6 +4279,11 @@ export async function updateUserRole(
   role: TenantUser['role'],
   permissions?: Record<string, string[]>
 ): Promise<{ success: boolean; error?: string }> {
+  const tid = await getTenantId()
+  if (!tid) return { success: false, error: 'Aucun tenant actif' }
+  const guard = await requireAdminOfTenant(tid)
+  if (!guard.ok) return { success: false, error: guard.error }
+
   const update: Record<string, any> = { role }
   if (permissions !== undefined) update.permissions = permissions
 
@@ -4274,45 +4291,69 @@ export async function updateUserRole(
     .from('tenant_users')
     .update(update)
     .eq('id', tenantUserId)
+    .eq('tenant_id', tid)
 
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
 
 export async function revokeUser(tenantUserId: string): Promise<{ success: boolean; error?: string }> {
+  const tid = await getTenantId()
+  if (!tid) return { success: false, error: 'Aucun tenant actif' }
+  const guard = await requireAdminOfTenant(tid)
+  if (!guard.ok) return { success: false, error: guard.error }
+
   const { error } = await supabase
     .from('tenant_users')
     .update({ status: 'revoked' })
     .eq('id', tenantUserId)
+    .eq('tenant_id', tid)
 
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
 
 export async function reactivateUser(tenantUserId: string): Promise<{ success: boolean; error?: string }> {
+  const tid = await getTenantId()
+  if (!tid) return { success: false, error: 'Aucun tenant actif' }
+  const guard = await requireAdminOfTenant(tid)
+  if (!guard.ok) return { success: false, error: guard.error }
+
   const { error } = await supabase
     .from('tenant_users')
     .update({ status: 'active' })
     .eq('id', tenantUserId)
+    .eq('tenant_id', tid)
 
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
 
 export async function reinviteUser(tenantUserId: string, email: string): Promise<{ success: boolean; error?: string; emailSent?: boolean }> {
+  const tid = await getTenantId()
+  if (!tid) return { success: false, error: 'Aucun tenant actif' }
+  const guard = await requireAdminOfTenant(tid)
+  if (!guard.ok) return { success: false, error: guard.error }
+
   const { error: updateError } = await supabase
     .from('tenant_users')
     .update({ status: 'pending' })
     .eq('id', tenantUserId)
+    .eq('tenant_id', tid)
 
   if (updateError) return { success: false, error: updateError.message }
 
   let emailSent = false
   try {
     const redirectTo = `${window.location.origin}/accept-invitation`
+    const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'en'
+    const otpOptions: Record<string, any> = { emailRedirectTo: redirectTo }
+    if (['fr', 'en', 'ar'].includes(locale)) {
+      otpOptions.lang = locale
+    }
     const { error: inviteError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectTo },
+      options: otpOptions,
     })
     emailSent = !inviteError
   } catch {
@@ -4334,9 +4375,10 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
   if (!email) return { success: false, error: 'Email introuvable dans la session.' }
 
   // Find the pending (or already-linked) invitation for this email
+  // CRITICAL: filter by email AND ensure the auth_id matches or is not yet set
   const { data: tenantUser, error: findError } = await supabase
     .from('tenant_users')
-    .select('id, tenant_id, status, tenants:tenant_id (name)')
+    .select('id, tenant_id, status, auth_id, tenants:tenant_id (name)')
     .eq('email', email)
     .neq('status', 'revoked')
     .maybeSingle()
@@ -4344,7 +4386,14 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
   if (findError) return { success: false, error: findError.message }
   if (!tenantUser) return { success: false, error: "Aucune invitation trouvée pour cet email." }
 
+  // Security: if the invitation already has a different auth_id, refuse
+  if (tenantUser.auth_id && tenantUser.auth_id !== authId) {
+    return { success: false, error: 'Cette invitation est associée à un autre compte.' }
+  }
+
   // Link auth_id + activate
+  // CRITICAL: filter by status='pending' to prevent race condition where
+  // a revoked user could reactivate themselves between lookup and update
   const { error: updateError } = await supabase
     .from('tenant_users')
     .update({
@@ -4354,11 +4403,16 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
       last_login: new Date().toISOString(),
     })
     .eq('id', tenantUser.id)
+    .eq('email', email)
+    .in('status', ['pending', 'active'])
 
   if (updateError) return { success: false, error: updateError.message }
 
-  // Optionally set a password for future email/password logins
-  if (password && password.length >= 6) {
+  // Optionally set a password — enforce strong password policy
+  if (password) {
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      return { success: false, error: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.' }
+    }
     const { error: pwError } = await supabase.auth.updateUser({ password })
     if (pwError) return { success: false, error: `Compte activé mais mot de passe non défini: ${pwError.message}` }
   }
@@ -4915,10 +4969,10 @@ export async function runMRPCalculation(): Promise<MRPRun> {
     const [products, boms, bomLines, stockQtys, openMOs, openPOs] = await Promise.all([
       getProducts(),
       getBOMs(),
-      tid ? supabase.from('bom_lines').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('bom_lines').select('*').then(r => r.data || []),
-      tid ? supabase.from('stock_quantities').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('stock_quantities').select('*').then(r => r.data || []),
-      tid ? supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).then(r => r.data || []) : supabase.from('manufacturing_orders').select('*').in('status', ['planned', 'in_progress']).then(r => r.data || []),
-      tid ? supabase.from('purchase_orders').select('*').eq('tenant_id', tid).in('status', ['draft', 'sent']).then(r => r.data || []) : supabase.from('purchase_orders').select('*').in('status', ['draft', 'sent']).then(r => r.data || []),
+      supabase.from('bom_lines').select('*').eq('tenant_id', tid).then(r => r.data || []),
+      supabase.from('stock_quantities').select('*').eq('tenant_id', tid).then(r => r.data || []),
+      supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).then(r => r.data || []),
+      supabase.from('purchase_orders').select('*').eq('tenant_id', tid).in('status', ['draft', 'sent']).then(r => r.data || []),
     ])
 
     // Build stock map: product_id -> total quantity
@@ -5174,11 +5228,12 @@ export async function checkMaterialAvailability(slotId: string) {
 
 export async function autoScheduleMOs() {
   const tid = await getTenantId()
+  if (!tid) return { scheduled: 0, message: 'No tenant' }
   const [mos, machines, routings, routingOps] = await Promise.all([
     getManufacturingOrders('planned'),
-    supabase.from('machines').select('*').eq('status', 'active').then(r => r.data || []),
-    tid ? supabase.from('routings').select('*').eq('tenant_id', tid).then(r => r.data || []) : supabase.from('routings').select('*').then(r => r.data || []),
-    tid ? supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).then(r => r.data || []) : supabase.from('routing_operations').select('*').order('sequence', { ascending: true }).then(r => r.data || []),
+    supabase.from('machines').select('*').eq('status', 'active').eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('routings').select('*').eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).then(r => r.data || []),
   ])
 
   let scheduled = 0
@@ -5249,11 +5304,12 @@ export async function getProductSupplierPrices(productId: string) {
 
 export async function getProductDocuments(productId: string) {
   const tid = await getTenantId()
+  if (!tid) return []
   const [invoices, purchaseOrders, manufacturingOrders, salesOrders] = await Promise.all([
-    tid ? supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).then(r => r.data || []),
-    tid ? supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).then(r => r.data || []),
-    tid ? supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).then(r => r.data || []),
-    tid ? supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).then(r => r.data || []),
+    supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
   ])
 
   const docs: any[] = []
@@ -5274,9 +5330,10 @@ export async function getProductDocuments(productId: string) {
 
 export async function getProductBOMs(productId: string) {
   const tid = await getTenantId()
+  if (!tid) return { asFinished: [], asComponent: [] }
   const [asFinished, asComponent] = await Promise.all([
-    tid ? supabase.from('boms').select('*').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('boms').select('*').eq('product_id', productId).then(r => r.data || []),
-    tid ? supabase.from('bom_lines').select('*, boms(code, name)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []) : supabase.from('bom_lines').select('*, boms(code, name)').eq('product_id', productId).then(r => r.data || []),
+    supabase.from('boms').select('*').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
+    supabase.from('bom_lines').select('*, boms(code, name)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
   ])
   return { asFinished: asFinished as any[], asComponent: asComponent as any[] }
 }

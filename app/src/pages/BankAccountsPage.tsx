@@ -207,7 +207,7 @@ const [name, setName] = useState('')
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('accounts.accountName')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('accounts.accountNamePlaceholder')} />
-          <Input label={t('accounts.bankName')} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="BNP Paribas" />
+          <Input label={t('accounts.bankName')} value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={t('accounts.placeholders.bankName')} />
           <Select label={tCommon('common.type')} value={type} onChange={(e) => setType(e.target.value)} options={[
             { value: 'chequing', label: t('accounts.types.chequing') },
             { value: 'savings', label: t('accounts.types.savings') },

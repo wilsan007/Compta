@@ -125,7 +125,9 @@
       "active": "Actif",
       "maintenance": "Maintenance",
       "inactive": "Inactif"
-    }
+    },
+    "namePlaceholder": "Nom de la machine",
+    "workCenterPlaceholder": "Nom du centre de charge"
   },
   "toolings": {
     "title": "Outillages",

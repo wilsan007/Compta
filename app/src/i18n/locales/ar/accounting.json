@@ -60,19 +60,26 @@
     "newJournal": "يومية جديدة",
     "closePeriod": "إقفال الفترة",
     "viewReports": "عرض الكشوفات",
-    "dailyManagement": "الإدارة اليومية",
+    "dailyEntry": "الإدخال والمعالجة اليومية",
     "addPiece": "إضافة وثيقة",
-    "viewEditPiece": "عرض / تعديل وثيقة",
-    "entryJournals": "يوميات الإدخال",
     "searchEntries": "البحث عن القيود",
-    "thirdPartyManagement": "إدارة الأطراف",
+    "lettrage": "مطابقة القيود",
+    "recurringEntries": "القيود المتكررة",
+    "thirdPartyPayments": "الأطراف والمدفوعات",
     "thirdPartyPlan": "دليل الأطراف",
-    "thirdPartyAccounts": "إدارة حسابات الأطراف",
     "paymentGeneration": "توليد المدفوعات",
-    "generalAccountsManagement": "إدارة الحسابات العامة",
+    "paymentReminders": "تذكير المدفوعات",
+    "bankReconciliation": "تسوية بنكية",
+    "accountsStructure": "الحسابات والهيكل",
     "chartOfAccounts": "دليل الحسابات",
-    "generalAccounts": "إدارة الحسابات العامة",
-    "accountsBalance": "رصيد الحسابات"
+    "accountsBalance": "رصيد الحسابات",
+    "entryTemplates": "نماذج الإدخال",
+    "fixedAssets": "الأصول الثابتة",
+    "statesClosures": "الكشوفات والإقفالات والتصريحات",
+    "generalLedger": "الدفتر العام",
+    "fecExport": "تصدير FEC",
+    "ediTva": "تصريح الضريبة",
+    "journalClosure": "إقفال اليوميات"
   },
   "chartAccounts": {
     "title": "المخطط العام للحسابات",
@@ -162,7 +169,13 @@
     "exerciseFutureHint": "السنة المالية لم تفتح بعد. إدخال إرشادي فقط.",
     "freeFieldLabel": "تسمية حرة {{n}}",
     "freeFieldValue": "قيمة حرة {{n}}",
-    "freeInfoHint": "حتى 10 حقول مخصصة."
+    "freeInfoHint": "حتى 10 حقول مخصصة.",
+    "classLabel": "الطبقة {{cls}}",
+    "accountCount": "{{count}} حساب(ات)",
+    "activeAccounts": "{{count}} نشط(ة)",
+    "showAll": "عرض الكل",
+    "hideZeroBalances": "إخفاء الأرصدة الصفرية",
+    "resultsCount": "{{shown}} من {{total}} — {{active}} نشط(ة)"
   },
   "thirdParty": {
     "title": "مخطط الأطراف الثالثة الموحد",
@@ -254,7 +267,10 @@
     "categorie": "الفئة",
     "freeFieldLabel": "تسمية حرة {{n}}",
     "freeFieldValue": "قيمة حرة {{n}}",
-    "freeInfoHint": "حقول مخصصة إضافية."
+    "freeInfoHint": "حقول مخصصة إضافية.",
+    "placeholders": {
+      "contactName": "جان دوبون"
+    }
   },
   "journals": {
     "title": "رموز اليوميات",

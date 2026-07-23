@@ -33,7 +33,7 @@ export function CompanySettingsPage() {
     setSaving(true)
     try {
       await updateCompanySettings(settings.id, settings)
-      toast('success', tCommon('common.success'), tCommon('common.saved'))
+      toast('success', tCommon('common.success'), tCommon('toast.saved'))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {

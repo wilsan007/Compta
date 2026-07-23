@@ -264,7 +264,8 @@
     "sizeUnitMB": "ميجابايت",
     "sizeUnitKB": "كيلوبايت",
     "exportError": "خطأ في التصدير",
-    "rowsRetrieved": "تم استرجاع {{rows}} صف من {{tables}} جدول"
+    "rowsRetrieved": "تم استرجاع {{rows}} صف من {{tables}} جدول",
+    "missingConfig": "إعدادات مفقودة"
   },
   "import": {
     "title": "استيراد البيانات",

@@ -116,17 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Last resort fallback
+      // No tenant_users or users record found and no pending invitation.
+      // Sign out — do NOT grant admin access to unrecognised users.
+      await supabase.auth.signOut()
       setTenantId(null)
-      setUser({
-        id: session.user.id,
-        email: session.user.email || '',
-        name: session.user.email || 'Utilisateur',
-        role: 'admin',
-        tenantId: null,
-        tenantName: null,
-        permissions: {},
-      })
+      setUser(null)
     } catch {
       setTenantId(null)
       setUser(null)
@@ -144,16 +138,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser])
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
+    const now = Date.now()
+    const attempts = JSON.parse(localStorage.getItem('_auth_attempts') || '[]') as number[]
+    const recent = attempts.filter((t) => now - t < 60000)
+    if (recent.length >= 5) {
+      return { error: 'Trop de tentatives. Réessayez dans 1 minute.' }
+    }
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) return { error: error.message }
+      if (error) {
+        localStorage.setItem('_auth_attempts', JSON.stringify([...recent, now]))
+        return { error: error.message }
+      }
+      localStorage.removeItem('_auth_attempts')
       return { error: null }
     } catch (err: any) {
+      localStorage.setItem('_auth_attempts', JSON.stringify([...recent, now]))
       return { error: err.message || 'Erreur de connexion' }
     }
   }, [])
 
   const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean }> => {
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      return { error: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 digit.', needsConfirmation: false }
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
         email,

@@ -207,12 +207,12 @@ function SupplierForm({ supplier, onClose, onSaved }: {
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label={t('suppliers.nameLabel')} required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tech Supply Co" />
-          <Input label={t('suppliers.contact')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Jean Dupont" />
-          <Input label={t('suppliers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@supplier.fr" />
-          <Input label={t('suppliers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0612345678" />
-          <Input label={t('suppliers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="15 rue du Commerce, 75011 Paris" />
-          <Input label={t('suppliers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder="FR98765432109" />
+          <Input label={t('suppliers.nameLabel')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('suppliers.placeholders.name')} />
+          <Input label={t('suppliers.contact')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('suppliers.placeholders.contactName')} />
+          <Input label={t('suppliers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('suppliers.placeholders.email')} />
+          <Input label={t('suppliers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('suppliers.placeholders.phone')} />
+          <Input label={t('suppliers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('suppliers.placeholders.address')} />
+          <Input label={t('suppliers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder={t('suppliers.placeholders.vatNumber')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>

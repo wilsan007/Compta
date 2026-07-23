@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getCompanySettings, getChartAccounts, getUsers, getLegislationPacks, updateCompanySettings } from '@/lib/queries'
+import { getCompanySettings, getChartAccounts, getTenantUsers, getLegislationPacks, updateCompanySettings, type TenantUser } from '@/lib/queries'
 import { useLegislation } from '@/lib/legislation'
 import { Building2, Users, BookOpen, Link2, Save, Scale, LayoutGrid, CheckCircle2, Lock } from 'lucide-react'
-import type { CompanySettings, ChartAccount, User, LegislationPack } from '@/types'
+import type { CompanySettings, ChartAccount, LegislationPack } from '@/types'
 import { useAuth } from '@/lib/auth'
-import { useTenantModules, invalidateModuleCache } from '@/lib/useTenantModules'
+import { useTenantModules } from '@/lib/useTenantModules'
 import { useLocale } from '@/hooks/useLocale'
 
 const routeToTab: Record<string, 'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'> = {
@@ -25,10 +25,11 @@ export function SettingsPage() {
   const { t } = useTranslation('settings')
   const { t: tCommon } = useTranslation('common')
   const { formatCurrency, formatDate } = useLocale()
+  const { user } = useAuth()
   const [tab, setTab] = useState<'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'>(routeToTab[location.pathname] || 'company')
   const [company, setCompany] = useState<CompanySettings | null>(null)
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<TenantUser[]>([])
   const [packs, setPacks] = useState<LegislationPack[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -46,7 +47,7 @@ export function SettingsPage() {
       const [c, a, u, p] = await Promise.all([
         getCompanySettings().catch(() => null),
         getChartAccounts().catch(() => []),
-        getUsers().catch(() => []),
+        user?.tenantId ? getTenantUsers(user.tenantId).catch(() => []) : Promise.resolve([]),
         getLegislationPacks().catch(() => []),
       ])
       setCompany(c)
@@ -222,8 +223,8 @@ export function SettingsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={u.active ? 'success' : 'neutral'}>
-                          {u.active ? tCommon('common.active') : tCommon('common.inactive')}
+                        <Badge variant={u.status === 'active' ? 'success' : u.status === 'pending' ? 'warning' : 'danger'}>
+                          {u.status === 'active' ? tCommon('common.active') : u.status === 'pending' ? tCommon('common.pending') : tCommon('common.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-[var(--color-text-secondary)]">
@@ -435,7 +436,6 @@ function ModulesTab() {
     const { success, error: saveError } = await saveModules(user.tenantId, finalModules)
     if (success) {
       setSaved(true)
-      invalidateModuleCache()
       refresh()
     } else {
       setError(saveError || t('modules.saveError'))

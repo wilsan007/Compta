@@ -3,7 +3,7 @@ import { ThemeProvider } from '@/lib/theme'
 import { ToastProvider } from '@/lib/toast'
 import { AuthProvider } from '@/lib/auth'
 import { LegislationProvider } from '@/lib/legislation'
-import { ProtectedLayout } from '@/components/ProtectedRoute'
+import { ProtectedLayout, AdminRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CustomersPage } from '@/pages/CustomersPage'
@@ -209,8 +209,8 @@ function App() {
           <Route path="/accounting/treatment/edi-tva" element={<EdiTvaPage />} />
           <Route path="/accounting/reports/tvs" element={<TvsPage />} />
           <Route path="/accounting/reports/progressive-balance" element={<ProgressiveBalancePage />} />
-          <Route path="/settings/company-settings" element={<CompanySettingsPage />} />
-          <Route path="/accounting/reports/fiscal-backup" element={<FiscalBackupPage />} />
+          <Route path="/settings/company-settings" element={<AdminRoute><CompanySettingsPage /></AdminRoute>} />
+          <Route path="/accounting/reports/fiscal-backup" element={<AdminRoute><FiscalBackupPage /></AdminRoute>} />
           <Route path="/accounting/general-ledger" element={<GeneralLedgerPage />} />
           <Route path="/accounting/trial-balance" element={<TrialBalancePage />} />
           <Route path="/accounting/chart-accounts" element={<ChartAccountsPage />} />
@@ -234,7 +234,7 @@ function App() {
           <Route path="/treasury" element={<ModuleHubPage moduleId="treasury" />} />
           <Route path="/treasury/dashboard" element={<TreasuryDashboardPage />} />
           <Route path="/treasury/forecast" element={<TreasuryForecastPage />} />
-          <Route path="/treasury/payment-orders" element={<PaymentOrdersPage />} />
+          <Route path="/treasury/payment-orders" element={<AdminRoute><PaymentOrdersPage /></AdminRoute>} />
           <Route path="/treasury/collections" element={<CollectionDashboardPage />} />
 
           {/* Stock */}
@@ -285,10 +285,10 @@ function App() {
           <Route path="/accounting/states/general-ledger-tiers" element={<GrandLivreTiersPage />} />
           <Route path="/accounting/states/fec" element={<FECExportPage />} />
           <Route path="/accounting/accountant-portal" element={<AccountantPortalPage />} />
-          <Route path="/treasury/sepa" element={<SepaTransferPage />} />
+          <Route path="/treasury/sepa" element={<AdminRoute><SepaTransferPage /></AdminRoute>} />
           <Route path="/hr/payroll-calc" element={<PayrollCalcPage />} />
           <Route path="/accounting/liasse-fiscale" element={<LiasseFiscalePage />} />
-          <Route path="/settings/multi-company" element={<MultiCompanyPage />} />
+          <Route path="/settings/multi-company" element={<AdminRoute><MultiCompanyPage /></AdminRoute>} />
           <Route path="/accounting/states/sig" element={<SIGPage />} />
           <Route path="/accounting/states/analytic-balance" element={<AnalyticBalancePage />} />
 
@@ -317,18 +317,18 @@ function App() {
           <Route path="/settings" element={<ModuleHubPage moduleId="system" />} />
           <Route path="/settings/configuration" element={<SubGroupHubPage moduleId="system" sectionIndex={0} />} />
           <Route path="/settings/data" element={<SubGroupHubPage moduleId="system" sectionIndex={1} />} />
-          <Route path="/settings/company" element={<SettingsPage />} />
-          <Route path="/settings/chart-accounts" element={<SettingsPage />} />
-          <Route path="/settings/users" element={<SettingsPage />} />
-          <Route path="/settings/integrations" element={<SettingsPage />} />
-          <Route path="/settings/modules" element={<SettingsPage />} />
-          <Route path="/settings/data-export" element={<DataExportPage />} />
+          <Route path="/settings/company" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          <Route path="/settings/chart-accounts" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          <Route path="/settings/users" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          <Route path="/settings/integrations" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          <Route path="/settings/modules" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          <Route path="/settings/data-export" element={<AdminRoute><DataExportPage /></AdminRoute>} />
           <Route path="/settings/import" element={<ImportPage />} />
           <Route path="/settings/import/sage" element={<SageImportPage />} />
-          <Route path="/settings/team" element={<TeamPage />} />
-          <Route path="/settings/currencies" element={<CurrenciesPage />} />
-          <Route path="/system/fiscal-years" element={<FiscalYearsPage />} />
-          <Route path="/system/audit-log" element={<AuditLogPage />} />
+          <Route path="/settings/team" element={<AdminRoute><TeamPage /></AdminRoute>} />
+          <Route path="/settings/currencies" element={<AdminRoute><CurrenciesPage /></AdminRoute>} />
+          <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
+          <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
 
           {/* Reporting & BI */}
           <Route path="/reporting" element={<ModuleHubPage moduleId="reporting" />} />
@@ -350,7 +350,7 @@ function App() {
           <Route path="/stock/product-batches" element={<ProductBatchesPage />} />
           <Route path="/stock/product-substitutes" element={<ProductSubstitutesPage />} />
           <Route path="/stock/dormant-stock" element={<DormantStockPage />} />
-          <Route path="/settings/document-templates" element={<DocumentTemplatesPage />} />
+          <Route path="/settings/document-templates" element={<AdminRoute><DocumentTemplatesPage /></AdminRoute>} />
 
           {/* Phase 3: Treasury */}
           <Route path="/treasury/mcf" element={<MCFPage />} />

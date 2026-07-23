@@ -20,6 +20,7 @@
     "xmlSize": "حجم XML",
     "xmlValid": "تم إنشاء XML مطابق بنجاح.",
     "xmlPreview": "معاينة XML",
+    "kb": "ك.ب",
     "noEligible": "لا توجد فاتورة مؤهلة",
     "noEligibleDesc": "لا يمكن إصدار الفواتير المسودة أو الملغاة إلكترونيًا.",
     "eligibleInvoices": "الفواتير المؤهلة ({{count}})",
@@ -99,7 +100,16 @@
     "importSuccessDesc": "تم استيراد {{accounts}} حساب و{{entries}} قيد",
     "importError": "خطأ في الاستيراد",
     "noFile": "اختر ملفًا أولاً",
-    "reset": "البدء من جديد"
+    "reset": "البدء من جديد",
+    "maeDetected": "تم اكتشاف ملف Sage 100 .mae",
+    "maeDescription": "هذا ملف نسخة احتياطية ثنائية Sage 100. الاستيراد المباشر غير ممكن من هذا التنسيق.",
+    "sqlServer": "خادم SQL",
+    "database": "قاعدة البيانات",
+    "creator": "المنشئ",
+    "importInstructions": "تعليمات الاستيراد",
+    "step1": "1. افتح Sage 100 على نفس الجهاز",
+    "step2": "2. استخدم ملف → استيراد → استيراد القيود",
+    "step3": "3. اختر ملف FEC المُصدّر"
   },
   "accountantPortal": {
     "title": "بوابة المحاسب",
@@ -148,6 +158,7 @@
     "total": "إجمالي الدفعة",
     "count": "التحويلات المحددة",
     "noPayments": "لا توجد أوامر دفع مؤهلة",
+    "xmlPreview": "XML SEPA",
     "noPaymentsDesc": "أوامر الدفع المسودة أو الملغاة غير مؤهلة لـ SEPA.",
     "generated": "تم إنشاء ملف SEPA",
     "generatedDesc": "{{count}} تحويل — {{total}} يورو",

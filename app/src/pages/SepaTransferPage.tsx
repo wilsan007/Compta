@@ -224,7 +224,7 @@ export function SepaTransferPage() {
           {generated && preview && (
             <Card>
               <div className="p-4">
-                <h3 className="text-sm font-semibold mb-2">XML SEPA</h3>
+                <h3 className="text-sm font-semibold mb-2">{t('sepa.xmlPreview')}</h3>
                 <pre className="text-xs font-mono overflow-x-auto bg-[var(--color-neutral-50)] p-3 rounded-lg max-h-96 overflow-y-auto">
                   {preview}
                 </pre>

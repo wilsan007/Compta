@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
-import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2 } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -13,6 +13,12 @@ const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutr
   equity: 'success',
   income: 'success',
   expense: 'danger',
+}
+
+const CLASS_COLORS: Record<string, string> = {
+  '1': 'var(--color-success)', '2': 'var(--color-primary)', '3': 'var(--color-primary)',
+  '4': 'var(--color-warning)', '5': 'var(--color-primary)',
+  '6': 'var(--color-danger)', '7': 'var(--color-success)', '8': 'var(--color-neutral)',
 }
 
 export function ChartAccountsPage() {
@@ -27,6 +33,8 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ChartAccount | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [hideZeroBalances, setHideZeroBalances] = useState(true)
+  const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set())
 
   useEffect(() => { loadAccounts() }, [])
 
@@ -42,32 +50,49 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
     }
   }
 
-  const tiersByAccount = new Map<string, number>()
-  for (const tp of tiers) {
-    const code = tp.account_general_code || tp.code?.substring(0, 3) || ''
-    if (code) {
-      tiersByAccount.set(code, (tiersByAccount.get(code) || 0) + 1)
+  const tiersByAccount = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const tp of tiers) {
+      const codes = [tp.account_general_code, tp.code?.substring(0, 3), tp.code?.substring(0, 6)].filter(Boolean) as string[]
+      for (const code of codes) { m.set(code, (m.get(code) || 0) + 1) }
     }
-  }
+    return m
+  }, [tiers])
 
-  const filtered = accounts.filter((a) => {
-    const matchSearch = !search ||
-      a.code.includes(search) ||
-      a.name.toLowerCase().includes(search.toLowerCase())
-    const matchClass = !filterClass || a.code.startsWith(filterClass)
-    return matchSearch && matchClass
-  })
+  const filtered = useMemo(() => {
+    return accounts.filter((a) => {
+      const matchSearch = !search || a.code.includes(search) || a.name.toLowerCase().includes(search.toLowerCase())
+      const matchClass = !filterClass || a.code.startsWith(filterClass)
+      const matchBalance = !hideZeroBalances || (Number(a.balance) || 0) !== 0
+      return matchSearch && matchClass && matchBalance
+    })
+  }, [accounts, search, filterClass, hideZeroBalances])
+
+  const classStats = useMemo(() => {
+    const stats: Record<string, { count: number; totalBalance: number; activeCount: number }> = {}
+    for (const a of accounts) {
+      const cls = a.code.charAt(0)
+      if (!stats[cls]) stats[cls] = { count: 0, totalBalance: 0, activeCount: 0 }
+      stats[cls].count++
+      stats[cls].totalBalance += Number(a.balance) || 0
+      if ((Number(a.balance) || 0) !== 0) stats[cls].activeCount++
+    }
+    return stats
+  }, [accounts])
 
   const filteredIds = new Set(filtered.map((a) => a.id))
 
-  const childrenByParent = new Map<string, ChartAccount[]>()
-  for (const a of filtered) {
-    if (a.parent_id) {
-      const children = childrenByParent.get(a.parent_id) || []
-      children.push(a)
-      childrenByParent.set(a.parent_id, children)
+  const childrenByParent = useMemo(() => {
+    const m = new Map<string, ChartAccount[]>()
+    for (const a of filtered) {
+      if (a.parent_id) {
+        const children = m.get(a.parent_id) || []
+        children.push(a)
+        m.set(a.parent_id, children)
+      }
     }
-  }
+    return m
+  }, [filtered])
 
   const rootAccounts = filtered.filter((a) => !a.parent_id || !filteredIds.has(a.parent_id))
 
@@ -80,6 +105,15 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
     })
   }
 
+  function toggleClassCollapse(cls: string) {
+    setCollapsedClasses((prev) => {
+      const next = new Set(prev)
+      if (next.has(cls)) next.delete(cls)
+      else next.add(cls)
+      return next
+    })
+  }
+
   function renderAccount(account: ChartAccount, depth: number): React.ReactNode {
     const children = childrenByParent.get(account.id) || []
     const hasChildren = children.length > 0
@@ -88,7 +122,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
     const isTiersAccount = account.code.startsWith('4')
 
     return (
-      <div key={account.id}>
+      <Fragment key={account.id}>
         <TableRow>
           <TableCell className="font-mono font-semibold">
             <div className="flex items-center gap-1" style={{ paddingLeft: `${depth * 20}px` }}>
@@ -116,7 +150,9 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
               </span>
             )}
           </TableCell>
-          <TableCell className="font-mono text-right">{formatCurrency(Number(account.balance) || 0)}</TableCell>
+          <TableCell className={`font-mono text-right ${(Number(account.balance) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
+            {formatCurrency(Number(account.balance) || 0)}
+          </TableCell>
           <TableCell>
             <div className="flex gap-2">
               <button onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
@@ -129,16 +165,18 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           </TableCell>
         </TableRow>
         {hasChildren && isExpanded && children.map((child) => renderAccount(child, depth + 1))}
-      </div>
+      </Fragment>
     )
   }
 
-  const grouped = rootAccounts.reduce((acc, account) => {
-    const cls = account.code.charAt(0)
-    if (!acc[cls]) acc[cls] = []
-    acc[cls].push(account)
-    return acc
-  }, {} as Record<string, ChartAccount[]>)
+  const grouped = useMemo(() => {
+    return rootAccounts.reduce((acc, account) => {
+      const cls = account.code.charAt(0)
+      if (!acc[cls]) acc[cls] = []
+      acc[cls].push(account)
+      return acc
+    }, {} as Record<string, ChartAccount[]>)
+  }, [rootAccounts])
 
   const sortedClasses = Object.keys(grouped).sort()
 
@@ -163,6 +201,9 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
     }
   }
 
+  const totalAccounts = accounts.length
+  const activeAccounts = accounts.filter((a) => (Number(a.balance) || 0) !== 0).length
+
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('chartAccounts.breadcrumb') }, { label: t('chartAccounts.title') }]} />
@@ -172,8 +213,34 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
         action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('chartAccounts.new')}</Button>}
       />
 
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1 relative">
+      {/* Class overview dashboard */}
+      {!loading && accounts.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+          {Object.entries(classStats).sort(([a], [b]) => a.localeCompare(b)).map(([cls, stats]) => (
+            <button
+              key={cls}
+              onClick={() => setFilterClass(filterClass === cls ? '' : cls)}
+              className={`text-left p-3 rounded-lg border transition-all hover:shadow-md ${filterClass === cls ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 ring-1 ring-[var(--color-primary)]' : 'border-[var(--color-border)] hover:border-[var(--color-text-secondary)]'}`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CLASS_COLORS[cls] || 'var(--color-neutral)' }} />
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('chartAccounts.classLabel', { cls })}</span>
+              </div>
+              <div className="text-lg font-bold">{stats.count}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {t('chartAccounts.activeAccounts', { count: stats.activeCount })}
+              </div>
+              <div className="text-xs font-mono mt-1 text-[var(--color-text-secondary)] truncate">
+                {formatCurrency(stats.totalBalance)}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Search & filters */}
+      <div className="flex flex-wrap gap-3 mb-4 items-center">
+        <div className="flex-1 relative min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
           <input
             className="input pl-10"
@@ -197,7 +264,21 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           <option value="7">{t('chartAccounts.classLabels.7')}</option>
           <option value="8">{t('chartAccounts.classLabels.8')}</option>
         </select>
+        <button
+          onClick={() => setHideZeroBalances(!hideZeroBalances)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${hideZeroBalances ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
+        >
+          {hideZeroBalances ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          {hideZeroBalances ? t('chartAccounts.showAll') : t('chartAccounts.hideZeroBalances')}
+        </button>
       </div>
+
+      {/* Results count */}
+      {!loading && (
+        <div className="text-sm text-[var(--color-text-secondary)] mb-3">
+          {t('chartAccounts.resultsCount', { shown: filtered.length, total: totalAccounts, active: activeAccounts })}
+        </div>
+      )}
 
       {loading ? (
         <SkeletonTable rows={8} cols={6} />
@@ -209,14 +290,38 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('chartAccounts.new')}</Button>}
         />
       ) : (
-        <div className="space-y-6">
-          {sortedClasses.map((cls) => (
-            <Card key={cls} title={t(`chartAccounts.classLabels.${cls}`, { defaultValue: `Classe ${cls}` })}>
-              <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), tCommon('common.balance'), tCommon('table.actions')]}>
-                {grouped[cls].map((account) => renderAccount(account, 0))}
-              </Table>
-            </Card>
-          ))}
+        <div className="space-y-4">
+          {sortedClasses.map((cls) => {
+            const isCollapsed = collapsedClasses.has(cls)
+            const stats = classStats[cls]
+            return (
+              <Card key={cls}>
+                <div
+                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[var(--color-neutral-50)] rounded-t-lg"
+                  onClick={() => toggleClassCollapse(cls)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: CLASS_COLORS[cls] || 'var(--color-neutral)' }} />
+                    <span className="font-semibold text-sm">
+                      {t(`chartAccounts.classLabels.${cls}`, { defaultValue: `Classe ${cls}` })}
+                    </span>
+                    <Badge variant="neutral">{t('chartAccounts.accountCount', { count: grouped[cls].length })}</Badge>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-mono text-[var(--color-text-secondary)]">
+                      {formatCurrency(stats?.totalBalance || 0)}
+                    </span>
+                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" /> : <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)]" />}
+                  </div>
+                </div>
+                {!isCollapsed && (
+                  <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), tCommon('common.balance'), tCommon('table.actions')]}>
+                    {grouped[cls].map((account) => renderAccount(account, 0))}
+                  </Table>
+                )}
+              </Card>
+            )
+          })}
         </div>
       )}
 

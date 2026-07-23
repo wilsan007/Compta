@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set in environment variables')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -64,6 +68,11 @@ const TENANT_TABLES = new Set([
   'asset_depreciation_plans', 'asset_families', 'asset_revaluations',
   'asset_documents', 'asset_free_fields', 'asset_batch_disposals', 'asset_batch_disposal_lines',
   'asset_splits', 'asset_split_components',
+  // Phase 6: Additional tenant-scoped tables
+  'recurring_entries', 'regularization_entries', 'currency_revaluations',
+  'analytic_plans', 'distribution_grills', 'distribution_grill_lines',
+  'bank_reconciliation_rules', 'bank_statement_imports',
+  'tvs_declarations', 'fiscal_backups',
 ])
 
 const EXEMPT_TABLES = new Set([

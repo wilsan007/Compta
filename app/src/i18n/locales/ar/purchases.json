@@ -252,7 +252,15 @@
     "updated": "تم تعديل المورد بنجاح",
     "created": "تم إنشاء المورد بنجاح",
     "deleteTitle": "حذف المورد",
-    "deleteConfirm": "هل تريد حقاً حذف المورد \"{{name}}\"؟"
+    "deleteConfirm": "هل تريد حقاً حذف المورد \"{{name}}\"؟",
+    "placeholders": {
+      "name": "Tech Supply Co",
+      "contactName": "جان دوبون",
+      "email": "contact@supplier.com",
+      "phone": "0612345678",
+      "address": "15 شارع التجارة، 75011 باريس",
+      "vatNumber": "FR98765432109"
+    }
   },
   "automation": {
     "title": "أتمتة الفواتير",

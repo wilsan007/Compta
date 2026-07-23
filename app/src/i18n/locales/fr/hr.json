@@ -261,5 +261,41 @@
       "completed": "Terminée",
       "cancelled": "Annulée"
     }
+  },
+  "team": {
+    "title": "Équipe",
+    "inviteMember": "Inviter un membre",
+    "fullName": "Nom complet",
+    "role": "Rôle",
+    "roles": {
+      "admin": "Administrateur",
+      "accountant": "Comptable",
+      "manager": "Manager",
+      "viewer": "Lecteur",
+      "custom": "Personnalisé"
+    },
+    "status": "Statut",
+    "statuses": {
+      "active": "Actif",
+      "pending": "En attente",
+      "revoked": "Révoqué"
+    },
+    "actions": "Actions",
+    "editRole": "Modifier le rôle",
+    "revoke": "Révoquer",
+    "reactivate": "Réactiver",
+    "reinvite": "Renvoyer l'invitation",
+    "inviteResent": "Invitation renvoyée",
+    "inviteResentMsg": "Un email a été envoyé à {{email}}",
+    "userCreated": "Utilisateur créé",
+    "userCreatedMsg": "Un email d'invitation a été envoyé à {{email}}",
+    "missingFields": "Veuillez remplir tous les champs obligatoires",
+    "inviteEmailInfo": "Un email d'invitation sera envoyé à cet utilisateur. Il devra cliquer sur le lien dans l'email pour définir son mot de passe et rejoindre l'entreprise.",
+    "permissions": "Permissions",
+    "noUsers": "Aucun utilisateur",
+    "noUsersDescription": "Aucun utilisateur dans cette entreprise",
+    "placeholders": {
+      "fullName": "Jean Dupont"
+    }
   }
 }

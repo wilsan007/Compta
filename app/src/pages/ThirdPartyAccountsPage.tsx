@@ -485,7 +485,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('thirdParty.escompte')} type="number" value={escompte} onChange={(e) => setEscompte(e.target.value)} placeholder="0" />
-                  <Input label={t('thirdParty.contactName')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Jean Dupont" />
+                  <Input label={t('thirdParty.contactName')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('thirdParty.placeholders.contactName')} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('thirdParty.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} />

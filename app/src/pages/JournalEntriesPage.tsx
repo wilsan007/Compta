@@ -73,7 +73,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       />
 
       {loading ? (
-        <SkeletonTable rows={6} cols={6} />
+        <SkeletonTable rows={6} cols={10} />
       ) : entries.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="w-8 h-8" />}
@@ -83,7 +83,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
         />
       ) : (
         <Card>
-          <Table headers={['', t('entries.number'), t('entries.date'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
+          <Table headers={['', t('entries.journal', { defaultValue: 'Journal' }), t('entries.number'), t('entries.date'), t('entries.description'), t('entries.reference', { defaultValue: 'Pièce' }), t('entries.status'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
             {entries.map((entry) => (
               <Fragment key={entry.id}>
                 <TableRow onClick={() => toggleExpand(entry.id)}>
@@ -92,9 +92,13 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                       ? (expanded.has(entry.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)
                       : <span className="w-4 inline-block" />}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="neutral">{entry.journal_code || '—'}</Badge>
+                  </TableCell>
                   <TableCell className="font-mono font-semibold">{entry.number}</TableCell>
-                  <TableCell>{formatDate(entry.date)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(entry.date)}</TableCell>
                   <TableCell className="max-w-xs truncate">{entry.description}</TableCell>
+                  <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">{entry.piece_number || entry.reference || '—'}</TableCell>
                   <TableCell><Badge variant={statusBadge[entry.status]}>{t(`entries.statusLabels.${entry.status}`)}</Badge></TableCell>
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
@@ -107,9 +111,11 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                 {expanded.has(entry.id) && entry.journal_lines && entry.journal_lines.map((line) => (
                   <tr key={line.id} className="bg-[var(--color-neutral-50)]">
                     <TableCell />
+                    <TableCell />
                     <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">{line.account_code}</TableCell>
+                    <TableCell />
                     <TableCell colSpan={2} className="text-xs text-[var(--color-text-secondary)]">
-                      {line.account_name} — {line.description || ''}
+                      {line.account_name}{line.description ? ` — ${line.description}` : ''}
                     </TableCell>
                     <TableCell />
                     <TableCell className="font-mono text-xs text-right">{Number(line.debit) > 0 ? formatCurrency(Number(line.debit)) : ''}</TableCell>

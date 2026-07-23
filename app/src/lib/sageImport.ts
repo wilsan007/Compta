@@ -21,6 +21,7 @@ export interface SageEntryLine {
   account_code: string
   account_name: string
   account_tiers: string
+  account_tiers_name: string
   description: string
   debit: number
   credit: number
@@ -120,6 +121,7 @@ export function parseSageFile(content: string): SageParseResult {
   const cCompteNum = idx('CompteNum')
   const cCompteLib = idx('CompteLib')
   const cCompAuxNum = idx('CompAuxNum')
+  const cCompAuxLib = idx('CompAuxLib')
   const cPieceRef = idx('PieceRef')
   const cEcritureLib = idx('EcritureLib')
   const cDebit = idx('Debit')
@@ -166,6 +168,7 @@ export function parseSageFile(content: string): SageParseResult {
       account_code: accountCode,
       account_name: accountName,
       account_tiers: (cCompAuxNum >= 0 ? cols[cCompAuxNum] : '')?.trim() || '',
+      account_tiers_name: (cCompAuxLib >= 0 ? cols[cCompAuxLib] : '')?.trim() || '',
       description: (cols[cEcritureLib] || '').trim(),
       debit: parseAmount(cols[cDebit]),
       credit: parseAmount(cols[cCredit]),

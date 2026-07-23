@@ -261,5 +261,41 @@
       "completed": "مكتمل",
       "cancelled": "ملغى"
     }
+  },
+  "team": {
+    "title": "الفريق",
+    "inviteMember": "دعوة عضو",
+    "fullName": "الاسم الكامل",
+    "role": "الدور",
+    "roles": {
+      "admin": "مدير",
+      "accountant": "محاسب",
+      "manager": "مدير قسم",
+      "viewer": "مشاهد",
+      "custom": "مخصص"
+    },
+    "status": "الحالة",
+    "statuses": {
+      "active": "نشط",
+      "pending": "في الانتظار",
+      "revoked": "موقوف"
+    },
+    "actions": "إجراءات",
+    "editRole": "تعديل الدور",
+    "revoke": "إيقاف",
+    "reactivate": "إعادة تفعيل",
+    "reinvite": "إعادة إرسال الدعوة",
+    "inviteResent": "تم إعادة إرسال الدعوة",
+    "inviteResentMsg": "تم إرسال بريد إلكتروني إلى {{email}}",
+    "userCreated": "تم إنشاء المستخدم",
+    "userCreatedMsg": "تم إرسال بريد دعوة إلكتروني إلى {{email}}",
+    "missingFields": "يرجى ملء جميع الحقول المطلوبة",
+    "inviteEmailInfo": "سيتم إرسال بريد دعوة إلكتروني إلى هذا المستخدم. سيحتاج إلى النقر على الرابط في البريد الإلكتروني لتعيين كلمة المرور والانضمام إلى الشركة.",
+    "permissions": "الصلاحيات",
+    "noUsers": "لا يوجد مستخدمون",
+    "noUsersDescription": "لا يوجد مستخدمون في هذه الشركة",
+    "placeholders": {
+      "fullName": "جان دوبون"
+    }
   }
 }

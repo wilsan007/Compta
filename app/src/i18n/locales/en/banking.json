@@ -48,7 +48,10 @@
     "noAccounts": "No bank account",
     "noAccountsDescription": "You haven't created a bank account yet",
     "createFirst": "Create my first bank account",
-    "searchPlaceholder": "Search by name, IBAN..."
+    "searchPlaceholder": "Search by name, IBAN...",
+    "placeholders": {
+      "bankName": "BNP Paribas"
+    }
   },
   "transactions": {
     "title": "Bank transactions",

@@ -36,11 +36,25 @@ CREATE TABLE IF NOT EXISTS tenants (
 );
 
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_tenants') THEN
-    CREATE POLICY "allow_all_tenants" ON tenants FOR ALL USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+ALTER TABLE tenants FORCE ROW LEVEL SECURITY;
+
+-- Drop the old permissive policy if it exists
+DROP POLICY IF EXISTS "allow_all_tenants" ON tenants;
+
+-- SELECT: users can only see their own tenant
+CREATE POLICY "tenant_select_tenants" ON tenants
+  FOR SELECT USING (id = current_tenant_id());
+
+-- UPDATE: only admins can update their own tenant
+CREATE POLICY "tenant_update_tenants" ON tenants
+  FOR UPDATE USING (id = current_tenant_id() AND current_user_role() = 'admin')
+  WITH CHECK (id = current_tenant_id() AND current_user_role() = 'admin');
+
+-- DELETE: only admins can delete their own tenant
+CREATE POLICY "tenant_delete_tenants" ON tenants
+  FOR DELETE USING (id = current_tenant_id() AND current_user_role() = 'admin');
+
+-- No INSERT policy: tenants are created only via service role (edge functions)
 
 -- ============================================
 -- 2. TENANT_USERS TABLE
@@ -68,11 +82,41 @@ CREATE INDEX IF NOT EXISTS idx_tenant_users_auth ON tenant_users(auth_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_users_email ON tenant_users(email);
 
 ALTER TABLE tenant_users ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_tenant_users') THEN
-    CREATE POLICY "allow_all_tenant_users" ON tenant_users FOR ALL USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+ALTER TABLE tenant_users FORCE ROW LEVEL SECURITY;
+
+-- Drop the old permissive policy if it exists
+DROP POLICY IF EXISTS "allow_all_tenant_users" ON tenant_users;
+
+-- SELECT: users can see users in their own tenant (needed for team management)
+-- Also allow users to see their own pending invitation (by email match via auth_id)
+CREATE POLICY "tenant_select_tenant_users" ON tenant_users
+  FOR SELECT USING (
+    tenant_id = current_tenant_id()
+    OR (auth_id = auth.uid() AND status = 'pending')
+  );
+
+-- INSERT: only admins can add users to their tenant (edge function handles creation)
+CREATE POLICY "tenant_insert_tenant_users" ON tenant_users
+  FOR INSERT WITH CHECK (
+    tenant_id = current_tenant_id() AND current_user_role() = 'admin'
+  );
+
+-- UPDATE: admins can update any user in their tenant; users can update their own last_login
+CREATE POLICY "tenant_update_tenant_users" ON tenant_users
+  FOR UPDATE USING (
+    (tenant_id = current_tenant_id() AND current_user_role() = 'admin')
+    OR auth_id = auth.uid()
+  )
+  WITH CHECK (
+    (tenant_id = current_tenant_id() AND current_user_role() = 'admin')
+    OR auth_id = auth.uid()
+  );
+
+-- DELETE: only admins can remove users from their tenant
+CREATE POLICY "tenant_delete_tenant_users" ON tenant_users
+  FOR DELETE USING (
+    tenant_id = current_tenant_id() AND current_user_role() = 'admin'
+  );
 
 -- ============================================
 -- 3. HELPER FUNCTION: current_tenant_id()

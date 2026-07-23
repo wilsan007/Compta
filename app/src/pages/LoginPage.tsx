@@ -18,7 +18,7 @@ export function LoginPage() {
     e.preventDefault()
     setError(null)
     if (!email.trim() || !password.trim()) {
-      setError(t('fillEmailPassword'))
+      setError(t('login.fillEmailPassword'))
       return
     }
     setLoading(true)
@@ -38,8 +38,8 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] text-white mb-4">
             <Building2 className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">ERP Compta</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
+          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('login.appName')}</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('login.subtitle')}</p>
         </div>
 
         <div className="card p-6 space-y-4">
@@ -52,7 +52,7 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">{t('email')}</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('login.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -60,7 +60,7 @@ export function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('emailPlaceholder')}
+                  placeholder={t('login.emailPlaceholder')}
                   className="input pl-10"
                   autoComplete="email"
                 />
@@ -68,7 +68,7 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">{t('password')}</label>
+              <label className="text-sm font-medium text-[var(--color-text)]">{t('login.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
                 <input
@@ -84,20 +84,20 @@ export function LoginPage() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? t('signingIn') : t('signIn')}
+              {loading ? t('login.signingIn') : t('login.signIn')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            {t('noAccount')}{' '}
+            {t('login.noAccount')}{' '}
             <Link to="/signup" className="text-[var(--color-primary)] font-medium">
-              {t('createAccount')}
+              {t('login.createAccount')}
             </Link>
           </p>
         </div>
 
         <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
-          ERP Compta — {t('tagline')}
+          ERP Compta — {t('login.tagline')}
         </p>
       </div>
     </div>

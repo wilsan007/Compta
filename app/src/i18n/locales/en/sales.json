@@ -243,7 +243,14 @@
     "createFirst": "Create my first customer",
     "searchPlaceholder": "Search by name, email, VAT...",
     "importCustomers": "Import customers",
-    "exportCustomers": "Export customers"
+    "exportCustomers": "Export customers",
+    "placeholders": {
+      "name": "ABC Company",
+      "contactName": "John Smith",
+      "email": "contact@company.com",
+      "phone": "0612345678",
+      "address": "12 Peace Street, 75001 Paris"
+    }
   },
   "prospects": {
     "title": "Prospects",
@@ -259,7 +266,14 @@
     "created": "Prospect created successfully",
     "convert": "Convert to customer",
     "convertConfirm": "Convert this prospect to a customer?",
-    "converted": "Prospect converted to customer"
+    "converted": "Prospect converted to customer",
+    "statuses": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "converted": "Converted",
+      "lost": "Lost"
+    }
   },
   "reps": {
     "title": "Representatives",

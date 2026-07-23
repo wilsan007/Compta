@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
@@ -195,7 +195,7 @@ export function SearchEntriesPage() {
             <Card>
               <Table headers={['', t('entries.number'), t('entries.date'), t('entries.journal'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit')]}>
                 {results.map((entry) => (
-                  <div key={entry.id}>
+                  <Fragment key={entry.id}>
                     <TableRow onClick={() => toggleExpand(entry.id)}>
                       <TableCell className="w-8">
                         {entry.journal_lines && entry.journal_lines.length > 0
@@ -203,7 +203,7 @@ export function SearchEntriesPage() {
                           : <span className="w-4 inline-block" />}
                       </TableCell>
                       <TableCell className="font-mono text-xs">{entry.piece_number || entry.number}</TableCell>
-                      <TableCell className="text-xs">{formatDate(entry.date)}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{formatDate(entry.date)}</TableCell>
                       <TableCell className="font-mono text-xs">{entry.journal_code}</TableCell>
                       <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                       <TableCell>
@@ -215,7 +215,7 @@ export function SearchEntriesPage() {
                       <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                     </TableRow>
                     {expanded.has(entry.id) && entry.journal_lines && entry.journal_lines.map((line) => (
-                      <tr key={line.id} className="bg-[var(--color-neutral-50)]">
+                      <TableRow key={line.id} className="bg-[var(--color-neutral-50)]">
                         <TableCell />
                         <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">{line.account_general || line.account_code}</TableCell>
                         <TableCell />
@@ -226,9 +226,9 @@ export function SearchEntriesPage() {
                         </TableCell>
                         <TableCell className="font-mono text-xs text-right">{Number(line.debit) > 0 ? formatCurrency(Number(line.debit)) : ''}</TableCell>
                         <TableCell className="font-mono text-xs text-right">{Number(line.credit) > 0 ? formatCurrency(Number(line.credit)) : ''}</TableCell>
-                      </tr>
+                      </TableRow>
                     ))}
-                  </div>
+                  </Fragment>
                 ))}
               </Table>
             </Card>

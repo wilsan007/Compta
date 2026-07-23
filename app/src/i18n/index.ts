@@ -133,8 +133,9 @@ i18n
         features: arFeatures,
       },
     },
-    fallbackLng: 'fr',
+    fallbackLng: 'en',
     supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
+    nonExplicitSupportedLngs: true,
     ns: ALL_NAMESPACES as unknown as string[],
     defaultNS: 'common',
     interpolation: {
@@ -144,6 +145,17 @@ i18n
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage'],
+      convertDetectedLanguage: (lng: string) => {
+        // Map browser language to supported language
+        // e.g. 'sv-SE' -> not supported -> falls back to 'en' via fallbackLng
+        // e.g. 'fr-FR' -> 'fr', 'ar-MA' -> 'ar', 'en-US' -> 'en'
+        const base = lng.split('-')[0]
+        if ((SUPPORTED_LANGUAGES as readonly string[]).includes(base)) {
+          return base
+        }
+        // Unsupported language -> default to English
+        return 'en'
+      },
     },
     react: {
       useSuspense: false,
@@ -158,14 +170,14 @@ export function setLanguage(lng: SupportedLanguage) {
 }
 
 export function initRtl() {
-  const currentLang = (i18n.language || 'fr').split('-')[0] as SupportedLanguage
+  const currentLang = (i18n.language || 'en').split('-')[0] as SupportedLanguage
   const dir = LANGUAGE_LABELS[currentLang]?.dir || 'ltr'
   document.documentElement.dir = dir
   document.documentElement.lang = currentLang
 }
 
 i18n.on('languageChanged', (lng) => {
-  const lang = (lng || 'fr').split('-')[0] as SupportedLanguage
+  const lang = (lng || 'en').split('-')[0] as SupportedLanguage
   const dir = LANGUAGE_LABELS[lang]?.dir || 'ltr'
   document.documentElement.dir = dir
   document.documentElement.lang = lang

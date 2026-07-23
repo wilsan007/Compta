@@ -264,7 +264,8 @@
     "sizeUnitMB": "MB",
     "sizeUnitKB": "KB",
     "exportError": "Export error",
-    "rowsRetrieved": "{{rows}} rows retrieved across {{tables}} tables"
+    "rowsRetrieved": "{{rows}} rows retrieved across {{tables}} tables",
+    "missingConfig": "Missing configuration"
   },
   "import": {
     "title": "Data import",

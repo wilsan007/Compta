@@ -15,31 +15,76 @@ const ALL_MODULES = [
 ]
 
 const DEFAULT_MODULES = [...ALL_MODULES]
+const STORAGE_KEY = 'compta-enabled-modules'
 
-let cachedModules: string[] | null = null
+function readSessionCache(): string[] | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+function writeSessionCache(modules: string[]) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(modules))
+  } catch {
+    // ignore
+  }
+}
+
+let cachedModules: string[] | null = readSessionCache()
 let cachePromise: Promise<string[]> | null = null
+
+// Pub/sub: all hook instances subscribe so they stay in sync
+const subscribers = new Set<(modules: string[]) => void>()
+
+function broadcastModules(modules: string[]) {
+  cachedModules = modules
+  writeSessionCache(modules)
+  subscribers.forEach((fn) => fn(modules))
+}
 
 export function useTenantModules() {
   const [modules, setModules] = useState<string[]>(cachedModules || DEFAULT_MODULES)
   const [loading, setLoading] = useState(!cachedModules)
 
+  // Subscribe to module changes from other instances
+  useEffect(() => {
+    const handler = (newModules: string[]) => {
+      setModules(newModules)
+      setLoading(false)
+    }
+    subscribers.add(handler)
+    // Sync immediately if cache already exists
+    if (cachedModules) {
+      setModules(cachedModules)
+      setLoading(false)
+    }
+    return () => {
+      subscribers.delete(handler)
+    }
+  }, [])
+
   const refresh = useCallback(async () => {
     if (cachePromise) {
       const result = await cachePromise
-      setModules(result)
-      setLoading(false)
+      broadcastModules(result)
       return result
     }
     setLoading(true)
     cachePromise = getTenantEnabledModules()
     try {
       const result = await cachePromise
-      cachedModules = result
-      setModules(result)
+      broadcastModules(result)
       return result
     } catch {
-      cachedModules = DEFAULT_MODULES
-      setModules(DEFAULT_MODULES)
+      broadcastModules(DEFAULT_MODULES)
       return DEFAULT_MODULES
     } finally {
       cachePromise = null
@@ -59,8 +104,7 @@ export function useTenantModules() {
   const saveModules = useCallback(async (tenantId: string, newModules: string[]) => {
     const { success, error } = await updateTenantModules(tenantId, newModules)
     if (success) {
-      cachedModules = newModules
-      setModules(newModules)
+      broadcastModules(newModules)
     }
     return { success, error }
   }, [])
@@ -76,6 +120,11 @@ export function useTenantModules() {
 export function invalidateModuleCache() {
   cachedModules = null
   cachePromise = null
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
 }
 
 export { ALL_MODULES, DEFAULT_MODULES }

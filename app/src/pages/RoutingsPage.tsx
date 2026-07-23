@@ -26,7 +26,7 @@ export function RoutingsPage() {
   const [operations, setOperations] = useState<Record<string, any[]>>({})
   const [showOpForm, setShowOpForm] = useState<string | null>(null)
 
-  const routingHeaders = ['Code', t('routings.name'), t('routings.product'), t('routings.version'), t('routings.active'), t('common.actions')]
+  const routingHeaders = [t('common.code'), t('routings.name'), t('routings.product'), t('routings.version'), t('routings.active'), t('common.actions')]
   const operationHeaders = [t('routings.seq'), t('routings.name'), t('routings.center'), t('routings.machine'), t('routings.tooling'), t('routings.prepMin'), t('routings.execMin'), t('routings.st'), t('common.actions')]
 
   const loadData = useCallback(async () => {
@@ -152,7 +152,7 @@ export function RoutingsPage() {
                   <TableCell><Badge variant={r.active ? 'success' : 'neutral'}>{r.active ? t('routings.active') : t('routings.inactive')}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={() => setShowOpForm(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Ajouter opération"><Plus className="w-4 h-4" /></button>
+                      <button onClick={() => setShowOpForm(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('routings.addOperation')}><Plus className="w-4 h-4" /></button>
                       <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </TableCell>
@@ -222,7 +222,7 @@ function RoutingFormModal({ products, onClose, onSaved }: { products: Product[];
       <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">{t('routings.create')}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="GAM-001" required />
+          <Input label={t('common.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="GAM-001" required />
           <Input label={t('routings.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Gamme de montage" required />
           <Select label={t('routings.product')} value={productId} onChange={(e) => setProductId(e.target.value)} options={[{ value: '', label: '—' }, ...products.map((p) => ({ value: p.id, label: p.name }))]} />
           <Input label={t('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />

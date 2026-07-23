@@ -61,19 +61,26 @@
     "newJournal": "Nouveau journal",
     "closePeriod": "Clôturer la période",
     "viewReports": "Voir les états",
-    "dailyManagement": "Gestion quotidienne",
+    "dailyEntry": "Saisie & Traitement quotidien",
     "addPiece": "Ajout d'une pièce",
-    "viewEditPiece": "Visualisation / modification d'une pièce",
-    "entryJournals": "Journaux de saisie",
     "searchEntries": "Recherche d'écritures",
-    "thirdPartyManagement": "Gestion des tiers",
+    "lettrage": "Lettrage",
+    "recurringEntries": "Écritures récurrentes",
+    "thirdPartyPayments": "Tiers & Règlements",
     "thirdPartyPlan": "Plan tiers",
-    "thirdPartyAccounts": "Gestion des comptes tiers",
     "paymentGeneration": "Génération des règlements",
-    "generalAccountsManagement": "Gestion des comptes généraux",
+    "paymentReminders": "Relances de paiement",
+    "bankReconciliation": "Rapprochement bancaire",
+    "accountsStructure": "Comptes & Structure",
     "chartOfAccounts": "Plan comptable",
-    "generalAccounts": "Gestion des comptes généraux",
-    "accountsBalance": "Balance des comptes"
+    "accountsBalance": "Balance des comptes",
+    "entryTemplates": "Modèles de saisie",
+    "fixedAssets": "Immobilisations",
+    "statesClosures": "États, Clôtures & Déclarations",
+    "generalLedger": "Grand livre",
+    "fecExport": "Export FEC",
+    "ediTva": "Déclaration TVA",
+    "journalClosure": "Clôture des journaux"
   },
   "chartAccounts": {
     "title": "Plan comptable général",
@@ -163,7 +170,13 @@
     "exerciseFutureHint": "Exercice non encore ouvert. Saisie indicative.",
     "freeFieldLabel": "Libellé libre {{n}}",
     "freeFieldValue": "Valeur libre {{n}}",
-    "freeInfoHint": "Jusqu'à 10 champs personnalisés."
+    "freeInfoHint": "Jusqu'à 10 champs personnalisés.",
+    "classLabel": "Classe {{cls}}",
+    "accountCount": "{{count}} compte(s)",
+    "activeAccounts": "{{count}} actif(s)",
+    "showAll": "Afficher tout",
+    "hideZeroBalances": "Masquer soldes nuls",
+    "resultsCount": "{{shown}} sur {{total}} — {{active}} actif(s)"
   },
   "thirdParty": {
     "title": "Plan tiers unifié",
@@ -255,7 +268,10 @@
     "categorie": "Catégorie",
     "freeFieldLabel": "Libellé libre {{n}}",
     "freeFieldValue": "Valeur libre {{n}}",
-    "freeInfoHint": "Champs personnalisés supplémentaires."
+    "freeInfoHint": "Champs personnalisés supplémentaires.",
+    "placeholders": {
+      "contactName": "Jean Dupont"
+    }
   },
   "journals": {
     "title": "Codes journaux",

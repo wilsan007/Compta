@@ -252,7 +252,15 @@
     "updated": "Fournisseur modifié avec succès",
     "created": "Fournisseur créé avec succès",
     "deleteTitle": "Supprimer le fournisseur",
-    "deleteConfirm": "Voulez-vous vraiment supprimer le fournisseur \"{{name}}\" ?"
+    "deleteConfirm": "Voulez-vous vraiment supprimer le fournisseur \"{{name}}\" ?",
+    "placeholders": {
+      "name": "Tech Supply Co",
+      "contactName": "Jean Dupont",
+      "email": "contact@supplier.fr",
+      "phone": "0612345678",
+      "address": "15 rue du Commerce, 75011 Paris",
+      "vatNumber": "FR98765432109"
+    }
   },
   "automation": {
     "title": "Automatisation des factures",

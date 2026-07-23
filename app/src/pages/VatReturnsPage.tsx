@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getVatReturns, createVatReturn, updateVatReturn, deleteVatReturn, calcVatFromEntries } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import { FileText, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -11,6 +11,7 @@ export function VatReturnsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('reports')
   const { t: tCommon } = useTranslation('common')
+  const { formatCurrency, formatDate } = useLocale()
 const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -111,6 +112,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
   const { toast } = useToast()
   const { t } = useTranslation('reports')
   const { t: tCommon } = useTranslation('common')
+  const { formatCurrency } = useLocale()
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
   const [outputVat, setOutputVat] = useState(0)

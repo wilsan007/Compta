@@ -261,5 +261,41 @@
       "completed": "Completed",
       "cancelled": "Cancelled"
     }
+  },
+  "team": {
+    "title": "Team",
+    "inviteMember": "Invite a member",
+    "fullName": "Full name",
+    "role": "Role",
+    "roles": {
+      "admin": "Administrator",
+      "accountant": "Accountant",
+      "manager": "Manager",
+      "viewer": "Viewer",
+      "custom": "Custom"
+    },
+    "status": "Status",
+    "statuses": {
+      "active": "Active",
+      "pending": "Pending",
+      "revoked": "Revoked"
+    },
+    "actions": "Actions",
+    "editRole": "Edit role",
+    "revoke": "Revoke",
+    "reactivate": "Reactivate",
+    "reinvite": "Resend invitation",
+    "inviteResent": "Invitation resent",
+    "inviteResentMsg": "An email has been sent to {{email}}",
+    "userCreated": "User created",
+    "userCreatedMsg": "An invitation email has been sent to {{email}}",
+    "missingFields": "Please fill in all required fields",
+    "inviteEmailInfo": "An invitation email will be sent to this user. They will need to click the link in the email to set their password and join the company.",
+    "permissions": "Permissions",
+    "noUsers": "No users",
+    "noUsersDescription": "No users in this company",
+    "placeholders": {
+      "fullName": "John Smith"
+    }
   }
 }

@@ -264,7 +264,8 @@
     "sizeUnitMB": "Mo",
     "sizeUnitKB": "Ko",
     "exportError": "Erreur export",
-    "rowsRetrieved": "{{rows}} lignes récupérées sur {{tables}} tables"
+    "rowsRetrieved": "{{rows}} lignes récupérées sur {{tables}} tables",
+    "missingConfig": "Configuration manquante"
   },
   "import": {
     "title": "Import de données",

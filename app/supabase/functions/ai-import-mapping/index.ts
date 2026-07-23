@@ -1,15 +1,19 @@
+// @ts-nocheck — This file runs in Deno (Supabase Edge Function), not in the local TS environment.
 // Supabase Edge Function: AI-powered import column mapping fallback.
 // Called when the heuristic auto-mapping engine returns confidence < 50%.
 // Uses OpenAI GPT-4o-mini to analyze column headers + sample data and
 // return a structured mapping to target fields.
 //
 // Deploy with:
-//   supabase functions deploy ai-import-mapping --no-verify-jwt
+//   supabase functions deploy ai-import-mapping
 //
-// Required env var (set in Supabase dashboard → Edge Functions → Secrets):
+// Required env vars (set in Supabase dashboard → Edge Functions → Secrets):
 //   OPENAI_API_KEY=sk-...
+//   SUPABASE_URL=...
+//   SUPABASE_ANON_KEY=...
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface MappingRequest {
   sourceHeaders: string[];
@@ -24,22 +28,78 @@ interface MappingResponse {
   reasoning: Record<string, string>;
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev",
+  "http://localhost:5173",
+  "http://localhost:4173",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  } as const;
+}
 
 serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // ============================================
+  // AUTHENTICATION: Verify JWT from Authorization header
+  // ============================================
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) {
+    return new Response(
+      JSON.stringify({ error: "Token d'authentification requis" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  // Verify the caller's JWT
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) {
+    return new Response(
+      JSON.stringify({ error: "Utilisateur non authentifié" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Verify user is an active tenant user
+  const { data: tenantUser, error: tuErr } = await userClient
+    .from("tenant_users")
+    .select("id, role, status")
+    .eq("auth_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (tuErr || !tenantUser) {
+    return new Response(
+      JSON.stringify({ error: "Utilisateur non autorisé" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {
@@ -49,7 +109,15 @@ serve(async (req: Request) => {
     if (!sourceHeaders || !targetFields || sourceHeaders.length === 0) {
       return new Response(
         JSON.stringify({ error: "Missing sourceHeaders or targetFields" }),
-        { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Limit input size to prevent abuse
+    if (sourceHeaders.length > 100 || (sampleRows && sampleRows.length > 50)) {
+      return new Response(
+        JSON.stringify({ error: "Input too large" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -57,7 +125,7 @@ serve(async (req: Request) => {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: "OPENAI_API_KEY not configured" }),
-        { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -125,8 +193,8 @@ Associe ces colonnes aux champs cibles. Réponds en JSON uniquement.`;
       const errText = await openaiResponse.text();
       console.error("OpenAI API error:", errText);
       return new Response(
-        JSON.stringify({ error: "AI service error", details: errText }),
-        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        JSON.stringify({ error: "AI service error" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -136,7 +204,7 @@ Associe ces colonnes aux champs cibles. Réponds en JSON uniquement.`;
     if (!content) {
       return new Response(
         JSON.stringify({ error: "Empty AI response" }),
-        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -145,8 +213,8 @@ Associe ces colonnes aux champs cibles. Réponds en JSON uniquement.`;
       result = JSON.parse(content);
     } catch {
       return new Response(
-        JSON.stringify({ error: "Invalid JSON from AI", raw: content }),
-        { status: 502, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+        JSON.stringify({ error: "Invalid JSON from AI" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -170,14 +238,14 @@ Associe ces colonnes aux champs cibles. Réponds en JSON uniquement.`;
       }),
       {
         status: 200,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (err) {
     console.error("Edge function error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal error", details: String(err) }),
-      { status: 500, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Internal error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

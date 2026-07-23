@@ -148,6 +148,7 @@
     "total": "Total du lot",
     "count": "Virements sélectionnés",
     "noPayments": "Aucun ordre de paiement éligible",
+    "xmlPreview": "XML SEPA",
     "noPaymentsDesc": "Les ordres de paiement en brouillon ou annulés ne sont pas éligibles au SEPA.",
     "generated": "Fichier SEPA généré",
     "generatedDesc": "{{count}} virement(s) — {{total}} EUR",
