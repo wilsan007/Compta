@@ -20,14 +20,18 @@ import {
   Pin,
   PinOff,
   Home,
+  Building2,
+  Check,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
 import { useTenantModules } from '@/lib/useTenantModules'
+import { useAuth } from '@/lib/auth'
 
 // ============================================
 // TYPES
 // ============================================
-export type ModuleColor = 'blue' | 'indigo' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan' | 'teal' | 'fuchsia' | 'slate'
+export type ModuleColor = 'blue' | 'indigo' | 'emerald' | 'amber' | 'violet' | 'rose' | 'cyan' | 'teal' | 'fuchsia' | 'slate' | 'lime'
 
 interface NavItem {
   labelKey: string
@@ -46,6 +50,7 @@ export interface NavModule {
   color: ModuleColor
   icon: LucideIcon
   path: string
+  homePath?: string
   sections?: NavSection[]
   items?: NavItem[]
 }
@@ -60,6 +65,7 @@ export const navModules: NavModule[] = [
     color: 'blue',
     icon: Home,
     path: '/',
+    homePath: '/',
     items: [
       { labelKey: 'items.dashboard', path: '/' },
       { labelKey: 'items.myWorkspace', path: '/dashboard/workspace' },
@@ -71,6 +77,7 @@ export const navModules: NavModule[] = [
     color: 'indigo',
     icon: BookOpen,
     path: '/accounting',
+    homePath: '/accounting/home',
     sections: [
       {
         subGroupKey: 'subGroups.structure',
@@ -153,6 +160,7 @@ export const navModules: NavModule[] = [
     color: 'emerald',
     icon: ShoppingCart,
     path: '/commercial',
+    homePath: '/commercial/home',
     sections: [
       {
         subGroupKey: 'subGroups.sales',
@@ -194,6 +202,7 @@ export const navModules: NavModule[] = [
     color: 'amber',
     icon: Wallet,
     path: '/treasury',
+    homePath: '/treasury/home',
     items: [
       { labelKey: 'items.treasuryDashboard', path: '/treasury/dashboard' },
       { labelKey: 'items.forecasts', path: '/treasury/forecast' },
@@ -215,6 +224,7 @@ export const navModules: NavModule[] = [
     color: 'violet',
     icon: Boxes,
     path: '/stock',
+    homePath: '/stock/home',
     items: [
       { labelKey: 'items.stockQuantities', path: '/stock/quantities' },
       { labelKey: 'items.stockMovements', path: '/stock/movements' },
@@ -237,9 +247,10 @@ export const navModules: NavModule[] = [
   {
     id: 'production',
     groupKey: 'groups.production',
-    color: 'rose',
+    color: 'lime',
     icon: Factory,
     path: '/production',
+    homePath: '/production/home',
     sections: [
       {
         subGroupKey: 'subGroups.manufacturing',
@@ -283,6 +294,7 @@ export const navModules: NavModule[] = [
     color: 'cyan',
     icon: Users,
     path: '/hr',
+    homePath: '/hr/home',
     items: [
       { labelKey: 'items.employees', path: '/hr/employees' },
       { labelKey: 'items.payRuns', path: '/hr/pay-runs' },
@@ -312,6 +324,7 @@ export const navModules: NavModule[] = [
     color: 'teal',
     icon: BarChart3,
     path: '/dashboard',
+    homePath: '/dashboard/home',
     items: [
       { labelKey: 'items.salesDashboard', path: '/dashboard/sales' },
       { labelKey: 'items.purchasesDashboard', path: '/dashboard/purchases' },
@@ -325,6 +338,7 @@ export const navModules: NavModule[] = [
     color: 'fuchsia',
     icon: PieChart,
     path: '/reporting',
+    homePath: '/reporting/home',
     items: [
       { labelKey: 'items.financialDashboard', path: '/reporting/financial' },
       { labelKey: 'items.biReporting', path: '/reporting/bi' },
@@ -337,6 +351,7 @@ export const navModules: NavModule[] = [
     color: 'slate',
     icon: Settings,
     path: '/settings',
+    homePath: '/settings/home',
     sections: [
       {
         subGroupKey: 'subGroups.configuration',
@@ -418,6 +433,8 @@ export function getEnabledNavGroups(): LegacyNavGroup[] {
 // ============================================
 function getModuleIdForPath(pathname: string): string | null {
   for (const mod of getEnabledNavModules()) {
+    if (mod.homePath && mod.homePath !== '/' && pathname.startsWith(mod.homePath)) return mod.id
+    if (mod.path !== '/' && pathname.startsWith(mod.path)) return mod.id
     const allPaths = mod.sections
       ? mod.sections.flatMap((s) => s.items.map((i) => i.path))
       : mod.items?.map((i) => i.path) || []
@@ -480,6 +497,7 @@ const colorVarMap: Record<ModuleColor, string> = {
   teal: '--mod-teal',
   fuchsia: '--mod-fuchsia',
   slate: '--mod-slate',
+  lime: '--mod-lime',
 }
 
 const colorBgMap: Record<ModuleColor, string> = {
@@ -493,6 +511,7 @@ const colorBgMap: Record<ModuleColor, string> = {
   teal: '--mod-teal-bg',
   fuchsia: '--mod-fuchsia-bg',
   slate: '--mod-slate-bg',
+  lime: '--mod-lime-bg',
 }
 
 // ============================================
@@ -510,12 +529,15 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
   const navigate = useNavigate()
   const { t } = useTranslation('nav')
   const { modules: enabledModules } = useTenantModules()
+  const { user, availableTenants, switchTenant } = useAuth()
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
   const [expandedSubGroup, setExpandedSubGroup] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [pinnedPaths, setPinnedPaths] = useState<string[]>([])
   const [hoveredModule, setHoveredModule] = useState<string | null>(null)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showTenantMenu, setShowTenantMenu] = useState(false)
+  const [switchingTenant, setSwitchingTenant] = useState(false)
 
   // Sync enabled modules with the module-level filter
   useEffect(() => {
@@ -588,6 +610,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
       setExpandedSubGroup(null)
     } else {
       setExpandedModule(mod.id)
+      setExpandedSubGroup(null)
     }
   }
 
@@ -653,7 +676,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
               >
                 <button
                   onClick={() => {
-                    navigate(mod.path)
+                    navigate(mod.homePath || mod.path)
                     onCloseMobile()
                   }}
                   className={cn(
@@ -771,14 +794,69 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
       'fixed lg:sticky top-0 left-0 h-screen w-72 border-r border-[var(--color-border)] sidebar-glass flex flex-col z-50 transition-all duration-300',
       mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
     )}>
-      {/* Logo + close */}
+      {/* Logo + tenant switcher + close */}
       <div className="flex items-center gap-3 h-14 px-4 border-b border-[var(--color-border)] flex-shrink-0">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-purple-600 flex items-center justify-center shadow-md flex-shrink-0">
           <span className="text-white font-bold text-base">C</span>
         </div>
-        <div className="overflow-hidden flex-1">
-          <p className="font-bold text-[var(--color-text)] text-sm whitespace-nowrap">Compta</p>
-          <p className="text-[10px] text-[var(--color-text-secondary)] whitespace-nowrap">v0.3 - Aurora</p>
+        <div className="overflow-hidden flex-1 relative">
+          {availableTenants.length > 1 ? (
+            <>
+              <button
+                onClick={() => setShowTenantMenu(!showTenantMenu)}
+                className="flex items-center gap-1.5 w-full text-left group"
+              >
+                <div className="overflow-hidden flex-1">
+                  <p className="font-bold text-[var(--color-text)] text-sm whitespace-nowrap truncate">{user?.tenantName || 'Compta'}</p>
+                  <p className="text-[10px] text-[var(--color-text-secondary)] whitespace-nowrap flex items-center gap-1">
+                    {t('layout.switchTenant')}
+                    <ChevronDown className="w-2.5 h-2.5 group-hover:translate-y-0.5 transition-transform" />
+                  </p>
+                </div>
+              </button>
+              {showTenantMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowTenantMenu(false)} />
+                  <div className="absolute left-0 top-full mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl py-1 min-w-[220px] z-50">
+                    <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-secondary)] border-b border-[var(--color-border)]">
+                      {t('layout.switchTenant')}
+                    </p>
+                    {availableTenants.map((tenant) => (
+                      <button
+                        key={tenant.tenantId}
+                        disabled={switchingTenant}
+                        onClick={async () => {
+                          if (tenant.tenantId === user?.tenantId) {
+                            setShowTenantMenu(false)
+                            return
+                          }
+                          setSwitchingTenant(true)
+                          await switchTenant(tenant.tenantId)
+                          setSwitchingTenant(false)
+                          setShowTenantMenu(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--color-neutral-50)] transition-colors ${switchingTenant ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-[var(--color-text-secondary)]" />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-[var(--color-text)]">{tenant.tenantName}</p>
+                          <p className="text-[10px] text-[var(--color-text-secondary)] capitalize">{t('layout.tenantRole')}: {tenant.role}</p>
+                        </div>
+                        {tenant.tenantId === user?.tenantId && (
+                          <Check className="w-4 h-4 text-[var(--color-primary)] flex-shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="font-bold text-[var(--color-text)] text-sm whitespace-nowrap truncate">{user?.tenantName || 'Compta'}</p>
+              <p className="text-[10px] text-[var(--color-text-secondary)] whitespace-nowrap">v0.3 - Aurora</p>
+            </>
+          )}
         </div>
         <button
           onClick={onCloseMobile}
@@ -908,7 +986,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                   >
                     <div className="flex items-center">
                       <NavLink
-                        to={mod.path}
+                        to={mod.homePath || mod.path}
                         onClick={onCloseMobile}
                         className="flex items-center gap-3 px-3 py-2.5 flex-1 min-w-0"
                       >

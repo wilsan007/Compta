@@ -195,6 +195,7 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
   const { toast } = useToast()
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { t: tHr } = useTranslation('hr')
   const [activeTab, setActiveTab] = useState('complement')
   const [name, setName] = useState(journal?.name || '')
   const [type, setType] = useState<Journal['type']>(journal?.type || 'general')
@@ -362,15 +363,15 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   <label className="flex items-center gap-2 text-sm p-2 rounded border border-[var(--color-border)]">
                     <input type="checkbox" defaultChecked />
-                    <span>Admin</span>
+                    <span>{tHr('team.roles.admin')}</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm p-2 rounded border border-[var(--color-border)]">
                     <input type="checkbox" defaultChecked />
-                    <span>Comptable</span>
+                    <span>{tHr('team.roles.accountant')}</span>
                   </label>
                   <label className="flex items-center gap-2 text-sm p-2 rounded border border-[var(--color-border)]">
                     <input type="checkbox" />
-                    <span>Gestionnaire</span>
+                    <span>{tHr('team.roles.manager')}</span>
                   </label>
                 </div>
                 <p className="text-xs text-[var(--color-text-secondary)]">{t('journals.rightsHint')}</p>

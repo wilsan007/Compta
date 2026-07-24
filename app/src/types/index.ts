@@ -244,9 +244,17 @@ export interface JournalLine {
   running_balance?: number | null
   reconciled?: boolean
   line_date?: string | null
+  vat_code?: string | null
+  vat_amount?: number | null
+  echeance_date?: string | null
+  quantity?: number | null
+  marking_code?: string | null
+  marked_bap?: boolean
+  marked_bap_date?: string | null
 }
 
 export interface JournalEntry {
+  ifrs_mode?: boolean
   id: string
   number: string
   date: string
@@ -278,6 +286,18 @@ export interface ChartAccount {
   description: string
   parent_id: string | null
   created_at: string
+  racine?: string | null
+  classe?: string | null
+  nature?: string | null
+  code_taxe_default?: string | null
+  saisie_analytic?: boolean
+  saisie_echeance?: boolean
+  saisie_tiers?: boolean
+  debit_n1?: number
+  credit_n1?: number
+  current_debit?: number
+  current_credit?: number
+  current_balance?: number
 }
 
 export interface User {
@@ -285,7 +305,7 @@ export interface User {
   auth_id: string | null
   name: string
   email: string
-  role: 'admin' | 'accountant' | 'manager' | 'viewer'
+  role: 'admin' | 'accountant' | 'manager' | 'viewer' | 'auditor'
   active: boolean
   last_login: string | null
   created_at: string
@@ -390,6 +410,11 @@ export interface TaxRate {
   effective_from: string
   effective_to: string | null
   created_at: string
+  account_collectee?: string | null
+  account_deductible?: string | null
+  type?: string | null
+  mode?: string | null
+  tenant_id?: string | null
 }
 
 export interface DashboardStats {
@@ -461,6 +486,14 @@ export interface Employee {
   salary: number
   hire_date: string
   status: 'active' | 'inactive' | 'on_leave'
+  employee_number?: string | null
+  social_security_number?: string | null
+  birth_date?: string | null
+  address?: string | null
+  city?: string | null
+  postal_code?: string | null
+  contract_type?: 'CDI' | 'CDD' | 'Apprentissage' | 'Stage' | 'Interim' | null
+  contract_end_date?: string | null
   created_at: string
   updated_at: string
 }
@@ -516,6 +549,10 @@ export interface Journal {
   locked: boolean
   created_at: string
   updated_at: string
+  numbering_mode?: string | null
+  account_attente?: string | null
+  is_analytic?: boolean
+  analytic_plan_id?: string | null
 }
 
 // ============ Fiscal Years & Periods ============
@@ -583,6 +620,9 @@ export interface ThirdPartyAccount {
   active: boolean
   created_at: string
   updated_at: string
+  payment_term_id?: string | null
+  default_bank_account_id?: string | null
+  credit_limit?: number
 }
 
 // ============ Analytic Sections ============
@@ -2076,5 +2116,525 @@ export interface AssetSplitComponent {
   new_asset_id: string
   allocated_value: number
   allocated_percentage: number
+  created_at: string
+}
+
+// ============ Phase 6: Sage 100 Accounting Features ============
+
+export interface AutoLabelRule {
+  id: string
+  tenant_id: string | null
+  name: string
+  description: string | null
+  journal_code: string | null
+  account_code: string | null
+  account_prefix: string | null
+  label_pattern: string
+  priority: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ExtourneLog {
+  id: string
+  tenant_id: string | null
+  original_entry_id: string
+  extourne_entry_id: string
+  extourne_date: string
+  reason: string | null
+  journal_code: string | null
+  total_debit: number
+  total_credit: number
+  status: string
+  created_at: string
+}
+
+export interface CarryForwardLog {
+  id: string
+  tenant_id: string | null
+  source_fiscal_year_id: string
+  target_fiscal_year_id: string
+  carry_forward_date: string
+  total_debit: number
+  total_credit: number
+  entry_count: number
+  status: string
+  journal_entry_id: string | null
+  created_at: string
+}
+
+export interface LettrageDifference {
+  id: string
+  tenant_id: string | null
+  third_party_code: string
+  lettrage_code: string
+  line_id_1: string
+  line_id_2: string
+  debit_amount: number
+  credit_amount: number
+  difference: number
+  difference_account: string | null
+  generated_entry_id: string | null
+  status: string
+  created_at: string
+}
+
+export interface AccountingControlRun {
+  id: string
+  tenant_id: string | null
+  control_type: string
+  fiscal_year_id: string | null
+  period_id: string | null
+  run_date: string
+  status: string
+  total_checks: number
+  errors_found: number
+  warnings_found: number
+  details: any[]
+  created_at: string
+}
+
+export interface CashControlSession {
+  id: string
+  tenant_id: string | null
+  session_number: string
+  journal_code: string
+  session_date: string
+  theoretical_balance: number
+  counted_balance: number
+  difference: number
+  status: string
+  counted_by: string | null
+  validated_by: string | null
+  validated_at: string | null
+  notes: string | null
+  details: any[]
+  created_at: string
+  updated_at: string
+}
+
+export interface FECAttestation {
+  id: string
+  tenant_id: string | null
+  fiscal_year_id: string
+  attestation_number: string
+  attestation_date: string
+  fec_type: string
+  entry_count: number
+  total_debit: number
+  total_credit: number
+  file_name: string | null
+  file_content: string | null
+  status: string
+  generated_by: string | null
+  created_at: string
+}
+
+export interface TierRIB {
+  id: string
+  tenant_id: string | null
+  third_party_account_id: string
+  rib_label: string
+  iban: string
+  bic: string | null
+  bank_name: string | null
+  bank_code: string | null
+  branch_code: string | null
+  account_number: string | null
+  key: string | null
+  is_default: boolean
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface IFRSAdjustment {
+  id: string
+  tenant_id: string | null
+  fiscal_year_id: string | null
+  adjustment_type: string
+  account_code: string
+  counter_account_code: string
+  description: string
+  amount: number
+  adjustment_date: string
+  ifrs_standard: string | null
+  journal_entry_id: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TaxPayment {
+  id: string
+  tenant_id: string | null
+  payment_number: string
+  tax_type: string
+  period_label: string
+  period_start: string
+  period_end: string
+  amount: number
+  payment_date: string
+  payment_method: string
+  bank_account_id: string | null
+  status: string
+  confirmation_number: string | null
+  journal_entry_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomReportTemplate {
+  id: string
+  tenant_id: string | null
+  name: string
+  description: string | null
+  report_type: string
+  category: string
+  columns: any[]
+  filters: Record<string, any>
+  group_by: string | null
+  sort_by: string | null
+  sort_order: string
+  page_orientation: string
+  page_size: string
+  header_text: string | null
+  footer_text: string | null
+  show_logo: boolean
+  show_date: boolean
+  show_page_numbers: boolean
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DeferredPrintingJob {
+  id: string
+  tenant_id: string | null
+  job_name: string
+  report_type: string
+  parameters: Record<string, any>
+  scheduled_date: string
+  status: string
+  output_format: string
+  output_data: string | null
+  generated_at: string | null
+  generated_by: string | null
+  error_message: string | null
+  created_at: string
+}
+
+export interface JournalAccessRight {
+  id: string
+  tenant_id: string | null
+  user_id: string
+  journal_code: string
+  can_view: boolean
+  can_create: boolean
+  can_edit: boolean
+  can_delete: boolean
+  can_close: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface VATOnCollection {
+  id: string
+  tenant_id: string | null
+  fiscal_year_id: string | null
+  period_label: string
+  period_start: string
+  period_end: string
+  vat_base: number
+  vat_rate: number
+  vat_amount: number
+  collected_amount: number
+  uncollected_amount: number
+  vat_collected: number
+  vat_uncollected: number
+  status: string
+  journal_entry_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============ Phase 7A: Payment Terms & Marking Types ============
+
+export interface PaymentTerm {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  type: 'fixed' | 'end_of_month' | 'split'
+  days_1: number
+  days_2: number | null
+  pct_1: number
+  pct_2: number | null
+  end_of_month: boolean
+  description: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface MarkingType {
+  id: string
+  tenant_id: string | null
+  code: string
+  label: string
+  color: string
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BatchEntrySession {
+  id: string
+  tenant_id: string | null
+  session_name: string
+  journal_code: string
+  session_date: string
+  entry_count: number
+  total_debit: number
+  total_credit: number
+  status: string
+  validated_at: string | null
+  validated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============ Phase 7B: Reminder Levels, Promises, Disputes ============
+
+export interface ReminderLevel {
+  id: string
+  tenant_id: string | null
+  level: number
+  name: string
+  template: string | null
+  days_after_due: number
+  penalty_rate: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentPromise {
+  id: string
+  tenant_id: string | null
+  third_party_code: string
+  amount: number
+  promised_date: string
+  reminder_level: number
+  status: 'pending' | 'kept' | 'broken' | 'cancelled'
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Dispute {
+  id: string
+  tenant_id: string | null
+  third_party_code: string
+  invoice_ref: string | null
+  amount: number
+  reason: string
+  status: 'open' | 'under_review' | 'resolved' | 'rejected'
+  resolution: string | null
+  opened_date: string
+  resolved_date: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface JustificatifSolde {
+  id: string
+  tenant_id: string | null
+  account_code: string
+  third_party_code: string | null
+  fiscal_period_id: string | null
+  opening_balance: number
+  total_debit: number
+  total_credit: number
+  closing_balance: number
+  generated_at: string
+  generated_by: string | null
+}
+
+export interface EtatRapprochement {
+  id: string
+  tenant_id: string | null
+  bank_account_id: string | null
+  account_code: string
+  period_start: string
+  period_end: string
+  bank_balance: number
+  book_balance: number
+  difference: number
+  reconciled_items: number
+  unreconciled_items: number
+  generated_at: string
+  generated_by: string | null
+}
+
+// ============ Phase 7C: Revision Cycles, Reporting Plans, Stat Fields, Dashboard Widgets, Fusion, Compaction, RGPD ============
+
+export interface RevisionCycle {
+  id: string
+  tenant_id: string | null
+  name: string
+  frequency: 'monthly' | 'quarterly' | 'annual' | 'custom'
+  start_month: number
+  account_class: string | null
+  active: boolean
+  last_run: string | null
+  next_run: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReportingPlan {
+  id: string
+  tenant_id: string | null
+  name: string
+  report_type: 'balance' | 'pnl' | 'cashflow' | 'vat' | 'custom'
+  schedule: 'manual' | 'monthly' | 'quarterly' | 'annual'
+  format: 'pdf' | 'excel' | 'csv'
+  recipients: string | null
+  parameters: Record<string, any>
+  last_generated: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StatField {
+  id: string
+  tenant_id: string | null
+  entity_type: 'customer' | 'supplier' | 'product' | 'account' | 'journal'
+  entity_id: string
+  field_name: string
+  field_value: string | null
+  field_type: 'text' | 'number' | 'date' | 'boolean'
+  created_at: string
+  updated_at: string
+}
+
+export interface DashboardWidget {
+  id: string
+  tenant_id: string | null
+  user_id: string
+  widget_type: 'chart' | 'table' | 'kpi' | 'alert' | 'custom'
+  title: string
+  config: Record<string, any>
+  position: number
+  size: 'small' | 'medium' | 'large' | 'full'
+  visible: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FusionLog {
+  id: string
+  tenant_id: string | null
+  source_account_code: string
+  target_account_code: string
+  lines_moved: number
+  fused_by: string | null
+  fused_at: string
+}
+
+export interface CompactionLog {
+  id: string
+  tenant_id: string | null
+  fiscal_year_id: string | null
+  entries_compacted: number
+  lines_compacted: number
+  status: 'pending' | 'in_progress' | 'completed' | 'failed'
+  compacted_by: string | null
+  compacted_at: string
+  details: Record<string, any> | null
+}
+
+export interface RGPDRequest {
+  id: string
+  tenant_id: string | null
+  request_type: 'export' | 'delete' | 'anonymize' | 'access'
+  entity_type: 'customer' | 'supplier' | 'employee' | 'all'
+  entity_id: string | null
+  status: 'pending' | 'processing' | 'completed' | 'rejected'
+  requested_by: string | null
+  processed_by: string | null
+  requested_at: string
+  processed_at: string | null
+  notes: string | null
+}
+
+export interface GridTemplate {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  description: string | null
+  journal_code: string | null
+  columns_config: any[]
+  default_account: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentTemplateCompta {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  description: string | null
+  payment_method: string
+  day_count: number
+  end_of_month: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StandardLabel {
+  id: string
+  tenant_id: string | null
+  code: string
+  label: string
+  category: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AnalyticJournalCode {
+  id: string
+  tenant_id: string | null
+  code: string
+  name: string
+  description: string | null
+  type: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ReimputationLog {
+  id: string
+  tenant_id: string | null
+  original_entry_id: string | null
+  original_line_id: string | null
+  reimputed_entry_id: string | null
+  reimputed_line_id: string | null
+  from_account: string
+  to_account: string
+  amount: number
+  reason: string | null
+  status: string
   created_at: string
 }

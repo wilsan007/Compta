@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button, exportToCSV, exportToExcel } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getChartAccounts, getJournals, getGeneralLedgerFiltered, getThirdPartyAccounts } from '@/lib/queries'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Download, FileSpreadsheet } from 'lucide-react'
 import type { ChartAccount, Journal, ThirdPartyAccount } from '@/types'
 
 export function GeneralLedgerPage() {
@@ -20,6 +20,7 @@ export function GeneralLedgerPage() {
   const [tiersCode, setTiersCode] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [ifrsMode, setIfrsMode] = useState<'' | 'all' | 'ifrs' | 'pcg'>('all')
 
   useEffect(() => { loadRef() }, [])
 
@@ -44,6 +45,7 @@ export function GeneralLedgerPage() {
         journalCode: journalCode || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
+        ifrsMode: ifrsMode === 'ifrs' ? true : ifrsMode === 'pcg' ? false : undefined,
       })
       if (tiersCode && data) {
         data = data.filter((m: any) => m.third_party_account === tiersCode || m.journal_entries?.journal_lines?.some((l: any) => l.third_party_account === tiersCode))
@@ -60,6 +62,42 @@ export function GeneralLedgerPage() {
   const totalCredit = movements.reduce((s, m) => s + Number(m.credit), 0)
   const solde = totalDebit - totalCredit
   const selectedAcc = accounts.find((a) => a.code === selectedAccount)
+
+  function handleExportCSV() {
+    const headers = [t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit')]
+    let running = 0
+    const rows = movements.map((m) => {
+      running += Number(m.debit) - Number(m.credit)
+      const je = m.journal_entries
+      return [
+        formatDate(je?.date || ''),
+        je?.piece_number || je?.number || '',
+        je?.journal_code || '',
+        je?.description || '',
+        Number(m.debit) || 0,
+        Number(m.credit) || 0,
+      ]
+    })
+    exportToCSV(`grand-livre-${selectedAccount}-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
+  }
+
+  function handleExportExcel() {
+    const headers = [t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit')]
+    let running = 0
+    const rows = movements.map((m) => {
+      running += Number(m.debit) - Number(m.credit)
+      const je = m.journal_entries
+      return [
+        formatDate(je?.date || ''),
+        je?.piece_number || je?.number || '',
+        je?.journal_code || '',
+        je?.description || '',
+        Number(m.debit) || 0,
+        Number(m.credit) || 0,
+      ]
+    })
+    exportToExcel(`grand-livre-${selectedAccount}-${new Date().toISOString().split('T')[0]}.xls`, headers, rows)
+  }
 
   return (
     <div>
@@ -96,10 +134,28 @@ export function GeneralLedgerPage() {
             </select>
           </div>
         </div>
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 flex items-center gap-3">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('ifrs.label')}</label>
+            <select className="input" value={ifrsMode} onChange={(e) => setIfrsMode(e.target.value as any)}>
+              <option value="all">{tCommon('common.all')}</option>
+              <option value="pcg">{t('ifrs.french_pcga')}</option>
+              <option value="ifrs">{t('ifrs.ias_ifrs')}</option>
+            </select>
+          </div>
           <Button onClick={loadMovements} disabled={loading || !selectedAccount}>
             {loading ? tCommon('common.loading') : tCommon('common.display')}
           </Button>
+          {movements.length > 0 && (
+            <>
+              <Button variant="secondary" onClick={handleExportCSV}>
+                <Download className="w-4 h-4" /> CSV
+              </Button>
+              <Button variant="secondary" onClick={handleExportExcel}>
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </Button>
+            </>
+          )}
         </div>
       </Card>
 

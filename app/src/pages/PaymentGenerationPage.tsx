@@ -6,9 +6,10 @@ import { useToast } from '@/lib/toast'
 import {
   getThirdPartyAccounts, getInvoices, getPurchaseInvoices, getBankAccounts,
   createCustomerPayment, createSupplierPayment, updateInvoice, updatePurchaseInvoice,
+  getPaymentTerms, generateMultiEcheances,
 } from '@/lib/queries'
-import { Wallet, CheckSquare, Square, Landmark } from 'lucide-react'
-import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount } from '@/types'
+import { Wallet, CheckSquare, Square, Landmark, CalendarClock } from 'lucide-react'
+import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount, PaymentTerm } from '@/types'
 
 type TiersType = 'customer' | 'supplier'
 
@@ -44,6 +45,9 @@ export function PaymentGenerationPage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [hasSearched, setHasSearched] = useState(false)
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([])
+  const [selectedTermId, setSelectedTermId] = useState('')
+  const [echeancePreview, setEcheancePreview] = useState<{ date: string; amount_pct: number; label: string }[]>([])
 
   useEffect(() => {
     loadRef()
@@ -51,9 +55,10 @@ export function PaymentGenerationPage() {
 
   async function loadRef() {
     try {
-      const [tp, ba] = await Promise.all([getThirdPartyAccounts(), getBankAccounts()])
+      const [tp, ba, pt] = await Promise.all([getThirdPartyAccounts(), getBankAccounts(), getPaymentTerms()])
       setThirdParties(tp || [])
       setBanks(ba || [])
+      setPaymentTerms(pt || [])
     } catch (err) {
       console.error('Error loading reference data:', err)
     } finally {
@@ -148,20 +153,39 @@ export function PaymentGenerationPage() {
     }
     setGenerating(true)
     try {
+      const term = paymentTerms.find((pt) => pt.id === selectedTermId)
       for (const row of selectedRows) {
-        const number = `${tiersType === 'supplier' ? 'RSF' : 'RSC'}-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}-${row.id.slice(0, 4)}`
+        const echeances = term ? generateMultiEcheances(row.date, term) : [{ date: paymentDate, amount_pct: 100, label: 'Payment' }]
+        for (const ech of echeances) {
+          const amount = (row.amountDue * ech.amount_pct) / 100
+          const number = `${tiersType === 'supplier' ? 'RSF' : 'RSC'}-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}-${row.id.slice(0, 4)}-${ech.label.slice(-1)}`
+          if (tiersType === 'supplier') {
+            await createSupplierPayment({
+              number,
+              supplier_id: row.tiersId,
+              purchase_invoice_id: row.id,
+              payment_date: ech.date,
+              amount,
+              method: method as any,
+              bank_account_id: bankAccountId || null,
+              reference: ech.label,
+              status: 'recorded',
+            } as any)
+          } else {
+            await createCustomerPayment({
+              number,
+              customer_id: row.tiersId,
+              invoice_id: row.id,
+              payment_date: ech.date,
+              amount,
+              method: method as any,
+              bank_account_id: bankAccountId || null,
+              reference: ech.label,
+              status: 'recorded',
+            } as any)
+          }
+        }
         if (tiersType === 'supplier') {
-          await createSupplierPayment({
-            number,
-            supplier_id: row.tiersId,
-            purchase_invoice_id: row.id,
-            payment_date: paymentDate,
-            amount: row.amountDue,
-            method: method as any,
-            bank_account_id: bankAccountId || null,
-            reference: null,
-            status: 'recorded',
-          } as any)
           const pInv = purchaseInvoices.find((p) => p.id === row.id)
           await updatePurchaseInvoice(row.id, {
             amount_paid: Number(pInv?.amount_paid || 0) + row.amountDue,
@@ -169,17 +193,6 @@ export function PaymentGenerationPage() {
             status: 'paid',
           } as any)
         } else {
-          await createCustomerPayment({
-            number,
-            customer_id: row.tiersId,
-            invoice_id: row.id,
-            payment_date: paymentDate,
-            amount: row.amountDue,
-            method: method as any,
-            bank_account_id: bankAccountId || null,
-            reference: null,
-            status: 'recorded',
-          } as any)
           const cInv = invoices.find((i) => i.id === row.id)
           await updateInvoice(row.id, {
             amount_paid: Number(cInv?.amount_paid || 0) + row.amountDue,
@@ -244,6 +257,27 @@ export function PaymentGenerationPage() {
               </select>
             </div>
             <Input label={t('paymentGeneration.paymentDate')} type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">{t('paymentGeneration.paymentTerm')}</label>
+              <select
+                className="input cursor-pointer"
+                value={selectedTermId}
+                onChange={(e) => {
+                  setSelectedTermId(e.target.value)
+                  const term = paymentTerms.find((pt) => pt.id === e.target.value)
+                  if (term) {
+                    setEcheancePreview(generateMultiEcheances(paymentDate, term))
+                  } else {
+                    setEcheancePreview([])
+                  }
+                }}
+              >
+                <option value="">{t('paymentGeneration.noTerm')}</option>
+                {paymentTerms.map((pt) => (
+                  <option key={pt.id} value={pt.id}>{pt.code} — {pt.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-end">
               <Button onClick={handleSearch} loading={loading} className="w-full">
                 {t('paymentGeneration.search')}
@@ -252,6 +286,25 @@ export function PaymentGenerationPage() {
           </div>
         </div>
       </Card>
+
+      {echeancePreview.length > 0 && (
+        <Card className="mb-4">
+          <div className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <CalendarClock className="w-4 h-4" /> {t('paymentGeneration.echeancePreview')}
+            </h3>
+            <div className="flex gap-3 flex-wrap">
+              {echeancePreview.map((ech, i) => (
+                <div key={i} className="border rounded-lg px-3 py-2 text-xs">
+                  <div className="font-semibold">{ech.label}</div>
+                  <div className="text-[var(--color-text-secondary)]">{formatDate(ech.date)}</div>
+                  <div className="font-mono">{ech.amount_pct}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {hasSearched && (
         <div>

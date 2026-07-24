@@ -20,6 +20,7 @@ const colorVarMap: Record<ModuleColor, string> = {
   teal: '--mod-teal',
   fuchsia: '--mod-fuchsia',
   slate: '--mod-slate',
+  lime: '--mod-lime',
 }
 
 const colorBgMap: Record<ModuleColor, string> = {
@@ -33,6 +34,7 @@ const colorBgMap: Record<ModuleColor, string> = {
   teal: '--mod-teal-bg',
   fuchsia: '--mod-fuchsia-bg',
   slate: '--mod-slate-bg',
+  lime: '--mod-lime-bg',
 }
 
 // ============================================
@@ -312,7 +314,7 @@ function QuickShortcuts({ mod, t }: QuickShortcutsProps) {
           return (
             <Link
               key={other.id}
-              to={other.path}
+              to={other.homePath || other.path}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:shadow-sm transition-all group"
             >
               <div className={cn('mod-icon w-6 h-6 rounded-md', `mod-${other.color}`)}>
@@ -362,7 +364,7 @@ export function SubGroupHubPage({ moduleId, sectionIndex }: SubGroupHubPageProps
       <nav className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] mb-6">
         <Link to="/" className="hover:text-[var(--color-text)] transition-colors">{t('groups.home')}</Link>
         <ChevronRight className="w-3.5 h-3.5" />
-        <Link to={mod.path} className="hover:text-[var(--color-text)] transition-colors">{t(mod.groupKey)}</Link>
+        <Link to={mod.homePath || mod.path} className="hover:text-[var(--color-text)] transition-colors">{t(mod.groupKey)}</Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-[var(--color-text)] font-medium" style={{ color: `var(${colorVar})` }}>
           {section.subGroupKey ? t(section.subGroupKey) : ''}
@@ -407,7 +409,7 @@ export function SubGroupHubPage({ moduleId, sectionIndex }: SubGroupHubPageProps
       {/* Back to module */}
       <div className="mt-8">
         <Link
-          to={mod.path}
+          to={mod.homePath || mod.path}
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
         >
           <ChevronRight className="w-4 h-4 rotate-180" />

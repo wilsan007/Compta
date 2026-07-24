@@ -196,7 +196,28 @@
     "assetFamilies": "فئات الأصول",
     "assetRevaluations": "إعادة تقييم الأصول",
     "assetBatchDisposals": "التخلص الدفعي",
-    "assetFromEntry": "إنشاء من قيد"
+    "assetFromEntry": "إنشاء من قيد",
+    "batchEntry": "إدخال دفعي",
+    "autoLabel": "تسمية تلقائية",
+    "extourne": "قلب تلقائي",
+    "carryForward": "ترحيل الأرصدة",
+    "lettrageDifferences": "فروقات المطابقة",
+    "accountingControls": "المراقبة المحاسبية",
+    "cashControl": "مراقبة الصندوق",
+    "fecAttestation": "شهادة FEC",
+    "tierRIBs": "حسابات بنكية متعددة للأطراف",
+    "ifrsAdjustments": "تسويات IAS/IFRS",
+    "taxPayments": "المدفوعات الضريبية",
+    "customReports": "قوالب التقارير المخصصة",
+    "deferredPrinting": "الطباعة المؤجلة",
+    "journalAccessRights": "صلاحيات الوصول للدفاتر",
+    "vatOnCollections": "ضريبة القيمة المضافة على التحصيلات",
+    "taxRates": "نسب الضريبة",
+    "paymentTerms": "نماذج الأداء",
+    "saisieParPiece": "إدخال حسب القيد",
+    "justificatifSolde": "مبرر الرصيد",
+    "etatRapprochement": "كشف المطابقة",
+    "reminderLevels": "مستويات التذكير"
   },
   "layout": {
     "reduce": "طي",
@@ -219,8 +240,15 @@
     "noResults": "لا توجد نتائج",
     "collapse": "طي",
     "expand": "توسيع",
-    "footer": "Compta v0.2.0 - مستوحى من Sage Accounting، محسّن لك",
-    "copyright": "© 2026 Compta"
+    "footer": "Compta v0.2.0 — محاسبتك، مبسطة وقوية",
+    "copyright": "© 2026 Compta",
+    "switchTenant": "تبديل الشركة",
+    "currentTenant": "الشركة الحالية",
+    "tenantRole": "الدور"
+  },
+  "tenantSelection": {
+    "title": "اختر شركتك",
+    "subtitle": "اختر الشركة التي تريد الوصول إليها ({{email}})"
   },
   "hub": {
     "viewAll": "عرض الكل",
@@ -231,31 +259,66 @@
       "subtitle": "لوحة التحكم ومساحة العمل"
     },
     "accounting": {
-      "subtitle": "إدارة محاسبية شاملة: الهيكل والمعالجة والتقارير"
+      "subtitle": "إدارة محاسبية شاملة: الهيكل والمعالجة والتقارير",
+      "sections": {
+        "dailyEntry": "القيد اليومي",
+        "structure": "الهيكل المحاسبي",
+        "states": "التقارير المالية"
+      }
     },
     "commercial": {
-      "subtitle": "المبيعات والمشتريات: العملاء والموردين والفواتير والمدفوعات"
+      "subtitle": "المبيعات والمشتريات: العملاء والموردين والفواتير والمدفوعات",
+      "sections": {
+        "sales": "المبيعات",
+        "purchases": "المشتريات"
+      }
     },
     "treasury": {
-      "subtitle": "الخزينة والتوقعات وإدارة التدفقات النقدية"
+      "subtitle": "الخزينة والتوقعات وإدارة التدفقات النقدية",
+      "sections": {
+        "cashflow": "التدفق النقدي",
+        "payments": "المدفوعات والتحويلات"
+      }
     },
     "stock": {
-      "subtitle": "إدارة المخزون والمستودعات والجرد"
+      "subtitle": "إدارة المخزون والمستودعات والجرد",
+      "sections": {
+        "inventory": "الجرد",
+        "management": "إدارة المخزون"
+      }
     },
     "production": {
-      "subtitle": "التصنيع والتعهيد وتخطيط الإنتاج"
+      "subtitle": "التصنيع والتعهيد وتخطيط الإنتاج",
+      "sections": {
+        "manufacturing": "التصنيع",
+        "planning": "التخطيط"
+      }
     },
     "hr": {
-      "subtitle": "الموارد البشرية والرواتب وإدارة الموظفين"
+      "subtitle": "الموارد البشرية والرواتب وإدارة الموظفين",
+      "sections": {
+        "payroll": "الرواتب",
+        "admin": "إدارة الموظفين"
+      }
     },
     "dashboards": {
-      "subtitle": "لوحات تحكم تحليلية حسب المجال"
+      "subtitle": "لوحات تحكم تحليلية حسب المجال",
+      "sections": {
+        "analytics": "التحليلات"
+      }
     },
     "reporting": {
-      "subtitle": "التقارير المالية وذكاء الأعمال"
+      "subtitle": "التقارير المالية وذكاء الأعمال",
+      "sections": {
+        "reports": "التقارير"
+      }
     },
     "system": {
-      "subtitle": "التكوين والتكاملات وإدارة البيانات"
+      "subtitle": "التكوين والتكاملات وإدارة البيانات",
+      "sections": {
+        "configuration": "التكوين",
+        "data": "البيانات"
+      }
     }
   },
   "commandPalette": {

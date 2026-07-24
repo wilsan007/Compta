@@ -14,8 +14,9 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+  const { user, loading, availableTenants } = useAuth()
   const { t } = useTranslation('nav')
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -30,6 +31,11 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  // Multi-tenant user with no selected tenant — redirect to tenant selection
+  if (!user.tenantId && availableTenants.length > 1) {
+    return <Navigate to="/select-tenant" replace state={{ from: location.pathname }} />
   }
 
   if (!user.tenantId) {

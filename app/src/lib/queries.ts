@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -15,15 +15,18 @@ export async function getTenantId(): Promise<string | null> {
   // Fetch from DB
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
+  // User may belong to multiple tenants — pick the one from localStorage or the first
   const { data } = await supabase
     .from('tenant_users')
     .select('tenant_id')
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
-    .single()
-  if (data?.tenant_id) {
-    _cachedTenantId = data.tenant_id
-    return data.tenant_id
+  if (data && data.length > 0) {
+    const stored = localStorage.getItem('active_tenant_id')
+    const match = data.find(tu => tu.tenant_id === stored)
+    const tid = match?.tenant_id || data[0].tenant_id
+    _cachedTenantId = tid
+    return tid
   }
   return null
 }
@@ -537,6 +540,48 @@ export async function updateBankTransaction(id: string, updates: Partial<BankTra
   const { data, error } = await tud(supabase.from('bank_transactions').update(updates), 'bank_transactions', tid).eq('id', id).select().single()
   if (error) throw error
   return data as BankTransaction
+}
+
+export async function autoMatchBankTransactions(accountId?: string): Promise<{ matched: number; unmatched: number }> {
+  const tid = await getTenantId()
+  let txQ = supabase.from('bank_transactions').select('*').eq('reconciled', false)
+  if (tid) txQ = txQ.eq('tenant_id', tid)
+  if (accountId) txQ = txQ.eq('account_id', accountId)
+  const { data: txns, error: txErr } = await txQ
+  if (txErr) throw txErr
+
+  let jlQ = supabase.from('journal_lines').select('id, debit, credit, account_code, account_general, journal_entries!inner(date, journal_code, number, description)')
+  if (tid) jlQ = jlQ.eq('tenant_id', tid)
+  const { data: lines, error: jlErr } = await jlQ
+  if (jlErr) throw jlErr
+
+  let matched = 0
+  let unmatched = 0
+
+  for (const tx of txns || []) {
+    const txAmount = Number(tx.amount)
+    const txDate = tx.date
+    const isCredit = tx.type === 'credit'
+
+    const match = (lines || []).find((l: any) => {
+      const lineAmount = isCredit ? Number(l.credit) : Number(l.debit)
+      if (lineAmount !== txAmount) return false
+      const entryDate = l.journal_entries?.date
+      if (!entryDate) return false
+      const diff = Math.abs(new Date(entryDate).getTime() - new Date(txDate).getTime())
+      return diff <= 7 * 24 * 60 * 60 * 1000
+    })
+
+    if (match) {
+      const { error: updErr } = await tud(supabase.from('bank_transactions').update({ reconciled: true, matched: true, matched_line_id: match.id }), 'bank_transactions', tid).eq('id', tx.id)
+      if (updErr) throw updErr
+      matched++
+    } else {
+      unmatched++
+    }
+  }
+
+  return { matched, unmatched }
 }
 
 // ============ Bank Rules ============
@@ -1875,7 +1920,9 @@ export async function searchEntries(criteria: {
   if (criteria.pieceNumber) query = query.ilike('piece_number', `%${criteria.pieceNumber}%`)
   if (criteria.description) query = query.ilike('description', `%${criteria.description}%`)
 
+  console.log('[searchEntries] criteria:', JSON.stringify(criteria), 'tenant_id:', tid)
   const { data, error } = await query.limit(200)
+  console.log('[searchEntries] result count:', data?.length, 'error:', error?.message)
   if (error) throw error
 
   let results = data as JournalEntry[]
@@ -2351,11 +2398,12 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
   journalCode?: string
   dateFrom?: string
   dateTo?: string
+  ifrsMode?: boolean
 }) {
   const tid = await getTenantId()
   let query = supabase
     .from('journal_lines')
-    .select('*, journal_entries!inner(number, date, journal_code, description, reference, piece_number)')
+    .select('*, journal_entries!inner(number, date, journal_code, description, reference, piece_number, ifrs_mode)')
     .or(`account_code.eq.${accountCode},account_general.eq.${accountCode}`)
     .order('created_at', { ascending: true })
   if (tid) query = query.eq('tenant_id', tid)
@@ -2363,6 +2411,7 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
   if (filters?.journalCode) query = query.eq('journal_entries.journal_code', filters.journalCode)
   if (filters?.dateFrom) query = query.gte('journal_entries.date', filters.dateFrom)
   if (filters?.dateTo) query = query.lte('journal_entries.date', filters.dateTo)
+  if (filters?.ifrsMode !== undefined) query = query.eq('journal_entries.ifrs_mode', filters.ifrsMode)
 
   const { data, error } = await query
   if (error) throw error
@@ -4039,7 +4088,7 @@ export interface TenantUser {
   auth_id: string | null
   email: string
   name: string
-  role: 'admin' | 'accountant' | 'manager' | 'viewer' | 'custom'
+  role: 'admin' | 'accountant' | 'manager' | 'viewer' | 'custom' | 'auditor'
   permissions: Record<string, string[]>
   status: 'pending' | 'active' | 'revoked'
   invited_by: string | null
@@ -4047,6 +4096,8 @@ export interface TenantUser {
   accepted_at: string | null
   last_login: string | null
   created_at: string
+  valid_from: string | null
+  valid_until: string | null
 }
 
 export async function createTenantForUser(data: {
@@ -4151,10 +4202,11 @@ export async function getCurrentTenant(): Promise<Tenant | null> {
     .select('tenant_id, tenants(*)')
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
-    .single()
 
-  if (error || !data) return null
-  return (data as any).tenants as Tenant
+  if (error || !data || data.length === 0) return null
+  const stored = localStorage.getItem('active_tenant_id')
+  const match = data.find(tu => tu.tenant_id === stored) || data[0]
+  return (match as any).tenants as Tenant
 }
 
 export async function getCurrentTenantUser(): Promise<TenantUser | null> {
@@ -4166,10 +4218,11 @@ export async function getCurrentTenantUser(): Promise<TenantUser | null> {
     .select('*')
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
-    .single()
 
-  if (error || !data) return null
-  return data as TenantUser
+  if (error || !data || data.length === 0) return null
+  const stored = localStorage.getItem('active_tenant_id')
+  const match = data.find(tu => tu.tenant_id === stored) || data[0]
+  return match as TenantUser
 }
 
 export async function getTenantEnabledModules(): Promise<string[]> {
@@ -4186,10 +4239,10 @@ async function requireAdminOfTenant(tenantId: string): Promise<{ ok: boolean; er
     .select('role, status, tenant_id')
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
+    .eq('tenant_id', tenantId)
     .maybeSingle()
   if (!tu) return { ok: false, error: 'Utilisateur non trouvé' }
   if (tu.role !== 'admin') return { ok: false, error: 'Action réservée aux administrateurs' }
-  if (tu.tenant_id !== tenantId) return { ok: false, error: 'Vous ne pouvez agir que sur votre propre entreprise' }
   return { ok: true }
 }
 
@@ -4227,6 +4280,8 @@ export async function inviteUser(data: {
   role: TenantUser['role']
   permissions?: Record<string, string[]>
   invitedBy?: string
+  validFrom?: string | null
+  validUntil?: string | null
 }): Promise<{ success: boolean; error?: string; message?: string }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Non connecté' }
@@ -4248,6 +4303,8 @@ export async function inviteUser(data: {
         tenant_id: data.tenantId,
         invited_by: data.invitedBy || null,
         locale,
+        valid_from: data.validFrom || null,
+        valid_until: data.validUntil || null,
       },
     })
 
@@ -4442,6 +4499,7 @@ export function hasPermission(
     return false
   }
   if (user.role === 'viewer') return action === 'select'
+  if (user.role === 'auditor') return action === 'select'
   if (user.role === 'custom') {
     const perms = user.permissions[table]
     if (!perms) return false
@@ -4450,50 +4508,34 @@ export function hasPermission(
   return false
 }
 
-export const ROLE_LABELS: Record<TenantUser['role'], string> = {
-  admin: 'Administrateur',
-  accountant: 'Comptable',
-  manager: 'Manager',
-  viewer: 'Lecture seule',
-  custom: 'Personnalise',
-}
-
-export const ROLE_DESCRIPTIONS: Record<TenantUser['role'], string> = {
-  admin: 'Acces complet a toutes les fonctions et donnees',
-  accountant: 'Comptabilite, journaux, declarations - pas de suppression (sauf journaux)',
-  manager: 'Ventes, achats, clients, produits - pas de comptabilite ni parametres',
-  viewer: 'Consultation uniquement, aucune modification',
-  custom: 'Permissions granulaires definies par l administrateur',
-}
-
 export const PERMISSION_TABLES = [
-  { name: 'invoices', label: 'Factures ventes' },
-  { name: 'quotes', label: 'Devis' },
-  { name: 'customers', label: 'Clients' },
-  { name: 'suppliers', label: 'Fournisseurs' },
-  { name: 'products', label: 'Produits' },
-  { name: 'purchase_invoices', label: 'Factures achats' },
-  { name: 'purchase_orders', label: 'Commandes achats' },
-  { name: 'journal_entries', label: 'Ecritures comptables' },
-  { name: 'bank_transactions', label: 'Transactions bancaires' },
-  { name: 'chart_accounts', label: 'Plan comptable' },
-  { name: 'budgets', label: 'Budgets' },
-  { name: 'fiscal_years', label: 'Exercices' },
-  { name: 'vat_returns', label: 'Declarations TVA' },
-  { name: 'employees', label: 'Employes' },
-  { name: 'pay_runs', label: 'Paies' },
-  { name: 'company_settings', label: 'Parametres entreprise' },
-  { name: 'projects', label: 'Projets' },
-  { name: 'warehouses', label: 'Entrepots' },
-  { name: 'stock_movements', label: 'Mouvements stock' },
-  { name: 'audit_log', label: 'Journal d audit' },
+  { name: 'invoices' },
+  { name: 'quotes' },
+  { name: 'customers' },
+  { name: 'suppliers' },
+  { name: 'products' },
+  { name: 'purchase_invoices' },
+  { name: 'purchase_orders' },
+  { name: 'journal_entries' },
+  { name: 'bank_transactions' },
+  { name: 'chart_accounts' },
+  { name: 'budgets' },
+  { name: 'fiscal_years' },
+  { name: 'vat_returns' },
+  { name: 'employees' },
+  { name: 'pay_runs' },
+  { name: 'company_settings' },
+  { name: 'projects' },
+  { name: 'warehouses' },
+  { name: 'stock_movements' },
+  { name: 'audit_log' },
 ] as const
 
 export const PERMISSION_ACTIONS = [
-  { value: 'select', label: 'Voir' },
-  { value: 'insert', label: 'Creer' },
-  { value: 'update', label: 'Modifier' },
-  { value: 'delete', label: 'Supprimer' },
+  { value: 'select' },
+  { value: 'insert' },
+  { value: 'update' },
+  { value: 'delete' },
 ] as const
 
 // ============ Production Module: Routings ============
@@ -6645,4 +6687,1316 @@ export async function createAssetSplit(s: Omit<AssetSplit, 'id' | 'created_at'>)
   const { data, error } = await supabase.from('asset_splits').insert(ti(s, 'asset_splits', tid)).select().single()
   if (error) throw error
   return data as AssetSplit
+}
+
+// ============ Phase 6: Sage 100 Accounting Features ============
+
+// --- Auto Label Rules ---
+export async function getAutoLabelRules() {
+  const tid = await getTenantId()
+  let q = supabase.from('auto_label_rules').select('*').order('priority', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AutoLabelRule[]
+}
+export async function createAutoLabelRule(r: Omit<AutoLabelRule, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('auto_label_rules').insert({ ...r, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as AutoLabelRule
+}
+export async function updateAutoLabelRule(id: string, updates: Partial<AutoLabelRule>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('auto_label_rules').update(updates), 'auto_label_rules', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as AutoLabelRule
+}
+export async function deleteAutoLabelRule(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('auto_label_rules').delete(), 'auto_label_rules', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Extourne Log ---
+export async function getExtourneLogs() {
+  const tid = await getTenantId()
+  let q = supabase.from('extourne_log').select('*').order('extourne_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ExtourneLog[]
+}
+export async function createExtourneLog(e: Omit<ExtourneLog, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('extourne_log').insert({ ...e, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as ExtourneLog
+}
+
+// --- Carry Forward Log ---
+export async function getCarryForwardLogs() {
+  const tid = await getTenantId()
+  let q = supabase.from('carry_forward_log').select('*').order('carry_forward_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CarryForwardLog[]
+}
+export async function createCarryForwardLog(c: Omit<CarryForwardLog, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('carry_forward_log').insert({ ...c, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as CarryForwardLog
+}
+
+// --- Lettrage Differences ---
+export async function getLettrageDifferences() {
+  const tid = await getTenantId()
+  let q = supabase.from('lettrage_differences').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as LettrageDifference[]
+}
+export async function createLettrageDifference(d: Omit<LettrageDifference, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('lettrage_differences').insert({ ...d, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as LettrageDifference
+}
+export async function updateLettrageDifference(id: string, updates: Partial<LettrageDifference>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('lettrage_differences').update(updates), 'lettrage_differences', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as LettrageDifference
+}
+export async function deleteLettrageDifference(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('lettrage_differences').delete(), 'lettrage_differences', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Accounting Control Runs ---
+export async function getAccountingControlRuns() {
+  const tid = await getTenantId()
+  let q = supabase.from('accounting_control_runs').select('*').order('run_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AccountingControlRun[]
+}
+export async function createAccountingControlRun(c: Omit<AccountingControlRun, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('accounting_control_runs').insert({ ...c, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as AccountingControlRun
+}
+
+// --- Cash Control Sessions ---
+export async function getCashControlSessions() {
+  const tid = await getTenantId()
+  let q = supabase.from('cash_control_sessions').select('*').order('session_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CashControlSession[]
+}
+export async function createCashControlSession(c: Omit<CashControlSession, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('cash_control_sessions').insert({ ...c, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as CashControlSession
+}
+export async function updateCashControlSession(id: string, updates: Partial<CashControlSession>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('cash_control_sessions').update(updates), 'cash_control_sessions', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as CashControlSession
+}
+export async function deleteCashControlSession(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('cash_control_sessions').delete(), 'cash_control_sessions', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- FEC Attestations ---
+export async function getFECAttestations() {
+  const tid = await getTenantId()
+  let q = supabase.from('fec_attestations').select('*').order('attestation_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FECAttestation[]
+}
+export async function createFECAttestation(a: Omit<FECAttestation, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('fec_attestations').insert({ ...a, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as FECAttestation
+}
+export async function deleteFECAttestation(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('fec_attestations').delete(), 'fec_attestations', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Tier RIBs ---
+export async function getTierRIBs(thirdPartyAccountId?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('tier_ribs').select('*').order('is_default', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (thirdPartyAccountId) q = q.eq('third_party_account_id', thirdPartyAccountId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TierRIB[]
+}
+export async function createTierRIB(r: Omit<TierRIB, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tier_ribs').insert({ ...r, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TierRIB
+}
+export async function updateTierRIB(id: string, updates: Partial<TierRIB>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('tier_ribs').update(updates), 'tier_ribs', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as TierRIB
+}
+export async function deleteTierRIB(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('tier_ribs').delete(), 'tier_ribs', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- IFRS Adjustments ---
+export async function getIFRSAdjustments() {
+  const tid = await getTenantId()
+  let q = supabase.from('ifrs_adjustments').select('*').order('adjustment_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as IFRSAdjustment[]
+}
+export async function createIFRSAdjustment(a: Omit<IFRSAdjustment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('ifrs_adjustments').insert({ ...a, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as IFRSAdjustment
+}
+export async function updateIFRSAdjustment(id: string, updates: Partial<IFRSAdjustment>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('ifrs_adjustments').update(updates), 'ifrs_adjustments', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as IFRSAdjustment
+}
+export async function deleteIFRSAdjustment(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('ifrs_adjustments').delete(), 'ifrs_adjustments', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Tax Payments ---
+export async function getTaxPayments() {
+  const tid = await getTenantId()
+  let q = supabase.from('tax_payments').select('*').order('payment_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TaxPayment[]
+}
+export async function createTaxPayment(p: Omit<TaxPayment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tax_payments').insert({ ...p, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TaxPayment
+}
+export async function updateTaxPayment(id: string, updates: Partial<TaxPayment>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('tax_payments').update(updates), 'tax_payments', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as TaxPayment
+}
+export async function deleteTaxPayment(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('tax_payments').delete(), 'tax_payments', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Custom Report Templates ---
+export async function getCustomReportTemplates() {
+  const tid = await getTenantId()
+  let q = supabase.from('custom_report_templates').select('*').order('name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CustomReportTemplate[]
+}
+export async function createCustomReportTemplate(t: Omit<CustomReportTemplate, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('custom_report_templates').insert({ ...t, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as CustomReportTemplate
+}
+export async function updateCustomReportTemplate(id: string, updates: Partial<CustomReportTemplate>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('custom_report_templates').update(updates), 'custom_report_templates', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as CustomReportTemplate
+}
+export async function deleteCustomReportTemplate(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('custom_report_templates').delete(), 'custom_report_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Deferred Printing Jobs ---
+export async function getDeferredPrintingJobs() {
+  const tid = await getTenantId()
+  let q = supabase.from('deferred_printing_jobs').select('*').order('scheduled_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as DeferredPrintingJob[]
+}
+export async function createDeferredPrintingJob(j: Omit<DeferredPrintingJob, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('deferred_printing_jobs').insert({ ...j, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as DeferredPrintingJob
+}
+export async function updateDeferredPrintingJob(id: string, updates: Partial<DeferredPrintingJob>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('deferred_printing_jobs').update(updates), 'deferred_printing_jobs', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as DeferredPrintingJob
+}
+export async function deleteDeferredPrintingJob(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('deferred_printing_jobs').delete(), 'deferred_printing_jobs', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Journal Access Rights ---
+export async function getJournalAccessRights() {
+  const tid = await getTenantId()
+  let q = supabase.from('journal_access_rights').select('*, tenant_users(email)').order('journal_code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as any[]
+}
+export async function createJournalAccessRight(r: Omit<JournalAccessRight, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('journal_access_rights').insert({ ...r, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as JournalAccessRight
+}
+export async function updateJournalAccessRight(id: string, updates: Partial<JournalAccessRight>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('journal_access_rights').update(updates), 'journal_access_rights', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as JournalAccessRight
+}
+export async function deleteJournalAccessRight(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('journal_access_rights').delete(), 'journal_access_rights', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- VAT on Collections ---
+export async function getVATOnCollections() {
+  const tid = await getTenantId()
+  let q = supabase.from('vat_on_collections').select('*').order('period_start', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as VATOnCollection[]
+}
+export async function createVATOnCollection(v: Omit<VATOnCollection, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('vat_on_collections').insert({ ...v, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as VATOnCollection
+}
+export async function updateVATOnCollection(id: string, updates: Partial<VATOnCollection>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('vat_on_collections').update(updates), 'vat_on_collections', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as VATOnCollection
+}
+export async function deleteVATOnCollection(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('vat_on_collections').delete(), 'vat_on_collections', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Batch Entry Sessions ---
+export async function getBatchEntrySessions() {
+  const tid = await getTenantId()
+  let q = supabase.from('batch_entry_sessions').select('*').order('session_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as BatchEntrySession[]
+}
+export async function createBatchEntrySession(b: Omit<BatchEntrySession, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('batch_entry_sessions').insert({ ...b, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as BatchEntrySession
+}
+export async function updateBatchEntrySession(id: string, updates: Partial<BatchEntrySession>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('batch_entry_sessions').update(updates), 'batch_entry_sessions', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BatchEntrySession
+}
+export async function deleteBatchEntrySession(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('batch_entry_sessions').delete(), 'batch_entry_sessions', tid).eq('id', id)
+  if (error) throw error
+}
+
+// --- Extourne: create reversal entry from original ---
+export async function generateExtourne(originalEntryId: string, reason: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('journal_entries').select('*, journal_lines(*)').eq('id', originalEntryId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: original, error: e1 } = await q.single()
+  if (e1) throw e1
+
+  const extourneNumber = `EXT-${Date.now()}`
+  const { data: newEntry, error: e2 } = await supabase.from('journal_entries').insert({
+    tenant_id: tid,
+    number: extourneNumber,
+    date: new Date().toISOString().slice(0, 10),
+    description: `Extourne: ${original.description}`,
+    reference: original.reference || '',
+    status: 'posted',
+    journal_code: original.journal_code,
+    piece_number: `EXT-${original.piece_number || original.number}`,
+    total_debit: original.total_credit,
+    total_credit: original.total_debit,
+  }).select().single()
+  if (e2) throw e2
+
+  const reversedLines = (original.journal_lines || []).map((l: any) => ({
+    tenant_id: tid,
+    journal_id: newEntry.id,
+    account_code: l.account_code,
+    account_general: l.account_general,
+    account_tiers: l.account_tiers,
+    account_name: l.account_name,
+    debit: l.credit,
+    credit: l.debit,
+    description: `Extourne: ${l.description || ''}`,
+    line_order: l.line_order,
+    piece_number: `EXT-${l.piece_number || ''}`,
+  }))
+  if (reversedLines.length) {
+    const { error: e3 } = await supabase.from('journal_lines').insert(reversedLines)
+    if (e3) throw e3
+  }
+
+  await createExtourneLog({
+    original_entry_id: originalEntryId,
+    extourne_entry_id: newEntry.id,
+    extourne_date: new Date().toISOString().slice(0, 10),
+    reason,
+    journal_code: original.journal_code || null,
+    total_debit: original.total_credit,
+    total_credit: original.total_debit,
+    status: 'completed',
+  })
+
+  return newEntry
+}
+
+// --- Carry Forward: generate reports à-nouveaux ---
+export async function generateCarryForward(sourceFiscalYearId: string, targetFiscalYearId: string) {
+  const tid = await getTenantId()
+  const fecData = await getFECData(sourceFiscalYearId)
+  const balanceMap = new Map<string, { debit: number; credit: number }>()
+  for (const entry of fecData) {
+    for (const line of entry.journal_lines || []) {
+      const key = line.account_general || line.account_code
+      if (!key) continue
+      const existing = balanceMap.get(key) || { debit: 0, credit: 0 }
+      existing.debit += Number(line.debit) || 0
+      existing.credit += Number(line.credit) || 0
+      balanceMap.set(key, existing)
+    }
+  }
+  const anLines: any[] = []
+  let totalDebit = 0, totalCredit = 0
+  for (const [accountCode, bal] of balanceMap) {
+    const solde = bal.debit - bal.credit
+    if (Math.abs(solde) < 0.01) continue
+    if (solde > 0) {
+      anLines.push({ tenant_id: tid, account_code: accountCode, account_general: accountCode, debit: solde, credit: 0, description: 'Report à-nouveau', line_order: anLines.length + 1 })
+      totalDebit += solde
+    } else {
+      anLines.push({ tenant_id: tid, account_code: accountCode, account_general: accountCode, debit: 0, credit: -solde, description: 'Report à-nouveau', line_order: anLines.length + 1 })
+      totalCredit += -solde
+    }
+  }
+  if (anLines.length === 0) return null
+
+  const { data: newEntry, error } = await supabase.from('journal_entries').insert({
+    tenant_id: tid,
+    number: `AN-${Date.now()}`,
+    date: new Date().toISOString().slice(0, 10),
+    description: 'Reports à-nouveaux',
+    reference: 'AN',
+    status: 'posted',
+    journal_code: 'AN',
+    piece_number: 'AN-OUV',
+    total_debit: totalDebit,
+    total_credit: totalCredit,
+  }).select().single()
+  if (error) throw error
+
+  const linesWithEntry = anLines.map(l => ({ ...l, journal_id: newEntry.id }))
+  const { error: e2 } = await supabase.from('journal_lines').insert(linesWithEntry)
+  if (e2) throw e2
+
+  await createCarryForwardLog({
+    source_fiscal_year_id: sourceFiscalYearId,
+    target_fiscal_year_id: targetFiscalYearId,
+    carry_forward_date: new Date().toISOString().slice(0, 10),
+    total_debit: totalDebit,
+    total_credit: totalCredit,
+    entry_count: anLines.length,
+    status: 'completed',
+    journal_entry_id: newEntry.id,
+  })
+
+  return newEntry
+}
+
+// --- Accounting Control Run: detect anomalies ---
+export async function runAccountingControl(controlType: string, fiscalYearId?: string) {
+  const tid = await getTenantId()
+  const errors: any[] = []
+  const warnings: any[] = []
+  let totalChecks = 0
+
+  let jeQ = supabase.from('journal_entries').select('*, journal_lines(*)')
+  if (tid) jeQ = jeQ.eq('tenant_id', tid)
+  const { data: entries, error } = await jeQ
+  if (error) throw error
+
+  for (const entry of entries || []) {
+    totalChecks++
+    const totalD = (entry.journal_lines || []).reduce((s: number, l: any) => s + Number(l.debit || 0), 0)
+    const totalC = (entry.journal_lines || []).reduce((s: number, l: any) => s + Number(l.credit || 0), 0)
+    if (Math.abs(totalD - totalC) > 0.01) {
+      errors.push({ type: 'unbalanced', entry_number: entry.number, debit: totalD, credit: totalC, difference: totalD - totalC })
+    }
+    if (!entry.journal_lines || entry.journal_lines.length < 2) {
+      warnings.push({ type: 'single_line', entry_number: entry.number })
+    }
+    for (const line of entry.journal_lines || []) {
+      if (!line.account_code && !line.account_general) {
+        errors.push({ type: 'missing_account', entry_number: entry.number, line_id: line.id })
+      }
+    }
+  }
+
+  // Check for duplicates
+  totalChecks++
+  const numberMap = new Map<string, number>()
+  for (const e of entries || []) {
+    const key = `${e.journal_code}-${e.piece_number || e.number}`
+    numberMap.set(key, (numberMap.get(key) || 0) + 1)
+  }
+  for (const [key, count] of numberMap) {
+    if (count > 1) {
+      errors.push({ type: 'duplicate_piece', key, count })
+    }
+  }
+
+  // Check tiers non lettrés
+  totalChecks++
+  let lq = supabase.from('journal_lines').select('id, account_tiers, lettrage_code, debit, credit').not('account_tiers', 'is', null).is('lettrage_code', null)
+  if (tid) lq = lq.eq('tenant_id', tid)
+  const { data: unlettered } = await lq
+  if (unlettered && unlettered.length > 0) {
+    warnings.push({ type: 'unlettered_tiers', count: unlettered.length })
+  }
+
+  const result = {
+    control_type: controlType,
+    fiscal_year_id: fiscalYearId || null,
+    period_id: null,
+    run_date: new Date().toISOString(),
+    status: 'completed',
+    total_checks: totalChecks,
+    errors_found: errors.length,
+    warnings_found: warnings.length,
+    details: [...errors, ...warnings],
+  }
+  return await createAccountingControlRun(result)
+}
+
+// ============ Phase 7A: Sage 100 Critical Features ============
+
+// --- Calculate VAT from HT or TTC amount ---
+export function calculateVAT(amount: number, vatRate: number, mode: 'ht' | 'ttc' = 'ht'): { ht: number; tva: number; ttc: number } {
+  if (mode === 'ht') {
+    const ht = amount
+    const tva = ht * (vatRate / 100)
+    const ttc = ht + tva
+    return { ht: Math.round(ht * 100) / 100, tva: Math.round(tva * 100) / 100, ttc: Math.round(ttc * 100) / 100 }
+  } else {
+    const ttc = amount
+    const ht = ttc / (1 + vatRate / 100)
+    const tva = ttc - ht
+    return { ht: Math.round(ht * 100) / 100, tva: Math.round(tva * 100) / 100, ttc: Math.round(ttc * 100) / 100 }
+  }
+}
+
+// --- Apply auto label rules to generate a label ---
+export async function applyAutoLabelRules(
+  journalCode: string,
+  accountCode: string,
+  accountTiers: string | null,
+  pieceNumber: string,
+  date: string
+): Promise<string | null> {
+  const rules = await getAutoLabelRules()
+  for (const rule of rules) {
+    if (!rule.active) continue
+    if (rule.journal_code && rule.journal_code !== journalCode) continue
+    if (rule.account_code && rule.account_code !== accountCode) continue
+    if (rule.account_prefix && !accountCode.startsWith(rule.account_prefix)) continue
+    let label = rule.label_pattern
+    label = label.replace(/\{\{numero\}\}/g, pieceNumber || '')
+    label = label.replace(/\{\{tiers\}\}/g, accountTiers || '')
+    label = label.replace(/\{\{date\}\}/g, date || '')
+    label = label.replace(/\{\{compte\}\}/g, accountCode || '')
+    return label
+  }
+  return null
+}
+
+// --- Calculate echeance date based on payment term ---
+export async function calculateEcheance(date: string, paymentTermId: string | null): Promise<string | null> {
+  if (!paymentTermId) return null
+  const term = await getPaymentTermById(paymentTermId)
+  if (!term) return null
+
+  const baseDate = new Date(date)
+  if (term.type === 'fixed') {
+    const echeance = new Date(baseDate)
+    echeance.setDate(echeance.getDate() + term.days_1)
+    return echeance.toISOString().slice(0, 10)
+  } else if (term.type === 'end_of_month') {
+    const echeance = new Date(baseDate)
+    echeance.setDate(echeance.getDate() + term.days_1)
+    // Set to end of month
+    echeance.setMonth(echeance.getMonth() + 1, 0)
+    return echeance.toISOString().slice(0, 10)
+  } else if (term.type === 'split') {
+    // Return first echeance only (caller handles multi-echeance)
+    const echeance = new Date(baseDate)
+    echeance.setDate(echeance.getDate() + term.days_1)
+    return echeance.toISOString().slice(0, 10)
+  }
+  return null
+}
+
+// --- Get authorized journals for a user ---
+export async function getAuthorizedJournals(userId?: string): Promise<Journal[]> {
+  const tid = await getTenantId()
+  if (!userId) {
+    // No user filtering — return all journals
+    return getJournals()
+  }
+  // Check journal_access_rights for this user
+  let rightsQ = supabase
+    .from('journal_access_rights')
+    .select('journal_code, can_view, can_create')
+    .eq('user_id', userId)
+  if (tid) rightsQ = rightsQ.eq('tenant_id', tid)
+  const { data: rights, error } = await rightsQ
+  if (error || !rights || rights.length === 0) {
+    // No rights defined — return all journals (open access by default)
+    return getJournals()
+  }
+  const allowedCodes = rights.filter((r: any) => r.can_view !== false).map((r: any) => r.journal_code)
+  const allJournals = await getJournals()
+  return allJournals.filter((j) => allowedCodes.includes(j.code))
+}
+
+// ============ Payment Terms (Modèles de règlement) ============
+
+export async function getPaymentTerms(): Promise<PaymentTerm[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('payment_terms').select('*').order('code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PaymentTerm[]
+}
+
+export async function getPaymentTermById(id: string): Promise<PaymentTerm | null> {
+  const tid = await getTenantId()
+  let q = supabase.from('payment_terms').select('*').eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.single()
+  if (error) return null
+  return data as PaymentTerm
+}
+
+export async function createPaymentTerm(pt: Omit<PaymentTerm, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<PaymentTerm> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payment_terms').insert({ ...pt, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as PaymentTerm
+}
+
+export async function updatePaymentTerm(id: string, updates: Partial<PaymentTerm>): Promise<PaymentTerm> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('payment_terms').update(updates), 'payment_terms', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PaymentTerm
+}
+
+export async function deletePaymentTerm(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('payment_terms').delete(), 'payment_terms', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Tax Rates (enriched CRUD) ============
+
+export async function getTaxRates(): Promise<TaxRate[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('tax_rates').select('*').order('rate', { ascending: false })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TaxRate[]
+}
+
+export async function createTaxRate(tr: Omit<TaxRate, 'id' | 'created_at' | 'tenant_id'>): Promise<TaxRate> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tax_rates').insert({ ...tr, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TaxRate
+}
+
+export async function updateTaxRate(id: string, updates: Partial<TaxRate>): Promise<TaxRate> {
+  const { data, error } = await supabase.from('tax_rates').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data as TaxRate
+}
+
+export async function deleteTaxRate(id: string): Promise<void> {
+  const { error } = await supabase.from('tax_rates').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============ Marking Types (Types de marquage) ============
+
+export async function getMarkingTypes(): Promise<MarkingType[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('marking_types').select('*').order('code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as MarkingType[]
+}
+
+export async function createMarkingType(mt: Omit<MarkingType, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<MarkingType> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('marking_types').insert({ ...mt, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as MarkingType
+}
+
+export async function deleteMarkingType(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('marking_types').delete(), 'marking_types', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7B: Reminder Levels ============
+
+export async function getReminderLevels(): Promise<ReminderLevel[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('reminder_levels').select('*').order('level', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ReminderLevel[]
+}
+
+export async function createReminderLevel(rl: Omit<ReminderLevel, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<ReminderLevel> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('reminder_levels').insert({ ...rl, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as ReminderLevel
+}
+
+export async function updateReminderLevel(id: string, updates: Partial<ReminderLevel>): Promise<ReminderLevel> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('reminder_levels').update(updates), 'reminder_levels', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ReminderLevel
+}
+
+export async function deleteReminderLevel(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('reminder_levels').delete(), 'reminder_levels', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7B: Payment Promises ============
+
+export async function getPaymentPromises(): Promise<PaymentPromise[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('payment_promises').select('*').order('promised_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PaymentPromise[]
+}
+
+export async function createPaymentPromise(pp: Omit<PaymentPromise, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<PaymentPromise> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payment_promises').insert({ ...pp, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as PaymentPromise
+}
+
+export async function updatePaymentPromise(id: string, updates: Partial<PaymentPromise>): Promise<PaymentPromise> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('payment_promises').update(updates), 'payment_promises', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PaymentPromise
+}
+
+export async function deletePaymentPromise(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('payment_promises').delete(), 'payment_promises', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7B: Disputes ============
+
+export async function getDisputes(): Promise<Dispute[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('disputes').select('*').order('opened_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Dispute[]
+}
+
+export async function createDispute(d: Omit<Dispute, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<Dispute> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('disputes').insert({ ...d, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as Dispute
+}
+
+export async function updateDispute(id: string, updates: Partial<Dispute>): Promise<Dispute> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('disputes').update(updates), 'disputes', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Dispute
+}
+
+export async function deleteDispute(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('disputes').delete(), 'disputes', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7B: Multi-Echeance Generation ============
+
+export function generateMultiEcheances(
+  date: string,
+  paymentTerm: PaymentTerm
+): { date: string; amount_pct: number; label: string }[] {
+  const baseDate = new Date(date)
+  const echeances: { date: string; amount_pct: number; label: string }[] = []
+
+  if (paymentTerm.type === 'fixed' || paymentTerm.type === 'end_of_month') {
+    const echeance = new Date(baseDate)
+    echeance.setDate(echeance.getDate() + paymentTerm.days_1)
+    if (paymentTerm.type === 'end_of_month') {
+      echeance.setMonth(echeance.getMonth() + 1, 0)
+    }
+    echeances.push({
+      date: echeance.toISOString().slice(0, 10),
+      amount_pct: 100,
+      label: `Échéance ${paymentTerm.code}`,
+    })
+  } else if (paymentTerm.type === 'split') {
+    const pct1 = paymentTerm.pct_1 || 50
+    const pct2 = paymentTerm.pct_2 || 50
+    const echeance1 = new Date(baseDate)
+    echeance1.setDate(echeance1.getDate() + paymentTerm.days_1)
+    echeances.push({
+      date: echeance1.toISOString().slice(0, 10),
+      amount_pct: pct1,
+      label: `Échéance 1 (${pct1}%)`,
+    })
+    if (paymentTerm.days_2) {
+      const echeance2 = new Date(baseDate)
+      echeance2.setDate(echeance2.getDate() + paymentTerm.days_2)
+      echeances.push({
+        date: echeance2.toISOString().slice(0, 10),
+        amount_pct: pct2,
+        label: `Échéance 2 (${pct2}%)`,
+      })
+    }
+  }
+
+  return echeances
+}
+
+// ============ Phase 7B: Justificatif de Solde ============
+
+export async function generateJustificatifSolde(
+  accountCode: string,
+  thirdPartyCode: string | null,
+  fiscalPeriodId: string | null
+): Promise<JustificatifSolde> {
+  const tid = await getTenantId()
+  let q = supabase.from('journal_lines').select('debit, credit')
+  if (tid) q = q.eq('tenant_id', tid)
+  q = q.eq('account_code', accountCode)
+  if (thirdPartyCode) q = q.eq('account_tiers', thirdPartyCode)
+  if (fiscalPeriodId) {
+    const { data: fp } = await supabase.from('fiscal_periods').select('start_date, end_date').eq('id', fiscalPeriodId).single()
+    if (fp) {
+      q = q.gte('line_date', fp.start_date).lte('line_date', fp.end_date)
+    }
+  }
+  const { data: lines, error } = await q
+  if (error) throw error
+
+  const totalDebit = (lines || []).reduce((s: number, l: any) => s + (Number(l.debit) || 0), 0)
+  const totalCredit = (lines || []).reduce((s: number, l: any) => s + (Number(l.credit) || 0), 0)
+  const closingBalance = totalDebit - totalCredit
+
+  const record = {
+    account_code: accountCode,
+    third_party_code: thirdPartyCode,
+    fiscal_period_id: fiscalPeriodId,
+    opening_balance: 0,
+    total_debit: totalDebit,
+    total_credit: totalCredit,
+    closing_balance: closingBalance,
+    generated_by: null,
+  }
+
+  const { data, error: insertError } = await supabase.from('justificatif_solde').insert({ ...record, tenant_id: tid }).select().single()
+  if (insertError) throw insertError
+  return data as JustificatifSolde
+}
+
+export async function getJustificatifsSolde(): Promise<JustificatifSolde[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('justificatif_solde').select('*').order('generated_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as JustificatifSolde[]
+}
+
+// ============ Phase 7B: Etat Rapprochement ============
+
+export async function generateEtatRapprochement(
+  accountCode: string,
+  bankAccountId: string | null,
+  periodStart: string,
+  periodEnd: string
+): Promise<EtatRapprochement> {
+  const tid = await getTenantId()
+  let q = supabase.from('journal_lines').select('debit, credit')
+  if (tid) q = q.eq('tenant_id', tid)
+  q = q.eq('account_code', accountCode)
+  q = q.gte('line_date', periodStart).lte('line_date', periodEnd)
+  const { data: lines, error } = await q
+  if (error) throw error
+
+  const bookBalance = (lines || []).reduce((s: number, l: any) => s + (Number(l.debit) || 0) - (Number(l.credit) || 0), 0)
+
+  let bankBalance = 0
+  if (bankAccountId) {
+    let bq = supabase.from('bank_transactions').select('amount')
+    if (tid) bq = bq.eq('tenant_id', tid)
+    bq = bq.eq('bank_account_id', bankAccountId)
+    bq = bq.gte('transaction_date', periodStart).lte('transaction_date', periodEnd)
+    const { data: txns, error: txnError } = await bq
+    if (txnError) throw txnError
+    bankBalance = (txns || []).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0)
+  }
+
+  const record = {
+    bank_account_id: bankAccountId,
+    account_code: accountCode,
+    period_start: periodStart,
+    period_end: periodEnd,
+    bank_balance: bankBalance,
+    book_balance: bookBalance,
+    difference: bankBalance - bookBalance,
+    reconciled_items: 0,
+    unreconciled_items: 0,
+    generated_by: null,
+  }
+
+  const { data, error: insertError } = await supabase.from('etat_rapprochement').insert({ ...record, tenant_id: tid }).select().single()
+  if (insertError) throw insertError
+  return data as EtatRapprochement
+}
+
+export async function getEtatsRapprochement(): Promise<EtatRapprochement[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('etat_rapprochement').select('*').order('generated_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as EtatRapprochement[]
+}
+
+// ============ Phase 7B: Mark line as BAP (Bon à Payer) ============
+
+export async function markLineBAP(lineId: string, marked: boolean): Promise<void> {
+  const tid = await getTenantId()
+  const updates = marked
+    ? { marked_bap: true, marked_bap_date: new Date().toISOString().slice(0, 10) }
+    : { marked_bap: false, marked_bap_date: null }
+  const { error } = await tud(supabase.from('journal_lines').update(updates), 'journal_lines', tid).eq('id', lineId)
+  if (error) throw error
+}
+
+// ============ Phase 7B: Mark line with marking code ============
+
+export async function markLineWithCode(lineId: string, markingCode: string | null): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(
+    supabase.from('journal_lines').update({ marking_code: markingCode }),
+    'journal_lines', tid
+  ).eq('id', lineId)
+  if (error) throw error
+}
+
+// ============ Phase 7C: Revision Cycles ============
+
+export async function getRevisionCycles(): Promise<RevisionCycle[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('revision_cycles').select('*').order('name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as RevisionCycle[]
+}
+
+export async function createRevisionCycle(rc: Omit<RevisionCycle, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<RevisionCycle> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('revision_cycles').insert({ ...rc, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as RevisionCycle
+}
+
+export async function updateRevisionCycle(id: string, updates: Partial<RevisionCycle>): Promise<RevisionCycle> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('revision_cycles').update(updates), 'revision_cycles', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as RevisionCycle
+}
+
+export async function deleteRevisionCycle(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('revision_cycles').delete(), 'revision_cycles', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7C: Reporting Plans ============
+
+export async function getReportingPlans(): Promise<ReportingPlan[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('reporting_plans').select('*').order('name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ReportingPlan[]
+}
+
+export async function createReportingPlan(rp: Omit<ReportingPlan, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<ReportingPlan> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('reporting_plans').insert({ ...rp, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as ReportingPlan
+}
+
+export async function updateReportingPlan(id: string, updates: Partial<ReportingPlan>): Promise<ReportingPlan> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('reporting_plans').update(updates), 'reporting_plans', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ReportingPlan
+}
+
+export async function deleteReportingPlan(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('reporting_plans').delete(), 'reporting_plans', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7C: Stat Fields ============
+
+export async function getStatFields(entityType?: string, entityId?: string): Promise<StatField[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('stat_fields').select('*').order('field_name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (entityType) q = q.eq('entity_type', entityType)
+  if (entityId) q = q.eq('entity_id', entityId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StatField[]
+}
+
+export async function createStatField(sf: Omit<StatField, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<StatField> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stat_fields').insert({ ...sf, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as StatField
+}
+
+export async function deleteStatField(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('stat_fields').delete(), 'stat_fields', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7C: Dashboard Widgets ============
+
+export async function getDashboardWidgets(userId: string): Promise<DashboardWidget[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('dashboard_widgets').select('*').eq('user_id', userId).order('position', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as DashboardWidget[]
+}
+
+export async function createDashboardWidget(dw: Omit<DashboardWidget, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<DashboardWidget> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('dashboard_widgets').insert({ ...dw, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as DashboardWidget
+}
+
+export async function updateDashboardWidget(id: string, updates: Partial<DashboardWidget>): Promise<DashboardWidget> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('dashboard_widgets').update(updates), 'dashboard_widgets', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as DashboardWidget
+}
+
+export async function deleteDashboardWidget(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('dashboard_widgets').delete(), 'dashboard_widgets', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7C: Fusion de comptes ============
+
+export async function getFusionLogs(): Promise<FusionLog[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('fusion_logs').select('*').order('fused_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FusionLog[]
+}
+
+export async function fuseAccounts(sourceCode: string, targetCode: string): Promise<FusionLog> {
+  const tid = await getTenantId()
+  // Move all journal_lines from source to target
+  const { data: moved, error: moveError } = await tud(
+    supabase.from('journal_lines').update({ account_code: targetCode, account_general: targetCode }),
+    'journal_lines', tid
+  ).eq('account_general', sourceCode).select('id')
+  if (moveError) throw moveError
+  const linesMoved = moved?.length || 0
+
+  // Log the fusion
+  const { data, error: insertError } = await supabase.from('fusion_logs').insert({
+    source_account_code: sourceCode,
+    target_account_code: targetCode,
+    lines_moved: linesMoved,
+    fused_by: null,
+    tenant_id: tid,
+  }).select().single()
+  if (insertError) throw insertError
+  return data as FusionLog
+}
+
+// ============ Phase 7C: Compaction ============
+
+export async function getCompactionLogs(): Promise<CompactionLog[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('compaction_logs').select('*').order('compacted_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CompactionLog[]
+}
+
+export async function createCompactionLog(cl: Omit<CompactionLog, 'id' | 'compacted_at' | 'tenant_id'>): Promise<CompactionLog> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('compaction_logs').insert({ ...cl, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as CompactionLog
+}
+
+export async function updateCompactionLog(id: string, updates: Partial<CompactionLog>): Promise<CompactionLog> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('compaction_logs').update(updates), 'compaction_logs', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as CompactionLog
+}
+
+// ============ Phase 7C: RGPD Requests ============
+
+export async function getRGPDRequests(): Promise<RGPDRequest[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('rgpd_requests').select('*').order('requested_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as RGPDRequest[]
+}
+
+export async function createRGPDRequest(rr: Omit<RGPDRequest, 'id' | 'requested_at' | 'tenant_id'>): Promise<RGPDRequest> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('rgpd_requests').insert({ ...rr, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as RGPDRequest
+}
+
+export async function updateRGPDRequest(id: string, updates: Partial<RGPDRequest>): Promise<RGPDRequest> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('rgpd_requests').update(updates), 'rgpd_requests', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as RGPDRequest
+}
+
+// ============ Phase 7D: Grid Templates (Modèles de grille) ============
+
+export async function getGridTemplates(): Promise<GridTemplate[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('grid_templates').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as GridTemplate[]
+}
+
+export async function createGridTemplate(gt: Omit<GridTemplate, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<GridTemplate> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('grid_templates').insert({ ...gt, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as GridTemplate
+}
+
+export async function updateGridTemplate(id: string, updates: Partial<GridTemplate>): Promise<GridTemplate> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('grid_templates').update(updates), 'grid_templates', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as GridTemplate
+}
+
+export async function deleteGridTemplate(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('grid_templates').delete(), 'grid_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7D: Payment Templates Compta (Modèles de règlement compta) ============
+
+export async function getPaymentTemplatesCompta(): Promise<PaymentTemplateCompta[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('payment_templates_compta').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PaymentTemplateCompta[]
+}
+
+export async function createPaymentTemplateCompta(pt: Omit<PaymentTemplateCompta, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<PaymentTemplateCompta> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('payment_templates_compta').insert({ ...pt, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as PaymentTemplateCompta
+}
+
+export async function updatePaymentTemplateCompta(id: string, updates: Partial<PaymentTemplateCompta>): Promise<PaymentTemplateCompta> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('payment_templates_compta').update(updates), 'payment_templates_compta', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PaymentTemplateCompta
+}
+
+export async function deletePaymentTemplateCompta(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('payment_templates_compta').delete(), 'payment_templates_compta', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7D: Analytic Journal Codes (Codes journaux analytiques) ============
+
+export async function getAnalyticJournalCodes(): Promise<AnalyticJournalCode[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('analytic_journal_codes').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AnalyticJournalCode[]
+}
+
+export async function createAnalyticJournalCode(ajc: Omit<AnalyticJournalCode, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<AnalyticJournalCode> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('analytic_journal_codes').insert({ ...ajc, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as AnalyticJournalCode
+}
+
+export async function updateAnalyticJournalCode(id: string, updates: Partial<AnalyticJournalCode>): Promise<AnalyticJournalCode> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('analytic_journal_codes').update(updates), 'analytic_journal_codes', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as AnalyticJournalCode
+}
+
+export async function deleteAnalyticJournalCode(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('analytic_journal_codes').delete(), 'analytic_journal_codes', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Phase 7D: Reimputation Logs (Réimputation) ============
+
+export async function getReimputationLogs(): Promise<ReimputationLog[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('reimputation_logs').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ReimputationLog[]
+}
+
+export async function createReimputationLog(rl: Omit<ReimputationLog, 'id' | 'created_at' | 'tenant_id'>): Promise<ReimputationLog> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('reimputation_logs').insert({ ...rl, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as ReimputationLog
 }

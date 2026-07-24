@@ -18,6 +18,7 @@ interface Entity {
 
 export function MultiCompanyPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [entities, setEntities] = useState<Entity[]>([])
   const [activeEntity, setActiveEntity] = useState<string>('')
@@ -129,7 +130,7 @@ export function MultiCompanyPage() {
               <Button onClick={handleAddEntity} disabled={!form.name.trim()}>
                 <Check className="w-4 h-4" /> {t('multiCompany.addEntity')}
               </Button>
-              <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('actions.cancel')}</Button>
             </div>
           </div>
         </Card>

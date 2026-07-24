@@ -471,7 +471,7 @@
   },
   "placeholder": {
     "underDevelopment": "Under development",
-    "description": "This section is inspired by Sage Accounting and will be implemented in a future phase. The skeleton and structure are in place.",
+    "description": "Cette section sera implémentée dans une phase ultérieure. La structure et l'ossature sont déjà en place.",
     "back": "Back"
   },
   "workspace": {

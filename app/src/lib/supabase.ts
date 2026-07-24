@@ -73,6 +73,14 @@ const TENANT_TABLES = new Set([
   'analytic_plans', 'distribution_grills', 'distribution_grill_lines',
   'bank_reconciliation_rules', 'bank_statement_imports',
   'tvs_declarations', 'fiscal_backups',
+  // Phase 7A: Critical fixes
+  'payment_terms', 'marking_types',
+  // Phase 7B: Medium fixes
+  'reminder_levels', 'payment_promises', 'disputes', 'justificatif_solde', 'etat_rapprochement',
+  // Phase 7C: Minor fixes
+  'revision_cycles', 'reporting_plans', 'stat_fields', 'dashboard_widgets', 'fusion_logs', 'compaction_logs', 'rgpd_requests',
+  // Phase 7D: Remaining features
+  'grid_templates', 'payment_templates_compta', 'analytic_journal_codes', 'reimputation_logs',
 ])
 
 const EXEMPT_TABLES = new Set([
@@ -84,6 +92,14 @@ let _tenantId: string | null | undefined = undefined
 
 export async function setTenantId(id: string | null) {
   _tenantId = id
+  if (id) {
+    // Set the active tenant in the database session so RLS policies use it
+    try {
+      await supabase.rpc('set_active_tenant', { p_tenant_id: id })
+    } catch {
+      // Non-fatal: function may not be deployed yet
+    }
+  }
 }
 
 export function getCachedTenantId(): string | null {

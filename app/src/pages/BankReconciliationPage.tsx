@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankTransactions, getBankAccounts, updateBankTransaction } from '@/lib/queries'
+import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -40,6 +40,16 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
     }
   }
 
+  async function handleAutoMatch() {
+    try {
+      const result = await autoMatchBankTransactions(selectedAccount || undefined)
+      toast('success', tCommon('common.success'), t('reconciliation.autoMatchResult', { matched: result.matched, unmatched: result.unmatched }))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('error'), err.message || tCommon('error'))
+    }
+  }
+
   const unreconciled = transactions.filter(t => !t.reconciled)
   const reconciled = transactions.filter(t => t.reconciled)
   const totalUnreconciled = unreconciled.reduce((s, t) => s + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0)
@@ -55,6 +65,9 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
           { value: '', label: t('reconciliation.allAccounts') },
           ...accounts.map(a => ({ value: a.id, label: a.name })),
         ]} />
+        <Button onClick={handleAutoMatch} disabled={loading || unreconciled.length === 0}>
+          <Zap className="w-4 h-4" /> {t('reconciliation.autoMatch')}
+        </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">

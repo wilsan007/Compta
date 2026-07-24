@@ -325,6 +325,8 @@
   --mod-fuchsia-bg: rgba(192, 38, 211, 0.08);
   --mod-slate: #64748b;
   --mod-slate-bg: rgba(100, 116, 139, 0.08);
+  --mod-lime: #65a30d;
+  --mod-lime-bg: rgba(101, 163, 13, 0.08);
 }
 
 .dark {
@@ -338,6 +340,7 @@
   --mod-teal-bg: rgba(45, 212, 191, 0.12);
   --mod-fuchsia-bg: rgba(232, 121, 249, 0.12);
   --mod-slate-bg: rgba(148, 163, 184, 0.12);
+  --mod-lime-bg: rgba(163, 230, 53, 0.12);
 }
 
 /* Sidebar glassmorphism */
@@ -431,6 +434,10 @@
 .mod-slate { color: var(--mod-slate); }
 .mod-slate::before { background: var(--mod-slate); }
 .mod-slate-bg { background: var(--mod-slate-bg); }
+
+.mod-lime { color: var(--mod-lime); }
+.mod-lime::before { background: var(--mod-lime); }
+.mod-lime-bg { background: var(--mod-lime-bg); }
 
 /* Active module indicator bar */
 .mod-active-bar {

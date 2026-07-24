@@ -40,36 +40,21 @@ function writeSessionCache(modules: string[]) {
 
 let cachedModules: string[] | null = readSessionCache()
 let cachePromise: Promise<string[]> | null = null
+let resetCounter = 0
 
 // Pub/sub: all hook instances subscribe so they stay in sync
-const subscribers = new Set<(modules: string[]) => void>()
+const subscribers = new Set<(modules: string[], resetCount: number) => void>()
 
 function broadcastModules(modules: string[]) {
   cachedModules = modules
   writeSessionCache(modules)
-  subscribers.forEach((fn) => fn(modules))
+  subscribers.forEach((fn) => fn(modules, resetCounter))
 }
 
 export function useTenantModules() {
   const [modules, setModules] = useState<string[]>(cachedModules || DEFAULT_MODULES)
   const [loading, setLoading] = useState(!cachedModules)
-
-  // Subscribe to module changes from other instances
-  useEffect(() => {
-    const handler = (newModules: string[]) => {
-      setModules(newModules)
-      setLoading(false)
-    }
-    subscribers.add(handler)
-    // Sync immediately if cache already exists
-    if (cachedModules) {
-      setModules(cachedModules)
-      setLoading(false)
-    }
-    return () => {
-      subscribers.delete(handler)
-    }
-  }, [])
+  let lastResetCount = resetCounter
 
   const refresh = useCallback(async () => {
     if (cachePromise) {
@@ -91,6 +76,27 @@ export function useTenantModules() {
       setLoading(false)
     }
   }, [])
+
+  // Subscribe to module changes from other instances
+  useEffect(() => {
+    const handler = (newModules: string[], resetCount: number) => {
+      setModules(newModules)
+      setLoading(false)
+      if (resetCount > lastResetCount) {
+        lastResetCount = resetCount
+        refresh()
+      }
+    }
+    subscribers.add(handler)
+    // Sync immediately if cache already exists
+    if (cachedModules) {
+      setModules(cachedModules)
+      setLoading(false)
+    }
+    return () => {
+      subscribers.delete(handler)
+    }
+  }, [refresh])
 
   useEffect(() => {
     if (cachedModules) {
@@ -125,6 +131,18 @@ export function invalidateModuleCache() {
   } catch {
     // ignore
   }
+}
+
+export function resetModuleCache() {
+  cachedModules = null
+  cachePromise = null
+  resetCounter++
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+  subscribers.forEach((fn) => fn(DEFAULT_MODULES, resetCounter))
 }
 
 export { ALL_MODULES, DEFAULT_MODULES }

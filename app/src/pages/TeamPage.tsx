@@ -3,18 +3,20 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, Badge, Select, Input } from '@/components/ui'
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/lib/toast'
+import { useLocale } from '@/hooks/useLocale'
 import {
   getTenantUsers, inviteUser, updateUserRole, revokeUser, reactivateUser, reinviteUser,
-  ROLE_LABELS, ROLE_DESCRIPTIONS, PERMISSION_TABLES, PERMISSION_ACTIONS,
+  PERMISSION_TABLES, PERMISSION_ACTIONS,
   type TenantUser,
 } from '@/lib/queries'
-import { Users, UserPlus, Loader2, Ban, RotateCcw, Send, Shield, Check } from 'lucide-react'
+import { Users, UserPlus, Loader2, Ban, RotateCcw, Send, Shield, Check, CalendarClock } from 'lucide-react'
 
 export function TeamPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { user } = useAuth()
+  const { formatDate } = useLocale()
   const [users, setUsers] = useState<TenantUser[]>([])
   const [loading, setLoading] = useState(true)
   const [showInvite, setShowInvite] = useState(false)
@@ -78,9 +80,15 @@ export function TeamPage() {
                 <TableCell className="font-medium">{u.name}</TableCell>
                 <TableCell className="text-sm">{u.email}</TableCell>
                 <TableCell>
-                  <Badge variant={u.role === 'admin' ? 'danger' : u.role === 'accountant' ? 'primary' : u.role === 'manager' ? 'success' : 'neutral'}>
-                    {ROLE_LABELS[u.role]}
+                  <Badge variant={u.role === 'admin' ? 'danger' : u.role === 'accountant' ? 'primary' : u.role === 'manager' ? 'success' : u.role === 'auditor' ? 'warning' : 'neutral'}>
+                    {t(`team.roles.${u.role}`)}
                   </Badge>
+                  {u.role === 'auditor' && u.valid_until && (
+                    <span className="block text-xs text-[var(--color-text-secondary)] mt-1">
+                      <CalendarClock className="w-3 h-3 inline mr-1" />
+                      {formatDate(u.valid_until)}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {u.status === 'active' && <Badge variant="success">{tCommon('status.active')}</Badge>}
@@ -88,7 +96,7 @@ export function TeamPage() {
                   {u.status === 'revoked' && <Badge variant="danger">{t('team.revoked')}</Badge>}
                 </TableCell>
                 <TableCell className="text-xs text-[var(--color-text-secondary)]">
-                  {u.last_login ? new Date(u.last_login).toLocaleDateString('fr-FR') : t('team.never')}
+                  {u.last_login ? formatDate(u.last_login) : t('team.never')}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
@@ -172,9 +180,12 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
   const [name, setName] = useState('')
   const [role, setRole] = useState<TenantUser['role']>('viewer')
   const [permissions, setPermissions] = useState<Record<string, string[]>>({})
+  const [validFrom, setValidFrom] = useState('')
+  const [validUntil, setValidUntil] = useState('')
   const [saving, setSaving] = useState(false)
 
   const showCustom = role === 'custom'
+  const showAuditorDates = role === 'auditor'
 
   function togglePermission(table: string, action: string) {
     setPermissions(prev => {
@@ -193,7 +204,7 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
     if (!email || !name) { toast('error', tCommon('toast.error'), t('team.missingFields')); return }
     setSaving(true)
     try {
-      const result = await inviteUser({ tenantId, email, name, role, permissions: showCustom ? permissions : undefined, invitedBy: invitedById })
+      const result = await inviteUser({ tenantId, email, name, role, permissions: showCustom ? permissions : undefined, invitedBy: invitedById, validFrom: validFrom || null, validUntil: validUntil || null })
       if (result.success) {
         toast('success', t('team.userCreated'), result.message || t('team.userCreatedMsg', { email }))
         onSaved()
@@ -233,9 +244,26 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
                 { value: 'manager', label: t('team.roles.manager') },
                 { value: 'viewer', label: t('team.roles.viewer') },
                 { value: 'custom', label: t('team.roles.custom') },
+                { value: 'auditor', label: t('team.roles.auditor') },
               ]} />
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ROLE_DESCRIPTIONS[role]}</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t(`team.roleDescriptions.${role}`)}</p>
             </div>
+
+            {showAuditorDates && (
+              <div className="space-y-3 p-3 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[var(--color-warning)] ">
+                <p className="text-xs text-[var(--color-text-secondary)]">{t('team.auditorPeriodInfo')}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">{t('team.validFrom')}</label>
+                    <Input type="date" value={validFrom} onChange={e => setValidFrom(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">{t('team.validUntil')}</label>
+                    <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showCustom && (
               <div className="border border-[var(--color-border)] rounded-lg p-3 max-h-64 overflow-y-auto">
@@ -243,7 +271,7 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
                 <div className="space-y-2">
                   {PERMISSION_TABLES.map(table => (
                     <div key={table.name} className="flex items-center justify-between">
-                      <span className="text-sm">{table.label}</span>
+                      <span className="text-sm">{t(`team.permissionTables.${table.name}`)}</span>
                       <div className="flex gap-1">
                         {PERMISSION_ACTIONS.map(action => {
                           const checked = permissions[table.name]?.includes(action.value) || false
@@ -257,7 +285,7 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
                                   : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)]'
                               }`}
                             >
-                              {action.label}
+                              {t(`team.permissionActions.${action.value}`)}
                             </button>
                           )
                         })}
@@ -312,7 +340,7 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
   async function handleSubmit() {
     setSaving(true)
     const result = await updateUserRole(tenantUser.id, role, showCustom ? permissions : undefined)
-    if (result.success) { toast('success', t('team.roleUpdated'), t('team.roleUpdatedMsg', { role: ROLE_LABELS[role] })); onSaved() }
+    if (result.success) { toast('success', t('team.roleUpdated'), t('team.roleUpdatedMsg', { role: t(`team.roles.${role}`) })); onSaved() }
     else toast('error', tCommon('toast.error'), result.error!)
     setSaving(false)
   }
@@ -332,8 +360,9 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
               { value: 'manager', label: t('team.roles.manager') },
               { value: 'viewer', label: t('team.roles.viewer') },
               { value: 'custom', label: t('team.roles.custom') },
+              { value: 'auditor', label: t('team.roles.auditor') },
             ]} />
-            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ROLE_DESCRIPTIONS[role]}</p>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t(`team.roleDescriptions.${role}`)}</p>
           </div>
 
           {showCustom && (
@@ -342,7 +371,7 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
               <div className="space-y-2">
                 {PERMISSION_TABLES.map(table => (
                   <div key={table.name} className="flex items-center justify-between">
-                    <span className="text-sm">{table.label}</span>
+                    <span className="text-sm">{t(`team.permissionTables.${table.name}`)}</span>
                     <div className="flex gap-1">
                       {PERMISSION_ACTIONS.map(action => {
                         const checked = permissions[table.name]?.includes(action.value) || false
@@ -356,7 +385,7 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
                                 : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)]'
                             }`}
                           >
-                            {action.label}
+                            {t(`team.permissionActions.${action.value}`)}
                           </button>
                         )
                       })}

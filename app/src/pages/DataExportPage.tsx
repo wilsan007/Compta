@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '@/hooks/useLocale'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -27,6 +28,7 @@ export function DataExportPage() {
   const { t } = useTranslation('settings')
   const { toast } = useToast()
   const { user } = useAuth()
+  const { formatDateTime } = useLocale()
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<ExportResult[] | null>(null)
   const [exportedAt, setExportedAt] = useState('')
@@ -212,7 +214,7 @@ export function DataExportPage() {
               <p className="text-sm font-medium text-green-800">
                 {t('dataExport.exportDone')} — {t('dataExport.exportDoneDesc', { rows: totalRows.toLocaleString(), tables: tablesWithData.length })}
               </p>
-              <p className="text-xs text-green-700">{t('dataExport.exportDate')} : {new Date(exportedAt).toLocaleString('fr-FR')}</p>
+              <p className="text-xs text-green-700">{t('dataExport.exportDate')} : {formatDateTime(exportedAt)}</p>
             </div>
           </div>
 
@@ -313,7 +315,7 @@ export function DataExportPage() {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-green-800">{t('dataExport.mirrorActive')}</p>
                     <p className="text-xs text-green-700">
-                      {t('dataExport.machine')}: {mirrorStatus.machine_name} • {t('dataExport.verifiedOn')}: {mirrorStatus.verified_at ? new Date(mirrorStatus.verified_at).toLocaleString('fr-FR') : 'N/A'}
+                      {t('dataExport.machine')}: {mirrorStatus.machine_name} • {t('dataExport.verifiedOn')}: {mirrorStatus.verified_at ? formatDateTime(mirrorStatus.verified_at) : 'N/A'}
                     </p>
                   </div>
                   <Button variant="secondary" onClick={loadMirrorStatus}>

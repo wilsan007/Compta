@@ -31,7 +31,7 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-const VALID_ROLES = ["admin", "accountant", "manager", "viewer", "custom"]
+const VALID_ROLES = ["admin", "accountant", "manager", "viewer", "custom", "auditor"]
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -74,7 +74,7 @@ serve(async (req) => {
     // ============================================
     // AUTHORIZATION: Verify caller is admin of the target tenant
     // ============================================
-    const { email, name, role, permissions, tenant_id, invited_by, locale } = await req.json()
+    const { email, name, role, permissions, tenant_id, invited_by, locale, valid_from, valid_until } = await req.json()
 
     if (!email || !tenant_id) {
       return new Response(
@@ -133,34 +133,140 @@ serve(async (req) => {
     // 1. Check if user already exists in this tenant
     const { data: existingTenantUser } = await supabase
       .from("tenant_users")
-      .select("id, status")
+      .select("id, status, auth_id")
       .eq("tenant_id", tenant_id)
       .eq("email", email)
       .maybeSingle()
 
     if (existingTenantUser) {
-      return new Response(
-        JSON.stringify({ error: "Cet email est déjà enregistré dans cette entreprise." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      )
-    }
+      // User already has a row in this tenant
+      if (existingTenantUser.status === "active") {
+        return new Response(
+          JSON.stringify({ error: "Cet email est déjà enregistré et actif dans cette entreprise." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
+      }
 
-    // 2. Check if auth user already exists with this email
-    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
+      if (existingTenantUser.status === "pending") {
+        return new Response(
+          JSON.stringify({ error: "Cet email a déjà une invitation en attente dans cette entreprise." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
+      }
 
-    let authId: string | null = null
-    let isExistingUser = false
+      // status === 'revoked' — re-invite: reactivate with new role
+      if (existingTenantUser.status === "revoked") {
+        const { error: reactivateErr } = await supabase
+          .from("tenant_users")
+          .update({
+            role: role || "viewer",
+            permissions: permissions || {},
+            status: "pending",
+            accepted_at: null,
+            last_login: null,
+            invited_by: invited_by || null,
+            invited_at: new Date().toISOString(),
+            valid_from: valid_from || null,
+            valid_until: valid_until || null,
+          })
+          .eq("id", existingTenantUser.id)
 
-    if (!listError && existingUsers) {
-      const found = existingUsers.users.find((u: any) => u.email === email)
-      if (found) {
-        authId = found.id
-        isExistingUser = true
+        if (reactivateErr) {
+          return new Response(
+            JSON.stringify({ error: reactivateErr.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          )
+        }
+
+        // Send magic link invitation email
+        const appUrl = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
+        const redirectTo = `${appUrl}/accept-invitation`
+        const otpOptions: Record<string, any> = { emailRedirectTo: redirectTo }
+        if (locale && ["fr", "en", "ar"].includes(locale)) {
+          otpOptions.lang = locale
+        }
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email,
+          options: otpOptions,
+        })
+
+        if (otpError) {
+          console.error("Failed to send re-invitation email:", otpError.message)
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            email,
+            existing_user: true,
+            reactivated: true,
+            email_sent: !otpError,
+            message: "Utilisateur réactivé. Email d'invitation envoyé.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
       }
     }
 
-    // 3. If no existing auth user, create one WITHOUT password (magic link flow)
-    if (!authId) {
+    // 2. Check if auth user already exists with this email
+    // If yes, link them to this tenant (multi-tenant: same user, multiple tenants)
+    // If no, create a new auth user
+    let authId: string
+    let existingUser = false
+
+    const { data: existingAuthUsers, error: listErr } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+    })
+
+    // listUsers doesn't filter by email, so use RPC to check existence first
+    const { data: emailExists, error: rpcErr } = await supabase
+      .rpc("auth_email_exists", { p_email: email })
+
+    if (rpcErr) {
+      return new Response(
+        JSON.stringify({ error: "Erreur lors de la vérification de l'email" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      )
+    }
+
+    if (emailExists) {
+      // User already has an auth account — look up their auth_id
+      // We need to find them in auth.users. Use the service role to query.
+      const { data: authUser, error: authLookupErr } = await supabase
+        .from("tenant_users")
+        .select("auth_id")
+        .eq("email", email)
+        .not("auth_id", "is", null)
+        .limit(1)
+
+      if (authLookupErr || !authUser || authUser.length === 0) {
+        // Fallback: try to get auth user via admin API
+        // listUsers returns paginated results — we need to search
+        const { data: allUsers, error: allUsersErr } = await supabase.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        })
+        if (allUsersErr) {
+          return new Response(
+            JSON.stringify({ error: "Utilisateur existant mais impossible de récupérer son compte." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          )
+        }
+        const found = allUsers.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+        if (!found) {
+          return new Response(
+            JSON.stringify({ error: "Utilisateur existant introuvable dans auth.users." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          )
+        }
+        authId = found.id
+      } else {
+        authId = authUser[0].auth_id!
+      }
+      existingUser = true
+    } else {
+      // 3. Create new auth user WITHOUT password (magic link flow)
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
         email_confirm: true,
@@ -173,7 +279,6 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
       }
-
       authId = authData.user.id
     }
 
@@ -191,12 +296,14 @@ serve(async (req) => {
         accepted_at: null,
         last_login: null,
         invited_by: invited_by || null,
+        valid_from: valid_from || null,
+        valid_until: valid_until || null,
       })
 
     if (tuError) {
-      // Only rollback auth user if we created it (not if it pre-existed)
-      if (!isExistingUser) {
-        await supabase.auth.admin.deleteUser(authId!)
+      // Only rollback auth user creation if we actually created a new one
+      if (!existingUser) {
+        await supabase.auth.admin.deleteUser(authId)
       }
       return new Response(
         JSON.stringify({ error: tuError.message }),
@@ -220,16 +327,18 @@ serve(async (req) => {
       console.error("Failed to send invitation email:", otpError.message)
     }
 
+    const message = existingUser
+      ? "Utilisateur existant ajouté à cette entreprise. Email d'invitation envoyé."
+      : "Utilisateur créé. Email d'invitation envoyé."
+
     return new Response(
       JSON.stringify({
         success: true,
         auth_id: authId,
         email,
-        existing_user: isExistingUser,
+        existing_user: existingUser,
         email_sent: !otpError,
-        message: isExistingUser
-          ? "Utilisateur existant ajouté à cette entreprise. Email d'invitation envoyé."
-          : "Utilisateur créé. Email d'invitation envoyé."
+        message,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )

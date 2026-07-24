@@ -68,12 +68,14 @@ const [employees, setEmployees] = useState<Employee[]>([])
         <EmptyState icon={<Users className="w-8 h-8" />} title={t('employees.noEmployees')} description={t('employees.noEmployeesDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('employees.fullName'), t('employees.position'), t('employees.department'), t('employees.salary'), t('employees.hireDate'), t('employees.status'), tCommon('table.actions')]}>
+          <Table headers={[t('employees.fullName'), t('employees.employeeNumber'), t('employees.position'), t('employees.department'), t('employees.contractType'), t('employees.salary'), t('employees.hireDate'), t('employees.status'), tCommon('table.actions')]}>
             {filtered.map((e) => (
               <TableRow key={e.id}>
                 <TableCell className="font-medium">{e.name}</TableCell>
+                <TableCell className="font-mono text-xs">{e.employee_number || '—'}</TableCell>
                 <TableCell className="text-sm">{e.position || '—'}</TableCell>
                 <TableCell className="text-sm">{e.department || '—'}</TableCell>
+                <TableCell className="text-sm">{e.contract_type || 'CDI'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.salary))}</TableCell>
                 <TableCell className="text-xs">{formatDate(e.hire_date)}</TableCell>
                 <TableCell>
@@ -107,25 +109,47 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [salary, setSalary] = useState(0)
   const [hireDate, setHireDate] = useState(new Date().toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
+  const [employeeNumber, setEmployeeNumber] = useState('')
+  const [ssNumber, setSsNumber] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [contractType, setContractType] = useState('CDI')
+  const [contractEndDate, setContractEndDate] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      await createEmployee({ name, email, phone, position, department, salary, hire_date: hireDate, status: 'active' } as any)
+      await createEmployee({
+        name, email, phone, position, department, salary, hire_date: hireDate, status: 'active',
+        employee_number: employeeNumber || null,
+        social_security_number: ssNumber || null,
+        birth_date: birthDate || null,
+        address: address || null,
+        city: city || null,
+        postal_code: postalCode || null,
+        contract_type: contractType as any,
+        contract_end_date: contractEndDate || null,
+      } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
+      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('employees.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <Input label={t('employees.fullName')} required value={name} onChange={(e) => setName(e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('employees.employeeNumber')} value={employeeNumber} onChange={(e) => setEmployeeNumber(e.target.value)} placeholder="MAT001" />
+            <Input label={t('employees.ssNumber')} value={ssNumber} onChange={(e) => setSsNumber(e.target.value)} placeholder="1 23 45 67 890 123" />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('employees.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <Input label={t('employees.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -137,6 +161,24 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('employees.salary')} type="number" step="0.01" value={salary} onChange={(e) => setSalary(Number(e.target.value))} />
             <Input label={t('employees.hireDate')} type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('employees.birthDate')} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+            <Select label={t('employees.contractType')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
+              { value: 'CDI', label: 'CDI' },
+              { value: 'CDD', label: 'CDD' },
+              { value: 'Apprentissage', label: t('employees.contractTypes.apprentissage') },
+              { value: 'Stage', label: t('employees.contractTypes.stage') },
+              { value: 'Interim', label: t('employees.contractTypes.interim') },
+            ]} />
+          </div>
+          {contractType !== 'CDI' && (
+            <Input label={t('employees.contractEndDate')} type="date" value={contractEndDate} onChange={(e) => setContractEndDate(e.target.value)} />
+          )}
+          <Input label={t('employees.address')} value={address} onChange={(e) => setAddress(e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('employees.postalCode')} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+            <Input label={t('employees.city')} value={city} onChange={(e) => setCity(e.target.value)} />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

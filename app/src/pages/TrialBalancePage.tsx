@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Button, exportToCSV } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Button, exportToCSV, exportToExcel } from '@/components/ui'
 import { getTrialBalanceFiltered, getChartAccounts, getJournals } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
-import { Scale, Download } from 'lucide-react'
+import { Scale, Download, FileSpreadsheet } from 'lucide-react'
 import type { ChartAccount, Journal } from '@/types'
 
 export function TrialBalancePage() {
@@ -91,6 +91,20 @@ export function TrialBalancePage() {
     exportToCSV(`trial-balance-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
   }
 
+  function handleExportExcel() {
+    const headers = [t('chartAccounts.code'), t('chartAccounts.name'), t('chartAccounts.type'), t('entries.totalDebit'), t('entries.totalCredit'), t('trialBalance.closingDebit'), t('trialBalance.closingCredit')]
+    const rows = enriched.map((b) => [
+      b.account_code,
+      accountMap.get(b.account_code)?.name || '',
+      b.type || '',
+      b.total_debit || 0,
+      b.total_credit || 0,
+      b.solde_debiteur || 0,
+      b.solde_crediteur || 0,
+    ])
+    exportToExcel(`trial-balance-${new Date().toISOString().split('T')[0]}.xls`, headers, rows)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: t('trialBalance.title') }]} />
@@ -109,9 +123,14 @@ export function TrialBalancePage() {
           </div>
           <Button onClick={loadBalance} disabled={loading}>{tCommon('common.refresh')}</Button>
           {balances.length > 0 && (
-            <Button variant="secondary" onClick={handleExportCSV}>
-              <Download className="w-4 h-4" /> {t('trialBalance.exportCSV')}
-            </Button>
+            <>
+              <Button variant="secondary" onClick={handleExportCSV}>
+                <Download className="w-4 h-4" /> CSV
+              </Button>
+              <Button variant="secondary" onClick={handleExportExcel}>
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </Button>
+            </>
           )}
         </div>
       </Card>

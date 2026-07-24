@@ -121,6 +121,7 @@ import { TeamPage } from '@/pages/TeamPage'
 import { OnboardingPage } from '@/pages/OnboardingPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
+import { TenantSelectionPage } from '@/pages/TenantSelectionPage'
 import { AuditLogPage } from '@/pages/AuditLogPage'
 import { TrainingPage } from '@/pages/TrainingPage'
 import { EInvoicePage } from '@/pages/EInvoicePage'
@@ -131,10 +132,25 @@ import { PayrollCalcPage } from '@/pages/PayrollCalcPage'
 import { LiasseFiscalePage } from '@/pages/LiasseFiscalePage'
 import { MultiCompanyPage } from '@/pages/MultiCompanyPage'
 import { ModuleHubPage, SubGroupHubPage } from '@/components/ModuleHub'
+import { ModuleHomePage } from '@/components/ModuleHomePage'
 import { ProspectsPage, RepresentativesPage, WarehouseLocationsPage, QualityCheckPage, PickListPage, SerialNumbersPage, ProductBatchesPage, DocumentTemplatesPage, DeliverySchedulePage, ProductSubstitutesPage, DormantStockPage } from '@/pages/Phase2Pages'
 import { MCFPage, TreasuryTransfersPage, CreditLinesPage, InvestmentsPage, ValueDateTrackingPage, TreasuryRecurringPage, ConsolidatedTreasuryPage } from '@/pages/Phase3Pages'
 import { PayrollComponentsPage, PayrollTemplatesPage, SalaryAdvancesPage, DSNPage, DPAEPage, LegalWatchPage, ExpenseReportsPage, PayRecallsPage, PayrollArchivePage, InterviewsPage } from '@/pages/Phase4Pages'
 import { AssetDepreciationPlansPage, AssetFamiliesPage, AssetRevaluationPage, BatchDisposalPage, AssetFromEntryPage } from '@/pages/Phase5Pages'
+import { BatchEntryPage, AutoLabelRulesPage, ExtournePage, CarryForwardPage, LettrageDifferencesPage, AccountingControlsPage, CashControlPage, FECAttestationPage, TierRIBsPage, IFRSAdjustmentsPage, TaxPaymentsPage, CustomReportTemplatesPage, DeferredPrintingPage, JournalAccessRightsPage, VATOnCollectionsPage } from '@/pages/Phase6Pages'
+import { TaxRatesPage } from '@/pages/TaxRatesPage'
+import { PaymentTermsPage } from '@/pages/PaymentTermsPage'
+import { SaisieParPiecePage } from '@/pages/SaisieParPiecePage'
+import { JustificatifSoldePage } from '@/pages/JustificatifSoldePage'
+import { EtatRapprochementPage } from '@/pages/EtatRapprochementPage'
+import { ReminderLevelsPage } from '@/pages/ReminderLevelsPage'
+import { RevisionCyclesPage } from '@/pages/RevisionCyclesPage'
+import { FusionComptesPage } from '@/pages/FusionComptesPage'
+import { PlanReportingPage } from '@/pages/PlanReportingPage'
+import { CompactionPage } from '@/pages/CompactionPage'
+import { RGPDPage } from '@/pages/RGPDPage'
+import { GridTemplatesPage, PaymentTemplatesComptaPage, StandardLabelsPage, AnalyticJournalCodesPage } from '@/pages/Phase7DPages'
+import { AnalyticODEntryPage, ThirdPartyInquiryPage, AnalyticInquiryPage, ReimputationPage } from '@/pages/Phase7DInquiryPages'
 
 function App() {
   return (
@@ -147,6 +163,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+          <Route path="/select-tenant" element={<TenantSelectionPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
 
           <Route element={<ProtectedLayout />}>
@@ -161,6 +178,7 @@ function App() {
 
           {/* Commercial Hub */}
           <Route path="/commercial" element={<ModuleHubPage moduleId="commercial" />} />
+          <Route path="/commercial/home" element={<ModuleHomePage moduleId="commercial" />} />
 
           {/* Sales */}
           <Route path="/sales" element={<SubGroupHubPage moduleId="commercial" sectionIndex={0} />} />
@@ -187,6 +205,7 @@ function App() {
 
           {/* Accounting */}
           <Route path="/accounting" element={<ModuleHubPage moduleId="accounting" />} />
+          <Route path="/accounting/home" element={<AccountingHomePage />} />
           <Route path="/accounting/structure" element={<SubGroupHubPage moduleId="accounting" sectionIndex={0} />} />
           <Route path="/accounting/traitement" element={<SubGroupHubPage moduleId="accounting" sectionIndex={1} />} />
           <Route path="/accounting/etats" element={<SubGroupHubPage moduleId="accounting" sectionIndex={2} />} />
@@ -214,7 +233,6 @@ function App() {
           <Route path="/accounting/general-ledger" element={<GeneralLedgerPage />} />
           <Route path="/accounting/trial-balance" element={<TrialBalancePage />} />
           <Route path="/accounting/chart-accounts" element={<ChartAccountsPage />} />
-          <Route path="/accounting/home" element={<AccountingHomePage />} />
           <Route path="/accounting/third-party" element={<ThirdPartyAccountsPage />} />
           <Route path="/accounting/payment-generation" element={<PaymentGenerationPage />} />
           <Route path="/accounting/journals" element={<JournalsPage />} />
@@ -232,6 +250,7 @@ function App() {
 
           {/* Treasury */}
           <Route path="/treasury" element={<ModuleHubPage moduleId="treasury" />} />
+          <Route path="/treasury/home" element={<ModuleHomePage moduleId="treasury" />} />
           <Route path="/treasury/dashboard" element={<TreasuryDashboardPage />} />
           <Route path="/treasury/forecast" element={<TreasuryForecastPage />} />
           <Route path="/treasury/payment-orders" element={<AdminRoute><PaymentOrdersPage /></AdminRoute>} />
@@ -239,6 +258,7 @@ function App() {
 
           {/* Stock */}
           <Route path="/stock" element={<ModuleHubPage moduleId="stock" />} />
+          <Route path="/stock/home" element={<ModuleHomePage moduleId="stock" />} />
           <Route path="/stock/warehouses" element={<WarehousesPage />} />
           <Route path="/stock/quantities" element={<StockQuantitiesPage />} />
           <Route path="/stock/movements" element={<StockMovementsPage />} />
@@ -251,6 +271,7 @@ function App() {
 
           {/* Production */}
           <Route path="/production" element={<ModuleHubPage moduleId="production" />} />
+          <Route path="/production/home" element={<ModuleHomePage moduleId="production" />} />
           <Route path="/production/manufacturing" element={<SubGroupHubPage moduleId="production" sectionIndex={0} />} />
           <Route path="/production/subcontracting" element={<SubGroupHubPage moduleId="production" sectionIndex={1} />} />
           <Route path="/production/planning" element={<SubGroupHubPage moduleId="production" sectionIndex={2} />} />
@@ -298,6 +319,7 @@ function App() {
 
           {/* HR & Payroll */}
           <Route path="/hr" element={<ModuleHubPage moduleId="hr" />} />
+          <Route path="/hr/home" element={<ModuleHomePage moduleId="hr" />} />
           <Route path="/hr/employees" element={<EmployeesPage />} />
           <Route path="/hr/pay-runs" element={<PayRunsPage />} />
           <Route path="/hr/timesheets" element={<TimesheetsPage />} />
@@ -308,6 +330,7 @@ function App() {
           <Route path="/hr/declarations" element={<LegalDeclarationsPage />} />
 
           {/* Dashboards */}
+          <Route path="/dashboard/home" element={<ModuleHomePage moduleId="dashboards" />} />
           <Route path="/dashboard/sales" element={<SalesDashboardPage />} />
           <Route path="/dashboard/purchases" element={<PurchasesDashboardPage />} />
           <Route path="/dashboard/banking" element={<BankingDashboardPage />} />
@@ -315,6 +338,7 @@ function App() {
 
           {/* Settings */}
           <Route path="/settings" element={<ModuleHubPage moduleId="system" />} />
+          <Route path="/settings/home" element={<ModuleHomePage moduleId="system" />} />
           <Route path="/settings/configuration" element={<SubGroupHubPage moduleId="system" sectionIndex={0} />} />
           <Route path="/settings/data" element={<SubGroupHubPage moduleId="system" sectionIndex={1} />} />
           <Route path="/settings/company" element={<AdminRoute><SettingsPage /></AdminRoute>} />
@@ -332,6 +356,7 @@ function App() {
 
           {/* Reporting & BI */}
           <Route path="/reporting" element={<ModuleHubPage moduleId="reporting" />} />
+          <Route path="/reporting/home" element={<ModuleHomePage moduleId="reporting" />} />
           <Route path="/reporting/financial" element={<FinancialDashboardPage />} />
           <Route path="/reporting/bi" element={<BIReportingPage />} />
           <Route path="/reporting/budget" element={<BudgetTrackingPage />} />
@@ -379,6 +404,46 @@ function App() {
           <Route path="/accounting/asset-revaluations" element={<AssetRevaluationPage />} />
           <Route path="/accounting/asset-batch-disposals" element={<BatchDisposalPage />} />
           <Route path="/accounting/asset-from-entry" element={<AssetFromEntryPage />} />
+
+          {/* Phase 6: Sage 100 Accounting Features */}
+          <Route path="/accounting/batch-entry" element={<BatchEntryPage />} />
+          <Route path="/accounting/auto-labels" element={<AutoLabelRulesPage />} />
+          <Route path="/accounting/extourne" element={<ExtournePage />} />
+          <Route path="/accounting/carry-forward" element={<CarryForwardPage />} />
+          <Route path="/accounting/lettrage-differences" element={<LettrageDifferencesPage />} />
+          <Route path="/accounting/controls" element={<AccountingControlsPage />} />
+          <Route path="/accounting/cash-control" element={<CashControlPage />} />
+          <Route path="/accounting/fec-attestations" element={<FECAttestationPage />} />
+          <Route path="/accounting/tier-ribs" element={<TierRIBsPage />} />
+          <Route path="/accounting/ifrs-adjustments" element={<IFRSAdjustmentsPage />} />
+          <Route path="/accounting/tax-payments" element={<TaxPaymentsPage />} />
+          <Route path="/accounting/custom-reports" element={<CustomReportTemplatesPage />} />
+          <Route path="/accounting/deferred-printing" element={<DeferredPrintingPage />} />
+          <Route path="/accounting/journal-access-rights" element={<JournalAccessRightsPage />} />
+          <Route path="/accounting/vat-on-collections" element={<VATOnCollectionsPage />} />
+          {/* Phase 7A: Sage 100 Critical Features */}
+          <Route path="/accounting/tax-rates" element={<TaxRatesPage />} />
+          <Route path="/accounting/payment-terms" element={<PaymentTermsPage />} />
+          <Route path="/accounting/treatment/saisie-par-piece" element={<SaisieParPiecePage />} />
+          {/* Phase 7B: Sage 100 Medium Features */}
+          <Route path="/accounting/justificatif-solde" element={<JustificatifSoldePage />} />
+          <Route path="/accounting/etat-rapprochement" element={<EtatRapprochementPage />} />
+          <Route path="/accounting/reminder-levels" element={<ReminderLevelsPage />} />
+          {/* Phase 7C: Sage 100 Minor Features */}
+          <Route path="/accounting/revision-cycles" element={<RevisionCyclesPage />} />
+          <Route path="/accounting/fusion-comptes" element={<FusionComptesPage />} />
+          <Route path="/accounting/reporting-plans" element={<PlanReportingPage />} />
+          <Route path="/accounting/compaction" element={<CompactionPage />} />
+          <Route path="/accounting/rgpd" element={<RGPDPage />} />
+          {/* Phase 7D: Remaining Sage 100 Features */}
+          <Route path="/accounting/grid-templates" element={<GridTemplatesPage />} />
+          <Route path="/accounting/payment-templates-compta" element={<PaymentTemplatesComptaPage />} />
+          <Route path="/accounting/standard-labels" element={<StandardLabelsPage />} />
+          <Route path="/accounting/analytic-journal-codes" element={<AnalyticJournalCodesPage />} />
+          <Route path="/accounting/analytic-od-entry" element={<AnalyticODEntryPage />} />
+          <Route path="/accounting/third-party-inquiry" element={<ThirdPartyInquiryPage />} />
+          <Route path="/accounting/analytic-inquiry" element={<AnalyticInquiryPage />} />
+          <Route path="/accounting/reimputation" element={<ReimputationPage />} />
           </Route>
         </Routes>
         </BrowserRouter>

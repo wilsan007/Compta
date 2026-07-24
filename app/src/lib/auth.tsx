@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase, setTenantId } from '@/lib/supabase'
+import { resetModuleCache } from '@/lib/useTenantModules'
 import type { TenantUser } from '@/lib/queries'
 
 interface AuthUser {
@@ -21,6 +22,8 @@ interface AuthContextType {
   reloadUser: () => Promise<void>
   hasRole: (...roles: TenantUser['role'][]) => boolean
   canPerform: (table: string, action: 'select' | 'insert' | 'update' | 'delete') => boolean
+  switchTenant: (tenantId: string) => Promise<void>
+  availableTenants: { tenantId: string; tenantName: string; role: TenantUser['role'] }[]
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [availableTenants, setAvailableTenants] = useState<{ tenantId: string; tenantName: string; role: TenantUser['role'] }[]>([])
 
   const loadUser = useCallback(async () => {
     try {
@@ -38,23 +42,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Try tenant_users first (new multi-tenant system)
-      const { data: tenantUser, error: tenantErr } = await supabase
+      // Fetch ALL active tenant_users rows for this user (they may belong to multiple tenants)
+      const { data: tenantUsers, error: tenantErr } = await supabase
         .from('tenant_users')
         .select(`*, tenants:tenant_id (name)`)
         .eq('auth_id', session.user.id)
         .eq('status', 'active')
-        .single()
 
-      if (!tenantErr && tenantUser) {
-        setTenantId(tenantUser.tenant_id)
+      // Auto-revoke expired auditors (best-effort, ignore errors)
+      try {
+        await supabase.rpc('auto_revoke_expired_auditors')
+      } catch { /* ignore */ }
+
+      // Filter out any auditors whose valid_until has passed (in case RPC didn't run)
+      const now = new Date()
+      const validTenantUsers = (tenantUsers || []).filter((tu: any) => {
+        if (tu.role !== 'auditor') return true
+        if (tu.valid_until && new Date(tu.valid_until) < now) return false
+        if (tu.valid_from && new Date(tu.valid_from) > now) return false
+        return true
+      })
+
+      if (!tenantErr && validTenantUsers.length > 0) {
+        // Store all available tenants for the switcher UI
+        setAvailableTenants(validTenantUsers.map((tu: any) => ({
+          tenantId: tu.tenant_id,
+          tenantName: tu.tenants?.name || tu.tenant_id,
+          role: tu.role,
+        })))
+
+        const storedTenantId = localStorage.getItem('active_tenant_id')
+        const matchedTenant = validTenantUsers.find(tu => tu.tenant_id === storedTenantId)
+
+        if (matchedTenant) {
+          // Stored preference found — use it
+          const prevTenantId = user?.tenantId
+          const newTenantId = matchedTenant.tenant_id
+          if (prevTenantId && prevTenantId !== newTenantId) {
+            resetModuleCache()
+          }
+          setTenantId(newTenantId)
+          setUser({
+            id: matchedTenant.id,
+            email: matchedTenant.email,
+            name: matchedTenant.name,
+            role: matchedTenant.role,
+            tenantId: matchedTenant.tenant_id,
+            tenantName: (matchedTenant as any).tenants?.name || null,
+            permissions: matchedTenant.permissions || {},
+          })
+          return
+        }
+
+        // No stored preference
+        if (validTenantUsers.length === 1) {
+          // Only one tenant — auto-select it
+          const tu = validTenantUsers[0]
+          setTenantId(tu.tenant_id)
+          setUser({
+            id: tu.id,
+            email: tu.email,
+            name: tu.name,
+            role: tu.role,
+            tenantId: tu.tenant_id,
+            tenantName: (tu as any).tenants?.name || null,
+            permissions: tu.permissions || {},
+          })
+          return
+        }
+
+        // Multiple tenants and no stored preference — let user choose
+        // Set a minimal user object with tenantId=null so ProtectedRoute
+        // redirects to /select-tenant
+        setTenantId(null)
         setUser({
-          id: tenantUser.id,
-          email: tenantUser.email,
-          name: tenantUser.name,
-          role: tenantUser.role,
-          tenantId: tenantUser.tenant_id,
-          tenantName: (tenantUser as any).tenants?.name || null,
-          permissions: tenantUser.permissions || {},
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.email || '',
+          role: 'viewer',
+          tenantId: null,
+          tenantName: null,
+          permissions: {},
         })
         return
       }
@@ -117,10 +185,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // No tenant_users or users record found and no pending invitation.
-      // Sign out — do NOT grant admin access to unrecognised users.
-      await supabase.auth.signOut()
+      // Keep the session alive with a minimal user object so the user can
+      // access /onboarding to create their tenant. ProtectedRoute will
+      // redirect them there since tenantId is null.
+      setAvailableTenants([])
       setTenantId(null)
-      setUser(null)
+      setUser({
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.email || '',
+        role: 'admin',
+        tenantId: null,
+        tenantName: null,
+        permissions: {},
+      })
     } catch {
       setTenantId(null)
       setUser(null)
@@ -131,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser().finally(() => setLoading(false))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, _session) => {
+      setLoading(true)
       loadUser().finally(() => setLoading(false))
     })
 
@@ -163,6 +242,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 digit.', needsConfirmation: false }
     }
     try {
+      // Pre-check: block signup if email already exists in auth.users
+      const { data: emailExists, error: rpcErr } = await supabase
+        .rpc('auth_email_exists', { p_email: email })
+      if (rpcErr) {
+        // If RPC fails (e.g. function not deployed yet), fall through to signUp
+        console.warn('auth_email_exists RPC failed, falling back to signUp:', rpcErr.message)
+      } else if (emailExists) {
+        return { error: 'Un compte existe déjà avec cet email. Veuillez vous connecter avec vos identifiants actuels.', needsConfirmation: false }
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -183,6 +272,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setTenantId(null)
     setUser(null)
+    setAvailableTenants([])
+    localStorage.removeItem('active_tenant_id')
+    resetModuleCache()
+  }, [])
+
+  const switchTenant = useCallback(async (tenantId: string) => {
+    localStorage.setItem('active_tenant_id', tenantId)
+    resetModuleCache()
+    await setTenantId(tenantId)
+    window.location.reload()
   }, [])
 
   const hasRole = useCallback((...roles: TenantUser['role'][]) => {
@@ -207,6 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false
     }
     if (user.role === 'viewer') return action === 'select'
+    if (user.role === 'auditor') return action === 'select'
     if (user.role === 'custom') {
       const perms = user.permissions[table]
       if (!perms) return false
@@ -216,7 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, reloadUser: loadUser, hasRole, canPerform }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, reloadUser: loadUser, hasRole, canPerform, switchTenant, availableTenants }}>
       {children}
     </AuthContext.Provider>
   )

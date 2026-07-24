@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
 import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
-import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -150,8 +150,14 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
               </span>
             )}
           </TableCell>
-          <TableCell className={`font-mono text-right ${(Number(account.balance) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
-            {formatCurrency(Number(account.balance) || 0)}
+          <TableCell className={`font-mono text-right ${(Number(account.current_debit) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
+            {formatCurrency(Number(account.current_debit) || 0)}
+          </TableCell>
+          <TableCell className={`font-mono text-right ${(Number(account.current_credit) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
+            {formatCurrency(Number(account.current_credit) || 0)}
+          </TableCell>
+          <TableCell className={`font-mono text-right ${(Number(account.current_balance ?? account.balance) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
+            {formatCurrency(Number(account.current_balance ?? account.balance) || 0)}
           </TableCell>
           <TableCell>
             <div className="flex gap-2">
@@ -199,6 +205,32 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
       console.error('Error deleting account:', err)
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
+  }
+
+  function handleExportCSV() {
+    const headers = [tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.debit'), t('chartAccounts.credit'), tCommon('common.balance')]
+    const rows = filtered.map((a) => [
+      a.code,
+      a.name,
+      t(`chartAccounts.types.${a.type}`, { defaultValue: a.type }),
+      Number(a.current_debit) || 0,
+      Number(a.current_credit) || 0,
+      Number(a.current_balance ?? a.balance) || 0,
+    ])
+    exportToCSV(`chart-accounts-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
+  }
+
+  function handleExportExcel() {
+    const headers = [tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.debit'), t('chartAccounts.credit'), tCommon('common.balance')]
+    const rows = filtered.map((a) => [
+      a.code,
+      a.name,
+      t(`chartAccounts.types.${a.type}`, { defaultValue: a.type }),
+      Number(a.current_debit) || 0,
+      Number(a.current_credit) || 0,
+      Number(a.current_balance ?? a.balance) || 0,
+    ])
+    exportToExcel(`chart-accounts-${new Date().toISOString().split('T')[0]}.xls`, headers, rows)
   }
 
   const totalAccounts = accounts.length
@@ -264,6 +296,12 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           <option value="7">{t('chartAccounts.classLabels.7')}</option>
           <option value="8">{t('chartAccounts.classLabels.8')}</option>
         </select>
+        <Button variant="secondary" onClick={handleExportCSV} disabled={filtered.length === 0}>
+          <Download className="w-4 h-4" /> CSV
+        </Button>
+        <Button variant="secondary" onClick={handleExportExcel} disabled={filtered.length === 0}>
+          <FileSpreadsheet className="w-4 h-4" /> Excel
+        </Button>
         <button
           onClick={() => setHideZeroBalances(!hideZeroBalances)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${hideZeroBalances ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
@@ -315,7 +353,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
                   </div>
                 </div>
                 {!isCollapsed && (
-                  <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), tCommon('common.balance'), tCommon('table.actions')]}>
+                  <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), t('chartAccounts.debit'), t('chartAccounts.credit'), tCommon('common.balance'), tCommon('table.actions')]}>
                     {grouped[cls].map((account) => renderAccount(account, 0))}
                   </Table>
                 )}

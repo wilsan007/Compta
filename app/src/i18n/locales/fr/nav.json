@@ -196,7 +196,28 @@
     "assetFamilies": "Familles d'immobilisations",
     "assetRevaluations": "Réévaluations",
     "assetBatchDisposals": "Cessions en lot",
-    "assetFromEntry": "Créer depuis écriture"
+    "assetFromEntry": "Créer depuis écriture",
+    "batchEntry": "Saisie par lot",
+    "autoLabel": "Libellés automatiques",
+    "extourne": "Extourne",
+    "carryForward": "Report à nouveau",
+    "lettrageDifferences": "Différences de lettrage",
+    "accountingControls": "Contrôles comptables",
+    "cashControl": "Contrôle de caisse",
+    "fecAttestation": "Attestation FEC",
+    "tierRIBs": "Multi-RIB tiers",
+    "ifrsAdjustments": "Ajustements IAS/IFRS",
+    "taxPayments": "Télépaiements",
+    "customReports": "Modèles d'édition",
+    "deferredPrinting": "Impression différée",
+    "journalAccessRights": "Droits d'accès journaux",
+    "vatOnCollections": "TVA sur encaissements",
+    "taxRates": "Taux de TVA",
+    "paymentTerms": "Modèles de règlement",
+    "saisieParPiece": "Saisie par pièce",
+    "justificatifSolde": "Justificatif de solde",
+    "etatRapprochement": "État de rapprochement",
+    "reminderLevels": "Niveaux de relance"
   },
   "layout": {
     "reduce": "Reduire",
@@ -219,8 +240,15 @@
     "noResults": "Aucun résultat",
     "collapse": "Réduire",
     "expand": "Agrandir",
-    "footer": "Compta v0.2.0 - Inspire de Sage Accounting, ameliore pour vous",
-    "copyright": "© 2026 Compta"
+    "footer": "Compta v0.2.0 — Votre comptabilité, simplifiée et puissante",
+    "copyright": "© 2026 Compta",
+    "switchTenant": "Changer d'entreprise",
+    "currentTenant": "Entreprise actuelle",
+    "tenantRole": "Rôle"
+  },
+  "tenantSelection": {
+    "title": "Choisissez votre entreprise",
+    "subtitle": "Sélectionnez l'entreprise à laquelle vous souhaitez accéder ({{email}})"
   },
   "hub": {
     "viewAll": "Voir tout",
@@ -231,31 +259,66 @@
       "subtitle": "Tableau de bord et espace de travail"
     },
     "accounting": {
-      "subtitle": "Gestion comptable complète : structure, traitement et états"
+      "subtitle": "Gestion comptable complète : structure, traitement et états",
+      "sections": {
+        "dailyEntry": "Saisie quotidienne",
+        "structure": "Structure comptable",
+        "states": "États financiers"
+      }
     },
     "commercial": {
-      "subtitle": "Ventes et achats : clients, fournisseurs, factures et paiements"
+      "subtitle": "Ventes et achats : clients, fournisseurs, factures et paiements",
+      "sections": {
+        "sales": "Ventes",
+        "purchases": "Achats"
+      }
     },
     "treasury": {
-      "subtitle": "Trésorerie, prévisions et flux financiers"
+      "subtitle": "Trésorerie, prévisions et flux financiers",
+      "sections": {
+        "cashflow": "Flux de trésorerie",
+        "payments": "Paiements et virements"
+      }
     },
     "stock": {
-      "subtitle": "Gestion des stocks, entrepôts et inventaires"
+      "subtitle": "Gestion des stocks, entrepôts et inventaires",
+      "sections": {
+        "inventory": "Inventaire",
+        "management": "Gestion des stocks"
+      }
     },
     "production": {
-      "subtitle": "Fabrication, sous-traitance et planification de la production"
+      "subtitle": "Fabrication, sous-traitance et planification de la production",
+      "sections": {
+        "manufacturing": "Fabrication",
+        "planning": "Planification"
+      }
     },
     "hr": {
-      "subtitle": "Ressources humaines, paie et administration du personnel"
+      "subtitle": "Ressources humaines, paie et administration du personnel",
+      "sections": {
+        "payroll": "Paie",
+        "admin": "Administration du personnel"
+      }
     },
     "dashboards": {
-      "subtitle": "Tableaux de bord analytiques par domaine"
+      "subtitle": "Tableaux de bord analytiques par domaine",
+      "sections": {
+        "analytics": "Analytique"
+      }
     },
     "reporting": {
-      "subtitle": "Reporting financier et business intelligence"
+      "subtitle": "Reporting financier et business intelligence",
+      "sections": {
+        "reports": "Rapports"
+      }
     },
     "system": {
-      "subtitle": "Configuration, intégrations et gestion des données"
+      "subtitle": "Configuration, intégrations et gestion des données",
+      "sections": {
+        "configuration": "Configuration",
+        "data": "Données"
+      }
     }
   },
   "commandPalette": {

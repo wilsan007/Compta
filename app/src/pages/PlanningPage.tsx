@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocale } from '@/hooks/useLocale'
 import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock } from 'lucide-react'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
@@ -11,6 +12,7 @@ export function PlanningPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
+  const { formatDateTime } = useLocale()
   const [slots, setSlots] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
@@ -99,8 +101,8 @@ export function PlanningPage() {
                     <TableCell className="font-mono text-xs">{s.manufacturing_orders?.number || '—'}</TableCell>
                     <TableCell className="text-sm">{s.routing_operations?.name || '—'}</TableCell>
                     <TableCell className="text-sm">{s.machines?.name || '—'}</TableCell>
-                    <TableCell className="text-xs">{s.planned_start ? new Date(s.planned_start).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
-                    <TableCell className="text-xs">{s.planned_end ? new Date(s.planned_end).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
+                    <TableCell className="text-xs">{s.planned_start ? formatDateTime(s.planned_start) : '—'}</TableCell>
+                    <TableCell className="text-xs">{s.planned_end ? formatDateTime(s.planned_end) : '—'}</TableCell>
                     <TableCell className="font-mono text-xs">{duration > 0 ? `${duration}min` : '—'}</TableCell>
                     <TableCell>
                       {s.material_available ? (

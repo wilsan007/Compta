@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
+import { useLocale } from '@/hooks/useLocale'
 import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, getFiscalPeriods, createFiscalPeriodsForYear, updateFiscalPeriod } from '@/lib/queries'
 import { Calendar, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Lock, Unlock } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod } from '@/types'
@@ -10,6 +11,7 @@ export function FiscalYearsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { formatDate } = useLocale()
 const [years, setYears] = useState<FiscalYear[]>([])
   const [periods, setPeriods] = useState<Record<string, FiscalPeriod[]>>({})
   const [loading, setLoading] = useState(true)
@@ -117,7 +119,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
                 </button>
                 <div className="font-mono font-semibold text-lg">{y.code}</div>
                 <div className="text-sm text-[var(--color-text-secondary)]">
-                  {new Date(y.start_date).toLocaleDateString('fr-FR')} → {new Date(y.end_date).toLocaleDateString('fr-FR')}
+                  {formatDate(y.start_date)} → {formatDate(y.end_date)}
                 </div>
                 <div className="ml-auto flex items-center gap-3">
                   {statusBadge(y.status)}
@@ -141,8 +143,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
                       <TableRow key={p.id}>
                         <TableCell className="font-mono">{p.period_number}</TableCell>
                         <TableCell>{p.period_label}</TableCell>
-                        <TableCell className="text-xs">{new Date(p.start_date).toLocaleDateString('fr-FR')}</TableCell>
-                        <TableCell className="text-xs">{new Date(p.end_date).toLocaleDateString('fr-FR')}</TableCell>
+                        <TableCell className="text-xs">{formatDate(p.start_date)}</TableCell>
+                        <TableCell className="text-xs">{formatDate(p.end_date)}</TableCell>
                         <TableCell>{statusBadge(p.status)}</TableCell>
                         <TableCell>
                           <button onClick={() => togglePeriodStatus(p)} className="text-xs text-[var(--color-primary)] hover:underline">

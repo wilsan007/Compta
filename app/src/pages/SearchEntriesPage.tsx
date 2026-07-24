@@ -2,13 +2,15 @@ import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts } from '@/lib/queries'
-import { Search, ChevronDown, ChevronRight, Filter, X, Download } from 'lucide-react'
-import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount } from '@/types'
+import { useToast } from '@/lib/toast'
+import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts, markLineBAP, markLineWithCode, getMarkingTypes } from '@/lib/queries'
+import { Search, ChevronDown, ChevronRight, Filter, X, Download, CheckCircle2 } from 'lucide-react'
+import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount, MarkingType } from '@/types'
 
 export function SearchEntriesPage() {
   const { t } = useTranslation('accounting')
   const { formatCurrency, formatDate } = useLocale()
+  const { toast } = useToast()
   const [journals, setJournals] = useState<Journal[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
@@ -17,6 +19,7 @@ export function SearchEntriesPage() {
   const [hasSearched, setHasSearched] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters] = useState(true)
+  const [markingTypes, setMarkingTypes] = useState<MarkingType[]>([])
 
   const [criteria, setCriteria] = useState({
     journalCode: '',
@@ -28,11 +31,38 @@ export function SearchEntriesPage() {
     amountMax: '',
     description: '',
     pieceNumber: '',
+    markedBap: '',
   })
 
   useEffect(() => {
     loadRefData()
   }, [])
+
+  useEffect(() => {
+    getMarkingTypes().then(setMarkingTypes).catch(() => {})
+  }, [])
+
+  async function handleToggleBAP(lineId: string, currentMarked: boolean) {
+    try {
+      await markLineBAP(lineId, !currentMarked)
+      toast(!currentMarked ? 'success' : 'info', t('search.title'), !currentMarked ? t('search.bapMarked') : t('search.bapUnmarked'))
+      if (hasSearched) handleSearch()
+    } catch (err) {
+      console.error('Error toggling BAP:', err)
+      toast('error', t('search.title'), t('search.bapError'))
+    }
+  }
+
+  async function handleMarkLine(lineId: string, code: string) {
+    try {
+      await markLineWithCode(lineId, code || null)
+      toast('success', t('search.title'), t('search.markingApplied'))
+      if (hasSearched) handleSearch()
+    } catch (err) {
+      console.error('Error marking line:', err)
+      toast('error', t('search.title'), t('search.markingError'))
+    }
+  }
 
   async function loadRefData() {
     try {
@@ -82,6 +112,7 @@ export function SearchEntriesPage() {
     setCriteria({
       journalCode: '', dateFrom: '', dateTo: '', accountCode: '',
       accountTiers: '', amountMin: '', amountMax: '', description: '', pieceNumber: '',
+      markedBap: '',
     })
     setResults([])
     setHasSearched(false)
@@ -193,7 +224,7 @@ export function SearchEntriesPage() {
             />
           ) : (
             <Card>
-              <Table headers={['', t('entries.number'), t('entries.date'), t('entries.journal'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit')]}>
+              <Table headers={['', t('entries.number'), t('entries.date'), t('entries.journal'), t('entries.description'), t('entries.status'), t('entries.debit'), t('entries.credit'), '']}>
                 {results.map((entry) => (
                   <Fragment key={entry.id}>
                     <TableRow onClick={() => toggleExpand(entry.id)}>
@@ -213,6 +244,7 @@ export function SearchEntriesPage() {
                       </TableCell>
                       <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                       <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
+                      <TableCell />
                     </TableRow>
                     {expanded.has(entry.id) && entry.journal_lines && entry.journal_lines.map((line) => (
                       <TableRow key={line.id} className="bg-[var(--color-neutral-50)]">
@@ -223,9 +255,33 @@ export function SearchEntriesPage() {
                         <TableCell colSpan={2} className="text-xs text-[var(--color-text-secondary)]">
                           {line.account_tiers && <span className="font-mono">[{line.account_tiers}] </span>}
                           {line.description || ''}
+                          {(line as any).marked_bap && <Badge variant="success" >{t('search.bap')}</Badge>}
+                          {(line as any).marking_code && <Badge variant="warning">{(line as any).marking_code}</Badge>}
                         </TableCell>
                         <TableCell className="font-mono text-xs text-right">{Number(line.debit) > 0 ? formatCurrency(Number(line.debit)) : ''}</TableCell>
                         <TableCell className="font-mono text-xs text-right">{Number(line.credit) > 0 ? formatCurrency(Number(line.credit)) : ''}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleToggleBAP(line.id, (line as any).marked_bap) }}
+                              className={`p-1 ${ (line as any).marked_bap ? 'text-[var(--color-success)]' : 'text-[var(--color-text-secondary)]' } hover:text-[var(--color-success)]`}
+                              title={t('search.toggleBAP')}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </button>
+                            <select
+                              className="input text-xs py-0.5 w-20"
+                              value={(line as any).marking_code || ''}
+                              onChange={(e) => { e.stopPropagation(); handleMarkLine(line.id, e.target.value) }}
+                              title={t('search.marking')}
+                            >
+                              <option value="">—</option>
+                              {markingTypes.map((mt) => (
+                                <option key={mt.id} value={mt.code}>{mt.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </Fragment>

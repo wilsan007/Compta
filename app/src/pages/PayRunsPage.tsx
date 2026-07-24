@@ -110,9 +110,31 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
   const [payDate, setPayDate] = useState(today.toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
 
+  // Moroccan payroll calculation
   const grossTotal = employees.reduce((s, e) => s + Number(e.salary), 0)
-  const taxTotal = grossTotal * 0.23
-  const netTotal = grossTotal - taxTotal
+  const cnssTotal = employees.reduce((s, e) => {
+    const sal = Number(e.salary)
+    const cnssBase = Math.min(sal, 6000) // CNSS plafonné à 6000 MAD
+    return s + cnssBase * 0.0448 // 4.48% part salariale
+  }, 0)
+  const amoTotal = grossTotal * 0.0226 // AMO 2.26%
+  const irTotal = employees.reduce((s, e) => {
+    const sal = Number(e.salary)
+    const cnssDed = Math.min(sal, 6000) * 0.0448
+    const amoDed = sal * 0.0226
+    const netImposable = sal - cnssDed - amoDed
+    // Simplified IR barème
+    let ir = 0
+    if (netImposable <= 2500) ir = 0
+    else if (netImposable <= 4166) ir = (netImposable - 2500) * 0.10
+    else if (netImposable <= 5000) ir = 166.6 + (netImposable - 4166) * 0.20
+    else if (netImposable <= 6666) ir = 333.4 + (netImposable - 5000) * 0.30
+    else if (netImposable <= 15000) ir = 833.2 + (netImposable - 6666) * 0.34
+    else ir = 3683.0 + (netImposable - 15000) * 0.38
+    return s + Math.max(0, ir)
+  }, 0)
+  const totalDeductions = cnssTotal + amoTotal + irTotal
+  const netTotal = grossTotal - totalDeductions
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -120,7 +142,7 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
     try {
       await createPayRun({
         number, period_start: periodStart, period_end: periodEnd, pay_date: payDate,
-        status: 'draft', gross_total: grossTotal, tax_total: taxTotal, net_total: netTotal,
+        status: 'draft', gross_total: grossTotal, tax_total: totalDeductions, net_total: netTotal,
         employee_count: employees.length,
       } as any)
       onSaved()
@@ -144,7 +166,9 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('dashboard.activeEmployees')}:</span><span className="font-bold">{employees.length}</span></div>
             <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.grossTotal')}:</span><span className="font-mono font-bold">{formatCurrency(grossTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.chargesTotal')} (~23%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(taxTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">CNSS (4.48%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(cnssTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">AMO (2.26%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(amoTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">IR:</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(irTotal)}</span></div>
             <div className="flex justify-between border-t border-[var(--color-border)] pt-1"><span className="font-semibold">{t('paySlips.netSalary')}:</span><span className="font-mono font-bold text-[var(--color-success)]">{formatCurrency(netTotal)}</span></div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">

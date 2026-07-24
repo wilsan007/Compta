@@ -196,7 +196,28 @@
     "assetFamilies": "Asset families",
     "assetRevaluations": "Asset revaluations",
     "assetBatchDisposals": "Batch disposals",
-    "assetFromEntry": "Create from entry"
+    "assetFromEntry": "Create from entry",
+    "batchEntry": "Batch entry",
+    "autoLabel": "Auto labeling",
+    "extourne": "Automatic reversal",
+    "carryForward": "Carry forward",
+    "lettrageDifferences": "Lettrage differences",
+    "accountingControls": "Accounting controls",
+    "cashControl": "Cash control",
+    "fecAttestation": "FEC attestation",
+    "tierRIBs": "Multi-RIB per third party",
+    "ifrsAdjustments": "IAS/IFRS adjustments",
+    "taxPayments": "Tax payments",
+    "customReports": "Custom report templates",
+    "deferredPrinting": "Deferred printing",
+    "journalAccessRights": "Journal access rights",
+    "vatOnCollections": "VAT on collections",
+    "taxRates": "VAT rates",
+    "paymentTerms": "Payment terms",
+    "saisieParPiece": "Entry by piece",
+    "justificatifSolde": "Balance justification",
+    "etatRapprochement": "Reconciliation statement",
+    "reminderLevels": "Reminder levels"
   },
   "layout": {
     "reduce": "Collapse",
@@ -219,8 +240,15 @@
     "noResults": "No results",
     "collapse": "Collapse",
     "expand": "Expand",
-    "footer": "Compta v0.2.0 - Inspired by Sage Accounting, enhanced for you",
-    "copyright": "© 2026 Compta"
+    "footer": "Compta v0.2.0 — Your accounting, simplified and powerful",
+    "copyright": "© 2026 Compta",
+    "switchTenant": "Switch company",
+    "currentTenant": "Current company",
+    "tenantRole": "Role"
+  },
+  "tenantSelection": {
+    "title": "Choose your company",
+    "subtitle": "Select the company you want to access ({{email}})"
   },
   "hub": {
     "viewAll": "View all",
@@ -231,31 +259,66 @@
       "subtitle": "Dashboard and workspace"
     },
     "accounting": {
-      "subtitle": "Full accounting management: structure, processing and reports"
+      "subtitle": "Full accounting management: structure, processing and reports",
+      "sections": {
+        "dailyEntry": "Daily entry",
+        "structure": "Accounting structure",
+        "states": "Financial reports"
+      }
     },
     "commercial": {
-      "subtitle": "Sales and purchases: customers, suppliers, invoices and payments"
+      "subtitle": "Sales and purchases: customers, suppliers, invoices and payments",
+      "sections": {
+        "sales": "Sales",
+        "purchases": "Purchases"
+      }
     },
     "treasury": {
-      "subtitle": "Treasury, forecasts and cash flow management"
+      "subtitle": "Treasury, forecasts and cash flow management",
+      "sections": {
+        "cashflow": "Cash flow",
+        "payments": "Payments and transfers"
+      }
     },
     "stock": {
-      "subtitle": "Stock management, warehouses and inventory"
+      "subtitle": "Stock management, warehouses and inventory",
+      "sections": {
+        "inventory": "Inventory",
+        "management": "Stock management"
+      }
     },
     "production": {
-      "subtitle": "Manufacturing, subcontracting and production planning"
+      "subtitle": "Manufacturing, subcontracting and production planning",
+      "sections": {
+        "manufacturing": "Manufacturing",
+        "planning": "Planning"
+      }
     },
     "hr": {
-      "subtitle": "Human resources, payroll and personnel administration"
+      "subtitle": "Human resources, payroll and personnel administration",
+      "sections": {
+        "payroll": "Payroll",
+        "admin": "Personnel administration"
+      }
     },
     "dashboards": {
-      "subtitle": "Analytical dashboards by domain"
+      "subtitle": "Analytical dashboards by domain",
+      "sections": {
+        "analytics": "Analytics"
+      }
     },
     "reporting": {
-      "subtitle": "Financial reporting and business intelligence"
+      "subtitle": "Financial reporting and business intelligence",
+      "sections": {
+        "reports": "Reports"
+      }
     },
     "system": {
-      "subtitle": "Configuration, integrations and data management"
+      "subtitle": "Configuration, integrations and data management",
+      "sections": {
+        "configuration": "Configuration",
+        "data": "Data"
+      }
     }
   },
   "commandPalette": {
