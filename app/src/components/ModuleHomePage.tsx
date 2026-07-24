@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import { navModules, type NavModule, type ModuleColor } from './Sidebar'
+import { navModules, type ModuleColor } from './Sidebar'
 import {
   ChevronRight,
   PenLine, Search, Link2, ListTree, BookCopy, Contact, ScrollText, Scale, FileDown,

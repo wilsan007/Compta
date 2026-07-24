@@ -697,14 +697,6 @@ export interface BudgetControlResult {
   overshoot_amount: number
 }
 
-// ============ Standard Labels ============
-export interface StandardLabel {
-  id: string
-  label: string
-  category: string | null
-  created_at: string
-}
-
 // ============ Payment Orders ============
 export interface PaymentOrder {
   id: string
