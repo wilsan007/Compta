@@ -20,9 +20,7 @@ import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, setLanguage, type SupportedLangua
 import { CommandPalette } from './CommandPalette'
 import { AIAssistant } from './AIAssistant'
 import { OnboardingModal } from './OnboardingModal'
-import { Sidebar, navGroups, getEnabledNavGroups } from './Sidebar'
-
-export { navGroups, getEnabledNavGroups }
+import { Sidebar } from './Sidebar'
 
 export function Layout({ children }: { children?: React.ReactNode }) {
   const navigate = useNavigate()
