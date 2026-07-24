@@ -81,11 +81,13 @@ const TENANT_TABLES = new Set([
   'revision_cycles', 'reporting_plans', 'stat_fields', 'dashboard_widgets', 'fusion_logs', 'compaction_logs', 'rgpd_requests',
   // Phase 7D: Remaining features
   'grid_templates', 'payment_templates_compta', 'analytic_journal_codes', 'reimputation_logs',
+  'bank_statement_templates',
 ])
 
 const EXEMPT_TABLES = new Set([
   'tenants', 'tenant_users', 'users',
   'mirror_servers', 'mirror_verification_details',
+  'banks',
 ])
 
 let _tenantId: string | null | undefined = undefined

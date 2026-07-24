@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Breadcrumb, Select, Input } from '@/components/ui'
 import { getCompanySettings, updateCompanySettings } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
-import { Save, Shield, Calculator, FileText, Lock } from 'lucide-react'
+import { Save, Shield, Calculator, FileText, Lock, Settings } from 'lucide-react'
 import type { CompanySettings } from '@/types'
 
 export function CompanySettingsPage() {
@@ -132,6 +132,78 @@ export function CompanySettingsPage() {
                   />
                   {t('gdpr.anonymizeAfter')}
                 </label>
+              </div>
+            </div>
+          </Card>
+
+          {/* Company Preferences */}
+          <Card>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="w-5 h-5 text-[var(--color-primary)]" />
+                <h3 className="text-sm font-semibold">{t('companyPrefs.title', 'Préférences de saisie')}</h3>
+              </div>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-3">{t('companyPrefs.description', 'Configuration des options de saisie comptable')}</p>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.saisie_negative || false}
+                    onChange={(e) => update('saisie_negative', e.target.checked)}
+                    className="w-4 h-4 rounded border-[var(--color-border)]"
+                  />
+                  {t('companyPrefs.saisieNegative', 'Autoriser la saisie négative (débit négatif / crédit négatif)')}
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.multi_currency || false}
+                    onChange={(e) => update('multi_currency', e.target.checked)}
+                    className="w-4 h-4 rounded border-[var(--color-border)]"
+                  />
+                  {t('companyPrefs.multiCurrency', 'Double monnaie (saisie en devise + conversion)')}
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.show_quantities || false}
+                    onChange={(e) => update('show_quantities', e.target.checked)}
+                    className="w-4 h-4 rounded border-[var(--color-border)]"
+                  />
+                  {t('companyPrefs.showQuantities', 'Afficher les quantités dans la saisie')}
+                </label>
+              </div>
+            </div>
+          </Card>
+
+          {/* VAT Parameters */}
+          <Card>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="w-5 h-5 text-[var(--color-primary)]" />
+                <h3 className="text-sm font-semibold">{t('vatParams.title', 'Paramètres TVA')}</h3>
+              </div>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-3">{t('vatParams.description', 'Configuration du régime et de la périodicité TVA')}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label={t('vatParams.regime', 'Régime TVA')}
+                  value={settings.vat_regime || 'CA3'}
+                  onChange={(e) => update('vat_regime', e.target.value)}
+                  options={[
+                    { value: 'CA3', label: t('vatParams.ca3', 'CA3 (mensuel/trimestriel)') },
+                    { value: 'CA12', label: t('vatParams.ca12', 'CA12 (annuel - franchise)') },
+                  ]}
+                />
+                <Select
+                  label={t('vatParams.periodicity', 'Périodicité')}
+                  value={settings.vat_periodicity || 'monthly'}
+                  onChange={(e) => update('vat_periodicity', e.target.value)}
+                  options={[
+                    { value: 'monthly', label: t('vatParams.monthly', 'Mensuel') },
+                    { value: 'quarterly', label: t('vatParams.quarterly', 'Trimestriel') },
+                    { value: 'annual', label: t('vatParams.annual', 'Annuel') },
+                  ]}
+                />
               </div>
             </div>
           </Card>

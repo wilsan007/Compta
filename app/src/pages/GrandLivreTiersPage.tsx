@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getThirdPartyAccounts, getGrandLivreTiers } from '@/lib/queries'
-import { BookOpen } from 'lucide-react'
+import { getThirdPartyAccounts, getGrandLivreTiers, generateExtourne, exportToExcel } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { BookOpen, RotateCcw, Download } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
 
 export function GrandLivreTiersPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const { formatCurrency, formatDate } = useLocale()
+  const { toast } = useToast()
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
   const [movements, setMovements] = useState<any[]>([])
@@ -16,6 +19,10 @@ export function GrandLivreTiersPage() {
   const [, setLoadingTiers] = useState(true)
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [extourneEntryId, setExtourneEntryId] = useState('')
+  const [extourneReason, setExtourneReason] = useState('')
+  const [showExtourne, setShowExtourne] = useState(false)
+  const [extourneLoading, setExtourneLoading] = useState(false)
 
   useEffect(() => { loadTiers() }, [])
 
@@ -48,10 +55,37 @@ export function GrandLivreTiersPage() {
   const solde = totalDebit - totalCredit
   const selectedTp = tiers.find((tp) => tp.code === selectedTiers)
 
+  async function handleExtourne() {
+    if (!extourneEntryId) { toast('error', tCommon('common.error'), t('extourne.selectEntry')); return }
+    setExtourneLoading(true)
+    try {
+      await generateExtourne(extourneEntryId, extourneReason || 'Correction')
+      toast('success', tCommon('common.success'), t('extourne.generated'))
+      setShowExtourne(false); setExtourneEntryId(''); setExtourneReason('')
+      await loadMovements()
+    } catch (e: any) { toast('error', tCommon('common.error'), e.message) } finally { setExtourneLoading(false) }
+  }
+
+  function handleExport() {
+    const headers = [t('entries.date'), t('grandLivreTiers.pieceNumber'), t('grandLivreTiers.journal'), t('grandLivreTiers.description'), t('grandLivreTiers.debit'), t('grandLivreTiers.credit'), t('grandLivreTiers.balance')]
+    let runningBalance = 0
+    const rows = movements.map(m => {
+      const je = m.journal_entries
+      runningBalance += Number(m.debit) - Number(m.credit)
+      return [je?.date || '', je?.piece_number || je?.number || '', je?.journal_code || '', m.description || je?.description || '', Number(m.debit), Number(m.credit), runningBalance]
+    })
+    exportToExcel(`grand-livre-tiers-${selectedTiers}`, headers, rows)
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: t('grandLivreTiers.title') }]} />
-      <PageHeader title={t('grandLivreTiers.title')} subtitle={t('grandLivreTiers.subtitle')} />
+      <PageHeader title={t('grandLivreTiers.title')} subtitle={t('grandLivreTiers.subtitle')} action={
+        <div className="flex gap-2">
+          {movements.length > 0 && <Button variant="secondary" onClick={handleExport}><Download className="w-4 h-4" /> {tCommon('common.actions.export')}</Button>}
+          {movements.length > 0 && <Button variant="secondary" onClick={() => setShowExtourne(true)}><RotateCcw className="w-4 h-4" /> {t('extourne.title')}</Button>}
+        </div>
+      } />
 
       <Card className="mb-4">
         <div className="p-4 grid grid-cols-4 gap-3 items-end">
@@ -126,6 +160,24 @@ export function GrandLivreTiersPage() {
             </Table>
           </Card>
         </div>
+      )}
+
+      {showExtourne && (
+        <Card className="p-4 mb-4 space-y-3">
+          <h3 className="text-sm font-semibold">{t('extourne.title')}</h3>
+          <select className="input" value={extourneEntryId} onChange={e => setExtourneEntryId(e.target.value)}>
+            <option value="">{t('extourne.selectEntry')}</option>
+            {movements.map(m => {
+              const je = m.journal_entries
+              return <option key={m.id} value={je?.entry_id || m.id}>{je?.date} — {je?.piece_number || je?.number} — {formatCurrency(Number(m.debit) || Number(m.credit))}</option>
+            })}
+          </select>
+          <Input label={t('extourne.reason')} value={extourneReason} onChange={e => setExtourneReason(e.target.value)} />
+          <div className="flex gap-2">
+            <Button onClick={handleExtourne} disabled={extourneLoading}><RotateCcw className="w-4 h-4" /> {t('extourne.generate')}</Button>
+            <Button variant="secondary" onClick={() => setShowExtourne(false)}>{tCommon('common.actions.cancel')}</Button>
+          </div>
+        </Card>
       )}
     </div>
   )

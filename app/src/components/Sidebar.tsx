@@ -115,6 +115,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.journalClosure', path: '/accounting/treatment/journal-closure' },
           { labelKey: 'items.fiscalYearClosure', path: '/accounting/treatment/fiscal-year-closure' },
           { labelKey: 'items.bankReconciliation', path: '/banking/reconciliation' },
+          { labelKey: 'items.bankReconciliationPdf', path: '/banking/reconciliation-pdf' },
           { labelKey: 'items.bankTransactions', path: '/banking/transactions' },
           { labelKey: 'items.bankRules', path: '/banking/rules' },
           { labelKey: 'items.recurringEntries', path: '/accounting/treatment/recurring-entries' },

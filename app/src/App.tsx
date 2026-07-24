@@ -25,6 +25,7 @@ import { ProductsPage } from '@/pages/ProductsPage'
 import { PurchaseCreditNotesPage } from '@/pages/PurchaseCreditNotesPage'
 import { BankTransactionsPage } from '@/pages/BankTransactionsPage'
 import { BankReconciliationPage } from '@/pages/BankReconciliationPage'
+import { BankReconciliationPdfPage } from '@/pages/BankReconciliationPdfPage'
 import { BankRulesPage } from '@/pages/BankRulesPage'
 import { BalanceSheetPage } from '@/pages/BalanceSheetPage'
 import { CashFlowPage } from '@/pages/CashFlowPage'
@@ -246,6 +247,7 @@ function App() {
           <Route path="/banking/accounts" element={<BankAccountsPage />} />
           <Route path="/banking/transactions" element={<BankTransactionsPage />} />
           <Route path="/banking/reconciliation" element={<BankReconciliationPage />} />
+          <Route path="/banking/reconciliation-pdf" element={<BankReconciliationPdfPage />} />
           <Route path="/banking/rules" element={<BankRulesPage />} />
 
           {/* Treasury */}

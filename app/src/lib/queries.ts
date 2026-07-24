@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -7999,4 +7999,211 @@ export async function createReimputationLog(rl: Omit<ReimputationLog, 'id' | 'cr
   const { data, error } = await supabase.from('reimputation_logs').insert({ ...rl, tenant_id: tid }).select().single()
   if (error) throw error
   return data as ReimputationLog
+}
+
+// ============ Bank Statement Templates (AI-learned PDF parsing) ============
+
+export async function getBankStatementTemplates(): Promise<BankStatementTemplate[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('bank_statement_templates').select('*').eq('is_active', true).order('bank_name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as BankStatementTemplate[]
+}
+
+export async function createBankStatementTemplate(tpl: Omit<BankStatementTemplate, 'id' | 'created_at' | 'updated_at' | 'tenant_id'>): Promise<BankStatementTemplate> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('bank_statement_templates').insert({ ...tpl, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as BankStatementTemplate
+}
+
+export async function updateBankStatementTemplate(id: string, updates: Partial<BankStatementTemplate>): Promise<BankStatementTemplate> {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('bank_statement_templates').update(updates), 'bank_statement_templates', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BankStatementTemplate
+}
+
+export async function deleteBankStatementTemplate(id: string): Promise<void> {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('bank_statement_templates').delete(), 'bank_statement_templates', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Banks Registry (global, filtered by country) ============
+
+export async function getBanks(countryCode?: string): Promise<Bank[]> {
+  let q = supabase.from('banks').select('*').eq('is_active', true).order('name')
+  if (countryCode) q = q.eq('country', countryCode)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Bank[]
+}
+
+export async function getCompanyCountry(): Promise<string | null> {
+  const tid = await getTenantId()
+  if (!tid) return null
+  let q = supabase.from('company_settings').select('country, country_code').limit(1)
+  q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error || !data || data.length === 0) return null
+  const cs = data[0] as any
+  const raw = cs.country_code || cs.country || null
+  if (!raw) return null
+  // Convert ISO alpha-2 to alpha-3 (legislation_packs uses 2-letter codes)
+  const alpha2ToAlpha3: Record<string, string> = {
+    FR: 'FRA', GB: 'GBR', US: 'USA', MA: 'MAR', DZ: 'DZA', TN: 'TUN',
+    SN: 'SEN', CI: 'CIV', CM: 'CMR', DE: 'DEU', ES: 'ESP', IT: 'ITA',
+    DJ: 'DJI', ET: 'ETH', SA: 'SAU', AE: 'ARE', EG: 'EGY', NG: 'NGA',
+    KE: 'KEN', ZA: 'ZAF', BE: 'BEL', NL: 'NLD', PT: 'PRT', CH: 'CHE',
+    CA: 'CAN', AU: 'AUS', JP: 'JPN', CN: 'CHN', IN: 'IND', BR: 'BRA',
+    MX: 'MEX', RU: 'RUS', TR: 'TUR', SE: 'SWE', NO: 'NOR', DK: 'DNK',
+    FI: 'FIN', PL: 'POL', GR: 'GRC', IE: 'IRL', AT: 'AUT', CZ: 'CZE',
+    HU: 'HUN', RO: 'ROU', BG: 'BGR', HR: 'HRV', SK: 'SVK', SI: 'SVN',
+    LT: 'LTU', LV: 'LVA', EE: 'EST', LU: 'LUX', MT: 'MLT', CY: 'CYP',
+    IS: 'ISL', QA: 'QAT', KW: 'KWT', BH: 'BHR', OM: 'OMN', JO: 'JOR',
+    LB: 'LBN', IQ: 'IRQ', IR: 'IRN', SD: 'SDN', LY: 'LBY', MR: 'MRT',
+    ML: 'MLI', BF: 'BFA', BJ: 'BEN', TG: 'TGO', NE: 'NER', GN: 'GIN',
+    GQ: 'GNQ', GA: 'GAB', CG: 'COG', CD: 'COD', AO: 'AGO', MZ: 'MOZ',
+    TZ: 'TZA', UG: 'UGA', RW: 'RWA', BI: 'BDI', SO: 'SOM', ER: 'ERI',
+    MG: 'MDG', MU: 'MUS', SC: 'SYC', KM: 'COM', CV: 'CPV', GW: 'GNB',
+    SL: 'SLE', LR: 'LBR', GH: 'GHA', NA: 'NAM', BW: 'BWA', ZM: 'ZMB',
+    ZW: 'ZWE', LS: 'LSO', SZ: 'SWZ', MW: 'MWI',
+  }
+  const upper = raw.toUpperCase()
+  // Already 3 letters
+  if (upper.length === 3) return upper
+  // Convert 2-letter to 3-letter
+  if (upper.length === 2 && alpha2ToAlpha3[upper]) return alpha2ToAlpha3[upper]
+  return upper
+}
+
+// ============ Template Validation Logic ============
+// Flow: user validates AI results. If no corrections → consecutive_successes++.
+// When consecutive_successes >= 2 → status = 'validated'.
+// If corrections made → consecutive_successes = 0, status stays 'pending'.
+
+export async function getTemplateByBankId(bankId: string): Promise<BankStatementTemplate | null> {
+  // First try own tenant's template
+  const tid = await getTenantId()
+  let q = supabase.from('bank_statement_templates').select('*').eq('bank_id', bankId).eq('is_active', true)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.order('updated_at', { ascending: false }).limit(1)
+  if (error) throw error
+  if (data && data.length > 0) return data[0] as BankStatementTemplate
+
+  // Fallback: any validated template from any tenant (shared knowledge)
+  const { data: validated, error: vErr } = await supabase
+    .from('bank_statement_templates')
+    .select('*')
+    .eq('bank_id', bankId)
+    .eq('validation_status', 'validated')
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+  if (vErr) throw vErr
+  return (validated && validated.length > 0) ? validated[0] as BankStatementTemplate : null
+}
+
+export async function validateTemplateResult(templateId: string, hadCorrections: boolean, correctionNotes?: string): Promise<BankStatementTemplate> {
+  const tid = await getTenantId()
+  // Fetch current state
+  const { data: current, error: fetchErr } = await supabase
+    .from('bank_statement_templates')
+    .select('consecutive_successes, validation_count, validation_status')
+    .eq('id', templateId)
+    .single()
+  if (fetchErr || !current) throw fetchErr || new Error('Template not found')
+
+  const cur = current as any
+  let newConsecutive: number
+  let newStatus: string
+
+  if (hadCorrections) {
+    newConsecutive = 0
+    newStatus = 'pending'
+  } else {
+    newConsecutive = (cur.consecutive_successes || 0) + 1
+    newStatus = newConsecutive >= 2 ? 'validated' : 'pending'
+  }
+
+  const updates = {
+    consecutive_successes: newConsecutive,
+    validation_count: (cur.validation_count || 0) + 1,
+    validation_status: newStatus,
+    last_validated_at: new Date().toISOString(),
+    last_correction_notes: hadCorrections ? (correctionNotes || null) : null,
+  }
+
+  const { data, error } = await tud(
+    supabase.from('bank_statement_templates').update(updates),
+    'bank_statement_templates',
+    tid
+  ).eq('id', templateId).select().single()
+  if (error) throw error
+  return data as BankStatementTemplate
+}
+
+// ============ #22 — Analytic journals filter ============
+export async function getAnalyticJournals() {
+  const tid = await getTenantId()
+  let q = supabase.from('journals').select('*').eq('is_analytic', true).order('code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Journal[]
+}
+
+export async function getNonAnalyticJournals() {
+  const tid = await getTenantId()
+  let q = supabase.from('journals').select('*').or('is_analytic.is.null,is_analytic.eq.false').order('code', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Journal[]
+}
+
+// ============ #28 — Third party default bank account ============
+export async function getThirdPartyWithBank(tpaId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('third_party_accounts').select('*, bank_accounts!default_bank_account_id(*)').eq('id', tpaId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.single()
+  if (error) throw error
+  return data
+}
+
+// ============ #30 — Credit limit check ============
+export async function checkCreditLimit(tpaCode: string): Promise<{ exceeded: boolean; balance: number; limit: number | null }> {
+  const tid = await getTenantId()
+  let q = supabase.from('third_party_accounts').select('balance, credit_limit').eq('code', tpaCode)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.single()
+  if (error || !data) return { exceeded: false, balance: 0, limit: null }
+  const balance = Number(data.balance || 0)
+  const limit = data.credit_limit != null ? Number(data.credit_limit) : null
+  return { exceeded: limit != null && balance > limit, balance, limit }
+}
+
+// ============ #26 — Export to Excel (CSV) ============
+export function exportToExcel(filename: string, headers: string[], rows: (string | number)[][]) {
+  const escapeCsv = (val: string | number) => {
+    const s = String(val ?? '')
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`
+    }
+    return s
+  }
+  const csv = [headers.map(escapeCsv).join(','), ...rows.map(r => r.map(escapeCsv).join(','))].join('\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${filename}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }

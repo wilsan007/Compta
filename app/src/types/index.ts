@@ -199,6 +199,7 @@ export interface BankTransaction {
   category: string
   reconciled: boolean
   matched: boolean
+  matched_line_id: string | null
   invoice_id: string | null
   purchase_invoice_id: string | null
   created_at: string
@@ -374,6 +375,16 @@ export interface CompanySettings {
   logo_url: string
   country_code: string | null
   legislation_pack_code: string | null
+  vat_method?: string | null
+  accounting_standard?: string | null
+  gdpr_enabled?: boolean
+  gdpr_retention_years?: number
+  gdpr_anonymize_after?: boolean
+  saisie_negative?: boolean
+  multi_currency?: boolean
+  show_quantities?: boolean
+  vat_regime?: string | null
+  vat_periodicity?: string | null
   created_at: string
   updated_at: string
 }
@@ -2637,4 +2648,41 @@ export interface ReimputationLog {
   reason: string | null
   status: string
   created_at: string
+}
+
+export interface Bank {
+  id: string
+  name: string
+  swift_code: string | null
+  country: string | null
+  logo_url: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface BankStatementTemplate {
+  id: string
+  tenant_id: string | null
+  bank_id: string | null
+  bank_name: string
+  account_number_pattern: string | null
+  date_pattern: string
+  amount_pattern: string
+  description_pattern: string | null
+  reference_pattern: string | null
+  debit_indicator: string | null
+  credit_indicator: string | null
+  period_pattern: string | null
+  balance_pattern: string | null
+  currency_pattern: string | null
+  skip_lines_pattern: string | null
+  sample_text: string | null
+  is_active: boolean
+  validation_status: 'pending' | 'validated' | 'rejected'
+  consecutive_successes: number
+  validation_count: number
+  last_validated_at: string | null
+  last_correction_notes: string | null
+  created_at: string
+  updated_at: string
 }

@@ -1664,6 +1664,24 @@
     "subtitle": "Configuration comptable, fiscale et RGPD",
     "breadcrumb": "Paramètres société"
   },
+  "companyPrefs": {
+    "title": "Préférences de saisie",
+    "description": "Configuration des options de saisie comptable",
+    "saisieNegative": "Autoriser la saisie négative (débit négatif / crédit négatif)",
+    "multiCurrency": "Double monnaie (saisie en devise + conversion)",
+    "showQuantities": "Afficher les quantités dans la saisie"
+  },
+  "vatParams": {
+    "title": "Paramètres TVA",
+    "description": "Configuration du régime et de la périodicité TVA",
+    "regime": "Régime TVA",
+    "ca3": "CA3 (mensuel/trimestriel)",
+    "ca12": "CA12 (annuel - franchise)",
+    "periodicity": "Périodicité",
+    "monthly": "Mensuel",
+    "quarterly": "Trimestriel",
+    "annual": "Annuel"
+  },
   "system": {
     "breadcrumb": "Système"
   },

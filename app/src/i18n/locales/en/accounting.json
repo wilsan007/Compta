@@ -1665,6 +1665,24 @@
     "subtitle": "Accounting, tax and GDPR configuration",
     "breadcrumb": "Company settings"
   },
+  "companyPrefs": {
+    "title": "Entry preferences",
+    "description": "Accounting entry options configuration",
+    "saisieNegative": "Allow negative entry (negative debit / negative credit)",
+    "multiCurrency": "Dual currency (foreign currency entry + conversion)",
+    "showQuantities": "Show quantities in entry"
+  },
+  "vatParams": {
+    "title": "VAT parameters",
+    "description": "VAT regime and periodicity configuration",
+    "regime": "VAT regime",
+    "ca3": "CA3 (monthly/quarterly)",
+    "ca12": "CA12 (annual - franchise)",
+    "periodicity": "Periodicity",
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "annual": "Annual"
+  },
   "system": {
     "breadcrumb": "System"
   },
