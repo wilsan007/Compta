@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 .gstack/
+
+# Security: Never commit credentials, secrets, or env files
+.env
+.env.*
+!.env.example
+**/config.json
+!**/config.example.json
+mirror-daemon/config.json
+mirror-daemon/.machine-id

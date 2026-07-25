@@ -33,6 +33,11 @@
     "edit": "Modifier le compte",
     "view": "Détails du compte",
     "name": "Nom du compte",
+    "accountName": "Nom du compte",
+    "bankName": "Nom de la banque",
+    "initialBalance": "Solde initial",
+    "accountNamePlaceholder": "Compte principal",
+    "nameRequired": "Le nom du compte est obligatoire",
     "bank": "Banque",
     "iban": "IBAN",
     "bic": "BIC",
@@ -42,7 +47,11 @@
     "type": "Type de compte",
     "types": {
       "checking": "Compte courant",
+      "chequing": "Compte courant",
       "savings": "Compte épargne",
+      "credit_card": "Carte de crédit",
+      "cash": "Caisse",
+      "loan": "Emprunt",
       "other": "Autre"
     },
     "noAccounts": "Aucun compte bancaire",

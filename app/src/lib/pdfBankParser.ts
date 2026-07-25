@@ -124,14 +124,25 @@ function detectType(line: string, template: BankTemplate): 'debit' | 'credit' {
 export async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+  // SECURITY: Cap page count to prevent DoS via huge PDFs
+  const MAX_PAGES = 50
+  const MAX_TEXT_LENGTH = 150_000
+  const pageCount = Math.min(pdf.numPages, MAX_PAGES)
   let fullText = ''
-  for (let i = 1; i <= pdf.numPages; i++) {
+
+  for (let i = 1; i <= pageCount; i++) {
     const page = await pdf.getPage(i)
     const textContent = await page.getTextContent()
     const pageText = textContent.items
       .map((item: any) => item.str)
       .join(' ')
     fullText += pageText + '\n'
+    // SECURITY: Stop if text exceeds max length
+    if (fullText.length > MAX_TEXT_LENGTH) {
+      fullText = fullText.slice(0, MAX_TEXT_LENGTH)
+      break
+    }
   }
   return fullText
 }

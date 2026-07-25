@@ -1,6 +1,7 @@
 // @ts-nocheck — This file runs in Deno (Supabase Edge Function), not in the local TS environment.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { checkRateLimit, getClientIp, rateLimitResponse, validateBodySize } from "../_shared/rateLimit.ts"
 
 const ALLOWED_ORIGINS = [
   Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev",
@@ -10,7 +11,7 @@ const ALLOWED_ORIGINS = [
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("Origin") || ""
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ""
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -38,6 +39,23 @@ serve(async (req) => {
 
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
+  }
+
+  // ============================================
+  // RATE LIMITING: IP-based (anti-DDoS) + user-based (anti-abuse)
+  // ============================================
+  const clientIp = getClientIp(req)
+  if (!checkRateLimit(`ip:${clientIp}`, 20, 60_000)) {
+    return rateLimitResponse(corsHeaders, 60)
+  }
+
+  // Validate body size (max 10 KB for user creation)
+  const bodyCheck = await validateBodySize(req, 10 * 1024)
+  if (!bodyCheck.ok) {
+    return new Response(
+      JSON.stringify({ error: bodyCheck.error }),
+      { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    )
   }
 
   try {
@@ -71,6 +89,11 @@ serve(async (req) => {
       )
     }
 
+    // Per-user rate limit: max 5 user creations per minute
+    if (!checkRateLimit(`user:${user.id}`, 5, 60_000)) {
+      return rateLimitResponse(corsHeaders, 60)
+    }
+
     // ============================================
     // AUTHORIZATION: Verify caller is admin of the target tenant
     // ============================================
@@ -101,11 +124,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     // Verify caller is an active admin in the SAME tenant
+    // SECURITY: Filter by tenant_id to avoid maybeSingle() failure for multi-tenant users
     const { data: callerTenantUser, error: callerErr } = await supabase
       .from("tenant_users")
       .select("id, role, status, tenant_id")
       .eq("auth_id", user.id)
       .eq("status", "active")
+      .eq("tenant_id", tenant_id)
       .maybeSingle()
 
     if (callerErr || !callerTenantUser) {
@@ -214,12 +239,7 @@ serve(async (req) => {
     let authId: string
     let existingUser = false
 
-    const { data: existingAuthUsers, error: listErr } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1,
-    })
-
-    // listUsers doesn't filter by email, so use RPC to check existence first
+    // Check if user already exists in auth.users via RPC (avoids listing all users)
     const { data: emailExists, error: rpcErr } = await supabase
       .rpc("auth_email_exists", { p_email: email })
 
@@ -231,8 +251,8 @@ serve(async (req) => {
     }
 
     if (emailExists) {
-      // User already has an auth account — look up their auth_id
-      // We need to find them in auth.users. Use the service role to query.
+      // User already has an auth account — look up their auth_id via tenant_users
+      // SECURITY: Do NOT use listUsers() — it returns ALL users across ALL tenants (email enumeration)
       const { data: authUser, error: authLookupErr } = await supabase
         .from("tenant_users")
         .select("auth_id")
@@ -241,29 +261,15 @@ serve(async (req) => {
         .limit(1)
 
       if (authLookupErr || !authUser || authUser.length === 0) {
-        // Fallback: try to get auth user via admin API
-        // listUsers returns paginated results — we need to search
-        const { data: allUsers, error: allUsersErr } = await supabase.auth.admin.listUsers({
-          page: 1,
-          perPage: 1000,
-        })
-        if (allUsersErr) {
-          return new Response(
-            JSON.stringify({ error: "Utilisateur existant mais impossible de récupérer son compte." }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          )
-        }
-        const found = allUsers.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
-        if (!found) {
-          return new Response(
-            JSON.stringify({ error: "Utilisateur existant introuvable dans auth.users." }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          )
-        }
-        authId = found.id
-      } else {
-        authId = authUser[0].auth_id!
+        // User exists in auth.users but has no tenant_users record with auth_id
+        // They may have signed up independently. Send a magic link to link them.
+        // Do NOT enumerate all users to find their auth_id.
+        return new Response(
+          JSON.stringify({ error: "Cet email existe déjà dans le système mais n'est pas lié à un tenant. L'utilisateur doit d'abord se connecter avec son compte existant, puis accepter l'invitation." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
       }
+      authId = authUser[0].auth_id!
       existingUser = true
     } else {
       // 3. Create new auth user WITHOUT password (magic link flow)
@@ -334,7 +340,6 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        auth_id: authId,
         email,
         existing_user: existingUser,
         email_sent: !otpError,

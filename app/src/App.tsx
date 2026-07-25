@@ -67,6 +67,7 @@ import { EdiTvaPage } from '@/pages/EdiTvaPage'
 import { TvsPage } from '@/pages/TvsPage'
 import { ProgressiveBalancePage } from '@/pages/ProgressiveBalancePage'
 import { CompanySettingsPage } from '@/pages/CompanySettingsPage'
+import { TaxGridSettingsPage } from '@/pages/TaxGridSettingsPage'
 import { FiscalBackupPage } from '@/pages/FiscalBackupPage'
 import { BrouillardPage } from '@/pages/BrouillardPage'
 import { AgedBalancePage } from '@/pages/AgedBalancePage'
@@ -349,10 +350,11 @@ function App() {
           <Route path="/settings/integrations" element={<AdminRoute><SettingsPage /></AdminRoute>} />
           <Route path="/settings/modules" element={<AdminRoute><SettingsPage /></AdminRoute>} />
           <Route path="/settings/data-export" element={<AdminRoute><DataExportPage /></AdminRoute>} />
-          <Route path="/settings/import" element={<ImportPage />} />
-          <Route path="/settings/import/sage" element={<SageImportPage />} />
+          <Route path="/settings/import" element={<AdminRoute><ImportPage /></AdminRoute>} />
+          <Route path="/settings/import/sage" element={<AdminRoute><SageImportPage /></AdminRoute>} />
           <Route path="/settings/team" element={<AdminRoute><TeamPage /></AdminRoute>} />
           <Route path="/settings/currencies" element={<AdminRoute><CurrenciesPage /></AdminRoute>} />
+          <Route path="/settings/tax-grids" element={<AdminRoute><TaxGridSettingsPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
           <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
 

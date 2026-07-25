@@ -33,6 +33,11 @@
     "edit": "Edit account",
     "view": "Account details",
     "name": "Account name",
+    "accountName": "Account name",
+    "bankName": "Bank name",
+    "initialBalance": "Initial balance",
+    "accountNamePlaceholder": "Main account",
+    "nameRequired": "Account name is required",
     "bank": "Bank",
     "iban": "IBAN",
     "bic": "BIC",
@@ -42,7 +47,11 @@
     "type": "Account type",
     "types": {
       "checking": "Checking account",
+      "chequing": "Checking account",
       "savings": "Savings account",
+      "credit_card": "Credit card",
+      "cash": "Cash",
+      "loan": "Loan",
       "other": "Other"
     },
     "noAccounts": "No bank account",

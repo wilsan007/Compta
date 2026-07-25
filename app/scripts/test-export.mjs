@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://ndtaedcgwnaopopugiql.supabase.co'
-const supabaseKey = 'sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK'
+const supabaseUrl = process.env.SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
+if (!supabaseKey) {
+  console.error('ERROR: Set SUPABASE_KEY env var. Do NOT hardcode keys in source.')
+  process.exit(1)
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 

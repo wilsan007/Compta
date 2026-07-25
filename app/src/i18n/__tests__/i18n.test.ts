@@ -62,14 +62,14 @@ describe('Phase 1.0 — i18n Completeness', () => {
   })
 
   describe('No duplicate top-level keys in accounting.json', () => {
-    it('fr/accounting.json has 57 keys (no duplicates)', () => {
-      expect(Object.keys(frAcc).length).toBe(57)
+    it('fr/accounting.json has 95 keys (no duplicates)', () => {
+      expect(Object.keys(frAcc).length).toBe(95)
     })
-    it('en/accounting.json has 57 keys (no duplicates)', () => {
-      expect(Object.keys(enAcc).length).toBe(57)
+    it('en/accounting.json has 95 keys (no duplicates)', () => {
+      expect(Object.keys(enAcc).length).toBe(95)
     })
-    it('ar/accounting.json has 57 keys (no duplicates)', () => {
-      expect(Object.keys(arAcc).length).toBe(57)
+    it('ar/accounting.json has 95 keys (no duplicates)', () => {
+      expect(Object.keys(arAcc).length).toBe(95)
     })
   })
 

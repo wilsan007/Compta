@@ -1,10 +1,15 @@
 import https from 'https';
 
-const SUPABASE_URL = 'https://ndtaedcgwnaopopugiql.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK';
-const TID = '00000000-0000-0000-0000-000000000001';
-const EMAIL = 'test@test.com';
-const PASSWORD = 'tester123';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const TID = process.env.SEED_TENANT_ID || '00000000-0000-0000-0000-000000000001';
+const EMAIL = process.env.SEED_EMAIL || 'test@test.com';
+const PASSWORD = process.env.SEED_PASSWORD || '';
+
+if (!SUPABASE_KEY) {
+  console.error('ERROR: Set SUPABASE_KEY env var (or VITE_SUPABASE_PUBLISHABLE_KEY). Do NOT hardcode keys in source.');
+  process.exit(1);
+}
 
 function fetchUrl(url, options) {
   return new Promise((resolve, reject) => {

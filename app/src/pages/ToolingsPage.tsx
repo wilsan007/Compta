@@ -134,7 +134,7 @@ function ToolingFormModal({ machines, onClose, onSaved }: { machines: Machine[];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code || !name) { toast('error', t('common.required'), 'Code & ' + t('toolings.name')); return }
+    if (!code || !name) { toast('error', t('common.required'), t('toolings.code') + ' & ' + t('toolings.name')); return }
     try {
       await createTooling({ code, name, machine_id: machineId || null, max_pieces: maxPieces, initial_counter: initialCounter, current_counter: currentCounter, status: status as any, notes })
       onSaved()
@@ -146,7 +146,7 @@ function ToolingFormModal({ machines, onClose, onSaved }: { machines: Machine[];
       <div className="bg-[var(--color-surface)] rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">{t('toolings.create')}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <Input label="Code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="OUT-001" required />
+          <Input label={t('toolings.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="OUT-001" required />
           <Input label={t('toolings.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Moule injection A" required />
           <Select label={t('toolings.machine')} value={machineId} onChange={(e) => setMachineId(e.target.value)} options={[{ value: '', label: '—' }, ...machines.map((m) => ({ value: m.id, label: m.name }))]} />
           <Input label={t('toolings.maxPieces')} type="number" value={maxPieces} onChange={(e) => setMaxPieces(Number(e.target.value))} />

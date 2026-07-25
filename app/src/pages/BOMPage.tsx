@@ -177,7 +177,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="BOM-001" />
+            <Input label={t('bom.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="BOM-001" />
             <Input label={t('bom.name')} required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>

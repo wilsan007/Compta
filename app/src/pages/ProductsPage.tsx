@@ -175,7 +175,7 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('products.name')} required value={name} onChange={(e) => setName(e.target.value)} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
+            <Input label={t('products.sku')} value={sku} onChange={(e) => setSku(e.target.value)} />
             <Select label={tCommon('common.type')} value={type} onChange={(e) => setType(e.target.value)} options={[
               { value: 'stock', label: t('products.types.stock') },
               { value: 'service', label: t('products.types.service') },

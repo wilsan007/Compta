@@ -38,6 +38,7 @@
       "other": "أخرى"
     },
     "save": "حفظ التغييرات",
+    "saved": "تم حفظ الإعدادات بنجاح",
     "legalName": "الاسم القانوني",
     "countries": {
       "France": "فرنسا",
@@ -527,5 +528,89 @@
     "profitability": "الربحية",
     "noActiveProjects": "لا توجد مشاريع نشطة",
     "noQuotes": "لا توجد عروض"
+  },
+  "taxGrids": {
+    "title": "الجداول الضريبية",
+    "subtitle": "إدارة جداول الضرائب والمساهمات (الرواتب والشركات)",
+    "payrollTab": "جداول الرواتب",
+    "corporateTab": "ضرائب الشركات",
+    "loading": "جاري تحميل الجداول...",
+    "gridsList": "قائمة الجداول",
+    "new": "جدول جديد",
+    "noGrids": "لا توجد جداول",
+    "noGridsDescription": "أنشئ جدولاً جديداً للبدء",
+    "platform": "منصة",
+    "default": "افتراضي",
+    "confirmDelete": "هل أنت متأكد من حذف هذا الجدول؟",
+    "linesTitle": "بنود الجدول",
+    "linesSubtitle": "تفاصيل الشرائح والنسب",
+    "noLines": "لا توجد بنود",
+    "noLinesDescription": "هذا الجدول لا يحتوي على أي بند",
+    "selectGrid": "اختر جدولاً",
+    "selectGridDescription": "اختر جدولاً من القائمة لعرض تفاصيله",
+    "name": "الاسم",
+    "namePlaceholder": "مثال: جدول رواتب فرنسا 2025",
+    "countryCode": "رمز الدولة",
+    "type": "النوع",
+    "description": "الوصف",
+    "cancel": "إلغاء",
+    "create": "إنشاء",
+    "requiredFields": "يرجى ملء جميع الحقول المطلوبة",
+    "createError": "خطأ في إنشاء الجدول",
+    "colLabel": "التسمية",
+    "colType": "النوع",
+    "colCategory": "الفئة",
+    "colBase": "الأساس",
+    "colRate": "النسبة",
+    "colBracket": "الشريحة",
+    "status": {
+      "draft": "مسودة",
+      "active": "نشط",
+      "archived": "مؤرشف"
+    },
+    "gridType": {
+      "composite": "مركب",
+      "its": "الضريبة على الأجور",
+      "employer_contribution": "مساهمات صاحب العمل",
+      "employee_contribution": "مساهمات الموظف",
+      "income_tax": "ضريبة الدخل",
+      "other_deduction": "خصومات أخرى"
+    },
+    "taxType": {
+      "corporate_income_tax": "ضريبة أرباح الشركات",
+      "minimum_tax": "الضريبة الدنيا",
+      "turnover_tax": "ضريبة رقم الأعمال",
+      "withholding_tax": "ضريبة الاقتطاع"
+    },
+    "lineType": {
+      "bracket": "شريحة",
+      "flat": "مبلغ ثابت",
+      "percentage": "نسبة مئوية",
+      "fixed_amount": "مبلغ محدد"
+    },
+    "category": {
+      "social_security": "الضمان الاجتماعي",
+      "health": "التأمين الصحي",
+      "retirement": "التقاعد",
+      "unemployment": "البطالة",
+      "csg_crds": "CSG/CRDS",
+      "its": "الضريبة على الأجور",
+      "income_tax": "ضريبة الدخل",
+      "other_deduction": "خصم آخر",
+      "other_income": "دخل آخر",
+      "other_tax": "ضريبة أخرى",
+      "employer_charge": "رسوم صاحب العمل",
+      "employee_charge": "رسوم الموظف"
+    },
+    "baseType": {
+      "gross": "الإجمالي",
+      "taxable_gross": "الإجمالي الخاضع للضريبة",
+      "net": "الصافي",
+      "total_gross": "إجمالي كلي",
+      "custom": "مخصص",
+      "profit": "الأرباح",
+      "turnover": "رقم الأعمال",
+      "property_value": "قيمة العقار"
+    }
   }
 }

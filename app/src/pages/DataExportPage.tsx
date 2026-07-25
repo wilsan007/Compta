@@ -10,6 +10,7 @@ import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
 import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
+import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -82,15 +83,12 @@ export function DataExportPage() {
         return
       }
 
-      const daemonResp = await fetch('/mirror-daemon.mjs')
-      const daemonCode = await daemonResp.text()
-
       const installerCode = platform === 'mac'
         ? generateMacInstaller({
-            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!, daemonCode,
+            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!,
           })
         : generateWindowsInstaller({
-            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!, daemonCode,
+            supabaseUrl, supabaseKey, tenantId: user.tenantId, installToken: result.install_token!,
           })
 
       const filename = platform === 'mac' ? 'install-compta-mirror.sh' : 'install-compta-mirror.ps1'
@@ -108,6 +106,12 @@ export function DataExportPage() {
   }
 
   async function handleExport() {
+    // Client-side rate limit: prevent flooding the export endpoint
+    if (!checkClientRateLimit('export', CLIENT_LIMITS.export.max, CLIENT_LIMITS.export.windowMs)) {
+      const wait = getRateLimitResetSeconds('export')
+      toast('error', t('dataExport.exportError'), `Trop d'exports. Réessayez dans ${wait}s.`)
+      return
+    }
     setLoading(true)
     setResults(null)
     try {

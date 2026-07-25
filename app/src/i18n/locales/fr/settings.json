@@ -38,6 +38,7 @@
       "other": "Autre"
     },
     "save": "Enregistrer les modifications",
+    "saved": "Paramètres enregistrés avec succès",
     "legalName": "Raison sociale",
     "countries": {
       "France": "France",
@@ -527,5 +528,89 @@
     "profitability": "Rentabilité",
     "noActiveProjects": "Aucun projet actif",
     "noQuotes": "Aucun devis"
+  },
+  "taxGrids": {
+    "title": "Grilles fiscales",
+    "subtitle": "Gérez les grilles d'impôt et de cotisations (paie & entreprise)",
+    "payrollTab": "Grilles de paie",
+    "corporateTab": "Impôts d'entreprise",
+    "loading": "Chargement des grilles...",
+    "gridsList": "Liste des grilles",
+    "new": "Nouvelle grille",
+    "noGrids": "Aucune grille",
+    "noGridsDescription": "Créez une nouvelle grille pour commencer",
+    "platform": "Plateforme",
+    "default": "Par défaut",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette grille ?",
+    "linesTitle": "Lignes de la grille",
+    "linesSubtitle": "Détail des tranches et taux",
+    "noLines": "Aucune ligne",
+    "noLinesDescription": "Cette grille ne contient aucune ligne",
+    "selectGrid": "Sélectionnez une grille",
+    "selectGridDescription": "Choisissez une grille dans la liste pour voir ses détails",
+    "name": "Nom",
+    "namePlaceholder": "Ex: Grille paie France 2025",
+    "countryCode": "Code pays",
+    "type": "Type",
+    "description": "Description",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "requiredFields": "Veuillez remplir tous les champs obligatoires",
+    "createError": "Erreur lors de la création de la grille",
+    "colLabel": "Libellé",
+    "colType": "Type",
+    "colCategory": "Catégorie",
+    "colBase": "Base",
+    "colRate": "Taux",
+    "colBracket": "Tranche",
+    "status": {
+      "draft": "Brouillon",
+      "active": "Actif",
+      "archived": "Archivé"
+    },
+    "gridType": {
+      "composite": "Composite",
+      "its": "ITS (Impôt sur traitement)",
+      "employer_contribution": "Cotisations patronales",
+      "employee_contribution": "Cotisations salariales",
+      "income_tax": "Impôt sur le revenu",
+      "other_deduction": "Autres retenues"
+    },
+    "taxType": {
+      "corporate_income_tax": "Impôt sur les bénéfices",
+      "minimum_tax": "Impôt minimum",
+      "turnover_tax": "Impôt sur le chiffre d'affaires",
+      "withholding_tax": "Retenue à la source"
+    },
+    "lineType": {
+      "bracket": "Tranche",
+      "flat": "Forfaitaire",
+      "percentage": "Pourcentage",
+      "fixed_amount": "Montant fixe"
+    },
+    "category": {
+      "social_security": "Sécurité sociale",
+      "health": "Assurance maladie",
+      "retirement": "Retraite",
+      "unemployment": "Chômage",
+      "csg_crds": "CSG/CRDS",
+      "its": "ITS",
+      "income_tax": "Impôt sur le revenu",
+      "other_deduction": "Autre retenue",
+      "other_income": "Autre revenu",
+      "other_tax": "Autre impôt",
+      "employer_charge": "Charge patronale",
+      "employee_charge": "Charge salariale"
+    },
+    "baseType": {
+      "gross": "Brut",
+      "taxable_gross": "Brut imposable",
+      "net": "Net",
+      "total_gross": "Brut total",
+      "custom": "Personnalisé",
+      "profit": "Bénéfice",
+      "turnover": "Chiffre d'affaires",
+      "property_value": "Valeur foncière"
+    }
   }
 }

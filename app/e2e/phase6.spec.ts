@@ -2,10 +2,10 @@ import { test, expect, Page, APIRequestContext } from '@playwright/test'
 
 test.describe.configure({ mode: 'serial' })
 
-const TEST_EMAIL = 'test@test.com'
-const TEST_PASSWORD = 'tester123'
-const SUPABASE_URL = 'https://ndtaedcgwnaopopugiql.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_6WZDE3wBMwc5ildtfy19Nw_pxdPnAZK'
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
 
 let cachedSession: { access_token: string; refresh_token: string; expires_in: number } | null = null
 

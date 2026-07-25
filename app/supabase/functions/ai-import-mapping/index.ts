@@ -14,6 +14,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, getClientIp, rateLimitResponse, validateBodySize } from "../_shared/rateLimit.ts";
 
 interface MappingRequest {
   sourceHeaders: string[];
@@ -36,7 +37,7 @@ const ALLOWED_ORIGINS = [
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("Origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -57,6 +58,22 @@ serve(async (req: Request) => {
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // ============================================
+  // RATE LIMITING: IP-based (anti-DDoS) + body size validation
+  // ============================================
+  const clientIp = getClientIp(req);
+  if (!checkRateLimit(`ip:${clientIp}`, 20, 60_000)) {
+    return rateLimitResponse(corsHeaders, 60);
+  }
+
+  const bodyCheck = await validateBodySize(req, 50 * 1024); // 50 KB max for mapping request
+  if (!bodyCheck.ok) {
+    return new Response(
+      JSON.stringify({ error: bodyCheck.error }),
+      { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   // ============================================
@@ -87,17 +104,33 @@ serve(async (req: Request) => {
     );
   }
 
+  // Per-user rate limit: max 5 AI mapping requests per minute (cost control)
+  if (!checkRateLimit(`user:${user.id}`, 5, 60_000)) {
+    return rateLimitResponse(corsHeaders, 60);
+  }
+
   // Verify user is an active tenant user
-  const { data: tenantUser, error: tuErr } = await userClient
+  // SECURITY: Use .limit(1) instead of .maybeSingle() to prevent failure for multi-tenant users
+  const { data: tenantUsers, error: tuErr } = await userClient
     .from("tenant_users")
     .select("id, role, status")
     .eq("auth_id", user.id)
     .eq("status", "active")
-    .maybeSingle();
+    .limit(1);
 
-  if (tuErr || !tenantUser) {
+  if (tuErr || !tenantUsers || tenantUsers.length === 0) {
     return new Response(
       JSON.stringify({ error: "Utilisateur non autorisé" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const tenantUser = tenantUsers[0];
+
+  // SECURITY: Only admins and accountants can trigger AI mapping (cost control)
+  if (tenantUser.role !== "admin" && tenantUser.role !== "accountant") {
+    return new Response(
+      JSON.stringify({ error: "Réservé aux administrateurs et comptables" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

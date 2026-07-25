@@ -5,6 +5,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { useToast } from '@/lib/toast'
 import { getBankAccounts, createBankTransaction, autoMatchBankTransactions, getBanks, getCompanyCountry, validateTemplateResult } from '@/lib/queries'
 import { extractPdfText, parseBankStatement, getAvailableTemplates, getLearnedTemplates, parseWithLearnedTemplate, parseWithAI, parseWithBankTemplate, type ParsedBankTransaction, type AIParseResult } from '@/lib/pdfBankParser'
+import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText, Zap, CheckCircle, XCircle, AlertTriangle, Loader2, Eye, EyeOff, Sparkles, ThumbsUp, Edit3 } from 'lucide-react'
 import type { BankAccount, Bank } from '@/types'
 
@@ -75,8 +76,11 @@ export function BankReconciliationPdfPage() {
       toast('warning', tCommon('common.warning'), t('pdfReconciliation.selectAccount'))
       return
     }
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      toast('error', tCommon('common.error'), t('pdfReconciliation.pdfOnly'))
+    // SECURITY: Validate file before processing
+    const validation = await validateFileUpload(file, FILE_PROFILES.pdf)
+    if (!validation.ok) {
+      toast('error', tCommon('common.error'), validation.error || 'Invalid file')
+      e.target.value = ''
       return
     }
 

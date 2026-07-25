@@ -5,6 +5,7 @@ import { parseSageFile, type SageParseResult } from '@/lib/sageImport'
 import { parseMaeFile, type MaeParseResult } from '@/lib/maeParser'
 import { createChartAccount, createJournalEntry, createThirdPartyAccount, updateChartAccount, getChartAccounts, getThirdPartyAccounts } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
+import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileUp, Database, CheckCircle2, AlertTriangle, RotateCcw } from 'lucide-react'
 
 type UnifiedResult = SageParseResult | MaeParseResult
@@ -21,9 +22,16 @@ export function SageImportPage() {
   const [importing, setImporting] = useState(false)
   const [imported, setImported] = useState(false)
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    // SECURITY: Validate file before processing
+    const validation = await validateFileUpload(file, FILE_PROFILES.sage)
+    if (!validation.ok) {
+      toast('error', t('sageImport.noFile'), validation.error || 'Invalid file')
+      e.target.value = ''
+      return
+    }
     setFileName(file.name)
     setResult(null)
     setImported(false)

@@ -3,9 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './i18n'
 import { initRtl } from './i18n'
+import { initAntiInspection } from './lib/antiInspection'
 import App from './App.tsx'
 
 initRtl()
+initAntiInspection()
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

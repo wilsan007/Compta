@@ -23,8 +23,37 @@ CREATE TABLE IF NOT EXISTS mirror_verification_details (
 CREATE INDEX IF NOT EXISTS idx_mirror_verification_server ON mirror_verification_details(mirror_server_id);
 
 ALTER TABLE mirror_verification_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirror_verification_details FORCE ROW LEVEL SECURITY;
+
+-- Drop any old allow_all policy
+DROP POLICY IF EXISTS allow_all_mirror_verification ON mirror_verification_details;
+
+-- Tenant-isolated policies via join to mirror_servers
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_mirror_verification') THEN
-    CREATE POLICY "allow_all_mirror_verification" ON mirror_verification_details FOR ALL USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+  CREATE POLICY tenant_select_mirror_verification ON mirror_verification_details
+    FOR SELECT USING (EXISTS (
+      SELECT 1 FROM mirror_servers ms
+      WHERE ms.id = mirror_server_id AND ms.tenant_id = current_tenant_id()
+    ));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_insert_mirror_verification ON mirror_verification_details
+    FOR INSERT WITH CHECK (EXISTS (
+      SELECT 1 FROM mirror_servers ms
+      WHERE ms.id = mirror_server_id AND ms.tenant_id = current_tenant_id()
+    ));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_update_mirror_verification ON mirror_verification_details
+    FOR UPDATE USING (EXISTS (
+      SELECT 1 FROM mirror_servers ms
+      WHERE ms.id = mirror_server_id AND ms.tenant_id = current_tenant_id()
+    ));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_delete_mirror_verification ON mirror_verification_details
+    FOR DELETE USING (EXISTS (
+      SELECT 1 FROM mirror_servers ms
+      WHERE ms.id = mirror_server_id AND ms.tenant_id = current_tenant_id()
+    ));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;

@@ -82,6 +82,9 @@ const TENANT_TABLES = new Set([
   // Phase 7D: Remaining features
   'grid_templates', 'payment_templates_compta', 'analytic_journal_codes', 'reimputation_logs',
   'bank_statement_templates',
+  // Tax Grids (payroll & corporate)
+  'payroll_tax_grids', 'payroll_tax_grid_lines',
+  'corporate_tax_grids', 'corporate_tax_grid_lines',
 ])
 
 const EXEMPT_TABLES = new Set([
@@ -97,9 +100,14 @@ export async function setTenantId(id: string | null) {
   if (id) {
     // Set the active tenant in the database session so RLS policies use it
     try {
-      await supabase.rpc('set_active_tenant', { p_tenant_id: id })
-    } catch {
-      // Non-fatal: function may not be deployed yet
+      const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: id })
+      if (error) {
+        console.error('[SECURITY] set_active_tenant RPC failed:', error.message,
+          '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
+      }
+    } catch (err: any) {
+      console.error('[SECURITY] set_active_tenant RPC threw:', err?.message || err,
+        '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
     }
   }
 }

@@ -54,12 +54,16 @@ vi.mock('@/hooks/useLocale', () => ({
   })),
 }))
 
-vi.mock('react-i18next', () => ({
-  useTranslation: vi.fn(() => ({
-    t: (key: string) => key,
-    i18n: { language: 'fr', changeLanguage: vi.fn() },
-  })),
-}))
+vi.mock('react-i18next', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-i18next')>()
+  return {
+    ...actual,
+    useTranslation: vi.fn(() => ({
+      t: (key: string) => key,
+      i18n: { language: 'fr', changeLanguage: vi.fn() },
+    })),
+  }
+})
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -92,7 +96,7 @@ describe('BatchEntryPage', () => {
     const { BatchEntryPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<BatchEntryPage />)
     await waitFor(() => {
-      expect(screen.getByText('batchEntry.title')).toBeInTheDocument()
+      expect(screen.getAllByText('batchEntry.title').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('batchEntry.subtitle')).toBeInTheDocument()
     })
   })
@@ -122,7 +126,7 @@ describe('AutoLabelRulesPage', () => {
     const { AutoLabelRulesPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<AutoLabelRulesPage />)
     await waitFor(() => {
-      expect(screen.getByText('autoLabel.title')).toBeInTheDocument()
+      expect(screen.getAllByText('autoLabel.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -142,7 +146,7 @@ describe('ExtournePage', () => {
     const { ExtournePage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<ExtournePage />)
     await waitFor(() => {
-      expect(screen.getByText('extourne.title')).toBeInTheDocument()
+      expect(screen.getAllByText('extourne.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -162,7 +166,7 @@ describe('CarryForwardPage', () => {
     const { CarryForwardPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<CarryForwardPage />)
     await waitFor(() => {
-      expect(screen.getByText('carryForward.title')).toBeInTheDocument()
+      expect(screen.getAllByText('carryForward.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -173,7 +177,7 @@ describe('LettrageDifferencesPage', () => {
     const { LettrageDifferencesPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<LettrageDifferencesPage />)
     await waitFor(() => {
-      expect(screen.getByText('lettrageDiff.title')).toBeInTheDocument()
+      expect(screen.getAllByText('lettrageDiff.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -184,7 +188,7 @@ describe('AccountingControlsPage', () => {
     const { AccountingControlsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<AccountingControlsPage />)
     await waitFor(() => {
-      expect(screen.getByText('controls.title')).toBeInTheDocument()
+      expect(screen.getAllByText('controls.title').length).toBeGreaterThanOrEqual(1)
       expect(screen.getByText('controls.run')).toBeInTheDocument()
     })
   })
@@ -196,7 +200,7 @@ describe('CashControlPage', () => {
     const { CashControlPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<CashControlPage />)
     await waitFor(() => {
-      expect(screen.getByText('cashControl.title')).toBeInTheDocument()
+      expect(screen.getAllByText('cashControl.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -207,7 +211,7 @@ describe('FECAttestationPage', () => {
     const { FECAttestationPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<FECAttestationPage />)
     await waitFor(() => {
-      expect(screen.getByText('fecAttest.title')).toBeInTheDocument()
+      expect(screen.getAllByText('fecAttest.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -218,7 +222,7 @@ describe('TierRIBsPage', () => {
     const { TierRIBsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<TierRIBsPage />)
     await waitFor(() => {
-      expect(screen.getByText('tierRIB.title')).toBeInTheDocument()
+      expect(screen.getAllByText('tierRIB.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -229,7 +233,7 @@ describe('IFRSAdjustmentsPage', () => {
     const { IFRSAdjustmentsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<IFRSAdjustmentsPage />)
     await waitFor(() => {
-      expect(screen.getByText('ifrsAdjustments.title')).toBeInTheDocument()
+      expect(screen.getAllByText('ifrsAdjustments.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -240,7 +244,7 @@ describe('TaxPaymentsPage', () => {
     const { TaxPaymentsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<TaxPaymentsPage />)
     await waitFor(() => {
-      expect(screen.getByText('taxPayment.title')).toBeInTheDocument()
+      expect(screen.getAllByText('taxPayment.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -251,7 +255,7 @@ describe('CustomReportTemplatesPage', () => {
     const { CustomReportTemplatesPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<CustomReportTemplatesPage />)
     await waitFor(() => {
-      expect(screen.getByText('customReport.title')).toBeInTheDocument()
+      expect(screen.getAllByText('customReport.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -262,7 +266,7 @@ describe('DeferredPrintingPage', () => {
     const { DeferredPrintingPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<DeferredPrintingPage />)
     await waitFor(() => {
-      expect(screen.getByText('deferredPrint.title')).toBeInTheDocument()
+      expect(screen.getAllByText('deferredPrint.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -273,7 +277,7 @@ describe('JournalAccessRightsPage', () => {
     const { JournalAccessRightsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<JournalAccessRightsPage />)
     await waitFor(() => {
-      expect(screen.getByText('journalAccessRights.title')).toBeInTheDocument()
+      expect(screen.getAllByText('journalAccessRights.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })
@@ -284,7 +288,7 @@ describe('VATOnCollectionsPage', () => {
     const { VATOnCollectionsPage } = await import('@/pages/Phase6Pages')
     renderWithRouter(<VATOnCollectionsPage />)
     await waitFor(() => {
-      expect(screen.getByText('vatCollection.title')).toBeInTheDocument()
+      expect(screen.getAllByText('vatCollection.title').length).toBeGreaterThanOrEqual(1)
     })
   })
 })

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase, setTenantId } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
+import { clearTenantCache } from '@/lib/queries'
 import type { TenantUser } from '@/lib/queries'
 
 interface AuthUser {
@@ -141,12 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
           return
         }
+        // SECURITY: Old users table fallback — use 'viewer' role, force onboarding flow
         setTenantId(null)
         setUser({
           id: userData.id,
           email: userData.email,
           name: userData.name,
-          role: userData.role,
+          role: 'viewer',
           tenantId: null,
           tenantName: null,
           permissions: {},
@@ -188,13 +190,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Keep the session alive with a minimal user object so the user can
       // access /onboarding to create their tenant. ProtectedRoute will
       // redirect them there since tenantId is null.
+      // SECURITY: Use 'viewer' role — admin privileges should only come from a verified tenant_users record.
       setAvailableTenants([])
       setTenantId(null)
       setUser({
         id: session.user.id,
         email: session.user.email || '',
         name: session.user.email || '',
-        role: 'admin',
+        role: 'viewer',
         tenantId: null,
         tenantName: null,
         permissions: {},
@@ -218,21 +221,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
     const now = Date.now()
-    const attempts = JSON.parse(localStorage.getItem('_auth_attempts') || '[]') as number[]
-    const recent = attempts.filter((t) => now - t < 60000)
-    if (recent.length >= 5) {
+    // SECURITY: Use both localStorage and sessionStorage so clearing one doesn't reset the limit
+    const lsAttempts = JSON.parse(localStorage.getItem('_auth_attempts') || '[]') as number[]
+    const ssAttempts = JSON.parse(sessionStorage.getItem('_auth_attempts') || '[]') as number[]
+    const allAttempts = [...lsAttempts, ...ssAttempts].filter((t) => now - t < 60000)
+    const uniqueRecent = [...new Set(allAttempts)].sort((a, b) => a - b).slice(-10)
+    if (uniqueRecent.length >= 5) {
       return { error: 'Trop de tentatives. Réessayez dans 1 minute.' }
     }
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
-        localStorage.setItem('_auth_attempts', JSON.stringify([...recent, now]))
+        const updated = [...uniqueRecent, now]
+        localStorage.setItem('_auth_attempts', JSON.stringify(updated))
+        sessionStorage.setItem('_auth_attempts', JSON.stringify(updated))
         return { error: error.message }
       }
       localStorage.removeItem('_auth_attempts')
+      sessionStorage.removeItem('_auth_attempts')
       return { error: null }
     } catch (err: any) {
-      localStorage.setItem('_auth_attempts', JSON.stringify([...recent, now]))
+      const updated = [...uniqueRecent, now]
+      localStorage.setItem('_auth_attempts', JSON.stringify(updated))
+      sessionStorage.setItem('_auth_attempts', JSON.stringify(updated))
       return { error: err.message || 'Erreur de connexion' }
     }
   }, [])
@@ -271,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setTenantId(null)
+    clearTenantCache()
     setUser(null)
     setAvailableTenants([])
     localStorage.removeItem('active_tenant_id')
@@ -278,6 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const switchTenant = useCallback(async (tenantId: string) => {
+    clearTenantCache()
     localStorage.setItem('active_tenant_id', tenantId)
     resetModuleCache()
     await setTenantId(tenantId)

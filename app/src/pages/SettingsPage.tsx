@@ -9,6 +9,7 @@ import type { CompanySettings, ChartAccount, LegislationPack } from '@/types'
 import { useAuth } from '@/lib/auth'
 import { useTenantModules } from '@/lib/useTenantModules'
 import { useLocale } from '@/hooks/useLocale'
+import { CURRENCIES, COUNTRIES } from '@/lib/countries'
 
 const routeToTab: Record<string, 'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'> = {
   '/settings/company': 'company',
@@ -115,45 +116,7 @@ export function SettingsPage() {
         <>
           {/* Company tab */}
           {tab === 'company' && (
-            <Card title={t('company.title')} subtitle={t('company.subtitle')}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label={t('company.name')} value={company?.name || ''} />
-                <Input label={t('company.legalName')} value={company?.legal_name || ''} />
-                <Input label={t('company.vatNumber')} value={company?.vat_number || ''} />
-                <Input label={t('company.siret')} value={company?.siret || ''} />
-                <Input label={t('company.address')} value={company?.address || ''} />
-                <Input label={t('company.city')} value={company?.city || ''} />
-                <Input label={t('company.zipCode')} value={company?.postal_code || ''} />
-                <Select
-                  label={t('company.country')}
-                  value={company?.country || 'France'}
-                  options={[
-                    { value: 'France', label: t('company.countries.France') },
-                    { value: 'Belgique', label: t('company.countries.Belgique') },
-                    { value: 'Suisse', label: t('company.countries.Suisse') },
-                    { value: 'Maroc', label: t('company.countries.Maroc') },
-                    { value: 'Sénégal', label: t('company.countries.Sénégal') },
-                  ]}
-                />
-                <Input label={t('company.email')} type="email" value={company?.email || ''} />
-                <Input label={t('company.phone')} value={company?.phone || ''} />
-                <Input label={t('company.website')} value={company?.website || ''} />
-                <Select
-                  label={t('company.currency')}
-                  value={company?.currency || 'EUR'}
-                  options={[
-                    { value: 'EUR', label: t('company.currencies.EUR') },
-                    { value: 'USD', label: t('company.currencies.USD') },
-                    { value: 'GBP', label: t('company.currencies.GBP') },
-                    { value: 'MAD', label: t('company.currencies.MAD') },
-                    { value: 'XOF', label: t('company.currencies.XOF') },
-                  ]}
-                />
-              </div>
-              <div className="mt-6 flex justify-end">
-                <Button variant="primary"><Save className="w-4 h-4" /> {t('company.save')}</Button>
-              </div>
-            </Card>
+            <CompanyTab company={company} onSaved={() => loadData()} />
           )}
 
           {/* Modules tab */}
@@ -518,5 +481,116 @@ function ModulesTab() {
         )}
       </Card>
     </div>
+  )
+}
+
+function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onSaved: () => void }) {
+  const { t } = useTranslation('settings')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [form, setForm] = useState({
+    name: company?.name || '',
+    legal_name: company?.legal_name || '',
+    vat_number: company?.vat_number || '',
+    siret: company?.siret || '',
+    address: company?.address || '',
+    city: company?.city || '',
+    postal_code: company?.postal_code || '',
+    country: company?.country || 'France',
+    email: company?.email || '',
+    phone: company?.phone || '',
+    website: company?.website || '',
+    currency: company?.currency || 'EUR',
+  })
+
+  useEffect(() => {
+    if (company) {
+      setForm({
+        name: company.name || '',
+        legal_name: company.legal_name || '',
+        vat_number: company.vat_number || '',
+        siret: company.siret || '',
+        address: company.address || '',
+        city: company.city || '',
+        postal_code: company.postal_code || '',
+        country: company.country || 'France',
+        email: company.email || '',
+        phone: company.phone || '',
+        website: company.website || '',
+        currency: company.currency || 'EUR',
+      })
+    }
+  }, [company])
+
+  function update<K extends keyof typeof form>(key: K, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+    setSaved(false)
+  }
+
+  async function handleSave() {
+    if (!company) return
+    setSaving(true)
+    setSaved(false)
+    try {
+      await updateCompanySettings(company.id, {
+        name: form.name,
+        legal_name: form.legal_name,
+        vat_number: form.vat_number,
+        address: form.address,
+        city: form.city,
+        postal_code: form.postal_code,
+        country: form.country,
+        email: form.email,
+        phone: form.phone,
+        website: form.website,
+        currency: form.currency,
+      } as any)
+      setSaved(true)
+      onSaved()
+    } catch (err) {
+      console.error('Failed to save company settings:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card title={t('company.title')} subtitle={t('company.subtitle')}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input label={t('company.name')} value={form.name} onChange={(e) => update('name', e.target.value)} />
+        <Input label={t('company.legalName')} value={form.legal_name} onChange={(e) => update('legal_name', e.target.value)} />
+        <Input label={t('company.vatNumber')} value={form.vat_number} onChange={(e) => update('vat_number', e.target.value)} />
+        <Input label={t('company.siret')} value={form.siret} onChange={(e) => update('siret', e.target.value)} />
+        <Input label={t('company.address')} value={form.address} onChange={(e) => update('address', e.target.value)} />
+        <Input label={t('company.city')} value={form.city} onChange={(e) => update('city', e.target.value)} />
+        <Input label={t('company.zipCode')} value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} />
+        <Select
+          label={t('company.country')}
+          value={form.country}
+          onChange={(e) => update('country', e.target.value)}
+          options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+        />
+        <Input label={t('company.email')} type="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+        <Input label={t('company.phone')} value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+        <Input label={t('company.website')} value={form.website} onChange={(e) => update('website', e.target.value)} />
+        <Select
+          label={t('company.currency')}
+          value={form.currency}
+          onChange={(e) => update('currency', e.target.value)}
+          options={CURRENCIES.map((c) => ({ value: c.code, label: c.label }))}
+        />
+      </div>
+      {saved && (
+        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-[rgba(0,135,90,0.08)] border border-[var(--color-success)] text-sm text-[var(--color-success)]">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          {t('company.saved')}
+        </div>
+      )}
+      <div className="mt-6 flex justify-end">
+        <Button variant="primary" onClick={handleSave} disabled={saving || !company}>
+          <Save className="w-4 h-4" /> {saving ? '...' : t('company.save')}
+        </Button>
+      </div>
+    </Card>
   )
 }

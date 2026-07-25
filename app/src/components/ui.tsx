@@ -764,14 +764,25 @@ export function Combobox({ label, value, onChange, options, placeholder, require
 
 // ============================================
 // CSV EXPORT UTILITY
+// SECURITY: sanitizeCsvCell prevents formula injection (=cmd, +cmd, -cmd, @cmd, =HYPERLINK)
+// by prefixing dangerous leading characters with a single quote.
 // ============================================
+function sanitizeCsvCell(val: string | number): string {
+  let s = String(val)
+  // Prevent CSV formula injection: prefix dangerous characters with a tab
+  if (/^[=+\-@]/.test(s)) {
+    s = '\t' + s
+  }
+  // Escape double quotes
+  s = s.replace(/"/g, '""')
+  // Quote if contains special characters
+  return s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\t') ? `"${s}"` : s
+}
+
 export function exportToCSV(filename: string, headers: string[], rows: (string | number)[][]) {
   const csvContent = [
     headers.join(';'),
-    ...rows.map((r) => r.map((cell) => {
-      const s = String(cell).replace(/"/g, '""')
-      return s.includes(';') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
-    }).join(';')),
+    ...rows.map((r) => r.map((cell) => sanitizeCsvCell(cell)).join(';')),
   ].join('\n')
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

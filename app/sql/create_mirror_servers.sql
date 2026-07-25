@@ -21,8 +21,26 @@ CREATE INDEX IF NOT EXISTS idx_mirror_servers_tenant ON mirror_servers(tenant_id
 CREATE INDEX IF NOT EXISTS idx_mirror_servers_machine ON mirror_servers(machine_id);
 
 ALTER TABLE mirror_servers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mirror_servers FORCE ROW LEVEL SECURITY;
+
+-- Drop any old allow_all policy
+DROP POLICY IF EXISTS allow_all_mirror_servers ON mirror_servers;
+
+-- Tenant-isolated policies (see migration 38 for details)
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_mirror_servers') THEN
-    CREATE POLICY "allow_all_mirror_servers" ON mirror_servers FOR ALL USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+  CREATE POLICY tenant_select_mirror_servers ON mirror_servers
+    FOR SELECT USING (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_insert_mirror_servers ON mirror_servers
+    FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_update_mirror_servers ON mirror_servers
+    FOR UPDATE USING (tenant_id = current_tenant_id())
+    WITH CHECK (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_delete_mirror_servers ON mirror_servers
+    FOR DELETE USING (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;

@@ -32,9 +32,31 @@ CREATE INDEX IF NOT EXISTS idx_bank_stmt_templates_bank
   ON bank_statement_templates(tenant_id, bank_name);
 
 ALTER TABLE bank_statement_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bank_statement_templates FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bank_stmt_templates_tenant_isolation ON bank_statement_templates;
-CREATE POLICY bank_stmt_templates_tenant_isolation ON bank_statement_templates
-  USING (tenant_id = auth.uid() OR tenant_id IS NULL);
+DROP POLICY IF EXISTS tenant_select_bank_statement_templates ON bank_statement_templates;
+DROP POLICY IF EXISTS tenant_insert_bank_statement_templates ON bank_statement_templates;
+DROP POLICY IF EXISTS tenant_update_bank_statement_templates ON bank_statement_templates;
+DROP POLICY IF EXISTS tenant_delete_bank_statement_templates ON bank_statement_templates;
+
+-- SECURITY: Use current_tenant_id() not auth.uid() — auth.uid() returns the Supabase auth user ID, not the tenant_id
+DO $$ BEGIN
+  CREATE POLICY tenant_select_bank_statement_templates ON bank_statement_templates
+    FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_insert_bank_statement_templates ON bank_statement_templates
+    FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_update_bank_statement_templates ON bank_statement_templates
+    FOR UPDATE USING (tenant_id = current_tenant_id())
+    WITH CHECK (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_delete_bank_statement_templates ON bank_statement_templates
+    FOR DELETE USING (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON bank_statement_templates TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON bank_statement_templates TO service_role;

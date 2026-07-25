@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseInvoices, getSuppliers, createPurchaseInvoice } from '@/lib/queries'
+import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText, CheckCircle2, X, Sparkles, AlertCircle } from 'lucide-react'
 import type { PurchaseInvoice, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -10,7 +11,8 @@ import { useTranslation } from 'react-i18next'
 export function SupplierInvoiceAutomationPage() {
   const { t } = useTranslation('purchases')
   const { t: tNav } = useTranslation('nav')
-const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
+  const { toast } = useToast()
+  const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -31,9 +33,16 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
     }
   }
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    // SECURITY: Validate file before processing
+    const validation = await validateFileUpload(file, FILE_PROFILES.pdf)
+    if (!validation.ok) {
+      toast('error', t('common.error'), validation.error || 'Invalid file')
+      e.target.value = ''
+      return
+    }
     setProcessing(true)
     setOcrResult(null)
 

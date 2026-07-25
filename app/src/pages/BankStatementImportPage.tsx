@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankStatementImports, createBankStatementImport, getBankAccounts } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
+import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText } from 'lucide-react'
 import type { BankStatementImport, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -38,6 +39,13 @@ export function BankStatementImportPage() {
     const file = e.target.files?.[0]
     if (!file || !selectedAccount) {
       toast('warning', tCommon('common.warning'), t('bankImport.selectAccount'))
+      return
+    }
+    // SECURITY: Validate file before processing
+    const validation = await validateFileUpload(file, FILE_PROFILES.spreadsheet)
+    if (!validation.ok) {
+      toast('error', tCommon('common.error'), validation.error || 'Invalid file')
+      e.target.value = ''
       return
     }
     setUploading(true)

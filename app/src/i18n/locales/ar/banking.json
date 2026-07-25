@@ -33,6 +33,11 @@
     "edit": "تعديل الحساب",
     "view": "تفاصيل الحساب",
     "name": "اسم الحساب",
+    "accountName": "اسم الحساب",
+    "bankName": "اسم البنك",
+    "initialBalance": "الرصيد الافتتاحي",
+    "accountNamePlaceholder": "الحساب الرئيسي",
+    "nameRequired": "اسم الحساب مطلوب",
     "bank": "البنك",
     "iban": "IBAN",
     "bic": "BIC",
@@ -42,7 +47,11 @@
     "type": "نوع الحساب",
     "types": {
       "checking": "حساب جاري",
+      "chequing": "حساب جاري",
       "savings": "حساب توفير",
+      "credit_card": "بطاقة ائتمان",
+      "cash": "صندوق",
+      "loan": "قرض",
       "other": "أخرى"
     },
     "noAccounts": "لا يوجد حساب بنكي",

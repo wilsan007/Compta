@@ -2678,3 +2678,71 @@ export interface BankStatementTemplate {
   created_at: string
   updated_at: string
 }
+
+// ============ Tax Grids (Payroll & Corporate) ============
+
+export interface PayrollTaxGrid {
+  id: string
+  tenant_id: string | null
+  country_code: string
+  grid_type: 'its' | 'employer_contribution' | 'employee_contribution' | 'income_tax' | 'other_deduction' | 'other_income' | 'composite'
+  name: string
+  description: string | null
+  effective_from: string
+  effective_to: string | null
+  status: 'draft' | 'active' | 'archived'
+  source: 'platform' | 'imported' | 'manual' | 'api'
+  file_url: string | null
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PayrollTaxGridLine {
+  id: string
+  grid_id: string
+  line_type: 'bracket' | 'flat' | 'percentage' | 'fixed_amount'
+  category: 'social_security' | 'health' | 'retirement' | 'unemployment' | 'csg_crds' | 'its' | 'income_tax' | 'other_deduction' | 'other_income' | 'other_tax' | 'employer_charge' | 'employee_charge'
+  label: string
+  base_type: 'gross' | 'taxable_gross' | 'net' | 'total_gross' | 'custom'
+  min_amount: number
+  max_amount: number | null
+  rate_employee: number
+  rate_employer: number
+  cap_amount: number | null
+  fixed_amount: number
+  sort_order: number
+  created_at: string
+}
+
+export interface CorporateTaxGrid {
+  id: string
+  tenant_id: string | null
+  country_code: string
+  tax_type: 'corporate_income_tax' | 'minimum_tax' | 'turnover_tax' | 'withholding_tax' | 'property_tax' | 'other_corporate_tax'
+  name: string
+  description: string | null
+  effective_from: string
+  effective_to: string | null
+  status: 'draft' | 'active' | 'archived'
+  source: 'platform' | 'imported' | 'manual' | 'api'
+  file_url: string | null
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CorporateTaxGridLine {
+  id: string
+  grid_id: string
+  line_type: 'bracket' | 'flat' | 'percentage' | 'fixed_amount'
+  label: string
+  base_type: 'profit' | 'turnover' | 'property_value' | 'custom'
+  min_amount: number
+  max_amount: number | null
+  rate: number
+  cap_amount: number | null
+  fixed_amount: number
+  sort_order: number
+  created_at: string
+}

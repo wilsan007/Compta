@@ -8,13 +8,14 @@
 // Deploy with:
 //   supabase functions deploy parse-bank-statement
 //
-// Required env vars (set in Supabase dashboard → Edge Functions → Secrets):
+// Required eçnv vars (set in Supabase dashboard → Edge Functions → Secrets):
 //   OPENAI_API_KEY=sk-...
 //   SUPABASE_URL=...
 //   SUPABASE_ANON_KEY=...
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, getClientIp, rateLimitResponse, validateBodySize } from "../_shared/rateLimit.ts";
 
 interface PreviousAttempt {
   date_pattern: string;
@@ -75,15 +76,156 @@ const ALLOWED_ORIGINS = [
   "http://localhost:4173",
 ];
 
+const MAX_INPUT_CHARS = 15000;
+const MAX_TRANSACTIONS = 500;
+const OPENAI_TIMEOUT_MS = 30_000;
+const OPENAI_MAX_RETRIES = 3;
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("Origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Vary": "Origin",
   } as const;
+}
+
+function isValidDate(s: string): boolean {
+  if (!s || typeof s !== "string") return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
+}
+
+function isValidAmount(n: any): boolean {
+  return typeof n === "number" && isFinite(n) && n > 0;
+}
+
+function isValidTransactionType(t: any): boolean {
+  return t === "debit" || t === "credit";
+}
+
+function tryRegex(pattern: string | null): boolean {
+  if (!pattern) return true;
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateAndSanitizeResult(raw: any): ParseResponse {
+  const warnings: string[] = Array.isArray(raw?.warnings) ? raw.warnings : [];
+
+  if (!raw || typeof raw !== "object") {
+    return { transactions: [], template: emptyTemplate(), bankName: "", accountNumber: null, periodStart: null, periodEnd: null, currency: null, warnings: ["Invalid AI response structure", ...warnings] };
+  }
+
+  const rawTxns = Array.isArray(raw.transactions) ? raw.transactions : [];
+  const transactions: ParsedTransaction[] = [];
+  let skipped = 0;
+
+  for (const t of rawTxns) {
+    if (transactions.length >= MAX_TRANSACTIONS) {
+      warnings.push(`Truncated to ${MAX_TRANSACTIONS} transactions`);
+      break;
+    }
+    if (!t || typeof t !== "object") { skipped++; continue; }
+    const date = typeof t.date === "string" ? t.date.trim() : "";
+    const amount = Number(t.amount);
+    const type = t.type;
+    const description = typeof t.description === "string" ? t.description.trim() : "";
+    const reference = typeof t.reference === "string" ? t.reference.trim() : "";
+
+    if (!isValidDate(date)) { skipped++; continue; }
+    if (!isValidAmount(amount)) { skipped++; continue; }
+    if (!isValidTransactionType(type)) { skipped++; continue; }
+
+    transactions.push({ date, description, reference, type });
+  }
+
+  if (skipped > 0) warnings.push(`${skipped} invalid transactions skipped`);
+
+  const tpl = raw.template || {};
+  const template: TemplatePatterns = {
+    date_pattern: typeof tpl.date_pattern === "string" ? tpl.date_pattern : "",
+    amount_pattern: typeof tpl.amount_pattern === "string" ? tpl.amount_pattern : "",
+    description_pattern: typeof tpl.description_pattern === "string" ? tpl.description_pattern : null,
+    reference_pattern: typeof tpl.reference_pattern === "string" ? tpl.reference_pattern : null,
+    debit_indicator: typeof tpl.debit_indicator === "string" ? tpl.debit_indicator : null,
+    credit_indicator: typeof tpl.credit_indicator === "string" ? tpl.credit_indicator : null,
+    account_number_pattern: typeof tpl.account_number_pattern === "string" ? tpl.account_number_pattern : null,
+    period_pattern: typeof tpl.period_pattern === "string" ? tpl.period_pattern : null,
+    balance_pattern: typeof tpl.balance_pattern === "string" ? tpl.balance_pattern : null,
+    currency_pattern: typeof tpl.currency_pattern === "string" ? tpl.currency_pattern : null,
+    skip_lines_pattern: typeof tpl.skip_lines_pattern === "string" ? tpl.skip_lines_pattern : null,
+  };
+
+  const invalidRegexFields: string[] = [];
+  for (const [key, val] of Object.entries(template)) {
+    if (!tryRegex(val as string)) invalidRegexFields.push(key);
+  }
+  if (invalidRegexFields.length > 0) {
+    warnings.push(`Invalid regex patterns: ${invalidRegexFields.join(", ")}`);
+    for (const key of invalidRegexFields) {
+      (template as any)[key] = null;
+    }
+  }
+
+  if (!template.date_pattern || !template.amount_pattern) {
+    warnings.push("Missing essential patterns (date_pattern or amount_pattern)");
+  }
+
+  return {
+    transactions,
+    template,
+    bankName: typeof raw.bankName === "string" ? raw.bankName : "",
+    accountNumber: typeof raw.accountNumber === "string" ? raw.accountNumber : null,
+    periodStart: isValidDate(raw.periodStart) ? raw.periodStart : null,
+    periodEnd: isValidDate(raw.periodEnd) ? raw.periodEnd : null,
+    currency: typeof raw.currency === "string" ? raw.currency : null,
+    warnings,
+  };
+}
+
+function emptyTemplate(): TemplatePatterns {
+  return { date_pattern: "", amount_pattern: "", description_pattern: null, reference_pattern: null, debit_indicator: null, credit_indicator: null, account_number_pattern: null, period_pattern: null, balance_pattern: null, currency_pattern: null, skip_lines_pattern: null };
+}
+
+async function callOpenAIWithRetry(apiKey: string, body: object): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < OPENAI_MAX_RETRIES; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) return resp;
+
+      if (resp.status === 429 || resp.status === 500 || resp.status === 502 || resp.status === 503) {
+        const retryAfter = Number(resp.headers.get("retry-after")) || (attempt + 1) * 1000;
+        lastError = new Error(`OpenAI ${resp.status}`);
+        if (attempt < OPENAI_MAX_RETRIES - 1) {
+          await new Promise(r => setTimeout(r, Math.min(retryAfter, 5000)));
+          continue;
+        }
+      }
+      return resp;
+    } catch (err) {
+      lastError = err as Error;
+      if (attempt < OPENAI_MAX_RETRIES - 1) {
+        await new Promise(r => setTimeout(r, (attempt + 1) * 1000));
+        continue;
+      }
+    }
+  }
+  throw lastError || new Error("OpenAI request failed after retries");
 }
 
 serve(async (req: Request) => {
@@ -98,6 +240,22 @@ serve(async (req: Request) => {
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // ============================================
+  // RATE LIMITING: IP-based (anti-DDoS) + body size validation
+  // ============================================
+  const clientIp = getClientIp(req);
+  if (!checkRateLimit(`ip:${clientIp}`, 20, 60_000)) {
+    return rateLimitResponse(corsHeaders, 60);
+  }
+
+  const bodyCheck = await validateBodySize(req, 20 * 1024); // 20 KB max for bank statement text
+  if (!bodyCheck.ok) {
+    return new Response(
+      JSON.stringify({ error: bodyCheck.error }),
+      { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   // ============================================
@@ -127,33 +285,48 @@ serve(async (req: Request) => {
     );
   }
 
+  // Per-user rate limit: max 10 bank statement parses per minute
+  if (!checkRateLimit(`user:${user.id}`, 10, 60_000)) {
+    return rateLimitResponse(corsHeaders, 60);
+  }
+
   const { data: tenantUser, error: tuErr } = await userClient
     .from("tenant_users")
     .select("id, role, status, tenant_id")
     .eq("auth_id", user.id)
     .eq("status", "active")
-    .maybeSingle();
+    .limit(1);
 
-  if (tuErr || !tenantUser) {
+  if (tuErr || !tenantUser || tenantUser.length === 0) {
     return new Response(
       JSON.stringify({ error: "Utilisateur non autorisé" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
+  // SECURITY: Use the first active tenant_user record (client-side set_active_tenant ensures correct RLS context)
+  const activeTenantUser = tenantUser[0];
+
   try {
     const body: ParseRequest = await req.json();
     const { rawText, bankName, bankId, previousTemplate, correctionNotes, attemptCount } = body;
 
-    if (!rawText || rawText.trim().length === 0) {
+    if (!rawText || typeof rawText !== "string" || rawText.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "rawText is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    if (rawText.length > 100_000) {
+      return new Response(
+        JSON.stringify({ error: "Input too large (max 100KB)" }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Limit input size (first 15000 chars ~ 15 pages of text)
-    const truncatedText = rawText.slice(0, 15000);
+    const truncatedText = rawText.slice(0, MAX_INPUT_CHARS);
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) {
@@ -268,15 +441,11 @@ ${bankName ? `Indice: la banque pourrait être "${bankName}"` : "Identifie la ba
 Réponds en JSON uniquement.`;
 
     // ============================================
-    // CALL OPENAI
+    // CALL OPENAI (with retry + timeout)
     // ============================================
-    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    let openaiResponse: Response;
+    try {
+      openaiResponse = await callOpenAIWithRetry(apiKey, {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
@@ -285,14 +454,20 @@ Réponds en JSON uniquement.`;
         temperature: 0.1,
         max_tokens: 4000,
         response_format: { type: "json_object" },
-      }),
-    });
+      });
+    } catch (err) {
+      console.error("OpenAI request failed after retries:", err);
+      return new Response(
+        JSON.stringify({ error: "AI service unavailable after retries" }),
+        { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     if (!openaiResponse.ok) {
       const errText = await openaiResponse.text();
       console.error("OpenAI API error:", errText);
       return new Response(
-        JSON.stringify({ error: "AI service error" }),
+        JSON.stringify({ error: `AI service error (${openaiResponse.status})` }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -309,7 +484,8 @@ Réponds en JSON uniquement.`;
 
     let result: ParseResponse;
     try {
-      result = JSON.parse(content);
+      const rawParsed = JSON.parse(content);
+      result = validateAndSanitizeResult(rawParsed);
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON from AI" }),
@@ -320,10 +496,10 @@ Réponds en JSON uniquement.`;
     // ============================================
     // SAVE TEMPLATE TO DATABASE
     // ============================================
-    if (result.template && result.transactions.length > 0 && tenantUser.tenant_id) {
+    if (result.template && result.transactions.length > 0 && activeTenantUser.tenant_id) {
       try {
         const { data: savedTpl } = await userClient.from("bank_statement_templates").upsert({
-          tenant_id: tenantUser.tenant_id,
+          tenant_id: activeTenantUser.tenant_id,
           bank_id: bankId || null,
           bank_name: result.bankName || bankName || "Unknown Bank",
           date_pattern: result.template.date_pattern,

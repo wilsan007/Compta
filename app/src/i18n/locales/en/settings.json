@@ -38,6 +38,7 @@
       "other": "Other"
     },
     "save": "Save changes",
+    "saved": "Settings saved successfully",
     "legalName": "Legal name",
     "countries": {
       "France": "France",
@@ -527,5 +528,89 @@
     "profitability": "Profitability",
     "noActiveProjects": "No active project",
     "noQuotes": "No quote"
+  },
+  "taxGrids": {
+    "title": "Tax Grids",
+    "subtitle": "Manage tax and contribution grids (payroll & corporate)",
+    "payrollTab": "Payroll Grids",
+    "corporateTab": "Corporate Taxes",
+    "loading": "Loading grids...",
+    "gridsList": "Grids List",
+    "new": "New Grid",
+    "noGrids": "No grids",
+    "noGridsDescription": "Create a new grid to get started",
+    "platform": "Platform",
+    "default": "Default",
+    "confirmDelete": "Are you sure you want to delete this grid?",
+    "linesTitle": "Grid Lines",
+    "linesSubtitle": "Brackets and rates detail",
+    "noLines": "No lines",
+    "noLinesDescription": "This grid has no lines",
+    "selectGrid": "Select a grid",
+    "selectGridDescription": "Choose a grid from the list to see its details",
+    "name": "Name",
+    "namePlaceholder": "Ex: France Payroll Grid 2025",
+    "countryCode": "Country Code",
+    "type": "Type",
+    "description": "Description",
+    "cancel": "Cancel",
+    "create": "Create",
+    "requiredFields": "Please fill in all required fields",
+    "createError": "Error creating grid",
+    "colLabel": "Label",
+    "colType": "Type",
+    "colCategory": "Category",
+    "colBase": "Base",
+    "colRate": "Rate",
+    "colBracket": "Bracket",
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "gridType": {
+      "composite": "Composite",
+      "its": "ITS (Income Tax on Salary)",
+      "employer_contribution": "Employer Contributions",
+      "employee_contribution": "Employee Contributions",
+      "income_tax": "Income Tax",
+      "other_deduction": "Other Deductions"
+    },
+    "taxType": {
+      "corporate_income_tax": "Corporate Income Tax",
+      "minimum_tax": "Minimum Tax",
+      "turnover_tax": "Turnover Tax",
+      "withholding_tax": "Withholding Tax"
+    },
+    "lineType": {
+      "bracket": "Bracket",
+      "flat": "Flat",
+      "percentage": "Percentage",
+      "fixed_amount": "Fixed Amount"
+    },
+    "category": {
+      "social_security": "Social Security",
+      "health": "Health Insurance",
+      "retirement": "Retirement",
+      "unemployment": "Unemployment",
+      "csg_crds": "CSG/CRDS",
+      "its": "ITS",
+      "income_tax": "Income Tax",
+      "other_deduction": "Other Deduction",
+      "other_income": "Other Income",
+      "other_tax": "Other Tax",
+      "employer_charge": "Employer Charge",
+      "employee_charge": "Employee Charge"
+    },
+    "baseType": {
+      "gross": "Gross",
+      "taxable_gross": "Taxable Gross",
+      "net": "Net",
+      "total_gross": "Total Gross",
+      "custom": "Custom",
+      "profit": "Profit",
+      "turnover": "Turnover",
+      "property_value": "Property Value"
+    }
   }
 }

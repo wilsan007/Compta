@@ -2,8 +2,8 @@ import { test, expect, Page, APIRequestContext } from '@playwright/test'
 
 test.describe.configure({ mode: 'serial' })
 
-const TEST_EMAIL = 'test@test.com'
-const TEST_PASSWORD = 'tester123'
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
 
 async function login(page: Page) {
   await page.goto('/login')

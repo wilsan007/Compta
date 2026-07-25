@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -36,8 +36,9 @@ export function clearTenantCache() {
 }
 
 // Helper: add tenant_id to an insert payload if the table is tenant-scoped
+// SECURITY: Always force tenant_id to the authenticated user's tenant — never trust client-supplied tenant_id
 function ti<T extends Record<string, any>>(payload: T, table: string, tid: string | null): T {
-  if (tid && isTenantTable(table) && !('tenant_id' in payload)) return { ...payload, tenant_id: tid }
+  if (tid && isTenantTable(table)) return { ...payload, tenant_id: tid }
   return payload
 }
 
@@ -3586,9 +3587,13 @@ function escapeSqlValue(val: any): string {
   if (val === null || val === undefined) return 'NULL'
   if (typeof val === 'number') return String(val)
   if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`
-  const str = String(val).replace(/'/g, "''")
+  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')}'`
+  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')
   return `'${str}'`
+}
+
+function quoteIdentifier(name: string): string {
+  return '"' + String(name).replace(/"/g, '""').replace(/\0/g, '') + '"'
 }
 
 export function generateSqlDump(tables: ExportResult[], exportedAt: string): string {
@@ -3610,8 +3615,9 @@ export function generateSqlDump(tables: ExportResult[], exportedAt: string): str
   lines.push('')
 
   for (const table of tables) {
+    const quotedTable = quoteIdentifier(table.tableName)
     lines.push(`-- Table: ${table.tableName} (${table.rowCount} lignes)`)
-    lines.push(`INSERT INTO sync_metadata (table_name, last_sync_at, row_count, source) VALUES ('${table.tableName}', '${exportedAt}', ${table.rowCount}, 'supabase');`)
+    lines.push(`INSERT INTO sync_metadata (table_name, last_sync_at, row_count, source) VALUES ('${table.tableName.replace(/'/g, "''")}', '${exportedAt}', ${table.rowCount}, 'supabase');`)
     lines.push('')
 
     if (table.rowCount === 0) {
@@ -3620,10 +3626,10 @@ export function generateSqlDump(tables: ExportResult[], exportedAt: string): str
       continue
     }
 
-    const cols = table.columns.join(', ')
+    const cols = table.columns.map(c => quoteIdentifier(c)).join(', ')
     for (const row of table.rows) {
       const values = table.columns.map(c => escapeSqlValue(row[c])).join(', ')
-      lines.push(`INSERT INTO ${table.tableName} (${cols}) VALUES (${values});`)
+      lines.push(`INSERT INTO ${quotedTable} (${cols}) VALUES (${values});`)
     }
     lines.push('')
   }
@@ -3642,8 +3648,11 @@ export function generateCsvForTable(table: ExportResult): string {
       const val = row[c]
       if (val === null || val === undefined) return ''
       if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`
-      const str = String(val).replace(/"/g, '""')
-      return str.includes(';') || str.includes('\n') ? `"${str}"` : str
+      let str = String(val)
+      // SECURITY: Prevent CSV formula injection
+      if (/^[=+\-@]/.test(str)) str = '\t' + str
+      str = str.replace(/"/g, '""')
+      return str.includes(';') || str.includes('\n') || str.includes('\t') ? `"${str}"` : str
     }).join(';')
   )
   return [headers, ...rows].join('\n')
@@ -3756,6 +3765,10 @@ export async function updateMirrorHeartbeat(machineId: string): Promise<void> {
 }
 
 export async function revokeMirrorServer(tenantId: string): Promise<{ error?: string }> {
+  // SECURITY: Verify caller is an admin of the target tenant
+  const guard = await requireAdminOfTenant(tenantId)
+  if (!guard.ok) return { error: guard.error }
+
   const { error } = await supabase
     .from('mirror_servers')
     .update({ status: 'revoked' })
@@ -3770,6 +3783,10 @@ export async function preRegisterMirrorServer(data: {
   tenant_id: string
   install_platform: 'mac' | 'windows' | 'linux'
 }): Promise<{ success: boolean; error?: string; install_token?: string }> {
+  // SECURITY: Verify caller is an admin of the target tenant
+  const guard = await requireAdminOfTenant(data.tenant_id)
+  if (!guard.ok) return { success: false, error: guard.error }
+
   const { data: existing } = await supabase
     .from('mirror_servers')
     .select('*')
@@ -3854,7 +3871,6 @@ export function generateMacInstaller(config: {
   supabaseKey: string
   tenantId: string
   installToken: string
-  daemonCode: string
 }): string {
   return `#!/bin/bash
 # Installateur du serveur miroir Compta - macOS
@@ -3913,10 +3929,14 @@ EOF
 echo "Installation des dépendances..."
 npm install --production 2>&1 | tail -3
 
-# Écrire le daemon
-cat > daemon.mjs << 'DAEMON_EOF'
-${config.daemonCode}
-DAEMON_EOF
+# Télécharger le daemon depuis le bucket de stockage Supabase
+echo "Téléchargement du daemon..."
+DAEMON_URL="$SUPABASE_URL/storage/v1/object/public/mirror-daemon/daemon.mjs"
+curl -sfL "$DAEMON_URL" -o daemon.mjs || {
+  echo "ERREUR: Impossible de télécharger daemon.mjs depuis $DAEMON_URL"
+  echo "Veuillez télécharger manuellement le fichier daemon.mjs et le placer dans $INSTALL_DIR/"
+  exit 1
+}
 
 # Enregistrer + première sync + vérification
 echo ""
@@ -3970,7 +3990,6 @@ export function generateWindowsInstaller(config: {
   supabaseKey: string
   tenantId: string
   installToken: string
-  daemonCode: string
 }): string {
   return `# Installateur du serveur miroir Compta - Windows (PowerShell)
 # Genere automatiquement depuis la plateforme
@@ -4027,11 +4046,16 @@ $pkg | Out-File -FilePath "package.json" -Encoding utf8
 Write-Host "Installation des dependances..."
 npm install --production 2>&1 | Select-Object -Last 3
 
-# Ecrire le daemon
-$daemonCode = @'
-${config.daemonCode}
-'@
-$daemonCode | Out-File -FilePath "daemon.mjs" -Encoding utf8
+# Telecharger le daemon depuis le bucket de stockage Supabase
+Write-Host "Telechargement du daemon..."
+$daemonUrl = "$SUPABASE_URL/storage/v1/object/public/mirror-daemon/daemon.mjs"
+try {
+    Invoke-WebRequest -Uri $daemonUrl -OutFile "daemon.mjs" -ErrorAction Stop
+} catch {
+    Write-Host "ERREUR: Impossible de telecharger daemon.mjs depuis $daemonUrl" -ForegroundColor Red
+    Write-Host "Veuillez telecharger manuellement le fichier daemon.mjs et le placer dans $INSTALL_DIR/"
+    exit 1
+}
 
 # Enregistrer + premiere sync + verification
 Write-Host ""
@@ -4431,17 +4455,25 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
   const email = session.user.email
   if (!email) return { success: false, error: 'Email introuvable dans la session.' }
 
-  // Find the pending (or already-linked) invitation for this email
-  // CRITICAL: filter by email AND ensure the auth_id matches or is not yet set
-  const { data: tenantUser, error: findError } = await supabase
+  // Find all pending/active invitations for this email
+  // SECURITY: Use .limit(10) instead of .maybeSingle() to handle multiple tenant invitations
+  const { data: invitations, error: findError } = await supabase
     .from('tenant_users')
     .select('id, tenant_id, status, auth_id, tenants:tenant_id (name)')
     .eq('email', email)
     .neq('status', 'revoked')
-    .maybeSingle()
+    .order('accepted_at', { ascending: false, nullsFirst: true })
+    .limit(10)
 
   if (findError) return { success: false, error: findError.message }
-  if (!tenantUser) return { success: false, error: "Aucune invitation trouvée pour cet email." }
+  if (!invitations || invitations.length === 0) {
+    return { success: false, error: "Aucune invitation trouvée pour cet email." }
+  }
+
+  // Priority: 1) invitation matching this auth_id, 2) invitation with null auth_id (pending), 3) first
+  const tenantUser = invitations.find(i => i.auth_id === authId)
+    || invitations.find(i => !i.auth_id)
+    || invitations[0]
 
   // Security: if the invitation already has a different auth_id, refuse
   if (tenantUser.auth_id && tenantUser.auth_id !== authId) {
@@ -8207,3 +8239,207 @@ export function exportToExcel(filename: string, headers: string[], rows: (string
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+// ============ Tax Grids (Payroll & Corporate) ============
+
+// --- Payroll Tax Grids ---
+export async function getPayrollTaxGrids(countryCode?: string) {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('payroll_tax_grids')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (tid) q = q.or(`tenant_id.eq.${tid},tenant_id.is.null`)
+  if (countryCode) q = q.eq('country_code', countryCode)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PayrollTaxGrid[]
+}
+
+export async function getPayrollTaxGridLines(gridId: string) {
+  const tid = await getTenantId()
+  const { data: grid } = await supabase
+    .from('payroll_tax_grids')
+    .select('id, tenant_id')
+    .eq('id', gridId)
+    .or(`tenant_id.eq.${tid},tenant_id.is.null`)
+    .maybeSingle()
+  if (!grid) throw new Error('Grille introuvable ou accès non autorisé')
+  const { data, error } = await supabase
+    .from('payroll_tax_grid_lines')
+    .select('*')
+    .eq('grid_id', gridId)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  return data as PayrollTaxGridLine[]
+}
+
+export async function createPayrollTaxGrid(grid: Omit<PayrollTaxGrid, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const payload = { ...grid, tenant_id: tid }
+  const { data, error } = await supabase
+    .from('payroll_tax_grids')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) throw error
+  return data as PayrollTaxGrid
+}
+
+export async function updatePayrollTaxGrid(id: string, updates: Partial<PayrollTaxGrid>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('payroll_tax_grids')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as PayrollTaxGrid
+}
+
+export async function deletePayrollTaxGrid(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('payroll_tax_grids')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+export async function createPayrollTaxGridLines(lines: Omit<PayrollTaxGridLine, 'id' | 'created_at'>[]) {
+  const { data, error } = await supabase
+    .from('payroll_tax_grid_lines')
+    .insert(lines)
+    .select()
+  if (error) throw error
+  return data as PayrollTaxGridLine[]
+}
+
+export async function deletePayrollTaxGridLines(gridId: string) {
+  const tid = await getTenantId()
+  const { error: gridErr } = await supabase
+    .from('payroll_tax_grids')
+    .select('id')
+    .eq('id', gridId)
+    .eq('tenant_id', tid!)
+    .maybeSingle()
+  if (gridErr) throw gridErr
+  const { error } = await supabase
+    .from('payroll_tax_grid_lines')
+    .delete()
+    .eq('grid_id', gridId)
+  if (error) throw error
+}
+
+// --- Corporate Tax Grids ---
+export async function getCorporateTaxGrids(countryCode?: string) {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('corporate_tax_grids')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (tid) q = q.or(`tenant_id.eq.${tid},tenant_id.is.null`)
+  if (countryCode) q = q.eq('country_code', countryCode)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CorporateTaxGrid[]
+}
+
+export async function getCorporateTaxGridLines(gridId: string) {
+  const tid = await getTenantId()
+  const { data: grid } = await supabase
+    .from('corporate_tax_grids')
+    .select('id, tenant_id')
+    .eq('id', gridId)
+    .or(`tenant_id.eq.${tid},tenant_id.is.null`)
+    .maybeSingle()
+  if (!grid) throw new Error('Grille introuvable ou accès non autorisé')
+  const { data, error } = await supabase
+    .from('corporate_tax_grid_lines')
+    .select('*')
+    .eq('grid_id', gridId)
+    .order('sort_order', { ascending: true })
+  if (error) throw error
+  return data as CorporateTaxGridLine[]
+}
+
+export async function createCorporateTaxGrid(grid: Omit<CorporateTaxGrid, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
+  const tid = await getTenantId()
+  const payload = { ...grid, tenant_id: tid }
+  const { data, error } = await supabase
+    .from('corporate_tax_grids')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CorporateTaxGrid
+}
+
+export async function updateCorporateTaxGrid(id: string, updates: Partial<CorporateTaxGrid>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('corporate_tax_grids')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CorporateTaxGrid
+}
+
+export async function deleteCorporateTaxGrid(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('corporate_tax_grids')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+export async function createCorporateTaxGridLines(lines: Omit<CorporateTaxGridLine, 'id' | 'created_at'>[]) {
+  const { data, error } = await supabase
+    .from('corporate_tax_grid_lines')
+    .insert(lines)
+    .select()
+  if (error) throw error
+  return data as CorporateTaxGridLine[]
+}
+
+export async function deleteCorporateTaxGridLines(gridId: string) {
+  const tid = await getTenantId()
+  const { error: gridErr } = await supabase
+    .from('corporate_tax_grids')
+    .select('id')
+    .eq('id', gridId)
+    .eq('tenant_id', tid!)
+    .maybeSingle()
+  if (gridErr) throw gridErr
+  const { error } = await supabase
+    .from('corporate_tax_grid_lines')
+    .delete()
+    .eq('grid_id', gridId)
+  if (error) throw error
+}
+
+// --- Helper: get active payroll tax grid for a country ---
+export async function getActivePayrollTaxGrid(countryCode: string, gridType?: string) {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('payroll_tax_grids')
+    .select('*')
+    .eq('country_code', countryCode)
+    .eq('status', 'active')
+    .order('is_default', { ascending: false })
+    .limit(1)
+  if (gridType) q = q.eq('grid_type', gridType)
+  if (tid) q = q.or(`tenant_id.eq.${tid},tenant_id.is.null`)
+  const { data, error } = await q
+  if (error) throw error
+  return data?.[0] as PayrollTaxGrid | undefined
+}
+

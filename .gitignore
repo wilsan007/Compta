@@ -5,6 +5,11 @@ node_modules/
 dist/
 dist-ssr/
 
+# SECURITY: Source maps (never commit — exposes source code)
+*.map
+*.js.map
+*.css.map
+
 # Environment files
 .env
 .env.*
@@ -33,3 +38,15 @@ pnpm-debug.log*
 
 # OS files
 Thumbs.db
+
+# SECURITY: Wrangler cache (contains account tokens)
+.wrangler/
+
+# SECURITY: SQL dumps and backups
+*.sql.bak
+*.sql.dump
+*.db.bak
+
+# SECURITY: Lock files that could leak dependency versions
+package-lock.json.bak
+yarn.lock.bak

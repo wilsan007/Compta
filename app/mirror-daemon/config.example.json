@@ -1,0 +1,10 @@
+{
+  "supabaseUrl": "https://your-project.supabase.co",
+  "supabaseKey": "YOUR_SUPABASE_PUBLISHABLE_KEY_FROM_ENV",
+  "mirrorDir": "~/Desktop/Compta-Donnees",
+  "pollIntervalMs": 300000,
+  "syncOnStart": true,
+  "tenantId": "00000000-0000-0000-0000-000000000001",
+  "encrypt": true,
+  "encryptionKey": "YOUR_ENCRYPTION_KEY_FROM_ENV"
+}

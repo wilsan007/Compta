@@ -4,6 +4,9 @@ import { Card, PageHeader, Button, Breadcrumb, Badge, Select } from '@/component
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
+import { getTenantId } from '@/lib/queries'
+import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
+import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import {
   IMPORT_MODULES, coerceValue, type ImportModule,
 } from '@/lib/importConfig'
@@ -78,9 +81,16 @@ export function ImportPage() {
     XLSX.writeFile(wb, `modele_${mod.id}.xlsx`)
   }
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !activeModule) return
+    // SECURITY: Validate file before processing
+    const validation = await validateFileUpload(file, FILE_PROFILES.spreadsheet)
+    if (!validation.ok) {
+      toast('error', t('import.readError'), validation.error || 'Invalid file')
+      e.target.value = ''
+      return
+    }
     const reader = new FileReader()
     reader.onload = (evt) => {
       try {
@@ -92,9 +102,15 @@ export function ImportPage() {
           toast('error', t('import.emptyFile'), t('import.emptyFileDesc'))
           return
         }
-        const fileHeaders = Object.keys(json[0])
+        // SECURITY: Cap row count to prevent memory exhaustion and DoS
+        const MAX_IMPORT_ROWS = 10000
+        if (json.length > MAX_IMPORT_ROWS) {
+          toast('warning', 'Fichier trop volumineux', `Seules les ${MAX_IMPORT_ROWS} premières lignes seront importées (sur ${json.length}).`)
+        }
+        const cappedJson = json.slice(0, MAX_IMPORT_ROWS)
+        const fileHeaders = Object.keys(cappedJson[0])
         setHeaders(fileHeaders)
-        setRows(json)
+        setRows(cappedJson)
         // Smart auto-mapping: fuzzy matching + synonyms + content analysis
         const result = autoMapColumns(
           fileHeaders,
@@ -125,8 +141,18 @@ export function ImportPage() {
     const payload: ParsedRow[] = []
     const errors: string[] = []
 
+    // SECURITY: Use getTenantId() to get the authenticated tenant ID, not user.tenantId from client state
+    const authenticatedTenantId = await getTenantId()
+    if (!authenticatedTenantId) {
+      errors.push('Erreur: Impossible de déterminer le tenant actif')
+      setResult({ inserted: 0, failed: rows.length, errors })
+      setStep('result')
+      setImporting(false)
+      return
+    }
+
     rows.forEach((row, idx) => {
-      const record: ParsedRow = { tenant_id: user.tenantId }
+      const record: ParsedRow = { tenant_id: authenticatedTenantId }
       let rowHasError = false
       for (const field of activeModule.fields) {
         const sourceCol = mapping[field.key]
@@ -173,6 +199,12 @@ export function ImportPage() {
 
   async function handleAIFallback() {
     if (!activeModule || !autoMapping) return
+    // Client-side rate limit: prevent flooding the AI edge function
+    if (!checkClientRateLimit('ai-import', CLIENT_LIMITS.aiImport.max, CLIENT_LIMITS.aiImport.windowMs)) {
+      const wait = getRateLimitResetSeconds('ai-import')
+      toast('error', t('import.aiUnavailable'), `Trop de requêtes. Réessayez dans ${wait}s.`)
+      return
+    }
     setAiLoading(true)
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''

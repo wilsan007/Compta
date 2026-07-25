@@ -10,6 +10,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Compta" />
     <meta name="description" content="ERP comptable, commercial, stock et production pour PME industrielles" />
+
+    <!-- SECURITY: Anti-scraping / Anti-indexing -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
+
+    <!-- SECURITY: Prevent content embedding (clickjacking) -->
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'" />
+
+    <!-- SECURITY: Prevent MIME type sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- SECURITY: Control referrer information leakage -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- SECURITY: Disable browser features that could be exploited -->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()" />
+
     <title>Compta - Gestion comptable</title>
   </head>
   <body>

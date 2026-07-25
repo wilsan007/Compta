@@ -201,6 +201,7 @@
     "view": "Détails du produit",
     "name": "Nom",
     "code": "Code / Référence",
+    "sku": "SKU",
     "barcode": "Code-barres",
     "category": "Catégorie",
     "type": "Type",

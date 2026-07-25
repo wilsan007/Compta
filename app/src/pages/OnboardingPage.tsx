@@ -6,7 +6,7 @@ import { Button } from '@/components/ui'
 import { createTenantForUser, getLegislationPacks, getApplicableVatRates } from '@/lib/queries'
 import type { LegislationPack, TaxRate } from '@/types'
 import { Building2, AlertCircle, CheckCircle2, MapPin, FileText, Phone, Scale, LayoutGrid } from 'lucide-react'
-import { COUNTRIES, CURRENCIES } from '@/lib/countries'
+import { COUNTRIES, CURRENCIES, getCurrencyForCountry, getCountryCode } from '@/lib/countries'
 import { SearchableSelect } from '@/components/SearchableSelect'
 
 export function OnboardingPage() {
@@ -78,6 +78,29 @@ export function OnboardingPage() {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
+  // When country is selected, auto-link currency and matching legislation pack
+  useEffect(() => {
+    if (!form.country) return
+    const autoCurrency = getCurrencyForCountry(form.country)
+    const countryCode = getCountryCode(form.country)
+    if (countryCode) {
+      const matchingPack = legislationPacks.find(
+        (p) => p.country_code === countryCode
+      )
+      if (matchingPack) {
+        setSelectedPack(matchingPack)
+        setForm((prev) => ({
+          ...prev,
+          legislation_pack_code: matchingPack.code,
+          currency: matchingPack.currency,
+        }))
+        getApplicableVatRates(matchingPack.code).then(setPackTaxRates).catch(() => setPackTaxRates([]))
+        return
+      }
+    }
+    setForm((prev) => ({ ...prev, currency: autoCurrency }))
+  }, [form.country, legislationPacks])
+
   const [created, setCreated] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -122,6 +145,10 @@ export function OnboardingPage() {
   function nextStep() {
     if (step === 1 && !form.name.trim()) {
       setError(t('onboarding.companyNameRequired'))
+      return
+    }
+    if (step === 1 && !form.country) {
+      setError(t('onboarding.countryRequired'))
       return
     }
     if (step === 4 && selectedModules.length === 0) {
@@ -265,7 +292,9 @@ export function OnboardingPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-[var(--color-text)]">{t('onboarding.country')}</label>
+                  <label className="text-sm font-medium text-[var(--color-text)]">
+                    {t('onboarding.country')} <span className="text-[var(--color-danger)]">*</span>
+                  </label>
                   <SearchableSelect
                     value={form.country}
                     onChange={(v) => update('country', v)}

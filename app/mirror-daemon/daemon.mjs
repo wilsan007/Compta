@@ -31,7 +31,12 @@ const ONCE = process.argv.includes('--once')
 const REGISTER = process.argv.includes('--register')
 const FORCE = process.argv.includes('--force')
 
-const { supabaseUrl, supabaseKey, pollIntervalMs, syncOnStart, tenantId } = config
+const { supabaseUrl, pollIntervalMs, syncOnStart, tenantId } = config
+const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || config.supabaseKey
+if (!supabaseKey) {
+  console.error('ERROR: No Supabase key found. Set SUPABASE_KEY env var or config.json supabaseKey.')
+  process.exit(1)
+}
 
 // Resolve mirrorDir: expand ~ to home directory, fallback to Desktop
 let mirrorDir = config.mirrorDir || '~/Desktop/Compta-Donnees'
@@ -39,8 +44,12 @@ if (mirrorDir.startsWith('~/')) {
   mirrorDir = join(homedir(), mirrorDir.slice(2))
 }
 
-const ENCRYPT = config.encrypt === true && config.encryptionKey
-const ENC_KEY = config.encryptionKey || ''
+const ENCRYPT = config.encrypt === true && (config.encryptionKey || process.env.MIRROR_ENCRYPTION_KEY)
+const ENC_KEY = config.encryptionKey || process.env.MIRROR_ENCRYPTION_KEY || ''
+if (!ENCRYPT) {
+  console.warn('⚠️  WARNING: Encryption is DISABLED. Local mirror data will be stored in plaintext.')
+  console.warn('   Set config.encrypt=true and provide encryptionKey (or MIRROR_ENCRYPTION_KEY env var) to enable.')
+}
 
 // ============ Machine identification ============
 function getMachineId() {
@@ -80,8 +89,47 @@ const osInfo = getOSInfo()
 const localIP = getLocalIP()
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: { persistSession: true, autoRefreshToken: true },
 })
+
+// Tables that are global (no tenant_id column) — don't filter by tenant
+const GLOBAL_TABLES = new Set([
+  'currencies', 'legislation_packs', 'tax_rates', 'chart_account_templates',
+])
+
+// Authenticate and set active tenant before any data fetch
+let _authenticated = false
+async function authenticateDaemon() {
+  if (_authenticated) return
+  const daemonEmail = process.env.MIRROR_DAEMON_EMAIL || ''
+  const daemonPassword = process.env.MIRROR_DAEMON_PASSWORD || ''
+  if (daemonEmail && daemonPassword) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: daemonEmail, password: daemonPassword })
+    if (error) {
+      console.error('ERROR: Daemon authentication failed:', error.message)
+      console.error('Set MIRROR_DAEMON_EMAIL and MIRROR_DAEMON_PASSWORD env vars with a valid tenant user account.')
+      process.exit(1)
+    }
+    log(`Authenticated as ${daemonEmail}`)
+  } else {
+    console.warn('⚠️  WARNING: No daemon credentials provided (MIRROR_DAEMON_EMAIL/MIRROR_DAEMON_PASSWORD).')
+    console.warn('   RLS policies will block tenant-scoped data. Only global reference tables will sync.')
+  }
+  // Set active tenant in DB session so RLS policies apply
+  if (tenantId && tenantId !== 'default') {
+    const { error: tenantErr } = await supabase.rpc('set_active_tenant', { p_tenant_id: tenantId })
+    if (tenantErr) {
+      console.error('ERROR: set_active_tenant failed:', tenantErr.message)
+      console.error('The daemon cannot isolate tenant data. Check that tenantId in config is a valid UUID and the daemon account has access.')
+      process.exit(1)
+    }
+    log(`Active tenant set to ${tenantId}`)
+  } else {
+    console.error('ERROR: tenantId in config.json must be a valid UUID (not "default"). Update config.json with the real tenant UUID.')
+    process.exit(1)
+  }
+  _authenticated = true
+}
 
 const TABLES = [
   'company_settings', 'users', 'chart_accounts', 'customers', 'suppliers',
@@ -147,9 +195,13 @@ function escapeSqlValue(val) {
   if (val === null || val === undefined) return 'NULL'
   if (typeof val === 'number') return String(val)
   if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`
-  const str = String(val).replace(/'/g, "''")
+  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')}'`
+  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')
   return `'${str}'`
+}
+
+function quoteIdentifier(name) {
+  return '"' + String(name).replace(/"/g, '""').replace(/\0/g, '') + '"'
 }
 
 function generateSqlDump(tables, exportedAt) {
@@ -170,8 +222,9 @@ function generateSqlDump(tables, exportedAt) {
   lines.push('')
 
   for (const table of tables) {
+    const quotedTable = quoteIdentifier(table.tableName)
     lines.push(`-- Table: ${table.tableName} (${table.rowCount} lignes)`)
-    lines.push(`INSERT INTO sync_metadata (table_name, last_sync_at, row_count, source) VALUES ('${table.tableName}', '${exportedAt}', ${table.rowCount}, 'supabase');`)
+    lines.push(`INSERT INTO sync_metadata (table_name, last_sync_at, row_count, source) VALUES ('${table.tableName.replace(/'/g, "''")}', '${exportedAt}', ${table.rowCount}, 'supabase');`)
     lines.push('')
 
     if (table.rowCount === 0) {
@@ -180,10 +233,10 @@ function generateSqlDump(tables, exportedAt) {
       continue
     }
 
-    const cols = table.columns.join(', ')
+    const cols = table.columns.map(c => quoteIdentifier(c)).join(', ')
     for (const row of table.rows) {
       const values = table.columns.map(c => escapeSqlValue(row[c])).join(', ')
-      lines.push(`INSERT INTO ${table.tableName} (${cols}) VALUES (${values});`)
+      lines.push(`INSERT INTO ${quotedTable} (${cols}) VALUES (${values});`)
     }
     lines.push('')
   }
@@ -245,13 +298,13 @@ function generateHtmlViewer(tables, exportedAt) {
     ).join('')
 
     return `
-    <div class="table-card" onclick="toggleTable('${t.tableName}')">
+    <div class="table-card" data-table-name="${escapeHtml(t.tableName)}">
       <div class="table-header">
-        <span class="table-name">${t.tableName}</span>
+        <span class="table-name">${escapeHtml(t.tableName)}</span>
         <span class="table-count">${t.rowCount} lignes</span>
         <span class="table-toggle">▼</span>
       </div>
-      <div class="table-preview" id="preview-${t.tableName}">
+      <div class="table-preview" id="preview-${escapeHtml(t.tableName)}">
         <table>
           <thead><tr>${headerCells}</tr></thead>
           <tbody>${bodyRows}</tbody>
@@ -262,7 +315,7 @@ function generateHtmlViewer(tables, exportedAt) {
     </div>`
   }).join('')
 
-  const emptyBadges = tablesEmpty.map(t => `<span class="empty-badge">${t.tableName}</span>`).join('')
+  const emptyBadges = tablesEmpty.map(t => `<span class="empty-badge">${escapeHtml(t.tableName)}</span>`).join('')
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -336,10 +389,11 @@ function generateHtmlViewer(tables, exportedAt) {
   </div>
 </div>
 <script>
-  function toggleTable(name) {
-    const card = event.currentTarget
-    card.classList.toggle('open')
-  }
+  document.querySelectorAll('.table-card').forEach(card => {
+    card.addEventListener('click', function() {
+      this.classList.toggle('open')
+    })
+  })
 </script>
 </body>
 </html>`
@@ -361,12 +415,20 @@ async function syncAll(reason = 'scheduled') {
   syncRunning = true
   log(`Début de la sync (${reason})...`)
 
+  // Authenticate and set tenant context before any data fetch
+  await authenticateDaemon()
+
   const tables = []
   let totalRows = 0
 
   for (const table of TABLES) {
     try {
-      const { data, error } = await supabase.from(table).select('*')
+      let query = supabase.from(table).select('*')
+      // Defense-in-depth: filter by tenant_id for non-global tables
+      if (!GLOBAL_TABLES.has(table)) {
+        query = query.eq('tenant_id', tenantId)
+      }
+      const { data, error } = await query
       if (error) {
         logVerbose(`  ✗ ${table}: ${error.message}`)
         tables.push({ tableName: table, rowCount: 0, columns: [], rows: [] })
