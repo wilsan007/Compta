@@ -4,8 +4,9 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyStat
 import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Users, Plus, Search, Trash2, Edit, Mail, X, Download } from 'lucide-react'
+import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Customer } from '@/types'
+import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 
 export function CustomersPage() {
   const { toast } = useToast()
@@ -17,6 +18,7 @@ export function CustomersPage() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null)
+  const [contactsTarget, setContactsTarget] = useState<Customer | null>(null)
 
   useEffect(() => {
     loadCustomers()
@@ -121,6 +123,9 @@ export function CustomersPage() {
                 <TableCell>{c.created_at ? formatDate(c.created_at) : '—'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <button onClick={() => setContactsTarget(c)} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)]" title={t('customers.contacts')}>
+                      <ContactIcon className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleEdit(c)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.edit')}>
                       <Edit className="w-4 h-4" />
                     </button>
@@ -158,6 +163,15 @@ export function CustomersPage() {
         onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {contactsTarget && (
+        <PartnerContactsModal
+          partnerType="customer"
+          partnerId={contactsTarget.id}
+          partnerName={contactsTarget.name}
+          onClose={() => setContactsTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -176,6 +190,9 @@ function CustomerForm({ customer, onClose, onSaved }: {
   const [phone, setPhone] = useState(customer?.phone || '')
   const [address, setAddress] = useState(customer?.address || '')
   const [vatNumber, setVatNumber] = useState(customer?.vat_number || '')
+  const [isCompany, setIsCompany] = useState(customer?.is_company ?? true)
+  const [parentId, setParentId] = useState(customer?.parent_id || '')
+  const [salesRepId, setSalesRepId] = useState(customer?.sales_rep_id || '')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -183,7 +200,7 @@ function CustomerForm({ customer, onClose, onSaved }: {
     if (!name.trim()) { toast('warning', tCommon('form.requiredField'), t('customers.name')); return }
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber }
+      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null }
       if (customer) {
         await updateCustomer(customer.id, data)
         toast('success', t('customers.title'), tCommon('toast.updated'))
@@ -213,6 +230,12 @@ function CustomerForm({ customer, onClose, onSaved }: {
           <Input label={t('customers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('customers.placeholders.phone')} />
           <Input label={t('customers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('customers.placeholders.address')} />
           <Input label={t('customers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder="FR12345678901" />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} />
+            {t('customers.isCompany')}
+          </label>
+          <Input label={t('customers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('customers.parentIdPlaceholder')} />
+          <Input label={t('customers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('customers.salesRepIdPlaceholder')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" loading={saving}>{customer ? tCommon('actions.edit') : tCommon('actions.create')}</Button>

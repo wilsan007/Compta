@@ -200,7 +200,29 @@
     "netPayable": "Taxable net",
     "totalCostEmployer": "Total employer cost",
     "noEmployees": "No employees",
-    "noEmployeesDesc": "Add employees in the HR section to calculate a payslip."
+    "noEmployeesDesc": "Add employees in the HR section to calculate a payslip.",
+    "gridLoaded": "Tax grid loaded",
+    "fallbackRates": "Default rates",
+    "breakdown": "Line-by-line breakdown"
+  },
+  "corporateTax": {
+    "title": "Corporate Income Tax Calculator",
+    "subtitle": "Multi-country IS engine — pre-configured tax brackets",
+    "intro": "Enter your turnover and profit to calculate corporate income tax based on your country's tax brackets.",
+    "turnover": "Turnover",
+    "profit": "Taxable profit",
+    "calculate": "Calculate tax",
+    "results": "Results",
+    "taxableBase": "Taxable base",
+    "taxCalculation": "Tax calculation",
+    "isTax": "Corporate income tax (IS)",
+    "minimumTax": "Minimum flat tax (IMF)",
+    "finalTax": "Tax payable",
+    "afterTaxProfit": "After-tax profit",
+    "breakdown": "Breakdown by bracket",
+    "gridLoaded": "Tax bracket loaded",
+    "noGrid": "No tax bracket",
+    "noGridDesc": "No corporate tax grid configured for your country. Set one up in settings."
   },
   "liasseFiscale": {
     "title": "Tax Return",

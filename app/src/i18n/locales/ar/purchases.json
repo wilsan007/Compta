@@ -212,7 +212,11 @@
       "other": "أخرى"
     },
     "deleteConfirm": "حذف هذه الدفعة؟",
-    "actions": "إجراءات"
+    "actions": "إجراءات",
+    "currency": "العملة",
+    "exchangeRate": "سعر الصرف",
+    "refreshRate": "تحديث السعر",
+    "amountCurrency": "المبلغ بالعملة"
   },
   "suppliers": {
     "title": "الموردون",
@@ -246,6 +250,12 @@
     "createdAt": "تاريخ الإنشاء",
     "suppliersTotal": "موردين",
     "add": "إضافة مورد",
+    "contacts": "جهات الاتصال والعناوين",
+    "isCompany": "شركة",
+    "parentId": "الشركة الأم (المعرف)",
+    "parentIdPlaceholder": "معرف الشركة الأم",
+    "salesRepId": "المندوب التجاري (المعرف)",
+    "salesRepIdPlaceholder": "معرف المندوب التجاري",
     "nameLabel": "اسم المورد",
     "nameRequired": "الاسم مطلوب",
     "deleted": "تم حذف المورد بنجاح",

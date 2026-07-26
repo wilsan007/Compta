@@ -1,5 +1,5 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
+import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, DeliveryNote, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check } from '@/types'
 
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
@@ -50,13 +50,23 @@ function tud<T extends { eq: (col: string, val: any) => T }>(q: T, table: string
 }
 
 // ============ Company Settings ============
-export async function getCompanySettings() {
+export async function getCompanySettings(): Promise<CompanySettings | null> {
   const tid = await getTenantId()
   let q = supabase.from('company_settings').select('*').limit(1)
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q.single()
+  const { data, error } = await q.maybeSingle()
   if (error) throw error
-  return data as CompanySettings
+  if (!data && tid) {
+    // No company_settings row for this tenant — auto-create a default one
+    const { data: created, error: createErr } = await supabase
+      .from('company_settings')
+      .insert({ tenant_id: tid, name: 'Mon Entreprise', country: 'France', currency: 'EUR', fiscal_year_start: '01-01' })
+      .select('*')
+      .single()
+    if (createErr) throw createErr
+    return created as CompanySettings
+  }
+  return data as CompanySettings | null
 }
 
 export async function updateCompanySettings(id: string, updates: Partial<CompanySettings>) {
@@ -915,6 +925,96 @@ export async function getRecentActivity(): Promise<Array<{
   return activities.slice(0, 8)
 }
 
+// ============ Sprint 6: Partner Contacts (#62) ============
+export async function getPartnerContacts(partnerType: string, partnerId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('partner_contacts').select('*').eq('partner_type', partnerType).eq('partner_id', partnerId).order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PartnerContact[]
+}
+
+export async function createPartnerContact(contact: Omit<PartnerContact, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('partner_contacts').insert(ti(contact, 'partner_contacts', tid)).select().single()
+  if (error) throw error
+  return data as PartnerContact
+}
+
+export async function updatePartnerContact(id: string, updates: Partial<PartnerContact>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('partner_contacts').update(updates), 'partner_contacts', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PartnerContact
+}
+
+export async function deletePartnerContact(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('partner_contacts').delete(), 'partner_contacts', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Sprint 6: Partner Categories (#64) ============
+export async function getPartnerCategories() {
+  const tid = await getTenantId()
+  let q = supabase.from('partner_categories').select('*').order('name', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PartnerCategory[]
+}
+
+export async function createPartnerCategory(cat: Omit<PartnerCategory, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('partner_categories').insert(ti(cat, 'partner_categories', tid)).select().single()
+  if (error) throw error
+  return data as PartnerCategory
+}
+
+export async function updatePartnerCategory(id: string, updates: Partial<PartnerCategory>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('partner_categories').update(updates), 'partner_categories', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PartnerCategory
+}
+
+export async function deletePartnerCategory(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('partner_categories').delete(), 'partner_categories', tid).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Sprint 6: Partner Bank Accounts (#80) ============
+export async function getPartnerBankAccounts(partnerType: string, partnerId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('partner_bank_accounts').select('*').eq('partner_type', partnerType).eq('partner_id', partnerId).order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as PartnerBankAccount[]
+}
+
+export async function createPartnerBankAccount(bank: Omit<PartnerBankAccount, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('partner_bank_accounts').insert(ti(bank, 'partner_bank_accounts', tid)).select().single()
+  if (error) throw error
+  return data as PartnerBankAccount
+}
+
+export async function updatePartnerBankAccount(id: string, updates: Partial<PartnerBankAccount>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('partner_bank_accounts').update(updates), 'partner_bank_accounts', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PartnerBankAccount
+}
+
+export async function deletePartnerBankAccount(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('partner_bank_accounts').delete(), 'partner_bank_accounts', tid).eq('id', id)
+  if (error) throw error
+}
+
 // ============ Purchase Credit Notes ============
 export async function getPurchaseCreditNotes() {
   const tid = await getTenantId()
@@ -1751,6 +1851,10 @@ export async function createSaisieEntry(entry: {
   status_detail?: 'open' | 'printed' | 'closed'
   total_debit: number
   total_credit: number
+  currency_code?: string
+  functional_currency?: string
+  exchange_rate?: number
+  exchange_rate_date?: string | null
   lines: Array<{
     account_code: string
     account_name: string
@@ -5623,6 +5727,19 @@ export async function createCurrencyRevaluation(entry: Omit<CurrencyRevaluation,
   return data as CurrencyRevaluation
 }
 
+export async function updateCurrencyRevaluation(id: string, updates: Partial<CurrencyRevaluation>): Promise<CurrencyRevaluation> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('currency_revaluations')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CurrencyRevaluation
+}
+
 export async function deleteCurrencyRevaluation(id: string) {
   const tid = await getTenantId()
   const { error } = await supabase
@@ -5669,6 +5786,19 @@ export async function createAnalyticPlan(plan: Omit<AnalyticPlan, 'id' | 'tenant
   const { data, error } = await supabase
     .from('analytic_plans')
     .insert({ ...plan, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as AnalyticPlan
+}
+
+export async function updateAnalyticPlan(id: string, updates: Partial<AnalyticPlan>): Promise<AnalyticPlan> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('analytic_plans')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('tenant_id', tid!)
     .select()
     .single()
   if (error) throw error
@@ -7431,6 +7561,200 @@ export async function deleteTaxRate(id: string): Promise<void> {
   if (error) throw error
 }
 
+// ============ Tax Groups (#11) ============
+
+export async function getTaxGroups(): Promise<TaxGroup[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('tax_groups').select('*').order('name', { ascending: true })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TaxGroup[]
+}
+
+export async function createTaxGroup(tg: Omit<TaxGroup, 'id' | 'created_at' | 'tenant_id'>): Promise<TaxGroup> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tax_groups').insert({ ...tg, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TaxGroup
+}
+
+export async function deleteTaxGroup(id: string): Promise<void> {
+  const { error } = await supabase.from('tax_groups').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============ Tax Repartition Lines (#18) ============
+
+export async function getTaxRepartitionLines(taxId: string): Promise<TaxRepartitionLine[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('tax_repartition_lines').select('*').eq('tax_id', taxId).order('repartition_type', { ascending: true })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TaxRepartitionLine[]
+}
+
+export async function createTaxRepartitionLine(line: Omit<TaxRepartitionLine, 'id' | 'created_at' | 'tenant_id'>): Promise<TaxRepartitionLine> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tax_repartition_lines').insert({ ...line, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TaxRepartitionLine
+}
+
+export async function deleteTaxRepartitionLine(id: string): Promise<void> {
+  const { error } = await supabase.from('tax_repartition_lines').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============ Tax Cash Basis Entries (#20) ============
+
+export async function getTaxCashBasisEntries(): Promise<TaxCashBasisEntry[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('tax_cash_basis_entries').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as TaxCashBasisEntry[]
+}
+
+export async function createTaxCashBasisEntry(entry: Omit<TaxCashBasisEntry, 'id' | 'created_at' | 'tenant_id'>): Promise<TaxCashBasisEntry> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('tax_cash_basis_entries').insert({ ...entry, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as TaxCashBasisEntry
+}
+
+export async function updateTaxCashBasisEntry(id: string, updates: Partial<TaxCashBasisEntry>): Promise<void> {
+  const { error } = await supabase.from('tax_cash_basis_entries').update(updates).eq('id', id)
+  if (error) throw error
+}
+
+// ============ Fiscal Positions (#32, #56) ============
+
+export async function getFiscalPositions(): Promise<FiscalPosition[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_positions').select('*').order('name', { ascending: true })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FiscalPosition[]
+}
+
+export async function createFiscalPosition(fp: Omit<FiscalPosition, 'id' | 'created_at' | 'tenant_id'>): Promise<FiscalPosition> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('fiscal_positions').insert({ ...fp, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as FiscalPosition
+}
+
+export async function updateFiscalPosition(id: string, updates: Partial<FiscalPosition>): Promise<FiscalPosition> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_positions').update(updates).eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.select().single()
+  if (error) throw error
+  return data as FiscalPosition
+}
+
+export async function deleteFiscalPosition(id: string): Promise<void> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_positions').delete().eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { error } = await q
+  if (error) throw error
+}
+
+// ============ Fiscal Position Mappings (#56) ============
+
+export async function getFiscalPositionMappings(fiscalPositionId: string): Promise<FiscalPositionMapping[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_position_mappings').select('*').eq('fiscal_position_id', fiscalPositionId).order('created_at', { ascending: true })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as FiscalPositionMapping[]
+}
+
+export async function createFiscalPositionMapping(m: Omit<FiscalPositionMapping, 'id' | 'created_at' | 'tenant_id'>): Promise<FiscalPositionMapping> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('fiscal_position_mappings').insert({ ...m, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as FiscalPositionMapping
+}
+
+export async function deleteFiscalPositionMapping(id: string): Promise<void> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_position_mappings').delete().eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { error } = await q
+  if (error) throw error
+}
+
+// ============ Account Tags (#22) ============
+
+export async function getAccountTags(): Promise<AccountTag[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('account_tags').select('*').order('name', { ascending: true })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AccountTag[]
+}
+
+export async function createAccountTag(tag: Omit<AccountTag, 'id' | 'created_at' | 'tenant_id'>): Promise<AccountTag> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('account_tags').insert({ ...tag, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as AccountTag
+}
+
+export async function deleteAccountTag(id: string): Promise<void> {
+  const tid = await getTenantId()
+  let q = supabase.from('account_tags').delete().eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { error } = await q
+  if (error) throw error
+}
+
+export async function updateAccountTag(id: string, updates: Partial<AccountTag>): Promise<AccountTag> {
+  const tid = await getTenantId()
+  let q = supabase.from('account_tags').update(updates).eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.select().single()
+  if (error) throw error
+  return data as AccountTag
+}
+
+// ============ Account Tag Mappings (#22) ============
+
+export async function getAccountTagMappings(tagId?: string, entityType?: string, entityId?: string): Promise<AccountTagMapping[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('account_tag_mappings').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.or(`tenant_id.is.null,tenant_id.eq.${tid}`)
+  if (tagId) q = q.eq('tag_id', tagId)
+  if (entityType) q = q.eq('entity_type', entityType)
+  if (entityId) q = q.eq('entity_id', entityId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as AccountTagMapping[]
+}
+
+export async function createAccountTagMapping(m: Omit<AccountTagMapping, 'id' | 'created_at' | 'tenant_id'>): Promise<AccountTagMapping> {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('account_tag_mappings').insert({ ...m, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as AccountTagMapping
+}
+
+export async function deleteAccountTagMapping(id: string): Promise<void> {
+  const tid = await getTenantId()
+  let q = supabase.from('account_tag_mappings').delete().eq('id', id)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { error } = await q
+  if (error) throw error
+}
+
 // ============ Marking Types (Types de marquage) ============
 
 export async function getMarkingTypes(): Promise<MarkingType[]> {
@@ -8441,5 +8765,246 @@ export async function getActivePayrollTaxGrid(countryCode: string, gridType?: st
   const { data, error } = await q
   if (error) throw error
   return data?.[0] as PayrollTaxGrid | undefined
+}
+
+// --- Helper: get active corporate tax grid for a country ---
+export async function getActiveCorporateTaxGrid(countryCode: string, taxType?: string) {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('corporate_tax_grids')
+    .select('*')
+    .eq('country_code', countryCode)
+    .eq('status', 'active')
+    .order('is_default', { ascending: false })
+    .limit(1)
+  if (taxType) q = q.eq('tax_type', taxType)
+  if (tid) q = q.or(`tenant_id.eq.${tid},tenant_id.is.null`)
+  const { data, error } = await q
+  if (error) throw error
+  return data?.[0] as CorporateTaxGrid | undefined
+}
+
+// ============ Bank Connections (#69) ============
+export async function getBankConnections() {
+  const tid = await getTenantId()
+  let q = supabase.from('bank_connections').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as BankConnection[]
+}
+
+export async function createBankConnection(conn: Omit<BankConnection, 'id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('bank_connections').insert({ ...conn, tenant_id: tid }).select().single()
+  if (error) throw error
+  return data as BankConnection
+}
+
+export async function updateBankConnection(id: string, updates: Partial<BankConnection>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('bank_connections').update(updates), 'bank_connections', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BankConnection
+}
+
+export async function deleteBankConnection(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('bank_connections').delete(), 'bank_connections', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function syncBankConnection(connectionId: string): Promise<{ synced: number; error: string | null }> {
+  const tid = await getTenantId()
+  const { error: connErr } = await supabase.from('bank_connections').select('*').eq('id', connectionId).single()
+  if (connErr) throw connErr
+  const now = new Date().toISOString()
+  const { error: updErr } = await tud(
+    supabase.from('bank_connections').update({ last_sync_at: now, status: 'active', error_message: null }),
+    'bank_connections', tid
+  ).eq('id', connectionId)
+  if (updErr) throw updErr
+  return { synced: 0, error: null }
+}
+
+// ============ Statement Balance Update (#70) ============
+export async function updateStatementBalance(accountId: string, statementBalance: number, statementDate: string) {
+  const tid = await getTenantId()
+  const { data: account, error: accErr } = await supabase.from('bank_accounts').select('calculated_balance').eq('id', accountId).single()
+  if (accErr) throw accErr
+  const calculated = Number(account?.calculated_balance || 0)
+  const diff = statementBalance - calculated
+  const { data, error } = await tud(
+    supabase.from('bank_accounts').update({
+      statement_balance: statementBalance,
+      statement_balance_date: statementDate,
+      reconciliation_diff: diff,
+    }),
+    'bank_accounts', tid
+  ).eq('id', accountId).select().single()
+  if (error) throw error
+  return data as BankAccount
+}
+
+// ============ IBAN Validation (#80) ============
+export function validateIBAN(iban: string): boolean {
+  const cleaned = iban.replace(/\s/g, '').toUpperCase()
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/.test(cleaned)) return false
+  const rearranged = cleaned.slice(4) + cleaned.slice(0, 4)
+  const converted = rearranged.replace(/[A-Z]/g, (ch) => String(ch.charCodeAt(0) - 55))
+  let remainder: number
+  let block = converted
+  while (block.length > 9) {
+    remainder = Number(block.slice(0, 9)) % 97
+    block = remainder.toString() + block.slice(9)
+  }
+  return Number(block) % 97 === 1
+}
+
+// ============ Sprint 8: Check Books (#82) ============
+export async function getCheckBooks() {
+  const tid = await getTenantId()
+  let q = supabase.from('check_books').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as CheckBook[]
+}
+
+export async function createCheckBook(book: Omit<CheckBook, 'id' | 'tenant_id' | 'created_at' | 'issued_count'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('check_books')
+    .insert({ ...book, tenant_id: tid, issued_count: 0 })
+    .select()
+    .single()
+  if (error) throw error
+  return data as CheckBook
+}
+
+export async function updateCheckBook(id: string, updates: Partial<CheckBook>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('check_books')
+    .update(updates)
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CheckBook
+}
+
+export async function deleteCheckBook(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('check_books')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Sprint 8: Checks (#82) ============
+export async function getChecks() {
+  const tid = await getTenantId()
+  let q = supabase.from('checks').select('*').order('issue_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Check[]
+}
+
+export async function createCheck(check: Omit<Check, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('checks')
+    .insert({ ...check, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as Check
+}
+
+export async function updateCheck(id: string, updates: Partial<Check>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('checks')
+    .update(updates)
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+    .select()
+    .single()
+  if (error) throw error
+  return data as Check
+}
+
+export async function deleteCheck(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase
+    .from('checks')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tid!)
+  if (error) throw error
+}
+
+// ============ Sprint 8: Exchange Gain/Loss (#9) ============
+export async function getExchangeGainLossEntries() {
+  const tid = await getTenantId()
+  let q = supabase.from('exchange_gain_loss_entries').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ExchangeGainLossEntry[]
+}
+
+export async function createExchangeGainLossEntry(entry: Omit<ExchangeGainLossEntry, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('exchange_gain_loss_entries')
+    .insert({ ...entry, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as ExchangeGainLossEntry
+}
+
+// ============ Sprint 8: Exchange Rates (#89) ============
+export async function getExchangeRates(baseCurrency?: string, quoteCurrency?: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('exchange_rates').select('*').order('rate_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (baseCurrency) q = q.eq('base_currency', baseCurrency)
+  if (quoteCurrency) q = q.eq('quote_currency', quoteCurrency)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ExchangeRate[]
+}
+
+export async function getLatestRate(baseCurrency: string, quoteCurrency: string): Promise<ExchangeRate | null> {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('exchange_rates')
+    .select('*')
+    .eq('base_currency', baseCurrency)
+    .eq('quote_currency', quoteCurrency)
+    .order('rate_date', { ascending: false })
+    .limit(1)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data && data.length > 0) ? data[0] as ExchangeRate : null
+}
+
+export async function createExchangeRate(rate: Omit<ExchangeRate, 'id' | 'tenant_id' | 'created_at'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .insert({ ...rate, tenant_id: tid })
+    .select()
+    .single()
+  if (error) throw error
+  return data as ExchangeRate
 }
 

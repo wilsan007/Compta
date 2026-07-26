@@ -39,7 +39,7 @@ export function DistributionGrillsPage() {
     }
   }
 
-  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.lines'), t('grills.total'), tCommon('common.table.actions')]
+  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.journal'), t('grills.lines'), t('grills.total'), t('grills.active'), tCommon('common.table.actions')]
 
   return (
     <div>
@@ -68,9 +68,13 @@ export function DistributionGrillsPage() {
                 <TableRow key={grill.id}>
                   <TableCell className="font-medium text-sm">{grill.name}</TableCell>
                   <TableCell className="font-mono text-xs">{grill.account_code}</TableCell>
+                  <TableCell className="font-mono text-xs">{grill.journal_code || '—'}</TableCell>
                   <TableCell className="text-xs">{(grill.lines || []).length} {t('grills.linesCount')}</TableCell>
                   <TableCell>
                     <Badge variant={Math.abs(total - 100) < 0.01 ? 'success' : 'danger'}>{total}%</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={grill.active ? 'success' : 'neutral'}>{grill.active ? t('grills.yes') : t('grills.no')}</Badge>
                   </TableCell>
                   <TableCell>
                     <button onClick={() => handleDelete(grill.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
@@ -95,6 +99,9 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const { toast } = useToast()
   const [name, setName] = useState('')
   const [accountCode, setAccountCode] = useState('')
+  const [journalCode, setJournalCode] = useState('')
+  const [description, setDescription] = useState('')
+  const [active, setActive] = useState(true)
   const [lines, setLines] = useState<DistributionGrillLine[]>([{ id: '', grill_id: '', section_code: '', percentage: 0, created_at: '' }])
   const [saving, setSaving] = useState(false)
 
@@ -121,10 +128,10 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     try {
       await createDistributionGrill({
         name,
-        description: null,
+        description: description || null,
         account_code: accountCode,
-        journal_code: null,
-        active: true,
+        journal_code: journalCode || null,
+        active,
         lines: lines.map(l => ({ section_code: l.section_code, percentage: Number(l.percentage) })),
       })
       toast('success', tCommon('common.success'), t('grills.saveSuccess'))
@@ -148,6 +155,14 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             <Input label={t('grills.name')} value={name} onChange={(e) => setName(e.target.value)} required />
             <Input label={t('grills.account')} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} required />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('grills.journal')} value={journalCode} onChange={(e) => setJournalCode(e.target.value)} placeholder="ACH" />
+            <Input label={t('grills.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+            {t('grills.active')}
+          </label>
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold">{t('grills.lines')}</h3>

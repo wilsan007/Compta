@@ -9,10 +9,13 @@ import {
   calculateEcheance,
 } from '@/lib/queries'
 import {
-  Plus, Trash2, CheckCircle2, Wand2, Calculator,
+  Plus, Trash2, CheckCircle2, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
 import type { Journal, FiscalYear, FiscalPeriod, ChartAccount, ThirdPartyAccount, EntryTemplate, TaxRate } from '@/types'
 import { useToast } from '@/lib/toast'
+import { CurrencySelector } from '@/components/CurrencySelector'
+import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
+import { getLatestRate } from '@/lib/currencyRates'
 
 interface LineDraft {
   account_general: string
@@ -60,6 +63,10 @@ export function SaisieParPiecePage() {
   const [description, setDescription] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([blankLine(), blankLine()])
+  const [currencyCode, setCurrencyCode] = useState('EUR')
+  const [exchangeRate, setExchangeRate] = useState(1.0)
+  const [rateLoading, setRateLoading] = useState(false)
+  const [showAnalyticDist, setShowAnalyticDist] = useState<number | null>(null)
 
   useEffect(() => { loadRef() }, [])
 
@@ -260,6 +267,10 @@ export function SaisieParPiecePage() {
         status_detail: 'open',
         total_debit: totalD,
         total_credit: totalC,
+        currency_code: currencyCode,
+        functional_currency: 'EUR',
+        exchange_rate: exchangeRate,
+        exchange_rate_date: date,
         lines: entryLines as any,
       })
       toast('success', t('saisieParPiece.title'), t('saisieParPiece.saveSuccess'))
@@ -313,6 +324,34 @@ export function SaisieParPiecePage() {
             options={[{ value: '', label: t('saisie.allPeriods') }, ...periods.map((p) => ({ value: p.id, label: p.period_label }))]}
           />
           <Input label={tCommon('common.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+      </Card>
+
+      {/* Currency header */}
+      <Card className="mb-4">
+        <div className="p-4 grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.currency')}</label>
+            <CurrencySelector value={currencyCode} onChange={(v) => { setCurrencyCode(v); if (v === 'EUR') setExchangeRate(1.0) }} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.exchangeRate')}</label>
+            <div className="flex gap-1">
+              <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+              <button type="button" onClick={async () => {
+                if (currencyCode === 'EUR') return
+                setRateLoading(true)
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch {} finally { setRateLoading(false) }
+              }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
+                <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-end text-xs text-[var(--color-text-secondary)]">
+            {currencyCode !== 'EUR' && exchangeRate > 0 && (
+              <span>1 EUR = {exchangeRate.toFixed(4)} {currencyCode}</span>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -444,6 +483,14 @@ export function SaisieParPiecePage() {
                             <Calculator className="w-3.5 h-3.5" />
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setShowAnalyticDist(idx)}
+                          className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"
+                          title={t('analyticDistribution.open')}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
                         {lines.length > 2 && (
                           <button
                             onClick={() => removeLine(idx)}
@@ -499,6 +546,14 @@ export function SaisieParPiecePage() {
           </div>
         </div>
       </Card>
+
+      {showAnalyticDist !== null && (
+        <AnalyticDistributionEditor
+          journalLineId={null}
+          lineAmount={Number(lines[showAnalyticDist]?.debit || lines[showAnalyticDist]?.credit || 0)}
+          onClose={() => setShowAnalyticDist(null)}
+        />
+      )}
 
       {/* Datalists for autocomplete */}
       <datalist id="chart-accounts">

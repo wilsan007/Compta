@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { useAuth } from './auth'
 import { getActiveLegislationPack, getApplicableVatRates } from './queries'
 import type { LegislationPack, TaxRate } from '@/types'
 
@@ -13,6 +14,7 @@ interface LegislationContextValue {
 const LegislationContext = createContext<LegislationContextValue | undefined>(undefined)
 
 export function LegislationProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [pack, setPack] = useState<LegislationPack | null>(null)
   const [vatRates, setVatRates] = useState<TaxRate[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,6 +23,12 @@ export function LegislationProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
   useEffect(() => {
+    if (!user) {
+      setPack(null)
+      setVatRates([])
+      setLoading(false)
+      return
+    }
     let cancelled = false
     setLoading(true)
     getActiveLegislationPack()
@@ -36,7 +44,7 @@ export function LegislationProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [refreshKey])
+  }, [refreshKey, user])
 
   const defaultVatRate = vatRates.find(r => r.is_default)?.rate
     ?? vatRates.find(r => r.category === 'standard')?.rate

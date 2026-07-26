@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts } from '@/lib/queries'
+import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -60,6 +60,17 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     }
   }
 
+  async function handleExtourne(id: string) {
+    if (!window.confirm(t('writingsEnhancement.extourneConfirm'))) return
+    try {
+      await generateExtourne(id, 'Extourne manuelle')
+      toast('success', tCommon('toast.success'), t('writingsEnhancement.extourneSuccess'))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('writingsEnhancement.extourneError'))
+    }
+  }
+
   const totalDebit = entries.reduce((s, e) => s + Number(e.total_debit), 0)
   const totalCredit = entries.reduce((s, e) => s + Number(e.total_credit), 0)
 
@@ -103,9 +114,16 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {entry.status === 'posted' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleExtourne(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('writingsEnhancement.extourneBtn')}>
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
                 {expanded.has(entry.id) && entry.journal_lines && entry.journal_lines.map((line) => (

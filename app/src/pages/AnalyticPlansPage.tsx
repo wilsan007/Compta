@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getAnalyticPlans, createAnalyticPlan, deleteAnalyticPlan } from '@/lib/queries'
-import { Plus, Trash2, Layers } from 'lucide-react'
+import { getAnalyticPlans, createAnalyticPlan, updateAnalyticPlan, deleteAnalyticPlan } from '@/lib/queries'
+import { Plus, Trash2, Pencil, Layers } from 'lucide-react'
 import type { AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -13,6 +13,7 @@ export function AnalyticPlansPage() {
   const [plans, setPlans] = useState<AnalyticPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<AnalyticPlan | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -27,6 +28,16 @@ export function AnalyticPlansPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  function startEdit(plan: AnalyticPlan) {
+    setEditing(plan)
+    setShowForm(true)
+  }
+
+  function openCreate() {
+    setEditing(null)
+    setShowForm(true)
+  }
 
   async function handleDelete(id: string) {
     if (!window.confirm(t('analyticPlans.deleteConfirm'))) return
@@ -47,7 +58,7 @@ export function AnalyticPlansPage() {
       <PageHeader
         title={t('analyticPlans.title')}
         subtitle={t('analyticPlans.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('analyticPlans.new')}</Button>}
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('analyticPlans.new')}</Button>}
       />
 
       {loading ? (
@@ -57,7 +68,7 @@ export function AnalyticPlansPage() {
           icon={<Layers className="w-8 h-8" />}
           title={t('analyticPlans.noPlans')}
           description={t('analyticPlans.noPlansDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('analyticPlans.new')}</Button>}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('analyticPlans.new')}</Button>}
         />
       ) : (
         <Card>
@@ -69,9 +80,14 @@ export function AnalyticPlansPage() {
                 <TableCell className="text-xs text-[var(--color-text-secondary)]">{plan.description || '—'}</TableCell>
                 <TableCell>{plan.is_default && <Badge variant="success">{t('analyticPlans.default')}</Badge>}</TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(plan.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => startEdit(plan)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(plan.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -79,19 +95,19 @@ export function AnalyticPlansPage() {
         </Card>
       )}
 
-      {showForm && <PlanForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {showForm && <PlanForm plan={editing} onClose={() => { setShowForm(false); setEditing(null) }} onSaved={() => { setShowForm(false); setEditing(null); loadData() }} />}
     </div>
   )
 }
 
-function PlanForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function PlanForm({ plan, onClose, onSaved }: { plan: AnalyticPlan | null; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [code, setCode] = useState('')
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
+  const [code, setCode] = useState(plan?.code || '')
+  const [name, setName] = useState(plan?.name || '')
+  const [description, setDescription] = useState(plan?.description || '')
+  const [isDefault, setIsDefault] = useState(plan?.is_default || false)
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -101,8 +117,14 @@ function PlanForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
     }
     setSaving(true)
     try {
-      await createAnalyticPlan({ code, name, description: description || null, is_default: isDefault, active: true })
-      toast('success', tCommon('common.success'), t('analyticPlans.saveSuccess'))
+      const payload = { code, name, description: description || null, is_default: isDefault, active: true }
+      if (plan) {
+        await updateAnalyticPlan(plan.id, payload)
+        toast('success', tCommon('common.success'), t('analyticPlans.saveSuccess'))
+      } else {
+        await createAnalyticPlan(payload)
+        toast('success', tCommon('common.success'), t('analyticPlans.saveSuccess'))
+      }
       onSaved()
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
@@ -115,7 +137,7 @@ function PlanForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('analyticPlans.create')}</h2>
+          <h2 className="text-lg font-semibold">{plan ? t('analyticPlans.edit') : t('analyticPlans.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
         </div>
         <div className="p-6 space-y-4">

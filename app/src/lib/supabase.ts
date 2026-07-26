@@ -85,6 +85,13 @@ const TENANT_TABLES = new Set([
   // Tax Grids (payroll & corporate)
   'payroll_tax_grids', 'payroll_tax_grid_lines',
   'corporate_tax_grids', 'corporate_tax_grid_lines',
+  // Sprint 4: Fiscal Positions & Account Tags
+  'fiscal_positions', 'fiscal_position_mappings',
+  'account_tags', 'account_tag_mappings',
+  // Sprint 5: Analytic Distribution Lines
+  'analytic_distribution_lines',
+  // Sprint 8: Exchange Gain/Loss + Check Books
+  'exchange_gain_loss_entries', 'check_books', 'checks',
 ])
 
 const EXEMPT_TABLES = new Set([

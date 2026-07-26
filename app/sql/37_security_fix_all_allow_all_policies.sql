@@ -18,7 +18,7 @@
 CREATE OR REPLACE FUNCTION set_tenant_id()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.tenant_id IS NULL AND TG_TABLENAME != 'tenants' THEN
+  IF NEW.tenant_id IS NULL AND TG_TABLE_NAME != 'tenants' THEN
     NEW.tenant_id := current_tenant_id();
   END IF;
   RETURN NEW;

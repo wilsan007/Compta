@@ -4,8 +4,9 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyStat
 import { getSuppliers, deleteSupplier, createSupplier, updateSupplier } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Package, Plus, Search, Trash2, Edit, Mail, X, Download } from 'lucide-react'
+import { Package, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Supplier } from '@/types'
+import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 
 export function SuppliersPage() {
   const { toast } = useToast()
@@ -17,6 +18,7 @@ export function SuppliersPage() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Supplier | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null)
+  const [contactsTarget, setContactsTarget] = useState<Supplier | null>(null)
 
   useEffect(() => {
     loadSuppliers()
@@ -121,6 +123,9 @@ export function SuppliersPage() {
                 <TableCell>{s.created_at ? formatDate(s.created_at) : '—'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <button onClick={() => setContactsTarget(s)} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)]" title={t('suppliers.contacts')}>
+                      <ContactIcon className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleEdit(s)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.edit')}>
                       <Edit className="w-4 h-4" />
                     </button>
@@ -158,6 +163,15 @@ export function SuppliersPage() {
         onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {contactsTarget && (
+        <PartnerContactsModal
+          partnerType="supplier"
+          partnerId={contactsTarget.id}
+          partnerName={contactsTarget.name}
+          onClose={() => setContactsTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -176,6 +190,9 @@ function SupplierForm({ supplier, onClose, onSaved }: {
   const [phone, setPhone] = useState(supplier?.phone || '')
   const [address, setAddress] = useState(supplier?.address || '')
   const [vatNumber, setVatNumber] = useState(supplier?.vat_number || '')
+  const [isCompany, setIsCompany] = useState(supplier?.is_company ?? true)
+  const [parentId, setParentId] = useState(supplier?.parent_id || '')
+  const [salesRepId, setSalesRepId] = useState(supplier?.sales_rep_id || '')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -183,7 +200,7 @@ function SupplierForm({ supplier, onClose, onSaved }: {
     if (!name.trim()) { toast('warning', tCommon('toast.warning'), t('suppliers.nameRequired')); return }
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber }
+      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null }
       if (supplier) {
         await updateSupplier(supplier.id, data)
         toast('success', t('suppliers.updated'))
@@ -213,6 +230,12 @@ function SupplierForm({ supplier, onClose, onSaved }: {
           <Input label={t('suppliers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('suppliers.placeholders.phone')} />
           <Input label={t('suppliers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('suppliers.placeholders.address')} />
           <Input label={t('suppliers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder={t('suppliers.placeholders.vatNumber')} />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} />
+            {t('suppliers.isCompany')}
+          </label>
+          <Input label={t('suppliers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('suppliers.parentIdPlaceholder')} />
+          <Input label={t('suppliers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('suppliers.salesRepIdPlaceholder')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>

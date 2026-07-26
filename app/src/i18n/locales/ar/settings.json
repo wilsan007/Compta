@@ -154,7 +154,31 @@
     "cancel": "إلغاء",
     "createBtn": "إنشاء",
     "noCurrenciesAdd": "أضف عملتك الأولى.",
-    "loadError": "خطأ في تحميل البيانات"
+    "loadError": "خطأ في تحميل البيانات",
+    "decimalPlaces": "المنازل العشرية",
+    "positionLabel": "موضع الرمز",
+    "positionBefore": "قبل المبلغ",
+    "positionAfter": "بعد المبلغ",
+    "active": "نشط",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "exchangeRates": {
+    "title": "أسعار الصرف",
+    "subtitle": "سجل وتحديث أسعار الصرف",
+    "breadcrumb": "أسعار الصرف",
+    "refreshECB": "تحديث (البنك المركزي الأوروبي)",
+    "addManual": "إدخال يدوي",
+    "base": "العملة الأساسية",
+    "quote": "عملة المقابل",
+    "date": "التاريخ",
+    "rate": "السعر",
+    "source": "المصدر",
+    "actions": "إجراءات",
+    "noRates": "لم يتم العثور على أسعار",
+    "noRatesDescription": "حدث الأسعار من البنك المركزي الأوروبي أو أضف سعراً يدوياً",
+    "refreshed": "تم تحديث {{count}} سعر",
+    "refreshError": "خطأ في تحديث الأسعار"
   },
   "integrations": {
     "title": "التكاملات",

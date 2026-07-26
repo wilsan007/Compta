@@ -212,7 +212,11 @@
       "other": "Autre"
     },
     "deleteConfirm": "Supprimer ce règlement ?",
-    "actions": "Actions"
+    "actions": "Actions",
+    "currency": "Devise",
+    "exchangeRate": "Taux de change",
+    "refreshRate": "Actualiser le taux",
+    "amountCurrency": "Montant en devise"
   },
   "suppliers": {
     "title": "Fournisseurs",
@@ -246,6 +250,12 @@
     "createdAt": "Date de création",
     "suppliersTotal": "fournisseurs",
     "add": "Ajouter un fournisseur",
+    "contacts": "Contacts & adresses",
+    "isCompany": "Société",
+    "parentId": "Société parente (ID)",
+    "parentIdPlaceholder": "UUID de la société parente",
+    "salesRepId": "Commercial assigné (ID)",
+    "salesRepIdPlaceholder": "UUID du commercial",
     "nameLabel": "Nom du fournisseur",
     "nameRequired": "Le nom est obligatoire",
     "deleted": "Fournisseur supprimé avec succès",

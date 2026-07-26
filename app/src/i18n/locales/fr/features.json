@@ -190,7 +190,29 @@
     "netPayable": "Net imposable",
     "totalCostEmployer": "Coût total employeur",
     "noEmployees": "Aucun salarié",
-    "noEmployeesDesc": "Ajoutez des salariés dans la section RH pour calculer un bulletin de paie."
+    "noEmployeesDesc": "Ajoutez des salariés dans la section RH pour calculer un bulletin de paie.",
+    "gridLoaded": "Grille fiscale chargée",
+    "fallbackRates": "Taux par défaut",
+    "breakdown": "Détail par rubrique"
+  },
+  "corporateTax": {
+    "title": "Calcul de l'impôt sur les sociétés",
+    "subtitle": "Moteur de calcul IS multi-pays — barèmes pré-configurés",
+    "intro": "Saisissez le chiffre d'affaires et le bénéfice pour calculer l'impôt sur les sociétés selon le barème de votre pays.",
+    "turnover": "Chiffre d'affaires",
+    "profit": "Bénéfice imposable",
+    "calculate": "Calculer l'impôt",
+    "results": "Résultats",
+    "taxableBase": "Base imposable",
+    "taxCalculation": "Calcul de l'impôt",
+    "isTax": "Impôt sur les sociétés (IS)",
+    "minimumTax": "Impôt minimum forfaitaire (IMF)",
+    "finalTax": "Impôt dû",
+    "afterTaxProfit": "Bénéfice après impôt",
+    "breakdown": "Détail par tranche",
+    "gridLoaded": "Barème chargé",
+    "noGrid": "Aucun barème",
+    "noGridDesc": "Aucune grille d'impôt sur les sociétés configurée pour votre pays. Configurez-en une dans les paramètres."
   },
   "liasseFiscale": {
     "title": "Liasse fiscale",

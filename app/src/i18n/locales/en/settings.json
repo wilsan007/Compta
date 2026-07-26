@@ -154,7 +154,31 @@
     "cancel": "Cancel",
     "createBtn": "Create",
     "noCurrenciesAdd": "Add your first currency.",
-    "loadError": "Error loading data"
+    "loadError": "Error loading data",
+    "decimalPlaces": "Decimal places",
+    "positionLabel": "Symbol position",
+    "positionBefore": "Before amount",
+    "positionAfter": "After amount",
+    "active": "Active",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "exchangeRates": {
+    "title": "Exchange Rates",
+    "subtitle": "History and refresh of exchange rates",
+    "breadcrumb": "Exchange Rates",
+    "refreshECB": "Refresh (ECB)",
+    "addManual": "Manual entry",
+    "base": "Base currency",
+    "quote": "Quote currency",
+    "date": "Date",
+    "rate": "Rate",
+    "source": "Source",
+    "actions": "Actions",
+    "noRates": "No rates found",
+    "noRatesDescription": "Refresh rates from ECB or add a manual rate",
+    "refreshed": "{{count}} rates updated",
+    "refreshError": "Error refreshing rates"
   },
   "integrations": {
     "title": "Integrations",

@@ -54,6 +54,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const reconciled = transactions.filter(t => t.reconciled)
   const totalUnreconciled = unreconciled.reduce((s, t) => s + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0)
   const accountBalance = accounts.find(a => a.id === selectedAccount)?.balance || 0
+  const selectedAcc = accounts.find(a => a.id === selectedAccount)
+  const isForeignCurrency = selectedAcc && selectedAcc.currency && selectedAcc.currency !== 'EUR'
 
   return (
     <div>
@@ -100,7 +102,14 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
             <EmptyState icon={<CheckCircle className="w-8 h-8" />} title={t('reconciliation.fullyReconciled')} description={t('reconciliation.fullyReconciledDesc')} />
           ) : (
             <Card className="mb-6">
-              <Table headers={[t('transactions.date'), t('transactions.description'), t('transactions.type'), t('transactions.amount'), t('reconciliation.action')]}>
+              <Table headers={[
+                t('transactions.date'),
+                t('transactions.description'),
+                t('transactions.type'),
+                t('transactions.amount'),
+                ...(isForeignCurrency ? [t('multiCurrency.originalAmount'), t('multiCurrency.exchangeRate')] : []),
+                t('reconciliation.action'),
+              ]}>
                 {unreconciled.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell>{formatDate(tx.date)}</TableCell>
@@ -109,6 +118,16 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
                     <TableCell className={`font-mono ${tx.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                       {tx.type === 'credit' ? '+' : '-'}{formatCurrency(Number(tx.amount))}
                     </TableCell>
+                    {isForeignCurrency && (
+                      <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">
+                        {tx.original_amount ? `${Number(tx.original_amount).toFixed(2)} ${tx.original_currency || selectedAcc?.currency}` : '—'}
+                      </TableCell>
+                    )}
+                    {isForeignCurrency && (
+                      <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">
+                        {tx.exchange_rate ? Number(tx.exchange_rate).toFixed(4) : '—'}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Button size="sm" onClick={() => handleReconcile(tx.id, false)}>
                         <CheckCircle className="w-3 h-3" /> {t('reconciliation.reconcileBtn')}

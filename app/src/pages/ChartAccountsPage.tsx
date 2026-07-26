@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
 import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
-import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -14,6 +14,58 @@ const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutr
   income: 'success',
   expense: 'danger',
 }
+
+const ACCOUNT_TYPE_GROUPS: { label: string; types: { value: string; labelKey: string }[] }[] = [
+  {
+    label: 'Actifs',
+    types: [
+      { value: 'asset_receivable', labelKey: 'chartAccounts.accountTypes.asset_receivable' },
+      { value: 'asset_cash', labelKey: 'chartAccounts.accountTypes.asset_cash' },
+      { value: 'asset_current', labelKey: 'chartAccounts.accountTypes.asset_current' },
+      { value: 'asset_non_current', labelKey: 'chartAccounts.accountTypes.asset_non_current' },
+      { value: 'asset_prepayments', labelKey: 'chartAccounts.accountTypes.asset_prepayments' },
+      { value: 'asset_fixed', labelKey: 'chartAccounts.accountTypes.asset_fixed' },
+    ],
+  },
+  {
+    label: 'Passifs',
+    types: [
+      { value: 'liability_payable', labelKey: 'chartAccounts.accountTypes.liability_payable' },
+      { value: 'liability_credit_card', labelKey: 'chartAccounts.accountTypes.liability_credit_card' },
+      { value: 'liability_current', labelKey: 'chartAccounts.accountTypes.liability_current' },
+      { value: 'liability_non_current', labelKey: 'chartAccounts.accountTypes.liability_non_current' },
+    ],
+  },
+  {
+    label: 'Capitaux',
+    types: [
+      { value: 'equity', labelKey: 'chartAccounts.accountTypes.equity' },
+      { value: 'equity_unaffected', labelKey: 'chartAccounts.accountTypes.equity_unaffected' },
+    ],
+  },
+  {
+    label: 'Revenus',
+    types: [
+      { value: 'income', labelKey: 'chartAccounts.accountTypes.income' },
+      { value: 'income_other', labelKey: 'chartAccounts.accountTypes.income_other' },
+    ],
+  },
+  {
+    label: 'Dépenses',
+    types: [
+      { value: 'expense', labelKey: 'chartAccounts.accountTypes.expense' },
+      { value: 'expense_other', labelKey: 'chartAccounts.accountTypes.expense_other' },
+      { value: 'expense_depreciation', labelKey: 'chartAccounts.accountTypes.expense_depreciation' },
+      { value: 'expense_direct_cost', labelKey: 'chartAccounts.accountTypes.expense_direct_cost' },
+    ],
+  },
+  {
+    label: 'Autres',
+    types: [
+      { value: 'off_balance', labelKey: 'chartAccounts.accountTypes.off_balance' },
+    ],
+  },
+]
 
 const CLASS_COLORS: Record<string, string> = {
   '1': 'var(--color-success)', '2': 'var(--color-primary)', '3': 'var(--color-primary)',
@@ -35,6 +87,8 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [hideZeroBalances, setHideZeroBalances] = useState(true)
   const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set())
+  const [showDeprecated, setShowDeprecated] = useState(false)
+  const [filterAccountType, setFilterAccountType] = useState('')
 
   useEffect(() => { loadAccounts() }, [])
 
@@ -64,9 +118,11 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
       const matchSearch = !search || a.code.includes(search) || a.name.toLowerCase().includes(search.toLowerCase())
       const matchClass = !filterClass || a.code.startsWith(filterClass)
       const matchBalance = !hideZeroBalances || (Number(a.balance) || 0) !== 0
-      return matchSearch && matchClass && matchBalance
+      const matchDeprecated = showDeprecated || !a.deprecated
+      const matchAccountType = !filterAccountType || a.account_type === filterAccountType
+      return matchSearch && matchClass && matchBalance && matchDeprecated && matchAccountType
     })
-  }, [accounts, search, filterClass, hideZeroBalances])
+  }, [accounts, search, filterClass, hideZeroBalances, showDeprecated, filterAccountType])
 
   const classStats = useMemo(() => {
     const stats: Record<string, { count: number; totalBalance: number; activeCount: number }> = {}
@@ -138,9 +194,19 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           </TableCell>
           <TableCell className="text-sm">{account.name}</TableCell>
           <TableCell>
-            <Badge variant={accountTypeBadge[account.type] || 'neutral'}>
-              {t(`chartAccounts.types.${account.type}`, { defaultValue: account.type })}
-            </Badge>
+            <div className="flex flex-col gap-1">
+              <Badge variant={accountTypeBadge[account.type] || 'neutral'}>
+                {t(`chartAccounts.types.${account.type}`, { defaultValue: account.type })}
+              </Badge>
+              {account.account_type && (
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {t(`chartAccounts.accountTypes.${account.account_type}`, { defaultValue: account.account_type })}
+                </span>
+              )}
+              {account.deprecated && (
+                <Badge variant="danger">{t('chartAccounts.deprecated')}</Badge>
+              )}
+            </div>
           </TableCell>
           <TableCell className="text-xs">
             {isTiersAccount && (
@@ -158,6 +224,13 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           </TableCell>
           <TableCell className={`font-mono text-right ${(Number(account.current_balance ?? account.balance) || 0) !== 0 ? 'font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
             {formatCurrency(Number(account.current_balance ?? account.balance) || 0)}
+          </TableCell>
+          <TableCell className="text-xs">
+            {account.currency_code ? (
+              <span className="font-mono">{account.currency_code}</span>
+            ) : (
+              <span className="text-[var(--color-text-secondary)]">{t('chartAccounts.currencyTenue')}</span>
+            )}
           </TableCell>
           <TableCell>
             <div className="flex gap-2">
@@ -296,6 +369,20 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           <option value="7">{t('chartAccounts.classLabels.7')}</option>
           <option value="8">{t('chartAccounts.classLabels.8')}</option>
         </select>
+        <select
+          className="input cursor-pointer w-56"
+          value={filterAccountType}
+          onChange={(e) => setFilterAccountType(e.target.value)}
+        >
+          <option value="">{t('chartAccounts.allAccountTypes')}</option>
+          {ACCOUNT_TYPE_GROUPS.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.types.map((at) => (
+                <option key={at.value} value={at.value}>{t(at.labelKey, { defaultValue: at.value })}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
         <Button variant="secondary" onClick={handleExportCSV} disabled={filtered.length === 0}>
           <Download className="w-4 h-4" /> CSV
         </Button>
@@ -308,6 +395,13 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
         >
           {hideZeroBalances ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           {hideZeroBalances ? t('chartAccounts.showAll') : t('chartAccounts.hideZeroBalances')}
+        </button>
+        <button
+          onClick={() => setShowDeprecated(!showDeprecated)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${showDeprecated ? 'border-[var(--color-warning)] text-[var(--color-warning)] bg-[var(--color-warning)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
+        >
+          <AlertCircle className="w-4 h-4" />
+          {showDeprecated ? t('chartAccounts.hideDeprecated') : t('chartAccounts.showDeprecated')}
         </button>
       </div>
 
@@ -353,7 +447,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
                   </div>
                 </div>
                 {!isCollapsed && (
-                  <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), t('chartAccounts.debit'), t('chartAccounts.credit'), tCommon('common.balance'), tCommon('table.actions')]}>
+                  <Table headers={[tCommon('common.code'), tCommon('common.label'), tCommon('common.type'), t('chartAccounts.thirdPartyLink'), t('chartAccounts.debit'), t('chartAccounts.credit'), tCommon('common.balance'), t('chartAccounts.currencyCode'), tCommon('table.actions')]}>
                     {grouped[cls].map((account) => renderAccount(account, 0))}
                   </Table>
                 )}
@@ -383,6 +477,10 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
   const [code, setCode] = useState(account?.code || '')
   const [name, setName] = useState(account?.name || '')
   const [type, setType] = useState<'asset' | 'liability' | 'equity' | 'income' | 'expense'>(account?.type || 'asset')
+  const [accountType, setAccountType] = useState<string>(account?.account_type || '')
+  const [currencyCode, setCurrencyCode] = useState<string>(account?.currency_code || '')
+  const [reconcile, setReconcile] = useState<boolean>(account?.reconcile || false)
+  const [deprecated, setDeprecated] = useState<boolean>(account?.deprecated || false)
   const [balance, setBalance] = useState(String(account?.balance || 0))
   const [vatRate, setVatRate] = useState(account?.vat_rate || '')
   const [parentId, setParentId] = useState(account?.parent_id || '')
@@ -400,7 +498,7 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
     e.preventDefault()
     setSaving(true)
     try {
-      const data = { code, name, type, balance: Number(balance) || 0, vat_rate: vatRate || undefined, parent_id: parentId || undefined, description: description || undefined }
+      const data = { code, name, type, balance: Number(balance) || 0, vat_rate: vatRate || undefined, parent_id: parentId || undefined, description: description || undefined, account_type: (accountType || undefined) as ChartAccount['account_type'], currency_code: currencyCode || undefined, reconcile, deprecated }
       if (account) {
         await updateChartAccount(account.id, data)
       } else {
@@ -466,6 +564,43 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
                     { value: 'expense', label: t('chartAccounts.natures.expense') },
                   ]} />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.accountTypeLabel')}</label>
+                    <select className="input" value={accountType} onChange={(e) => setAccountType(e.target.value)}>
+                      <option value="">—</option>
+                      {ACCOUNT_TYPE_GROUPS.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.types.map((at) => (
+                            <option key={at.value} value={at.value}>{t(at.labelKey, { defaultValue: at.value })}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.currencyCode')}</label>
+                    <select className="input" value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)}>
+                      <option value="">{t('chartAccounts.currencyTenue')}</option>
+                      <option value="EUR">EUR</option>
+                      <option value="USD">USD</option>
+                      <option value="GBP">GBP</option>
+                      <option value="MAD">MAD</option>
+                      <option value="XOF">XOF</option>
+                      <option value="CHF">CHF</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="flex items-center gap-2 text-sm pt-6">
+                    <input type="checkbox" checked={reconcile} onChange={(e) => setReconcile(e.target.checked)} />
+                    {t('chartAccounts.reconcile')}
+                  </label>
+                  <label className="flex items-center gap-2 text-sm pt-6">
+                    <input type="checkbox" checked={deprecated} onChange={(e) => setDeprecated(e.target.checked)} />
+                    {t('chartAccounts.deprecatedLabel')}
+                  </label>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('chartAccounts.parent')}</label>
                   <select className="input" value={parentId} onChange={(e) => setParentId(e.target.value)}>
@@ -480,11 +615,11 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
-                  <Input label={t('chartAccounts.nbLines')} type="number" value="" onChange={() => {}} placeholder="0" />
+                  <Input label={t('chartAccounts.nbLines')} type="number" defaultValue="" placeholder="0" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('chartAccounts.pageBreak')} type="number" value="" onChange={() => {}} placeholder="0" />
-                  <Input label={t('chartAccounts.regrouping')} value="" onChange={() => {}} placeholder="" />
+                  <Input label={t('chartAccounts.pageBreak')} type="number" defaultValue="" placeholder="0" />
+                  <Input label={t('chartAccounts.regrouping')} defaultValue="" placeholder="" />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <label className="flex items-center gap-2 text-sm pt-6">

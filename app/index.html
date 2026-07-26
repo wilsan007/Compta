@@ -16,8 +16,7 @@
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
     <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet" />
 
-    <!-- SECURITY: Prevent content embedding (clickjacking) -->
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'" />
+    <!-- SECURITY: frame-ancestors must be set via HTTP headers, not meta tags -->
 
     <!-- SECURITY: Prevent MIME type sniffing -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />

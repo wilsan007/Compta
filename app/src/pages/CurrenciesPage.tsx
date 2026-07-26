@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCurrencies, createCurrency, updateCurrency, deleteCurrency } from '@/lib/queries'
 import { Plus, Trash2, X, Coins } from 'lucide-react'
 import type { Currency } from '@/types'
@@ -49,19 +49,23 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
         <EmptyState icon={<Coins className="w-8 h-8" />} title={t('currencies.noCurrencies')} description={t('currencies.noCurrenciesAdd')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('currencies.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('currencies.code'), t('currencies.name'), t('currencies.symbol'), t('currencies.rateLabel'), t('currencies.base'), t('currencies.actions')]}>
+          <Table headers={[t('currencies.code'), t('currencies.name'), t('currencies.symbol'), t('currencies.rateLabel'), t('currencies.decimalPlaces'), t('currencies.base'), t('currencies.active'), t('currencies.actions')]}>
             {currencies.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono font-bold">{c.code}</TableCell>
                 <TableCell className="text-sm">{c.name}</TableCell>
                 <TableCell className="text-sm">{c.symbol || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(c.exchange_rate).toFixed(4)}</TableCell>
+                <TableCell className="text-xs text-center">{(c as any).decimal_places ?? 2}</TableCell>
                 <TableCell>
                   {c.is_base ? (
                     <Badge variant="success">{t('currencies.base')}</Badge>
                   ) : (
                     <button onClick={() => handleSetBase(c.id)} className="text-xs text-[var(--color-primary)] hover:underline">{t('currencies.setBase')}</button>
                   )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={(c as any).active !== false ? 'success' : 'neutral'}>{(c as any).active !== false ? t('currencies.yes') : t('currencies.no')}</Badge>
                 </TableCell>
                 <TableCell>
                   <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
@@ -79,19 +83,23 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
 
 function CurrencyForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const [code, setCode] = useState('')
   const { toast } = useToast()
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [exchangeRate, setExchangeRate] = useState(1)
   const [isBase, setIsBase] = useState(false)
+  const [decimalPlaces, setDecimalPlaces] = useState(2)
+  const [position, setPosition] = useState('after')
+  const [active, setActive] = useState(true)
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      await createCurrency({ code: code.toUpperCase(), name, symbol, exchange_rate: exchangeRate, is_base: isBase } as any)
+      await createCurrency({ code: code.toUpperCase(), name, symbol, exchange_rate: exchangeRate, is_base: isBase, decimal_places: decimalPlaces, position, active } as any)
       onSaved()
     } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) } finally { setSaving(false) }
   }
@@ -109,14 +117,30 @@ function CurrencyForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             <Input label={t('currencies.symbolLabel')} value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder={t('currencies.symbolPlaceholder')} />
           </div>
           <Input label={t('currencies.nameLabel')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('currencies.namePlaceholder')} />
-          <Input label={t('currencies.rateLabel')} type="number" step="0.0001" required value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('currencies.rateLabel')} type="number" step="0.0001" required value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} />
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('currencies.decimalPlaces')}</label>
+              <input type="number" className="input" min={0} max={6} value={decimalPlaces} onChange={(e) => setDecimalPlaces(Number(e.target.value))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label={t('currencies.positionLabel')} value={position} onChange={(e) => setPosition(e.target.value)} options={[
+              { value: 'before', label: t('currencies.positionBefore') },
+              { value: 'after', label: t('currencies.positionAfter') },
+            ]} />
+            <label className="flex items-center gap-2 text-sm pt-6">
+              <input type="checkbox" checked={isBase} onChange={(e) => setIsBase(e.target.checked)} />
+              {t('currencies.isBase')}
+            </label>
+          </div>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isBase} onChange={(e) => setIsBase(e.target.checked)} />
-            {t('currencies.isBase')}
+            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+            {t('currencies.active')}
           </label>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{t('currencies.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('currencies.createBtn')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('common.saving') : t('currencies.createBtn')}</Button>
           </div>
         </form>
       </div>

@@ -36,7 +36,7 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
 
   async function handleDelete(id: string) {
   if (!window.confirm(t('analyticSections.deleteConfirm'))) return
-    try { await deleteAnalyticSection(id); await load() }
+    try { await deleteAnalyticSection(id); toast('success', tCommon('common.success'), t('analyticSections.deleteSuccess')); await load() }
     catch (err) { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }
 
@@ -120,6 +120,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
       const data = { code, name, axis, active, level: Number(level) || 1, parent_id: parentId || undefined, plan_id: plan || undefined, section_type: sectionType }
       if (section) await updateAnalyticSection(section.id, data)
       else await createAnalyticSection(data as any)
+      toast('success', tCommon('common.success'), t('analyticSections.saveSuccess'))
       onSaved()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))

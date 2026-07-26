@@ -62,6 +62,7 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
     if (!window.confirm(t('templates.deleteConfirm'))) return
     try {
       await deleteEntryTemplate(id)
+      toast('success', tCommon('common.success'), t('templates.deleteSuccess'))
       await loadData()
     } catch (err) {
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
@@ -207,8 +208,10 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
       }
       if (template) {
         await updateEntryTemplate(template.id, data)
+        toast('success', tCommon('common.success'), t('templates.updateSuccess'))
       } else {
         await createEntryTemplate(data as any)
+        toast('success', tCommon('common.success'), t('templates.createSuccess'))
       }
       onSaved()
     } catch (err: any) {

@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getBankAccounts, getBankTransactions, getBankRules } from '@/lib/queries'
+import { getBankAccounts, getBankTransactions, getBankRules, getBankConnections } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import type { BankAccount, BankTransaction, BankRule } from '@/types'
+import type { BankAccount, BankTransaction, BankRule, BankConnection } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function BankingDashboardPage() {
@@ -14,22 +14,23 @@ export function BankingDashboardPage() {
 const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [rules, setRules] = useState<BankRule[]>([])
+  const [connections, setConnections] = useState<BankConnection[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [a, txns, r] = await Promise.all([getBankAccounts(), getBankTransactions(), getBankRules()])
+      const [a, txns, r, conns] = await Promise.all([getBankAccounts(), getBankTransactions(), getBankRules(), getBankConnections().catch(() => [])])
       setAccounts(a)
       setTransactions(txns)
       setRules(r)
+      setConnections(conns)
     } catch (err: any) { console.error(err); toast('error', tCommon('error'), err.message || tCommon('error')) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
 
   const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0)
-  const unreconciled = transactions.filter(t => !t.reconciled)
   const totalInflow = transactions.filter(t => t.type === 'credit').reduce((s, t) => s + Number(t.amount), 0)
   const totalOutflow = transactions.filter(t => t.type === 'debit').reduce((s, t) => s + Number(t.amount), 0)
 
@@ -46,7 +47,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalBalance')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalBalance)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.inflow')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalInflow)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.outflow')}</p><p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalOutflow)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.unreconciled')}</p><p className="text-2xl font-bold text-[var(--color-warning)]">{unreconciled.length}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('bankSync.title')}</p><div className="flex items-center gap-2 mt-1">{connections.length > 0 ? connections.map(c => <Badge key={c.id} variant={c.status === 'active' ? 'success' : c.status === 'error' ? 'danger' : 'neutral'}>{c.provider}</Badge>) : <span className="text-xs text-[var(--color-text-secondary)]">{t('bankSync.connections.noConnections')}</span>}</div></div></Card>
           </div>
 
           <div className="grid grid-cols-2 gap-6">

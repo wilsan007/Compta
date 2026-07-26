@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, calculateDepreciation, calculateAllDepreciation, getAssetDepreciations, disposeFixedAsset } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX } from 'lucide-react'
+import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
 import type { FixedAsset, AssetDepreciation } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
@@ -19,6 +19,8 @@ export function FixedAssetsPage() {
   const [showDisposal, setShowDisposal] = useState<FixedAsset | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [depreciations, setDepreciations] = useState<Record<string, AssetDepreciation[]>>({})
+
+  const [showAccounting, setShowAccounting] = useState<FixedAsset | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -167,6 +169,9 @@ export function FixedAssetsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <button onClick={() => setShowAccounting(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={t('assetAccounts.title')}>
+                          <BookOpen className="w-4 h-4" />
+                        </button>
                         <button onClick={() => handleCalculateDepreciation(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('assets.calculateDepreciation')}>
                           <Calculator className="w-4 h-4" />
                         </button>
@@ -211,6 +216,10 @@ export function FixedAssetsPage() {
 
       {showForm && (
         <AssetForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />
+      )}
+
+      {showAccounting && (
+        <AssetAccountingModal asset={showAccounting} onClose={() => setShowAccounting(null)} onSaved={() => { setShowAccounting(null); loadData() }} />
       )}
 
       {showDisposal && (
@@ -287,6 +296,11 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [derogatoryDep, setDerogatoryDep] = useState(false)
   const [subventionAmount, setSubventionAmount] = useState(0)
   const [subventionAccount, setSubventionAccount] = useState('')
+  const [accountAsset, setAccountAsset] = useState('')
+  const [accountDepreciation, setAccountDepreciation] = useState('')
+  const [accountExpenseDep, setAccountExpenseDep] = useState('')
+  const [assetJournal, setAssetJournal] = useState('')
+  const [currencyCode, setCurrencyCode] = useState('EUR')
   const [saving, setSaving] = useState(false)
 
   const currentValue = purchaseValue - ((purchaseValue - residualValue) / Math.max(usefulLife, 1)) * Math.min(usefulLife, Math.floor((Date.now() - new Date(purchaseDate).getTime()) / (365.25 * 86400000)))
@@ -306,6 +320,11 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         derogatory_depreciation: derogatoryDep,
         subvention_amount: subventionAmount > 0 ? subventionAmount : null,
         subvention_account: subventionAccount || null,
+        account_asset_code: accountAsset || null,
+        account_depreciation_code: accountDepreciation || null,
+        account_expense_depreciation_code: accountExpenseDep || null,
+        journal_id: assetJournal || null,
+        currency_code: currencyCode || null,
         status: 'active',
       } as any)
       onSaved()
@@ -352,6 +371,16 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
               <Input label={t('assets.subventionAccount')} value={subventionAccount} onChange={(e) => setSubventionAccount(e.target.value)} placeholder="131000" />
             </div>
           </div>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t('assetAccounts.title')}</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Input label={t('assetAccounts.accountAsset')} value={accountAsset} onChange={(e) => setAccountAsset(e.target.value)} placeholder="210000" />
+              <Input label={t('assetAccounts.accountDepreciation')} value={accountDepreciation} onChange={(e) => setAccountDepreciation(e.target.value)} placeholder="281000" />
+              <Input label={t('assetAccounts.accountExpenseDepreciation')} value={accountExpenseDep} onChange={(e) => setAccountExpenseDep(e.target.value)} placeholder="681000" />
+              <Input label={t('assetAccounts.journal')} value={assetJournal} onChange={(e) => setAssetJournal(e.target.value)} placeholder="IMMO" />
+              <Input label={t('currencyCode')} value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} placeholder="EUR" />
+            </div>
+          </div>
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm">
             <span className="text-[var(--color-text-secondary)]">{t('assets.estimatedCurrentValue')}: </span>
             <span className="font-mono font-bold">{formatCurrency(Math.max(currentValue, residualValue))}</span>
@@ -359,6 +388,62 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function AssetAccountingModal({ asset, onClose, onSaved }: { asset: FixedAsset; onClose: () => void; onSaved: () => void }) {
+  const { toast } = useToast()
+  const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const [accountAsset, setAccountAsset] = useState(asset.account_asset_code || '')
+  const [accountDepreciation, setAccountDepreciation] = useState(asset.account_depreciation_code || '')
+  const [accountExpenseDep, setAccountExpenseDep] = useState(asset.account_expense_depreciation_code || '')
+  const [assetJournal, setAssetJournal] = useState(asset.journal_id || '')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await updateFixedAsset(asset.id, {
+        account_asset_code: accountAsset || null,
+        account_depreciation_code: accountDepreciation || null,
+        account_expense_depreciation_code: accountExpenseDep || null,
+        journal_id: assetJournal || null,
+      } as any)
+      toast('success', t('assetAccounts.title'), t('assetAccounts.saved'))
+      onSaved()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
+      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">{t('assetAccounts.title')}: {asset.name}</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('assets.code')}:</span><span className="font-mono">{asset.code || '—'}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('assets.purchaseValue')}:</span><span className="font-mono">{formatCurrency(Number(asset.purchase_value))}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('assets.netBookValue')}:</span><span className="font-mono">{formatCurrency(Number(asset.current_value))}</span></div>
+          </div>
+          <Input label={t('assetAccounts.accountAsset')} value={accountAsset} onChange={(e) => setAccountAsset(e.target.value)} placeholder="210000" />
+          <Input label={t('assetAccounts.accountDepreciation')} value={accountDepreciation} onChange={(e) => setAccountDepreciation(e.target.value)} placeholder="281000" />
+          <Input label={t('assetAccounts.accountExpenseDepreciation')} value={accountExpenseDep} onChange={(e) => setAccountExpenseDep(e.target.value)} placeholder="681000" />
+          <Input label={t('assetAccounts.journal')} value={assetJournal} onChange={(e) => setAssetJournal(e.target.value)} placeholder="IMMO" />
+          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" loading={saving}>{t('assetAccounts.save')}</Button>
           </div>
         </form>
       </div>

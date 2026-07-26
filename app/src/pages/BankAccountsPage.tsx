@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, StatCard, Breadcrumb, SkeletonCard, Input, Select } from '@/components/ui'
 import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Banknote, Plus, Landmark, CreditCard, Wallet, TrendingDown, TrendingUp, X } from 'lucide-react'
+import { Banknote, Plus, Landmark, CreditCard, Wallet, TrendingDown, TrendingUp, X, AlertTriangle } from 'lucide-react'
 import type { BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -101,6 +101,18 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                     <div>
                       <p className="text-sm font-medium text-[var(--color-text)]">{acc.name}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{acc.bank_name || acc.type}</p>
+                      {acc.statement_balance != null && (
+                        <div className="mt-1 flex items-center gap-2 text-xs">
+                          <span className="text-[var(--color-text-secondary)]">{t('statementBalances.statementBalance')}:</span>
+                          <span className="font-mono">{formatCurrency(Number(acc.statement_balance))}</span>
+                          {Number(acc.reconciliation_diff || 0) !== 0 && (
+                            <span className="flex items-center gap-0.5 text-[var(--color-danger)]">
+                              <AlertTriangle className="w-3 h-3" />
+                              {t('statementBalances.reconciliationDiff')}: {formatCurrency(Number(acc.reconciliation_diff))}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <span className="font-semibold text-[var(--color-text)]">{formatCurrency(Number(acc.balance) || 0)}</span>

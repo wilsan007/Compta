@@ -10,10 +10,13 @@ import {
   calculateVAT, applyAutoLabelRules, calculateEcheance, createChartAccount,
 } from '@/lib/queries'
 import {
-  Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2, Calculator,
+  Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
 import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount, AnalyticSection, TaxRate } from '@/types'
 import { useToast } from '@/lib/toast'
+import { CurrencySelector } from '@/components/CurrencySelector'
+import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
+import { getLatestRate } from '@/lib/currencyRates'
 
 const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
   open: 'success',
@@ -416,6 +419,10 @@ function SaisieForm({
   const [lines, setLines] = useState<LineDraft[]>([blankLine(), blankLine()])
   const [saving, setSaving] = useState(false)
   const [searchAccount] = useState('')
+  const [currencyCode, setCurrencyCode] = useState(journal.currency_code || 'EUR')
+  const [exchangeRate, setExchangeRate] = useState(1.0)
+  const [rateLoading, setRateLoading] = useState(false)
+  const [showAnalyticDist, setShowAnalyticDist] = useState<number | null>(null)
   const isBankOrCash = journal.type === 'bank' || journal.type === 'cash'
   const [balance, setBalance] = useState({ ancienSolde: 0, mouvementDebit: 0, mouvementCredit: 0, nouveauSolde: 0 })
 
@@ -651,6 +658,10 @@ function SaisieForm({
         status_detail: 'open',
         total_debit: totalDebit,
         total_credit: totalCredit,
+        currency_code: currencyCode,
+        functional_currency: 'EUR',
+        exchange_rate: exchangeRate,
+        exchange_rate_date: date,
         lines: linesData,
       })
       onSaved()
@@ -702,6 +713,30 @@ function SaisieForm({
           <Input label={t('saisie.pieceNumber')} value={pieceNumber} onChange={(e) => setPieceNumber(e.target.value)} placeholder={t('saisie.auto')} />
           <Input label={t('saisie.invoiceNumber')} value={invoiceRef} onChange={(e) => setInvoiceRef(e.target.value)} placeholder={tCommon('form.optional')} />
           <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('saisie.entryObject')} />
+        </div>
+        <div className="px-4 pb-4 grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.currency')}</label>
+            <CurrencySelector value={currencyCode} onChange={(v) => { setCurrencyCode(v); if (v === 'EUR') setExchangeRate(1.0) }} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.exchangeRate')}</label>
+            <div className="flex gap-1">
+              <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+              <button type="button" onClick={async () => {
+                if (currencyCode === 'EUR') return
+                setRateLoading(true)
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch {} finally { setRateLoading(false) }
+              }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
+                <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+          <div className="flex items-end text-xs text-[var(--color-text-secondary)]">
+            {currencyCode !== 'EUR' && exchangeRate > 0 && (
+              <span>1 EUR = {exchangeRate.toFixed(4)} {currencyCode}</span>
+            )}
+          </div>
         </div>
       </Card>
 
@@ -843,16 +878,26 @@ function SaisieForm({
                       </select>
                     </td>
                     <td className="px-1 py-1.5">
-                      <select
-                        className="input text-xs py-1 w-32"
-                        value={line.analytic_section}
-                        onChange={(e) => updateLine(idx, 'analytic_section', e.target.value)}
-                      >
-                        <option value="">—</option>
-                        {analyticSections.map((s) => (
-                          <option key={s.id} value={s.code}>{s.code} — {s.name}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-1">
+                        <select
+                          className="input text-xs py-1 w-28"
+                          value={line.analytic_section}
+                          onChange={(e) => updateLine(idx, 'analytic_section', e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {analyticSections.map((s) => (
+                            <option key={s.id} value={s.code}>{s.code} — {s.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowAnalyticDist(idx)}
+                          className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"
+                          title={t('analyticDistribution.open')}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                     <td className="px-1 py-1.5">
                       <input
@@ -927,6 +972,14 @@ function SaisieForm({
           </div>
         </div>
       </Card>
+
+      {showAnalyticDist !== null && (
+        <AnalyticDistributionEditor
+          journalLineId={null}
+          lineAmount={Number(lines[showAnalyticDist]?.debit || lines[showAnalyticDist]?.credit || 0)}
+          onClose={() => setShowAnalyticDist(null)}
+        />
+      )}
     </div>
   )
 }

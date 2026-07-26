@@ -212,7 +212,11 @@
       "other": "Other"
     },
     "deleteConfirm": "Delete this payment?",
-    "actions": "Actions"
+    "actions": "Actions",
+    "currency": "Currency",
+    "exchangeRate": "Exchange rate",
+    "refreshRate": "Refresh rate",
+    "amountCurrency": "Amount in currency"
   },
   "suppliers": {
     "title": "Suppliers",
@@ -246,6 +250,12 @@
     "createdAt": "Created date",
     "suppliersTotal": "suppliers",
     "add": "Add a supplier",
+    "contacts": "Contacts & addresses",
+    "isCompany": "Company",
+    "parentId": "Parent company (ID)",
+    "parentIdPlaceholder": "Parent company UUID",
+    "salesRepId": "Sales representative (ID)",
+    "salesRepIdPlaceholder": "Sales rep UUID",
     "nameLabel": "Supplier name",
     "nameRequired": "Name is required",
     "deleted": "Supplier deleted successfully",

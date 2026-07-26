@@ -214,7 +214,11 @@
       "directDebit": "Prélèvement",
       "direct_debit": "Prélèvement",
       "other": "Autre"
-    }
+    },
+    "currency": "Devise",
+    "exchangeRate": "Taux de change",
+    "refreshRate": "Actualiser le taux",
+    "amountCurrency": "Montant en devise"
   },
   "customers": {
     "title": "Clients",
@@ -244,6 +248,12 @@
     "searchPlaceholder": "Rechercher par nom, email, TVA...",
     "importCustomers": "Importer des clients",
     "exportCustomers": "Exporter les clients",
+    "contacts": "Contacts & adresses",
+    "isCompany": "Société",
+    "parentId": "Société parente (ID)",
+    "parentIdPlaceholder": "UUID de la société parente",
+    "salesRepId": "Commercial assigné (ID)",
+    "salesRepIdPlaceholder": "UUID du commercial",
     "placeholders": {
       "name": "Société ABC",
       "contactName": "Jean Dupont",

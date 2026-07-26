@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getCustomerPayments, createCustomerPayment, deleteCustomerPayment, getCustomers, getBankAccounts } from '@/lib/queries'
-import { Plus, Trash2, X, CreditCard } from 'lucide-react'
+import { Plus, Trash2, X, CreditCard, RefreshCw } from 'lucide-react'
+import { CurrencySelector } from '@/components/CurrencySelector'
+import { getLatestRate } from '@/lib/currencyRates'
 import type { CustomerPayment, Customer, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -48,7 +50,7 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payments.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('payments.number'), t('payments.customer'), t('payments.date'), t('payments.amount'), t('payments.method'), t('payments.reference'), tCommon('table.actions')]}>
+          <Table headers={[t('payments.number'), t('payments.customer'), t('payments.date'), t('payments.amount'), t('payments.currency'), t('payments.method'), t('payments.reference'), tCommon('table.actions')]}>
             {payments.map((p) => {
               const cust = customers.find((c) => c.id === p.customer_id)
               return (
@@ -57,6 +59,7 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
                   <TableCell className="text-sm">{cust?.name || '—'}</TableCell>
                   <TableCell className="text-xs">{formatDate(p.payment_date)}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(p.amount))}</TableCell>
+                  <TableCell className="font-mono text-xs">{p.currency_code || 'EUR'}</TableCell>
                   <TableCell className="text-xs">{t(`payments.methods.${p.method || 'other'}`)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.reference || '—'}</TableCell>
                   <TableCell>
@@ -86,14 +89,38 @@ function PaymentForm({ customers, banks, onClose, onSaved }: { customers: Custom
   const [method, setMethod] = useState('transfer')
   const [bankAccountId, setBankAccountId] = useState('')
   const [reference, setReference] = useState('')
+  const [currencyCode, setCurrencyCode] = useState('EUR')
+  const [exchangeRate, setExchangeRate] = useState(1.0)
+  const [amountCurrency, setAmountCurrency] = useState<number | null>(null)
+  const [rateLoading, setRateLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  async function handleRefreshRate() {
+    if (currencyCode === 'EUR') { setExchangeRate(1.0); setAmountCurrency(null); return }
+    setRateLoading(true)
+    try {
+      const result = await getLatestRate('EUR', currencyCode)
+      if (result) {
+        setExchangeRate(result.rate)
+        setAmountCurrency(amount * result.rate)
+      }
+    } catch { /* ignore */ }
+    finally { setRateLoading(false) }
+  }
+
+  function handleAmountChange(v: number) {
+    setAmount(v)
+    if (currencyCode !== 'EUR' && exchangeRate && exchangeRate > 0) {
+      setAmountCurrency(v * exchangeRate)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
       const number = `RGT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-      await createCustomerPayment({ number, customer_id: customerId || null, invoice_id: null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded' } as any)
+      await createCustomerPayment({ number, customer_id: customerId || null, invoice_id: null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
@@ -115,8 +142,26 @@ function PaymentForm({ customers, banks, onClose, onSaved }: { customers: Custom
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('payments.amount')} type="number" step="0.01" required value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
+            <Input label={t('payments.amount')} type="number" step="0.01" required value={amount} onChange={(e) => handleAmountChange(Number(e.target.value))} />
             <Input label={t('payments.date')} type="date" required value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.currency')}</label>
+              <CurrencySelector value={currencyCode} onChange={(v) => { setCurrencyCode(v); if (v === 'EUR') { setExchangeRate(1.0); setAmountCurrency(null) } }} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.exchangeRate')}</label>
+              <div className="flex gap-1">
+                <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+                <button type="button" onClick={handleRefreshRate} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payments.refreshRate')}>
+                  <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+            {currencyCode !== 'EUR' && (
+              <Input label={t('payments.amountCurrency')} type="number" step="0.01" value={amountCurrency ?? ''} onChange={(e) => setAmountCurrency(Number(e.target.value))} />
+            )}
           </div>
           <Select label={t('payments.method')} value={method} onChange={(e) => setMethod(e.target.value)} options={[
             { value: 'transfer', label: t('payments.methods.transfer') }, { value: 'check', label: t('payments.methods.check') }, { value: 'cash', label: t('payments.methods.cash') },

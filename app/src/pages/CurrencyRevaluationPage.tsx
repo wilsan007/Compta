@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencyRevaluations, createCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries'
+import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Trash2, Pencil, TrendingUp, TrendingDown } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -15,6 +15,7 @@ export function CurrencyRevaluationPage() {
   const [entries, setEntries] = useState<CurrencyRevaluation[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<CurrencyRevaluation | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -29,6 +30,16 @@ export function CurrencyRevaluationPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  function startEdit(entry: CurrencyRevaluation) {
+    setEditing(entry)
+    setShowForm(true)
+  }
+
+  function openCreate() {
+    setEditing(null)
+    setShowForm(true)
+  }
 
   async function handleDelete(id: string) {
     if (!window.confirm(t('revaluation.deleteConfirm'))) return
@@ -61,7 +72,7 @@ export function CurrencyRevaluationPage() {
       <PageHeader
         title={t('revaluation.title')}
         subtitle={t('revaluation.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
+        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
       />
 
       {loading ? (
@@ -71,7 +82,7 @@ export function CurrencyRevaluationPage() {
           icon={<TrendingUp className="w-8 h-8" />}
           title={t('revaluation.noEntries')}
           description={t('revaluation.noEntriesDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
+          action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
         />
       ) : (
         <Card>
@@ -102,13 +113,22 @@ export function CurrencyRevaluationPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <button
-                    onClick={() => handleDelete(entry.id)}
-                    className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
-                    title={tCommon('common.actions.delete')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => startEdit(entry)}
+                      className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
+                      title={tCommon('common.actions.edit')}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
+                      title={tCommon('common.actions.delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -118,27 +138,28 @@ export function CurrencyRevaluationPage() {
 
       {showForm && (
         <RevaluationForm
-          onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); loadData() }}
+          entry={editing}
+          onClose={() => { setShowForm(false); setEditing(null) }}
+          onSaved={() => { setShowForm(false); setEditing(null); loadData() }}
         />
       )}
     </div>
   )
 }
 
-function RevaluationForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function RevaluationForm({ entry, onClose, onSaved }: { entry: CurrencyRevaluation | null; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 
-  const [periodDate, setPeriodDate] = useState(new Date().toISOString().slice(0, 10))
-  const [accountCode, setAccountCode] = useState('')
-  const [thirdPartyCode, setThirdPartyCode] = useState('')
-  const [currency, setCurrency] = useState('USD')
-  const [originalRate, setOriginalRate] = useState(1)
-  const [newRate, setNewRate] = useState(1)
-  const [originalAmount, setOriginalAmount] = useState(0)
-  const [type, setType] = useState<'receivable' | 'payable'>('receivable')
+  const [periodDate, setPeriodDate] = useState(entry?.period_date || new Date().toISOString().slice(0, 10))
+  const [accountCode, setAccountCode] = useState(entry?.account_code || '')
+  const [thirdPartyCode, setThirdPartyCode] = useState(entry?.third_party_code || '')
+  const [currency, setCurrency] = useState(entry?.currency || 'USD')
+  const [originalRate, setOriginalRate] = useState(entry?.original_rate || 1)
+  const [newRate, setNewRate] = useState(entry?.new_rate || 1)
+  const [originalAmount, setOriginalAmount] = useState(entry?.original_amount || 0)
+  const [type, setType] = useState<'receivable' | 'payable'>(entry?.type || 'receivable')
   const [saving, setSaving] = useState(false)
 
   const originalAmountEur = Number(originalAmount) * Number(originalRate)
@@ -152,7 +173,7 @@ function RevaluationForm({ onClose, onSaved }: { onClose: () => void; onSaved: (
     }
     setSaving(true)
     try {
-      await createCurrencyRevaluation({
+      const payload = {
         fiscal_year_id: null,
         period_date: periodDate,
         account_code: accountCode,
@@ -165,8 +186,13 @@ function RevaluationForm({ onClose, onSaved }: { onClose: () => void; onSaved: (
         revalued_amount_eur: revaluedAmountEur,
         gain_loss: gainLoss,
         type,
-        status: 'pending',
-      })
+        status: entry?.status || 'pending',
+      }
+      if (entry) {
+        await updateCurrencyRevaluation(entry.id, payload)
+      } else {
+        await createCurrencyRevaluation(payload)
+      }
       toast('success', tCommon('common.success'), t('revaluation.saveSuccess'))
       onSaved()
     } catch (err: any) {
@@ -180,7 +206,7 @@ function RevaluationForm({ onClose, onSaved }: { onClose: () => void; onSaved: (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('revaluation.create')}</h2>
+          <h2 className="text-lg font-semibold">{entry ? t('revaluation.edit') : t('revaluation.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
         </div>
         <div className="p-6 space-y-4">

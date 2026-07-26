@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input } from '@/components/ui'
-import { getEmployees } from '@/lib/queries'
+import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input, Badge } from '@/components/ui'
+import { getEmployees, getActiveLegislationPack, getActivePayrollTaxGrid, getPayrollTaxGridLines } from '@/lib/queries'
 import { calculatePayroll, type PayrollInput, type PayrollResult, formatPayrollAmount } from '@/lib/payroll'
-import { Calculator, FileText } from 'lucide-react'
-import type { Employee } from '@/types'
+import { Calculator, FileText, Globe } from 'lucide-react'
+import type { Employee, PayrollTaxGridLine, LegislationPack } from '@/types'
 
 export function PayrollCalcPage() {
   const { t } = useTranslation('features')
@@ -12,6 +12,9 @@ export function PayrollCalcPage() {
   const [loading, setLoading] = useState(true)
   const [selectedEmp, setSelectedEmp] = useState('')
   const [result, setResult] = useState<PayrollResult | null>(null)
+  const [gridLines, setGridLines] = useState<PayrollTaxGridLine[]>([])
+  const [legislationPack, setLegislationPack] = useState<LegislationPack | null>(null)
+  const [usingGrid, setUsingGrid] = useState(false)
 
   const [grossSalary, setGrossSalary] = useState(2500)
   const [contractType, setContractType] = useState<'cdi' | 'cdd' | 'apprentice'>('cdi')
@@ -21,20 +24,51 @@ export function PayrollCalcPage() {
   const [transportAllowance, setTransportAllowance] = useState(75)
   const [taxRate, setTaxRate] = useState(3.5)
 
-  useEffect(() => {
-    loadEmployees()
-  }, [])
-
-  async function loadEmployees() {
+  const loadData = useCallback(async () => {
+    setLoading(true)
     try {
-      const data = await getEmployees()
-      setEmployees((data || []).filter((e) => e.status === 'active'))
+      const [empData, pack] = await Promise.all([
+        getEmployees().catch(() => []),
+        getActiveLegislationPack().catch(() => null),
+      ])
+      setEmployees((empData || []).filter((e) => e.status === 'active'))
+      setLegislationPack(pack)
+
+      if (pack?.country_code) {
+        const grid = await getActivePayrollTaxGrid(pack.country_code, 'composite').catch(() => undefined)
+        if (!grid) {
+          const itsGrid = await getActivePayrollTaxGrid(pack.country_code, 'its').catch(() => undefined)
+          if (itsGrid) {
+            const lines = await getPayrollTaxGridLines(itsGrid.id).catch(() => [])
+            const empGrid = await getActivePayrollTaxGrid(pack.country_code, 'employee_contribution').catch(() => undefined)
+            const empLines = empGrid ? await getPayrollTaxGridLines(empGrid.id).catch(() => []) : []
+            const allLines = [...lines, ...empLines]
+            if (allLines.length > 0) {
+              setGridLines(allLines)
+              setUsingGrid(true)
+              return
+            }
+          }
+        } else {
+          const lines = await getPayrollTaxGridLines(grid.id).catch(() => [])
+          if (lines.length > 0) {
+            setGridLines(lines)
+            setUsingGrid(true)
+            return
+          }
+        }
+      }
+      setUsingGrid(false)
     } catch (err) {
-      console.error('Error loading employees:', err)
+      console.error('Error loading payroll data:', err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   function handleEmployeeChange(id: string) {
     setSelectedEmp(id)
@@ -56,7 +90,7 @@ export function PayrollCalcPage() {
       department: '',
       taxRate,
     }
-    setResult(calculatePayroll(input))
+    setResult(calculatePayroll(input, usingGrid ? gridLines : undefined))
   }
 
   const activeEmployees = employees
@@ -68,7 +102,16 @@ export function PayrollCalcPage() {
 
       <Card className="mb-4">
         <div className="p-4">
-          <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('payroll.intro')}</p>
+          <div className="flex items-center gap-2 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t('payroll.intro')}</p>
+            {legislationPack && (
+              <Badge variant={usingGrid ? 'success' : 'warning'}>
+                <Globe className="w-3 h-3 mr-1 inline" />
+                {legislationPack.country_name}
+                {usingGrid ? ' — ' + t('payroll.gridLoaded') : ' — ' + t('payroll.fallbackRates')}
+              </Badge>
+            )}
+          </div>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
               <Select
@@ -169,6 +212,19 @@ export function PayrollCalcPage() {
                   </div>
                 </div>
               </div>
+              {result.lineDetails && result.lineDetails.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                  <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)] mb-2">{t('payroll.breakdown')}</h4>
+                  <div className="space-y-1">
+                    {result.lineDetails.map((d, i) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span className="text-[var(--color-text-secondary)]">{d.label}</span>
+                        <span className="font-mono">{formatPayrollAmount(d.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -181,7 +237,7 @@ function Row({ label, value, bold, highlight }: { label: string; value: string; 
   return (
     <div className={`flex justify-between items-center py-1 ${bold ? 'font-bold' : ''} ${highlight ? 'text-[var(--color-primary)] text-lg' : ''}`}>
       <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
-      <span className="font-mono">{value} €</span>
+      <span className="font-mono">{value}</span>
     </div>
   )
 }

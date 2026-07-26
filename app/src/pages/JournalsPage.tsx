@@ -58,7 +58,7 @@ const [journals, setJournals] = useState<Journal[]>([])
       j.name.toLowerCase().includes(search.toLowerCase())
     const matchType = !filterType || j.type === filterType
     return matchSearch && matchType
-  })
+  }).sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
 
   function openCreate() {
   setEditing(null)
@@ -132,7 +132,7 @@ const [journals, setJournals] = useState<Journal[]>([])
         />
       ) : (
         <Card>
-          <Table headers={[t('journals.code'), t('journals.name'), t('journals.type'), t('journals.counterpart'), t('journals.bankAccount'), tCommon('common.status'), tCommon('table.actions')]}>
+          <Table headers={[t('journals.code'), t('journals.name'), t('journals.type'), t('journals.currency'), t('journals.counterpart'), t('journals.bankAccount'), tCommon('common.status'), tCommon('table.actions')]}>
             {filtered.map((journal) => (
               <TableRow key={journal.id}>
                 <TableCell className="font-mono font-semibold">{journal.code}</TableCell>
@@ -142,6 +142,7 @@ const [journals, setJournals] = useState<Journal[]>([])
                     {t(`journals.types.${journal.type}`, { defaultValue: journal.type })}
                   </Badge>
                 </TableCell>
+                <TableCell className="font-mono text-xs">{journal.currency_code || 'EUR'}</TableCell>
                 <TableCell className="font-mono text-xs">{journal.account_counterpart || '—'}</TableCell>
                 <TableCell>{getBankName(journal.bank_account_id)}</TableCell>
                 <TableCell>
@@ -207,6 +208,8 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
   const [compteAttente, setCompteAttente] = useState((journal as any)?.compte_attente || '')
   const [numerotation, setNumerotation] = useState((journal as any)?.numerotation || 'manual')
   const [reconciliationMode, setReconciliationMode] = useState((journal as any)?.reconciliation_mode || 'manual')
+  const [currencyCode, setCurrencyCode] = useState(journal?.currency_code || 'EUR')
+  const [sequence, setSequence] = useState(String(journal?.sequence || 0))
   const [saving, setSaving] = useState(false)
 
   const isTreasury = type === 'bank' || type === 'cash'
@@ -228,6 +231,8 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
         compte_attente: compteAttente || null,
         numerotation: numerotation || 'manual',
         reconciliation_mode: isTreasury ? (reconciliationMode || 'manual') : null,
+        currency_code: currencyCode || 'EUR',
+        sequence: Number(sequence) || 0,
       }
       if (journal) {
         await updateJournal(journal.id, data)
@@ -312,6 +317,20 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
                     { value: 'auto', label: t('journals.numerotationAuto') },
                     { value: 'continuous', label: t('journals.numerotationContinuous') },
                   ]} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('journals.currency')}</label>
+                    <select className="input" value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)}>
+                      <option value="EUR">EUR</option>
+                      <option value="USD">USD</option>
+                      <option value="GBP">GBP</option>
+                      <option value="MAD">MAD</option>
+                      <option value="XOF">XOF</option>
+                      <option value="CHF">CHF</option>
+                    </select>
+                  </div>
+                  <Input label={t('journals.sequence')} type="number" value={sequence} onChange={(e) => setSequence(e.target.value)} placeholder="0" />
                 </div>
               </>
             )}

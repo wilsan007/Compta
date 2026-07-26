@@ -21,9 +21,13 @@ export interface Customer {
   credit_limit: number
   payment_terms: string
   currency: string
+  currency_code?: string
   active: boolean
   created_at: string
   updated_at: string
+  parent_id?: string | null
+  is_company?: boolean
+  sales_rep_id?: string | null
 }
 
 export interface Supplier {
@@ -40,9 +44,13 @@ export interface Supplier {
   balance: number
   payment_terms: string
   currency: string
+  currency_code?: string
   active: boolean
   created_at: string
   updated_at: string
+  parent_id?: string | null
+  is_company?: boolean
+  sales_rep_id?: string | null
 }
 
 export interface InvoiceLine {
@@ -78,6 +86,13 @@ export interface Invoice {
   created_at: string
   updated_at: string
   invoice_lines?: InvoiceLine[]
+  fiscal_position_id?: string | null
+  payment_state?: 'not_paid' | 'in_payment' | 'paid' | 'partial'
+  currency_code?: string
+  exchange_rate?: number
+  amount_untaxed_currency?: number | null
+  amount_tax_currency?: number | null
+  amount_total_currency?: number | null
 }
 
 export interface QuoteLine {
@@ -138,6 +153,11 @@ export interface CreditNote {
   invoice_id: string | null
   created_at: string
   credit_note_lines?: CreditNoteLine[]
+  currency_code?: string
+  exchange_rate?: number
+  amount_untaxed_currency?: number | null
+  amount_tax_currency?: number | null
+  amount_total_currency?: number | null
 }
 
 export interface PurchaseInvoiceLine {
@@ -171,6 +191,13 @@ export interface PurchaseInvoice {
   created_at: string
   updated_at: string
   purchase_invoice_lines?: PurchaseInvoiceLine[]
+  fiscal_position_id?: string | null
+  payment_state?: 'not_paid' | 'in_payment' | 'paid' | 'partial'
+  currency_code?: string
+  exchange_rate?: number
+  amount_untaxed_currency?: number | null
+  amount_tax_currency?: number | null
+  amount_total_currency?: number | null
 }
 
 export interface BankAccount {
@@ -186,6 +213,10 @@ export interface BankAccount {
   connected: boolean
   created_at: string
   updated_at: string
+  statement_balance?: number | null
+  statement_balance_date?: string | null
+  calculated_balance?: number | null
+  reconciliation_diff?: number | null
 }
 
 export interface BankTransaction {
@@ -202,6 +233,43 @@ export interface BankTransaction {
   matched_line_id: string | null
   invoice_id: string | null
   purchase_invoice_id: string | null
+  created_at: string
+  original_currency?: string | null
+  original_amount?: number | null
+  exchange_rate?: number | null
+  exchange_gain_loss?: number | null
+  source?: string | null
+}
+
+export interface BankConnection {
+  id: string
+  tenant_id: string | null
+  provider: string
+  provider_connection_id: string | null
+  bank_account_id: string | null
+  status: string
+  last_sync_at: string | null
+  sync_frequency: string
+  next_sync_at: string | null
+  error_message: string | null
+  metadata: Record<string, any> | null
+  created_at: string
+}
+
+export interface PartnerBankAccount {
+  id: string
+  tenant_id: string | null
+  partner_type: 'customer' | 'supplier'
+  partner_id: string
+  account_number: string
+  bank_name: string | null
+  bic: string | null
+  bank_code: string | null
+  sort_code: string | null
+  account_key: string | null
+  currency_code: string
+  is_default: boolean
+  active: boolean
   created_at: string
 }
 
@@ -252,6 +320,22 @@ export interface JournalLine {
   marking_code?: string | null
   marked_bap?: boolean
   marked_bap_date?: string | null
+  analytic_distribution?: Record<string, Record<string, number>> | null
+  amount_residual?: number | null
+  tax_tag_ids?: string[] | null
+  product_id?: string | null
+  product_uom?: string | null
+}
+
+export interface AnalyticDistributionLine {
+  id: string
+  tenant_id: string | null
+  journal_line_id: string | null
+  plan_id: string | null
+  section_id: string | null
+  percentage: number
+  amount: number | null
+  created_at: string
 }
 
 export interface JournalEntry {
@@ -275,13 +359,39 @@ export interface JournalEntry {
   status_detail?: 'open' | 'printed' | 'closed' | null
   validated_by?: string | null
   validated_at?: string | null
+  currency_code?: string
+  functional_currency?: string
+  exchange_rate?: number
+  exchange_rate_date?: string | null
 }
+
+export type ChartAccountType =
+  | 'asset_receivable'
+  | 'asset_cash'
+  | 'asset_current'
+  | 'asset_non_current'
+  | 'asset_prepayments'
+  | 'asset_fixed'
+  | 'liability_payable'
+  | 'liability_credit_card'
+  | 'liability_current'
+  | 'liability_non_current'
+  | 'equity'
+  | 'equity_unaffected'
+  | 'income'
+  | 'income_other'
+  | 'expense'
+  | 'expense_other'
+  | 'expense_depreciation'
+  | 'expense_direct_cost'
+  | 'off_balance'
 
 export interface ChartAccount {
   id: string
   code: string
   name: string
   type: 'asset' | 'liability' | 'equity' | 'income' | 'expense'
+  account_type?: ChartAccountType
   balance: number
   vat_rate: string
   description: string
@@ -299,6 +409,9 @@ export interface ChartAccount {
   current_debit?: number
   current_credit?: number
   current_balance?: number
+  currency_code?: string | null
+  reconcile?: boolean
+  deprecated?: boolean
 }
 
 export interface User {
@@ -426,6 +539,93 @@ export interface TaxRate {
   type?: string | null
   mode?: string | null
   tenant_id?: string | null
+  amount_type?: 'percent' | 'fixed' | 'group' | 'division'
+  type_tax_use?: 'sale' | 'purchase' | 'none'
+  sequence?: number
+  parent_tax_id?: string | null
+  tax_exigibility?: 'on_invoice' | 'on_payment'
+  cash_basis_transition_account?: string | null
+  price_include?: boolean
+  include_base_amount?: boolean
+  is_base_affected?: boolean
+  analytic?: boolean
+  fixed_amount?: number | null
+}
+
+export interface TaxGroup {
+  id: string
+  tenant_id: string | null
+  name: string
+  country_code?: string | null
+  created_at: string
+}
+
+export interface TaxRepartitionLine {
+  id: string
+  tenant_id: string | null
+  tax_id: string
+  document_type: 'invoice' | 'refund'
+  repartition_type: 'base' | 'tax'
+  factor: number
+  account_code?: string | null
+  tag_ids?: string[] | null
+  created_at: string
+}
+
+export interface TaxCashBasisEntry {
+  id: string
+  tenant_id: string | null
+  tax_id: string | null
+  payment_id: string | null
+  journal_entry_id: string | null
+  base_amount: number
+  tax_amount: number
+  transition_date: string | null
+  status: 'pending' | 'posted'
+  created_at: string
+}
+
+export interface FiscalPosition {
+  id: string
+  tenant_id: string | null
+  name: string
+  country_code?: string | null
+  country_group_id?: string | null
+  zip_from?: string | null
+  zip_to?: string | null
+  auto_apply: boolean
+  active: boolean
+  created_at: string
+}
+
+export interface FiscalPositionMapping {
+  id: string
+  tenant_id: string | null
+  fiscal_position_id: string
+  source_tax_id?: string | null
+  target_tax_id?: string | null
+  source_account_code?: string | null
+  target_account_code?: string | null
+  created_at: string
+}
+
+export interface AccountTag {
+  id: string
+  tenant_id: string | null
+  name: string
+  applicability: string
+  color?: string | null
+  country_code?: string | null
+  created_at: string
+}
+
+export interface AccountTagMapping {
+  id: string
+  tenant_id: string | null
+  tag_id: string
+  entity_type: string
+  entity_id: string
+  created_at: string
 }
 
 export interface DashboardStats {
@@ -467,6 +667,11 @@ export interface PurchaseCreditNote {
   purchase_invoice_id: string | null
   created_at: string
   purchase_credit_lines?: PurchaseCreditNoteLine[]
+  currency_code?: string
+  exchange_rate?: number
+  amount_untaxed_currency?: number | null
+  amount_tax_currency?: number | null
+  amount_total_currency?: number | null
 }
 
 // ============ Fixed Assets ============
@@ -484,6 +689,64 @@ export interface FixedAsset {
   status: 'active' | 'disposed' | 'fully_depreciated'
   created_at: string
   updated_at: string
+  account_asset_code?: string | null
+  account_depreciation_code?: string | null
+  account_expense_depreciation_code?: string | null
+  journal_id?: string | null
+  partner_id?: string | null
+  currency_code?: string
+  derogatory_depreciation?: boolean
+  subvention_amount?: number | null
+  subvention_account?: string | null
+}
+
+// ============ Sprint 6: Partner Contacts (#62) ============
+export interface PartnerContact {
+  id: string
+  tenant_id: string | null
+  partner_type: 'customer' | 'supplier'
+  partner_id: string
+  contact_type: 'primary' | 'invoice' | 'delivery' | 'other'
+  name: string
+  email: string | null
+  phone: string | null
+  mobile: string | null
+  function: string | null
+  address: string | null
+  postal_code: string | null
+  city: string | null
+  country: string | null
+  is_default: boolean
+  active: boolean
+  created_at: string
+}
+
+// ============ Sprint 6: Partner Categories (#64) ============
+export interface PartnerCategory {
+  id: string
+  tenant_id: string | null
+  name: string
+  color: string | null
+  parent_id: string | null
+  created_at: string
+}
+
+// ============ Sprint 6: Partner Bank Accounts (#80) ============
+export interface PartnerBankAccount {
+  id: string
+  tenant_id: string | null
+  partner_type: 'customer' | 'supplier'
+  partner_id: string
+  account_number: string
+  bank_name: string | null
+  bic: string | null
+  bank_code: string | null
+  sort_code: string | null
+  account_key: string | null
+  currency_code: string
+  is_default: boolean
+  active: boolean
+  created_at: string
 }
 
 // ============ Employees ============
@@ -545,6 +808,22 @@ export interface Currency {
   exchange_rate: number
   is_base: boolean
   created_at: string
+  last_rate_date?: string | null
+  decimal_places?: number
+  rounding?: number
+  active?: boolean
+  position?: 'before' | 'after'
+}
+
+export interface ExchangeRate {
+  id: string
+  tenant_id: string | null
+  base_currency: string
+  quote_currency: string
+  rate: number
+  rate_date: string
+  source: string
+  created_at: string
 }
 
 // ============ Journals (codes journaux) ============
@@ -564,6 +843,8 @@ export interface Journal {
   account_attente?: string | null
   is_analytic?: boolean
   analytic_plan_id?: string | null
+  currency_code?: string
+  sequence?: number
 }
 
 // ============ Fiscal Years & Periods ============
@@ -646,6 +927,7 @@ export interface AnalyticSection {
   level: number
   active: boolean
   created_at: string
+  plan_id?: string | null
 }
 
 // ============ Budgets ============
@@ -807,6 +1089,10 @@ export interface CustomerPayment {
   reference: string | null
   status: 'recorded' | 'reconciled' | 'cancelled'
   created_at: string
+  currency_code?: string
+  exchange_rate?: number
+  amount_currency?: number | null
+  exchange_gain_loss?: number
 }
 
 export interface PurchaseOrder {
@@ -867,6 +1153,10 @@ export interface SupplierPayment {
   reference: string | null
   status: 'recorded' | 'reconciled' | 'cancelled'
   created_at: string
+  currency_code?: string
+  exchange_rate?: number
+  amount_currency?: number | null
+  exchange_gain_loss?: number
 }
 
 export interface Warehouse {
@@ -2744,5 +3034,52 @@ export interface CorporateTaxGridLine {
   cap_amount: number | null
   fixed_amount: number
   sort_order: number
+  created_at: string
+}
+
+// ============ Sprint 8: Exchange Gain/Loss (#9) ============
+export interface ExchangeGainLossEntry {
+  id: string
+  tenant_id: string | null
+  payment_id: string | null
+  invoice_id: string | null
+  type: 'gain' | 'loss'
+  amount: number
+  exchange_rate_original: number | null
+  exchange_rate_payment: number | null
+  account_gain_code: string | null
+  account_loss_code: string | null
+  journal_entry_id: string | null
+  created_at: string
+}
+
+// ============ Sprint 8: Check Books (#82) ============
+export interface CheckBook {
+  id: string
+  tenant_id: string | null
+  bank_account_id: string | null
+  journal_id: string | null
+  name: string
+  first_check_number: string
+  last_check_number: string
+  next_check_number: string
+  status: 'active' | 'exhausted' | 'cancelled'
+  issued_count: number
+  created_at: string
+}
+
+export interface Check {
+  id: string
+  tenant_id: string | null
+  check_book_id: string | null
+  check_number: string
+  amount: number
+  payee: string
+  issue_date: string
+  due_date: string | null
+  status: 'draft' | 'issued' | 'cashed' | 'cancelled' | 'lost'
+  journal_entry_id: string | null
+  payment_id: string | null
+  notes: string | null
   created_at: string
 }

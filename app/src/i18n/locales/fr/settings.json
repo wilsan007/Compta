@@ -154,7 +154,31 @@
     "cancel": "Annuler",
     "createBtn": "Créer",
     "noCurrenciesAdd": "Ajoutez votre première devise.",
-    "loadError": "Erreur lors du chargement"
+    "loadError": "Erreur lors du chargement",
+    "decimalPlaces": "Décimales",
+    "positionLabel": "Position du symbole",
+    "positionBefore": "Avant le montant",
+    "positionAfter": "Après le montant",
+    "active": "Actif",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "exchangeRates": {
+    "title": "Taux de change",
+    "subtitle": "Historique et actualisation des taux de change",
+    "breadcrumb": "Taux de change",
+    "refreshECB": "Actualiser (BCE)",
+    "addManual": "Saisie manuelle",
+    "base": "Devise de base",
+    "quote": "Devise de contrepartie",
+    "date": "Date",
+    "rate": "Taux",
+    "source": "Source",
+    "actions": "Actions",
+    "noRates": "Aucun taux trouvé",
+    "noRatesDescription": "Actualisez les taux depuis la BCE ou ajoutez un taux manuel",
+    "refreshed": "{{count}} taux mis à jour",
+    "refreshError": "Erreur lors de l'actualisation des taux"
   },
   "integrations": {
     "title": "Intégrations",

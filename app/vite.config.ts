@@ -10,6 +10,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    hmr: {
+      overlay: false,
+    },
+  },
   build: {
     // SECURITY: No source maps in production — prevents code reverse-engineering
     sourcemap: false,

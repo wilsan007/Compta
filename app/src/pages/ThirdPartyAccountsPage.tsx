@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV } from '@/components/ui'
 import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getCustomers, getSuppliers, getChartAccounts } from '@/lib/queries'
-import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download } from 'lucide-react'
+import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download, Landmark } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import type { ThirdPartyAccount, Customer, Supplier, ChartAccount } from '@/types'
+import { PartnerBankAccountsModal } from '@/components/PartnerBankAccountsModal'
 
 const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   customer: 'success',
@@ -311,6 +312,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   const [zoneGeo, setZoneGeo] = useState((account as any)?.zone_geo || '')
   const [categorie, setCategorie] = useState((account as any)?.categorie || '')
   const [saving, setSaving] = useState(false)
+  const [showPartnerBankModal, setShowPartnerBankModal] = useState(false)
 
   const tierAccounts = chartAccounts.filter((a) => a.code.startsWith('4'))
 
@@ -462,6 +464,13 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
                   <Input label={t('thirdParty.key')} value={key} onChange={(e) => setKey(e.target.value)} placeholder="23" />
                 </div>
                 <p className="text-xs text-[var(--color-text-secondary)]">{t('thirdParty.multiRibHint')}</p>
+                {account && (type === 'customer' || type === 'supplier') && (
+                  <div className="pt-4 border-t border-[var(--color-border)]">
+                    <Button type="button" variant="secondary" onClick={() => setShowPartnerBankModal(true)}>
+                      <Landmark className="w-4 h-4" /> {t('partnerBankAccounts.title', { ns: 'banking' })}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
 
@@ -529,6 +538,14 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
           </div>
         </form>
       </div>
+
+      {showPartnerBankModal && account && (type === 'customer' || type === 'supplier') && (
+        <PartnerBankAccountsModal
+          partnerType={type as 'customer' | 'supplier'}
+          partnerId={account.id}
+          onClose={() => setShowPartnerBankModal(false)}
+        />
+      )}
     </div>
   )
 }

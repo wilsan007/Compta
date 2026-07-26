@@ -27,6 +27,7 @@ import { BankTransactionsPage } from '@/pages/BankTransactionsPage'
 import { BankReconciliationPage } from '@/pages/BankReconciliationPage'
 import { BankReconciliationPdfPage } from '@/pages/BankReconciliationPdfPage'
 import { BankRulesPage } from '@/pages/BankRulesPage'
+import { BankSyncPage } from '@/pages/BankSyncPage'
 import { BalanceSheetPage } from '@/pages/BalanceSheetPage'
 import { CashFlowPage } from '@/pages/CashFlowPage'
 import { VatReturnsPage } from '@/pages/VatReturnsPage'
@@ -41,6 +42,7 @@ import { PurchasesDashboardPage } from '@/pages/PurchasesDashboardPage'
 import { BankingDashboardPage } from '@/pages/BankingDashboardPage'
 import { HRDashboardPage } from '@/pages/HRDashboardPage'
 import { CurrenciesPage } from '@/pages/CurrenciesPage'
+import { ExchangeRatesPage } from '@/pages/ExchangeRatesPage'
 import { WorkspacePage } from '@/pages/WorkspacePage'
 import { JournalsPage } from '@/pages/JournalsPage'
 import { FiscalYearsPage } from '@/pages/FiscalYearsPage'
@@ -63,6 +65,8 @@ import { AnalyticPlansPage } from '@/pages/AnalyticPlansPage'
 import { DistributionGrillsPage } from '@/pages/DistributionGrillsPage'
 import { BankReconciliationRulesPage } from '@/pages/BankReconciliationRulesPage'
 import { BankStatementImportPage } from '@/pages/BankStatementImportPage'
+import { ExchangeGainLossPage } from '@/pages/ExchangeGainLossPage'
+import { CheckBooksPage } from '@/pages/CheckBooksPage'
 import { EdiTvaPage } from '@/pages/EdiTvaPage'
 import { TvsPage } from '@/pages/TvsPage'
 import { ProgressiveBalancePage } from '@/pages/ProgressiveBalancePage'
@@ -131,6 +135,7 @@ import { SageImportPage } from '@/pages/SageImportPage'
 import { AccountantPortalPage } from '@/pages/AccountantPortalPage'
 import { SepaTransferPage } from '@/pages/SepaTransferPage'
 import { PayrollCalcPage } from '@/pages/PayrollCalcPage'
+import { CorporateTaxCalcPage } from '@/pages/CorporateTaxCalcPage'
 import { LiasseFiscalePage } from '@/pages/LiasseFiscalePage'
 import { MultiCompanyPage } from '@/pages/MultiCompanyPage'
 import { ModuleHubPage, SubGroupHubPage } from '@/components/ModuleHub'
@@ -141,6 +146,8 @@ import { PayrollComponentsPage, PayrollTemplatesPage, SalaryAdvancesPage, DSNPag
 import { AssetDepreciationPlansPage, AssetFamiliesPage, AssetRevaluationPage, BatchDisposalPage, AssetFromEntryPage } from '@/pages/Phase5Pages'
 import { BatchEntryPage, AutoLabelRulesPage, ExtournePage, CarryForwardPage, LettrageDifferencesPage, AccountingControlsPage, CashControlPage, FECAttestationPage, TierRIBsPage, IFRSAdjustmentsPage, TaxPaymentsPage, CustomReportTemplatesPage, DeferredPrintingPage, JournalAccessRightsPage, VATOnCollectionsPage } from '@/pages/Phase6Pages'
 import { TaxRatesPage } from '@/pages/TaxRatesPage'
+import { FiscalPositionsPage } from '@/pages/FiscalPositionsPage'
+import { AccountTagsPage } from '@/pages/AccountTagsPage'
 import { PaymentTermsPage } from '@/pages/PaymentTermsPage'
 import { SaisieParPiecePage } from '@/pages/SaisieParPiecePage'
 import { JustificatifSoldePage } from '@/pages/JustificatifSoldePage'
@@ -153,6 +160,7 @@ import { CompactionPage } from '@/pages/CompactionPage'
 import { RGPDPage } from '@/pages/RGPDPage'
 import { GridTemplatesPage, PaymentTemplatesComptaPage, StandardLabelsPage, AnalyticJournalCodesPage } from '@/pages/Phase7DPages'
 import { AnalyticODEntryPage, ThirdPartyInquiryPage, AnalyticInquiryPage, ReimputationPage } from '@/pages/Phase7DInquiryPages'
+import { PartnerCategoriesPage } from '@/pages/PartnerCategoriesPage'
 
 function App() {
   return (
@@ -250,6 +258,9 @@ function App() {
           <Route path="/banking/reconciliation" element={<BankReconciliationPage />} />
           <Route path="/banking/reconciliation-pdf" element={<BankReconciliationPdfPage />} />
           <Route path="/banking/rules" element={<BankRulesPage />} />
+          <Route path="/banking/sync" element={<BankSyncPage />} />
+          <Route path="/banking/exchange-gain-loss" element={<ExchangeGainLossPage />} />
+          <Route path="/banking/check-books" element={<CheckBooksPage />} />
 
           {/* Treasury */}
           <Route path="/treasury" element={<ModuleHubPage moduleId="treasury" />} />
@@ -311,6 +322,7 @@ function App() {
           <Route path="/accounting/accountant-portal" element={<AccountantPortalPage />} />
           <Route path="/treasury/sepa" element={<AdminRoute><SepaTransferPage /></AdminRoute>} />
           <Route path="/hr/payroll-calc" element={<PayrollCalcPage />} />
+          <Route path="/accounting/corporate-tax-calc" element={<CorporateTaxCalcPage />} />
           <Route path="/accounting/liasse-fiscale" element={<LiasseFiscalePage />} />
           <Route path="/settings/multi-company" element={<AdminRoute><MultiCompanyPage /></AdminRoute>} />
           <Route path="/accounting/states/sig" element={<SIGPage />} />
@@ -354,6 +366,7 @@ function App() {
           <Route path="/settings/import/sage" element={<AdminRoute><SageImportPage /></AdminRoute>} />
           <Route path="/settings/team" element={<AdminRoute><TeamPage /></AdminRoute>} />
           <Route path="/settings/currencies" element={<AdminRoute><CurrenciesPage /></AdminRoute>} />
+          <Route path="/settings/exchange-rates" element={<AdminRoute><ExchangeRatesPage /></AdminRoute>} />
           <Route path="/settings/tax-grids" element={<AdminRoute><TaxGridSettingsPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
           <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
@@ -427,6 +440,8 @@ function App() {
           <Route path="/accounting/vat-on-collections" element={<VATOnCollectionsPage />} />
           {/* Phase 7A: Sage 100 Critical Features */}
           <Route path="/accounting/tax-rates" element={<TaxRatesPage />} />
+          <Route path="/accounting/fiscal-positions" element={<FiscalPositionsPage />} />
+          <Route path="/accounting/account-tags" element={<AccountTagsPage />} />
           <Route path="/accounting/payment-terms" element={<PaymentTermsPage />} />
           <Route path="/accounting/treatment/saisie-par-piece" element={<SaisieParPiecePage />} />
           {/* Phase 7B: Sage 100 Medium Features */}
@@ -448,6 +463,9 @@ function App() {
           <Route path="/accounting/third-party-inquiry" element={<ThirdPartyInquiryPage />} />
           <Route path="/accounting/analytic-inquiry" element={<AnalyticInquiryPage />} />
           <Route path="/accounting/reimputation" element={<ReimputationPage />} />
+          <Route path="/accounting/partner-categories" element={<PartnerCategoriesPage />} />
+          <Route path="/banking/check-books" element={<CheckBooksPage />} />
+          <Route path="/banking/exchange-gain-loss" element={<ExchangeGainLossPage />} />
           </Route>
         </Routes>
         </BrowserRouter>

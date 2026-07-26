@@ -320,6 +320,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
 
 function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
   const { t } = useTranslation('sales')
+  const { t: tAcc } = useTranslation('accounting')
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
@@ -332,6 +333,9 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: (
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.date')}</span><span>{formatDate(invoice.date)}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.dueDate')}</span><span>{formatDate(invoice.due_date)}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.status')}</span><Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(invoice.status)}</Badge></div>
+          {invoice.payment_state && (
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</span><Badge variant={invoice.payment_state === 'paid' ? 'success' : invoice.payment_state === 'partial' ? 'warning' : 'neutral'}>{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</Badge></div>
+          )}
           <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.paidAmount')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(Number(invoice.amount_due))}</span></div>

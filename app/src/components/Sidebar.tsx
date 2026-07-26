@@ -103,6 +103,9 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.assetRevaluations', path: '/accounting/asset-revaluations' },
           { labelKey: 'items.assetBatchDisposals', path: '/accounting/asset-batch-disposals' },
           { labelKey: 'items.assetFromEntry', path: '/accounting/asset-from-entry' },
+          { labelKey: 'items.taxRates', path: '/accounting/tax-rates' },
+          { labelKey: 'items.fiscalPositions', path: '/accounting/fiscal-positions' },
+          { labelKey: 'items.accountTags', path: '/accounting/account-tags' },
         ],
       },
       {
@@ -363,6 +366,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.usersMenu', path: '/settings/users' },
           { labelKey: 'items.teamRoles', path: '/settings/team' },
           { labelKey: 'items.currencies', path: '/settings/currencies' },
+          { labelKey: 'items.exchangeRates', path: '/settings/exchange-rates' },
           { labelKey: 'items.integrations', path: '/settings/integrations' },
           { labelKey: 'items.modulesSettings', path: '/settings/modules' },
           { labelKey: 'items.multiCompany', path: '/settings/multi-company' },
