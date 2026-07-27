@@ -56,7 +56,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
       <div className="mb-4 flex items-center gap-3">
         <Select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="max-w-xs" options={[
-          { value: '', label: tCommon('all') },
+          { value: '', label: tCommon('table.all') },
           ...departments.map(d => ({ value: d, label: d })),
         ]} />
         <span className="text-sm text-[var(--color-text-secondary)]">{filtered.length} {t('employees.title').toLowerCase()}</span>
@@ -75,7 +75,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
                 <TableCell className="font-mono text-xs">{e.employee_number || '—'}</TableCell>
                 <TableCell className="text-sm">{e.position || '—'}</TableCell>
                 <TableCell className="text-sm">{e.department || '—'}</TableCell>
-                <TableCell className="text-sm">{e.contract_type || 'CDI'}</TableCell>
+                <TableCell className="text-sm">{e.contract_type ? (t(`employees.contractTypes.${e.contract_type}`) as string) : t('employees.contractTypes.cdi') as string}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.salary))}</TableCell>
                 <TableCell className="text-xs">{formatDate(e.hire_date)}</TableCell>
                 <TableCell>
@@ -115,7 +115,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [postalCode, setPostalCode] = useState('')
-  const [contractType, setContractType] = useState('CDI')
+  const [contractType, setContractType] = useState('cdi')
   const [contractEndDate, setContractEndDate] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
@@ -165,14 +165,14 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('employees.birthDate')} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
             <Select label={t('employees.contractType')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
-              { value: 'CDI', label: 'CDI' },
-              { value: 'CDD', label: 'CDD' },
-              { value: 'Apprentissage', label: t('employees.contractTypes.apprentissage') },
-              { value: 'Stage', label: t('employees.contractTypes.stage') },
-              { value: 'Interim', label: t('employees.contractTypes.interim') },
+              { value: 'cdi', label: t('employees.contractTypes.cdi') as string },
+              { value: 'cdd', label: t('employees.contractTypes.cdd') as string },
+              { value: 'apprentissage', label: t('employees.contractTypes.apprentissage') as string },
+              { value: 'stage', label: t('employees.contractTypes.stage') as string },
+              { value: 'interim', label: t('employees.contractTypes.interim') as string },
             ]} />
           </div>
-          {contractType !== 'CDI' && (
+          {contractType !== 'cdi' && (
             <Input label={t('employees.contractEndDate')} type="date" value={contractEndDate} onChange={(e) => setContractEndDate(e.target.value)} />
           )}
           <Input label={t('employees.address')} value={address} onChange={(e) => setAddress(e.target.value)} />

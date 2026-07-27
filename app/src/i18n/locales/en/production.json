@@ -16,7 +16,8 @@
     "search": "Search",
     "close": "Close",
     "add": "Add",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "code": "Code"
   },
   "dashboard": {
     "title": "Production Dashboard",

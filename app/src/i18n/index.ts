@@ -19,6 +19,10 @@ import frReports from './locales/fr/reports.json'
 import frSettings from './locales/fr/settings.json'
 import frErrors from './locales/fr/errors.json'
 import frFeatures from './locales/fr/features.json'
+import frCrm from './locales/fr/crm.json'
+import frPos from './locales/fr/pos.json'
+import frDemat from './locales/fr/demat.json'
+import frEmployee from './locales/fr/employee.json'
 
 import enCommon from './locales/en/common.json'
 import enNav from './locales/en/nav.json'
@@ -37,6 +41,10 @@ import enReports from './locales/en/reports.json'
 import enSettings from './locales/en/settings.json'
 import enErrors from './locales/en/errors.json'
 import enFeatures from './locales/en/features.json'
+import enCrm from './locales/en/crm.json'
+import enPos from './locales/en/pos.json'
+import enDemat from './locales/en/demat.json'
+import enEmployee from './locales/en/employee.json'
 
 import arCommon from './locales/ar/common.json'
 import arNav from './locales/ar/nav.json'
@@ -55,6 +63,10 @@ import arReports from './locales/ar/reports.json'
 import arSettings from './locales/ar/settings.json'
 import arErrors from './locales/ar/errors.json'
 import arFeatures from './locales/ar/features.json'
+import arCrm from './locales/ar/crm.json'
+import arPos from './locales/ar/pos.json'
+import arDemat from './locales/ar/demat.json'
+import arEmployee from './locales/ar/employee.json'
 
 export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ar'] as const
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
@@ -67,7 +79,7 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; flag: s
 
 export const ALL_NAMESPACES = [
   'common', 'nav', 'auth', 'sales', 'purchases', 'accounting',
-  'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features',
+  'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features', 'crm', 'pos', 'demat', 'employee',
 ] as const
 
 i18n
@@ -93,6 +105,10 @@ i18n
         settings: frSettings,
         errors: frErrors,
         features: frFeatures,
+        crm: frCrm,
+        pos: frPos,
+        demat: frDemat,
+        employee: frEmployee,
       },
       en: {
         common: enCommon,
@@ -112,6 +128,10 @@ i18n
         settings: enSettings,
         errors: enErrors,
         features: enFeatures,
+        crm: enCrm,
+        pos: enPos,
+        demat: enDemat,
+        employee: enEmployee,
       },
       ar: {
         common: arCommon,
@@ -131,6 +151,10 @@ i18n
         settings: arSettings,
         errors: arErrors,
         features: arFeatures,
+        crm: arCrm,
+        pos: arPos,
+        demat: arDemat,
+        employee: arEmployee,
       },
     },
     fallbackLng: 'en',

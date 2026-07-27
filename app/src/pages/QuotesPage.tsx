@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice, getCustomers, getProducts } from '@/lib/queries'
+import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice, transformQuoteToSalesOrder, getCustomers, getProducts } from '@/lib/queries'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
-import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package } from 'lucide-react'
+import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package, FileSignature } from 'lucide-react'
 import type { Quote, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
@@ -78,6 +78,17 @@ const [quotes, setQuotes] = useState<Quote[]>([])
     }
   }
 
+  async function handleTransformToOrder(id: string) {
+    if (!window.confirm(t('quotes.transformToOrder'))) return
+    try {
+      await transformQuoteToSalesOrder(id)
+      toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    }
+  }
+
   async function handleStatusChange(id: string, status: string) {
     try {
       await updateQuote(id, { status: status as any })
@@ -117,7 +128,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         />
       ) : (
         <Card>
-          <Table headers={['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), tCommon('table.actions')]}>
+          <Table headers={['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), t('quotes.transformationStatus'), tCommon('table.actions')}]>
             {filtered.map((quote) => (
               <div key={quote.id}>
                 <TableRow onClick={() => toggleExpand(quote.id)}>
@@ -143,10 +154,20 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
+                    <span className={`text-xs ${quote.transformation_status === 'transformed' ? 'text-[var(--color-success)]' : quote.transformation_status === 'partial' ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-secondary)]'}`}>
+                      {quote.transformation_status === 'transformed' ? t('quotes.transformationTransformed') : quote.transformation_status === 'partial' ? t('quotes.transformationPartial') : t('quotes.transformationPending')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1">
                       {quote.status === 'accepted' && (
                         <button onClick={(e) => { e.stopPropagation(); handleConvert(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" title={t('quotes.convertToInvoice')}>
                           <ArrowRight className="w-4 h-4" />
+                        </button>
+                      )}
+                      {quote.status === 'accepted' && quote.transformation_status !== 'transformed' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleTransformToOrder(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('quotes.transformToOrder')}>
+                          <FileSignature className="w-4 h-4" />
                         </button>
                       )}
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
@@ -169,6 +190,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     </TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(line.total))}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{t('invoices.vatAmount')}: {formatCurrency(Number(line.vat_total))}</TableCell>
+                    <TableCell />
                     <TableCell />
                   </tr>
                 ))}

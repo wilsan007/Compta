@@ -25,7 +25,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       setTransactions(txns)
       setRules(r)
       setConnections(conns)
-    } catch (err: any) { console.error(err); toast('error', tCommon('error'), err.message || tCommon('error')) } finally { setLoading(false) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])

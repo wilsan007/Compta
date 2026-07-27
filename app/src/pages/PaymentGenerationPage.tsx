@@ -204,7 +204,7 @@ export function PaymentGenerationPage() {
       toast('success', t('paymentGeneration.generated'), t('paymentGeneration.generatedDesc', { count: selectedRows.length }))
       await handleSearch()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || t('paymentGeneration.generateError'))
+      toast('error', tCommon('common.error'), err.message || t('paymentGeneration.generateError'))
     } finally {
       setGenerating(false)
     }

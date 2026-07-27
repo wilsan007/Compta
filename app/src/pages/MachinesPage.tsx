@@ -32,13 +32,13 @@ export function MachinesPage() {
   async function handleDelete(id: string) {
     if (!window.confirm(t('machines.confirmDelete'))) return
     try { await deleteMachine(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleDeleteWc(id: string) {
     if (!window.confirm(t('machines.confirmDeleteWorkCenter'))) return
     try { await deleteWorkCenter(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   function handleExport() {
@@ -143,7 +143,7 @@ function MachineFormModal({ workCenters, onClose, onSaved }: { workCenters: Work
     try {
       await createMachine({ code, name, work_center_id: workCenterId || null, capacity_per_hour: capacity, status: status as any, purchase_date: purchaseDate || null, notes })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (
@@ -182,7 +182,7 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
     try {
       await createWorkCenter({ code, name, capacity_hours_per_day: capacity, cost_per_hour: costPerHour, active: true })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (

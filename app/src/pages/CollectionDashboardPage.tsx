@@ -178,7 +178,7 @@ const [customerId, setCustomerId] = useState('')
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

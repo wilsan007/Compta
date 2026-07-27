@@ -299,6 +299,20 @@
     "nov": "Nov",
     "dec": "Déc"
   },
+  "months": {
+    "0": "Janvier",
+    "1": "Février",
+    "2": "Mars",
+    "3": "Avril",
+    "4": "Mai",
+    "5": "Juin",
+    "6": "Juillet",
+    "7": "Août",
+    "8": "Septembre",
+    "9": "Octobre",
+    "10": "Novembre",
+    "11": "Décembre"
+  },
   "common": {
     "welcome": "Bienvenue",
     "loading": "Chargement...",
@@ -337,6 +351,9 @@
     "debit": "Débit",
     "credit": "Crédit",
     "account": "Compte",
+    "accounts": "Comptes",
+    "operations": "Opérations",
+    "transactions": "Transactions",
     "company": "Entreprise",
     "user": "Utilisateur",
     "users": "Utilisateurs",
@@ -396,8 +413,10 @@
     "active": "Actif",
     "inactive": "Inactif",
     "saving": "Enregistrement...",
+    "saved": "Enregistré avec succès",
     "display": "Afficher",
-    "refresh": "Rafraîchir"
+    "refresh": "Rafraîchir",
+    "selectEmployee": "Veuillez sélectionner un employé"
   },
   "dashboard": {
     "title": "Tableau de bord",

@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
-import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder, getCustomers } from '@/lib/queries'
-import { Plus, Trash2, X, FileText } from 'lucide-react'
-import type { SalesOrder, Customer } from '@/types'
+import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder, getCustomers, getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries'
+import { Plus, Trash2, X, FileText, Truck } from 'lucide-react'
+import type { SalesOrder, SalesOrderLine, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 
 const statusKeys: string[] = ['draft', 'confirmed', 'delivered', 'invoiced', 'cancelled']
@@ -18,6 +18,9 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
+  const [transformOrder, setTransformOrder] = useState<SalesOrder | null>(null)
+  const [orderLines, setOrderLines] = useState<SalesOrderLine[]>([])
+  const [transformLoading, setTransformLoading] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -39,6 +42,31 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
     if (!window.confirm(tCommon('form.confirmDelete'))) return
     try { await deleteSalesOrder(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+  }
+
+  async function handleTransformToDelivery(order: SalesOrder) {
+    setTransformLoading(true)
+    try {
+      const lines = await getSalesOrderLines(order.id)
+      setOrderLines(lines)
+      setTransformOrder(order)
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } finally {
+      setTransformLoading(false)
+    }
+  }
+
+  async function confirmTransformToDelivery(orderId: string, selectedLines: { sales_order_line_id: string; quantity: number }[]) {
+    if (selectedLines.length === 0) { toast('warning', t('transformations.transformationError'), t('transformations.noLinesSelected')); return }
+    try {
+      await transformSalesOrderToDeliveryNote(orderId, selectedLines)
+      toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
+      setTransformOrder(null)
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.total), 0)
@@ -63,7 +91,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('orders.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('orders.number'), t('orders.customer'), t('orders.date'), t('orders.deliveryDate'), t('orders.amount'), t('orders.status'), tCommon('table.actions')]}>
+          <Table headers={[t('orders.number'), t('orders.customer'), t('orders.date'), t('orders.deliveryDate'), t('orders.amount'), t('orders.status'), t('orders.deliveryStatus'), tCommon('table.actions')]}>
             {orders.map((o) => {
               const cust = customers.find((c) => c.id === o.customer_id)
               return (
@@ -80,9 +108,21 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <span className={`text-xs ${o.delivery_status === 'delivered' ? 'text-[var(--color-success)]' : o.delivery_status === 'partial' ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-secondary)]'}`}>
+                      {o.delivery_status === 'delivered' ? t('orders.deliveryDelivered') : o.delivery_status === 'partial' ? t('orders.deliveryPartial') : t('orders.deliveryPending')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {o.status === 'confirmed' && o.delivery_status !== 'delivered' && (
+                        <button onClick={() => handleTransformToDelivery(o)} disabled={transformLoading} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('orders.transformToDelivery')}>
+                          <Truck className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )
@@ -92,6 +132,15 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       )}
 
       {showForm && <OrderForm customers={customers} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+
+      {transformOrder && (
+        <TransformToDeliveryModal
+          order={transformOrder}
+          lines={orderLines}
+          onClose={() => setTransformOrder(null)}
+          onConfirm={(selected) => confirmTransformToDelivery(transformOrder.id, selected)}
+        />
+      )}
     </div>
   )
 }
@@ -144,6 +193,91 @@ function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onC
             <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function TransformToDeliveryModal({ order, lines, onClose, onConfirm }: {
+  order: SalesOrder
+  lines: SalesOrderLine[]
+  onClose: () => void
+  onConfirm: (selected: { sales_order_line_id: string; quantity: number }[]) => void
+}) {
+  const { t } = useTranslation('sales')
+  const { t: tCommon } = useTranslation('common')
+  const [selected, setSelected] = useState<Record<string, number>>({})
+
+  function toggle(lineId: string) {
+    setSelected(prev => {
+      const next = { ...prev }
+      if (next[lineId] !== undefined) delete next[lineId]
+      else next[lineId] = 0
+      return next
+    })
+  }
+
+  function setQty(lineId: string, qty: number) {
+    setSelected(prev => ({ ...prev, [lineId]: qty }))
+  }
+
+  function handleConfirm() {
+    const result = Object.entries(selected)
+      .filter(([_, qty]) => qty > 0)
+      .map(([lineId, qty]) => ({ sales_order_line_id: lineId, quantity: qty }))
+    onConfirm(result)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl my-8" style={{ width: '100%', maxWidth: '42rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">{t('orders.transformToDelivery')} — {order.number}</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-[var(--color-text-secondary)]">{t('orders.selectLinesDescription')}</p>
+          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+            <table className="app-table min-w-[600px]">
+              <thead className="bg-[var(--color-neutral-50)]">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold w-8"></th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold">{t('invoices.quantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold">{t('orders.deliveredQuantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold">{t('orders.remainingQuantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold">{t('orders.quantityToTransform')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((line) => {
+                  const remaining = Number(line.quantity) - Number(line.delivered_quantity || 0)
+                  const isSelected = selected[line.id] !== undefined
+                  return (
+                    <tr key={line.id} className="border-t border-[var(--color-border)]">
+                      <td className="px-3 py-2">
+                        <input type="checkbox" checked={isSelected} onChange={() => toggle(line.id)} disabled={remaining <= 0} />
+                      </td>
+                      <td className="px-3 py-2 text-xs">{line.description}</td>
+                      <td className="px-3 py-2 text-right text-xs font-mono">{Number(line.quantity)}</td>
+                      <td className="px-3 py-2 text-right text-xs font-mono">{Number(line.delivered_quantity || 0)}</td>
+                      <td className="px-3 py-2 text-right text-xs font-mono">{remaining}</td>
+                      <td className="px-3 py-2 text-right">
+                        {isSelected && (
+                          <input type="number" step="0.01" min={0} max={remaining} value={selected[line.id]} onChange={(e) => setQty(line.id, Math.min(Number(e.target.value), remaining))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-20 bg-[var(--color-surface)] text-right" />
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button onClick={handleConfirm}>{t('orders.confirmTransformation')}</Button>
+          </div>
+        </div>
       </div>
     </div>
   )

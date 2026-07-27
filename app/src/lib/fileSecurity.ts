@@ -20,7 +20,7 @@ export interface FileValidationResult {
 }
 
 // Magic bytes signatures for common file types
-const MAGIC_BYTES: Record<string, number[]> = {
+const MAGIC_BYTES: Record<string, number[] | null> = {
   pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
   xlsx: [0x50, 0x4B, 0x03, 0x04], // PK (ZIP-based, also matches .docx, .xlsx)
   xls: [0xD0, 0xCF, 0x11, 0xE0], // OLE2 compound document
@@ -88,10 +88,10 @@ export async function validateFileUpload(
     }
 
     // Verify magic bytes match the claimed extension
-    if (ext === '.pdf' && !bytesStartsWith(bytes, MAGIC_BYTES.pdf)) {
+    if (ext === '.pdf' && MAGIC_BYTES.pdf && !bytesStartsWith(bytes, MAGIC_BYTES.pdf)) {
       return { ok: false, error: 'File claims to be PDF but magic bytes do not match' }
     }
-    if (ext === '.xlsx' && !bytesStartsWith(bytes, MAGIC_BYTES.xlsx)) {
+    if (ext === '.xlsx' && MAGIC_BYTES.xlsx && !bytesStartsWith(bytes, MAGIC_BYTES.xlsx)) {
       return { ok: false, error: 'File claims to be XLSX but magic bytes do not match' }
     }
   }

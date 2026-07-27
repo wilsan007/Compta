@@ -38,13 +38,13 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaymentOrder(id, { status: status as any }); await load() }
-    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!window.confirm(t('paymentOrders.deleteConfirm'))) return
     try { await deletePaymentOrder(id); await load() }
-    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.amount), 0)
@@ -178,7 +178,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

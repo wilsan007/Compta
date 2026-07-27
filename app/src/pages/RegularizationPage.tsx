@@ -122,7 +122,7 @@ export function RegularizationPage() {
                     <button
                       onClick={() => handleEdit(entry)}
                       className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
-                      title={tCommon('common.actions.edit')}
+                      title={tCommon('actions.edit')}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -254,9 +254,9 @@ function RegularizationForm({ editing, onClose, onSaved }: {
           <Input label={t('regularization.description')} value={description} onChange={(e) => setDescription(e.target.value)} required />
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? tCommon('common.saving') : tCommon('common.actions.save')}
+            {saving ? tCommon('common.saving') : tCommon('actions.save')}
           </Button>
         </div>
       </div>

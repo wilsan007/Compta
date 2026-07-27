@@ -8,7 +8,7 @@ import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
 
-const typeLabels: Record<string, string> = { cdi: 'CDI', cdd: 'CDD', apprentissage: 'Apprentissage', stage: 'Stage', interim: 'Intérim', freelance: 'Freelance' }
+const contractTypeKeys: Record<string, string> = { cdi: 'cdi', cdd: 'cdd', apprentissage: 'apprentissage', stage: 'stage', interim: 'interim', freelance: 'freelance' }
 
 export function ContractsPage() {
   const { toast } = useToast()
@@ -55,7 +55,7 @@ const [contracts, setContracts] = useState<any[]>([])
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-48">
           <Select label={t('contracts.type')} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} options={[
-            { value: '', label: tCommon('table.all') }, ...Object.entries(typeLabels).map(([k, v]) => ({ value: k, label: v })),
+            { value: '', label: tCommon('table.all') }, ...Object.entries(contractTypeKeys).map(([k, v]) => ({ value: k, label: t(`contracts.types.${v}`) as string })),
           ]} />
         </div>
       </div>
@@ -70,7 +70,7 @@ const [contracts, setContracts] = useState<any[]>([])
               <TableRow key={c.id}>
                 <TableCell className="font-mono text-xs">{c.number}</TableCell>
                 <TableCell className="text-sm">{c.employees?.name || '—'}</TableCell>
-                <TableCell className="text-xs">{typeLabels[c.contract_type] || t(`contracts.types.${c.contract_type}`) || c.contract_type}</TableCell>
+                <TableCell className="text-xs">{t(`contracts.types.${c.contract_type}`) || c.contract_type}</TableCell>
                 <TableCell className="text-xs">{formatDate(c.start_date)}</TableCell>
                 <TableCell className="text-xs">{c.end_date ? formatDate(c.end_date) : '—'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(c.monthly_salary))}</TableCell>
@@ -147,8 +147,8 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select label={t('contracts.type')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
-              { value: 'cdi', label: 'CDI' }, { value: 'cdd', label: 'CDD' }, { value: 'apprentissage', label: t('contracts.types.apprenticeship') },
-              { value: 'stage', label: t('contracts.types.internship') }, { value: 'interim', label: 'Intérim' }, { value: 'freelance', label: t('contracts.types.freelance') },
+              { value: 'cdi', label: t('contracts.types.cdi') }, { value: 'cdd', label: t('contracts.types.cdd') }, { value: 'apprentissage', label: t('contracts.types.apprentissage') },
+              { value: 'stage', label: t('contracts.types.stage') }, { value: 'interim', label: t('contracts.types.interim') }, { value: 'freelance', label: t('contracts.types.freelance') },
             ]} />
             <Input label={t('contracts.trialPeriod')} type="number" value={trialPeriodDays} onChange={(e) => setTrialPeriodDays(Number(e.target.value))} />
           </div>

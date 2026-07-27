@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell } from '@/components/ui'
+import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
 import { getEmployees, getPayRuns, getTimesheets } from '@/lib/queries'
+import { getRhDashboardData } from '@/lib/queries/sprintH'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import type { Employee, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
+import { Users, DollarSign, Clock, FileText, Activity, HeartPulse, TrendingUp, Stethoscope } from 'lucide-react'
 
 export function HRDashboardPage() {
   const { toast } = useToast()
@@ -14,15 +16,17 @@ export function HRDashboardPage() {
 const [employees, setEmployees] = useState<Employee[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [timesheets, setTimesheets] = useState<any[]>([])
+  const [dashData, setDashData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [e, pr, ts] = await Promise.all([getEmployees(), getPayRuns(), getTimesheets()])
+      const [e, pr, ts, dash] = await Promise.all([getEmployees(), getPayRuns(), getTimesheets(), getRhDashboardData()])
       setEmployees(e)
       setPayRuns(pr)
       setTimesheets(ts)
+      setDashData(dash)
     } catch (err) { console.error(err); toast('error', tCommon('common.error'), tCommon('common.error')) } finally { setLoading(false) }
   }, [])
 
@@ -42,11 +46,24 @@ const [employees, setEmployees] = useState<Employee[]>([])
         <SkeletonTable rows={4} cols={4} />
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.activeEmployees')}</p><p className="text-2xl font-bold">{activeCount}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.payrollTotal')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalPayroll)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('timesheets.noTimesheets')}</p><p className="text-2xl font-bold text-[var(--color-warning)]">{pendingTimesheets}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('payRuns.title')}</p><p className="text-2xl font-bold">{payRuns.length}</p></div></Card>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Users className="w-4 h-4 text-[var(--color-primary)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.activeEmployees')}</p></div><p className="text-2xl font-bold">{activeCount}</p></div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><DollarSign className="w-4 h-4 text-[var(--color-success)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.payrollTotal')}</p></div><p className="text-2xl font-bold font-mono">{formatCurrency(totalPayroll)}</p></div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Clock className="w-4 h-4 text-[var(--color-warning)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingLeaveRequests')}</p></div><p className="text-2xl font-bold text-[var(--color-warning)]">{dashData?.leaves?.pendingCount ?? pendingTimesheets}</p></div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><FileText className="w-4 h-4 text-[var(--color-info)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('payRuns.title')}</p></div><p className="text-2xl font-bold">{payRuns.length}</p></div></Card>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Activity className="w-4 h-4 text-[var(--color-danger)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.workStoppages', 'Arrêts en cours')}</p></div><p className="text-2xl font-bold text-[var(--color-danger)]">{dashData?.workStoppages?.current ?? 0}</p></div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><Stethoscope className="w-4 h-4 text-[var(--color-warning)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.medicalExams', 'Visites médicales')}</p></div><p className="text-2xl font-bold text-[var(--color-warning)]">{dashData?.medical?.toPlan ?? 0}</p>{dashData?.medical?.overdue > 0 && <Badge variant="danger">{dashData.medical.overdue} {t('dashboard.overdue', 'en retard')}</Badge>}</div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-[var(--color-info)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.exits', 'Sorties en cours')}</p></div><p className="text-2xl font-bold">{dashData?.exits?.inProgress ?? 0}</p></div></Card>
+            <Card><div className="p-4"><div className="flex items-center gap-2 mb-1"><HeartPulse className="w-4 h-4 text-[var(--color-primary)]" /><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.hardship', 'Pénibilité')}</p></div><p className="text-2xl font-bold">{dashData?.hardship?.totalExposed ?? 0}</p></div></Card>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.hiresThisMonth', 'Embauches du mois')}</p><p className="text-2xl font-bold text-[var(--color-success)]">{dashData?.effectifs?.hiresThisMonth ?? 0}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.exitsThisMonth', 'Sorties du mois')}</p><p className="text-2xl font-bold text-[var(--color-danger)]">{dashData?.effectifs?.exitsThisMonth ?? 0}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.cpfBalance', 'Solde CPF (h)')}</p><p className="text-2xl font-bold font-mono">{dashData?.cpf?.totalHours ?? 0}</p></div></Card>
           </div>
 
           <div className="grid grid-cols-2 gap-6">

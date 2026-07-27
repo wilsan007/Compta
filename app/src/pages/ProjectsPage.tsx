@@ -39,7 +39,7 @@ const [projects, setProjects] = useState<Project[]>([])
       await deleteProject(id)
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -48,7 +48,7 @@ const [projects, setProjects] = useState<Project[]>([])
       await updateProject(id, { status: status as any })
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -139,7 +139,7 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

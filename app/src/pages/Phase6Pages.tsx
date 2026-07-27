@@ -84,7 +84,7 @@ export function BatchEntryPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : sessions.length === 0 ? <EmptyState title={t('batchEntry.empty')} /> : (
-        <Table headers={[t('batchEntry.colName'), t('batchEntry.colJournal'), t('batchEntry.colDate'), t('batchEntry.colEntries'), t('batchEntry.colDebit'), t('batchEntry.colCredit'), t('batchEntry.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('batchEntry.colName'), t('batchEntry.colJournal'), t('batchEntry.colDate'), t('batchEntry.colEntries'), t('batchEntry.colDebit'), t('batchEntry.colCredit'), t('batchEntry.colStatus'), tCommon('table.actions')]}>
           {sessions.map(s => (
             <TableRow key={s.id}>
               <TableCell>{s.session_name}</TableCell>
@@ -162,7 +162,7 @@ export function AutoLabelRulesPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : rules.length === 0 ? <EmptyState title={t('autoLabel.empty')} /> : (
-        <Table headers={[t('autoLabel.colName'), t('autoLabel.colJournal'), t('autoLabel.colAccount'), t('autoLabel.colPattern'), t('autoLabel.colPriority'), t('autoLabel.colActive'), tCommon('common.actions')]}>
+        <Table headers={[t('autoLabel.colName'), t('autoLabel.colJournal'), t('autoLabel.colAccount'), t('autoLabel.colPattern'), t('autoLabel.colPriority'), t('autoLabel.colActive'), tCommon('table.actions')]}>
           {rules.map(r => (
             <TableRow key={r.id}>
               <TableCell>{r.name}</TableCell>
@@ -337,7 +337,7 @@ export function LettrageDifferencesPage() {
       <Breadcrumb items={[{ label: t('home.breadcrumb'), path: '/accounting' }, { label: t('lettrageDiff.title') }]} />
       <PageHeader title={t('lettrageDiff.title')} subtitle={t('lettrageDiff.subtitle')} />
       {loading ? <SkeletonTable /> : diffs.length === 0 ? <EmptyState title={t('lettrageDiff.empty')} /> : (
-        <Table headers={[t('lettrageDiff.colThirdParty'), t('lettrageDiff.colCode'), t('lettrageDiff.colDebit'), t('lettrageDiff.colCredit'), t('lettrageDiff.colDifference'), t('lettrageDiff.colAccount'), t('lettrageDiff.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('lettrageDiff.colThirdParty'), t('lettrageDiff.colCode'), t('lettrageDiff.colDebit'), t('lettrageDiff.colCredit'), t('lettrageDiff.colDifference'), t('lettrageDiff.colAccount'), t('lettrageDiff.colStatus'), tCommon('table.actions')]}>
           {diffs.map(d => (
             <TableRow key={d.id}>
               <TableCell>{d.third_party_code}</TableCell>
@@ -388,7 +388,7 @@ export function AccountingControlsPage() {
       <Breadcrumb items={[{ label: t('home.breadcrumb'), path: '/accounting' }, { label: t('controls.title') }]} />
       <PageHeader title={t('controls.title')} subtitle={t('controls.subtitle')} action={<Button onClick={handleRun} loading={running}><Shield className="w-4 h-4" /> {t('controls.run')}</Button>} />
       {loading ? <SkeletonTable /> : runs.length === 0 ? <EmptyState title={t('controls.empty')} /> : (
-        <Table headers={[t('controls.colDate'), t('controls.colType'), t('controls.colChecks'), t('controls.colErrors'), t('controls.colWarnings'), t('controls.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('controls.colDate'), t('controls.colType'), t('controls.colChecks'), t('controls.colErrors'), t('controls.colWarnings'), t('controls.colStatus'), tCommon('table.actions')]}>
           {runs.map(r => (
             <TableRow key={r.id} onClick={() => setSelectedRun(r)}>
               <TableCell>{formatDate(r.run_date)}</TableCell>
@@ -488,7 +488,7 @@ export function CashControlPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : sessions.length === 0 ? <EmptyState title={t('cashControl.empty')} /> : (
-        <Table headers={[t('cashControl.colNumber'), t('cashControl.colJournal'), t('cashControl.colDate'), t('cashControl.colTheoretical'), t('cashControl.colCounted'), t('cashControl.colDifference'), t('cashControl.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('cashControl.colNumber'), t('cashControl.colJournal'), t('cashControl.colDate'), t('cashControl.colTheoretical'), t('cashControl.colCounted'), t('cashControl.colDifference'), t('cashControl.colStatus'), tCommon('table.actions')]}>
           {sessions.map(s => (
             <TableRow key={s.id}>
               <TableCell>{s.session_number}</TableCell>
@@ -586,7 +586,7 @@ export function FECAttestationPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : attestations.length === 0 ? <EmptyState title={t('fecAttest.empty')} /> : (
-        <Table headers={[t('fecAttest.colNumber'), t('fecAttest.colDate'), t('fecAttest.colType'), t('fecAttest.colEntries'), t('fecAttest.colDebit'), t('fecAttest.colCredit'), tCommon('common.actions')]}>
+        <Table headers={[t('fecAttest.colNumber'), t('fecAttest.colDate'), t('fecAttest.colType'), t('fecAttest.colEntries'), t('fecAttest.colDebit'), t('fecAttest.colCredit'), tCommon('table.actions')]}>
           {attestations.map(a => (
             <TableRow key={a.id}>
               <TableCell className="font-mono">{a.attestation_number}</TableCell>
@@ -670,7 +670,7 @@ export function TierRIBsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : ribs.length === 0 ? <EmptyState title={t('tierRIB.empty')} /> : (
-        <Table headers={[t('tierRIB.colThirdParty'), t('tierRIB.colLabel'), t('tierRIB.colIBAN'), t('tierRIB.colBIC'), t('tierRIB.colBank'), t('tierRIB.colDefault'), tCommon('common.actions')]}>
+        <Table headers={[t('tierRIB.colThirdParty'), t('tierRIB.colLabel'), t('tierRIB.colIBAN'), t('tierRIB.colBIC'), t('tierRIB.colBank'), t('tierRIB.colDefault'), tCommon('table.actions')]}>
           {ribs.map(r => (
             <TableRow key={r.id}>
               <TableCell>{tpMap.get(r.third_party_account_id)?.account_code || r.third_party_account_id.slice(0, 8)}</TableCell>
@@ -742,7 +742,7 @@ export function IFRSAdjustmentsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('ifrsAdjustments.empty')} /> : (
-        <Table headers={[t('ifrsAdjustments.colDate'), t('ifrsAdjustments.colType'), t('ifrsAdjustments.colAccount'), t('ifrsAdjustments.colCounter'), t('ifrsAdjustments.colAmount'), t('ifrsAdjustments.colStandard'), t('ifrsAdjustments.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('ifrsAdjustments.colDate'), t('ifrsAdjustments.colType'), t('ifrsAdjustments.colAccount'), t('ifrsAdjustments.colCounter'), t('ifrsAdjustments.colAmount'), t('ifrsAdjustments.colStandard'), t('ifrsAdjustments.colStatus'), tCommon('table.actions')]}>
           {items.map(i => (
             <TableRow key={i.id}>
               <TableCell>{formatDate(i.adjustment_date)}</TableCell>
@@ -832,7 +832,7 @@ export function TaxPaymentsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('taxPayment.empty')} /> : (
-        <Table headers={[t('taxPayment.colNumber'), t('taxPayment.colType'), t('taxPayment.colPeriod'), t('taxPayment.colAmount'), t('taxPayment.colDate'), t('taxPayment.colMethod'), t('taxPayment.colStatus'), t('taxPayment.colConfirmation'), tCommon('common.actions')]}>
+        <Table headers={[t('taxPayment.colNumber'), t('taxPayment.colType'), t('taxPayment.colPeriod'), t('taxPayment.colAmount'), t('taxPayment.colDate'), t('taxPayment.colMethod'), t('taxPayment.colStatus'), t('taxPayment.colConfirmation'), tCommon('table.actions')]}>
           {items.map(p => (
             <TableRow key={p.id}>
               <TableCell className="font-mono">{p.payment_number}</TableCell>
@@ -918,7 +918,7 @@ export function CustomReportTemplatesPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('customReport.empty')} /> : (
-        <Table headers={[t('customReport.colName'), t('customReport.colType'), t('customReport.colCategory'), t('customReport.colOrientation'), t('customReport.colPageSize'), t('customReport.colActive'), tCommon('common.actions')]}>
+        <Table headers={[t('customReport.colName'), t('customReport.colType'), t('customReport.colCategory'), t('customReport.colOrientation'), t('customReport.colPageSize'), t('customReport.colActive'), tCommon('table.actions')]}>
           {items.map(r => (
             <TableRow key={r.id}>
               <TableCell>{r.name}</TableCell>
@@ -988,7 +988,7 @@ export function DeferredPrintingPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('deferredPrint.empty')} /> : (
-        <Table headers={[t('deferredPrint.colName'), t('deferredPrint.colType'), t('deferredPrint.colScheduled'), t('deferredPrint.colFormat'), t('deferredPrint.colStatus'), t('deferredPrint.colGenerated'), tCommon('common.actions')]}>
+        <Table headers={[t('deferredPrint.colName'), t('deferredPrint.colType'), t('deferredPrint.colScheduled'), t('deferredPrint.colFormat'), t('deferredPrint.colStatus'), t('deferredPrint.colGenerated'), tCommon('table.actions')]}>
           {items.map(j => (
             <TableRow key={j.id}>
               <TableCell>{j.job_name}</TableCell>
@@ -1065,7 +1065,7 @@ export function JournalAccessRightsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('journalAccessRights.empty')} /> : (
-        <Table headers={[t('journalAccessRights.colUser'), t('journalAccessRights.colJournal'), t('journalAccessRights.colView'), t('journalAccessRights.colCreate'), t('journalAccessRights.colEdit'), t('journalAccessRights.colDelete'), t('journalAccessRights.colClose'), tCommon('common.actions')]}>
+        <Table headers={[t('journalAccessRights.colUser'), t('journalAccessRights.colJournal'), t('journalAccessRights.colView'), t('journalAccessRights.colCreate'), t('journalAccessRights.colEdit'), t('journalAccessRights.colDelete'), t('journalAccessRights.colClose'), tCommon('table.actions')]}>
           {items.map(r => (
             <TableRow key={r.id}>
               <TableCell className="font-mono text-xs">{r.tenant_users?.email || r.user_id.slice(0, 8)}</TableCell>
@@ -1139,7 +1139,7 @@ export function VATOnCollectionsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('vatCollection.empty')} /> : (
-        <Table headers={[t('vatCollection.colPeriod'), t('vatCollection.colBase'), t('vatCollection.colRate'), t('vatCollection.colVATAmount'), t('vatCollection.colCollected'), t('vatCollection.colUncollected'), t('vatCollection.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('vatCollection.colPeriod'), t('vatCollection.colBase'), t('vatCollection.colRate'), t('vatCollection.colVATAmount'), t('vatCollection.colCollected'), t('vatCollection.colUncollected'), t('vatCollection.colStatus'), tCommon('table.actions')]}>
           {items.map(v => (
             <TableRow key={v.id}>
               <TableCell>{v.period_label}</TableCell>

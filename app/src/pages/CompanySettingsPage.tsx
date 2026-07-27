@@ -51,7 +51,7 @@ export function CompanySettingsPage() {
       <PageHeader
         title={t('companySettings.title', 'Paramètres société')}
         subtitle={t('companySettings.subtitle', 'Configuration comptable, fiscale et RGPD')}
-        action={<Button onClick={handleSave} disabled={saving || loading}><Save className="w-4 h-4" /> {saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>}
+        action={<Button onClick={handleSave} disabled={saving || loading}><Save className="w-4 h-4" /> {saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>}
       />
 
       {loading || !settings ? (

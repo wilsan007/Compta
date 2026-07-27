@@ -18,7 +18,8 @@ export function calculateTax(
 
   switch (amountType) {
     case 'percent': {
-      const taxAmount = baseAmount * (tax.rate / 100)
+      const rate = Number(tax.rate) || 0
+      const taxAmount = baseAmount * (rate / 100)
       return {
         taxAmount: round2(taxAmount),
         newBase: baseAmount,

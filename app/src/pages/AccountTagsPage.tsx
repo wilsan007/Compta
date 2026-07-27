@@ -192,12 +192,12 @@ export function AccountTagsPage() {
                   <div>
                     <label className="block text-xs text-[var(--color-text-secondary)] mb-1">{t('accountTags.applicability')}</label>
                     <select className="input" value={mappingForm.entity_type} onChange={(e) => setMappingForm({ ...mappingForm, entity_type: e.target.value as any })}>
-                      <option value="account">{tCommon('common.account', 'Account')}</option>
+                      <option value="account">{tCommon('common.account')}</option>
                       <option value="tax">{t('taxRates.title')}</option>
                       <option value="journal_line">{t('title')}</option>
                     </select>
                   </div>
-                  <Input label={tCommon('common.code', 'Code')} value={mappingForm.entity_id} onChange={(e) => setMappingForm({ ...mappingForm, entity_id: e.target.value })} />
+                  <Input label={tCommon('common.code')} value={mappingForm.entity_id} onChange={(e) => setMappingForm({ ...mappingForm, entity_id: e.target.value })} />
                   <div className="flex items-end">
                     <Button onClick={handleCreateMapping} disabled={!mappingForm.entity_id}><Plus className="w-4 h-4" /> {t('fiscalPositions.mappingAdd')}</Button>
                   </div>
@@ -206,7 +206,7 @@ export function AccountTagsPage() {
                 {mappings.length === 0 ? (
                   <EmptyState icon={<Link2 className="w-8 h-8" />} title={t('fiscalPositions.mappingEmpty')} />
                 ) : (
-                  <Table headers={[t('accountTags.applicability'), tCommon('common.code', 'Code'), '']}>
+                  <Table headers={[t('accountTags.applicability'), tCommon('common.code'), '']}>
                     {mappings.map((m) => (
                       <TableRow key={m.id}>
                         <TableCell className="text-xs">{m.entity_type}</TableCell>
@@ -236,9 +236,9 @@ export function AccountTagsPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('accountTags.applicability')}</label>
                 <select className="input" value={form.applicability} onChange={(e) => setForm({ ...form, applicability: e.target.value as any })}>
-                  <option value="accounts">{tCommon('common.accounts', 'Accounts')}</option>
+                  <option value="accounts">{tCommon('common.accounts')}</option>
                   <option value="taxes">{t('taxRates.title')}</option>
-                  <option value="operations">{tCommon('common.operations', 'Operations')}</option>
+                  <option value="operations">{tCommon('common.operations')}</option>
                 </select>
               </div>
               <Input label={t('accountTags.color')} value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="#3b82f6" />

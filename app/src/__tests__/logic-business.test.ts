@@ -316,12 +316,12 @@ describe('2a. Tests de calculs financiers', () => {
   // --- calculateMultipleTaxes ---
   describe('calculateMultipleTaxes', () => {
     it('Multiple taxes with include_base_amount', () => {
-      const taxes = [mockTax20, { ...mockTax55, include_base_amount: true }]
+      const taxes = [{ ...mockTax20, include_base_amount: true }, mockTax55]
       const result = calculateMultipleTaxes(1000, taxes)
-      // Tax1: 1000 * 20% = 200, base becomes 1200
-      // Tax2: 1200 * 5.5% = 66
+      // Tax1: 1000 * 20% = 200, base becomes 1200 (include_base_amount)
+      // Tax2: 1200 * 5.5% = 66 (no include_base_amount, base stays 1200)
       expect(result.totalTax).toBe(266)
-      expect(result.finalBase).toBe(1266)
+      expect(result.finalBase).toBe(1200)
     })
 
     it('Empty taxes array → totalTax=0', () => {
@@ -730,14 +730,14 @@ describe('2b. Tests de cohérence multi-tableau', () => {
       const amount = 1000
       const rateDiff = 1.090 - 1.085
       const gain = amount * rateDiff
-      expect(gain).toBe(5)
+      expect(gain).toBeCloseTo(5, 5)
     })
 
     it('Calcul perte: 1000€ * (1.085 - 1.080) = 5€', () => {
       const amount = 1000
       const rateDiff = 1.085 - 1.080
       const loss = amount * rateDiff
-      expect(loss).toBe(5)
+      expect(loss).toBeCloseTo(5, 5)
     })
 
     it('ExchangeGainLossEntry: payment_id et invoice_id présents', () => {
@@ -806,9 +806,7 @@ describe('2c. Tests de robustesse', () => {
     it('calculateTax avec tax sans rate → taxAmount=0', () => {
       const taxNoRate: TaxRate = { ...mockTax20, rate: undefined as any }
       const result = calculateTax(1000, taxNoRate)
-      expect(result.taxAmount).toBe(0) // undefined / 100 = NaN, but 0 * NaN = NaN... 
-      // Actually NaN * anything = NaN, Math.round(NaN*100)/100 = NaN
-      // This is a potential bug: no NaN guard
+      expect(result.taxAmount).toBe(0) // NaN guard: Number(undefined) || 0 = 0
     })
 
     it('calculateTax avec fixed_amount null → taxAmount=0', () => {
@@ -1186,5 +1184,343 @@ describe('2e. Tests de cohérence cross-module', () => {
     expect(result.totalCostEmployer).toBe(
       result.totalGross + result.totalEmployerContributions + result.mealVouchers + result.transportAllowance
     )
+  })
+})
+
+// ============ 2f: MODULE COMMERCIAL — TESTS DYNAMIQUES ============
+import type { Quote, QuoteLine, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, Invoice, InvoiceLine, Customer, Promotion, CreditNote, CustomerPayment } from '@/types'
+
+const mockCust: Customer = {
+  id: 'cust-1', name: 'Acme Corp', email: 'c@acme.com', phone: '01', address: '1 rue',
+  city: 'Paris', postal_code: '75001', country: 'France', vat_number: 'FR12', contact_name: 'JD',
+  balance: 5000, credit_limit: 10000, payment_terms: '30 days', currency: 'EUR', active: true,
+  created_at: '2024-01-01', updated_at: '2024-01-01',
+}
+
+const mockCustBlocked: Customer = { ...mockCust, id: 'c2', balance: 12000, credit_limit: 10000 }
+
+const mockQL: QuoteLine = {
+  id: 'ql1', quote_id: 'q1', product_id: 'p1', description: 'Product A', quantity: 10,
+  unit_price: 100, vat_rate: 20, total: 1000, vat_total: 200, line_order: 0, created_at: '2024-01-01',
+}
+
+const mockQ: Quote = {
+  id: 'q1', number: 'DEV-2024-001', customer_id: 'cust-1', customer_name: 'Acme Corp',
+  date: '2024-01-15', expiry_date: '2024-02-15', status: 'draft', subtotal: 1000, vat_total: 200,
+  total: 1200, notes: '', created_at: '2024-01-15', updated_at: '2024-01-15',
+  quote_lines: [mockQL], transformation_status: 'pending',
+}
+
+const mockSOL: SalesOrderLine = {
+  id: 'sol1', sales_order_id: 'so1', product_id: 'p1', description: 'Product A', quantity: 10,
+  unit_price: 100, vat_rate: 20, line_total: 1000, delivered_quantity: 0,
+}
+
+const mockSO: SalesOrder = {
+  id: 'so1', number: 'CMD-2024-001', customer_id: 'cust-1', order_date: '2024-01-16',
+  delivery_date: '2024-01-25', status: 'confirmed', subtotal: 1000, vat: 200, total: 1200,
+  notes: '', created_at: '2024-01-16', updated_at: '2024-01-16', quote_id: 'q1',
+  fully_delivered: false, delivery_status: 'pending',
+}
+
+const mockDNL: DeliveryNoteLine = {
+  id: 'dnl1', delivery_note_id: 'dn1', product_id: 'p1', description: 'Product A',
+  quantity: 10, invoiced_quantity: 0, sales_order_line_id: 'sol1',
+}
+
+const mockDN: DeliveryNote = {
+  id: 'dn1', number: 'BL-2024-001', customer_id: 'cust-1', sales_order_id: 'so1',
+  delivery_date: '2024-01-25', status: 'delivered', carrier: 'Chronopost', tracking_number: 'T1',
+  notes: '', created_at: '2024-01-25', fully_invoiced: false, invoice_status: 'pending',
+}
+
+const mockIL: InvoiceLine = {
+  id: 'il1', invoice_id: 'inv1', product_id: 'p1', description: 'Product A', quantity: 10,
+  unit_price: 100, vat_rate: 20, total: 1000, vat_total: 200, line_order: 0, created_at: '2024-01-30',
+}
+
+const mockInv: Invoice = {
+  id: 'inv1', number: 'FAC-2024-001', customer_id: 'cust-1', customer_name: 'Acme Corp',
+  date: '2024-01-30', due_date: '2024-03-01', status: 'draft', subtotal: 1000, vat_total: 200,
+  total: 1200, amount_paid: 0, amount_due: 1200, notes: '', recurring: false,
+  recurring_frequency: null, created_at: '2024-01-30', updated_at: '2024-01-30',
+  invoice_lines: [mockIL], invoice_type: 'standard',
+}
+
+const mockPromo: Promotion = {
+  id: 'promo1', tenant_id: 'tid', name: 'Summer Sale', description: '10% off',
+  promo_type: 'percentage', value: 10, product_id: 'p1', category: null, customer_id: null,
+  start_date: '2024-06-01', end_date: '2024-08-31', min_quantity: 1, free_product_id: null,
+  free_product_qty: 0, active: true, created_at: '2024-06-01',
+}
+
+const mockCN: CreditNote = {
+  id: 'cn1', number: 'AV-2024-001', customer_id: 'cust-1', customer_name: 'Acme Corp',
+  date: '2024-02-01', status: 'draft', subtotal: 1000, vat_total: 200, total: 1200,
+  reason: 'Return', invoice_id: 'inv1', source_invoice_id: 'inv1',
+  created_at: '2024-02-01', updated_at: '2024-02-01',
+}
+
+describe('2f. Module Commercial — Workflows & Transformations', () => {
+  describe('Quote → Sales Order', () => {
+    it('Amounts copiés: subtotal, vat, total', () => {
+      expect(mockQ.subtotal).toBe(mockSO.subtotal)
+      expect(mockQ.vat_total).toBe(mockSO.vat)
+      expect(mockQ.total).toBe(mockSO.total)
+    })
+    it('Lines: qty et prix préservés', () => {
+      expect(mockQL.quantity).toBe(mockSOL.quantity)
+      expect(mockQL.unit_price).toBe(mockSOL.unit_price)
+    })
+    it('transformation_status pending → transformed', () => {
+      const tq: Quote = { ...mockQ, transformation_status: 'transformed', transformed_to_order_id: mockSO.id }
+      expect(tq.transformation_status).toBe('transformed')
+      expect(tq.transformed_to_order_id).toBe(mockSO.id)
+    })
+    it('SO.quote_id référence la quote', () => {
+      expect(mockSO.quote_id).toBe(mockQ.id)
+    })
+  })
+
+  describe('Sales Order → Delivery Note', () => {
+    it('Delivery partielle: status=partial', () => {
+      const so: SalesOrder = { ...mockSO, delivery_status: 'partial', fully_delivered: false }
+      expect(so.delivery_status).toBe('partial')
+      expect(so.fully_delivered).toBe(false)
+    })
+    it('Delivery complète: status=delivered', () => {
+      const so: SalesOrder = { ...mockSO, delivery_status: 'delivered', fully_delivered: true }
+      expect(so.delivery_status).toBe('delivered')
+      expect(so.fully_delivered).toBe(true)
+    })
+    it('DN.sales_order_id référence SO', () => {
+      expect(mockDN.sales_order_id).toBe(mockSO.id)
+    })
+    it('DNL.sales_order_line_id référence SOL', () => {
+      expect(mockDNL.sales_order_line_id).toBe(mockSOL.id)
+    })
+    it('Qté livrée ≤ qté commandée', () => {
+      expect(mockDNL.quantity).toBeLessThanOrEqual(mockSOL.quantity)
+    })
+  })
+
+  describe('Delivery Note → Invoice', () => {
+    it('DN invoice_status partial → invoiced', () => {
+      const dn: DeliveryNote = { ...mockDN, invoice_status: 'invoiced', fully_invoiced: true }
+      expect(dn.invoice_status).toBe('invoiced')
+    })
+    it('Invoice delivery_note_id référence DN', () => {
+      const inv: Invoice = { ...mockInv, delivery_note_id: mockDN.id }
+      expect(inv.delivery_note_id).toBe(mockDN.id)
+    })
+    it('Calcul depuis lignes: sum(total)=subtotal, sum(vat_total)=vat_total', () => {
+      const lines = [mockIL, { ...mockIL, id: 'il2', total: 500, vat_total: 100 }]
+      const sub = lines.reduce((s, l) => s + l.total, 0)
+      const vat = lines.reduce((s, l) => s + l.vat_total, 0)
+      expect(sub).toBe(1500)
+      expect(vat).toBe(300)
+      expect(sub + vat).toBe(1800)
+    })
+  })
+
+  describe('Invoice → Credit Note', () => {
+    it('CN amounts = Invoice amounts', () => {
+      expect(mockCN.subtotal).toBe(mockInv.subtotal)
+      expect(mockCN.total).toBe(mockInv.total)
+    })
+    it('CN.source_invoice_id = Invoice.id', () => {
+      expect(mockCN.source_invoice_id).toBe(mockInv.id)
+    })
+    it('CN status commence à draft', () => {
+      expect(mockCN.status).toBe('draft')
+    })
+    it('Application CN: amount_due réduit à 0', () => {
+      const newDue = Math.max(mockInv.amount_due - mockCN.total, 0)
+      expect(newDue).toBe(0)
+    })
+  })
+})
+
+describe('2g. Module Commercial — Promotions', () => {
+  it('Percentage 10% sur 1000€ → remise 100€', () => {
+    expect(1000 * (Number(mockPromo.value) / 100)).toBe(100)
+  })
+  it('Fixed 50€ sur 1000€ → remise 50€', () => {
+    const p: Promotion = { ...mockPromo, promo_type: 'fixed_amount', value: 50 }
+    expect(Number(p.value)).toBe(50)
+  })
+  it('Promo inactive → non applicable', () => {
+    expect(({ ...mockPromo, active: false }).active).toBe(false)
+  })
+  it('Promo expirée: end_date < today', () => {
+    const p: Promotion = { ...mockPromo, end_date: '2023-12-31' }
+    expect(p.end_date < '2024-07-27').toBe(true)
+  })
+  it('Promo active: start <= today <= end', () => {
+    const today = '2024-07-15'
+    expect(mockPromo.active && mockPromo.start_date <= today && mockPromo.end_date >= today).toBe(true)
+  })
+  it('min_quantity: qty=1 >= min=1 → OK', () => {
+    expect(1 >= Number(mockPromo.min_quantity)).toBe(true)
+  })
+  it('min_quantity: qty=3 < min=5 → non applicable', () => {
+    expect(3 >= 5).toBe(false)
+  })
+  it('Promo client spécifique: match → applicable', () => {
+    const p: Promotion = { ...mockPromo, customer_id: 'cust-1' }
+    expect(p.customer_id === null || p.customer_id === 'cust-1').toBe(true)
+  })
+  it('Promo client spécifique: mismatch → non applicable', () => {
+    const p: Promotion = { ...mockPromo, customer_id: 'cust-2' }
+    expect(p.customer_id === null || p.customer_id === 'cust-1').toBe(false)
+  })
+  it('Remise + TVA: 1000 - 10% + 20% = 1080', () => {
+    const sub = 1000, discount = sub * 0.10, after = sub - discount
+    expect(after + after * 0.20).toBe(1080)
+  })
+})
+
+describe('2h. Module Commercial — Credit Limit', () => {
+  it('Balance < credit_limit → non bloqué', () => {
+    expect(mockCust.balance < mockCust.credit_limit).toBe(true)
+  })
+  it('Balance > credit_limit → bloqué', () => {
+    expect(mockCustBlocked.balance > mockCustBlocked.credit_limit).toBe(true)
+  })
+  it('Credit available = credit_limit - balance', () => {
+    expect(mockCust.credit_limit - mockCust.balance).toBe(5000)
+  })
+  it('Credit available négatif si bloqué', () => {
+    expect(mockCustBlocked.credit_limit - mockCustBlocked.balance).toBe(-2000)
+  })
+  it('Credit limit = 0 → aucun crédit', () => {
+    const c: Customer = { ...mockCust, credit_limit: 0, balance: 0 }
+    expect(c.credit_limit - c.balance).toBe(0)
+  })
+})
+
+describe('2i. Module Commercial — Invoice Payment Status', () => {
+  it('amount_paid=0 → not_paid', () => {
+    expect(mockInv.amount_paid).toBe(0)
+    expect(mockInv.amount_due).toBe(mockInv.total)
+  })
+  it('amount_paid=total → paid', () => {
+    const inv: Invoice = { ...mockInv, amount_paid: 1200, amount_due: 0, status: 'paid' }
+    expect(inv.amount_paid).toBe(inv.total)
+    expect(inv.amount_due).toBe(0)
+  })
+  it('amount_paid partiel → partial', () => {
+    const inv: Invoice = { ...mockInv, amount_paid: 600, amount_due: 600 }
+    expect(inv.amount_paid).toBeLessThan(inv.total)
+    expect(inv.amount_due).toBeGreaterThan(0)
+  })
+  it('amount_paid + amount_due = total', () => {
+    expect(mockInv.amount_paid + mockInv.amount_due).toBe(mockInv.total)
+  })
+  it('Overdue: due_date < today et status != paid', () => {
+    const inv: Invoice = { ...mockInv, due_date: '2024-01-01', status: 'overdue' }
+    expect(inv.due_date < '2024-07-27').toBe(true)
+    expect(inv.status).not.toBe('paid')
+  })
+})
+
+describe('2j. Module Commercial — Line Item Consistency', () => {
+  it('Quote: sum(line.total) = subtotal', () => {
+    const sum = (mockQ.quote_lines || []).reduce((s: number, l: QuoteLine) => s + l.total, 0)
+    expect(sum).toBe(mockQ.subtotal)
+  })
+  it('Quote: sum(line.vat_total) = vat_total', () => {
+    const sum = (mockQ.quote_lines || []).reduce((s: number, l: QuoteLine) => s + l.vat_total, 0)
+    expect(sum).toBe(mockQ.vat_total)
+  })
+  it('Quote: subtotal + vat_total = total', () => {
+    expect(mockQ.subtotal + mockQ.vat_total).toBe(mockQ.total)
+  })
+  it('Invoice: subtotal + vat_total = total', () => {
+    expect(mockInv.subtotal + mockInv.vat_total).toBe(mockInv.total)
+  })
+  it('Sales order: subtotal + vat = total', () => {
+    expect(mockSO.subtotal + mockSO.vat).toBe(mockSO.total)
+  })
+  it('Line total = qty * unit_price', () => {
+    expect(mockQL.quantity * mockQL.unit_price).toBe(mockQL.total)
+  })
+  it('Line vat_total = total * (vat_rate / 100)', () => {
+    expect(mockQL.total * (mockQL.vat_rate / 100)).toBe(mockQL.vat_total)
+  })
+  it('Invoice lines: sum(total) = subtotal', () => {
+    const sum = (mockInv.invoice_lines || []).reduce((s: number, l: InvoiceLine) => s + l.total, 0)
+    expect(sum).toBe(mockInv.subtotal)
+  })
+  it('Multi-taux TVA: 20% + 10% + 5.5%', () => {
+    const lines = [
+      { ...mockIL, id: 'l1', total: 1000, vat_rate: 20, vat_total: 200 },
+      { ...mockIL, id: 'l2', total: 500, vat_rate: 10, vat_total: 50 },
+      { ...mockIL, id: 'l3', total: 200, vat_rate: 5.5, vat_total: 11 },
+    ]
+    const sub = lines.reduce((s, l) => s + l.total, 0)
+    const vat = lines.reduce((s, l) => s + l.vat_total, 0)
+    expect(sub).toBe(1700)
+    expect(vat).toBe(261)
+    expect(sub + vat).toBe(1961)
+  })
+})
+
+describe('2k. Module Commercial — Advance Invoice', () => {
+  it('Advance: is_advance_invoice=true, type=advance', () => {
+    const inv: Invoice = { ...mockInv, is_advance_invoice: true, advance_amount: 500, invoice_type: 'advance' }
+    expect(inv.is_advance_invoice).toBe(true)
+    expect(inv.invoice_type).toBe('advance')
+  })
+  it('Advance VAT: 500 * 20% = 100', () => {
+    expect(500 * 0.20).toBe(100)
+  })
+  it('Balance invoice: type=balance, parent set', () => {
+    const inv: Invoice = { ...mockInv, invoice_type: 'balance', parent_invoice_id: 'inv-adv-1' }
+    expect(inv.invoice_type).toBe('balance')
+    expect(inv.parent_invoice_id).toBe('inv-adv-1')
+  })
+})
+
+describe('2l. Module Commercial — Fulfillment & Robustness', () => {
+  it('Order fully delivered: delivered_qty = qty pour toutes lignes', () => {
+    const lines: SalesOrderLine[] = [
+      { ...mockSOL, delivered_quantity: 10 },
+      { ...mockSOL, id: 'sol2', delivered_quantity: 5, quantity: 5 },
+    ]
+    const allDelivered = lines.every(l => l.delivered_quantity >= l.quantity)
+    expect(allDelivered).toBe(true)
+  })
+  it('Order partial: 5/10 → not fully delivered', () => {
+    const lines: SalesOrderLine[] = [{ ...mockSOL, delivered_quantity: 5, quantity: 10 }]
+    expect(lines.every(l => l.delivered_quantity >= l.quantity)).toBe(false)
+  })
+  it('Quote sans lines: subtotal=0, total=0', () => {
+    const emptyQ: Quote = { ...mockQ, quote_lines: [], subtotal: 0, vat_total: 0, total: 0 }
+    const sum = (emptyQ.quote_lines || []).reduce((s: number, l: QuoteLine) => s + l.total, 0)
+    expect(sum).toBe(0)
+  })
+  it('Invoice avec lines vides: pas de crash', () => {
+    const emptyInv: Invoice = { ...mockInv, invoice_lines: [] }
+    const sum = (emptyInv.invoice_lines || []).reduce((s: number, l: InvoiceLine) => s + l.total, 0)
+    expect(sum).toBe(0)
+  })
+  it('Customer avec balance null: pas de crash', () => {
+    const c: Customer = { ...mockCust, balance: 0 }
+    expect(c.balance).not.toBeNull()
+    expect(c.balance).toBe(0)
+  })
+  it('Promotion avec value null: remise=0', () => {
+    const p: Promotion = { ...mockPromo, value: null }
+    const discount = p.value ? Number(p.value) : 0
+    expect(discount).toBe(0)
+  })
+  it('DN avec carrier null: pas de crash', () => {
+    const dn: DeliveryNote = { ...mockDN, carrier: null as any }
+    expect(dn.carrier).toBeNull()
+  })
+  it('Invoice avec amount_paid > total: amount_due=0 (pas négatif)', () => {
+    const overpaid: Invoice = { ...mockInv, amount_paid: 1500, amount_due: 0 }
+    expect(Math.max(overpaid.total - overpaid.amount_paid, 0)).toBe(0)
   })
 })

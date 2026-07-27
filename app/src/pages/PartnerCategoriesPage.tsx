@@ -63,7 +63,7 @@ export function PartnerCategoriesPage() {
         />
       ) : (
         <Card>
-          <Table headers={[t('partnerCategories.colName'), t('partnerCategories.colColor'), t('partnerCategories.colParent'), tCommon('common.actions')]}>
+          <Table headers={[t('partnerCategories.colName'), t('partnerCategories.colColor'), t('partnerCategories.colParent'), tCommon('table.actions')]}>
             {categories.map((c) => {
               const parent = categories.find((p) => p.id === c.parent_id)
               return (

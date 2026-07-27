@@ -23,5 +23,18 @@
   ],
   "categories": ["business", "finance", "productivity"],
   "lang": "fr",
-  "dir": "ltr"
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Espace employé",
+      "url": "/employee",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Tableau de bord RH",
+      "url": "/hr/home",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": []
 }

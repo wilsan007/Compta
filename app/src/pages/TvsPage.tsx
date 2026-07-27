@@ -164,8 +164,8 @@ function TvsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
           </div>
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
         </div>
       </div>
     </div>

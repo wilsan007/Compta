@@ -88,7 +88,7 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
         />
       ) : (
         <Card>
-          <Table headers={['', t('creditNotes.number'), t('creditNotes.date'), t('creditNotes.customer'), t('creditNotes.amount'), t('creditNotes.status'), tCommon('table.actions')]}>
+          <Table headers={['', t('creditNotes.number'), t('creditNotes.date'), t('creditNotes.customer'), t('creditNotes.sourceInvoice'), t('creditNotes.amount'), t('creditNotes.status'), tCommon('table.actions')]}>
             {creditNotes.map((cn) => (
               <div key={cn.id}>
                 <TableRow onClick={() => toggleExpand(cn.id)}>
@@ -100,6 +100,7 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
                   <TableCell className="font-mono font-semibold">{cn.number}</TableCell>
                   <TableCell>{formatDate(cn.date)}</TableCell>
                   <TableCell>{cn.customer_name || '—'}</TableCell>
+                  <TableCell className="font-mono text-xs text-[var(--color-text-secondary)]">{cn.source_invoice_id ? cn.source_invoice_id.slice(0, 8) + '...' : '—'}</TableCell>
                   <TableCell className="font-mono text-[var(--color-danger)] text-right">-{formatCurrency(Number(cn.total))}</TableCell>
                   <TableCell><Badge variant={statusBadge[cn.status]}>{translateStatus(cn.status)}</Badge></TableCell>
                   <TableCell>
@@ -123,11 +124,12 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(line.total))}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{t('invoices.vatAmount')}: {formatCurrency(Number(line.vat_total))}</TableCell>
                     <TableCell />
+                    <TableCell />
                   </tr>
                 ))}
                 {cn.reason && (
                   <tr className="bg-[var(--color-neutral-50)]">
-                    <TableCell /><TableCell colSpan={6} className="text-xs text-[var(--color-text-secondary)] italic">{t('creditNotes.reason')}: {cn.reason}</TableCell>
+                    <TableCell /><TableCell colSpan={7} className="text-xs text-[var(--color-text-secondary)] italic">{t('creditNotes.reason')}: {cn.reason}</TableCell>
                   </tr>
                 )}
               </div>

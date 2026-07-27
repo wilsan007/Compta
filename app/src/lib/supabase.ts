@@ -92,6 +92,41 @@ const TENANT_TABLES = new Set([
   'analytic_distribution_lines',
   // Sprint 8: Exchange Gain/Loss + Check Books
   'exchange_gain_loss_entries', 'check_books', 'checks',
+  // Sprint A: Commercial Transformations
+  'document_charges', 'document_transformations',
+  // Sprint B: Customer Advanced
+  'customer_contacts', 'supplier_contacts',
+  // Sprint C: Purchase Advanced
+  'purchase_requests', 'purchase_request_lines',
+  'supplier_price_lists', 'supplier_price_list_lines',
+  'supplier_delivery_schedules',
+  // Sprint D: Catalog Extended
+  'product_grids', 'product_grid_combinations', 'product_packagings', 'product_links', 'promotions',
+  // Sprint E: Stock Advanced
+  'warehouse_users', 'stock_alerts',
+  // Sprint F: CRM Sales
+  'crm_opportunities', 'crm_activities', 'crm_campaigns', 'crm_campaign_recipients', 'crm_territories', 'crm_forecasts',
+  // Sprint G: CRM Service
+  'service_tickets', 'service_ticket_messages', 'service_contracts', 'knowledge_base_articles',
+  // Sprint H: POS
+  'pos_terminals', 'pos_sessions', 'pos_tickets', 'pos_ticket_lines',
+  // Sprint I: Dématérialisation
+  'electronic_signatures', 'online_payments', 'document_shares',
+  // Sprint J: Pilotage
+  'saved_filters',
+  // Sprint B: Leaves & Absences
+  'leave_balances', 'public_holidays', 'leave_rules', 'approval_workflows', 'leave_provisions', 'staff_requirements',
+  // Sprint C: Payroll Advanced
+  'meal_voucher_config', 'payroll_variable_elements', 'sepa_payment_orders', 'pay_slip_clarified',
+  // Sprint D: Admin & Arrêts
+  'work_stoppages', 'ijss_history', 'work_hardship_records', 'cpf_transactions',
+  'medical_exams', 'expense_categories', 'interview_campaigns', 'employee_objectives',
+  // Sprint E: Sortie & Entretiens
+  'employee_exit_processes',
+  // Sprint F: Social Declarations
+  'social_declarations', 'cice_config', 'pas_rates', 'at_rates', 'bdes_indicators', 'honorarium_records',
+  // Sprint G: Dématérialisation RH
+  'employee_documents', 'document_distribution_logs', 'rh_requests', 'rh_knowledge_base',
 ])
 
 const EXEMPT_TABLES = new Set([

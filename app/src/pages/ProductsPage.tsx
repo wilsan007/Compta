@@ -10,7 +10,7 @@ import { useLegislation } from '@/lib/legislation'
 
 export function ProductsPage() {
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
 const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<StockMovement[]>([])
@@ -89,7 +89,7 @@ const [products, setProducts] = useState<Product[]>([])
         />
       ) : (
         <Card>
-          <Table headers={[t('products.name'), 'SKU', tCommon('common.type'), t('products.salePrice'), t('products.purchasePrice'), tCommon('common.stock'), tCommon('table.actions')]}>
+          <Table headers={[t('products.name'), t('products.sku'), tCommon('common.type'), t('products.salePrice'), t('products.purchasePrice'), tCommon('common.stock'), tCommon('table.actions')]}>
             {filtered.map((p) => (
               <TableRow key={p.id} onClick={() => setSelectedProduct(p)}>
                 <TableCell className="font-medium">{p.name}</TableCell>

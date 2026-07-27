@@ -1,0 +1,48 @@
+{
+  "signatures": {
+    "title": "Electronic signatures",
+    "subtitle": "Manage document signatures",
+    "documentType": "Document type",
+    "documentId": "Document ID",
+    "signerName": "Signer",
+    "signerEmail": "Signer email",
+    "signedAt": "Signed at",
+    "ipAddress": "IP address",
+    "noSignatures": "No signatures",
+    "noSignaturesDescription": "No electronic signatures recorded",
+    "new": "New signature"
+  },
+  "payments": {
+    "title": "Online payments",
+    "subtitle": "Track customer online payments",
+    "invoice": "Invoice",
+    "customer": "Customer",
+    "provider": "Provider",
+    "amount": "Amount",
+    "currency": "Currency",
+    "status": "Status",
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "refunded": "Refunded",
+    "paidAt": "Paid at",
+    "noPayments": "No payments",
+    "noPaymentsDescription": "No online payments recorded"
+  },
+  "shares": {
+    "title": "Document shares",
+    "subtitle": "Manage document share links",
+    "documentType": "Document type",
+    "sharedWith": "Shared with",
+    "shareToken": "Share token",
+    "expiresAt": "Expires at",
+    "viewed": "Viewed",
+    "viewedAt": "Viewed at",
+    "notViewed": "Not viewed",
+    "noShares": "No shares",
+    "noSharesDescription": "No document shares recorded",
+    "new": "New share",
+    "createLink": "Create link",
+    "copyLink": "Copy link"
+  }
+}

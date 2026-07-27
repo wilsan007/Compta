@@ -41,7 +41,7 @@ export function BankSyncPage() {
       setAccounts(accs)
       setTransactions(txns.filter((tx: any) => tx.source === 'auto'))
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setLoading(false)
     }
@@ -56,7 +56,7 @@ export function BankSyncPage() {
       toast('success', tCommon('common.success'), t('bankSync.syncSuccess'))
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), t('bankSync.syncError') + ': ' + (err.message || ''))
+      toast('error', tCommon('common.error'), t('bankSync.syncError') + ': ' + (err.message || ''))
     } finally {
       setSyncing(null)
     }
@@ -226,7 +226,7 @@ function SettingsTab({ connections, onUpdate }: { connections: BankConnection[];
       toast('success', tCommon('common.success'), t('bankSync.settings.syncFrequency') + ' → ' + frequency)
       onUpdate()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || '')
+      toast('error', tCommon('common.error'), err.message || '')
     }
   }
 

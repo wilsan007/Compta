@@ -56,12 +56,12 @@ const [boms, setBOMs] = useState<BOM[]>([])
   async function handleDelete(id: string) {
   if (!window.confirm(t('bom.confirmDelete'))) return
     try { await deleteBOM(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleDeleteLine(lineId: string, bomId: string) {
     try { await deleteBOMLine(lineId); const lns = await getBOMLines(bomId); setLines((prev) => ({ ...prev, [bomId]: lns })) }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (
@@ -164,7 +164,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
     try {
       await createBOM({ code, name, product_id: productId || null, quantity, unit, active: true, bom_type: bomType, routing_id: routingId || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -225,7 +225,7 @@ function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; pro
     try {
       await createBOMLine({ bom_id: bomId, product_id: productId, quantity, unit_cost: unitCost, position } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
     finally { setSaving(false) }
   }
 

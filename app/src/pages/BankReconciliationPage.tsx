@@ -36,7 +36,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       await updateBankTransaction(id, { reconciled: !current, matched: !current })
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -46,7 +46,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       toast('success', tCommon('common.success'), t('reconciliation.autoMatchResult', { matched: result.matched, unmatched: result.unmatched }))
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 

@@ -31,7 +31,7 @@ export function ToolingsPage() {
   async function handleDelete(id: string) {
     if (!window.confirm(t('toolings.confirmDelete'))) return
     try { await deleteTooling(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   function handleExport() {
@@ -138,7 +138,7 @@ function ToolingFormModal({ machines, onClose, onSaved }: { machines: Machine[];
     try {
       await createTooling({ code, name, machine_id: machineId || null, max_pieces: maxPieces, initial_counter: initialCounter, current_counter: currentCounter, status: status as any, notes })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (

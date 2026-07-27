@@ -193,5 +193,55 @@
       "conducted": "مُجرى",
       "cancelled": "ملغى"
     }
+  },
+  "preparation": {
+    "title": "تحضير الرواتب",
+    "subtitle": "معالج تحضير الرواتب في 5 خطوات",
+    "steps": { "period": "الفترة", "constants": "الثوابت", "variables": "المتغيرات", "preview": "معاينة", "validate": "التحقق" },
+    "selectPayRun": "اختر حملة رواتب",
+    "next": "التالي", "prev": "السابق",
+    "activeEmployees": "الموظفون النشطون",
+    "grossTotal": "إجمالي الراتب", "netTotal": "صافي الإجمالي",
+    "variableTotal": "إجمالي المتغيرات", "estimatedTotal": "الإجمالي المقدر",
+    "reverseCalc": "حساب عكسي",
+    "importTimesheet": "استيراد ساعات العمل", "importLeaves": "استيراد العطل",
+    "importExpenses": "استيراد المصاريف", "importMealVouchers": "استيراد قسائم الطعام",
+    "addElement": "إضافة عنصر",
+    "employee": "الموظف", "type": "النوع", "description": "الوصف",
+    "quantity": "الكمية", "unitPrice": "سعر الوحدة", "amount": "المبلغ",
+    "noElements": "لا عناصر متغيرة", "noElementsDescription": "لم يتم استيراد عناصر متغيرة لحملة الرواتب هذه",
+    "imported": "تم الاستيراد بنجاح",
+    "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "transport": "نقل", "other": "أخرى" },
+    "validate": "التحقق من التحضير", "validated": "تم التحقق من التحضير",
+    "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير"
+  },
+  "reverseCalc": {
+    "title": "حساب عكسي (من الصافي إلى الإجمالي)",
+    "targetNet": "الصافي المستهدف", "calculatedGross": "الإجمالي المحسوب",
+    "calculate": "حساب", "code": "الرمز", "name": "الاسم", "amount": "المبلغ"
+  },
+  "mealVouchers": {
+    "title": "قسائم الطعام", "subtitle": "إدارة قسائم طعام الموظفين",
+    "month": "الشهر", "year": "السنة", "calculate": "حساب",
+    "config": "التكوين", "configTitle": "تكوين قسائم الطعام",
+    "voucherValue": "قيمة القسيمة", "employerShare": "حصة المشغل (%)", "employeeShare": "حصة الموظف (%)",
+    "maxPerMonth": "الحد الأقصى شهرياً",
+    "employee": "الموظف", "department": "القسم",
+    "workingDays": "أيام العمل", "nbVouchers": "عدد القسائم",
+    "unitValue": "قيمة الوحدة", "employerAmount": "مبلغ المشغل", "employeeAmount": "مبلغ الموظف",
+    "total": "المجموع", "payRun": "حملة الرواتب", "selectPayRun": "اختر حملة رواتب",
+    "generateToPayroll": "توليد إلى الرواتب", "generated": "تم توليد قسائم الطعام إلى الرواتب",
+    "calculated": "تم الحساب",
+    "noData": "لا بيانات", "noDataDescription": "لم يتم حساب قسائم الطعام"
+  },
+  "sepa": {
+    "title": "تحويلات SEPA", "subtitle": "إدارة أوامر تحويل SEPA للرواتب",
+    "number": "الرقم", "payRun": "حملة الرواتب", "executionDate": "تاريخ التنفيذ",
+    "totalAmount": "المبلغ الإجمالي", "employees": "الموظفون", "status": "الحالة",
+    "statuses": { "draft": "مسودة", "generated": "مُولّد", "transmitted": "مُرسل", "processed": "مُعالج", "rejected": "مرفوض" },
+    "transmit": "إرسال", "transmitted": "تم إرسال أمر SEPA",
+    "confirmTransmit": "تأكيد إرسال أمر SEPA؟",
+    "noFile": "لا ملف متاح",
+    "noOrders": "لا أوامر SEPA", "noOrdersDescription": "لم يتم توليد أوامر تحويل SEPA"
   }
 }

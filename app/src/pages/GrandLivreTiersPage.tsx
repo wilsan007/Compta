@@ -82,7 +82,7 @@ export function GrandLivreTiersPage() {
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: t('grandLivreTiers.title') }]} />
       <PageHeader title={t('grandLivreTiers.title')} subtitle={t('grandLivreTiers.subtitle')} action={
         <div className="flex gap-2">
-          {movements.length > 0 && <Button variant="secondary" onClick={handleExport}><Download className="w-4 h-4" /> {tCommon('common.actions.export')}</Button>}
+          {movements.length > 0 && <Button variant="secondary" onClick={handleExport}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>}
           {movements.length > 0 && <Button variant="secondary" onClick={() => setShowExtourne(true)}><RotateCcw className="w-4 h-4" /> {t('extourne.title')}</Button>}
         </div>
       } />
@@ -175,7 +175,7 @@ export function GrandLivreTiersPage() {
           <Input label={t('extourne.reason')} value={extourneReason} onChange={e => setExtourneReason(e.target.value)} />
           <div className="flex gap-2">
             <Button onClick={handleExtourne} disabled={extourneLoading}><RotateCcw className="w-4 h-4" /> {t('extourne.generate')}</Button>
-            <Button variant="secondary" onClick={() => setShowExtourne(false)}>{tCommon('common.actions.cancel')}</Button>
+            <Button variant="secondary" onClick={() => setShowExtourne(false)}>{tCommon('actions.cancel')}</Button>
           </div>
         </Card>
       )}

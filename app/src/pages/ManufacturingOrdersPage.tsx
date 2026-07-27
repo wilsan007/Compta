@@ -37,13 +37,13 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updateManufacturingOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!window.confirm(t('manufacturing.confirmDelete'))) return
     try { await deleteManufacturingOrder(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (
@@ -123,7 +123,7 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
       const number = `OF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
       await createManufacturingOrder({ number, bom_id: bomId || null, product_id: null, quantity, status: 'planned', start_date: startDate || null, end_date: endDate || null, warehouse_id: warehouseId || null, routing_id: routingId || null, notes: notes || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
     finally { setSaving(false) }
   }
 

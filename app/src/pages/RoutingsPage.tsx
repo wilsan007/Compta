@@ -64,7 +64,7 @@ export function RoutingsPage() {
   async function handleDelete(id: string) {
     if (!window.confirm(t('routings.confirmDelete'))) return
     try { await deleteRouting(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleDeleteOp(opId: string, routingId: string) {
@@ -72,7 +72,7 @@ export function RoutingsPage() {
       await deleteRoutingOperation(opId)
       const ops = await getRoutingOperations(routingId)
       setOperations((prev) => ({ ...prev, [routingId]: ops }))
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleRenumber(routingId: string) {
@@ -81,7 +81,7 @@ export function RoutingsPage() {
       const ops = await getRoutingOperations(routingId)
       setOperations((prev) => ({ ...prev, [routingId]: ops }))
       toast('success', t('routings.renumberSuccess'), t('routings.renumberSuccessMessage'))
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   function handleExport() {
@@ -214,7 +214,7 @@ function RoutingFormModal({ products, onClose, onSaved }: { products: Product[];
     try {
       await createRouting({ code, name, description, product_id: productId || null, version: 1, active: true })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (
@@ -266,7 +266,7 @@ function RoutingOperationFormModal({ routingId, workCenters, machines, toolings,
         st_unit: stUnit || null, st_quantity: stQuantity,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (

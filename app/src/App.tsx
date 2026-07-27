@@ -115,6 +115,13 @@ import { ProductionDashboardPage } from '@/pages/ProductionDashboardPage'
 import { PaySlipsPage } from '@/pages/PaySlipsPage'
 import { PayrollAccountingPage } from '@/pages/PayrollAccountingPage'
 import { LeaveRequestsPage } from '@/pages/LeaveRequestsPage'
+import { LeaveRulesPage } from '@/pages/settings/LeaveRulesPage'
+import { LeaveBalancesPage } from '@/pages/hr/LeaveBalancesPage'
+import { LeavePlanningPage } from '@/pages/hr/LeavePlanningPage'
+import { ManagerLeaveApprovalsPage } from '@/pages/employee/ManagerLeaveApprovalsPage'
+import { PayrollPreparationPage } from '@/pages/payroll/PayrollPreparationPage'
+import { MealVouchersPage } from '@/pages/payroll/MealVouchersPage'
+import { SepaPaymentsPage } from '@/pages/payroll/SepaPaymentsPage'
 import { ContractsPage } from '@/pages/ContractsPage'
 import { LegalDeclarationsPage } from '@/pages/LegalDeclarationsPage'
 import { FinancialDashboardPage } from '@/pages/FinancialDashboardPage'
@@ -130,6 +137,12 @@ import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { TenantSelectionPage } from '@/pages/TenantSelectionPage'
 import { AuditLogPage } from '@/pages/AuditLogPage'
 import { TrainingPage } from '@/pages/TrainingPage'
+import { SocialDeclarationsPage } from '@/pages/hr/SocialDeclarationsPage'
+import { BdesPage } from '@/pages/hr/BdesPage'
+import { DocumentManagementPage } from '@/pages/hr/DocumentManagementPage'
+import { RhRequestsPage } from '@/pages/hr/RhRequestsPage'
+import { RhKnowledgeBasePage } from '@/pages/hr/RhKnowledgeBasePage'
+import { EmployeeDocumentsPage as EmployeeSelfDocsPage } from '@/pages/employee/EmployeeDocumentsPage'
 import { EInvoicePage } from '@/pages/EInvoicePage'
 import { SageImportPage } from '@/pages/SageImportPage'
 import { AccountantPortalPage } from '@/pages/AccountantPortalPage'
@@ -141,6 +154,18 @@ import { MultiCompanyPage } from '@/pages/MultiCompanyPage'
 import { ModuleHubPage, SubGroupHubPage } from '@/components/ModuleHub'
 import { ModuleHomePage } from '@/components/ModuleHomePage'
 import { ProspectsPage, RepresentativesPage, WarehouseLocationsPage, QualityCheckPage, PickListPage, SerialNumbersPage, ProductBatchesPage, DocumentTemplatesPage, DeliverySchedulePage, ProductSubstitutesPage, DormantStockPage } from '@/pages/Phase2Pages'
+import { PromotionsPage } from '@/pages/PromotionsPage'
+import { ProductGridsPage } from '@/pages/ProductGridsPage'
+import { StockAlertsPage } from '@/pages/StockAlertsPage'
+import { OpportunitiesPage } from '@/pages/crm/OpportunitiesPage'
+import { ActivitiesPage } from '@/pages/crm/ActivitiesPage'
+import { CampaignsPage } from '@/pages/crm/CampaignsPage'
+import { TerritoriesPage } from '@/pages/crm/TerritoriesPage'
+import { SalesForecastPage } from '@/pages/crm/SalesForecastPage'
+import { TicketsPage } from '@/pages/crm/TicketsPage'
+import { ServiceContractsPage } from '@/pages/crm/ServiceContractsPage'
+import { KnowledgeBasePage } from '@/pages/crm/KnowledgeBasePage'
+import { CustomerPortalPage } from '@/pages/crm/CustomerPortalPage'
 import { MCFPage, TreasuryTransfersPage, CreditLinesPage, InvestmentsPage, ValueDateTrackingPage, TreasuryRecurringPage, ConsolidatedTreasuryPage } from '@/pages/Phase3Pages'
 import { PayrollComponentsPage, PayrollTemplatesPage, SalaryAdvancesPage, DSNPage, DPAEPage, LegalWatchPage, ExpenseReportsPage, PayRecallsPage, PayrollArchivePage, InterviewsPage } from '@/pages/Phase4Pages'
 import { AssetDepreciationPlansPage, AssetFamiliesPage, AssetRevaluationPage, BatchDisposalPage, AssetFromEntryPage } from '@/pages/Phase5Pages'
@@ -161,6 +186,34 @@ import { RGPDPage } from '@/pages/RGPDPage'
 import { GridTemplatesPage, PaymentTemplatesComptaPage, StandardLabelsPage, AnalyticJournalCodesPage } from '@/pages/Phase7DPages'
 import { AnalyticODEntryPage, ThirdPartyInquiryPage, AnalyticInquiryPage, ReimputationPage } from '@/pages/Phase7DInquiryPages'
 import { PartnerCategoriesPage } from '@/pages/PartnerCategoriesPage'
+import { Customer360Page } from '@/pages/Customer360Page'
+import { PurchaseRequestsPage } from '@/pages/PurchaseRequestsPage'
+import { SupplierPriceListsPage } from '@/pages/SupplierPriceListsPage'
+import { SupplierDeliverySchedulePage } from '@/pages/SupplierDeliverySchedulePage'
+import { PosTerminalPage } from '@/pages/PosTerminalPage'
+import { PosSessionsPage } from '@/pages/PosSessionsPage'
+import { PosStatsPage } from '@/pages/PosStatsPage'
+import { OnlinePaymentPage } from '@/pages/OnlinePaymentPage'
+import { SharedDocumentPage } from '@/pages/SharedDocumentPage'
+import { RevenueSimulationPage } from '@/pages/sales/RevenueSimulationPage'
+import { MarginAnalysisPage } from '@/pages/sales/MarginAnalysisPage'
+import { WorkHardshipPage } from '@/pages/WorkHardshipPage'
+import { CareerHistoryPage } from '@/pages/CareerHistoryPage'
+import { CPFPage } from '@/pages/CPFPage'
+import { EmployeeDocumentsPage } from '@/pages/EmployeeDocumentsPage'
+import { WorkStoppagesPage } from '@/pages/WorkStoppagesPage'
+import { MedicalExamsPage } from '@/pages/MedicalExamsPage'
+import { ExpenseCategoriesPage } from '@/pages/ExpenseCategoriesPage'
+import { EmployeeExitPage } from '@/pages/EmployeeExitPage'
+import { InterviewCampaignsPage } from '@/pages/InterviewCampaignsPage'
+import { EmployeeExpensesPage } from '@/pages/EmployeeExpensesPage'
+import { ManagerExpenseApprovalsPage } from '@/pages/ManagerExpenseApprovalsPage'
+import { EmployeeInterviewsPage } from '@/pages/EmployeeInterviewsPage'
+import { EmployeeLayout } from '@/components/EmployeeLayout'
+import { EmployeeDashboardPage } from '@/pages/employee/EmployeeDashboardPage'
+import { EmployeeProfilePage } from '@/pages/employee/EmployeeProfilePage'
+import { EmployeeLeavesPage } from '@/pages/employee/EmployeeLeavesPage'
+import { RhReportsPage } from '@/pages/hr/RhReportsPage'
 
 function App() {
   return (
@@ -341,8 +394,21 @@ function App() {
           <Route path="/hr/pay-slips" element={<PaySlipsPage />} />
           <Route path="/hr/payroll-accounting" element={<PayrollAccountingPage />} />
           <Route path="/hr/leave-requests" element={<LeaveRequestsPage />} />
+          <Route path="/hr/leave-rules" element={<LeaveRulesPage />} />
+          <Route path="/hr/leave-balances" element={<LeaveBalancesPage />} />
+          <Route path="/hr/leave-planning" element={<LeavePlanningPage />} />
+          <Route path="/hr/leave-approvals" element={<ManagerLeaveApprovalsPage />} />
+          <Route path="/hr/payroll-preparation" element={<PayrollPreparationPage />} />
+          <Route path="/hr/meal-vouchers" element={<MealVouchersPage />} />
+          <Route path="/hr/sepa-payments" element={<SepaPaymentsPage />} />
           <Route path="/hr/contracts" element={<ContractsPage />} />
           <Route path="/hr/declarations" element={<LegalDeclarationsPage />} />
+          <Route path="/hr/social-declarations" element={<SocialDeclarationsPage />} />
+          <Route path="/hr/bdes" element={<BdesPage />} />
+          <Route path="/hr/document-management" element={<DocumentManagementPage />} />
+          <Route path="/hr/rh-requests" element={<RhRequestsPage />} />
+          <Route path="/hr/knowledge-base" element={<RhKnowledgeBasePage />} />
+          <Route path="/employee/documents" element={<EmployeeSelfDocsPage />} />
 
           {/* Dashboards */}
           <Route path="/dashboard/home" element={<ModuleHomePage moduleId="dashboards" />} />
@@ -392,6 +458,18 @@ function App() {
           <Route path="/stock/product-batches" element={<ProductBatchesPage />} />
           <Route path="/stock/product-substitutes" element={<ProductSubstitutesPage />} />
           <Route path="/stock/dormant-stock" element={<DormantStockPage />} />
+          <Route path="/stock/product-grids" element={<ProductGridsPage />} />
+          <Route path="/stock/alerts" element={<StockAlertsPage />} />
+          <Route path="/sales/promotions" element={<PromotionsPage />} />
+          <Route path="/crm/opportunities" element={<OpportunitiesPage />} />
+          <Route path="/crm/activities" element={<ActivitiesPage />} />
+          <Route path="/crm/campaigns" element={<CampaignsPage />} />
+          <Route path="/crm/territories" element={<TerritoriesPage />} />
+          <Route path="/crm/forecasts" element={<SalesForecastPage />} />
+          <Route path="/crm/tickets" element={<TicketsPage />} />
+          <Route path="/crm/contracts" element={<ServiceContractsPage />} />
+          <Route path="/crm/knowledge-base" element={<KnowledgeBasePage />} />
+          <Route path="/portal" element={<CustomerPortalPage />} />
           <Route path="/settings/document-templates" element={<AdminRoute><DocumentTemplatesPage /></AdminRoute>} />
 
           {/* Phase 3: Treasury */}
@@ -414,6 +492,31 @@ function App() {
           <Route path="/hr/pay-recalls" element={<PayRecallsPage />} />
           <Route path="/hr/payroll-archives" element={<PayrollArchivePage />} />
           <Route path="/hr/interviews" element={<InterviewsPage />} />
+          <Route path="/hr/hardship" element={<WorkHardshipPage />} />
+          <Route path="/hr/career" element={<CareerHistoryPage />} />
+          <Route path="/hr/cpf" element={<CPFPage />} />
+          <Route path="/hr/employee-documents" element={<EmployeeDocumentsPage />} />
+          <Route path="/hr/work-stoppages" element={<WorkStoppagesPage />} />
+          <Route path="/hr/medical-exams" element={<MedicalExamsPage />} />
+          <Route path="/hr/expense-categories" element={<ExpenseCategoriesPage />} />
+          <Route path="/hr/employee-exit" element={<EmployeeExitPage />} />
+          <Route path="/hr/interview-campaigns" element={<InterviewCampaignsPage />} />
+          <Route path="/hr/my-expenses" element={<EmployeeExpensesPage />} />
+          <Route path="/hr/expense-approvals" element={<ManagerExpenseApprovalsPage />} />
+          <Route path="/hr/my-interviews" element={<EmployeeInterviewsPage />} />
+          <Route path="/hr/reports" element={<RhReportsPage />} />
+
+          {/* ============ Espace Employé ============ */}
+          <Route path="/employee" element={<EmployeeLayout />}>
+            <Route index element={<EmployeeDashboardPage />} />
+            <Route path="leaves" element={<EmployeeLeavesPage />} />
+            <Route path="profile" element={<EmployeeProfilePage />} />
+            <Route path="expenses" element={<EmployeeExpensesPage />} />
+            <Route path="interviews" element={<EmployeeInterviewsPage />} />
+            <Route path="documents" element={<EmployeeSelfDocsPage />} />
+            <Route path="manager/approvals" element={<ManagerLeaveApprovalsPage />} />
+            <Route path="manager/expense-approvals" element={<ManagerExpenseApprovalsPage />} />
+          </Route>
 
           {/* Phase 5: Fixed Assets */}
           <Route path="/accounting/asset-depreciation-plans" element={<AssetDepreciationPlansPage />} />
@@ -466,6 +569,28 @@ function App() {
           <Route path="/accounting/partner-categories" element={<PartnerCategoriesPage />} />
           <Route path="/banking/check-books" element={<CheckBooksPage />} />
           <Route path="/banking/exchange-gain-loss" element={<ExchangeGainLossPage />} />
+          {/* Sprint B: Customer Advanced */}
+          <Route path="/sales/customers/:id/360" element={<Customer360Page />} />
+          {/* Sprint C: Purchase Advanced */}
+          <Route path="/purchases/requests" element={<PurchaseRequestsPage />} />
+          <Route path="/purchases/supplier-price-lists" element={<SupplierPriceListsPage />} />
+          <Route path="/purchases/delivery-schedules" element={<SupplierDeliverySchedulePage />} />
+          {/* Sprint D: Catalog Extended */}
+          <Route path="/sales/promotions" element={<PromotionsPage />} />
+          <Route path="/stock/product-grids" element={<ProductGridsPage />} />
+          {/* Sprint E: Stock Advanced */}
+          <Route path="/stock/alerts" element={<StockAlertsPage />} />
+          {/* Sprint H: POS */}
+          <Route path="/pos/terminal/:terminalId" element={<PosTerminalPage />} />
+          <Route path="/pos/terminal" element={<PosTerminalPage />} />
+          <Route path="/pos/sessions" element={<PosSessionsPage />} />
+          <Route path="/pos/stats" element={<PosStatsPage />} />
+          {/* Sprint I: Dématérialisation */}
+          <Route path="/pay/:token" element={<OnlinePaymentPage />} />
+          <Route path="/shared/:token" element={<SharedDocumentPage />} />
+          {/* Sprint J: Pilotage */}
+          <Route path="/sales/simulation" element={<RevenueSimulationPage />} />
+          <Route path="/sales/margins" element={<MarginAnalysisPage />} />
           </Route>
         </Routes>
         </BrowserRouter>

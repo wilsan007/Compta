@@ -37,7 +37,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       await updateBankTransaction(id, { reconciled: !current })
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -47,7 +47,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       await deleteBankTransaction(id)
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
   }
 

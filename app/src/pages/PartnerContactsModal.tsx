@@ -123,7 +123,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                   t('partnerContacts.colType'), t('partnerContacts.colName'),
                   t('partnerContacts.colEmail'), t('partnerContacts.colPhone'),
                   t('partnerContacts.colFunction'), t('partnerContacts.colDefault'),
-                  tCommon('common.actions'),
+                  tCommon('table.actions'),
                 ]}>
                   {contacts.map((c) => (
                     <TableRow key={c.id}>
@@ -174,7 +174,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                 <Table headers={[
                   t('partnerContacts.colIBAN'), t('partnerContacts.colBIC'),
                   t('partnerContacts.colBankName'), t('partnerContacts.colCurrency'),
-                  t('partnerContacts.colDefault'), t('partnerContacts.colActive'), tCommon('common.actions'),
+                  t('partnerContacts.colDefault'), t('partnerContacts.colActive'), tCommon('table.actions'),
                 ]}>
                   {bankAccounts.map((b) => (
                     <TableRow key={b.id}>

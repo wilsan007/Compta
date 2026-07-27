@@ -1,4 +1,4 @@
-const CACHE_NAME = 'compta-v1';
+const CACHE_NAME = 'compta-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -53,6 +53,48 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       });
+    })
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-expenses') {
+    event.waitUntil(
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'SYNC_EXPENSES' }));
+      })
+    );
+  }
+});
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Compta', {
+      body: data.body || '',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      data: data.data || {},
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      if (clients.length > 0) {
+        clients[0].focus();
+      } else {
+        self.clients.openWindow('/');
+      }
     })
   );
 });

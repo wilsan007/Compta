@@ -193,5 +193,55 @@
       "conducted": "Conducted",
       "cancelled": "Cancelled"
     }
+  },
+  "preparation": {
+    "title": "Payroll Preparation",
+    "subtitle": "5-step payroll preparation wizard",
+    "steps": { "period": "Period", "constants": "Constants", "variables": "Variables", "preview": "Preview", "validate": "Validation" },
+    "selectPayRun": "Select a pay run",
+    "next": "Next", "prev": "Previous",
+    "activeEmployees": "Active Employees",
+    "grossTotal": "Gross Total", "netTotal": "Net Total",
+    "variableTotal": "Variable Total", "estimatedTotal": "Estimated Total",
+    "reverseCalc": "Reverse Calculation",
+    "importTimesheet": "Import Timesheets", "importLeaves": "Import Leaves",
+    "importExpenses": "Import Expenses", "importMealVouchers": "Import Meal Vouchers",
+    "addElement": "Add Element",
+    "employee": "Employee", "type": "Type", "description": "Description",
+    "quantity": "Quantity", "unitPrice": "Unit Price", "amount": "Amount",
+    "noElements": "No Variable Elements", "noElementsDescription": "No variable elements imported for this pay run",
+    "imported": "Import successful",
+    "elementTypes": { "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "transport": "Transport", "other": "Other" },
+    "validate": "Validate Preparation", "validated": "Preparation validated",
+    "validateHint": "Review the elements above then validate the preparation"
+  },
+  "reverseCalc": {
+    "title": "Reverse Calculation (Net to Gross)",
+    "targetNet": "Target Net", "calculatedGross": "Calculated Gross",
+    "calculate": "Calculate", "code": "Code", "name": "Name", "amount": "Amount"
+  },
+  "mealVouchers": {
+    "title": "Meal Vouchers", "subtitle": "Manage employee meal vouchers",
+    "month": "Month", "year": "Year", "calculate": "Calculate",
+    "config": "Configuration", "configTitle": "Meal Voucher Configuration",
+    "voucherValue": "Voucher Value", "employerShare": "Employer Share (%)", "employeeShare": "Employee Share (%)",
+    "maxPerMonth": "Max Per Month",
+    "employee": "Employee", "department": "Department",
+    "workingDays": "Working Days", "nbVouchers": "Nb Vouchers",
+    "unitValue": "Unit Value", "employerAmount": "Employer Amount", "employeeAmount": "Employee Amount",
+    "total": "Total", "payRun": "Pay Run", "selectPayRun": "Select a pay run",
+    "generateToPayroll": "Generate to Payroll", "generated": "Meal vouchers generated to payroll",
+    "calculated": "Calculation done",
+    "noData": "No Data", "noDataDescription": "No meal voucher calculation done"
+  },
+  "sepa": {
+    "title": "SEPA Payments", "subtitle": "Manage SEPA payment orders for payroll",
+    "number": "Number", "payRun": "Pay Run", "executionDate": "Execution Date",
+    "totalAmount": "Total Amount", "employees": "Employees", "status": "Status",
+    "statuses": { "draft": "Draft", "generated": "Generated", "transmitted": "Transmitted", "processed": "Processed", "rejected": "Rejected" },
+    "transmit": "Transmit", "transmitted": "SEPA order transmitted",
+    "confirmTransmit": "Confirm transmission of SEPA order?",
+    "noFile": "No file available",
+    "noOrders": "No SEPA Orders", "noOrdersDescription": "No SEPA payment orders generated"
   }
 }

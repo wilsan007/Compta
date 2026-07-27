@@ -36,7 +36,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       await updateVatReturn(id, updates)
       await loadData()
     } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+      toast('error', t('vat.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -46,7 +46,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       await deleteVatReturn(id)
       await loadData()
     } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+      toast('error', t('vat.error'), err.message || tCommon('common.error'))
     }
   }
 
@@ -137,7 +137,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       setTotalSales(result.totalSales)
       setTotalPurchases(result.totalPurchases)
     } catch (err: any) {
-      toast('error', t('vat.calcError'), err.message || tCommon('error'))
+      toast('error', t('vat.calcError'), err.message || tCommon('common.error'))
     } finally {
       setCalculating(false)
     }
@@ -161,7 +161,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       } as any)
       onSaved()
     } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+      toast('error', t('vat.error'), err.message || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

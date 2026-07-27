@@ -16,7 +16,8 @@
     "search": "Rechercher",
     "close": "Fermer",
     "add": "Ajouter",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "code": "Code"
   },
   "dashboard": {
     "title": "Tableau de bord production",
