@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import {
   getEmployeeDocuments, uploadEmployeeDocument, deleteEmployeeDocument,
   distributePaySlips, controlBatchBeforeDiffusion, getDistributionLogs, sendDistributionReminders,
-  signDocument, getDocumentStats,
+  signRhDocument, getDocumentStats,
   getEmployees, getPayRuns,
 } from '@/lib/queries'
 import type { EmployeeDocument, DocumentDistributionLog, Employee, PayRun } from '@/types'
@@ -92,7 +92,7 @@ export function DocumentManagementPage() {
 
   const handleSign = async (docId: string) => {
     try {
-      await signDocument(docId)
+      await signRhDocument(docId)
       toast('success', t('demat.signed'))
       loadData()
     } catch (e: any) {

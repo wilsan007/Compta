@@ -93,7 +93,7 @@ export function SageImportPage() {
           importErrors.push(`Compte ${acc.code}: ${err?.message || 'erreur'}`)
         }
       }
-      console.log(`[Import] Accounts: ${accountsCreated} created, ${accountsSkipped} skipped`)
+      if (import.meta.env.DEV) console.debug('[Import] Accounts:', accountsCreated, 'created,', accountsSkipped, 'skipped')
 
       let entriesCreated = 0
       let entriesSkipped = 0
@@ -252,7 +252,7 @@ export function SageImportPage() {
           }
         }
       }
-      console.log(`[Import] Entries: ${entriesCreated} created, ${entriesSkipped} skipped`)
+      if (import.meta.env.DEV) console.debug('[Import] Entries:', entriesCreated, 'created,', entriesSkipped, 'skipped')
 
       if (importErrors.length > 0) {
         toast('error', 'Erreurs d\'import', `${importErrors.length} erreur(s) — voir console (F12). ${accountsCreated} comptes, ${tiersCreated} tiers et ${entriesCreated} écritures importés.`)

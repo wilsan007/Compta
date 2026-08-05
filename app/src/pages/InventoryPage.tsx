@@ -118,7 +118,7 @@ const [productId, setProductId] = useState('')
           <Input label={t('inventory.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('inventory.validate')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('inventory.validate')}</Button>
           </div>
         </form>
       </div>

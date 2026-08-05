@@ -58,7 +58,7 @@ ALTER TABLE chart_accounts ADD COLUMN IF NOT EXISTS reconcile boolean DEFAULT fa
 ALTER TABLE chart_accounts ADD COLUMN IF NOT EXISTS deprecated boolean DEFAULT false;
 
 -- ============================================================
--- #1: Precise Account Types (19 values, Odoo-aligned)
+-- #1: Precise Account Types (19 values)
 -- ============================================================
 ALTER TABLE chart_accounts ADD COLUMN IF NOT EXISTS account_type text;
 

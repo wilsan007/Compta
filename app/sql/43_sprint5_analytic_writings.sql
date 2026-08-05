@@ -60,7 +60,7 @@ ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_state text DEFAULT 'not_pa
 ALTER TABLE purchase_invoices ADD COLUMN IF NOT EXISTS payment_state text DEFAULT 'not_paid';
 
 -- ============================================================
--- #34: Extourne - table already exists in 25_sage100_accounting_features.sql
+-- #34: Extourne - table already exists in 25_accounting_features.sql
 -- Ensure the generateExtourne function can link entries
 -- ============================================================
 -- (No additional SQL needed - extourne_log table already exists)

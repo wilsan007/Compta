@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Search, ArrowRight, Plus, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getEnabledNavGroups } from './Sidebar'
+import { useAuth } from '@/lib/auth'
 
 interface Command {
   id: string
@@ -19,14 +20,26 @@ interface Command {
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const { t } = useTranslation('nav')
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // RBAC: modules that require module_roles check
+  const RBAC_MODULE_IDS = new Set(['accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'projectManagement'])
+  const moduleRoles = (user as any)?.module_roles || {}
+  const isGlobalAdmin = user?.role === 'admin'
+
   const commands: Command[] = useMemo(() => {
     const cmds: Command[] = []
-    // Auto-generate from navGroups
+    // Auto-generate from navGroups, filtered by user module_roles
     for (const group of getEnabledNavGroups()) {
+      // Check if this group's module is RBAC-restricted
+      const moduleId = group.moduleId
+      if (moduleId && RBAC_MODULE_IDS.has(moduleId) && !isGlobalAdmin) {
+        const role = moduleRoles[moduleId]
+        if (role == null || String(role) === '') continue // skip modules user has no access to
+      }
       for (const item of group.items) {
         const label = t(item.labelKey)
         cmds.push({
@@ -62,7 +75,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       { id: 'ai-assistant', label: t('layout.aiAssistant'), icon: Sparkles, category: t('commandPalette.quickActions'), keywords: 'ai copilot assistant', action: () => {} },
     ]
     return [...cmds, ...quickActions]
-  }, [t])
+  }, [t, moduleRoles, isGlobalAdmin])
 
   const filtered = useMemo(() => {
     if (!query) return commands

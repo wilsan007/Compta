@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill } from '@/lib/queries'
-import { Plus, Trash2, Grid3x3 } from 'lucide-react'
+import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -148,7 +148,7 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '40rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('grills.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">

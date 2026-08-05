@@ -78,7 +78,8 @@ const [journals, setJournals] = useState<Journal[]>([])
 
   async function loadInitial() {
     try {
-      const currentUserId = localStorage.getItem('auth_user_id') || undefined
+      const rawUserId = localStorage.getItem('auth_user_id')
+      const currentUserId = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId) ? rawUserId : undefined
       const [j, fy] = await Promise.all([
         getAuthorizedJournals(currentUserId),
         getFiscalYears(),
@@ -165,7 +166,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   const selectedYearObj = fiscalYears.find((y) => y.id === selectedYear)
   const selectedPeriodObj = periods.find((p) => p.id === selectedPeriod)
 
-  // Build the Journal × Période grid (one row per journal × period), like Sage 100
+  // Build the Journal × Période grid (one row per journal × period)
   const gridRows = useMemo(() => {
     const rows: { period: FiscalPeriod; journal: Journal; count: number; status: ReturnType<typeof cellStatus> }[] = []
     const shownPeriods = selectedPeriod ? periods.filter((p) => p.id === selectedPeriod) : periods
@@ -242,7 +243,7 @@ const [journals, setJournals] = useState<Journal[]>([])
         />
       ) : (
         <div className="flex gap-4">
-          {/* Left status filter panel (Sage 100 style) */}
+          {/* Left status filter panel */}
           <div className="w-52 shrink-0">
             <Card>
               <div className="p-2">

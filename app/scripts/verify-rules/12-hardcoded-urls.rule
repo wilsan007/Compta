@@ -1,0 +1,12 @@
+# rule: Hardcoded URLs in source code (should use env variables)
+# severity: warning
+# pattern: http:// or https:// in .ts/.tsx files (excluding imports, types, comments)
+# fix: Use import.meta.env.VITE_* for API URLs
+
+RULE_NAME="Hardcoded URLs"
+RULE_DESC="Hardcoded URLs in source (use env variables)"
+RULE_SEVERITY="warning"
+RULE_GREP_PATTERN="https\?://"
+RULE_GREP_INCLUDES="--include=*.ts --include=*.tsx"
+RULE_GREP_PATHS="src/pages/ src/components/ src/lib/"
+RULE_GREP_EXCLUDES="node_modules|\.test\.|__tests__|import |//.*|schema\.org|w3\.org|creativecommons|supabase\.co|workers\.dev|fonts\.googleapis|fonts\.gstatic|xmlns|\.d\.ts"

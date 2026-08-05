@@ -1,0 +1,12 @@
+# Block access to sensitive files
+/.git/*              /404.html 404
+/.env*               /404.html 404
+/sql/*               /404.html 404
+/supabase/*          /404.html 404
+/mirror-daemon/*     /404.html 404
+/package.json        /404.html 404
+/vite.config.*       /404.html 404
+/tsconfig*           /404.html 404
+
+# SPA fallback: serve index.html for all client-side routes
+/*                   /index.html 200

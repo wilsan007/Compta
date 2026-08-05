@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Bell,
   HelpCircle,
@@ -13,7 +13,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGUAGES, LANGUAGE_LABELS, setLanguage, type SupportedLanguage } from '@/i18n'
@@ -24,6 +24,7 @@ import { Sidebar } from './Sidebar'
 
 export function Layout({ children }: { children?: React.ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { theme, toggleTheme } = useTheme()
   const { user, signOut } = useAuth()
   const { t } = useTranslation('nav')
@@ -37,15 +38,64 @@ export function Layout({ children }: { children?: React.ReactNode }) {
   const { i18n } = useTranslation()
   const currentLang = (i18n.language || 'fr').split('-')[0] as SupportedLanguage
 
+  // Track whether the user explicitly toggled the sidebar (vs auto-collapse)
+  const userPreferenceRef = useRef<boolean | null>(null)
+
   // Sync sidebar collapsed state with localStorage
   useEffect(() => {
     const saved = localStorage.getItem('compta-sidebar-collapsed')
-    if (saved === 'true') setSidebarCollapsed(true)
+    if (saved === 'true') {
+      setSidebarCollapsed(true)
+      userPreferenceRef.current = true
+    }
   }, [])
 
+  // Persist user preference (not auto-collapse state)
   useEffect(() => {
-    localStorage.setItem('compta-sidebar-collapsed', String(sidebarCollapsed))
+    if (userPreferenceRef.current !== null) {
+      localStorage.setItem('compta-sidebar-collapsed', String(userPreferenceRef.current))
+    }
   }, [sidebarCollapsed])
+
+  // Auto-close mobile sidebar on route change
+  useEffect(() => {
+    setMobileSidebar(false)
+  }, [location.pathname])
+
+  // Responsive auto-collapse: below xl (1280px), auto-collapse to icon rail
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1279px)')
+    function handleResize(e: MediaQueryListEvent | MediaQueryList) {
+      if (e.matches) {
+        setSidebarCollapsed(true)
+      } else if (userPreferenceRef.current === false) {
+        setSidebarCollapsed(false)
+      }
+    }
+    handleResize(mql)
+    const listener = (e: MediaQueryListEvent) => handleResize(e)
+    mql.addEventListener('change', listener)
+    return () => mql.removeEventListener('change', listener)
+  }, [])
+
+  // Keyboard shortcuts: Cmd/Ctrl+B to toggle sidebar, Escape to close mobile
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault()
+        setSidebarCollapsed((v) => {
+          const next = !v
+          userPreferenceRef.current = next
+          return next
+        })
+      }
+      if (e.key === 'Escape' && mobileSidebar) {
+        setMobileSidebar(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mobileSidebar])
 
   useEffect(() => {
     const seen = localStorage.getItem('compta-onboarded')
@@ -75,13 +125,17 @@ export function Layout({ children }: { children?: React.ReactNode }) {
       {/* Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+        onToggleCollapse={() => setSidebarCollapsed((v) => {
+          const next = !v
+          userPreferenceRef.current = next
+          return next
+        })}
         mobileOpen={mobileSidebar}
         onCloseMobile={() => setMobileSidebar(false)}
       />
 
       {/* Mobile overlay */}
-      {mobileSidebar && <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setMobileSidebar(false)} />}
+      {mobileSidebar && <div className="fixed inset-0 bg-black/30 z-40 lg:hidden sidebar-overlay-anim" onClick={() => setMobileSidebar(false)} />}
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -91,6 +145,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
           <button
             onClick={() => setMobileSidebar(true)}
             className="lg:hidden p-2 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]"
+            title={t('layout.toggleSidebar')}
           >
             <PanelLeft className="w-5 h-5" />
           </button>

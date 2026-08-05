@@ -1,0 +1,1 @@
+PATTERN_1="diff --git|diff|@@|\+|\-"

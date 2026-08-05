@@ -1,0 +1,5 @@
+PATTERN_1="Supply Chain|supply.chain|Audit|audit|SCA"
+PATTERN_2="npm|Node\.js|Python|ecosystem|Ecosystem"
+PATTERN_3="vulnerability|vulnerabilities|critical|high|Trivy|trivy"
+ANTIPATTERN_1="command not found|permission denied"
+ANTIPATTERN_2="Set the SECSKILL_"

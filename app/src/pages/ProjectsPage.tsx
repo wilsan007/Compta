@@ -166,7 +166,7 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{t('projects.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('projects.createBtn')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('projects.createBtn')}</Button>
           </div>
         </form>
       </div>

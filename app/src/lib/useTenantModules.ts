@@ -9,6 +9,7 @@ const ALL_MODULES = [
   'stock',
   'production',
   'hr',
+  'projectManagement',
   'dashboards',
   'reporting',
   'system',

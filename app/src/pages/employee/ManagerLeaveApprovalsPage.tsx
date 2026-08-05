@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { formatDate } from '@/lib/utils'
 import { getPendingLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
-import { CheckCircle, XCircle, CalendarClock, AlertTriangle } from 'lucide-react'
+import { CheckCircle, XCircle, CalendarClock, AlertTriangle, X } from 'lucide-react'
 
 export function ManagerLeaveApprovalsPage() {
   const { t } = useTranslation('hr')
@@ -88,7 +88,7 @@ export function ManagerLeaveApprovalsPage() {
           <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '28rem' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
               <h2 className="text-lg font-semibold">{t('leaveApprovals.reviewTitle')}</h2>
-              <button onClick={() => { setActiveId(null); setComment('') }} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+              <button onClick={() => { setActiveId(null); setComment('') }} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="flex items-start gap-2 p-3 rounded-lg bg-[var(--color-neutral-50)]">

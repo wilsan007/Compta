@@ -7,7 +7,6 @@ import { Calculator, Plus, Trash2, X, ArrowRightLeft, CheckCircle2 } from 'lucid
 import type { PayRun, PayrollAccountingEntry } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const statusLabels: Record<string, string> = { draft: 'Brouillon', transferred: 'Transféré', cancelled: 'Annulé' }
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { draft: 'warning', transferred: 'success', cancelled: 'danger' }
 
 export function PayrollAccountingPage() {
@@ -111,7 +110,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
       await createPayrollAccountingEntry({
         number, pay_run_id: payRunId || null, period_date: periodDate,
         gross_total: Number(selectedRun?.gross_total) || 0,
-        employer_contributions_total: (Number(selectedRun?.gross_total) || 0) * 0.42,
+        employer_contributions_total: Number(selectedRun?.employer_contributions_total) || 0,
         employee_deductions_total: Number(selectedRun?.tax_total) || 0,
         net_total: Number(selectedRun?.net_total) || 0,
         journal_entry_id: null, status: 'draft',
@@ -147,7 +146,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

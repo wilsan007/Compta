@@ -72,7 +72,8 @@ export function SaisieParPiecePage() {
 
   async function loadRef() {
     try {
-      const currentUserId = localStorage.getItem('auth_user_id') || undefined
+      const rawUserId = localStorage.getItem('auth_user_id')
+      const currentUserId = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId) ? rawUserId : undefined
       const [jls, fys, accs, tp, tmpls, txs] = await Promise.all([
         getAuthorizedJournals(currentUserId),
         getFiscalYears(),

@@ -5,6 +5,10 @@ import { AuthProvider } from '@/lib/auth'
 import { LegislationProvider } from '@/lib/legislation'
 import { ProtectedLayout, AdminRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { HomePage } from '@/pages/HomePage'
+import { LandingPage } from '@/pages/LandingPage'
+import { TermsPage } from '@/pages/TermsPage'
+import { PrivacyPage } from '@/pages/PrivacyPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { InvoicesPage } from '@/pages/InvoicesPage'
@@ -33,6 +37,7 @@ import { CashFlowPage } from '@/pages/CashFlowPage'
 import { VatReturnsPage } from '@/pages/VatReturnsPage'
 import { JournalsReportPage } from '@/pages/JournalsReportPage'
 import { ProjectsPage } from '@/pages/ProjectsPage'
+import { ProjectManagementPage } from '@/pages/ProjectManagementPage'
 import { FixedAssetsPage } from '@/pages/FixedAssetsPage'
 import { EmployeesPage } from '@/pages/EmployeesPage'
 import { PayRunsPage } from '@/pages/PayRunsPage'
@@ -228,10 +233,13 @@ function App() {
           <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
           <Route path="/select-tenant" element={<TenantSelectionPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
 
           <Route element={<ProtectedLayout />}>
-          {/* Dashboard */}
-          <Route path="/" element={<DashboardPage />} />
+          {/* Home + Dashboard */}
+          <Route path="/home" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/customers" element={<CustomersPage />} />
           <Route path="/dashboard/suppliers" element={<SuppliersPage />} />
@@ -382,7 +390,26 @@ function App() {
           <Route path="/accounting/states/analytic-balance" element={<AnalyticBalancePage />} />
 
           {/* Projects & Fixed Assets */}
-          <Route path="/accounting/projects" element={<ProjectsPage />} />
+          <Route path="/accounting/projects" element={<ProjectManagementPage />} />
+          <Route path="/accounting/projects/legacy" element={<ProjectsPage />} />
+          <Route path="/project-management" element={<ProjectManagementPage />} />
+          <Route path="/project-management/tasks" element={<ProjectManagementPage initialView="table" />} />
+          <Route path="/project-management/graph" element={<ProjectManagementPage initialView="graph" />} />
+          <Route path="/project-management/pivot" element={<ProjectManagementPage initialView="pivot" />} />
+          <Route path="/project-management/burndown" element={<ProjectManagementPage initialView="burndown" />} />
+          <Route path="/project-management/my-tasks" element={<ProjectManagementPage initialView="my-tasks" />} />
+          <Route path="/project-management/calendar" element={<ProjectManagementPage initialView="calendar" />} />
+          <Route path="/project-management/large-screen" element={<ProjectManagementPage initialView="large-screen" />} />
+          <Route path="/project-management/workload" element={<ProjectManagementPage initialView="workload" />} />
+          <Route path="/project-management/timeline" element={<ProjectManagementPage initialView="timeline" />} />
+          <Route path="/project-management/activity" element={<ProjectManagementPage initialView="activity" />} />
+          <Route path="/project-management/notifications" element={<ProjectManagementPage initialView="notifications" />} />
+          <Route path="/project-management/kanban" element={<ProjectManagementPage initialView="kanban" />} />
+          <Route path="/project-management/gantt" element={<ProjectManagementPage initialView="gantt" />} />
+          <Route path="/project-management/mind-map" element={<ProjectManagementPage initialView="mind-map" />} />
+          <Route path="/project-management/box" element={<ProjectManagementPage initialView="box" />} />
+          <Route path="/project-management/doc" element={<ProjectManagementPage initialView="doc" />} />
+          <Route path="/project-management/chat" element={<ProjectManagementPage initialView="chat" />} />
           <Route path="/accounting/fixed-assets" element={<FixedAssetsPage />} />
 
           {/* HR & Payroll */}

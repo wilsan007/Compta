@@ -120,6 +120,7 @@
     "capHDay": "Cap. h/day",
     "costH": "Cost/h",
     "confirmDeleteWorkCenter": "Delete this work center?",
+    "codeAndNameRequired": "Code and name are required",
     "export": "Export",
     "import": "Import",
     "statuses": {
@@ -309,7 +310,10 @@
       "manual": "Manual",
       "mrp": "MRP",
       "sub_level": "Sub-level"
-    }
+    },
+    "count": "{{count}} order(s)",
+    "selectWarehouse": "Select a warehouse",
+    "selectRouting": "Select a routing"
   },
   "subcontracting": {
     "title": "Subcontracting",

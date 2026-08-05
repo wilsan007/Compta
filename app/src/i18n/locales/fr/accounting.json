@@ -508,6 +508,7 @@
     "balance": "Solde",
     "noMovements": "Aucun mouvement sur cette période",
     "noMovementsDescription": "Le compte {{code}} — {{name}} n'a aucun mouvement avec ces filtres.",
+    "thirdParty": "Tiers",
     "debitBalance": "Solde débiteur",
     "creditBalance": "Solde créditeur",
     "export": "Exporter le grand livre"
@@ -738,6 +739,7 @@
       "rate10": "10%",
       "rate20": "20%"
     },
+    "calculatorHint": "Astuce : tapez = suivi d'une expression (ex. =1000+200*1.2) pour auto-calculer",
     "vatCalc": "Calcul TVA",
     "currency": "Devise",
     "exchangeRate": "Taux de change",
@@ -1686,6 +1688,8 @@
     "deleteConfirm": "Supprimer cet abonnement ?",
     "deleteSuccess": "Abonnement supprimé",
     "saveSuccess": "Abonnement enregistré",
+    "fillRequired": "Veuillez remplir tous les champs requis",
+    "unbalanced": "L'écriture n'est pas équilibrée (débit ≠ crédit)",
     "noEntries": "Aucun abonnement",
     "noEntriesDescription": "Créez votre premier abonnement pour automatiser vos écritures récurrentes.",
     "frequencies": {

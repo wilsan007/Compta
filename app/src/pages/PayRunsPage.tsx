@@ -7,8 +7,6 @@ import { Calendar, Plus, Trash2, X, FileText } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const statusLabels: Record<string, string> = { draft: 'Brouillon', approved: 'Approuvé', paid: 'Payé' }
-
 export function PayRunsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
@@ -77,7 +75,7 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
                 <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(pr.net_total))}</TableCell>
                 <TableCell>
                   <select value={pr.status} onChange={(e) => handleStatusChange(pr.id, e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                    {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`payRuns.statuses.${k}`) || statusLabels[k]}</option>)}
+                    {['draft', 'approved', 'paid'].map((k) => <option key={k} value={k}>{t(`payRuns.statuses.${k}`)}</option>)}
                   </select>
                 </TableCell>
                 <TableCell>
@@ -135,6 +133,13 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
   }, 0)
   const totalDeductions = cnssTotal + amoTotal + irTotal
   const netTotal = grossTotal - totalDeductions
+  const employerCnssTotal = employees.reduce((s, e) => {
+    const sal = Number(e.salary)
+    const cnssBase = Math.min(sal, 6000)
+    return s + cnssBase * 0.0898
+  }, 0)
+  const employerAmoTotal = grossTotal * 0.0226
+  const employerContributionsTotal = employerCnssTotal + employerAmoTotal
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -143,6 +148,7 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
       await createPayRun({
         number, period_start: periodStart, period_end: periodEnd, pay_date: payDate,
         status: 'draft', gross_total: grossTotal, tax_total: totalDeductions, net_total: netTotal,
+        employer_contributions_total: employerContributionsTotal,
         employee_count: employees.length,
       } as any)
       onSaved()
@@ -166,14 +172,14 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('dashboard.activeEmployees')}:</span><span className="font-bold">{employees.length}</span></div>
             <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.grossTotal')}:</span><span className="font-mono font-bold">{formatCurrency(grossTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">CNSS (4.48%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(cnssTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">AMO (2.26%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(amoTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">IR:</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(irTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.cnss')} (4.48%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(cnssTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.amo')} (2.26%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(amoTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.ir')}:</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(irTotal)}</span></div>
             <div className="flex justify-between border-t border-[var(--color-border)] pt-1"><span className="font-semibold">{t('paySlips.netSalary')}:</span><span className="font-mono font-bold text-[var(--color-success)]">{formatCurrency(netTotal)}</span></div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving || employees.length === 0}>{saving ? '...' : t('payRuns.generate')}</Button>
+            <Button type="submit" disabled={saving || employees.length === 0}>{saving ? tCommon('actions.saving') : t('payRuns.generate')}</Button>
           </div>
         </form>
       </div>

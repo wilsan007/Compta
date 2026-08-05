@@ -139,7 +139,7 @@ function MachineFormModal({ workCenters, onClose, onSaved }: { workCenters: Work
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code || !name) { toast('error', t('common.required'), 'Code & ' + t('machines.name')); return }
+    if (!code || !name) { toast('error', t('common.required'), t('machines.codeAndNameRequired')); return }
     try {
       await createMachine({ code, name, work_center_id: workCenterId || null, capacity_per_hour: capacity, status: status as any, purchase_date: purchaseDate || null, notes })
       onSaved()
@@ -178,7 +178,7 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code || !name) { toast('error', t('common.required'), 'Code & ' + t('machines.name')); return }
+    if (!code || !name) { toast('error', t('common.required'), t('machines.codeAndNameRequired')); return }
     try {
       await createWorkCenter({ code, name, capacity_hours_per_day: capacity, cost_per_hour: costPerHour, active: true })
       onSaved()

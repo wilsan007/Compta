@@ -43,7 +43,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
   return (
     <div>
       <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('payments.title') }]} />
-      <PageHeader title={t('payments.title')} subtitle={`${payments.length} ${t('payments.title').toLowerCase()} — ${formatCurrency(totalAmount)}`}
+      <PageHeader title={t('payments.title')} subtitle={t('payments.count', { count: payments.length, total: formatCurrency(totalAmount) })}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payments.new')}</Button>} />
 
       {loading ? <SkeletonTable rows={6} cols={6} /> : payments.length === 0 ? (
@@ -178,7 +178,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
           <Input label={t('payments.reference')} value={reference} onChange={(e) => setReference(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

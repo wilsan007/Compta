@@ -135,12 +135,12 @@ export async function generatePaySlipsForRun(payRunId: string, employees: Employ
     const grossSalary = Number(emp.salary)
     const calc = calculatePayroll({
       grossSalary,
-      contractType: (emp.contract_type === 'CDD' ? 'cdd' : 'cdi') as 'cdi' | 'cdd',
+      contractType: (String(emp.contract_type).toLowerCase() === 'cdd' ? 'cdd' : 'cdi') as 'cdi' | 'cdd',
       hoursPerWeek: 35,
       overtimeHours: 0,
       mealVouchers: 0,
       transportAllowance: 0,
-      age: 30,
+      age: emp.birth_date ? Math.floor((Date.now() - new Date(emp.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 30,
       department: emp.department || '',
       taxRate: 10,
     })
@@ -325,7 +325,7 @@ export async function generatePaymentLink(reminderId: string) {
   const token = crypto.randomUUID()
   const url = `${window.location.origin}/pay/${token}`
   const tid = await getTenantId()
-  const { data, error } = await supabase
+  let updateQ = supabase
     .from('collection_reminders')
     .update({
       payment_link_token: token,
@@ -334,7 +334,8 @@ export async function generatePaymentLink(reminderId: string) {
       payment_status: 'pending',
     })
     .eq('id', reminderId)
-    .eq('tenant_id', tid!)
+  if (tid) updateQ = updateQ.eq('tenant_id', tid)
+  const { data, error } = await updateQ
     .select()
     .single()
   if (error) throw error

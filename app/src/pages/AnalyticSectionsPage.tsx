@@ -211,7 +211,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
 
           <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

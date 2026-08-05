@@ -7,8 +7,6 @@ import { CalendarDays, Plus, Trash2, X, Check, XCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const typeLabels: Record<string, string> = { annual: 'Congé payé', sick: 'Maladie', maternity: 'Maternité', paternity: 'Paternité', unpaid: 'Sans solde', other: 'Autre' }
-const statusLabels: Record<string, string> = { pending: 'En attente', approved: 'Approuvé', rejected: 'Refusé', cancelled: 'Annulé' }
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'neutral' }
 
 export function LeaveRequestsPage() {
@@ -73,12 +71,12 @@ const [requests, setRequests] = useState<any[]>([])
             {requests.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="text-sm">{r.employees?.name || '—'}</TableCell>
-                <TableCell className="text-xs">{t(`leaveRequests.types.${r.leave_type}`) || typeLabels[r.leave_type] || r.leave_type}</TableCell>
+                <TableCell className="text-xs">{t(`leaveRequests.types.${r.leave_type}`) || r.leave_type}</TableCell>
                 <TableCell className="text-xs">{formatDate(r.start_date)}</TableCell>
                 <TableCell className="text-xs">{formatDate(r.end_date)}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(r.days)}</TableCell>
                 <TableCell className="text-xs">{r.reason || '—'}</TableCell>
-                <TableCell><Badge variant={statusBadge[r.status] || 'neutral'}>{t(`leaveRequests.statuses.${r.status}`) || statusLabels[r.status] || r.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[r.status] || 'neutral'}>{t(`leaveRequests.statuses.${r.status}`) || r.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {r.status === 'pending' && (
@@ -151,7 +149,7 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
           <Input label={t('leaveRequests.reason')} value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

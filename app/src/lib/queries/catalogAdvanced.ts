@@ -179,7 +179,10 @@ export async function deletePromotion(id: string) {
   if (error) throw error
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function applyPromotion(productId: string, customerId: string | null, quantity: number) {
+  if (!UUID_RE.test(productId)) throw new Error('Invalid product ID format')
   const tid = await getTenantId()
   const now = new Date().toISOString().split('T')[0]
   let q = supabase.from('promotions').select('*').eq('active', true).lte('start_date', now).gte('end_date', now).or(`product_id.eq.${productId},product_id.is.null`)

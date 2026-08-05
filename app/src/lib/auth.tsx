@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { supabase, setTenantId } from '@/lib/supabase'
+import { supabase, setTenantId, setUserName } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
 import { clearTenantCache } from '@/lib/queries'
 import type { TenantUser } from '@/lib/queries'
@@ -12,6 +12,8 @@ interface AuthUser {
   tenantId: string | null
   tenantName: string | null
   permissions: Record<string, string[]>
+  module_roles?: Record<string, string>
+  guest_permissions?: Record<string, any>
 }
 
 interface AuthContextType {
@@ -83,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             resetModuleCache()
           }
           setTenantId(newTenantId)
+          setUserName(matchedTenant.name)
           setUser({
             id: matchedTenant.id,
             email: matchedTenant.email,
@@ -91,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             tenantId: matchedTenant.tenant_id,
             tenantName: (matchedTenant as any).tenants?.name || null,
             permissions: matchedTenant.permissions || {},
+            module_roles: (matchedTenant as any).module_roles || {},
+            guest_permissions: (matchedTenant as any).guest_permissions || {},
           })
           return
         }
@@ -100,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Only one tenant — auto-select it
           const tu = validTenantUsers[0]
           setTenantId(tu.tenant_id)
+          setUserName(tu.name)
           setUser({
             id: tu.id,
             email: tu.email,
@@ -108,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             tenantId: tu.tenant_id,
             tenantName: (tu as any).tenants?.name || null,
             permissions: tu.permissions || {},
+            module_roles: (tu as any).module_roles || {},
+            guest_permissions: (tu as any).guest_permissions || {},
           })
           return
         }
@@ -144,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // SECURITY: Old users table fallback — use 'viewer' role, force onboarding flow
         setTenantId(null)
+        setUserName(userData.name)
         setUser({
           id: userData.id,
           email: userData.email,
@@ -180,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
           // Redirect to accept-invitation page
           if (window.location.pathname !== '/accept-invitation') {
-            window.location.href = '/accept-invitation'
+            window.location.replace('/accept-invitation')
           }
           return
         }
@@ -253,27 +262,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 digit.', needsConfirmation: false }
     }
     try {
-      // Pre-check: block signup if email already exists in auth.users
-      const { data: emailExists, error: rpcErr } = await supabase
-        .rpc('auth_email_exists', { p_email: email })
-      if (rpcErr) {
-        // If RPC fails (e.g. function not deployed yet), fall through to signUp
-        console.warn('auth_email_exists RPC failed, falling back to signUp:', rpcErr.message)
-      } else if (emailExists) {
-        return { error: 'Un compte existe déjà avec cet email. Veuillez vous connecter avec vos identifiants actuels.', needsConfirmation: false }
+      const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'en'
+
+      const { data: result, error: fnError } = await supabase.functions.invoke('auth-signup', {
+        body: { email, password, locale },
+      })
+
+      if (fnError) {
+        return { error: fnError.message || "Erreur lors de l'inscription", needsConfirmation: false }
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
-        },
-      })
-      if (error) return { error: error.message, needsConfirmation: false }
-      // If no session is returned, email confirmation is required before login
-      const needsConfirmation = !data.session
-      return { error: null, needsConfirmation }
+      if (result?.error) {
+        return { error: result.error, needsConfirmation: false }
+      }
+
+      return { error: null, needsConfirmation: true }
     } catch (err: any) {
       return { error: err.message || "Erreur lors de l'inscription", needsConfirmation: false }
     }

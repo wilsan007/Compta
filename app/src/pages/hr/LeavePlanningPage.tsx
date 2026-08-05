@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getLeaveRequests, getEmployees, getPublicHolidays, getLeaveRules } from '@/lib/queries'
+import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
 import type { Employee, LeaveRule, PublicHoliday } from '@/types'
 import { CalendarDays } from 'lucide-react'
 
@@ -38,7 +39,7 @@ export function LeavePlanningPage() {
 
   const empName = (id: string) => employees.find((e) => e.id === id)?.name || '—'
   const empDept = (id: string) => employees.find((e) => e.id === id)?.department || ''
-  const ruleColor = (type: string) => rules.find((r) => r.leave_type === type)?.color || '#3b82f6'
+  const ruleColor = (type: string) => rules.find((r) => r.leave_type === type)?.color || DEFAULT_LEAVE_COLOR
 
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)

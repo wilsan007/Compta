@@ -32,9 +32,10 @@ const REGISTER = process.argv.includes('--register')
 const FORCE = process.argv.includes('--force')
 
 const { supabaseUrl, pollIntervalMs, syncOnStart, tenantId } = config
-const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || config.supabaseKey
+const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
 if (!supabaseKey) {
-  console.error('ERROR: No Supabase key found. Set SUPABASE_KEY env var or config.json supabaseKey.')
+  console.error('ERROR: No Supabase key found. Set SUPABASE_KEY or VITE_SUPABASE_PUBLISHABLE_KEY env var.')
+  console.error('SECURITY: Credentials in config.json are no longer supported. Use environment variables only.')
   process.exit(1)
 }
 
@@ -44,8 +45,8 @@ if (mirrorDir.startsWith('~/')) {
   mirrorDir = join(homedir(), mirrorDir.slice(2))
 }
 
-const ENCRYPT = config.encrypt === true && (config.encryptionKey || process.env.MIRROR_ENCRYPTION_KEY)
-const ENC_KEY = config.encryptionKey || process.env.MIRROR_ENCRYPTION_KEY || ''
+const ENCRYPT = config.encrypt === true && !!process.env.MIRROR_ENCRYPTION_KEY
+const ENC_KEY = process.env.MIRROR_ENCRYPTION_KEY || ''
 if (!ENCRYPT) {
   console.warn('⚠️  WARNING: Encryption is DISABLED. Local mirror data will be stored in plaintext.')
   console.warn('   Set config.encrypt=true and provide encryptionKey (or MIRROR_ENCRYPTION_KEY env var) to enable.')

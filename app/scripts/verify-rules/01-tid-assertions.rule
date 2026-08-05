@@ -1,0 +1,12 @@
+# rule: tid! non-null assertions in queries
+# severity: error
+# pattern: .eq('tenant_id', tid!)
+# fix: Replace with .eq('tenant_id', tid ?? '')
+
+RULE_NAME="tid! assertions"
+RULE_DESC="tid! non-null assertions in queries"
+RULE_SEVERITY="error"
+RULE_GREP_PATTERN="\.eq('tenant_id', tid!)"
+RULE_GREP_INCLUDES="--include=*.ts"
+RULE_GREP_PATHS="src/lib/queries/"
+RULE_GREP_EXCLUDES="node_modules"

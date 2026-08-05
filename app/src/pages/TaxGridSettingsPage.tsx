@@ -312,7 +312,7 @@ function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corpor
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel}>{t('taxGrids.cancel')}</Button>
           <Button variant="primary" size="sm" onClick={handleCreate} disabled={saving}>
-            {saving ? '...' : t('taxGrids.create')}
+            {saving ? tCommon('actions.saving') : t('taxGrids.create')}
           </Button>
         </div>
       </div>

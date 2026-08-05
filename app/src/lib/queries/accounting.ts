@@ -70,6 +70,8 @@ export async function getActiveLegislationPack() {
 
 // VAT rates in force for a pack at a given date (versioned by effective_from/to).
 export async function getApplicableVatRates(packCode: string, atDate: string = new Date().toISOString().slice(0, 10)) {
+  if (!/^[A-Za-z0-9_-]{1,20}$/.test(packCode)) throw new Error('Invalid pack code format')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(atDate)) throw new Error('Invalid date format')
   const { data, error } = await supabase
     .from('tax_rates')
     .select('*')
@@ -416,7 +418,7 @@ export async function getRecentActivity(): Promise<Array<{
       type: 'invoice',
       icon: inv.status === 'overdue' ? 'AlertCircle' : 'FileText',
       title: `Facture ${inv.number} ${statusLabel}`,
-      description: `${inv.customer_name || 'Client'} - ${Number(inv.total).toLocaleString('fr-FR')} €`,
+      description: `${inv.customer_name || 'Client'} - ${Number(inv.total).toLocaleString('fr-FR')}`,
       time: inv.date,
       color: inv.status === 'overdue' ? 'text-[var(--color-danger)]' : inv.status === 'paid' ? 'text-[var(--color-success)]' : 'text-[var(--color-primary)]',
     })
@@ -436,7 +438,7 @@ export async function getRecentActivity(): Promise<Array<{
       type: 'supplier',
       icon: 'Package',
       title: `Facture fournisseur ${pur.number} reçue`,
-      description: `${pur.supplier_name || 'Fournisseur'} - ${Number(pur.total).toLocaleString('fr-FR')} €`,
+      description: `${pur.supplier_name || 'Fournisseur'} - ${Number(pur.total).toLocaleString('fr-FR')}`,
       time: pur.date,
       color: 'text-[var(--color-warning)]',
     })
@@ -456,7 +458,7 @@ export async function getRecentActivity(): Promise<Array<{
       type: 'bank',
       icon: 'Banknote',
       title: bnk.type === 'credit' ? 'Encaissement bancaire' : 'Décaissement bancaire',
-      description: `${bnk.description} - ${Number(bnk.amount).toLocaleString('fr-FR')} €`,
+      description: `${bnk.description} - ${Number(bnk.amount).toLocaleString('fr-FR')}`,
       time: bnk.date,
       color: bnk.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]',
     })
@@ -928,7 +930,7 @@ export async function getJournalPeriodBalance(
   return { ancienSolde: ancien, mouvementDebit: mvtD, mouvementCredit: mvtC, nouveauSolde: ancien + mvtD - mvtC }
 }
 
-// --- Saisie: create entry with lines (Sage 100 format) ---
+// --- Saisie: create entry with lines ---
 export async function createSaisieEntry(entry: {
   number: string
   date: string
@@ -1113,12 +1115,12 @@ export async function searchEntries(criteria: {
   if (criteria.journalCode) query = query.eq('journal_code', criteria.journalCode)
   if (criteria.dateFrom) query = query.gte('date', criteria.dateFrom)
   if (criteria.dateTo) query = query.lte('date', criteria.dateTo)
-  if (criteria.pieceNumber) query = query.ilike('piece_number', `%${criteria.pieceNumber}%`)
-  if (criteria.description) query = query.ilike('description', `%${criteria.description}%`)
+  if (criteria.pieceNumber) query = query.ilike('piece_number', `%${criteria.pieceNumber.replace(/[%_]/g, '\\$&')}%`)
+  if (criteria.description) query = query.ilike('description', `%${criteria.description.replace(/[%_]/g, '\\$&')}%`)
 
-  console.log('[searchEntries] criteria:', JSON.stringify(criteria), 'tenant_id:', tid)
+  if (import.meta.env.DEV) console.debug('[searchEntries] criteria:', JSON.stringify(criteria))
   const { data, error } = await query.limit(200)
-  console.log('[searchEntries] result count:', data?.length, 'error:', error?.message)
+  if (import.meta.env.DEV) console.debug('[searchEntries] result count:', data?.length, 'error:', error?.message)
   if (error) throw error
 
   let results = data as JournalEntry[]
@@ -1597,6 +1599,7 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
   dateTo?: string
   ifrsMode?: boolean
 }) {
+  if (!/^[0-9A-Za-z._ -]{1,20}$/.test(accountCode)) throw new Error('Invalid account code format')
   const tid = await getTenantId()
   let query = supabase
     .from('journal_lines')
@@ -2205,7 +2208,7 @@ export async function updateRecurringEntry(id: string, updates: Partial<Recurrin
     .from('recurring_entries')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -2218,7 +2221,7 @@ export async function deleteRecurringEntry(id: string) {
     .from('recurring_entries')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -2260,7 +2263,7 @@ export async function updateRegularizationEntry(id: string, updates: Partial<Reg
     .from('regularization_entries')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -2273,7 +2276,7 @@ export async function deleteRegularizationEntry(id: string) {
     .from('regularization_entries')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -2305,7 +2308,7 @@ export async function updateCurrencyRevaluation(id: string, updates: Partial<Cur
     .from('currency_revaluations')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -2318,7 +2321,7 @@ export async function deleteCurrencyRevaluation(id: string) {
     .from('currency_revaluations')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -2350,7 +2353,7 @@ export async function updateAnalyticPlan(id: string, updates: Partial<AnalyticPl
     .from('analytic_plans')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -2363,7 +2366,7 @@ export async function deleteAnalyticPlan(id: string) {
     .from('analytic_plans')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -2403,7 +2406,7 @@ export async function deleteDistributionGrill(id: string) {
     .from('distribution_grills')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -2431,11 +2434,12 @@ export async function createBankReconciliationRule(rule: Omit<BankReconciliation
 
 export async function deleteBankReconciliationRule(id: string) {
   const tid = await getTenantId()
+  if (!tid) throw new Error('No tenant context')
   const { error } = await supabase
     .from('bank_reconciliation_rules')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -2485,11 +2489,12 @@ export async function createTvsDeclaration(decl: Omit<TvsDeclaration, 'id' | 'te
 
 export async function deleteTvsDeclaration(id: string) {
   const tid = await getTenantId()
+  if (!tid) throw new Error('No tenant context')
   const { error } = await supabase
     .from('tvs_declarations')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -2517,11 +2522,12 @@ export async function createFiscalBackup(backup: Omit<FiscalBackup, 'id' | 'tena
 
 export async function deleteFiscalBackup(id: string) {
   const tid = await getTenantId()
+  if (!tid) throw new Error('No tenant context')
   const { error } = await supabase
     .from('fiscal_backups')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -2661,7 +2667,7 @@ export async function updateAssetDepreciationPlan(id: string, updates: Partial<A
 }
 
 
-// ============ Phase 6: Sage 100 Accounting Features ============
+// ============ Phase 6: Accounting Features ============
 
 // --- Auto Label Rules ---
 export async function getAutoLabelRules() {
@@ -3213,7 +3219,7 @@ export async function runAccountingControl(controlType: string, fiscalYearId?: s
 }
 
 
-// ============ Phase 7A: Sage 100 Critical Features ============
+// ============ Phase 7A: Critical Features ============
 
 // --- Calculate VAT from HT or TTC amount ---
 export function calculateVAT(amount: number, vatRate: number, mode: 'ht' | 'ttc' = 'ht'): { ht: number; tva: number; ttc: number } {
@@ -3581,11 +3587,10 @@ export async function createPayrollTaxGrid(grid: Omit<PayrollTaxGrid, 'id' | 'te
 
 export async function updatePayrollTaxGrid(id: string, updates: Partial<PayrollTaxGrid>) {
   const tid = await getTenantId()
-  const { data, error } = await supabase
+  const { data, error } = await tud(supabase
     .from('payroll_tax_grids')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...updates, updated_at: new Date().toISOString() }), 'payroll_tax_grids', tid)
     .eq('id', id)
-    .eq('tenant_id', tid!)
     .select()
     .single()
   if (error) throw error
@@ -3594,11 +3599,10 @@ export async function updatePayrollTaxGrid(id: string, updates: Partial<PayrollT
 
 export async function deletePayrollTaxGrid(id: string) {
   const tid = await getTenantId()
-  const { error } = await supabase
+  const { error } = await tud(supabase
     .from('payroll_tax_grids')
-    .delete()
+    .delete(), 'payroll_tax_grids', tid)
     .eq('id', id)
-    .eq('tenant_id', tid!)
   if (error) throw error
 }
 
@@ -3613,12 +3617,12 @@ export async function createPayrollTaxGridLines(lines: Omit<PayrollTaxGridLine, 
 
 export async function deletePayrollTaxGridLines(gridId: string) {
   const tid = await getTenantId()
-  const { error: gridErr } = await supabase
+  let gridQ = supabase
     .from('payroll_tax_grids')
     .select('id')
     .eq('id', gridId)
-    .eq('tenant_id', tid!)
-    .maybeSingle()
+  if (tid) gridQ = gridQ.eq('tenant_id', tid)
+  const { error: gridErr } = await gridQ.maybeSingle()
   if (gridErr) throw gridErr
   const { error } = await supabase
     .from('payroll_tax_grid_lines')
@@ -3677,7 +3681,7 @@ export async function updateCorporateTaxGrid(id: string, updates: Partial<Corpor
     .from('corporate_tax_grids')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -3690,7 +3694,7 @@ export async function deleteCorporateTaxGrid(id: string) {
     .from('corporate_tax_grids')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -3709,7 +3713,7 @@ export async function deleteCorporateTaxGridLines(gridId: string) {
     .from('corporate_tax_grids')
     .select('id')
     .eq('id', gridId)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .maybeSingle()
   if (gridErr) throw gridErr
   const { error } = await supabase
@@ -3781,7 +3785,7 @@ export async function updateCheckBook(id: string, updates: Partial<CheckBook>) {
     .from('check_books')
     .update(updates)
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -3794,7 +3798,7 @@ export async function deleteCheckBook(id: string) {
     .from('check_books')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 
@@ -3826,7 +3830,7 @@ export async function updateCheck(id: string, updates: Partial<Check>) {
     .from('checks')
     .update(updates)
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error
@@ -3839,7 +3843,7 @@ export async function deleteCheck(id: string) {
     .from('checks')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
   if (error) throw error
 }
 

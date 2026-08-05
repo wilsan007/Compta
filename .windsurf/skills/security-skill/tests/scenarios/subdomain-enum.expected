@@ -1,0 +1,5 @@
+PATTERN_1="subfinder|Subdomain|subdomain|Enumeration"
+PATTERN_2="test\.security-skill\.local|target|Target"
+PATTERN_3="results|Total|complete|Summary"
+ANTIPATTERN_1="command not found|permission denied"
+ANTIPATTERN_2="Set the SECSKILL_"

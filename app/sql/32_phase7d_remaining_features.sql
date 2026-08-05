@@ -1,5 +1,5 @@
 -- ============================================
--- Phase 7D — Remaining Sage 100 Features
+-- Phase 7D — Remaining Features
 -- Migration: 32_phase7d_remaining_features.sql
 -- 
 -- Creates tables for:
@@ -140,7 +140,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   TO authenticated;
 
 -- ============================================
--- 6. ALTER TABLE employees — Sage 100 fields
+-- 6. ALTER TABLE employees — additional fields
 -- ============================================
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_number text;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS social_security_number text;

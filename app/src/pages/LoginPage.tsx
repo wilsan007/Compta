@@ -27,78 +27,100 @@ export function LoginPage() {
       setError(signInError)
       setLoading(false)
     } else {
-      navigate('/')
+      navigate('/home')
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-neutral-50)] p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] text-white mb-4">
-            <Building2 className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('login.appName')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('login.subtitle')}</p>
-        </div>
-
-        <div className="card p-6 space-y-4">
-          {error && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-[rgba(222,53,11,0.08)] border border-[var(--color-danger)] text-sm text-[var(--color-danger)]">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">{t('login.email')}</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t('login.emailPlaceholder')}
-                  className="input pl-10"
-                  autoComplete="email"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-text)]">{t('login.password')}</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="input pl-10"
-                  autoComplete="current-password"
-                />
-              </div>
-            </div>
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? t('login.signingIn') : t('login.signIn')}
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            {t('login.noAccount')}{' '}
-            <Link to="/signup" className="text-[var(--color-primary)] font-medium">
-              {t('login.createAccount')}
-            </Link>
+    <div className="min-h-screen flex bg-[var(--color-neutral-50)]">
+      {/* Brand panel — hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img
+          src="/brand/founder-office.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1E2A4A]/80 via-[#1E2A4A]/40 to-[#C44536]/30" />
+        <div className="relative z-10 flex flex-col justify-end p-12 text-white">
+          <h2 className="text-3xl font-bold leading-tight mb-3">
+            {t('login.appName')}
+          </h2>
+          <p className="text-sm text-white/80 max-w-sm">
+            {t('login.subtitle')}
           </p>
         </div>
+      </div>
 
-        <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
-          ERP Compta — {t('login.tagline')}
-        </p>
+      {/* Form panel */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--color-primary)] text-white mb-4">
+              <Building2 className="w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('login.appName')}</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('login.subtitle')}</p>
+          </div>
+
+          <div className="card p-6 space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-[rgba(222,53,11,0.08)] border border-[var(--color-danger)] text-sm text-[var(--color-danger)]">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('login.email')}</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('login.emailPlaceholder')}
+                    className="input pl-10"
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-[var(--color-text)]">{t('login.password')}</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="input pl-10"
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? t('login.signingIn') : t('login.signIn')}
+              </Button>
+            </form>
+
+            <p className="text-center text-sm text-[var(--color-text-secondary)]">
+              {t('login.noAccount')}{' '}
+              <Link to="/signup" className="text-[var(--color-primary)] font-medium">
+                {t('login.createAccount')}
+              </Link>
+            </p>
+          </div>
+
+          <p className="text-center text-xs text-[var(--color-text-secondary)] mt-6">
+            ERP Compta — {t('login.tagline')}
+          </p>
+        </div>
       </div>
     </div>
   )

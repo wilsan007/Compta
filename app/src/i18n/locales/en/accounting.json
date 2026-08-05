@@ -55,6 +55,7 @@
     "structure": "Structure",
     "processing": "Processing",
     "states": "Statements",
+    "reports": "Reports",
     "quickActions": "Quick actions",
     "newEntry": "New entry",
     "newJournal": "New journal",
@@ -1557,7 +1558,8 @@
     "deleteSuccess": "Plan deleted",
     "saveSuccess": "Plan saved",
     "noPlans": "No analytic plan",
-    "noPlansDescription": "Create your first analytic plan."
+    "noPlansDescription": "Create your first analytic plan.",
+    "edit": "Edit plan"
   },
   "grills": {
     "title": "Pre-distribution grills",
@@ -1686,6 +1688,8 @@
     "deleteConfirm": "Delete this subscription?",
     "deleteSuccess": "Subscription deleted",
     "saveSuccess": "Subscription saved",
+    "fillRequired": "Please fill in all required fields",
+    "unbalanced": "Entry is not balanced (debit ≠ credit)",
     "noEntries": "No subscription",
     "noEntriesDescription": "Create your first subscription to automate recurring entries.",
     "frequencies": {

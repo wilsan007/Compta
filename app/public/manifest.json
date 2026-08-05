@@ -1,11 +1,11 @@
 {
-  "name": "Compta - Gestion comptable",
-  "short_name": "Compta",
-  "description": "ERP comptable, commercial, stock et production pour PME industrielles",
+  "name": "Onusuite — The Unified Business Suite",
+  "short_name": "Onusuite",
+  "description": "Suite logicielle trilingue (FR/EN/AR) qui unifie 17 modules — comptabilité, commercial, RH/paie, trésorerie, stock, production et plus — pour les PME d'Afrique francophone et du Maghreb.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0066cc",
+  "background_color": "#F5F0E8",
+  "theme_color": "#C44536",
   "orientation": "any",
   "icons": [
     {

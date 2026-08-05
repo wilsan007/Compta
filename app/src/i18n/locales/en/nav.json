@@ -9,7 +9,13 @@
     "manufacturing": "Manufacturing",
     "subcontracting": "Subcontracting",
     "planning": "Planning",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "pmViews": "Views",
+    "pmAnalysis": "Analysis",
+    "pmPersonal": "Personal",
+    "pmDisplay": "Display",
+    "pmVisual": "Visual",
+    "pmCollaboration": "Collaboration"
   },
   "groups": {
     "home": "Home",
@@ -21,6 +27,7 @@
     "hr": "HR & Payroll",
     "dashboards": "Dashboards",
     "reporting": "Reporting & BI",
+    "projectManagement": "Project Management",
     "system": "System"
   },
   "items": {
@@ -252,7 +259,25 @@
     "partnerCategories": "Partner categories",
     "partnerContacts": "Partner contacts",
     "checkBooks": "Check books",
-    "exchangeGainLoss": "Exchange gain/loss"
+    "exchangeGainLoss": "Exchange gain/loss",
+    "pmHome": "Projects home",
+    "pmTasks": "Tasks",
+    "pmMyTasks": "My tasks",
+    "pmGraph": "Graph",
+    "pmPivot": "Pivot table",
+    "pmBurndown": "Burndown",
+    "pmCalendar": "Calendar",
+    "pmKanban": "Kanban",
+    "pmGantt": "Gantt",
+    "pmTimeline": "Timeline",
+    "pmWorkload": "Workload",
+    "pmActivity": "Activity",
+    "pmNotifications": "Notifications",
+    "pmMindMap": "Mind Map",
+    "pmBox": "Boxes",
+    "pmDoc": "Documents",
+    "pmChat": "Chat",
+    "pmLargeScreen": "Large screen"
   },
   "layout": {
     "reduce": "Collapse",
@@ -269,12 +294,15 @@
     "accessDeniedMessage": "You do not have the necessary permissions to access this page. Your role ({{role}}) does not allow this access.",
     "moduleDisabled": "Module not enabled",
     "moduleDisabledMessage": "This module is not enabled for your company. Contact your administrator to activate it.",
+    "rbacAccessDenied": "Module access denied",
+    "rbacAccessDeniedMessage": "You do not have a role assigned for this module. Contact your administrator to request access.",
     "backHome": "Back to home",
     "pinned": "Pinned",
     "filterPages": "Filter pages...",
     "noResults": "No results",
     "collapse": "Collapse",
     "expand": "Expand",
+    "toggleSidebar": "Toggle sidebar (Ctrl+B)",
     "footer": "Compta v0.2.0 — Your accounting, simplified and powerful",
     "copyright": "© 2026 Compta",
     "switchTenant": "Switch company",
@@ -368,5 +396,467 @@
     "newProduct": "New product",
     "newEmployee": "New employee",
     "newSupplier": "New supplier"
+  },
+  "homePage": {
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "subtitle": "Welcome to Onusuite. Access all your modules from this home page.",
+    "modules": "Modules",
+    "modulesAvailable": "modules available",
+    "open": "Open",
+    "footerHint": "Tip: use Cmd+K (or Ctrl+K) for global search"
+  },
+  "landing": {
+    "badge": "More flexibility, less cost, more efficiency",
+    "heroTitle": "Onusuite — The unified software suite to manage your entire business",
+    "heroSubtitle": "Accounting, sales, HR/payroll, treasury, stock, production and more — all in one platform. Easy transition from Sage, QuickBooks or any accounting tool. More flexibility, less cost, more efficiency and robustness.",
+    "heroNoCard": "45-day free trial — no credit card required",
+    "ctaStart": "Try for free",
+    "ctaDemo": "Log in",
+    "ctaContact": "Talk to sales",
+    "login": "Log in",
+    "getStarted": "Sign up",
+    "nav": {
+      "why": "Why Onusuite",
+      "features": "Features",
+      "modules": "Modules",
+      "pricing": "Pricing",
+      "faq": "FAQ"
+    },
+    "whyTitle": "Why choose Onusuite?",
+    "whySubtitle": "A modern, affordable alternative to traditional accounting tools. More flexibility, less cost, more efficiency.",
+    "why": {
+      "lowerCost": {
+        "title": "Less cost",
+        "desc": "Cut your software expenses by up to 60% compared to traditional solutions. One subscription, all modules included."
+      },
+      "efficiency": {
+        "title": "More efficiency",
+        "desc": "Automate repetitive tasks: accounting entries, invoicing, payroll, tax filings. Save hours every week."
+      },
+      "robustness": {
+        "title": "More robustness",
+        "desc": "Encrypted data, automatic backups, tax compliance. Infrastructure designed for African and Maghreb SME requirements."
+      },
+      "flexibility": {
+        "title": "Easy transition",
+        "desc": "Import your data from Sage, QuickBooks, Ciel or any other tool. Our team supports your migration for free."
+      },
+      "migration": {
+        "title": "Free migration",
+        "desc": "We transfer your chart of accounts, entries, customers and suppliers from your old software at no extra cost."
+      },
+      "allInOne": {
+        "title": "All-in-one",
+        "desc": "17 modules in a single platform: accounting, sales, stock, HR/payroll, production, treasury, reporting. No need for multiple subscriptions."
+      }
+    },
+    "features": {
+      "lowerCost": "Up to 60% savings",
+      "efficiency": "Advanced automation",
+      "robustness": "Security & compliance",
+      "migration": "Migration from Sage included"
+    },
+    "modulesTitle": "10 unified modules",
+    "modulesSubtitle": "A complete platform to manage your entire business",
+    "modules": {
+      "accounting": "General accounting, entry, financial statements and closures",
+      "commercial": "Sales, purchases, invoices, quotes and payments",
+      "treasury": "Treasury, forecasts, transfers and cash flow",
+      "stock": "Stock, warehouses, inventory and valuation",
+      "production": "Manufacturing, subcontracting and production planning",
+      "hr": "Human resources, payroll and personnel administration",
+      "projectManagement": "Project management, tasks and collaboration",
+      "dashboards": "Analytical dashboards by domain",
+      "reporting": "Financial reporting and business intelligence",
+      "system": "Configuration, integrations and data management"
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Choose your user tier and currency. No hidden fees.",
+      "perMonth": "/mo",
+      "popular": "Most popular",
+      "startTrial": "Start free trial",
+      "trial45": "45-day trial, no credit card",
+      "migrationFree": "Free migration from Sage",
+      "annualDiscount": "−20% with annual plan",
+      "multiCompany": "3 companies included",
+      "tier1Users": "1–3 users",
+      "tier2Users": "4–10 users",
+      "tier3Users": "11–25 users",
+      "essential": {
+        "name": "Essential",
+        "desc": "Core + Accounting + Treasury",
+        "modules": "Ideal for sole proprietors and small practices"
+      },
+      "management": {
+        "name": "Management",
+        "desc": "+ Sales, Purchases, Stock",
+        "modules": "For growing SMEs"
+      },
+      "full": {
+        "name": "Full Suite",
+        "desc": "All 17 modules included",
+        "modules": "Everything Onusuite, unlimited"
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "trialDuration": {
+        "q": "How long is the free trial?",
+        "a": "The free trial lasts 45 days with all modules unlocked. For HR/Payroll and Production, the trial is extended to 60 days. You can extend up to 90 days by reaching activation milestones (data import, entries created, users invited)."
+      },
+      "noCard": {
+        "q": "Do I need a credit card to sign up?",
+        "a": "No. The trial is completely free and requires no credit card. You only pay if you decide to subscribe after the trial."
+      },
+      "migration": {
+        "q": "Can I migrate from Sage or another software?",
+        "a": "Yes. Our team supports your migration from Sage, QuickBooks, Ciel or any other tool for free. We transfer your chart of accounts, entries, customers and suppliers."
+      },
+      "afterTrial": {
+        "q": "What happens after the trial?",
+        "a": "At the end of the trial, your account automatically switches to Onusuite Solo (free forever, limited). Your data is never lost. You can subscribe to a paid plan at any time."
+      },
+      "cancel": {
+        "q": "Can I cancel at any time?",
+        "a": "Yes. There is no mandatory commitment (unless you choose the annual plan with −20%). You can cancel at any time, your data remains accessible in read-only mode for 21 days."
+      },
+      "support": {
+        "q": "What support is available?",
+        "a": "During the trial: chat and email. On paid plans: chat, email, and phone support depending on your tier. Personalized onboarding is offered for SMEs."
+      }
+    },
+    "betterWayTitle": "A better way to work",
+    "betterWaySubtitle": "Compare your current workflow with Onusuite",
+    "betterWay": {
+      "withoutTitle": "Without Onusuite",
+      "without": {
+        "1": "5 separate tools, 5 subscriptions",
+        "2": "Manual entry and double data entry",
+        "3": "Scattered data, no unified view",
+        "4": "Copy errors and missed entries",
+        "5": "Slow and disconnected support"
+      },
+      "withTitle": "With Onusuite",
+      "with": {
+        "1": "17 modules, 1 single platform",
+        "2": "Automated and intelligent data entry",
+        "3": "Centralized data, unified dashboard",
+        "4": "Auto entries, consistency checks",
+        "5": "Responsive local support, chat & phone"
+      }
+    },
+    "foundationTitle": "The foundation for every workflow",
+    "foundationSubtitle": "Onusuite adapts to every situation in your daily work",
+    "foundation": {
+      "scenario1": {
+        "title": "Accounting entries",
+        "desc": "Enter double-entry bookkeeping with automatic balance control, pre-filled journals and accounts."
+      },
+      "scenario2": {
+        "title": "Customer invoicing",
+        "desc": "Create invoices and quotes in one click, track payments and automatically chase overdue invoices."
+      },
+      "scenario3": {
+        "title": "Inventory management",
+        "desc": "Track stock in/out, value your inventory and receive restocking alerts."
+      },
+      "scenario4": {
+        "title": "Payroll & HR",
+        "desc": "Calculate salaries, generate payslips and file social charges in a few clicks."
+      },
+      "scenario5": {
+        "title": "Dashboards",
+        "desc": "Visualize your business in real time: cash flow, sales, margins, key indicators."
+      },
+      "scenario6": {
+        "title": "Project management",
+        "desc": "Plan your projects, assign tasks, track progress and collaborate as a team."
+      }
+    },
+    "featuresGridTitle": "Everything you need to get work done",
+    "featuresGridSubtitle": "Powerful features adapted to the way you work",
+    "featuresGrid": {
+      "customFields": {
+        "title": "Custom fields",
+        "desc": "Add dropdowns, priorities, dates, budgets, regions, deal sizes — anything your workflow needs"
+      },
+      "multipleViews": {
+        "title": "Multiple views",
+        "desc": "See your work as Lists, Boards, Calendars, Timelines, or Gantt charts"
+      },
+      "automations": {
+        "title": "Automations",
+        "desc": "Trigger status changes, assignments, and notifications automatically when conditions are met"
+      },
+      "dependencies": {
+        "title": "Dependencies",
+        "desc": "Map blockers and get alerts when work stalls"
+      },
+      "subtasks": {
+        "title": "Subtasks & Checklists",
+        "desc": "Break big work into trackable, manageable pieces"
+      },
+      "multiAssignees": {
+        "title": "Multiple Assignees",
+        "desc": "Assign tasks to multiple people at once"
+      },
+      "recurringTasks": {
+        "title": "Recurring Tasks",
+        "desc": "Set once, recreates automatically on your schedule"
+      },
+      "comments": {
+        "title": "Comments & Clips",
+        "desc": "Discuss work in context with mentions and clips"
+      },
+      "timeTracking": {
+        "title": "Time Tracking",
+        "desc": "Track time spent with timers and estimates"
+      }
+    },
+    "stats": {
+      "costReduction": "Cost reduction",
+      "modules": "Unified modules",
+      "trialDays": "Free trial",
+      "companies": "Companies included"
+    },
+    "pillars": {
+      "saveMoney": "Save money — All modules, one subscription",
+      "saveTime": "Save time — Automate entries, payroll, filings",
+      "onePlatform": "All-in-one — 17 modules in a single platform"
+    },
+    "useCasesTitle": "Solutions for every industry",
+    "useCasesSubtitle": "Onusuite adapts to your business, wherever you are in Africa and the Maghreb",
+    "useCases": {
+      "retail": {
+        "title": "Retail & Distribution",
+        "desc": "Inventory management, sales, payments and customer loyalty in real time"
+      },
+      "services": {
+        "title": "Professional Services",
+        "desc": "Invoicing, time tracking, project management and profitability per mission"
+      },
+      "manufacturing": {
+        "title": "Manufacturing & Industry",
+        "desc": "Production orders, manufacturing costs, subcontracting and stock valuation"
+      },
+      "construction": {
+        "title": "Construction & Contracting",
+        "desc": "Project quotes, purchasing, cost tracking per site and progressive billing"
+      },
+      "agriculture": {
+        "title": "Agriculture & Agri-food",
+        "desc": "Seasonal stocks, traceability, agricultural payroll and cooperative management"
+      },
+      "nonprofit": {
+        "title": "NGO & Non-profit",
+        "desc": "Donor reporting, project management, grant budgets and transparency"
+      }
+    },
+    "roiTitle": "Tangible results, fast",
+    "roiSubtitle": "SMEs adopting Onusuite transform their operations within weeks",
+    "roi": {
+      "hoursSaved": {
+        "value": "30+ hrs",
+        "label": "saved per week"
+      },
+      "fasterInvoicing": {
+        "value": "2×",
+        "label": "faster invoicing"
+      },
+      "automation": {
+        "value": "90%",
+        "label": "automated entries"
+      },
+      "payback": {
+        "value": "< 6 months",
+        "label": "return on investment"
+      }
+    },
+    "comparisonTitle": "Onusuite vs traditional tools",
+    "comparisonSubtitle": "Compare and choose the most complete and cost-effective solution",
+    "comparison": {
+      "feature": "Feature",
+      "onusuite": "Onusuite",
+      "sage": "Sage 100",
+      "quickbooks": "QuickBooks",
+      "excel": "Excel",
+      "modules": "Included modules",
+      "modulesOnusuite": "17 modules",
+      "modulesSage": "5-8 modules",
+      "modulesQuickbooks": "3-5 modules",
+      "modulesExcel": "Manual",
+      "price": "Monthly price",
+      "priceOnusuite": "From $60",
+      "priceSage": "$200+",
+      "priceQuickbooks": "$80+",
+      "priceExcel": "Free",
+      "migration": "Migration included",
+      "migrationOnusuite": "Free",
+      "migrationSage": "Paid",
+      "migrationQuickbooks": "Limited",
+      "migrationExcel": "Manual",
+      "multiTenant": "Multi-company",
+      "multiTenantOnusuite": "3 included",
+      "multiTenantSage": "1 per license",
+      "multiTenantQuickbooks": "1 per license",
+      "multiTenantExcel": "Separate files",
+      "i18n": "Trilingual FR/EN/AR",
+      "i18nOnusuite": "Yes",
+      "i18nSage": "Limited",
+      "i18nQuickbooks": "No",
+      "i18nExcel": "Manual",
+      "support": "Local support",
+      "supportOnusuite": "Chat, email, phone",
+      "supportSage": "Email",
+      "supportQuickbooks": "Chat",
+      "supportExcel": "None"
+    },
+    "testimonialsTitle": "Trusted by businesses across Africa",
+    "testimonialsSubtitle": "SMEs across Africa and the Maghreb manage their operations with Onusuite",
+    "testimonials": {
+      "1": {
+        "quote": "Onusuite replaced 4 tools we were using. The migration from Sage was free and immediate. We save 60% on software costs.",
+        "author": "Aminata Diop",
+        "role": "CFO, Groupe Sahel Commerce"
+      },
+      "2": {
+        "quote": "Accounting entries are now automated. My accounting teams save 30 hours per week. Local support is responsive and competent.",
+        "author": "Karim Ben Salah",
+        "role": "CPA, Cabinet Ben Salah & Associés"
+      },
+      "3": {
+        "quote": "With 17 modules in a single platform, we finally have a unified view of our business. The trilingual FR/EN/AR is a major asset for our regional operations.",
+        "author": "Fatou Ndiaye",
+        "role": "CEO, Dakar Industries"
+      }
+    },
+    "ctaTitle": "Ready to digitize your business?",
+    "ctaSubtitle": "Join the SMEs trusting Onusuite to manage their daily operations. Try it for free, no commitment.",
+    "tagline": "The Unified Business Suite",
+    "copyright": "© 2025 Onusuite. All rights reserved.",
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "contact": "Contact",
+      "tryFree": "Free trial",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy"
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: July 30, 2025",
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "body": "By accessing or using Onusuite, you agree to these Terms of Service. If you do not agree to these terms, please do not use the service."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must be at least 18 years old and have the legal capacity to enter into a contract. You represent that the information provided during registration is accurate and complete."
+      },
+      "accounts": {
+        "title": "3. Accounts and Security",
+        "body": "You are responsible for the security of your account and credentials. You must immediately notify Onusuite of any unauthorized use of your account. Onusuite will not be liable for losses related to compromised credentials."
+      },
+      "trial": {
+        "title": "4. Free Trial",
+        "body": "Onusuite offers a 45-day free trial with all modules unlocked, no credit card required. At the end of the trial, the account automatically switches to the free Onusuite Solo plan (limited). No data is lost."
+      },
+      "subscriptions": {
+        "title": "5. Subscriptions and Payments",
+        "body": "Paid subscriptions are billed monthly or annually. Prices are listed in USD (1 USD = 1 EUR). Annual commitment receives a 20% discount. You can cancel at any time. Refunds are handled on a case-by-case basis."
+      },
+      "acceptableUse": {
+        "title": "6. Acceptable Use",
+        "body": "You agree not to use Onusuite for any illegal, fraudulent, or abusive purpose. You must not attempt to access other tenants' data, compromise platform security, or use the service to store illicit content."
+      },
+      "data": {
+        "title": "7. Data and Privacy",
+        "body": "Your data is stored securely and encrypted. Onusuite acts as a data processor under GDPR and applicable local regulations. See our Privacy Policy for details."
+      },
+      "ip": {
+        "title": "8. Intellectual Property",
+        "body": "Onusuite, its logo, source code, and content are the exclusive property of Onusuite. You retain full ownership of your business data. No part of the platform may be copied or redistributed without authorization."
+      },
+      "disclaimer": {
+        "title": "9. Disclaimer",
+        "body": "Onusuite is provided \"as is\" without warranty of any kind, express or implied. The platform does not constitute legal, tax, or accounting advice. You are responsible for the compliance of your tax and legal filings."
+      },
+      "liability": {
+        "title": "10. Limitation of Liability",
+        "body": "To the extent permitted by law, Onusuite will not be liable for indirect, incidental, or consequential damages arising from use of the service. Total liability is limited to the fees paid in the preceding 12 months."
+      },
+      "termination": {
+        "title": "11. Termination",
+        "body": "You may cancel at any time. Onusuite reserves the right to suspend or terminate an account for violation of these terms. After termination, your data remains accessible for 21 days in read-only mode, then archived for 90 days."
+      },
+      "governing": {
+        "title": "12. Governing Law",
+        "body": "These terms are governed by the law of Onusuite's country of registration. Any dispute will be submitted to the competent courts of that jurisdiction."
+      },
+      "changes": {
+        "title": "13. Changes",
+        "body": "Onusuite may modify these terms at any time. Changes take effect 30 days after publication. Continued use of the service constitutes acceptance of the changes."
+      },
+      "contact": {
+        "title": "14. Contact",
+        "body": "For any questions regarding these terms: contact@onusuite.com"
+      }
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: July 30, 2025",
+      "intro": {
+        "title": "1. Introduction",
+        "body": "Onusuite (\"we\", \"our\") protects the privacy of users (\"you\"). This policy explains how we collect, use, and protect your personal data in accordance with GDPR and applicable local regulations."
+      },
+      "collection": {
+        "title": "2. Data Collection",
+        "body": "We collect: name, professional email, company name, financial and accounting data entered in the platform, billing information, usage logs, and technical cookies necessary for the service to function."
+      },
+      "use": {
+        "title": "3. Use of Data",
+        "body": "Your data is used to: provide the Onusuite service, ensure security and compliance, bill subscriptions, improve the platform, and provide technical support. We never sell your data to third parties."
+      },
+      "sharing": {
+        "title": "4. Data Sharing",
+        "body": "Your data is only shared with: our hosting providers (Supabase, Cloudflare) under confidentiality agreements, tax authorities upon legal request, and your accounting firm if you explicitly authorize it."
+      },
+      "security": {
+        "title": "5. Security",
+        "body": "All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Tenant isolation is enforced via PostgreSQL Row-Level Security (RLS). Backups are automatic and encrypted. We conduct regular security audits."
+      },
+      "retention": {
+        "title": "6. Data Retention",
+        "body": "Your data is retained for the duration of service use. After termination: 21 days in read-only access, 90 days in encrypted archive, then permanent deletion. Billing data is retained for 10 years (legal requirement)."
+      },
+      "rights": {
+        "title": "7. Your Rights",
+        "body": "Under GDPR, you have: right of access, rectification, erasure, portability, limitation, and objection. To exercise these rights: contact@onusuite.com"
+      },
+      "cookies": {
+        "title": "8. Cookies",
+        "body": "Onusuite uses only technical cookies necessary for operation (authentication session, language and currency preferences). No advertising or third-party tracking cookies are used."
+      },
+      "children": {
+        "title": "9. Children's Privacy",
+        "body": "Onusuite is intended for professionals and businesses. The service is not accessible to persons under 18. We do not knowingly collect any data from minors."
+      },
+      "international": {
+        "title": "10. International Transfers",
+        "body": "Your data may be processed in the European Union, the United States, or Africa. All transfers are governed by Standard Contractual Clauses (SCC) compliant with GDPR."
+      },
+      "changes": {
+        "title": "11. Changes",
+        "body": "This policy may be modified at any time. Changes take effect 30 days after publication on this page."
+      },
+      "contact": {
+        "title": "12. Contact",
+        "body": "For any questions regarding privacy: contact@onusuite.com"
+      }
+    }
   }
 }

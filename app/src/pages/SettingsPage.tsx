@@ -345,7 +345,7 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
           />
           <div className="flex justify-end">
             <Button variant="primary" onClick={handleSave} disabled={saving || !company}>
-              <Save className="w-4 h-4" /> {saving ? '...' : t('legislation.save')}
+              <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('legislation.save')}
             </Button>
           </div>
         </div>
@@ -377,6 +377,7 @@ function ModulesTab() {
     { id: 'stock', icon: '📦', color: 'violet' },
     { id: 'production', icon: '🏭', color: 'rose' },
     { id: 'hr', icon: '👥', color: 'cyan' },
+    { id: 'projectManagement', icon: '📋', color: 'rose' },
     { id: 'dashboards', icon: '📊', color: 'teal' },
     { id: 'reporting', icon: '📈', color: 'fuchsia' },
   ]
@@ -475,7 +476,7 @@ function ModulesTab() {
         {isAdmin && (
           <div className="mt-6 flex justify-end">
             <Button variant="primary" onClick={handleSave} disabled={saving}>
-              <Save className="w-4 h-4" /> {saving ? '...' : t('modules.save')}
+              <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('modules.save')}
             </Button>
           </div>
         )}
@@ -588,7 +589,7 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       )}
       <div className="mt-6 flex justify-end">
         <Button variant="primary" onClick={handleSave} disabled={saving || !company}>
-          <Save className="w-4 h-4" /> {saving ? '...' : t('company.save')}
+          <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('company.save')}
         </Button>
       </div>
     </Card>

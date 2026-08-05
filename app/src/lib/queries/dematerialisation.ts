@@ -68,11 +68,13 @@ export async function createOnlinePayment(
 }
 
 export async function getOnlinePaymentByToken(token: string): Promise<OnlinePayment | null> {
-  const { data, error } = await supabase
+  const tid = await getTenantId()
+  let q = supabase
     .from('online_payments')
     .select('*, invoice:invoices(number, total, customer_id)')
-    .ilike('payment_url', `%${token}%`)
-    .maybeSingle()
+    .eq('payment_url', `${window.location.origin}/pay/${token}`)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.maybeSingle()
   if (error) throw error
   return data as OnlinePayment | null
 }

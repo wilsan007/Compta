@@ -143,7 +143,7 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [vatRate, setVatRate] = useState(defaultVatRate)
   const [stockQty, setStockQty] = useState(0)
   const [reorderLevel, setReorderLevel] = useState(0)
-  const [unit, setUnit] = useState('unité')
+  const [unit, setUnit] = useState('')
   const [category, setCategory] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -256,7 +256,7 @@ function StockMovementForm({ products, onClose, onSaved }: { products: Product[]
           <Input label={tCommon('common.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={tCommon('common.optional')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving || !productId}>{saving ? '...' : tCommon('actions.validate')}</Button>
+            <Button type="submit" disabled={saving || !productId}>{saving ? tCommon('actions.saving') : tCommon('actions.validate')}</Button>
           </div>
         </form>
       </div>

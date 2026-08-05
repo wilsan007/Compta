@@ -4,7 +4,9 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, Em
 import { getPurchaseInvoices, getSuppliers, createPurchaseInvoice, updatePurchaseInvoice, getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle } from 'lucide-react'
+import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle, UserPlus } from 'lucide-react'
+import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
+import { QuickSupplierAccess } from '@/components/cross-module/QuickSupplierAccess'
 import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
 
 export function PurchaseInvoicesPage() {
@@ -188,6 +190,10 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
   const { toast } = useToast()
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
+  const { t: tCross } = useTranslation('crossModule')
+  const { getAccessStrategy } = useModuleAwareAccess()
+  const commercialStrategy = getAccessStrategy('commercial')
+  const [showQuickAddSupplier, setShowQuickAddSupplier] = useState(false)
   const [number, setNumber] = useState('ACH-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(3, '0'))
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
@@ -270,6 +276,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
@@ -279,6 +286,11 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('purchaseInvoices.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
           <Combobox label={t('purchaseInvoices.supplier')} required value={supplierId} onChange={(v) => setSupplierId(v)} placeholder={t('purchaseInvoices.selectSupplierPlaceholder')} options={suppliers.map(s => ({ value: s.id, label: s.name }))} />
+          {commercialStrategy === 'inline' && (
+            <button type="button" onClick={() => setShowQuickAddSupplier(true)} className="text-xs text-[var(--color-primary)] flex items-center gap-1 hover:underline">
+              <UserPlus className="w-3.5 h-3.5" /> {tCross('supplier.add')}
+            </button>
+          )}
           <Input label={tCommon('common.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           <Input label={t('purchaseInvoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           <Input label={t('purchaseInvoices.totalAmount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" />
@@ -322,6 +334,13 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
         </form>
       </div>
     </div>
+    {showQuickAddSupplier && (
+      <QuickSupplierAccess
+        onClose={() => setShowQuickAddSupplier(false)}
+        onSaved={() => { setShowQuickAddSupplier(false); onSaved() }}
+      />
+    )}
+    </>
   )
 }
 

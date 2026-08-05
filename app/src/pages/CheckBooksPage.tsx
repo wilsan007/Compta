@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
 import { BookCheck, Plus, Trash2, X, Printer, CheckCircle, Ban } from 'lucide-react'
 import { useToast } from '@/lib/toast'
+import { useLocale } from '@/hooks/useLocale'
 import {
   getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook,
   getChecks, createCheck, updateCheck, deleteCheck,
@@ -12,6 +13,7 @@ import type { CheckBook, Check } from '@/types'
 export function CheckBooksPage() {
   const { t } = useTranslation('banking')
   const { toast } = useToast()
+  const { formatCurrency } = useLocale()
   const [activeTab, setActiveTab] = useState<'checkBooks' | 'checks' | 'print'>('checkBooks')
   const [checkBooks, setCheckBooks] = useState<CheckBook[]>([])
   const [checks, setChecks] = useState<Check[]>([])
@@ -133,7 +135,7 @@ export function CheckBooksPage() {
                 </div>
                 <div className="text-center py-8">
                   <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('checkBooks.print.amount')}</p>
-                  <p className="text-2xl font-bold">{printCheck.amount.toFixed(2)} €</p>
+                  <p className="text-2xl font-bold">{formatCurrency(printCheck.amount)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('checkBooks.print.payee')}</p>

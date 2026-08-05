@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getTvsDeclarations, createTvsDeclaration, deleteTvsDeclaration } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Car } from 'lucide-react'
+import { Plus, Trash2, Car, X } from 'lucide-react'
 import type { TvsDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -150,7 +150,7 @@ function TvsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('tvs.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4">
           <Input label={t('tvs.fiscalYear')} type="number" value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))} required />

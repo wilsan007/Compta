@@ -573,6 +573,7 @@ export interface Project {
   actual_cost: number
   start_date: string
   end_date: string
+  manager_id: string | null
   created_at: string
   updated_at: string
 }
@@ -621,6 +622,8 @@ export interface CompanySettings {
   show_quantities?: boolean
   vat_regime?: string | null
   vat_periodicity?: string | null
+  iban?: string | null
+  bic?: string | null
   created_at: string
   updated_at: string
 }
@@ -906,6 +909,7 @@ export interface PayRun {
   gross_total: number
   tax_total: number
   net_total: number
+  employer_contributions_total?: number
   employee_count: number
   created_at: string
 }
@@ -1493,39 +1497,6 @@ export interface PosSession {
   notes: string | null
 }
 
-export interface PosTicket {
-  id: string
-  tenant_id: string | null
-  number: string
-  session_id: string
-  terminal_id: string
-  customer_id: string | null
-  date: string
-  subtotal: number
-  vat_total: number
-  total: number
-  payment_method: string | null
-  amount_paid: number
-  change_given: number
-  status: string
-  invoice_id: string | null
-  notes: string | null
-  created_at: string
-}
-
-export interface PosTicketLine {
-  id: string
-  tenant_id: string | null
-  ticket_id: string
-  product_id: string | null
-  description: string
-  quantity: number
-  unit_price: number
-  vat_rate: number
-  line_total: number
-  created_at: string
-}
-
 // ============ Sprint I: Dématérialisation ============
 
 export interface ElectronicSignature {
@@ -1539,21 +1510,6 @@ export interface ElectronicSignature {
   signature_data: string | null
   ip_address: string | null
   signed_at: string
-  created_at: string
-}
-
-export interface OnlinePayment {
-  id: string
-  tenant_id: string | null
-  invoice_id: string | null
-  customer_id: string | null
-  payment_provider: string | null
-  provider_transaction_id: string | null
-  amount: number
-  currency_code: string
-  status: 'pending' | 'completed' | 'failed' | 'refunded'
-  payment_url: string | null
-  paid_at: string | null
   created_at: string
 }
 
@@ -2989,7 +2945,7 @@ export interface AssetSplitComponent {
   created_at: string
 }
 
-// ============ Phase 6: Sage 100 Accounting Features ============
+// ============ Phase 6: Accounting Features ============
 
 export interface AutoLabelRule {
   id: string
@@ -3722,21 +3678,7 @@ export interface PosTicketLine {
   created_at: string
 }
 
-// ============ Sprint I: Dématérialisation ============
-
-export interface ElectronicSignature {
-  id: string
-  tenant_id: string | null
-  document_type: string
-  document_id: string
-  signer_name: string
-  signer_email: string | null
-  signature_hash: string | null
-  signature_data: string | null
-  ip_address: string | null
-  signed_at: string
-  created_at: string
-}
+// ============ Sprint I: Dématérialisation (types étendus) ============
 
 export interface OnlinePayment {
   id: string

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
+import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
 import {
   getLeaveRules, createLeaveRule, updateLeaveRule, deleteLeaveRule,
   getPublicHolidays, createPublicHoliday, deletePublicHoliday,
@@ -131,7 +132,7 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
   const [minNotice, setMinNotice] = useState(String(rule?.min_notice_days ?? 7))
   const [maxConsecutive, setMaxConsecutive] = useState(String(rule?.max_consecutive_days ?? 30))
   const [countMethod, setCountMethod] = useState(rule?.count_method || 'working_days')
-  const [color, setColor] = useState(rule?.color || '#3b82f6')
+  const [color, setColor] = useState(rule?.color || DEFAULT_LEAVE_COLOR)
   const [active, setActive] = useState(rule?.active ?? true)
   const [saving, setSaving] = useState(false)
 
@@ -184,7 +185,7 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>
@@ -287,7 +288,7 @@ function HolidayForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           <Input label={t('leaveRules.country')} value={country} onChange={(e) => setCountry(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>
@@ -378,7 +379,7 @@ function WorkflowForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>
@@ -469,7 +470,7 @@ function StaffForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           <Input label={t('leaveRules.daysOfWeek')} value={daysOfWeek} onChange={(e) => setDaysOfWeek(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

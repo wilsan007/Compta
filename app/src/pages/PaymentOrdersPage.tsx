@@ -102,7 +102,7 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
                     onChange={(e) => handleStatusChange(o.id, e.target.value)}
                     className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                   >
-                    {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`paymentOrders.statuses.${k}`)}</option>)}
+                    {['draft', 'approved', 'executed', 'cancelled'].map((k) => <option key={k} value={k}>{t(`paymentOrders.statuses.${k}`)}</option>)}
                   </select>
                 </TableCell>
                 <TableCell>
@@ -226,7 +226,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
           <Input label={t('paymentOrders.form.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('paymentOrders.form.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('paymentOrders.form.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('paymentOrders.form.create')}</Button>
           </div>
         </form>
       </div>

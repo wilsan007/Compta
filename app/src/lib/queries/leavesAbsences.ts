@@ -382,6 +382,7 @@ export function calculateWorkingDays(startDate: string, endDate: string, holiday
 }
 
 export async function checkLeaveConflict(employeeId: string, startDate: string, endDate: string): Promise<boolean> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) throw new Error('Invalid date format')
   const tid = await getTenantId()
   let q = supabase.from('leave_requests')
     .select('id').eq('employee_id', employeeId).eq('status', 'approved')
@@ -393,6 +394,7 @@ export async function checkLeaveConflict(employeeId: string, startDate: string, 
 }
 
 export async function checkMinStaffRequired(department: string, startDate: string, endDate: string): Promise<{ ok: boolean; current: number; required: number }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) throw new Error('Invalid date format')
   const tid = await getTenantId()
   let reqQ = supabase.from('staff_requirements').select('*').eq('department', department).eq('active', true)
   if (tid) reqQ = reqQ.eq('tenant_id', tid)

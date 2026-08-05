@@ -820,6 +820,8 @@ export interface TenantUser {
   name: string
   role: 'admin' | 'accountant' | 'manager' | 'viewer' | 'custom' | 'auditor'
   permissions: Record<string, string[]>
+  module_roles?: Record<string, string>
+  guest_permissions?: Record<string, any>
   status: 'pending' | 'active' | 'revoked'
   invited_by: string | null
   invited_at: string
@@ -850,6 +852,8 @@ export async function createTenantForUser(data: {
 
   const authId = session.user.id
   const userEmail = session.user.email || data.email || ''
+  // Use the user's actual name from auth metadata, NOT the company name
+  const userDisplayName = (session.user.user_metadata?.name as string) || session.user.user_metadata?.full_name || userEmail
 
   const { data: tenant, error: tenantErr } = await supabase
     .from('tenants')
@@ -883,7 +887,7 @@ export async function createTenantForUser(data: {
       tenant_id: tenant.id,
       auth_id: authId,
       email: userEmail,
-      name: data.name,
+      name: userDisplayName,
       role: 'admin',
       permissions: {},
       status: 'active',
@@ -900,7 +904,7 @@ export async function createTenantForUser(data: {
     .from('employees')
     .insert({
       tenant_id: tenant.id,
-      name: data.name,
+      name: userDisplayName,
       email: userEmail,
       position: 'Admin',
       department: 'Direction',
@@ -915,6 +919,88 @@ export async function createTenantForUser(data: {
   // Seed reference data (chart of accounts, journals, currencies, fiscal year,
   // company settings) so the app is immediately usable. Non-fatal: if it fails,
   // the tenant still exists and the user can import/create data manually.
+  const { error: bootstrapErr } = await supabase.rpc('bootstrap_tenant', { p_tenant_id: tenant.id })
+  if (bootstrapErr) {
+    console.error('bootstrap_tenant failed:', bootstrapErr.message)
+  }
+
+  return { success: true, tenant: tenant as Tenant }
+}
+
+export async function createSiteForCurrentTenant(data: {
+  siteName: string
+  address: string
+}): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
+  const current = await getCurrentTenant()
+  if (!current) return { success: false, error: 'Aucun tenant actif' }
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return { success: false, error: 'Non connecté' }
+
+  const authId = session.user.id
+  const userEmail = session.user.email || current.email || ''
+  const userDisplayName = (session.user.user_metadata?.name as string) || session.user.user_metadata?.full_name || userEmail
+
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .insert({
+      name: data.siteName,
+      legal_name: current.legal_name || data.siteName,
+      siren: current.siren,
+      siret: null,
+      vat_number: current.vat_number,
+      address: data.address,
+      city: current.city,
+      postal_code: current.postal_code,
+      country: current.country,
+      currency: current.currency,
+      email: current.email,
+      phone: current.phone,
+      legislation_pack_code: current.legislation_pack_code || null,
+      country_code: current.legislation_pack_code || null,
+      enabled_modules: current.enabled_modules,
+      status: 'active',
+      plan: current.plan,
+      trial_ends_at: current.trial_ends_at,
+    })
+    .select()
+    .single()
+
+  if (tenantErr) return { success: false, error: tenantErr.message }
+
+  const { error: tuErr } = await supabase
+    .from('tenant_users')
+    .insert({
+      tenant_id: tenant.id,
+      auth_id: authId,
+      email: userEmail,
+      name: userDisplayName,
+      role: 'admin',
+      permissions: {},
+      status: 'active',
+      accepted_at: new Date().toISOString(),
+    })
+
+  if (tuErr) {
+    await supabase.from('tenants').delete().eq('id', tenant.id)
+    return { success: false, error: tuErr.message }
+  }
+
+  const { error: empErr } = await supabase
+    .from('employees')
+    .insert({
+      tenant_id: tenant.id,
+      name: userDisplayName,
+      email: userEmail,
+      position: 'Admin',
+      department: 'Direction',
+      hire_date: new Date().toISOString().split('T')[0],
+      status: 'active',
+    })
+  if (empErr) {
+    console.error('Failed to create employee record for site admin:', empErr.message)
+  }
+
   const { error: bootstrapErr } = await supabase.rpc('bootstrap_tenant', { p_tenant_id: tenant.id })
   if (bootstrapErr) {
     console.error('bootstrap_tenant failed:', bootstrapErr.message)
@@ -957,8 +1043,12 @@ export async function getCurrentTenantUser(): Promise<TenantUser | null> {
 
 export async function getTenantEnabledModules(): Promise<string[]> {
   const tenant = await getCurrentTenant()
-  if (!tenant) return ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system']
-  return tenant.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system']
+  const DEFAULT_MODS = ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'projectManagement', 'dashboards', 'reporting', 'system']
+  if (!tenant) return DEFAULT_MODS
+  const mods = tenant.enabled_modules || DEFAULT_MODS
+  // Ensure new modules are included if tenant has a saved list
+  if (!mods.includes('projectManagement')) return [...mods, 'projectManagement']
+  return mods
 }
 
 async function requireAdminOfTenant(tenantId: string): Promise<{ ok: boolean; error?: string }> {
@@ -1009,6 +1099,8 @@ export async function inviteUser(data: {
   name: string
   role: TenantUser['role']
   permissions?: Record<string, string[]>
+  moduleRoles?: Record<string, string>
+  guestPermissions?: Record<string, any>
   invitedBy?: string
   validFrom?: string | null
   validUntil?: string | null
@@ -1030,6 +1122,8 @@ export async function inviteUser(data: {
         name: data.name,
         role: data.role,
         permissions: data.permissions || {},
+        module_roles: data.moduleRoles || {},
+        guest_permissions: data.guestPermissions || {},
         tenant_id: data.tenantId,
         invited_by: data.invitedBy || null,
         locale,
@@ -1064,7 +1158,9 @@ export async function inviteUser(data: {
 export async function updateUserRole(
   tenantUserId: string,
   role: TenantUser['role'],
-  permissions?: Record<string, string[]>
+  permissions?: Record<string, string[]>,
+  moduleRoles?: Record<string, string>,
+  guestPermissions?: Record<string, any>
 ): Promise<{ success: boolean; error?: string }> {
   const tid = await getTenantId()
   if (!tid) return { success: false, error: 'Aucun tenant actif' }
@@ -1073,6 +1169,8 @@ export async function updateUserRole(
 
   const update: Record<string, any> = { role }
   if (permissions !== undefined) update.permissions = permissions
+  if (moduleRoles !== undefined) update.module_roles = moduleRoles
+  if (guestPermissions !== undefined) update.guest_permissions = guestPermissions
 
   const { error } = await supabase
     .from('tenant_users')
@@ -1132,7 +1230,7 @@ export async function reinviteUser(tenantUserId: string, email: string): Promise
 
   let emailSent = false
   try {
-    const redirectTo = `${window.location.origin}/accept-invitation`
+    const redirectTo = `${window.location.origin}/accept-invitation?tenant=${tid}`
     const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'en'
     const otpOptions: Record<string, any> = { emailRedirectTo: redirectTo }
     if (['fr', 'en', 'ar'].includes(locale)) {
@@ -1153,7 +1251,10 @@ export async function reinviteUser(tenantUserId: string, email: string): Promise
 // Called after an invited user clicks the magic link and lands on /accept-invitation.
 // Links the authenticated auth.users id to the pending tenant_users row, activates it,
 // and optionally sets a password so the user can log in with email/password later.
-export async function acceptInvitation(password?: string): Promise<{ success: boolean; error?: string; tenantName?: string }> {
+export async function acceptInvitation(
+  password?: string,
+  tenantId?: string
+): Promise<{ success: boolean; error?: string; tenantName?: string; otherPendingInvites?: { tenantId: string; tenantName: string }[] }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Lien invalide ou expiré. Redemandez une invitation.' }
 
@@ -1176,10 +1277,17 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
     return { success: false, error: "Aucune invitation trouvée pour cet email." }
   }
 
-  // Priority: 1) invitation matching this auth_id, 2) invitation with null auth_id (pending), 3) first
-  const tenantUser = invitations.find(i => i.auth_id === authId)
-    || invitations.find(i => !i.auth_id)
-    || invitations[0]
+  // If tenantId is provided (from magic link URL), target that specific invitation
+  // Otherwise fall back to: 1) matching auth_id, 2) null auth_id (pending), 3) first
+  let tenantUser
+  if (tenantId) {
+    tenantUser = invitations.find(i => i.tenant_id === tenantId)
+  }
+  if (!tenantUser) {
+    tenantUser = invitations.find(i => i.auth_id === authId)
+      || invitations.find(i => !i.auth_id)
+      || invitations[0]
+  }
 
   // Security: if the invitation already has a different auth_id, refuse
   if (tenantUser.auth_id && tenantUser.auth_id !== authId) {
@@ -1213,7 +1321,13 @@ export async function acceptInvitation(password?: string): Promise<{ success: bo
   }
 
   const tenantName = (tenantUser as any).tenants?.name || null
-  return { success: true, tenantName }
+
+  // Collect other pending invitations so the UI can offer them to the user
+  const otherPendingInvites = invitations
+    .filter(i => i.tenant_id !== tenantUser.tenant_id && i.status === 'pending')
+    .map(i => ({ tenantId: i.tenant_id, tenantName: (i as any).tenants?.name || i.tenant_id }))
+
+  return { success: true, tenantName, otherPendingInvites }
 }
 
 export function hasPermission(
@@ -1289,7 +1403,7 @@ export async function submitEdiTva(vatReturnId: string) {
       edi_submitted_at: new Date().toISOString(),
     })
     .eq('id', vatReturnId)
-    .eq('tenant_id', tid!)
+    .eq('tenant_id', tid ?? '')
     .select()
     .single()
   if (error) throw error

@@ -29,7 +29,9 @@ export async function getMyActivity(limit?: number) {
   const { data: { session } } = await supabase.auth.getSession()
   const userEmail = session?.user?.email
   if (!userEmail) throw new Error('Not authenticated')
-  const { data: emp } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+  let q = supabase.from('employees').select('id').eq('email', userEmail)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: emp } = await q.single()
   if (!emp?.id) throw new Error('Employee not found')
   return getEmployeeActivity(emp.id, limit)
 }
@@ -42,7 +44,9 @@ export async function getEmployeeDashboardData() {
   const userEmail = session?.user?.email
   if (!userEmail) throw new Error('Not authenticated')
 
-  const { data: emp } = await supabase.from('employees').select('*').eq('email', userEmail).single()
+  let empQ = supabase.from('employees').select('*').eq('email', userEmail)
+  if (tid) empQ = empQ.eq('tenant_id', tid)
+  const { data: emp } = await empQ.single()
   if (!emp) throw new Error('Employee not found')
   const employeeId = emp.id
 
@@ -67,10 +71,13 @@ export async function getEmployeeDashboardData() {
 // ============ Employee Profile ============
 
 export async function getMyProfile() {
+  const tid = await getTenantId()
   const { data: { session } } = await supabase.auth.getSession()
   const userEmail = session?.user?.email
   if (!userEmail) throw new Error('Not authenticated')
-  const { data, error } = await supabase.from('employees').select('*').eq('email', userEmail).single()
+  let q = supabase.from('employees').select('*').eq('email', userEmail)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.single()
   if (error) throw error
   return data
 }
@@ -104,7 +111,7 @@ export async function getEmployeeAlerts(employeeId?: string) {
   let eq2 = supabase.from('employees').select('*').eq('id', empId)
   if (tid) eq2 = eq2.eq('tenant_id', tid)
   const { data: emp } = await eq2.single()
-  if (emp?.hire_date && emp?.contract_type === 'CDD') {
+  if (emp?.hire_date && String(emp?.contract_type).toLowerCase() === 'cdd') {
     const hireDate = new Date(emp.hire_date)
     const trialEnd = new Date(hireDate)
     trialEnd.setMonth(trialEnd.getMonth() + (emp.trial_period_months || 3))
@@ -237,7 +244,9 @@ export async function calculateReportData(reportId: string) {
 
   switch (report.report_type) {
     case 'effectifs': {
-      const { data: emps } = await supabase.from('employees').select('*').eq('tenant_id', tid!)
+      let empsQ = supabase.from('employees').select('*')
+      if (tid) empsQ = empsQ.eq('tenant_id', tid)
+      const { data: emps } = await empsQ
       calculatedData = {
         total: emps?.length || 0,
         active: emps?.filter((e: any) => e.status === 'active').length || 0,
@@ -250,7 +259,9 @@ export async function calculateReportData(reportId: string) {
       break
     }
     case 'remuneration': {
-      const { data: emps } = await supabase.from('employees').select('*').eq('status', 'active').eq('tenant_id', tid!)
+      let empsQ2 = supabase.from('employees').select('*').eq('status', 'active')
+      if (tid) empsQ2 = empsQ2.eq('tenant_id', tid)
+      const { data: emps } = await empsQ2
       const salaries = emps?.map((e: any) => Number(e.salary || 0)) || []
       calculatedData = {
         total: salaries.reduce((s: number, v: number) => s + v, 0),
@@ -268,7 +279,8 @@ export async function calculateReportData(reportId: string) {
       break
     }
     case 'absenteeism': {
-      let lq = supabase.from('leave_requests').select('*').eq('status', 'approved').eq('tenant_id', tid!)
+      let lq = supabase.from('leave_requests').select('*').eq('status', 'approved')
+      if (tid) lq = lq.eq('tenant_id', tid)
       const { data: leaves } = await lq
       calculatedData = {
         total: leaves?.length || 0,
@@ -280,7 +292,9 @@ export async function calculateReportData(reportId: string) {
       break
     }
     case 'turnover': {
-      const { data: emps } = await supabase.from('employees').select('*').eq('tenant_id', tid!)
+      let empsQ3 = supabase.from('employees').select('*')
+      if (tid) empsQ3 = empsQ3.eq('tenant_id', tid)
+      const { data: emps } = await empsQ3
       const active = emps?.filter((e: any) => e.status === 'active').length || 0
       const inactive = emps?.filter((e: any) => e.status === 'inactive').length || 0
       calculatedData = {
@@ -291,7 +305,8 @@ export async function calculateReportData(reportId: string) {
       break
     }
     case 'training': {
-      let cq2 = supabase.from('cpf_transactions').select('*').eq('tenant_id', tid!)
+      let cq2 = supabase.from('cpf_transactions').select('*')
+      if (tid) cq2 = cq2.eq('tenant_id', tid)
       const { data: cpf } = await cq2
       calculatedData = {
         totalTransactions: cpf?.length || 0,
@@ -300,7 +315,9 @@ export async function calculateReportData(reportId: string) {
       break
     }
     case 'costs': {
-      const { data: emps } = await supabase.from('employees').select('*').eq('status', 'active').eq('tenant_id', tid!)
+      let empsQ4 = supabase.from('employees').select('*').eq('status', 'active')
+      if (tid) empsQ4 = empsQ4.eq('tenant_id', tid)
+      const { data: emps } = await empsQ4
       calculatedData = {
         byDepartment: emps?.reduce((acc: Record<string, number>, e: any) => {
           const dept = e.department || 'N/A'

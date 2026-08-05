@@ -33,12 +33,20 @@ CREATE INDEX IF NOT EXISTS idx_recurring_entries_next_gen ON recurring_entries(n
 
 -- RLS
 ALTER TABLE recurring_entries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_select_recurring_entries ON recurring_entries
-  FOR SELECT USING (tenant_id = current_tenant_id());
-CREATE POLICY tenant_insert_recurring_entries ON recurring_entries
-  FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'insert'));
-CREATE POLICY tenant_update_recurring_entries ON recurring_entries
-  FOR UPDATE USING (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'update'))
-  WITH CHECK (tenant_id = current_tenant_id());
-CREATE POLICY tenant_delete_recurring_entries ON recurring_entries
-  FOR DELETE USING (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'delete'));
+DO $$ BEGIN
+  CREATE POLICY tenant_select_recurring_entries ON recurring_entries
+    FOR SELECT USING (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_insert_recurring_entries ON recurring_entries
+    FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'insert'));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_update_recurring_entries ON recurring_entries
+    FOR UPDATE USING (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'update'))
+    WITH CHECK (tenant_id = current_tenant_id());
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
+DO $$ BEGIN
+  CREATE POLICY tenant_delete_recurring_entries ON recurring_entries
+    FOR DELETE USING (tenant_id = current_tenant_id() AND can_perform('recurring_entries', 'delete'));
+EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;

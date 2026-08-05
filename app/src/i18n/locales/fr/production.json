@@ -120,6 +120,7 @@
     "capHDay": "Cap. h/j",
     "costH": "Coût/h",
     "confirmDeleteWorkCenter": "Supprimer ce centre de charge ?",
+    "codeAndNameRequired": "Le code et le nom sont requis",
     "export": "Export",
     "import": "Import",
     "statuses": {
@@ -309,7 +310,10 @@
       "manual": "Manuel",
       "mrp": "CBN",
       "sub_level": "Sous-niveau"
-    }
+    },
+    "count": "{{count}} ordre(s)",
+    "selectWarehouse": "Sélectionner un dépôt",
+    "selectRouting": "Sélectionner une gamme"
   },
   "subcontracting": {
     "title": "Sous-traitance",

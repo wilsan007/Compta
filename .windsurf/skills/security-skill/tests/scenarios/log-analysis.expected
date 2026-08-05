@@ -1,0 +1,5 @@
+PATTERN_1="Failed password|failed|sshd"
+PATTERN_2="185\.220\.101\.1|45\.33\.32\.156"
+PATTERN_3="root|admin|ubuntu|deploy"
+ANTIPATTERN_1="command not found|permission denied"
+ANTIPATTERN_2="Enter log file path"

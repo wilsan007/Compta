@@ -10,6 +10,10 @@ import {
   type TenantUser,
 } from '@/lib/queries'
 import { Users, UserPlus, Loader2, Ban, RotateCcw, Send, Shield, Check, CalendarClock } from 'lucide-react'
+import { GuestAccessConfigPanel } from '@/components/team/GuestAccessConfigPanel'
+import { getEnabledModuleRoleOptions } from '@/lib/moduleRoles'
+import { useTenantModules } from '@/lib/useTenantModules'
+import type { GuestPermissions } from '@/types/documents'
 
 export function TeamPage() {
   const { toast } = useToast()
@@ -178,33 +182,38 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<TenantUser['role']>('viewer')
-  const [permissions, setPermissions] = useState<Record<string, string[]>>({})
-  const [validFrom, setValidFrom] = useState('')
-  const [validUntil, setValidUntil] = useState('')
   const [saving, setSaving] = useState(false)
+  const [moduleRoles, setModuleRoles] = useState<Record<string, string>>({})
+  const { modules: enabledModules } = useTenantModules()
+  const availableModuleOptions = getEnabledModuleRoleOptions(enabledModules)
+  const [guestPermissions, setGuestPermissions] = useState<GuestPermissions>({
+    projectIds: [],
+    views: {
+      table: true, kanban: true, gantt: false, calendar: false, timeline: false,
+      box: false, mindmap: false, graph: false, pivot: false, burndown: false,
+      workload: false, activity: false, documents: true, chat: false,
+    },
+    perProject: {
+      tasks: true, subtasks: true, documents: true, comments: true,
+      addComments: false, addRemarks: false, assignees: false, dates: false,
+      budget: false, progress: true,
+    },
+  })
 
-  const showCustom = role === 'custom'
-  const showAuditorDates = role === 'auditor'
-
-  function togglePermission(table: string, action: string) {
-    setPermissions(prev => {
-      const next = { ...prev }
-      if (!next[table]) next[table] = []
-      if (next[table].includes(action)) {
-        next[table] = next[table].filter(a => a !== action)
-      } else {
-        next[table] = [...next[table], action]
-      }
-      return next
-    })
-  }
+  const isPmGuest = moduleRoles.projectManagement === 'guest'
 
   async function handleSubmit() {
     if (!email || !name) { toast('error', tCommon('toast.error'), t('team.missingFields')); return }
     setSaving(true)
     try {
-      const result = await inviteUser({ tenantId, email, name, role, permissions: showCustom ? permissions : undefined, invitedBy: invitedById, validFrom: validFrom || null, validUntil: validUntil || null })
+      const result = await inviteUser({ 
+        tenantId, email, name, role: 'viewer', 
+        moduleRoles,
+        guestPermissions: isPmGuest ? guestPermissions : undefined,
+        invitedBy: invitedById, 
+        validFrom: null, 
+        validUntil: null 
+      })
       if (result.success) {
         toast('success', t('team.userCreated'), result.message || t('team.userCreatedMsg', { email }))
         onSaved()
@@ -236,64 +245,41 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
             <div className="p-3 rounded-lg bg-[rgba(0,135,90,0.08)] border border-[var(--color-success)] text-xs text-[var(--color-text-secondary)]">
               {t('team.inviteEmailInfo')}
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t('team.role')}</label>
-              <Select value={role} onChange={e => setRole(e.target.value as TenantUser['role'])} options={[
-                { value: 'admin', label: t('team.roles.admin') },
-                { value: 'accountant', label: t('team.roles.accountant') },
-                { value: 'manager', label: t('team.roles.manager') },
-                { value: 'viewer', label: t('team.roles.viewer') },
-                { value: 'custom', label: t('team.roles.custom') },
-                { value: 'auditor', label: t('team.roles.auditor') },
-              ]} />
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t(`team.roleDescriptions.${role}`)}</p>
+
+            <div className="border border-[var(--color-border)] rounded-lg p-3 space-y-3">
+              <p className="text-sm font-medium">{t('team.moduleRolesTitle')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('team.moduleRolesHelp')}</p>
+              <div className="p-2 rounded-md bg-[rgba(234,179,8,0.08)] border border-[var(--color-warning)] text-xs text-[var(--color-text-secondary)]">
+                {t('team.moduleAccessInfo')}
+              </div>
+              {availableModuleOptions.length === 0 ? (
+                <p className="text-xs text-[var(--color-text-secondary)] italic">{t('team.noModulesEnabled')}</p>
+              ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {availableModuleOptions.map(mod => (
+                  <div key={mod.module} className="flex items-center gap-2">
+                    <label className="text-xs font-medium w-32 shrink-0">{t(`team.moduleLabels.${mod.module}`)}</label>
+                    <select
+                      value={moduleRoles[mod.module] || ''}
+                      onChange={(e) => setModuleRoles(prev => ({ ...prev, [mod.module]: e.target.value }))}
+                      className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                    >
+                      <option value="">{t('team.noAccess')}</option>
+                      {mod.roles.map(r => (
+                        <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              )}
             </div>
 
-            {showAuditorDates && (
-              <div className="space-y-3 p-3 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[var(--color-warning)] ">
-                <p className="text-xs text-[var(--color-text-secondary)]">{t('team.auditorPeriodInfo')}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">{t('team.validFrom')}</label>
-                    <Input type="date" value={validFrom} onChange={e => setValidFrom(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">{t('team.validUntil')}</label>
-                    <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {showCustom && (
-              <div className="border border-[var(--color-border)] rounded-lg p-3 max-h-64 overflow-y-auto">
-                <p className="text-sm font-medium mb-2">{t('team.granularPermissions')}</p>
-                <div className="space-y-2">
-                  {PERMISSION_TABLES.map(table => (
-                    <div key={table.name} className="flex items-center justify-between">
-                      <span className="text-sm">{t(`team.permissionTables.${table.name}`)}</span>
-                      <div className="flex gap-1">
-                        {PERMISSION_ACTIONS.map(action => {
-                          const checked = permissions[table.name]?.includes(action.value) || false
-                          return (
-                            <button
-                              key={action.value}
-                              onClick={() => togglePermission(table.name, action.value)}
-                              className={`px-2 py-1 text-xs rounded border transition-colors ${
-                                checked
-                                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                                  : 'bg-transparent text-[var(--color-text-secondary)] border-[var(--color-border)]'
-                              }`}
-                            >
-                              {t(`team.permissionActions.${action.value}`)}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {isPmGuest && (
+              <GuestAccessConfigPanel
+                permissions={guestPermissions}
+                onChange={setGuestPermissions}
+              />
             )}
           </div>
 
@@ -321,8 +307,26 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
   const { t: tCommon } = useTranslation('common')
   const [permissions, setPermissions] = useState<Record<string, string[]>>(tenantUser.permissions || {})
   const [saving, setSaving] = useState(false)
+  const [moduleRoles, setModuleRoles] = useState<Record<string, string>>(tenantUser.module_roles || {})
+  const { modules: enabledModules } = useTenantModules()
+  const availableModuleOptions = getEnabledModuleRoleOptions(enabledModules)
+  const [guestPermissions, setGuestPermissions] = useState<GuestPermissions>((tenantUser.guest_permissions as GuestPermissions) || {
+    projectIds: [],
+    views: {
+      table: true, kanban: true, gantt: false, calendar: false, timeline: false,
+      box: false, mindmap: false, graph: false, pivot: false, burndown: false,
+      workload: false, activity: false, documents: true, chat: false,
+    },
+    perProject: {
+      tasks: true, subtasks: true, documents: true, comments: true,
+      addComments: false, addRemarks: false, assignees: false, dates: false,
+      budget: false, progress: true,
+    },
+  })
 
   const showCustom = role === 'custom'
+  const showModuleRoles = role !== 'admin'
+  const isPmGuest = moduleRoles.projectManagement === 'guest'
 
   function togglePermission(table: string, action: string) {
     setPermissions(prev => {
@@ -339,7 +343,7 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
 
   async function handleSubmit() {
     setSaving(true)
-    const result = await updateUserRole(tenantUser.id, role, showCustom ? permissions : undefined)
+    const result = await updateUserRole(tenantUser.id, role, showCustom ? permissions : undefined, showModuleRoles ? moduleRoles : undefined, isPmGuest ? guestPermissions : undefined)
     if (result.success) { toast('success', t('team.roleUpdated'), t('team.roleUpdatedMsg', { role: t(`team.roles.${role}`) })); onSaved() }
     else toast('error', tCommon('toast.error'), result.error!)
     setSaving(false)
@@ -393,6 +397,46 @@ function EditRoleModal({ tenantUser, onClose, onSaved }: {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {showModuleRoles && (
+            <div className="border border-[var(--color-border)] rounded-lg p-3 space-y-3 mt-4">
+              <p className="text-sm font-medium">{t('team.moduleRolesTitle')}</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">{t('team.moduleRolesHelp')}</p>
+              <div className="p-2 rounded-md bg-[rgba(234,179,8,0.08)] border border-[var(--color-warning)] text-xs text-[var(--color-text-secondary)]">
+                {t('team.moduleAccessInfo')}
+              </div>
+              {availableModuleOptions.length === 0 ? (
+                <p className="text-xs text-[var(--color-text-secondary)] italic">{t('team.noModulesEnabled')}</p>
+              ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {availableModuleOptions.map(mod => (
+                  <div key={mod.module} className="flex items-center gap-2">
+                    <label className="text-xs font-medium w-32 shrink-0">{t(`team.moduleLabels.${mod.module}`)}</label>
+                    <select
+                      value={moduleRoles[mod.module] || ''}
+                      onChange={(e) => setModuleRoles(prev => ({ ...prev, [mod.module]: e.target.value }))}
+                      className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                    >
+                      <option value="">{t('team.noAccess')}</option>
+                      {mod.roles.map(r => (
+                        <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              )}
+            </div>
+          )}
+
+          {isPmGuest && (
+            <div className="mt-4">
+              <GuestAccessConfigPanel
+                permissions={guestPermissions}
+                onChange={setGuestPermissions}
+              />
             </div>
           )}
 

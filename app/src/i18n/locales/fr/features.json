@@ -30,7 +30,8 @@
     "status": "Statut",
     "facturXGenerated": "Factur-X générée",
     "facturXGeneratedDesc": "XML conforme EN 16931 téléchargé pour {{number}}",
-    "buttonTitle": "Facture électronique (Factur-X)"
+    "buttonTitle": "Facture électronique (Factur-X)",
+    "kb": "Ko"
   },
   "fec": {
     "title": "Export FEC certifié",
@@ -99,7 +100,16 @@
     "importSuccessDesc": "{{accounts}} comptes et {{entries}} écritures importés",
     "importError": "Erreur d'import",
     "noFile": "Sélectionnez d'abord un fichier",
-    "reset": "Recommencer"
+    "reset": "Recommencer",
+    "creator": "Créateur",
+    "database": "Base de données",
+    "importInstructions": "Instructions d'import",
+    "maeDescription": "Il s'agit d'un fichier de sauvegarde binaire Sage 100. L'import direct n'est pas possible depuis ce format.",
+    "maeDetected": "Fichier .mae Sage 100 détecté",
+    "sqlServer": "SQL Server",
+    "step1": "1. Ouvrez Sage 100 sur le même poste",
+    "step2": "2. Utilisez Fichier → Importer → Importer les écritures",
+    "step3": "3. Sélectionnez le fichier FEC exporté"
   },
   "accountantPortal": {
     "title": "Portail expert-comptable",

@@ -23,6 +23,9 @@ import frCrm from './locales/fr/crm.json'
 import frPos from './locales/fr/pos.json'
 import frDemat from './locales/fr/demat.json'
 import frEmployee from './locales/fr/employee.json'
+import frTaskManagement from './locales/fr/taskManagement.json'
+import frDocuments from './locales/fr/documents.json'
+import frCrossModule from './locales/fr/crossModule.json'
 
 import enCommon from './locales/en/common.json'
 import enNav from './locales/en/nav.json'
@@ -45,6 +48,9 @@ import enCrm from './locales/en/crm.json'
 import enPos from './locales/en/pos.json'
 import enDemat from './locales/en/demat.json'
 import enEmployee from './locales/en/employee.json'
+import enTaskManagement from './locales/en/taskManagement.json'
+import enDocuments from './locales/en/documents.json'
+import enCrossModule from './locales/en/crossModule.json'
 
 import arCommon from './locales/ar/common.json'
 import arNav from './locales/ar/nav.json'
@@ -67,6 +73,9 @@ import arCrm from './locales/ar/crm.json'
 import arPos from './locales/ar/pos.json'
 import arDemat from './locales/ar/demat.json'
 import arEmployee from './locales/ar/employee.json'
+import arTaskManagement from './locales/ar/taskManagement.json'
+import arDocuments from './locales/ar/documents.json'
+import arCrossModule from './locales/ar/crossModule.json'
 
 export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ar'] as const
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
@@ -79,7 +88,7 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; flag: s
 
 export const ALL_NAMESPACES = [
   'common', 'nav', 'auth', 'sales', 'purchases', 'accounting',
-  'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features', 'crm', 'pos', 'demat', 'employee',
+  'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features', 'crm', 'pos', 'demat', 'employee', 'taskManagement', 'documents', 'crossModule',
 ] as const
 
 i18n
@@ -109,6 +118,9 @@ i18n
         pos: frPos,
         demat: frDemat,
         employee: frEmployee,
+        taskManagement: frTaskManagement,
+        documents: frDocuments,
+        crossModule: frCrossModule,
       },
       en: {
         common: enCommon,
@@ -132,6 +144,9 @@ i18n
         pos: enPos,
         demat: enDemat,
         employee: enEmployee,
+        taskManagement: enTaskManagement,
+        documents: enDocuments,
+        crossModule: enCrossModule,
       },
       ar: {
         common: arCommon,
@@ -155,6 +170,9 @@ i18n
         pos: arPos,
         demat: arDemat,
         employee: arEmployee,
+        taskManagement: arTaskManagement,
+        documents: arDocuments,
+        crossModule: arCrossModule,
       },
     },
     fallbackLng: 'en',

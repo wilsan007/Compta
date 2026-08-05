@@ -217,7 +217,7 @@ function PartnerBankAccountForm({ partnerType, partnerId, account, onClose, onSa
             <Input label={t('partnerBankAccounts.accountKey')} value={accountKey} onChange={(e) => setAccountKey(e.target.value)} placeholder="23" />
           </div>
           <Select label={t('partnerBankAccounts.currency')} value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} options={[
-            { value: 'EUR', label: 'EUR (€)' },
+            { value: 'EUR', label: 'EUR' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'GBP', label: 'GBP (£)' },
             { value: 'MAD', label: 'MAD' },

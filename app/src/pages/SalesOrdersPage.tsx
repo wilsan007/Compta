@@ -190,7 +190,7 @@ function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onC
           <Input label={t('invoices.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

@@ -326,7 +326,7 @@ export function getCountryCode(country: string): string | undefined {
 }
 
 export const CURRENCIES = [
-  { code: 'EUR', label: 'Euro (€)' },
+  { code: 'EUR', label: 'Euro' },
   { code: 'USD', label: 'Dollar US ($)' },
   { code: 'GBP', label: 'Livre sterling (£)' },
   { code: 'CHF', label: 'Franc suisse (CHF)' },

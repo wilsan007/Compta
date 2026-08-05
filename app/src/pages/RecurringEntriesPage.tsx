@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRecurringEntries, createRecurringEntry, updateRecurringEntry, deleteRecurringEntry, generateRecurringEntry, getJournals } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
-import { RefreshCw, Plus, Trash2, Pencil, Play, Pause, Zap } from 'lucide-react'
+import { RefreshCw, Plus, Trash2, Pencil, Play, Pause, Zap, X } from 'lucide-react'
 import type { RecurringEntry, RecurringEntryLine, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -38,10 +38,10 @@ export function RecurringEntriesPage() {
     if (!window.confirm(t('recurring.deleteConfirm'))) return
     try {
       await deleteRecurringEntry(id)
-      toast('success', tCommon('common.success'), t('recurring.deleteSuccess'))
+      toast('success', tCommon('toast.success'), t('recurring.deleteSuccess'))
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
     }
   }
 
@@ -50,10 +50,10 @@ export function RecurringEntriesPage() {
     setGeneratingId(id)
     try {
       await generateRecurringEntry(id)
-      toast('success', tCommon('common.success'), t('recurring.generateSuccess'))
+      toast('success', tCommon('toast.success'), t('recurring.generateSuccess'))
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
     } finally {
       setGeneratingId(null)
     }
@@ -65,7 +65,7 @@ export function RecurringEntriesPage() {
       await updateRecurringEntry(entry.id, { status: newStatus })
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
     }
   }
 
@@ -79,7 +79,7 @@ export function RecurringEntriesPage() {
     setShowForm(true)
   }
 
-  const tableHeaders = [t('recurring.name'), t('recurring.journal'), t('recurring.frequency'), t('recurring.nextGeneration'), t('recurring.totalDebit'), t('recurring.status'), tCommon('common.table.actions')]
+  const tableHeaders = [t('recurring.name'), t('recurring.journal'), t('recurring.frequency'), t('recurring.nextGeneration'), t('recurring.totalDebit'), t('recurring.status'), tCommon('table.actions')]
 
   return (
     <div>
@@ -205,11 +205,11 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
 
   async function handleSave() {
     if (!name || !journalId || lines.length === 0) {
-      toast('warning', tCommon('common.warning'), tCommon('common.fillRequired'))
+      toast('warning', tCommon('toast.warning'), t('recurring.fillRequired'))
       return
     }
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
-      toast('warning', tCommon('common.warning'), tCommon('common.unbalanced'))
+      toast('warning', tCommon('toast.warning'), t('recurring.unbalanced'))
       return
     }
     setSaving(true)
@@ -236,10 +236,10 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
       } else {
         await createRecurringEntry(payload)
       }
-      toast('success', tCommon('common.success'), t('recurring.saveSuccess'))
+      toast('success', tCommon('toast.success'), t('recurring.saveSuccess'))
       onSaved()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
     } finally {
       setSaving(false)
     }
@@ -252,7 +252,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{editing ? t('recurring.edit') : t('recurring.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
@@ -339,7 +339,7 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
           <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? tCommon('common.saving') : tCommon('actions.save')}
+            {saving ? tCommon('actions.saving') : tCommon('actions.save')}
           </Button>
         </div>
       </div>

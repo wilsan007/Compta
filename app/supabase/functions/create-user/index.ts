@@ -1,6 +1,7 @@
 // @ts-nocheck — This file runs in Deno (Supabase Edge Function), not in the local TS environment.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { sendEmailViaResend, buildInvitationEmail } from "../_shared/email.ts"
 
 // ============================================
 // INLINE RATE LIMITING (shared logic)
@@ -151,7 +152,8 @@ serve(async (req) => {
     // ============================================
     // AUTHORIZATION: Verify caller is admin of the target tenant
     // ============================================
-    const { email, name, role, permissions, tenant_id, invited_by, locale, valid_from, valid_until } = await req.json()
+    const body = await req.json()
+    const { email, name, role, permissions, tenant_id, invited_by, locale, valid_from, valid_until } = body
 
     if (!email || !tenant_id) {
       return new Response(
@@ -257,20 +259,80 @@ serve(async (req) => {
           )
         }
 
-        // Send magic link invitation email
+        // Send invitation email via Resend API (unified email system)
+        // Generate magic link token without sending Supabase's default email
         const appUrl = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
-        const redirectTo = `${appUrl}/accept-invitation`
-        const otpOptions: Record<string, any> = { emailRedirectTo: redirectTo }
-        if (locale && ["fr", "en", "ar"].includes(locale)) {
-          otpOptions.lang = locale
-        }
-        const { error: otpError } = await supabase.auth.signInWithOtp({
+        const redirectTo = `${appUrl}/accept-invitation?tenant=${tenant_id}`
+
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: "magiclink",
           email,
-          options: otpOptions,
+          options: { emailRedirectTo: redirectTo },
         })
 
-        if (otpError) {
-          console.error("Failed to send re-invitation email:", otpError.message)
+        let emailSent = false
+        if (linkError) {
+          console.error("Failed to generate magic link for re-invitation:", linkError.message)
+        } else if (linkData?.properties?.action_link) {
+          // Fetch tenant name and inviter name for the email template
+          const { data: tenantData } = await supabase
+            .from("tenants")
+            .select("name")
+            .eq("id", tenant_id)
+            .single()
+          const tenantName = tenantData?.name || tenant_id
+
+          // Fetch inviter name
+          let inviterName: string | undefined
+          if (invited_by) {
+            const { data: inviterData } = await supabase
+              .from("tenant_users")
+              .select("name")
+              .eq("auth_id", invited_by)
+              .eq("tenant_id", tenant_id)
+              .maybeSingle()
+            inviterName = inviterData?.name || undefined
+          }
+
+          // Build modules list from module_roles
+          const moduleRoles = body?.module_roles || {}
+          const moduleNames = Object.keys(moduleRoles)
+          const modules = moduleNames.length > 0 ? moduleNames.join(", ") : undefined
+
+          const template = buildInvitationEmail({
+            email,
+            name,
+            tenantName,
+            locale: locale || "en",
+            magicLinkUrl: linkData.properties.action_link,
+            isReinvitation: true,
+            inviterName,
+            role: role || undefined,
+            modules,
+          })
+
+          const emailResult = await sendEmailViaResend({
+            to: email,
+            subject: template.subject,
+            html: template.html,
+          })
+          emailSent = emailResult.success
+
+          // Log to email queue
+          if (emailResult.success) {
+            try {
+              await supabase.from("notification_email_queue").insert({
+                tenant_id,
+                recipient_email: email,
+                recipient_name: name,
+                notification_type: "invitation_pending",
+                subject: template.subject,
+                status: "sent",
+                resend_id: emailResult.id || null,
+                sent_at: new Date().toISOString(),
+              })
+            } catch { /* queue logging failure is non-blocking */ }
+          }
         }
 
         return new Response(
@@ -279,7 +341,7 @@ serve(async (req) => {
             email,
             existing_user: true,
             reactivated: true,
-            email_sent: !otpError,
+            email_sent: emailSent,
             message: "Utilisateur réactivé. Email d'invitation envoyé.",
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -371,20 +433,79 @@ serve(async (req) => {
       )
     }
 
-    // 5. Send magic link invitation email (with locale if provided)
+    // 5. Send invitation email via Resend API (unified email system)
+    // Generate magic link token without sending Supabase's default email
     const appUrl = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
-    const redirectTo = `${appUrl}/accept-invitation`
-    const otpOptions: Record<string, any> = { emailRedirectTo: redirectTo }
-    if (locale && ["fr", "en", "ar"].includes(locale)) {
-      otpOptions.lang = locale
-    }
-    const { error: otpError } = await supabase.auth.signInWithOtp({
+    const redirectTo = `${appUrl}/accept-invitation?tenant=${tenant_id}`
+
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
       email,
-      options: otpOptions,
+      options: { emailRedirectTo: redirectTo },
     })
 
-    if (otpError) {
-      console.error("Failed to send invitation email:", otpError.message)
+    let emailSent = false
+    if (linkError) {
+      console.error("Failed to generate magic link:", linkError.message)
+    } else if (linkData?.properties?.action_link) {
+      // Fetch tenant name and inviter name for the email template
+      const { data: tenantData } = await supabase
+        .from("tenants")
+        .select("name")
+        .eq("id", tenant_id)
+        .single()
+      const tenantName = tenantData?.name || tenant_id
+
+      // Fetch inviter name
+      let inviterName: string | undefined
+      if (invited_by) {
+        const { data: inviterData } = await supabase
+          .from("tenant_users")
+          .select("name")
+          .eq("auth_id", invited_by)
+          .eq("tenant_id", tenant_id)
+          .maybeSingle()
+        inviterName = inviterData?.name || undefined
+      }
+
+      // Build modules list from module_roles
+      const moduleRoles = body?.module_roles || {}
+      const moduleNames = Object.keys(moduleRoles)
+      const modules = moduleNames.length > 0 ? moduleNames.join(", ") : undefined
+
+      const template = buildInvitationEmail({
+        email,
+        name,
+        tenantName,
+        locale: locale || "en",
+        magicLinkUrl: linkData.properties.action_link,
+        inviterName,
+        role: role || undefined,
+        modules,
+      })
+
+      const emailResult = await sendEmailViaResend({
+        to: email,
+        subject: template.subject,
+        html: template.html,
+      })
+      emailSent = emailResult.success
+
+      // Log to email queue
+      if (emailResult.success) {
+        try {
+          await supabase.from("notification_email_queue").insert({
+            tenant_id,
+            recipient_email: email,
+            recipient_name: name,
+            notification_type: "invitation_pending",
+            subject: template.subject,
+            status: "sent",
+            resend_id: emailResult.id || null,
+            sent_at: new Date().toISOString(),
+          })
+        } catch { /* queue logging failure is non-blocking */ }
+      }
     }
 
     const message = existingUser

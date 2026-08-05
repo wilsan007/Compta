@@ -7,8 +7,6 @@ import { FileText, Trash2, Sparkles, ChevronDown, ChevronRight } from 'lucide-re
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const statusLabels: Record<string, string> = { draft: 'Brouillon', approved: 'Approuvé', paid: 'Payé', cancelled: 'Annulé' }
-
 export function PaySlipsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
@@ -123,7 +121,7 @@ const [slips, setSlips] = useState<any[]>([])
                         <TableCell>
                           <select value={s.status} onChange={(e) => handleStatusChange(s.id, e.target.value)}
                             className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                            {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`paySlips.statuses.${k}`) || statusLabels[k]}</option>)}
+                            {['draft', 'approved', 'paid', 'cancelled'].map((k) => <option key={k} value={k}>{t(`paySlips.statuses.${k}`)}</option>)}
                           </select>
                         </TableCell>
                         <TableCell>

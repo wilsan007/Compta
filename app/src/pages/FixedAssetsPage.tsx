@@ -273,7 +273,7 @@ function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose:
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('assets.confirmDisposal')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('assets.confirmDisposal')}</Button>
           </div>
         </form>
       </div>
@@ -387,7 +387,7 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

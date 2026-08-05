@@ -202,7 +202,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('common.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('common.create')}</Button>
           </div>
         </form>
       </div>
@@ -251,7 +251,7 @@ function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; pro
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('common.add')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('common.add')}</Button>
           </div>
         </form>
       </div>

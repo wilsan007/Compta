@@ -189,7 +189,7 @@ describe('Phase 6 — SQL Migration File Validation', () => {
   it('SQL migration file exists and contains all table definitions', async () => {
     const fs = await import('fs')
     const path = await import('path')
-    const sqlPath = path.resolve(process.cwd(), 'sql/25_sage100_accounting_features.sql')
+    const sqlPath = path.resolve(process.cwd(), 'sql/25_accounting_features.sql')
     const sql = fs.readFileSync(sqlPath, 'utf-8')
 
     const expectedTables = [
@@ -208,7 +208,7 @@ describe('Phase 6 — SQL Migration File Validation', () => {
   it('SQL migration has RLS policies for all tables', async () => {
     const fs = await import('fs')
     const path = await import('path')
-    const sqlPath = path.resolve(process.cwd(), 'sql/25_sage100_accounting_features.sql')
+    const sqlPath = path.resolve(process.cwd(), 'sql/25_accounting_features.sql')
     const sql = fs.readFileSync(sqlPath, 'utf-8')
 
     const expectedTables = [
@@ -232,7 +232,7 @@ describe('Phase 6 — SQL Migration File Validation', () => {
   it('SQL migration enables RLS on all tables', async () => {
     const fs = await import('fs')
     const path = await import('path')
-    const sqlPath = path.resolve(process.cwd(), 'sql/25_sage100_accounting_features.sql')
+    const sqlPath = path.resolve(process.cwd(), 'sql/25_accounting_features.sql')
     const sql = fs.readFileSync(sqlPath, 'utf-8')
 
     const expectedTables = [

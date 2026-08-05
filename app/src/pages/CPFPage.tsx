@@ -153,7 +153,7 @@ function CpfForm({ employees, onClose, onSaved }: { employees: Employee[]; onClo
           <Input label={t('cpf.balanceAmount')} type="number" step="0.01" value={balanceAmount} onChange={(e) => setBalanceAmount(Number(e.target.value))} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

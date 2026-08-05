@@ -9,7 +9,13 @@
     "manufacturing": "Fabrication",
     "subcontracting": "Sous-traitance",
     "planning": "Planification",
-    "configuration": "Configuration"
+    "configuration": "Configuration",
+    "pmViews": "Vues",
+    "pmAnalysis": "Analyse",
+    "pmPersonal": "Personnel",
+    "pmDisplay": "Affichage",
+    "pmVisual": "Visuel",
+    "pmCollaboration": "Collaboration"
   },
   "groups": {
     "home": "Accueil",
@@ -21,6 +27,7 @@
     "hr": "RH & Paie",
     "dashboards": "Tableaux de bord",
     "reporting": "Reporting & BI",
+    "projectManagement": "Gestion de projets",
     "system": "Système"
   },
   "items": {
@@ -252,7 +259,25 @@
     "partnerCategories": "Catégories de tiers",
     "partnerContacts": "Contacts tiers",
     "checkBooks": "Chéquiers",
-    "exchangeGainLoss": "Écarts de change"
+    "exchangeGainLoss": "Écarts de change",
+    "pmHome": "Accueil projets",
+    "pmTasks": "Tâches",
+    "pmMyTasks": "Mes tâches",
+    "pmGraph": "Graphiques",
+    "pmPivot": "Tableau croisé",
+    "pmBurndown": "Burndown",
+    "pmCalendar": "Calendrier",
+    "pmKanban": "Kanban",
+    "pmGantt": "Gantt",
+    "pmTimeline": "Chronologie",
+    "pmWorkload": "Charge de travail",
+    "pmActivity": "Activité",
+    "pmNotifications": "Notifications",
+    "pmMindMap": "Carte mentale",
+    "pmBox": "Boîtes",
+    "pmDoc": "Documents",
+    "pmChat": "Conversation",
+    "pmLargeScreen": "Grand écran"
   },
   "layout": {
     "reduce": "Reduire",
@@ -269,12 +294,15 @@
     "accessDeniedMessage": "Vous n'avez pas les permissions nécessaires pour accéder à cette page. Votre rôle ({{role}}) ne permet pas cet accès.",
     "moduleDisabled": "Module non activé",
     "moduleDisabledMessage": "Ce module n'est pas activé pour votre entreprise. Contactez votre administrateur pour l'activer.",
+    "rbacAccessDenied": "Accès au module refusé",
+    "rbacAccessDeniedMessage": "Vous n'avez pas de rôle assigné pour ce module. Contactez votre administrateur pour obtenir l'accès.",
     "backHome": "Retour à l'accueil",
     "pinned": "Épinglés",
     "filterPages": "Filtrer les pages...",
     "noResults": "Aucun résultat",
     "collapse": "Réduire",
     "expand": "Agrandir",
+    "toggleSidebar": "Basculer le menu (Ctrl+B)",
     "footer": "Compta v0.2.0 — Votre comptabilité, simplifiée et puissante",
     "copyright": "© 2026 Compta",
     "switchTenant": "Changer d'entreprise",
@@ -368,5 +396,467 @@
     "newProduct": "Nouveau produit",
     "newEmployee": "Nouvel employé",
     "newSupplier": "Nouveau fournisseur"
+  },
+  "homePage": {
+    "greetingMorning": "Bonjour",
+    "greetingAfternoon": "Bon après-midi",
+    "greetingEvening": "Bonsoir",
+    "subtitle": "Bienvenue sur Onusuite. Accédez à tous vos modules depuis cette page d'accueil.",
+    "modules": "Modules",
+    "modulesAvailable": "modules disponibles",
+    "open": "Ouvrir",
+    "footerHint": "Astuce : utilisez Cmd+K (ou Ctrl+K) pour la recherche globale"
+  },
+  "landing": {
+    "badge": "Plus de flexibilité, moins de coûts, plus d'efficacité",
+    "heroTitle": "Onusuite — La suite logicielle unifiée pour gérer toute votre entreprise",
+    "heroSubtitle": "Comptabilité, commercial, RH/paie, trésorerie, stock, production et plus — réunis dans une seule plateforme. Transition facile depuis Sage, QuickBooks ou tout autre outil de gestion comptable. Plus de flexibilité, moins de coûts, plus d'efficacité et de robustesse.",
+    "heroNoCard": "Essai gratuit de 45 jours — aucune carte bancaire requise",
+    "ctaStart": "Tester gratuitement",
+    "ctaDemo": "Se connecter",
+    "ctaContact": "Parler à un commercial",
+    "login": "Connexion",
+    "getStarted": "S'inscrire",
+    "nav": {
+      "why": "Pourquoi Onusuite",
+      "features": "Fonctionnalités",
+      "modules": "Modules",
+      "pricing": "Tarifs",
+      "faq": "FAQ"
+    },
+    "whyTitle": "Pourquoi choisir Onusuite ?",
+    "whySubtitle": "Une alternative moderne et abordable aux outils de gestion comptable traditionnels. Plus de flexibilité, moins de coûts, plus d'efficacité.",
+    "why": {
+      "lowerCost": {
+        "title": "Moins de coûts",
+        "desc": "Réduisez vos dépenses logicielles jusqu'à 60% par rapport aux solutions traditionnelles. Un seul abonnement, tous les modules inclus."
+      },
+      "efficiency": {
+        "title": "Plus d'efficacité",
+        "desc": "Automatisez vos tâches répétitives : saisie comptable, facturation, paie, déclarations. Gagnez des heures chaque semaine."
+      },
+      "robustness": {
+        "title": "Plus de robustesse",
+        "desc": "Données chiffrées, sauvegardes automatiques, conformité fiscale. Une infrastructure conçue pour les exigences des PME africaines et maghrébines."
+      },
+      "flexibility": {
+        "title": "Transition facile",
+        "desc": "Importez vos données depuis Sage, QuickBooks, Ciel ou tout autre outil. Notre équipe accompagne votre migration gratuitement."
+      },
+      "migration": {
+        "title": "Migration offerte",
+        "desc": "Nous transférons votre plan comptable, vos écritures, vos clients et fournisseurs depuis votre ancien logiciel sans frais supplémentaires."
+      },
+      "allInOne": {
+        "title": "Tout-en-un",
+        "desc": "17 modules dans une seule plateforme : comptabilité, commercial, stock, RH/paie, production, trésorerie, reporting. Plus besoin de multiplier les abonnements."
+      }
+    },
+    "features": {
+      "lowerCost": "Jusqu'à 60% d'économies",
+      "efficiency": "Automatisation avancée",
+      "robustness": "Sécurité & conformité",
+      "migration": "Migration depuis Sage incluse"
+    },
+    "modulesTitle": "10 modules unifiés",
+    "modulesSubtitle": "Une plateforme complète pour gérer toute votre entreprise",
+    "modules": {
+      "accounting": "Comptabilité générale, saisie, états financiers et clôtures",
+      "commercial": "Ventes, achats, factures, devis et paiements",
+      "treasury": "Trésorerie, prévisions, virements et flux financiers",
+      "stock": "Stocks, entrepôts, inventaires et valorisation",
+      "production": "Fabrication, sous-traitance et planification de la production",
+      "hr": "Ressources humaines, paie et administration du personnel",
+      "projectManagement": "Gestion de projets, tâches et collaboration",
+      "dashboards": "Tableaux de bord analytiques par domaine",
+      "reporting": "Reporting financier et business intelligence",
+      "system": "Configuration, intégrations et gestion des données"
+    },
+    "pricing": {
+      "title": "Des tarifs simples et transparents",
+      "subtitle": "Choisissez votre palier d'utilisateurs et votre devise. Pas de frais cachés.",
+      "perMonth": "/mois",
+      "popular": "Le plus populaire",
+      "startTrial": "Démarrer l'essai gratuit",
+      "trial45": "Essai 45 jours sans carte bancaire",
+      "migrationFree": "Migration depuis Sage offerte",
+      "annualDiscount": "−20% en engagement annuel",
+      "multiCompany": "3 sociétés incluses",
+      "tier1Users": "1–3 utilisateurs",
+      "tier2Users": "4–10 utilisateurs",
+      "tier3Users": "11–25 utilisateurs",
+      "essential": {
+        "name": "Essentiel",
+        "desc": "Socle + Comptabilité + Trésorerie",
+        "modules": "Idéal pour les TPE et cabinets solo"
+      },
+      "management": {
+        "name": "Gestion",
+        "desc": "+ Commercial, Achats, Stock",
+        "modules": "Pour les PME en croissance"
+      },
+      "full": {
+        "name": "Suite Complète",
+        "desc": "Les 17 modules inclus",
+        "modules": "Tout Onusuite, sans limite"
+      }
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "trialDuration": {
+        "q": "Combien de temps dure l'essai gratuit ?",
+        "a": "L'essai gratuit dure 45 jours avec tous les modules débloqués. Pour RH/Paie et Production, la durée est étendue à 60 jours. Vous pouvez prolonger jusqu'à 90 jours en atteignant des jalons d'activation (import de données, écritures saisies, invitation d'utilisateurs)."
+      },
+      "noCard": {
+        "q": "Faut-il une carte bancaire pour s'inscrire ?",
+        "a": "Non. L'essai est entièrement gratuit et ne nécessite aucune carte bancaire. Vous ne payez que si vous décidez de souscrire après l'essai."
+      },
+      "migration": {
+        "q": "Puis-je migrer depuis Sage ou un autre logiciel ?",
+        "a": "Oui. Notre équipe accompagne gratuitement votre migration depuis Sage, QuickBooks, Ciel ou tout autre outil. Nous transférons votre plan comptable, vos écritures, clients et fournisseurs."
+      },
+      "afterTrial": {
+        "q": "Que se passe-t-il après l'essai ?",
+        "a": "À la fin de l'essai, votre compte bascule automatiquement sur Onusuite Solo (gratuit à vie, limité). Vos données ne sont jamais perdues. Vous pouvez à tout moment souscrire à une offre payante."
+      },
+      "cancel": {
+        "q": "Puis-je résilier à tout moment ?",
+        "a": "Oui. Il n'y a pas d'engagement obligatoire (sauf si vous choisissez l'offre annuelle avec −20%). Vous pouvez résilier à tout moment, vos données restent accessibles en lecture seule pendant 21 jours."
+      },
+      "support": {
+        "q": "Quel support est disponible ?",
+        "a": "Pendant l'essai : chat et email. En offre payante : chat, email, et support téléphonique selon votre palier. Un onboarding personnalisé est proposé pour les PME."
+      }
+    },
+    "betterWayTitle": "Une meilleure façon de travailler",
+    "betterWaySubtitle": "Comparez votre flux de travail actuel avec Onusuite",
+    "betterWay": {
+      "withoutTitle": "Sans Onusuite",
+      "without": {
+        "1": "5 outils séparés, 5 abonnements",
+        "2": "Saisie manuelle et double saisie",
+        "3": "Données dispersées, pas de vue unifiée",
+        "4": "Erreurs de copie et oublis",
+        "5": "Support lent et déconnecté"
+      },
+      "withTitle": "Avec Onusuite",
+      "with": {
+        "1": "17 modules, 1 seule plateforme",
+        "2": "Saisie automatisée et intelligente",
+        "3": "Données centralisées, tableau de bord unifié",
+        "4": "Écritures auto, contrôles de cohérence",
+        "5": "Support local réactif, chat & téléphone"
+      }
+    },
+    "foundationTitle": "La base de chaque flux de travail",
+    "foundationSubtitle": "Onusuite s'adapte à chaque situation de votre quotidien",
+    "foundation": {
+      "scenario1": {
+        "title": "Saisie comptable",
+        "desc": "Saisissez vos écritures en partie double avec contrôle d'équilibre automatique, journaux et comptes pré-remplis."
+      },
+      "scenario2": {
+        "title": "Facturation client",
+        "desc": "Créez factures et devis en un clic, suivez les encaissements et relancez les impayés automatiquement."
+      },
+      "scenario3": {
+        "title": "Gestion de stock",
+        "desc": "Suivez vos entrées/sorties, valorisez votre stock et recevez des alertes de réapprovisionnement."
+      },
+      "scenario4": {
+        "title": "Paie & RH",
+        "desc": "Calculez les salaires, générez les bulletins et déclarez les charges sociales en quelques clics."
+      },
+      "scenario5": {
+        "title": "Tableaux de bord",
+        "desc": "Visualisez votre activité en temps réel : trésorerie, ventes, marges, indicateurs clés."
+      },
+      "scenario6": {
+        "title": "Gestion de projet",
+        "desc": "Planifiez vos projets, assignez des tâches, suivez l'avancement et collaborez en équipe."
+      }
+    },
+    "featuresGridTitle": "Tout ce dont vous avez besoin pour travailler",
+    "featuresGridSubtitle": "Des fonctionnalités puissantes adaptées à votre façon de travailler",
+    "featuresGrid": {
+      "customFields": {
+        "title": "Champs personnalisés",
+        "desc": "Ajoutez des listes déroulantes, priorités, dates, budgets, régions, tailles de devis — tout ce dont votre flux a besoin"
+      },
+      "multipleViews": {
+        "title": "Vues multiples",
+        "desc": "Visualisez votre travail en listes, tableaux, calendriers, timelines ou diagrammes de Gantt"
+      },
+      "automations": {
+        "title": "Automatisations",
+        "desc": "Déclenchez changements de statut, affectations et notifications automatiquement selon vos règles"
+      },
+      "dependencies": {
+        "title": "Dépendances",
+        "desc": "Mappez les blocages et recevez des alertes quand un travail stagne"
+      },
+      "subtasks": {
+        "title": "Sous-tâches & Checklists",
+        "desc": "Découpez les grands travaux en pièces traçables et gérables"
+      },
+      "multiAssignees": {
+        "title": "Multi-attribution",
+        "desc": "Assignez une tâche à plusieurs personnes en même temps"
+      },
+      "recurringTasks": {
+        "title": "Tâches récurrentes",
+        "desc": "Configurez une fois, recréez automatiquement selon votre planning"
+      },
+      "comments": {
+        "title": "Commentaires & Pièces jointes",
+        "desc": "Discutez du travail en contexte avec mentions et pièces jointes"
+      },
+      "timeTracking": {
+        "title": "Suivi du temps",
+        "desc": "Suivez le temps passé avec minuteurs et estimations"
+      }
+    },
+    "stats": {
+      "costReduction": "Réduction des coûts",
+      "modules": "Modules unifiés",
+      "trialDays": "Essai gratuit",
+      "companies": "Sociétés incluses"
+    },
+    "pillars": {
+      "saveMoney": "Économisez — Tous les modules, un seul abonnement",
+      "saveTime": "Gagnez du temps — Automatisez la saisie, la paie, les déclarations",
+      "onePlatform": "Tout-en-un — 17 modules dans une seule plateforme"
+    },
+    "useCasesTitle": "Des solutions pour chaque secteur",
+    "useCasesSubtitle": "Onusuite s'adapte à votre métier, où que vous soyez en Afrique et au Maghreb",
+    "useCases": {
+      "retail": {
+        "title": "Commerce & Distribution",
+        "desc": "Gestion des stocks, ventes, encaissements et fidélité client en temps réel"
+      },
+      "services": {
+        "title": "Services Professionnels",
+        "desc": "Facturation, suivi du temps, gestion de projets et rentabilité par mission"
+      },
+      "manufacturing": {
+        "title": "Production & Industrie",
+        "desc": "Ordres de fabrication, coûts de production, sous-traitance et valorisation des stocks"
+      },
+      "construction": {
+        "title": "BTP & Construction",
+        "desc": "Devis chantiers, achats, suivi des coûts par projet et facturation progressive"
+      },
+      "agriculture": {
+        "title": "Agriculture & Agroalimentaire",
+        "desc": "Stocks saisonniers, traçabilité, paie agricole et gestion des coopératives"
+      },
+      "nonprofit": {
+        "title": "ONG & Non-Profit",
+        "desc": "Reporting donateurs, gestion de projets, budgets par financement et transparence"
+      }
+    },
+    "roiTitle": "Des résultats concrets, rapidement",
+    "roiSubtitle": "Les PME qui adoptent Onusuite transforment leur gestion en quelques semaines",
+    "roi": {
+      "hoursSaved": {
+        "value": "30+ h",
+        "label": "économisées par semaine"
+      },
+      "fasterInvoicing": {
+        "value": "2×",
+        "label": "facturation plus rapide"
+      },
+      "automation": {
+        "value": "90%",
+        "label": "écritures automatisées"
+      },
+      "payback": {
+        "value": "< 6 mois",
+        "label": "retour sur investissement"
+      }
+    },
+    "comparisonTitle": "Onusuite vs les outils traditionnels",
+    "comparisonSubtitle": "Comparez et choisissez la solution la plus complète et la plus économique",
+    "comparison": {
+      "feature": "Fonctionnalité",
+      "onusuite": "Onusuite",
+      "sage": "Sage 100",
+      "quickbooks": "QuickBooks",
+      "excel": "Excel",
+      "modules": "Modules inclus",
+      "modulesOnusuite": "17 modules",
+      "modulesSage": "5-8 modules",
+      "modulesQuickbooks": "3-5 modules",
+      "modulesExcel": "Manuel",
+      "price": "Prix mensuel",
+      "priceOnusuite": "Dès 60 $",
+      "priceSage": "200 $+",
+      "priceQuickbooks": "80 $+",
+      "priceExcel": "Gratuit",
+      "migration": "Migration incluse",
+      "migrationOnusuite": "Offerte",
+      "migrationSage": "Payante",
+      "migrationQuickbooks": "Limitée",
+      "migrationExcel": "Manuel",
+      "multiTenant": "Multi-sociétés",
+      "multiTenantOnusuite": "3 incluses",
+      "multiTenantSage": "1 par licence",
+      "multiTenantQuickbooks": "1 par licence",
+      "multiTenantExcel": "Fichiers séparés",
+      "i18n": "Trilingue FR/EN/AR",
+      "i18nOnusuite": "Oui",
+      "i18nSage": "Limité",
+      "i18nQuickbooks": "Non",
+      "i18nExcel": "Manuel",
+      "support": "Support local",
+      "supportOnusuite": "Chat, email, téléphone",
+      "supportSage": "Email",
+      "supportQuickbooks": "Chat",
+      "supportExcel": "Aucun"
+    },
+    "testimonialsTitle": "Ils font confiance à Onusuite",
+    "testimonialsSubtitle": "Des PME à travers l'Afrique et le Maghreb gèrent leur activité avec Onusuite",
+    "testimonials": {
+      "1": {
+        "quote": "Onusuite a remplacé 4 outils que nous utilisions. La migration depuis Sage a été gratuite et immédiate. Nous économisons 60% sur nos coûts logiciels.",
+        "author": "Aminata Diop",
+        "role": "CFO, Groupe Sahel Commerce"
+      },
+      "2": {
+        "quote": "La saisie comptable est désormais automatisée. Mes équipes comptables gagnent 30 heures par semaine. Le support local est réactif et compétent.",
+        "author": "Karim Ben Salah",
+        "role": "Expert-comptable, Cabinet Ben Salah & Associés"
+      },
+      "3": {
+        "quote": "Avec 17 modules dans une seule plateforme, nous avons enfin une vision unifiée de notre entreprise. La trilingue FR/EN/AR est un atout majeur pour nos opérations régionales.",
+        "author": "Fatou Ndiaye",
+        "role": "Directrice Générale, Dakar Industries"
+      }
+    },
+    "ctaTitle": "Prêt à digitaliser votre entreprise ?",
+    "ctaSubtitle": "Rejoignez les PME qui font confiance à Onusuite pour gérer leur activité au quotidien. Testez gratuitement, sans engagement.",
+    "tagline": "The Unified Business Suite",
+    "copyright": "© 2025 Onusuite. Tous droits réservés.",
+    "footer": {
+      "product": "Produit",
+      "company": "Entreprise",
+      "legal": "Légal",
+      "contact": "Contact",
+      "tryFree": "Essai gratuit",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité"
+    },
+    "terms": {
+      "title": "Conditions d'utilisation",
+      "lastUpdated": "Dernière mise à jour : 30 juillet 2025",
+      "acceptance": {
+        "title": "1. Acceptation des conditions",
+        "body": "En accédant à Onusuite ou en utilisant la plateforme, vous acceptez les présentes Conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser le service."
+      },
+      "eligibility": {
+        "title": "2. Éligibilité",
+        "body": "Vous devez avoir au moins 18 ans et avoir la capacité juridique de conclure un contrat. Vous déclarez que les informations fournies lors de l'inscription sont exactes et complètes."
+      },
+      "accounts": {
+        "title": "3. Comptes et sécurité",
+        "body": "Vous êtes responsable de la sécurité de votre compte et de vos identifiants. Vous devez notifier immédiatement Onusuite de toute utilisation non autorisée de votre compte. Onusuite ne sera pas responsable des pertes liées à une compromission de vos identifiants."
+      },
+      "trial": {
+        "title": "4. Essai gratuit",
+        "body": "Onusuite propose un essai gratuit de 45 jours avec tous les modules débloqués, sans carte bancaire. À l'issue de l'essai, le compte bascule automatiquement sur la formule gratuite Onusuite Solo (limitée). Aucune donnée n'est perdue."
+      },
+      "subscriptions": {
+        "title": "5. Abonnements et paiements",
+        "body": "Les abonnements payants sont facturés mensuellement ou annuellement. Les prix sont indiqués en USD (1 USD = 1 EUR). L'engagement annuel bénéficie d'une remise de 20%. Vous pouvez résilier à tout moment. Les remboursements sont traités au cas par cas."
+      },
+      "acceptableUse": {
+        "title": "6. Utilisation acceptable",
+        "body": "Vous vous engagez à ne pas utiliser Onusuite à des fins illégales, frauduleuses ou abusives. Vous ne devez pas tenter d'accéder à des données d'autres tenants, compromettre la sécurité de la plateforme, ou utiliser le service pour stocker des contenus illicites."
+      },
+      "data": {
+        "title": "7. Données et confidentialité",
+        "body": "Vos données sont stockées de manière sécurisée et chiffrées. Onusuite agit en tant que sous-traitant au sens du RGPD et des réglementations locales applicables. Consultez notre Politique de confidentialité pour plus de détails."
+      },
+      "ip": {
+        "title": "8. Propriété intellectuelle",
+        "body": "Onusuite, son logo, son code source et ses contenus sont la propriété exclusive de Onusuite. Vous conservez la pleine propriété de vos données professionnelles. Aucune partie de la plateforme ne peut être copiée ou redistribuée sans autorisation."
+      },
+      "disclaimer": {
+        "title": "9. Avertissement",
+        "body": "Onusuite est fourni « tel quel » sans garantie d'aucune sorte, expresse ou implicite. La plateforme ne constitue pas un conseil juridique, fiscal ou comptable. Vous êtes responsable de la conformité de vos déclarations fiscales et légales."
+      },
+      "liability": {
+        "title": "10. Limitation de responsabilité",
+        "body": "Dans la mesure permise par la loi, Onusuite ne sera pas responsable des dommages indirects, incidents ou consécutifs résultant de l'utilisation du service. La responsabilité totale est limitée au montant des frais payés au cours des 12 derniers mois."
+      },
+      "termination": {
+        "title": "11. Résiliation",
+        "body": "Vous pouvez résilier à tout moment. Onusuite se réserve le droit de suspendre ou résilier un compte en cas de violation des présentes conditions. Après résiliation, vos données restent accessibles 21 jours en lecture seule, puis archivées 90 jours."
+      },
+      "governing": {
+        "title": "12. Droit applicable",
+        "body": "Les présentes conditions sont régies par le droit applicable au pays d'enregistrement de Onusuite. Tout litige sera soumis aux tribunaux compétents de cette juridiction."
+      },
+      "changes": {
+        "title": "13. Modifications",
+        "body": "Onusuite peut modifier ces conditions à tout moment. Les modifications prennent effet 30 jours après leur publication. L'utilisation continue du service vaut acceptation des modifications."
+      },
+      "contact": {
+        "title": "14. Contact",
+        "body": "Pour toute question relative aux présentes conditions : contact@onusuite.com"
+      }
+    },
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "lastUpdated": "Dernière mise à jour : 30 juillet 2025",
+      "intro": {
+        "title": "1. Introduction",
+        "body": "Onusuite (« nous », « notre ») protège la vie privée des utilisateurs (« vous »). Cette politique explique comment nous collectons, utilisons et protégeons vos données personnelles conformément au RGPD et aux réglementations locales applicables."
+      },
+      "collection": {
+        "title": "2. Données collectées",
+        "body": "Nous collectons : nom, email professionnel, nom de l'entreprise, données financières et comptables saisies dans la plateforme, informations de facturation, journaux d'utilisation et cookies techniques nécessaires au fonctionnement du service."
+      },
+      "use": {
+        "title": "3. Utilisation des données",
+        "body": "Vos données sont utilisées pour : fournir le service Onusuite, assurer la sécurité et la conformité, facturer les abonnements, améliorer la plateforme, et assurer le support technique. Nous ne vendons jamais vos données à des tiers."
+      },
+      "sharing": {
+        "title": "4. Partage des données",
+        "body": "Vos données ne sont partagées qu'avec : nos prestataires d'hébergement (Supabase, Cloudflare) soumis à des accords de confidentialité, les autorités fiscales en cas de requête légale, et votre cabinet comptable si vous l'autorisez explicitement."
+      },
+      "security": {
+        "title": "5. Sécurité",
+        "body": "Toutes les données sont chiffrées en transit (TLS 1.3) et au repos (AES-256). L'isolation entre tenants est assurée par Row-Level Security (RLS) PostgreSQL. Les sauvegardes sont automatiques et chiffrées. Nous effectuons des audits de sécurité réguliers."
+      },
+      "retention": {
+        "title": "6. Conservation des données",
+        "body": "Vos données sont conservées pendant toute la durée d'utilisation du service. Après résiliation : 21 jours en accès lecture seule, 90 jours en archivage chiffré, puis suppression définitive. Les données de facturation sont conservées 10 ans (obligation légale)."
+      },
+      "rights": {
+        "title": "7. Vos droits",
+        "body": "Conformément au RGPD, vous disposez : droit d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition. Pour exercer ces droits : contact@onusuite.com"
+      },
+      "cookies": {
+        "title": "8. Cookies",
+        "body": "Onusuite utilise uniquement des cookies techniques nécessaires au fonctionnement (session d'authentification, préférence de langue et de devise). Aucun cookie publicitaire ou de tracking tiers n'est utilisé."
+      },
+      "children": {
+        "title": "9. Protection des mineurs",
+        "body": "Onusuite est destiné aux professionnels et entreprises. Le service n'est pas accessible aux personnes de moins de 18 ans. Nous ne collectons sciemment aucune donnée de mineurs."
+      },
+      "international": {
+        "title": "10. Transferts internationaux",
+        "body": "Vos données peuvent être traitées dans l'Union Européenne, aux États-Unis ou en Afrique. Tous les transferts sont encadrés par des clauses contractuelles types (SCC) conformes au RGPD."
+      },
+      "changes": {
+        "title": "11. Modifications",
+        "body": "Cette politique peut être modifiée à tout moment. Les modifications prennent effet 30 jours après leur publication sur cette page."
+      },
+      "contact": {
+        "title": "12. Contact",
+        "body": "Pour toute question relative à la confidentialité : contact@onusuite.com"
+      }
+    }
   }
 }

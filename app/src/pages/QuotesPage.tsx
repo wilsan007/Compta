@@ -99,6 +99,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   const filtered = filterStatus ? quotes.filter(q => q.status === filterStatus) : quotes
+  const tableHeaders = ['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), t('quotes.transformationStatus'), tCommon('table.actions')]
 
   return (
     <div>
@@ -128,7 +129,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         />
       ) : (
         <Card>
-          <Table headers={['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), t('quotes.transformationStatus'), tCommon('table.actions')}]>
+          <Table headers={tableHeaders}>
             {filtered.map((quote) => (
               <div key={quote.id}>
                 <TableRow onClick={() => toggleExpand(quote.id)}>
@@ -148,7 +149,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                       onChange={(e) => handleStatusChange(quote.id, e.target.value)}
                       className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                     >
-                      {Object.entries(statusKeys).map(([_, k]) => (
+                      {statusKeys.map((k) => (
                         <option key={k} value={k}>{translateStatus(k)}</option>
                       ))}
                     </select>
@@ -285,7 +286,7 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
         total,
         notes,
         quote_lines: lines.filter(l => l.description).map(l => ({
-          product_id: null,
+          product_id: l.productId || null,
           description: l.description,
           quantity: l.quantity,
           unit_price: l.unit_price,

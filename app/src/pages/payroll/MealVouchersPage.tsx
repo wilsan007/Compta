@@ -150,7 +150,7 @@ export function MealVouchersPage() {
             ]} />
           </div>
           <Button onClick={handleGenerate} disabled={saving || !selectedPayRun}>
-            {saving ? '...' : t('mealVouchers.generateToPayroll')}
+            {saving ? tCommon('actions.saving') : t('mealVouchers.generateToPayroll')}
           </Button>
         </div>
       )}
@@ -202,7 +202,7 @@ function ConfigModal({ config, onClose, onSaved }: { config: MealVoucherConfig; 
           <Input label={t('mealVouchers.maxPerMonth')} type="number" required value={maxPerMonth} onChange={(e) => setMaxPerMonth(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}><Save className="w-4 h-4" /> {saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}><Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

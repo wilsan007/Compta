@@ -4,9 +4,11 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, Em
 import { getInvoices, getCustomers, createInvoice, updateInvoice, transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign } from 'lucide-react'
+import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
 import { generateFacturX, downloadXML } from '@/lib/facturX'
 import { getCompanySettings } from '@/lib/queries'
+import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
+import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import type { Invoice, Customer, CompanySettings } from '@/types'
 
 export function InvoicesPage() {
@@ -103,12 +105,12 @@ export function InvoicesPage() {
   }
 
   function handleDownload(inv: Invoice) {
-    const content = `FACTURE ${inv.number}\nClient: ${inv.customer_name}\nDate: ${formatDate(inv.date)}\nÉchéance: ${formatDate(inv.due_date)}\nTotal: ${formatCurrency(Number(inv.total))}\nÀ payer: ${formatCurrency(Number(inv.amount_due))}`
+    const content = `${t('invoices.title')} ${inv.number}\n${t('invoices.customer')}: ${inv.customer_name}\n${t('invoices.date')}: ${formatDate(inv.date)}\n${t('invoices.dueDate')}: ${formatDate(inv.due_date)}\n${t('invoices.total')}: ${formatCurrency(Number(inv.total))}\n${t('invoices.balance')}: ${formatCurrency(Number(inv.amount_due))}`
     const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `facture-${inv.number}.txt`
+    a.download = `${inv.number}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -299,6 +301,10 @@ function InvoiceForm({ customers, onClose, onSaved }: {
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
+  const { t: tCross } = useTranslation('crossModule')
+  const { getAccessStrategy } = useModuleAwareAccess()
+  const commercialStrategy = getAccessStrategy('commercial')
+  const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
   const [number, setNumber] = useState('FAC-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(3, '0'))
@@ -334,6 +340,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
   }
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
@@ -343,6 +350,11 @@ function InvoiceForm({ customers, onClose, onSaved }: {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('invoices.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
           <Combobox label={t('invoices.customer')} required value={customerId} onChange={(v) => setCustomerId(v)} placeholder={tCommon('form.selectOption')} options={customers.map(c => ({ value: c.id, label: c.name }))} />
+          {commercialStrategy === 'inline' && (
+            <button type="button" onClick={() => setShowQuickAddCustomer(true)} className="text-xs text-[var(--color-primary)] flex items-center gap-1 hover:underline">
+              <UserPlus className="w-3.5 h-3.5" /> {tCross('customer.add')}
+            </button>
+          )}
           <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           <Input label={t('invoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           <p className="text-xs text-[var(--color-text-secondary)]">{t('invoices.notes')}</p>
@@ -353,6 +365,13 @@ function InvoiceForm({ customers, onClose, onSaved }: {
         </form>
       </div>
     </div>
+    {showQuickAddCustomer && (
+      <QuickCustomerAccess
+        onClose={() => setShowQuickAddCustomer(false)}
+        onSaved={() => { setShowQuickAddCustomer(false); onSaved() }}
+      />
+    )}
+    </>
   )
 }
 
@@ -445,7 +464,7 @@ function AdvanceInvoiceForm({ customers, onClose, onSaved }: {
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

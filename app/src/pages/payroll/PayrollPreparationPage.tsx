@@ -10,7 +10,7 @@ import {
 } from '@/lib/queries'
 import type { PayRun, Employee, PayrollVariableElement, PayrollComponent } from '@/types'
 import { useToast } from '@/lib/toast'
-import { Wizard, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Download, Upload } from 'lucide-react'
+import { Wand2, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Download, Upload } from 'lucide-react'
 
 type Step = 1 | 2 | 3 | 4 | 5
 
@@ -175,7 +175,7 @@ export function PayrollPreparationPage() {
                 <Button onClick={() => setShowAddElement(true)}><Plus className="w-4 h-4" /> {t('preparation.addElement')}</Button>
               </div>
               {variableElements.length === 0 ? (
-                <EmptyState icon={<Wizard className="w-8 h-8" />} title={t('preparation.noElements')} description={t('preparation.noElementsDescription')} />
+                <EmptyState icon={<Wand2 className="w-8 h-8" />} title={t('preparation.noElements')} description={t('preparation.noElementsDescription')} />
               ) : (
                 <Card>
                   <Table headers={[t('preparation.employee'), t('preparation.type'), t('preparation.description'), t('preparation.amount'), tCommon('table.actions')]}>
@@ -318,7 +318,7 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

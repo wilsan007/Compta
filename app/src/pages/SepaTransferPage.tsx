@@ -97,8 +97,8 @@ export function SepaTransferPage() {
     const selectedPayments = payments.filter((p) => selected.has(p.id))
     const initiator: SEPAInitiator = {
       name: company?.legal_name || company?.name || '',
-      iban: (company as any)?.iban || '',
-      bic: (company as any)?.bic || '',
+      iban: company?.iban || '',
+      bic: company?.bic || '',
       siret: company?.siret,
     }
     const sepaPayments: SEPAPaymentInfo[] = selectedPayments.map((p) => ({

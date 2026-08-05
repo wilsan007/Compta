@@ -211,7 +211,7 @@ function ManualRateForm({ currencies, onClose, onSaved }: { currencies: Currency
           <Input label={t('exchangeRates.date')} type="date" required value={rateDate} onChange={(e) => setRateDate(e.target.value)} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

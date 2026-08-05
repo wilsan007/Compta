@@ -1,6 +1,6 @@
 -- ============================================================
 -- 23_entry_templates_enhanced.sql
--- Enhance entry_templates to match Sage 100 modèle de saisie
+-- Enhance entry_templates to support advanced modèle de saisie
 -- Adds: counterpart_account, payment_terms to header
 -- template_lines is a jsonb column already — no schema change needed
 -- This migration just ensures the table exists and adds helpful indexes

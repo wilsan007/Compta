@@ -243,6 +243,7 @@
     "status": "Status",
     "noPayments": "No payments",
     "noPaymentsDescription": "No payment recorded",
+    "count": "{{count}} payment(s) — {{total}}",
     "createFirst": "Record my first payment",
     "searchPlaceholder": "Search by number, customer, invoice...",
     "methods": {

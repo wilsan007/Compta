@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select, Badge } from '@/components/ui'
 import { getEmployees } from '@/lib/queries'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { Plus, Pencil, Trash2, X, GraduationCap } from 'lucide-react'
 import type { Employee } from '@/types'
 
@@ -134,28 +134,26 @@ export function TrainingPage() {
       ) : (
         <Card>
           <Table headers={[t('training.employee'), t('training.trainingTitle'), t('training.provider'), t('training.startDate'), t('training.cost'), t('training.status'), tCommon('table.actions')]}>
-            <tbody>
               {trainings.map((tr) => (
                 <TableRow key={tr.id}>
                   <TableCell>{tr.employee_name}</TableCell>
                   <TableCell className="font-medium">{tr.title}</TableCell>
                   <TableCell>{tr.provider || '—'}</TableCell>
                   <TableCell className="text-xs">{formatDate(tr.start_date)} → {formatDate(tr.end_date)}</TableCell>
-                  <TableCell className="text-right">{tr.cost > 0 ? `${tr.cost.toFixed(2)} €` : '—'}</TableCell>
+                  <TableCell className="text-right">{tr.cost > 0 ? formatCurrency(tr.cost) : '—'}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                    <Badge variant="neutral">
                       {statusLabels[tr.status] || tr.status}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
-            </tbody>
           </Table>
         </Card>
       )}

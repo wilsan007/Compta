@@ -200,6 +200,7 @@
     "status": "الحالة",
     "noPayments": "لا توجد مدفوعات",
     "noPaymentsDescription": "لم يتم تسجيل أي دفعة",
+    "count": "{{count}} دفعات — {{total}}",
     "createFirst": "تسجيل أول دفعة",
     "searchPlaceholder": "البحث برقم، مورد، فاتورة...",
     "methods": {

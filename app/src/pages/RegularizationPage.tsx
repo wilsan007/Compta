@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRegularizationEntries, createRegularizationEntry, updateRegularizationEntry, deleteRegularizationEntry } from '@/lib/queries'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Pencil, Zap } from 'lucide-react'
+import { Plus, Trash2, Pencil, Zap, X } from 'lucide-react'
 import type { RegularizationEntry } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -226,7 +226,7 @@ function RegularizationForm({ editing, onClose, onSaved }: {
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '40rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{editing ? t('regularization.edit') : t('regularization.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">

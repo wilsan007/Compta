@@ -127,6 +127,14 @@ const TENANT_TABLES = new Set([
   'social_declarations', 'cice_config', 'pas_rates', 'at_rates', 'bdes_indicators', 'honorarium_records',
   // Sprint G: Dématérialisation RH
   'employee_documents', 'document_distribution_logs', 'rh_requests', 'rh_knowledge_base',
+  // Project Management & Task Management
+  'project_tasks', 'project_task_dependencies', 'project_stages', 'project_milestones',
+  'project_tags', 'project_task_tags', 'project_task_assignees',
+  'project_members',
+  'notification_email_queue', 'notification_preferences',
+  'task_actions', 'task_action_attachments', 'task_documents', 'task_comments',
+  // Document Management System
+  'module_documents', 'module_document_access_log', 'module_document_shares',
 ])
 
 const EXEMPT_TABLES = new Set([
@@ -136,22 +144,34 @@ const EXEMPT_TABLES = new Set([
 ])
 
 let _tenantId: string | null | undefined = undefined
+let _userName: string | null = null
 
 export async function setTenantId(id: string | null) {
   _tenantId = id
   if (id) {
-    // Set the active tenant in the database session so RLS policies use it
-    try {
-      const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: id })
-      if (error) {
-        console.error('[SECURITY] set_active_tenant RPC failed:', error.message,
-          '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
-      }
-    } catch (err: any) {
-      console.error('[SECURITY] set_active_tenant RPC threw:', err?.message || err,
-        '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
+    const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: id })
+    if (error) {
+      _tenantId = null
+      throw new Error(`SECURITY: set_active_tenant failed for tenant ${id}: ${error.message}`)
+    }
+    const { data: verifyId, error: verifyErr } = await supabase.rpc('current_tenant_id')
+    if (verifyErr || verifyId !== id) {
+      _tenantId = null
+      throw new Error(`SECURITY: Tenant verification failed. Expected ${id}, got ${verifyId}`)
+    }
+    // Set user name for trigger context (best-effort, ignore errors)
+    // Note: set_user_name RPC may not exist yet if migration 71 hasn't been applied
+    if (_userName) {
+      try {
+        const { error: nameErr } = await supabase.rpc('set_user_name', { p_name: _userName })
+        if (nameErr) { /* best-effort — silently ignore */ }
+      } catch { /* ignore */ }
     }
   }
+}
+
+export function setUserName(name: string | null) {
+  _userName = name
 }
 
 export function getCachedTenantId(): string | null {

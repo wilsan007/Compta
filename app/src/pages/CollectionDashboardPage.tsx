@@ -212,7 +212,7 @@ const [customerId, setCustomerId] = useState('')
           <Input label={t('collections.form.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('collections.form.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('collections.form.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('collections.form.create')}</Button>
           </div>
         </form>
       </div>

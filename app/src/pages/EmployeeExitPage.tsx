@@ -148,7 +148,7 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
           ]} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>
@@ -227,7 +227,7 @@ function ExitWizard({ process, onClose }: { process: any; onClose: () => void })
           )}
           {currentStep === 5 && (
             <div className="space-y-3">
-              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.generateDsnExit(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
+              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.markDsnExitGenerated(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
                 <FileText className="w-4 h-4" /> {t('exit.generateDsnExit')}
               </Button>
               <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.transmitDsnExit(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>

@@ -243,6 +243,7 @@
     "status": "Statut",
     "noPayments": "Aucun règlement",
     "noPaymentsDescription": "Aucun règlement enregistré",
+    "count": "{{count}} règlement(s) — {{total}}",
     "createFirst": "Enregistrer mon premier règlement",
     "searchPlaceholder": "Rechercher par numéro, client, facture...",
     "methods": {

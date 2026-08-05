@@ -198,7 +198,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{t('vat.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('vat.createBtn')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('vat.createBtn')}</Button>
           </div>
         </form>
       </div>

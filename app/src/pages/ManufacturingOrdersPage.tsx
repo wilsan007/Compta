@@ -49,13 +49,13 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   return (
     <div>
       <Breadcrumb items={[{ label: t('title'), path: '/production' }, { label: t('manufacturing.title') }]} />
-      <PageHeader title={t('manufacturing.title')} subtitle={`${orders.length} ordre(s)`}
+      <PageHeader title={t('manufacturing.title')} subtitle={t('manufacturing.count', { count: orders.length })}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('manufacturing.new')}</Button>} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-48">
           <Select label={t('manufacturing.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} options={[
-            { value: '', label: 'Tous' }, { value: 'planned', label: t('manufacturing.statuses.planned') }, { value: 'in_progress', label: t('manufacturing.statuses.in_progress') },
+            { value: '', label: t('common.all') }, { value: 'planned', label: t('manufacturing.statuses.planned') }, { value: 'in_progress', label: t('manufacturing.statuses.in_progress') },
             { value: 'completed', label: t('manufacturing.statuses.completed') }, { value: 'cancelled', label: t('manufacturing.statuses.cancelled') },
           ]} />
         </div>
@@ -66,7 +66,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('manufacturing.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('manufacturing.number'), 'BOM', t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), t('common.actions')]}>
+          <Table headers={[t('manufacturing.number'), t('manufacturing.bom'), t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), t('common.actions')]}>
             {orders.map((o) => {
               const bom = boms.find((b) => b.id === o.bom_id)
               return (
@@ -150,7 +150,7 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('manufacturing.warehouse')}</label>
             <select className="input" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
-              <option value="">{t('bom.selectProduct')}</option>
+              <option value="">{t('manufacturing.selectWarehouse')}</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
@@ -158,13 +158,13 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('manufacturing.routing')}</label>
             <select className="input" value={routingId} onChange={(e) => setRoutingId(e.target.value)}>
-              <option value="">{t('bom.selectProduct')}</option>
+              <option value="">{t('manufacturing.selectRouting')}</option>
               {routings.map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('common.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('common.create')}</Button>
           </div>
         </form>
       </div>

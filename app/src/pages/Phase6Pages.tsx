@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Edit2, Play, Printer, Shield, CheckCircle, AlertTriangle, XCircle, Download } from 'lucide-react'
+import { Plus, Trash2, Edit2, Play, Printer, Shield, CheckCircle, AlertTriangle, XCircle, Download, X } from 'lucide-react'
 import {
   getAutoLabelRules, createAutoLabelRule, updateAutoLabelRule, deleteAutoLabelRule,
   getExtourneLogs, generateExtourne,
@@ -403,7 +403,7 @@ export function AccountingControlsPage() {
         </Table>
       )}
       {selectedRun && (
-        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)}>✕</Button>}>
+        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)}><X className="w-4 h-4" /></Button>}>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {selectedRun.details.map((d: any, i: number) => (
               <div key={i} className={`p-3 rounded border ${d.type === 'unbalanced' || d.type === 'duplicate_piece' || d.type === 'missing_account' ? 'border-red-300 bg-red-50' : 'border-orange-300 bg-orange-50'}`}>

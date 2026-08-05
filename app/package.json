@@ -11,9 +11,24 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:all": "vitest run && playwright test"
+    "test:all": "vitest run && playwright test",
+    "typecheck": "tsc --noEmit",
+    "test:ci": "vitest run --coverage",
+    "test:full": "oxlint --max-warnings=0 && tsc --noEmit && vitest run --coverage && playwright test",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "verify": "bash scripts/verify.sh",
+    "verify:fast": "bash scripts/verify.sh --skip-tests --skip-lint",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "oxlint --max-warnings=0"
+    ]
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.110.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -21,6 +36,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.468.0",
     "pdfjs-dist": "^6.1.200",
+    "pg": "^8.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-i18next": "^17.0.10",
@@ -31,6 +47,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "@sentry/react": "^10.68.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
@@ -39,7 +56,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/coverage-v8": "^4.1.10",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.2.0",
     "oxlint": "^1.71.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~6.0.2",

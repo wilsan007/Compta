@@ -120,6 +120,7 @@
     "capHDay": "سعة/يوم",
     "costH": "تكلفة/ساعة",
     "confirmDeleteWorkCenter": "حذف هذا مركز العمل؟",
+    "codeAndNameRequired": "الرمز والاسم مطلوبان",
     "export": "تصدير",
     "import": "استيراد",
     "statuses": {
@@ -309,7 +310,10 @@
       "manual": "يدوي",
       "mrp": "تخطيط الاحتياجات",
       "sub_level": "مستوى فرعي"
-    }
+    },
+    "count": "{{count}} أمر",
+    "selectWarehouse": "اختر مستودعاً",
+    "selectRouting": "اختر مساراً"
   },
   "subcontracting": {
     "title": "التعهيد",

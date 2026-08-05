@@ -1,4 +1,5 @@
-import { supabase, getTenantId, ti, tud } from '../supabase'
+import { supabase } from '../supabase'
+import { getTenantId, ti, tud } from './core'
 import type { SocialDeclaration, CiceConfig, PasRate, AtRate, BdesIndicator, HonorariumRecord } from '@/types'
 
 // ============ Social Declarations (CRUD) ============

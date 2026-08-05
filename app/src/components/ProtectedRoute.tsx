@@ -6,7 +6,7 @@ import { Layout } from '@/components/Layout'
 import { navModules } from '@/components/Sidebar'
 import { useTenantModules } from '@/lib/useTenantModules'
 import type { TenantUser } from '@/lib/queries'
-import { Lock, ArrowLeft } from 'lucide-react'
+import { Lock, ArrowLeft, ShieldAlert } from 'lucide-react'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -94,14 +94,47 @@ function getModuleIdForPathAll(pathname: string): string | null {
   return null
 }
 
+// Modules that require module_roles RBAC check
+const RBAC_MODULE_IDS = new Set(['accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'projectManagement'])
+
 function ModuleGuard({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useTranslation('nav')
   const { modules: enabledModules, loading } = useTenantModules()
+  const { user } = useAuth()
 
   const moduleId = useMemo(() => getModuleIdForPathAll(location.pathname), [location.pathname])
   const isDisabled = !loading && moduleId !== null && !enabledModules.includes(moduleId)
+
+  // RBAC check: if the module requires a module_roles entry and user doesn't have one
+  const moduleRoles = (user as any)?.module_roles || {}
+  const isGlobalAdmin = user?.role === 'admin'
+  const rbacDenied = !loading && moduleId !== null && RBAC_MODULE_IDS.has(moduleId) && !isGlobalAdmin
+    && (moduleRoles[moduleId] == null || String(moduleRoles[moduleId]) === '')
+
+  if (rbacDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="card p-8 text-center max-w-md">
+          <div className="w-12 h-12 rounded-full bg-[rgba(222,53,11,0.1)] flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-6 h-6 text-[var(--color-danger)]" />
+          </div>
+          <h2 className="text-lg font-semibold text-[var(--color-text)] mb-2">{t('layout.rbacAccessDenied')}</h2>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+            {t('layout.rbacAccessDeniedMessage')}
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t('layout.backHome')}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (isDisabled) {
     return (

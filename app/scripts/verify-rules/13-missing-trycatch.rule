@@ -1,0 +1,24 @@
+# rule: Missing error handling in async functions
+# severity: warning
+# pattern: await calls without try/catch wrapper
+# note: This is a simplified check — catches `await` in functions that don't have try
+# fix: Wrap async operations in try/catch with proper error toast
+
+RULE_NAME="Missing try/catch"
+RULE_DESC="Async functions without error handling (add try/catch)"
+RULE_SEVERITY="warning"
+RULE_USE_CUSTOM=true
+
+run_custom_rule() {
+  # Find .tsx files with await but no try/catch
+  local count=0
+  for f in $(grep -rl "await " --include="*.tsx" src/pages/ src/components/ 2>/dev/null | grep -v node_modules | grep -v "\.test\." | grep -v "__tests__"); do
+    has_await=$(grep -c "await " "$f" 2>/dev/null || echo 0)
+    has_try=$(grep -c "try {" "$f" 2>/dev/null || echo 0)
+    # Note: { is literal in basic grep, no escape needed
+    if [ "$has_await" -gt 0 ] && [ "$has_try" -eq 0 ]; then
+      count=$((count + 1))
+    fi
+  done
+  echo "$count"
+}

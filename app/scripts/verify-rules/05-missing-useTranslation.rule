@@ -1,0 +1,14 @@
+# rule: Pages without useTranslation import
+# severity: error
+# pattern: .tsx files in src/pages/ missing useTranslation
+# fix: Add useTranslation import and use t() for all text
+
+RULE_NAME="useTranslation"
+RULE_DESC="Pages missing useTranslation import"
+RULE_SEVERITY="error"
+RULE_GREP_PATTERN=""  # Uses grep -rL (files NOT matching)
+RULE_GREP_INCLUDES="--include=*.tsx"
+RULE_GREP_PATHS="src/pages/"
+RULE_GREP_EXCLUDES="node_modules|\.test\.|__tests__"
+RULE_USE_GREP_L=true  # Use grep -rL (inverse match)
+RULE_GREP_SEARCH="useTranslation"

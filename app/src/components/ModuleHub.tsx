@@ -90,6 +90,12 @@ export function ModuleHubPage({ moduleId }: ModuleHubPageProps) {
         className="relative overflow-hidden rounded-2xl p-6 mb-6 border border-[var(--color-border)]"
         style={{ background: `var(${colorBg})` }}
       >
+        <img
+          src="/brand/hero-geometric.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.06] pointer-events-none"
+          aria-hidden="true"
+        />
         <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 blur-3xl" style={{ background: `var(${colorVar})` }} />
         <div className="relative flex items-start gap-4">
           <div

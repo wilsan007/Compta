@@ -55,6 +55,7 @@
     "structure": "الهيكل",
     "processing": "المعالجة",
     "states": "الكشوفات",
+    "reports": "التقارير",
     "quickActions": "إجراءات سريعة",
     "newEntry": "قيد جديد",
     "newJournal": "يومية جديدة",
@@ -1687,6 +1688,8 @@
     "deleteConfirm": "حذف هذا الاشتراك؟",
     "deleteSuccess": "تم حذف الاشتراك",
     "saveSuccess": "تم حفظ الاشتراك",
+    "fillRequired": "يرجى ملء جميع الحقول المطلوبة",
+    "unbalanced": "القيد غير متوازن (مدين ≠ دائن)",
     "noEntries": "لا يوجد اشتراك",
     "noEntriesDescription": "أنشئ أول اشتراك لك لأتمتة القيود المتكررة.",
     "frequencies": {

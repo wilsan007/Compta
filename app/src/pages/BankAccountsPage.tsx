@@ -230,7 +230,7 @@ const [name, setName] = useState('')
           ]} />
           <Input label={t('accounts.initialBalance')} type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" />
           <Select label={tCommon('common.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} options={[
-            { value: 'EUR', label: 'EUR (€)' },
+            { value: 'EUR', label: 'EUR' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'GBP', label: 'GBP (£)' },
           ]} />

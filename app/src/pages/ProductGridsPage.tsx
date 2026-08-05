@@ -230,7 +230,7 @@ function GridForm({ productId, onClose, onSaved }: { productId: string; onClose:
           <Input label={t('grids.values')} required placeholder={t('grids.valuesPlaceholder')} value={valuesInput} onChange={(e) => setValuesInput(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

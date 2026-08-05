@@ -498,7 +498,7 @@ export async function generateExitDocuments(exitProcessId: string) {
   return data as EmployeeExitProcess
 }
 
-export async function generateDsnExit(exitProcessId: string) {
+export async function markDsnExitGenerated(exitProcessId: string) {
   const tid = await getTenantId()
   const { data, error } = await tud(supabase.from('employee_exit_processes').update({
     dsn_exit_generated: true, dsn_exit_url: `/documents/exit/${exitProcessId}/dsn_exit.xml`, step: 5,

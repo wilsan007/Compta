@@ -197,7 +197,7 @@ const { toast } = useToast()
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>
-              <CheckCircle2 className="w-4 h-4" /> {saving ? '...' : t('automation.validateAndCreate')}
+              <CheckCircle2 className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('automation.validateAndCreate')}
             </Button>
           </div>
         </form>

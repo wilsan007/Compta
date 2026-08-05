@@ -13,6 +13,7 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false,
+      host: 'localhost',
     },
   },
   build: {

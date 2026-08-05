@@ -1,0 +1,54 @@
+{
+  "uploader": {
+    "title": "Upload a document",
+    "dropzone": "Drag and drop a file here or click to browse",
+    "formats": "Accepted formats: PDF, PNG, JPG, WEBP, DOCX, XLSX, PPTX, DOC, XLS, TXT, CSV, ZIP (max 50 MB)",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Document title",
+    "typeLabel": "Document type",
+    "typePlaceholder": "e.g. expense_report, medical_certificate, invoice",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Optional description",
+    "confidentialityLabel": "Confidentiality level",
+    "upload": "Upload",
+    "uploading": "Uploading..."
+  },
+  "list": {
+    "searchPlaceholder": "Search documents...",
+    "allStatuses": "All statuses",
+    "allConfidentiality": "All confidentiality levels",
+    "empty": "No documents found",
+    "downloads": "{{count}} download",
+    "downloads_other": "{{count}} downloads",
+    "rejectedReason": "Rejection reason",
+    "preview": "Preview",
+    "download": "Download",
+    "approve": "Approve",
+    "reject": "Reject",
+    "archive": "Archive",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this document? This action is irreversible.",
+    "rejectTitle": "Reject document",
+    "rejectPlaceholder": "Please provide a reason for rejection",
+    "confirmReject": "Confirm rejection"
+  },
+  "confidentiality": {
+    "public": "Public",
+    "restricted": "Restricted",
+    "confidential": "Confidential",
+    "private": "Private"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "archived": "Archived"
+  },
+  "errors": {
+    "uploadFailed": "Failed to upload document",
+    "downloadFailed": "Failed to download",
+    "permissionDenied": "You do not have permission to perform this action"
+  },
+  "title": "Document Management",
+  "subtitle": "Upload, manage and share your documents securely"
+}

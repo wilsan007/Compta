@@ -7,10 +7,8 @@ import { ShieldCheck, Plus, Trash2, X, Send } from 'lucide-react'
 import type { LegalDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
 
-const typeLabels: Record<string, string> = { dsn: 'DSN', urssaf: 'URSSAF', dgt: 'DGT', ifrs: 'IFRS', other: 'Autre' }
-const statusLabels: Record<string, string> = { pending: 'En attente', submitted: 'Transmise', late: 'En retard', cancelled: 'Annulée' }
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', submitted: 'success', late: 'danger', cancelled: 'neutral' }
-const monthLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+const monthLabels = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
 export function LegalDeclarationsPage() {
   const { toast } = useToast()
@@ -74,11 +72,11 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
             {declarations.map((d) => (
               <TableRow key={d.id}>
                 <TableCell className="font-mono text-xs">{d.number}</TableCell>
-                <TableCell className="text-xs">{t(`declarations.types.${d.declaration_type}`) || typeLabels[d.declaration_type] || d.declaration_type}</TableCell>
+                <TableCell className="text-xs">{t(`declarations.types.${d.declaration_type}`, { defaultValue: d.declaration_type })}</TableCell>
                 <TableCell className="text-xs">{monthLabels[d.period_month - 1]} {d.period_year}</TableCell>
                 <TableCell className="text-xs">{formatDate(d.due_date)}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(d.amount))}</TableCell>
-                <TableCell><Badge variant={statusBadge[d.status] || 'neutral'}>{t(`declarations.statuses.${d.status}`) || statusLabels[d.status] || d.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[d.status] || 'neutral'}>{t(`declarations.statuses.${d.status}`, { defaultValue: d.status })}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {d.status === 'pending' && (
@@ -147,7 +145,7 @@ function DeclarationForm({ onClose, onSaved }: { onClose: () => void; onSaved: (
           <Input label={tCommon('common.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

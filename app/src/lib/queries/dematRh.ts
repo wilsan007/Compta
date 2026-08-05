@@ -1,4 +1,6 @@
-import { supabase, getTenantId, ti, tud } from '../supabase'
+import { supabase } from '../supabase'
+import { getTenantId, ti, tud } from './core'
+import { sanitizeFilename } from '@/lib/fileSecurity'
 import type { EmployeeDocument, DocumentDistributionLog, RhRequest, RhKnowledgeBaseArticle } from '@/types'
 
 // ============ Employee Documents ============
@@ -24,7 +26,8 @@ export async function getMyDocuments(): Promise<EmployeeDocument[]> {
 
 export async function uploadEmployeeDocument(employeeId: string, file: File, metadata: Partial<EmployeeDocument>): Promise<EmployeeDocument> {
   const tid = await getTenantId()
-  const fileName = `${employeeId}/${metadata.document_type}/${Date.now()}-${file.name}`
+  const safeName = sanitizeFilename(file.name)
+  const fileName = `${employeeId}/${metadata.document_type}/${Date.now()}-${safeName}`
   const { data: uploadData, error: uploadError } = await supabase.storage.from('employee-documents').upload(fileName, file)
   if (uploadError) throw uploadError
   const { data: row, error } = await supabase.from('employee_documents').insert(ti({
@@ -165,7 +168,7 @@ export async function requestESignature(documentId: string, employeeId: string):
   if (error) throw error
 }
 
-export async function signDocument(documentId: string): Promise<void> {
+export async function signRhDocument(documentId: string): Promise<void> {
   const tid = await getTenantId()
   const { data: doc } = await supabase.from('employee_documents').select('file_url').eq('id', documentId).single()
   const hash = doc ? btoa(doc.file_url + Date.now()) : 'unknown'
@@ -238,7 +241,10 @@ export async function getRhKnowledgeBase(category?: string, search?: string): Pr
   let q = supabase.from('rh_knowledge_base').select('*').order('updated_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (category) q = q.eq('category', category)
-  if (search) q = q.or(`title.ilike.%${search}%,content.ilike.%${search}%`)
+  if (search) {
+    const s = search.replace(/[,%.]/g, ' ').trim().slice(0, 100)
+    if (s) q = q.or(`title.ilike.%${s}%,content.ilike.%${s}%`)
+  }
   const { data, error } = await q
   if (error) throw error
   return data as RhKnowledgeBaseArticle[]
