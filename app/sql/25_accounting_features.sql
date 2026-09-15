@@ -42,9 +42,13 @@ DROP POLICY IF EXISTS tenant_select_auto_label_rules ON auto_label_rules;
 DROP POLICY IF EXISTS tenant_insert_auto_label_rules ON auto_label_rules;
 DROP POLICY IF EXISTS tenant_update_auto_label_rules ON auto_label_rules;
 DROP POLICY IF EXISTS tenant_delete_auto_label_rules ON auto_label_rules;
+DROP POLICY IF EXISTS tenant_select_auto_label_rules ON auto_label_rules;
 CREATE POLICY tenant_select_auto_label_rules ON auto_label_rules FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_auto_label_rules ON auto_label_rules;
 CREATE POLICY tenant_insert_auto_label_rules ON auto_label_rules FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_auto_label_rules ON auto_label_rules;
 CREATE POLICY tenant_update_auto_label_rules ON auto_label_rules FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_auto_label_rules ON auto_label_rules;
 CREATE POLICY tenant_delete_auto_label_rules ON auto_label_rules FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 2. Extourne Log (Extourne automatique)
@@ -112,9 +116,13 @@ DROP POLICY IF EXISTS tenant_select_lettrage_diff ON lettrage_differences;
 DROP POLICY IF EXISTS tenant_insert_lettrage_diff ON lettrage_differences;
 DROP POLICY IF EXISTS tenant_update_lettrage_diff ON lettrage_differences;
 DROP POLICY IF EXISTS tenant_delete_lettrage_diff ON lettrage_differences;
+DROP POLICY IF EXISTS tenant_select_lettrage_diff ON lettrage_differences;
 CREATE POLICY tenant_select_lettrage_diff ON lettrage_differences FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_lettrage_diff ON lettrage_differences;
 CREATE POLICY tenant_insert_lettrage_diff ON lettrage_differences FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_lettrage_diff ON lettrage_differences;
 CREATE POLICY tenant_update_lettrage_diff ON lettrage_differences FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_lettrage_diff ON lettrage_differences;
 CREATE POLICY tenant_delete_lettrage_diff ON lettrage_differences FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 5. Accounting Control Runs (Contrôles comptables)
@@ -166,9 +174,13 @@ DROP POLICY IF EXISTS tenant_select_cash_control ON cash_control_sessions;
 DROP POLICY IF EXISTS tenant_insert_cash_control ON cash_control_sessions;
 DROP POLICY IF EXISTS tenant_update_cash_control ON cash_control_sessions;
 DROP POLICY IF EXISTS tenant_delete_cash_control ON cash_control_sessions;
+DROP POLICY IF EXISTS tenant_select_cash_control ON cash_control_sessions;
 CREATE POLICY tenant_select_cash_control ON cash_control_sessions FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_cash_control ON cash_control_sessions;
 CREATE POLICY tenant_insert_cash_control ON cash_control_sessions FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_cash_control ON cash_control_sessions;
 CREATE POLICY tenant_update_cash_control ON cash_control_sessions FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_cash_control ON cash_control_sessions;
 CREATE POLICY tenant_delete_cash_control ON cash_control_sessions FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 7. FEC Attestations (Attestation FEC)
@@ -222,9 +234,13 @@ DROP POLICY IF EXISTS tenant_select_tier_ribs ON tier_ribs;
 DROP POLICY IF EXISTS tenant_insert_tier_ribs ON tier_ribs;
 DROP POLICY IF EXISTS tenant_update_tier_ribs ON tier_ribs;
 DROP POLICY IF EXISTS tenant_delete_tier_ribs ON tier_ribs;
+DROP POLICY IF EXISTS tenant_select_tier_ribs ON tier_ribs;
 CREATE POLICY tenant_select_tier_ribs ON tier_ribs FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_tier_ribs ON tier_ribs;
 CREATE POLICY tenant_insert_tier_ribs ON tier_ribs FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_tier_ribs ON tier_ribs;
 CREATE POLICY tenant_update_tier_ribs ON tier_ribs FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_tier_ribs ON tier_ribs;
 CREATE POLICY tenant_delete_tier_ribs ON tier_ribs FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 9. IFRS Adjustments (IAS/IFRS)
@@ -250,9 +266,13 @@ DROP POLICY IF EXISTS tenant_select_ifrs_adj ON ifrs_adjustments;
 DROP POLICY IF EXISTS tenant_insert_ifrs_adj ON ifrs_adjustments;
 DROP POLICY IF EXISTS tenant_update_ifrs_adj ON ifrs_adjustments;
 DROP POLICY IF EXISTS tenant_delete_ifrs_adj ON ifrs_adjustments;
+DROP POLICY IF EXISTS tenant_select_ifrs_adj ON ifrs_adjustments;
 CREATE POLICY tenant_select_ifrs_adj ON ifrs_adjustments FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_ifrs_adj ON ifrs_adjustments;
 CREATE POLICY tenant_insert_ifrs_adj ON ifrs_adjustments FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_ifrs_adj ON ifrs_adjustments;
 CREATE POLICY tenant_update_ifrs_adj ON ifrs_adjustments FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_ifrs_adj ON ifrs_adjustments;
 CREATE POLICY tenant_delete_ifrs_adj ON ifrs_adjustments FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 10. Tax Payments (Télépaiements)
@@ -281,9 +301,13 @@ DROP POLICY IF EXISTS tenant_select_tax_payments ON tax_payments;
 DROP POLICY IF EXISTS tenant_insert_tax_payments ON tax_payments;
 DROP POLICY IF EXISTS tenant_update_tax_payments ON tax_payments;
 DROP POLICY IF EXISTS tenant_delete_tax_payments ON tax_payments;
+DROP POLICY IF EXISTS tenant_select_tax_payments ON tax_payments;
 CREATE POLICY tenant_select_tax_payments ON tax_payments FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_tax_payments ON tax_payments;
 CREATE POLICY tenant_insert_tax_payments ON tax_payments FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_tax_payments ON tax_payments;
 CREATE POLICY tenant_update_tax_payments ON tax_payments FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_tax_payments ON tax_payments;
 CREATE POLICY tenant_delete_tax_payments ON tax_payments FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 11. Custom Report Templates (Modèles d'édition personnalisés)
@@ -317,9 +341,13 @@ DROP POLICY IF EXISTS tenant_select_custom_reports ON custom_report_templates;
 DROP POLICY IF EXISTS tenant_insert_custom_reports ON custom_report_templates;
 DROP POLICY IF EXISTS tenant_update_custom_reports ON custom_report_templates;
 DROP POLICY IF EXISTS tenant_delete_custom_reports ON custom_report_templates;
+DROP POLICY IF EXISTS tenant_select_custom_reports ON custom_report_templates;
 CREATE POLICY tenant_select_custom_reports ON custom_report_templates FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_custom_reports ON custom_report_templates;
 CREATE POLICY tenant_insert_custom_reports ON custom_report_templates FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_custom_reports ON custom_report_templates;
 CREATE POLICY tenant_update_custom_reports ON custom_report_templates FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_custom_reports ON custom_report_templates;
 CREATE POLICY tenant_delete_custom_reports ON custom_report_templates FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 12. Deferred Printing Jobs (Impressions différées)
@@ -346,9 +374,13 @@ DROP POLICY IF EXISTS tenant_select_deferred_print ON deferred_printing_jobs;
 DROP POLICY IF EXISTS tenant_insert_deferred_print ON deferred_printing_jobs;
 DROP POLICY IF EXISTS tenant_update_deferred_print ON deferred_printing_jobs;
 DROP POLICY IF EXISTS tenant_delete_deferred_print ON deferred_printing_jobs;
+DROP POLICY IF EXISTS tenant_select_deferred_print ON deferred_printing_jobs;
 CREATE POLICY tenant_select_deferred_print ON deferred_printing_jobs FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_deferred_print ON deferred_printing_jobs;
 CREATE POLICY tenant_insert_deferred_print ON deferred_printing_jobs FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_deferred_print ON deferred_printing_jobs;
 CREATE POLICY tenant_update_deferred_print ON deferred_printing_jobs FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_deferred_print ON deferred_printing_jobs;
 CREATE POLICY tenant_delete_deferred_print ON deferred_printing_jobs FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 13. Journal Access Rights (Protection journaux par droits)
@@ -373,9 +405,13 @@ DROP POLICY IF EXISTS tenant_select_journal_access ON journal_access_rights;
 DROP POLICY IF EXISTS tenant_insert_journal_access ON journal_access_rights;
 DROP POLICY IF EXISTS tenant_update_journal_access ON journal_access_rights;
 DROP POLICY IF EXISTS tenant_delete_journal_access ON journal_access_rights;
+DROP POLICY IF EXISTS tenant_select_journal_access ON journal_access_rights;
 CREATE POLICY tenant_select_journal_access ON journal_access_rights FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_journal_access ON journal_access_rights;
 CREATE POLICY tenant_insert_journal_access ON journal_access_rights FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_journal_access ON journal_access_rights;
 CREATE POLICY tenant_update_journal_access ON journal_access_rights FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_journal_access ON journal_access_rights;
 CREATE POLICY tenant_delete_journal_access ON journal_access_rights FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 14. VAT on Collections (TVA sur encaissements)
@@ -404,9 +440,13 @@ DROP POLICY IF EXISTS tenant_select_vat_collections ON vat_on_collections;
 DROP POLICY IF EXISTS tenant_insert_vat_collections ON vat_on_collections;
 DROP POLICY IF EXISTS tenant_update_vat_collections ON vat_on_collections;
 DROP POLICY IF EXISTS tenant_delete_vat_collections ON vat_on_collections;
+DROP POLICY IF EXISTS tenant_select_vat_collections ON vat_on_collections;
 CREATE POLICY tenant_select_vat_collections ON vat_on_collections FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_vat_collections ON vat_on_collections;
 CREATE POLICY tenant_insert_vat_collections ON vat_on_collections FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_vat_collections ON vat_on_collections;
 CREATE POLICY tenant_update_vat_collections ON vat_on_collections FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_vat_collections ON vat_on_collections;
 CREATE POLICY tenant_delete_vat_collections ON vat_on_collections FOR DELETE USING (tenant_id = current_tenant_id());
 
 -- 15. Batch Entry Sessions (Saisie par lot)
@@ -431,7 +471,11 @@ DROP POLICY IF EXISTS tenant_select_batch_entry ON batch_entry_sessions;
 DROP POLICY IF EXISTS tenant_insert_batch_entry ON batch_entry_sessions;
 DROP POLICY IF EXISTS tenant_update_batch_entry ON batch_entry_sessions;
 DROP POLICY IF EXISTS tenant_delete_batch_entry ON batch_entry_sessions;
+DROP POLICY IF EXISTS tenant_select_batch_entry ON batch_entry_sessions;
 CREATE POLICY tenant_select_batch_entry ON batch_entry_sessions FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_batch_entry ON batch_entry_sessions;
 CREATE POLICY tenant_insert_batch_entry ON batch_entry_sessions FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_batch_entry ON batch_entry_sessions;
 CREATE POLICY tenant_update_batch_entry ON batch_entry_sessions FOR UPDATE USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_batch_entry ON batch_entry_sessions;
 CREATE POLICY tenant_delete_batch_entry ON batch_entry_sessions FOR DELETE USING (tenant_id = current_tenant_id());

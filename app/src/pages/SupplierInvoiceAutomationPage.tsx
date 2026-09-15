@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseInvoices, createPurchaseInvoice } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
+import { extractSupplierInvoice, type OcrInvoiceResult } from '@/lib/ocrInvoice'
 import { Upload, FileText, CheckCircle2, X, Sparkles, AlertCircle } from 'lucide-react'
 import type { PurchaseInvoice, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -18,9 +19,10 @@ export function SupplierInvoiceAutomationPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [ocrResult, setOcrResult] = useState<any>(null)
+  const [ocrResult, setOcrResult] = useState<OcrInvoiceResult | null>(null)
   const [processing, setProcessing] = useState(false)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -38,7 +40,7 @@ export function SupplierInvoiceAutomationPage() {
     const file = e.target.files?.[0]
     if (!file) return
     // SECURITY: Validate file before processing
-    const validation = await validateFileUpload(file, FILE_PROFILES.pdf)
+    const validation = await validateFileUpload(file, FILE_PROFILES.invoiceScan)
     if (!validation.ok) {
       toast('error', t('common.error'), validation.error || 'Invalid file')
       e.target.value = ''
@@ -46,23 +48,15 @@ export function SupplierInvoiceAutomationPage() {
     }
     setProcessing(true)
     setOcrResult(null)
-
-    setTimeout(() => {
-      const simulated = {
-        supplierName: '',
-        invoiceNumber: `FACT-${String(Date.now()).slice(-6)}`,
-        date: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-        total: 0,
-        lines: [
-          { description: 'Article 1', quantity: 1, unitPrice: 0, total: 0 },
-        ],
-        confidence: 0,
-      }
-      setOcrResult(simulated)
-      setProcessing(false)
+    try {
+      setOcrResult(await extractSupplierInvoice(file))
       setShowForm(true)
-    }, 1500)
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } finally {
+      setProcessing(false)
+      e.target.value = ''
+    }
   }
 
   const recentInvoices = invoices.slice(0, 10)
@@ -135,16 +129,21 @@ export function SupplierInvoiceAutomationPage() {
 }
 
 function OcrForm({ result, suppliers, onClose, onSaved }: {
-  result: any; suppliers: Supplier[]; onClose: () => void; onSaved: () => void
+  result: OcrInvoiceResult; suppliers: Supplier[]; onClose: () => void; onSaved: () => void
 }) {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
-const [supplierId, setSupplierId] = useState('')
+const [supplierId, setSupplierId] = useState(
+  result.supplierId
+  || suppliers.find((s) => result.supplierName && s.name.toLowerCase() === result.supplierName.toLowerCase())?.id
+  || '')
 const { toast } = useToast()
   const [number, setNumber] = useState(result.invoiceNumber || '')
   const [date, setDate] = useState(result.date || '')
   const [dueDate, setDueDate] = useState(result.dueDate || '')
-  const [total, setTotal] = useState(result.total || 0)
+  const [subtotal, setSubtotal] = useState(result.subtotal || 0)
+  const [vatTotal, setVatTotal] = useState(result.vatTotal || 0)
+  const total = Math.round((Number(subtotal) + Number(vatTotal)) * 100) / 100
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -154,7 +153,7 @@ const { toast } = useToast()
       await createPurchaseInvoice({
         number, supplier_id: supplierId || null,
         date, due_date: dueDate,
-        subtotal: total, vat: 0, total,
+        subtotal, vat_total: vatTotal, total, amount_paid: 0, amount_due: total,
         status: 'received',
       } as any)
       onSaved()
@@ -171,9 +170,6 @@ const { toast } = useToast()
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">{t('automation.ocrReviewTitle')}</h2>
-            <Badge variant={result.confidence > 80 ? 'success' : 'warning'}>
-              <AlertCircle className="w-3 h-3 mr-1" /> {t('automation.confidenceLevel', { confidence: result.confidence })}
-            </Badge>
           </div>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
         </div>
@@ -194,7 +190,14 @@ const { toast } = useToast()
             <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
             <Input label={t('automation.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
-          <Input label={t('automation.totalAmount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(Number(e.target.value))} />
+          <div className="grid grid-cols-3 gap-4">
+            <Input label={t('automation.subtotalAmount')} type="number" step="0.01" required value={subtotal} onChange={(e) => setSubtotal(Number(e.target.value))} />
+            <Input label={t('automation.vat')} type="number" step="0.01" value={vatTotal} onChange={(e) => setVatTotal(Number(e.target.value))} />
+            <Input label={t('automation.totalAmount')} type="number" value={total} readOnly />
+          </div>
+          {result.total > 0 && Math.abs(result.total - total) > 0.01 && (
+            <p className="text-xs text-[var(--color-warning)]">{t('automation.totalMismatch', { total: result.total })}</p>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>

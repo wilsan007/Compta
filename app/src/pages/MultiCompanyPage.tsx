@@ -28,6 +28,7 @@ export function MultiCompanyPage() {
 
   useEffect(() => {
     loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {

@@ -7,6 +7,7 @@ import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, X, FileText, Trash2 } from 'lucide-react'
 import type { ServiceContract, Customer } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 type ContractWithCustomer = ServiceContract & { customer: { name: string } | null }
 
@@ -120,7 +121,7 @@ function ContractForm({ customers, onClose, onSaved }: { customers: Customer[]; 
     if (!name || !customerId || !startDate) return
     setSaving(true)
     try {
-      const num = `SC-${Date.now().toString().slice(-6)}`
+      const num = await nextDocumentNumber('SC')
       await createServiceContract({
         tenant_id: null,
         number: num,

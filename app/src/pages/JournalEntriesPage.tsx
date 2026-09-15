@@ -7,6 +7,7 @@ import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw } from 
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -25,6 +26,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
 
   useEffect(() => {
     loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -171,7 +173,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [number, setNumber] = useState(`JE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`)
+  // Numéro attribué à l'enregistrement par la séquence si le champ est laissé vide (LOT4-10)
+  const [number, setNumber] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [reference, setReference] = useState('')
@@ -223,7 +226,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
           description: l.description || null,
         }))
       await createJournalEntry({
-        number,
+        number: number.trim() || await nextDocumentNumber('JE'),
         date,
         description,
         reference: reference || null,
@@ -249,7 +252,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t('entries.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('entries.number')} value={number} placeholder="Auto" onChange={(e) => setNumber(e.target.value)} />
             <Input label={t('entries.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
             <Input label={t('entries.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t('entries.referenceOptional')} />
           </div>

@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_pr_number ON purchase_requests(number);
 ALTER TABLE purchase_requests ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_purchase_requests') THEN
+    DROP POLICY IF EXISTS "allow_all_purchase_requests" ON purchase_requests;
     CREATE POLICY "allow_all_purchase_requests" ON purchase_requests FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -42,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_prl_request ON purchase_request_lines(purchase_re
 ALTER TABLE purchase_request_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_purchase_request_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_purchase_request_lines" ON purchase_request_lines;
     CREATE POLICY "allow_all_purchase_request_lines" ON purchase_request_lines FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -64,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_spl_supplier ON supplier_price_lists(supplier_id)
 ALTER TABLE supplier_price_lists ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_supplier_price_lists') THEN
+    DROP POLICY IF EXISTS "allow_all_supplier_price_lists" ON supplier_price_lists;
     CREATE POLICY "allow_all_supplier_price_lists" ON supplier_price_lists FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -86,6 +89,7 @@ CREATE INDEX IF NOT EXISTS idx_spll_product ON supplier_price_list_lines(product
 ALTER TABLE supplier_price_list_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_supplier_price_list_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_supplier_price_list_lines" ON supplier_price_list_lines;
     CREATE POLICY "allow_all_supplier_price_list_lines" ON supplier_price_list_lines FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -114,6 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_sds_supplier ON supplier_delivery_schedules(suppl
 ALTER TABLE supplier_delivery_schedules ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_supplier_delivery_schedules') THEN
+    DROP POLICY IF EXISTS "allow_all_supplier_delivery_schedules" ON supplier_delivery_schedules;
     CREATE POLICY "allow_all_supplier_delivery_schedules" ON supplier_delivery_schedules FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

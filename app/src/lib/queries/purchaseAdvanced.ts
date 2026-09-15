@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type { PurchaseRequest, PurchaseRequestLine, SupplierPriceList, SupplierPriceListLine, SupplierDeliverySchedule } from '@/types'
 
 // ============ Sprint C: Purchase Requests ============
@@ -50,7 +50,7 @@ export async function convertPurchaseRequestToOrder(prId: string, supplierId: st
   const { data: pr, error: prError } = await supabase.from('purchase_requests').select('*, purchase_request_lines(*)').eq('id', prId).single()
   if (prError) throw prError
 
-  const orderNumber = `PO-${Date.now()}`
+  const orderNumber = await nextDocumentNumber('PO')
   const { data: order, error: orderError } = await supabase.from('purchase_orders').insert(ti({
     number: orderNumber,
     supplier_id: supplierId,
@@ -199,7 +199,7 @@ export async function generatePurchaseFromSchedule(date: string) {
 
   const createdOrders: any[] = []
   for (const [supplierId, items] of Object.entries(bySupplier)) {
-    const orderNumber = `PO-SCHED-${Date.now()}-${supplierId.slice(0, 4)}`
+    const orderNumber = await nextDocumentNumber('PO')
     const { data: order, error: orderError } = await supabase.from('purchase_orders').insert(ti({
       number: orderNumber,
       supplier_id: supplierId,

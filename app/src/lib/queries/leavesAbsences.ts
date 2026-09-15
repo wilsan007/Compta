@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type {
   LeaveBalance, PublicHoliday, LeaveRule, ApprovalWorkflow,
   LeaveProvision, StaffRequirement, Employee, LeaveRequest,
@@ -660,7 +660,7 @@ export async function generateSepaFile(payRunId: string, executionDate: string):
   if (error) throw error
   if (!slips || slips.length === 0) throw new Error('No paid payslips found')
   const totalAmount = slips.reduce((s: number, sl: any) => s + Number(sl.net_salary), 0)
-  const number = `SEPA-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const number = await nextDocumentNumber('SEPA')
   const { data: order, error: orderErr } = await supabase.from('sepa_payment_orders').insert(ti({
     pay_run_id: payRunId, number, execution_date: executionDate,
     total_amount: totalAmount, currency: 'EUR', employee_count: slips.length,

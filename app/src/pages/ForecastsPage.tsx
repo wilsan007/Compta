@@ -6,6 +6,7 @@ import { useToast } from '@/lib/toast'
 import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries/stock'
 import type { Product } from '@/types'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function ForecastsPage() {
   const { toast } = useToast()
@@ -110,7 +111,7 @@ function ForecastFormModal({ products, onClose, onSaved }: { products: Product[]
     e.preventDefault()
     if (!period || !startDate || !endDate) { toast('error', tCommon('toast.error'), t('forecasts.periodRequired')); return }
     try {
-      const num = `PREV-${period}-${String(Date.now()).slice(-4)}`
+      const num = await nextDocumentNumber('PREV')
       await createProductionForecast({
         forecast_number: num, period, start_date: startDate, end_date: endDate,
         product_id: productId || null, forecasted_quantity: quantity, actual_quantity: 0,

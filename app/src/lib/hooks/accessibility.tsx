@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 // UX-02 : Composants d'accessibilité
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 

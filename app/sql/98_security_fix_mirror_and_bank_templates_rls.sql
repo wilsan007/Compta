@@ -47,22 +47,26 @@ DROP POLICY IF EXISTS tenant_delete_mirror_servers ON mirror_servers;
 
 -- Create tenant-isolated policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_mirror_servers ON mirror_servers;
   CREATE POLICY tenant_select_mirror_servers ON mirror_servers
     FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_mirror_servers ON mirror_servers;
   CREATE POLICY tenant_insert_mirror_servers ON mirror_servers
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_mirror_servers ON mirror_servers;
   CREATE POLICY tenant_update_mirror_servers ON mirror_servers
     FOR UPDATE USING (tenant_id = current_tenant_id())
     WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_mirror_servers ON mirror_servers;
   CREATE POLICY tenant_delete_mirror_servers ON mirror_servers
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
@@ -83,6 +87,7 @@ DROP POLICY IF EXISTS tenant_delete_mirror_verification ON mirror_verification_d
 
 -- Create tenant-isolated policies via join to mirror_servers
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_mirror_verification ON mirror_verification_details;
   CREATE POLICY tenant_select_mirror_verification ON mirror_verification_details
     FOR SELECT USING (EXISTS (
       SELECT 1 FROM mirror_servers ms
@@ -91,6 +96,7 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_mirror_verification ON mirror_verification_details;
   CREATE POLICY tenant_insert_mirror_verification ON mirror_verification_details
     FOR INSERT WITH CHECK (EXISTS (
       SELECT 1 FROM mirror_servers ms
@@ -99,6 +105,7 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_mirror_verification ON mirror_verification_details;
   CREATE POLICY tenant_update_mirror_verification ON mirror_verification_details
     FOR UPDATE USING (EXISTS (
       SELECT 1 FROM mirror_servers ms
@@ -107,6 +114,7 @@ DO $$ BEGIN
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_mirror_verification ON mirror_verification_details;
   CREATE POLICY tenant_delete_mirror_verification ON mirror_verification_details
     FOR DELETE USING (EXISTS (
       SELECT 1 FROM mirror_servers ms
@@ -134,22 +142,26 @@ DROP POLICY IF EXISTS tenant_delete_bank_statement_templates ON bank_statement_t
 
 -- Create correct tenant-isolated policies using current_tenant_id()
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_select_bank_statement_templates ON bank_statement_templates
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_insert_bank_statement_templates ON bank_statement_templates
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_update_bank_statement_templates ON bank_statement_templates
     FOR UPDATE USING (tenant_id = current_tenant_id())
     WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_delete_bank_statement_templates ON bank_statement_templates
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;

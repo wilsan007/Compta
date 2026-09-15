@@ -29,6 +29,7 @@ export function BudgetTrackingPage() {
   const [loading, setLoading] = useState(true)
   const [yearFilter, setYearFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

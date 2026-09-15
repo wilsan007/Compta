@@ -257,6 +257,8 @@
     "parentIdPlaceholder": "Parent company UUID",
     "salesRepId": "Sales representative (ID)",
     "salesRepIdPlaceholder": "Sales rep UUID",
+    "accountTiers": "Auxiliary account",
+    "accountCollectif": "Collective account",
     "nameLabel": "Supplier name",
     "nameRequired": "Name is required",
     "deleted": "Supplier deleted successfully",
@@ -298,7 +300,7 @@
     "processed": "Processed invoices",
     "pending": "Pending invoices",
     "rejected": "Rejected invoices",
-    "uploadTitle": "Upload an invoice (simulated OCR)",
+    "uploadTitle": "Import an invoice (OCR)",
     "dragDropText": "Drag a PDF or image invoice, or click to browse",
     "fileTypes": "PDF, PNG, JPG — 10 MB max",
     "browse": "Browse",
@@ -316,7 +318,9 @@
       "paid": "Paid",
       "overdue": "Overdue",
       "received": "Received"
-    }
+    },
+    "subtotalAmount": "Amount excl. VAT",
+    "totalMismatch": "The total read on the invoice ({{total}}) differs from net + VAT: check the amounts."
   },
   "approval": {
     "title": "Invoice approval",

@@ -24,7 +24,8 @@ serve(async (req) => {
     if (userErr || !user) return new Response(JSON.stringify({ error: "Non authentifié" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
 
     const body = await req.json()
-    const { file_url, file_base64, _document_type = "purchase_invoice" } = body
+    const { file_url, file_base64, mime_type = "image/png", _document_type = "purchase_invoice" } = body
+    const safeMime = ["image/png", "image/jpeg", "image/webp"].includes(mime_type) ? mime_type : "image/png"
 
     if (!file_url && !file_base64) {
       return new Response(JSON.stringify({ error: "file_url ou file_base64 requis" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
@@ -36,7 +37,7 @@ serve(async (req) => {
     }
 
     // Préparer l'image
-    const imageUrl = file_base64 ? `data:image/png;base64,${file_base64}` : file_url
+    const imageUrl = file_base64 ? `data:${safeMime};base64,${file_base64}` : file_url
 
     // Appeler OpenAI GPT-4o pour l'OCR
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -86,10 +87,14 @@ serve(async (req) => {
 
     // Tenter de faire correspondre avec un fournisseur existant
     const supabase = createClient(supabaseUrl, serviceRoleKey)
-    if (extractedData.supplier_name) {
+    const { data: memberships } = await supabase
+      .from("tenant_users").select("tenant_id").eq("auth_id", user.id).eq("status", "active")
+    const tenantIds = (memberships || []).map((m) => m.tenant_id)
+    if (extractedData.supplier_name && tenantIds.length > 0) {
       const { data: supplier, error } = await supabase
         .from("suppliers")
         .select("id, name, siret, vat_number")
+        .in("tenant_id", tenantIds)
         .ilike("name", `%${extractedData.supplier_name}%`)
         .limit(1)
         .single()

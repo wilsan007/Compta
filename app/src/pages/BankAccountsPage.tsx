@@ -19,6 +19,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
   useEffect(() => {
     loadAccounts().catch(err => console.error('loadAccounts:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadAccounts() {

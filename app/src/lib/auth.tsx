@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { supabase, setTenantId, setUserName } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
 import { clearTenantCache } from '@/lib/queries/core'
@@ -35,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [availableTenants, setAvailableTenants] = useState<{ tenantId: string; tenantName: string; role: TenantUser['role'] }[]>([])
+  // loadUser et l'abonnement auth sont créés une seule fois : ils lisent l'utilisateur
+  // courant via une ref, sinon ils verraient toujours la valeur initiale (null).
+  const userRef = useRef<AuthUser | null>(null)
+  useEffect(() => { userRef.current = user }, [user])
 
   const loadUser = useCallback(async () => {
     try {
@@ -79,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (matchedTenant) {
           // Stored preference found — use it
-          const prevTenantId = user?.tenantId
+          const prevTenantId = userRef.current?.tenantId
           const newTenantId = matchedTenant.tenant_id
           if (prevTenantId && prevTenantId !== newTenantId) {
             resetModuleCache()
@@ -231,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
         setLoading(true)
         loadUser().finally(() => setLoading(false))
-      } else if (!user) {
+      } else if (!userRef.current) {
         // No user loaded yet — still need to load on initial session
         setLoading(true)
         loadUser().finally(() => setLoading(false))

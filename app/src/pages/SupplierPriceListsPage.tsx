@@ -23,6 +23,7 @@ export function SupplierPriceListsPage() {
   const [compareProduct, setCompareProduct] = useState('')
   const [compareResult, setCompareResult] = useState<any>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadLists(); loadOptions() }, [])
 
   async function loadLists() {

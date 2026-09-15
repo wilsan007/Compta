@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS stock_reservations (
 );
 
 ALTER TABLE stock_reservations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS stock_reservations_tenant ON stock_reservations;
 CREATE POLICY stock_reservations_tenant ON stock_reservations
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

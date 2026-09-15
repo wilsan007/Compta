@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_emp_docs_period ON employee_documents(period);
 ALTER TABLE employee_documents ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_employee_documents') THEN
+    DROP POLICY IF EXISTS "allow_all_employee_documents" ON employee_documents;
     CREATE POLICY "allow_all_employee_documents" ON employee_documents FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -51,6 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_dist_logs_employee ON document_distribution_logs(
 ALTER TABLE document_distribution_logs ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_document_distribution_logs') THEN
+    DROP POLICY IF EXISTS "allow_all_document_distribution_logs" ON document_distribution_logs;
     CREATE POLICY "allow_all_document_distribution_logs" ON document_distribution_logs FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -74,6 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_rh_requests_employee ON rh_requests(employee_id);
 ALTER TABLE rh_requests ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_rh_requests') THEN
+    DROP POLICY IF EXISTS "allow_all_rh_requests" ON rh_requests;
     CREATE POLICY "allow_all_rh_requests" ON rh_requests FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -96,6 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_rh_kb_category ON rh_knowledge_base(category);
 ALTER TABLE rh_knowledge_base ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_rh_knowledge_base') THEN
+    DROP POLICY IF EXISTS "allow_all_rh_knowledge_base" ON rh_knowledge_base;
     CREATE POLICY "allow_all_rh_knowledge_base" ON rh_knowledge_base FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

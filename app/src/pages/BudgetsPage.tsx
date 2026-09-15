@@ -20,6 +20,7 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   const [editing, setEditing] = useState<Budget | null>(null)
   const [realized, setRealized] = useState<Record<string, number[]>>({})
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

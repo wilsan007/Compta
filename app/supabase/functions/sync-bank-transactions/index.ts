@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -71,6 +72,7 @@ serve(async (req) => {
           })
         }
 
+        if (!(await isTenantMember(supabase, user.id, body.tenant_id))) return forbidden(corsHeaders)
         // Stocker la connexion en base
         const { data: conn, error: _connErr } = await supabase
           .from("bank_connections")
@@ -152,6 +154,7 @@ serve(async (req) => {
           status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
         })
       }
+      if (!(await isTenantMember(supabase, user.id, connection.tenant_id))) return forbidden(corsHeaders)
 
       if (connection.provider === "gocardless") {
         const gcToken = Deno.env.get("GOCARDLESS_API_TOKEN")

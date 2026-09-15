@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_analytic_dist_line_plan ON analytic_distribution_
 ALTER TABLE analytic_distribution_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_isolated_analytic_dist_lines') THEN
+    DROP POLICY IF EXISTS "tenant_isolated_analytic_dist_lines" ON analytic_distribution_lines;
     CREATE POLICY "tenant_isolated_analytic_dist_lines" ON analytic_distribution_lines
       FOR ALL USING (tenant_id IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid)
       WITH CHECK (tenant_id IS NULL OR tenant_id = current_setting('app.tenant_id', true)::uuid);

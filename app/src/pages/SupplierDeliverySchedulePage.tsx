@@ -22,6 +22,7 @@ export function SupplierDeliverySchedulePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [generateDate, setGenerateDate] = useState(new Date().toISOString().split('T')[0])
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadSchedules(); loadOptions() }, [])
 
   async function loadSchedules() {

@@ -24,6 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_doc_charges_doc ON document_charges(document_type
 ALTER TABLE document_charges ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_document_charges') THEN
+    DROP POLICY IF EXISTS "allow_all_document_charges" ON document_charges;
     CREATE POLICY "allow_all_document_charges" ON document_charges FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -46,6 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_doc_trans_tgt ON document_transformations(target_
 ALTER TABLE document_transformations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_doc_transformations') THEN
+    DROP POLICY IF EXISTS "allow_all_doc_transformations" ON document_transformations;
     CREATE POLICY "allow_all_doc_transformations" ON document_transformations FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

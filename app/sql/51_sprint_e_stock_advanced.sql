@@ -26,6 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_wu_user ON warehouse_users(user_email);
 ALTER TABLE warehouse_users ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_warehouse_users') THEN
+    DROP POLICY IF EXISTS "allow_all_warehouse_users" ON warehouse_users;
     CREATE POLICY "allow_all_warehouse_users" ON warehouse_users FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -49,6 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_sa_status ON stock_alerts(status);
 ALTER TABLE stock_alerts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_stock_alerts') THEN
+    DROP POLICY IF EXISTS "allow_all_stock_alerts" ON stock_alerts;
     CREATE POLICY "allow_all_stock_alerts" ON stock_alerts FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

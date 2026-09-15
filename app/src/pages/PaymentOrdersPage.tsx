@@ -8,6 +8,7 @@ import { Plus, Trash2, X, CheckCircle2, Ban, FileText } from 'lucide-react'
 import type { PaymentOrder, BankAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 
 export function PaymentOrdersPage() {
@@ -19,6 +20,7 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -146,6 +148,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadRef() }, [])
 
   async function loadRef() {
@@ -160,7 +163,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `PAY-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('PAY')
       await createPaymentOrder({
         number, type, status: 'draft',
         bank_account_id: bankAccountId || null,

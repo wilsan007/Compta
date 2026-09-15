@@ -9,6 +9,7 @@ import { Plus, Trash2, X, FileText, Truck } from 'lucide-react'
 import type { SalesOrder, SalesOrderLine, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusKeys: string[] = ['draft', 'confirmed', 'delivered', 'invoiced', 'cancelled']
 
@@ -163,7 +164,7 @@ function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onC
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `CMD-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('CMD')
       await createSalesOrder({ number, customer_id: customerId || null, order_date: orderDate, delivery_date: deliveryDate || null, status: 'draft', subtotal: total, vat: 0, total, notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }

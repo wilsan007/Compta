@@ -30,8 +30,10 @@ CREATE TABLE IF NOT EXISTS product_categories (
 );
 
 ALTER TABLE product_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS product_categories_tenant_select ON product_categories;
 CREATE POLICY product_categories_tenant_select ON product_categories
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS product_categories_tenant_all ON product_categories;
 CREATE POLICY product_categories_tenant_all ON product_categories
   FOR ALL USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 

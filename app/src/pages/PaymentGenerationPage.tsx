@@ -11,6 +11,7 @@ import { getPaymentTerms } from '@/lib/queries/payroll'
 import { generateMultiEcheances } from '@/lib/queries/misc'
 import { Wallet, CheckSquare, Square, Landmark, CalendarClock } from 'lucide-react'
 import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount, PaymentTerm } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 type TiersType = 'customer' | 'supplier'
 
@@ -52,6 +53,7 @@ export function PaymentGenerationPage() {
 
   useEffect(() => {
     loadRef().catch(err => console.error('loadRef:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadRef() {
@@ -159,7 +161,7 @@ export function PaymentGenerationPage() {
         const echeances = term ? generateMultiEcheances(row.date, term) : [{ date: paymentDate, amount_pct: 100, label: 'Payment' }]
         for (const ech of echeances) {
           const amount = (row.amountDue * ech.amount_pct) / 100
-          const number = `${tiersType === 'supplier' ? 'RSF' : 'RSC'}-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}-${row.id.slice(0, 4)}-${ech.label.slice(-1)}`
+          const number = await nextDocumentNumber(tiersType === 'supplier' ? 'RSF' : 'RSC')
           if (tiersType === 'supplier') {
             await createSupplierPayment({
               number,

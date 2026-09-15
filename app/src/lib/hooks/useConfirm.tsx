@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 // UX-03 : Remplacement de window.confirm par un composant accessible
 import { useState, useCallback, createContext, useContext, type ReactNode } from 'react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'

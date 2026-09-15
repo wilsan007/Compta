@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ShoppingCart, Plus, Search, Trash2, X, Check, Ban, ArrowRightCircle } from 'lucide-react'
 import type { PurchaseRequest } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function PurchaseRequestsPage() {
   const { t } = useTranslation('purchases')
@@ -19,6 +20,7 @@ export function PurchaseRequestsPage() {
   const [editing, setEditing] = useState<PurchaseRequest | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PurchaseRequest | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadRequests() }, [])
 
   async function loadRequests() {
@@ -168,7 +170,8 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [number, setNumber] = useState(request?.number || `PR-${Date.now()}`)
+  // Numéro attribué à l'enregistrement par la séquence si le champ est laissé vide (LOT4-10)
+  const [number, setNumber] = useState(request?.number || '')
   const [requester, setRequester] = useState(request?.requester || '')
   const [department, setDepartment] = useState(request?.department || '')
   const [priority, setPriority] = useState(request?.priority || 'normal')
@@ -184,11 +187,10 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!number.trim()) { toast('warning', tCommon('form.requiredField'), t('purchaseRequests.number')); return }
     setSaving(true)
     try {
       const data = {
-        number, requester, department, priority, expected_date: expectedDate || null, notes,
+        number: number.trim() || await nextDocumentNumber('PR'), requester, department, priority, expected_date: expectedDate || null, notes,
         status: 'draft' as const,
         purchase_request_lines: lines.filter(l => l.description.trim()),
       }
@@ -211,7 +213,7 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('purchaseRequests.number')} required value={number} onChange={e => setNumber(e.target.value)} />
+            <Input label={t('purchaseRequests.number')} value={number} placeholder="Auto" onChange={e => setNumber(e.target.value)} />
             <Input label={t('purchaseRequests.requester')} value={requester} onChange={e => setRequester(e.target.value)} />
             <Input label={t('purchaseRequests.department')} value={department} onChange={e => setDepartment(e.target.value)} />
             <Select label={t('purchaseRequests.priority')} value={priority} onChange={e => setPriority(e.target.value as any)}

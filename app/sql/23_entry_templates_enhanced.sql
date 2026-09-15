@@ -21,6 +21,7 @@ DO $$ BEGIN
       created_at timestamptz default now()
     );
     alter table entry_templates enable row level security;
+    DROP POLICY IF EXISTS "allow_all_entry_templates" ON entry_templates;
     CREATE POLICY "allow_all_entry_templates" ON entry_templates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

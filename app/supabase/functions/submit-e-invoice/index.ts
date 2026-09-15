@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -59,6 +60,7 @@ serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
       })
     }
+    if (!(await isTenantMember(supabase, user.id, invoice.tenant_id))) return forbidden(corsHeaders)
 
     // Générer le XML Factur-X si non fourni
     const facturXXml = xml_content || generateFacturXXml(invoice)
@@ -69,27 +71,13 @@ serve(async (req) => {
       const chorusSiret = Deno.env.get("CHORUS_PRO_SIRET")
 
       if (!chorusToken) {
-        // Mode simulation si Chorus Pro n'est pas configuré
-        await supabase
-          .from("invoices")
-          .update({
-            e_invoice_status: "submitted",
-            e_invoice_platform: "chorus_pro",
-            e_invoice_submitted_at: new Date().toISOString(),
-          })
-          .eq("id", invoice_id)
-          .eq("tenant_id", invoice.tenant_id)
-
+        // LOT7-08 : sans accès configuré, refuser plutôt que simuler.
+        // Une simulation enregistrait l'envoi comme effectué alors que rien n'était transmis.
         return new Response(JSON.stringify({
-          success: true,
-          platform: "chorus_pro",
-          status: "submitted",
-          mode: "simulation",
-          message: "Facture soumise en mode simulation (Chorus Pro non configuré)",
-          xml_size: facturXXml.length,
-        }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        })
+          success: false,
+          code: "NOT_CONFIGURED",
+          error: "Chorus Pro non configuré : définissez CHORUS_PRO_TOKEN pour activer la transmission. Aucune donnée n'a été transmise.",
+        }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
       }
 
       // Soumission réelle à Chorus Pro API
@@ -142,12 +130,12 @@ serve(async (req) => {
       const peppolEndpoint = Deno.env.get("PEPPOL_ENDPOINT")
       if (!peppolEndpoint) {
         return new Response(JSON.stringify({
-          success: true,
+          success: false,
+          code: "NOT_CONFIGURED",
           platform: "peppol",
-          status: "simulation",
-          message: "PEPPOL non configuré — mode simulation",
+          error: "PEPPOL non configuré : définissez PEPPOL_ENDPOINT pour activer l'envoi. Aucune facture n'a été transmise.",
         }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" }
         })
       }
 

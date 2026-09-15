@@ -11,7 +11,7 @@ import { confirmSync } from '@/lib/confirm'
 // LOT5-05 : Validation SSRF côté client — doit correspondre à is_allowed_webhook_url (SQL) et isAllowedWebhookUrl (Edge Function)
 function isAllowedWebhookUrl(raw: string): boolean {
   let u: URL
-  try { u = new URL(raw) } catch { return false }
+  try { u = new URL(raw) } catch (e) { console.error('isAllowedWebhookUrl: invalid URL:', e); return false }
   if (u.protocol !== 'https:') return false
   const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return false

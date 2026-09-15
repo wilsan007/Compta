@@ -316,7 +316,7 @@ SELECT cron.schedule(
   '* * * * *',
   $$SELECT process_webhook_queue(50)$$
 ) WHERE NOT EXISTS (
-  SELECT 1 FROM cron.job WHERE name = 'process-webhook-queue'
+  SELECT 1 FROM cron.job WHERE jobname = 'process-webhook-queue'
 );
 
 -- ============================================================

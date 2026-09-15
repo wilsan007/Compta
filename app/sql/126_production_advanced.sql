@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS mo_consumptions (
 );
 
 ALTER TABLE mo_consumptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS mo_consumptions_tenant ON mo_consumptions;
 CREATE POLICY mo_consumptions_tenant ON mo_consumptions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS mo_operations (
 );
 
 ALTER TABLE mo_operations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS mo_operations_tenant ON mo_operations;
 CREATE POLICY mo_operations_tenant ON mo_operations
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS work_center_calendars (
 );
 
 ALTER TABLE work_center_calendars ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS work_center_calendars_tenant ON work_center_calendars;
 CREATE POLICY work_center_calendars_tenant ON work_center_calendars
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -159,6 +162,7 @@ CREATE TABLE IF NOT EXISTS maintenance_plans (
 );
 
 ALTER TABLE maintenance_plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS maintenance_plans_tenant ON maintenance_plans;
 CREATE POLICY maintenance_plans_tenant ON maintenance_plans
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -179,6 +183,7 @@ CREATE TABLE IF NOT EXISTS maintenance_records (
 );
 
 ALTER TABLE maintenance_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS maintenance_records_tenant ON maintenance_records;
 CREATE POLICY maintenance_records_tenant ON maintenance_records
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

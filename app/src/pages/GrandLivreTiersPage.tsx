@@ -25,6 +25,7 @@ export function GrandLivreTiersPage() {
   const [showExtourne, setShowExtourne] = useState(false)
   const [extourneLoading, setExtourneLoading] = useState(false)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadTiers() }, [])
 
   async function loadTiers() {

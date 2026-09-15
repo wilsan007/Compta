@@ -518,6 +518,7 @@ export async function createNotification(
         action_url: fullActionUrl,
         locale,
         tenant_name: tenantName,
+        tenant_id: tid,
       },
     })
 

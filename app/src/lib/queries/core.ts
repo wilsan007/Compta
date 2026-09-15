@@ -1,4 +1,14 @@
 import { supabase, getCachedTenantId, isTenantTable } from '@/lib/supabase'
+
+// ============ Document numbering ============
+// LOT4-10 : numérotation continue par tenant et préfixe (RPC get_next_document_number,
+// migration 146) — format PREFIXE-AAAA-NNNNNN. Ne jamais dériver un numéro de Date.now().
+export async function nextDocumentNumber(prefix: string): Promise<string> {
+  const { data, error } = await supabase.rpc('get_next_document_number', { p_prefix: prefix })
+  if (error) throw error
+  return data as string
+}
+
 // ============ Tenant Helper ============
 // RLS policies filter at the DB level, but we also filter at the app level
 // for performance (smaller payloads) and defense-in-depth.

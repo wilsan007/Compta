@@ -27,19 +27,23 @@ DROP POLICY IF EXISTS tenant_users_delete ON tenant_users;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_users' AND policyname = 'tenant_select_tenant_users') THEN
+    DROP POLICY IF EXISTS tenant_select_tenant_users ON tenant_users;
     CREATE POLICY tenant_select_tenant_users ON tenant_users
       FOR SELECT USING (tenant_id = current_tenant_id());
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_users' AND policyname = 'tenant_insert_tenant_users') THEN
+    DROP POLICY IF EXISTS tenant_insert_tenant_users ON tenant_users;
     CREATE POLICY tenant_insert_tenant_users ON tenant_users
       FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_users' AND policyname = 'tenant_update_tenant_users') THEN
+    DROP POLICY IF EXISTS tenant_update_tenant_users ON tenant_users;
     CREATE POLICY tenant_update_tenant_users ON tenant_users
       FOR UPDATE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin')
       WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'tenant_users' AND policyname = 'tenant_delete_tenant_users') THEN
+    DROP POLICY IF EXISTS tenant_delete_tenant_users ON tenant_users;
     CREATE POLICY tenant_delete_tenant_users ON tenant_users
       FOR DELETE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
   END IF;
@@ -57,13 +61,16 @@ DROP POLICY IF EXISTS tenant_insert_users ON users;
 DROP POLICY IF EXISTS tenant_update_users ON users;
 DROP POLICY IF EXISTS tenant_delete_users ON users;
 
+DROP POLICY IF EXISTS tenant_insert_users ON users;
 CREATE POLICY tenant_insert_users ON users
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS tenant_update_users ON users;
 CREATE POLICY tenant_update_users ON users
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS tenant_delete_users ON users;
 CREATE POLICY tenant_delete_users ON users
   FOR DELETE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
 
@@ -80,16 +87,20 @@ DROP POLICY IF EXISTS tenant_insert_project_members ON project_members;
 DROP POLICY IF EXISTS tenant_update_project_members ON project_members;
 DROP POLICY IF EXISTS tenant_delete_project_members ON project_members;
 
+DROP POLICY IF EXISTS tenant_select_project_members ON project_members;
 CREATE POLICY tenant_select_project_members ON project_members
   FOR SELECT USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_insert_project_members ON project_members;
 CREATE POLICY tenant_insert_project_members ON project_members
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_update_project_members ON project_members;
 CREATE POLICY tenant_update_project_members ON project_members
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_delete_project_members ON project_members;
 CREATE POLICY tenant_delete_project_members ON project_members
   FOR DELETE USING (tenant_id = current_tenant_id());
 

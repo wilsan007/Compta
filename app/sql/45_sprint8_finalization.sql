@@ -66,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_exchange_gain_loss_invoice ON exchange_gain_loss_
 ALTER TABLE exchange_gain_loss_entries ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_exchange_gain_loss_entries') THEN
+    DROP POLICY IF EXISTS "allow_all_exchange_gain_loss_entries" ON exchange_gain_loss_entries;
     CREATE POLICY "allow_all_exchange_gain_loss_entries" ON exchange_gain_loss_entries FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -94,6 +95,7 @@ CREATE INDEX IF NOT EXISTS idx_check_books_status ON check_books(status);
 ALTER TABLE check_books ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_check_books') THEN
+    DROP POLICY IF EXISTS "allow_all_check_books" ON check_books;
     CREATE POLICY "allow_all_check_books" ON check_books FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -122,6 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_checks_issue_date ON checks(issue_date);
 ALTER TABLE checks ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_checks') THEN
+    DROP POLICY IF EXISTS "allow_all_checks" ON checks;
     CREATE POLICY "allow_all_checks" ON checks FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

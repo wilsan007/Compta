@@ -106,7 +106,19 @@
     "notes": "Notes",
     "reference": "Reference",
     "noAdjustments": "No adjustment",
-    "noAdjustmentsDescription": "Enter your first inventory."
+    "noAdjustmentsDescription": "Enter your first inventory.",
+    "valuationMethod": "Valuation method",
+    "valuationResult": "Stock valuation",
+    "totalValue": "Total value",
+    "method": "Method",
+    "grandTotal": "Grand total",
+    "noValuation": "No valuation",
+    "noValuationDescription": "No stock products to value.",
+    "methods": {
+      "cump": "WAC (weighted average cost)",
+      "fifo": "FIFO (first in, first out)",
+      "lifo": "LIFO (last in, first out)"
+    }
   },
   "reorder": {
     "title": "Reorder",
@@ -236,6 +248,9 @@
     "products": "products",
     "initialQty": "Initial quantity",
     "reorderLevel": "Reorder level",
+    "saleAccountCode": "Sales account",
+    "purchaseAccountCode": "Purchase account",
+    "stockAccountCode": "Stock account",
     "movementTypes": {
       "in": "In",
       "out": "Out",

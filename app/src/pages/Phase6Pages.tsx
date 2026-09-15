@@ -28,6 +28,7 @@ import type {
   IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob,
   VATOnCollection, BatchEntrySession,
 } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 // ============ Batch Entry Page (Saisie par lot) ============
 export function BatchEntryPage() {
@@ -534,7 +535,7 @@ export function FECAttestationPage() {
   async function handleCreate() {
     try {
       const year = years.find(y => y.id === form.fiscal_year_id)
-      const attNumber = `FEC-ATT-${Date.now()}`
+      const attNumber = await nextDocumentNumber('FEC-ATT')
       await createFECAttestation({
         fiscal_year_id: form.fiscal_year_id,
         attestation_number: attNumber,

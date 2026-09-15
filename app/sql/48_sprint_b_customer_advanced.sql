@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_cc_customer ON customer_contacts(customer_id);
 ALTER TABLE customer_contacts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_customer_contacts') THEN
+    DROP POLICY IF EXISTS "allow_all_customer_contacts" ON customer_contacts;
     CREATE POLICY "allow_all_customer_contacts" ON customer_contacts FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -43,6 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_sc_supplier ON supplier_contacts(supplier_id);
 ALTER TABLE supplier_contacts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_supplier_contacts') THEN
+    DROP POLICY IF EXISTS "allow_all_supplier_contacts" ON supplier_contacts;
     CREATE POLICY "allow_all_supplier_contacts" ON supplier_contacts FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

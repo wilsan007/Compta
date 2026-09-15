@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS resource_capacities (
 );
 
 ALTER TABLE resource_capacities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS resource_capacities_tenant ON resource_capacities;
 CREATE POLICY resource_capacities_tenant ON resource_capacities
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS custom_field_definitions (
 );
 
 ALTER TABLE custom_field_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS custom_field_definitions_tenant ON custom_field_definitions;
 CREATE POLICY custom_field_definitions_tenant ON custom_field_definitions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -80,6 +82,7 @@ CREATE TABLE IF NOT EXISTS custom_field_values (
 );
 
 ALTER TABLE custom_field_values ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS custom_field_values_tenant ON custom_field_values;
 CREATE POLICY custom_field_values_tenant ON custom_field_values
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -127,6 +130,7 @@ CREATE TABLE IF NOT EXISTS report_definitions (
 );
 
 ALTER TABLE report_definitions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS report_definitions_tenant ON report_definitions;
 CREATE POLICY report_definitions_tenant ON report_definitions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -193,6 +197,7 @@ CREATE TABLE IF NOT EXISTS tenant_fiscal_settings (
 );
 
 ALTER TABLE tenant_fiscal_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_fiscal_settings_tenant ON tenant_fiscal_settings;
 CREATE POLICY tenant_fiscal_settings_tenant ON tenant_fiscal_settings
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -211,6 +216,7 @@ CREATE TABLE IF NOT EXISTS document_templates (
 );
 
 ALTER TABLE document_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS document_templates_tenant ON document_templates;
 CREATE POLICY document_templates_tenant ON document_templates
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -233,6 +239,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS audit_log_tenant ON audit_log;
 CREATE POLICY audit_log_tenant ON audit_log
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -254,6 +261,7 @@ CREATE TABLE IF NOT EXISTS document_attachments (
 );
 
 ALTER TABLE document_attachments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS document_attachments_tenant ON document_attachments;
 CREATE POLICY document_attachments_tenant ON document_attachments
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -274,6 +282,7 @@ CREATE TABLE IF NOT EXISTS electronic_signatures (
 );
 
 ALTER TABLE electronic_signatures ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS electronic_signatures_tenant ON electronic_signatures;
 CREATE POLICY electronic_signatures_tenant ON electronic_signatures
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -298,6 +307,7 @@ CREATE TABLE IF NOT EXISTS notification_center (
 );
 
 ALTER TABLE notification_center ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS notification_center_tenant ON notification_center;
 CREATE POLICY notification_center_tenant ON notification_center
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -317,6 +327,7 @@ CREATE TABLE IF NOT EXISTS business_alert_rules (
 );
 
 ALTER TABLE business_alert_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS business_alert_rules_tenant ON business_alert_rules;
 CREATE POLICY business_alert_rules_tenant ON business_alert_rules
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -335,6 +346,7 @@ CREATE TABLE IF NOT EXISTS crm_sequences (
 );
 
 ALTER TABLE crm_sequences ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS crm_sequences_tenant ON crm_sequences;
 CREATE POLICY crm_sequences_tenant ON crm_sequences
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -351,6 +363,7 @@ CREATE TABLE IF NOT EXISTS crm_sequence_steps (
 );
 
 ALTER TABLE crm_sequence_steps ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS crm_sequence_steps_tenant ON crm_sequence_steps;
 CREATE POLICY crm_sequence_steps_tenant ON crm_sequence_steps
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -369,6 +382,7 @@ CREATE TABLE IF NOT EXISTS crm_scoring_rules (
 );
 
 ALTER TABLE crm_scoring_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS crm_scoring_rules_tenant ON crm_scoring_rules;
 CREATE POLICY crm_scoring_rules_tenant ON crm_scoring_rules
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -384,6 +398,7 @@ CREATE TABLE IF NOT EXISTS group_entities (
 );
 
 ALTER TABLE group_entities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS group_entities_all ON group_entities;
 CREATE POLICY group_entities_all ON group_entities
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -398,6 +413,7 @@ CREATE TABLE IF NOT EXISTS group_members (
 );
 
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS group_members_tenant ON group_members;
 CREATE POLICY group_members_tenant ON group_members
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -420,6 +436,7 @@ CREATE TABLE IF NOT EXISTS intra_group_transactions (
 );
 
 ALTER TABLE intra_group_transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS intra_group_transactions_tenant ON intra_group_transactions;
 CREATE POLICY intra_group_transactions_tenant ON intra_group_transactions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -449,6 +466,7 @@ CREATE TABLE IF NOT EXISTS time_entries (
 );
 
 ALTER TABLE time_entries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS time_entries_tenant ON time_entries;
 CREATE POLICY time_entries_tenant ON time_entries
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -476,6 +494,7 @@ CREATE TABLE IF NOT EXISTS leave_requests (
 );
 
 ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS leave_requests_tenant ON leave_requests;
 CREATE POLICY leave_requests_tenant ON leave_requests
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -500,6 +519,7 @@ CREATE TABLE IF NOT EXISTS job_postings (
 );
 
 ALTER TABLE job_postings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS job_postings_tenant ON job_postings;
 CREATE POLICY job_postings_tenant ON job_postings
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -518,6 +538,7 @@ CREATE TABLE IF NOT EXISTS job_applications (
 );
 
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS job_applications_tenant ON job_applications;
 CREATE POLICY job_applications_tenant ON job_applications
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -538,6 +559,7 @@ CREATE TABLE IF NOT EXISTS employee_self_service (
 );
 
 ALTER TABLE employee_self_service ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS employee_self_service_tenant ON employee_self_service;
 CREATE POLICY employee_self_service_tenant ON employee_self_service
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -560,6 +582,7 @@ CREATE TABLE IF NOT EXISTS signup_flows (
 );
 
 ALTER TABLE signup_flows ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS signup_flows_self ON signup_flows;
 CREATE POLICY signup_flows_self ON signup_flows
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -584,6 +607,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS subscriptions_tenant ON subscriptions;
 CREATE POLICY subscriptions_tenant ON subscriptions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -604,6 +628,7 @@ CREATE TABLE IF NOT EXISTS migration_templates (
 );
 
 ALTER TABLE migration_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS migration_templates_tenant ON migration_templates;
 CREATE POLICY migration_templates_tenant ON migration_templates
   FOR ALL USING (tenant_id = current_tenant_id() OR tenant_id IS NULL)
   WITH CHECK (tenant_id = current_tenant_id() OR tenant_id IS NULL);
@@ -624,6 +649,7 @@ CREATE TABLE IF NOT EXISTS business_connectors (
 );
 
 ALTER TABLE business_connectors ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS business_connectors_tenant ON business_connectors;
 CREATE POLICY business_connectors_tenant ON business_connectors
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -646,6 +672,7 @@ CREATE TABLE IF NOT EXISTS e_invoicing_logs (
 );
 
 ALTER TABLE e_invoicing_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS e_invoicing_logs_tenant ON e_invoicing_logs;
 CREATE POLICY e_invoicing_logs_tenant ON e_invoicing_logs
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

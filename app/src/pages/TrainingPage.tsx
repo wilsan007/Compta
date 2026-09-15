@@ -33,6 +33,7 @@ export function TrainingPage() {
   const [editing, setEditing] = useState<Training | null>(null)
   const [form, setForm] = useState<Partial<Training>>({})
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

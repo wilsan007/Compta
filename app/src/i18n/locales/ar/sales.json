@@ -294,6 +294,8 @@
     "parentIdPlaceholder": "معرف الشركة الأم",
     "salesRepId": "المندوب التجاري (المعرف)",
     "salesRepIdPlaceholder": "معرف المندوب التجاري",
+    "accountTiers": "حساب فرعي",
+    "accountCollectif": "حساب جمعي",
     "placeholders": {
       "name": "شركة ABC",
       "contactName": "جان دوبون",

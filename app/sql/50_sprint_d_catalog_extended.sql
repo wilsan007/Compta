@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_pg_product ON product_grids(product_id);
 ALTER TABLE product_grids ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_product_grids') THEN
+    DROP POLICY IF EXISTS "allow_all_product_grids" ON product_grids;
     CREATE POLICY "allow_all_product_grids" ON product_grids FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -41,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_pgc_product ON product_grid_combinations(product_
 ALTER TABLE product_grid_combinations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pgc') THEN
+    DROP POLICY IF EXISTS "allow_all_pgc" ON product_grid_combinations;
     CREATE POLICY "allow_all_pgc" ON product_grid_combinations FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -62,6 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_pp_product ON product_packagings(product_id);
 ALTER TABLE product_packagings ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_product_packagings') THEN
+    DROP POLICY IF EXISTS "allow_all_product_packagings" ON product_packagings;
     CREATE POLICY "allow_all_product_packagings" ON product_packagings FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -80,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_pl_product ON product_links(product_id);
 ALTER TABLE product_links ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_product_links') THEN
+    DROP POLICY IF EXISTS "allow_all_product_links" ON product_links;
     CREATE POLICY "allow_all_product_links" ON product_links FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -107,6 +111,7 @@ CREATE INDEX IF NOT EXISTS idx_promo_dates ON promotions(start_date, end_date);
 ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_promotions') THEN
+    DROP POLICY IF EXISTS "allow_all_promotions" ON promotions;
     CREATE POLICY "allow_all_promotions" ON promotions FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

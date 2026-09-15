@@ -68,8 +68,8 @@ export function ChatView({ projectId }: ChatViewProps) {
     }
 
     setChannels(chans)
-    if (!activeChannel && chans.length > 0) {
-      setActiveChannel(chans[0])
+    if (chans.length > 0) {
+      setActiveChannel((current) => current ?? chans[0])
     }
   }, [tasks, tasksLoading, projectId, projectNames, t])
 

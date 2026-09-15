@@ -1,5 +1,5 @@
 import { supabase, isTenantTable } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { createJournalEntry } from './accounting'
 import { createStockMovement } from './stock'
 import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, FixedAsset, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
@@ -2538,7 +2538,7 @@ export async function transformQuoteToSalesOrder(quoteId: string) {
   const { data: quote, error: qErr } = await supabase.from('quotes').select('*, quote_lines(*)').eq('id', quoteId).single()
   if (qErr) throw qErr
 
-  const orderNumber = `CMD-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const orderNumber = await nextDocumentNumber('CMD')
   const { data: order, error: oErr } = await supabase
     .from('sales_orders')
     .insert({ tenant_id: tid, number: orderNumber, customer_id: quote.customer_id, order_date: new Date().toISOString().split('T')[0], delivery_date: null, status: 'confirmed', subtotal: Number(quote.subtotal), vat: Number(quote.vat_total), total: Number(quote.total), notes: quote.notes, quote_id: quoteId })
@@ -2564,7 +2564,7 @@ export async function transformSalesOrderToDeliveryNote(orderId: string, lines: 
   const { data: order, error: oErr } = await supabase.from('sales_orders').select('*, sales_order_lines(*)').eq('id', orderId).single()
   if (oErr) throw oErr
 
-  const dnNumber = `BL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const dnNumber = await nextDocumentNumber('BL')
   const { data: dn, error: dErr } = await supabase
     .from('delivery_notes')
     .insert({ tenant_id: tid, number: dnNumber, customer_id: order.customer_id, sales_order_id: orderId, delivery_date: new Date().toISOString().split('T')[0], status: 'pending', carrier: null, tracking_number: null, notes: null })
@@ -2597,7 +2597,7 @@ export async function transformDeliveryNoteToInvoice(dnId: string, lines: { deli
   const { data: dn, error: dErr } = await supabase.from('delivery_notes').select('*, delivery_note_lines(*)').eq('id', dnId).single()
   if (dErr) throw dErr
 
-  const invNumber = `FAC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const invNumber = await nextDocumentNumber('FAC')
   let subtotal = 0
   let vatTotal = 0
 
@@ -2642,7 +2642,7 @@ export async function transformInvoiceToCreditNote(invoiceId: string, reason: st
   const { data: inv, error: iErr } = await supabase.from('invoices').select('*, invoice_lines(*)').eq('id', invoiceId).single()
   if (iErr) throw iErr
 
-  const cnNumber = `AV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const cnNumber = await nextDocumentNumber('AV')
   const { data: cn, error: cErr } = await supabase
     .from('credit_notes')
     .insert({ tenant_id: tid, number: cnNumber, customer_id: inv.customer_id, customer_name: inv.customer_name, date: new Date().toISOString().split('T')[0], status: 'draft', subtotal: Number(inv.subtotal), vat_total: Number(inv.vat_total), total: Number(inv.total), reason, invoice_id: invoiceId, source_invoice_id: invoiceId })
@@ -2669,7 +2669,7 @@ export async function createAdvanceInvoice(customerId: string, amount: number, v
 
   const vatAmount = amount * (vatRate / 100)
   const total = amount + vatAmount
-  const invNumber = `AC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const invNumber = await nextDocumentNumber('AC')
 
   const { data: inv, error: iErr } = await supabase
     .from('invoices')

@@ -7,6 +7,7 @@ import { getCustomers } from '@/lib/queries/partners'
 import { AlertTriangle, Plus, X, Mail } from 'lucide-react'
 import type { Customer } from '@/types'
 import { useToast } from '@/lib/toast'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function CollectionDashboardPage() {
   const { t } = useTranslation('treasury')
@@ -17,6 +18,7 @@ const [data, setData] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -172,7 +174,7 @@ const [customerId, setCustomerId] = useState('')
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `REL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('REL')
       await createCollectionReminder({
         number, customer_id: customerId || null, third_party_id: null, invoice_id: null,
         reminder_level: reminderLevel, reminder_date: reminderDate,

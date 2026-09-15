@@ -9,6 +9,7 @@ import { Plus, Trash2, X, Truck, FileText } from 'lucide-react'
 import type { DeliveryNote, DeliveryNoteLine, Customer, SalesOrder } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusKeys: string[] = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
@@ -164,7 +165,7 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `BL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('BL')
       await createDeliveryNote({ number, customer_id: customerId || null, sales_order_id: salesOrderId || null, delivery_date: deliveryDate, status: 'pending', carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }

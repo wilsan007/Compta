@@ -17,6 +17,9 @@ interface Command {
   keywords?: string
 }
 
+// RBAC: modules that require module_roles check
+const RBAC_MODULE_IDS = new Set(['accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'projectManagement'])
+
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const { t } = useTranslation('nav')
@@ -25,9 +28,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // RBAC: modules that require module_roles check
-  const RBAC_MODULE_IDS = new Set(['accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'projectManagement'])
-  const moduleRoles = (user as any)?.module_roles || {}
+  const moduleRoles = useMemo(() => user?.module_roles || {}, [user])
   const isGlobalAdmin = user?.role === 'admin'
 
   const commands: Command[] = useMemo(() => {

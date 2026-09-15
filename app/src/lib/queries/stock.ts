@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
 
@@ -684,7 +684,7 @@ export async function deleteMRPPendingDoc(id: string) {
 // ============ Production Module: MRP Calculation Algorithm ============
 export async function runMRPCalculation(): Promise<MRPRun> {
   const tid = await getTenantId()
-  const runNumber = `MRP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+  const runNumber = await nextDocumentNumber('MRP')
 
   const run = await createMRPRun({
     run_number: runNumber,

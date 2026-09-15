@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS tracking_warnings (
 );
 
 ALTER TABLE tracking_warnings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tracking_warnings_tenant ON tracking_warnings;
 CREATE POLICY tracking_warnings_tenant ON tracking_warnings
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

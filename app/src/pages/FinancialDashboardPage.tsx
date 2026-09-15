@@ -26,6 +26,7 @@ export function FinancialDashboardPage() {
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

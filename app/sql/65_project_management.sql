@@ -244,86 +244,109 @@ ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
 
 -- project_tasks policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_tasks ON project_tasks;
   CREATE POLICY tenant_select_project_tasks ON project_tasks FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_tasks ON project_tasks;
   CREATE POLICY tenant_insert_project_tasks ON project_tasks FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_project_tasks ON project_tasks;
   CREATE POLICY tenant_update_project_tasks ON project_tasks FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_tasks ON project_tasks;
   CREATE POLICY tenant_delete_project_tasks ON project_tasks FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_task_dependencies policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_task_deps ON project_task_dependencies;
   CREATE POLICY tenant_select_project_task_deps ON project_task_dependencies FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_task_deps ON project_task_dependencies;
   CREATE POLICY tenant_insert_project_task_deps ON project_task_dependencies FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_project_task_deps ON project_task_dependencies;
   CREATE POLICY tenant_update_project_task_deps ON project_task_dependencies FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_task_deps ON project_task_dependencies;
   CREATE POLICY tenant_delete_project_task_deps ON project_task_dependencies FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_stages policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_stages ON project_stages;
   CREATE POLICY tenant_select_project_stages ON project_stages FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_stages ON project_stages;
   CREATE POLICY tenant_insert_project_stages ON project_stages FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_project_stages ON project_stages;
   CREATE POLICY tenant_update_project_stages ON project_stages FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_stages ON project_stages;
   CREATE POLICY tenant_delete_project_stages ON project_stages FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_milestones policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_milestones ON project_milestones;
   CREATE POLICY tenant_select_project_milestones ON project_milestones FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_milestones ON project_milestones;
   CREATE POLICY tenant_insert_project_milestones ON project_milestones FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_project_milestones ON project_milestones;
   CREATE POLICY tenant_update_project_milestones ON project_milestones FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_milestones ON project_milestones;
   CREATE POLICY tenant_delete_project_milestones ON project_milestones FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_tags policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_tags ON project_tags;
   CREATE POLICY tenant_select_project_tags ON project_tags FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_tags ON project_tags;
   CREATE POLICY tenant_insert_project_tags ON project_tags FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_project_tags ON project_tags;
   CREATE POLICY tenant_update_project_tags ON project_tags FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_tags ON project_tags;
   CREATE POLICY tenant_delete_project_tags ON project_tags FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_task_tags policies (inherit from parent project_tasks)
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_task_tags ON project_task_tags;
   CREATE POLICY tenant_select_project_task_tags ON project_task_tags FOR SELECT USING (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_tags.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_task_tags ON project_task_tags;
   CREATE POLICY tenant_insert_project_task_tags ON project_task_tags FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_tags.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_task_tags ON project_task_tags;
   CREATE POLICY tenant_delete_project_task_tags ON project_task_tags FOR DELETE USING (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_tags.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
@@ -331,16 +354,19 @@ EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- project_task_assignees policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_project_task_assignees ON project_task_assignees;
   CREATE POLICY tenant_select_project_task_assignees ON project_task_assignees FOR SELECT USING (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_assignees.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_project_task_assignees ON project_task_assignees;
   CREATE POLICY tenant_insert_project_task_assignees ON project_task_assignees FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_assignees.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_project_task_assignees ON project_task_assignees;
   CREATE POLICY tenant_delete_project_task_assignees ON project_task_assignees FOR DELETE USING (
     EXISTS (SELECT 1 FROM project_tasks WHERE project_tasks.id = project_task_assignees.task_id AND project_tasks.tenant_id = current_tenant_id())
   );
@@ -348,57 +374,73 @@ EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- task_actions policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_task_actions ON task_actions;
   CREATE POLICY tenant_select_task_actions ON task_actions FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_task_actions ON task_actions;
   CREATE POLICY tenant_insert_task_actions ON task_actions FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_task_actions ON task_actions;
   CREATE POLICY tenant_update_task_actions ON task_actions FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_task_actions ON task_actions;
   CREATE POLICY tenant_delete_task_actions ON task_actions FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- task_action_attachments policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_task_action_att ON task_action_attachments;
   CREATE POLICY tenant_select_task_action_att ON task_action_attachments FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_task_action_att ON task_action_attachments;
   CREATE POLICY tenant_insert_task_action_att ON task_action_attachments FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_task_action_att ON task_action_attachments;
   CREATE POLICY tenant_update_task_action_att ON task_action_attachments FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_task_action_att ON task_action_attachments;
   CREATE POLICY tenant_delete_task_action_att ON task_action_attachments FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- task_documents policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_task_documents ON task_documents;
   CREATE POLICY tenant_select_task_documents ON task_documents FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_task_documents ON task_documents;
   CREATE POLICY tenant_insert_task_documents ON task_documents FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_task_documents ON task_documents;
   CREATE POLICY tenant_update_task_documents ON task_documents FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_task_documents ON task_documents;
   CREATE POLICY tenant_delete_task_documents ON task_documents FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 
 -- task_comments policies
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_task_comments ON task_comments;
   CREATE POLICY tenant_select_task_comments ON task_comments FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_task_comments ON task_comments;
   CREATE POLICY tenant_insert_task_comments ON task_comments FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_task_comments ON task_comments;
   CREATE POLICY tenant_update_task_comments ON task_comments FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_task_comments ON task_comments;
   CREATE POLICY tenant_delete_task_comments ON task_comments FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 

@@ -294,6 +294,8 @@
     "parentIdPlaceholder": "UUID de la société parente",
     "salesRepId": "Commercial assigné (ID)",
     "salesRepIdPlaceholder": "UUID du commercial",
+    "accountTiers": "Compte auxiliaire",
+    "accountCollectif": "Compte collectif",
     "placeholders": {
       "name": "Société ABC",
       "contactName": "Jean Dupont",

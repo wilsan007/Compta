@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -41,31 +42,38 @@ serve(async (req) => {
       })
     }
 
-    // Si pas de HTML fourni, récupérer depuis la base
+    // Liste fermée : la clé service ne doit jamais lire une table choisie par le client
+    const TABLES: Record<string, string> = {
+      invoice: "invoices",
+      quote: "quotes",
+      payslip: "pay_slips",
+      credit_note: "credit_notes",
+      purchase_invoice: "purchase_invoices",
+    }
+    const tableName = TABLES[document_type]
+    if (!tableName) {
+      return new Response(JSON.stringify({ error: "document_type non pris en charge" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    const { data: doc, error: docErr } = await supabase
+      .from(tableName)
+      .select("*")
+      .eq("id", document_id)
+      .maybeSingle()
+
+    if (docErr || !doc) {
+      return new Response(JSON.stringify({ error: "Document non trouvé" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
+    if (!(await isTenantMember(supabase, user.id, doc.tenant_id))) return forbidden(corsHeaders)
+
+    // HTML fourni par le client ou généré depuis le document
     let pdfHtml = html
     if (!pdfHtml) {
-      const supabase = createClient(supabaseUrl, serviceRoleKey)
-      let tableName: string
-      switch (document_type) {
-        case "invoice": tableName = "invoices"; break
-        case "quote": tableName = "quotes"; break
-        case "payslip": tableName = "pay_slips"; break
-        case "credit_note": tableName = "credit_notes"; break
-        case "purchase_invoice": tableName = "purchase_invoices"; break
-        default: tableName = document_type + "s"
-      }
-
-      const { data: doc, error: docErr } = await supabase
-        .from(tableName)
-        .select("*")
-        .eq("id", document_id)
-        .single()
-
-      if (docErr || !doc) {
-        return new Response(JSON.stringify({ error: "Document non trouvé" }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
-        })
-      }
 
       // Générer un HTML basique depuis les données du document
       pdfHtml = generateDocumentHtml(document_type, doc)
@@ -99,20 +107,23 @@ serve(async (req) => {
 
     const pdfBuffer = await pdfResponse.arrayBuffer()
 
-    // Stocker le PDF dans Supabase Storage
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    // Stocker le PDF dans Supabase Storage, rangé par tenant ; accès par URL signée
+    // (un bulletin de paie ou une facture ne doit jamais avoir d'URL publique)
     const fileName = `${document_type}_${document_id}_${Date.now()}.pdf`
-    const { data: _uploadData, error: uploadErr } = await supabase
+    const storagePath = `pdfs/${doc.tenant_id}/${fileName}`
+    const { error: uploadErr } = await supabase
       .storage
       .from("documents")
-      .upload(`pdfs/${fileName}`, pdfBuffer, {
+      .upload(storagePath, pdfBuffer, {
         contentType: "application/pdf",
         upsert: true,
       })
 
-    const publicUrl = uploadErr
-      ? null
-      : `${supabaseUrl}/storage/v1/object/public/documents/pdfs/${fileName}`
+    let publicUrl: string | null = null
+    if (!uploadErr) {
+      const { data: signed } = await supabase.storage.from("documents").createSignedUrl(storagePath, 3600)
+      publicUrl = signed?.signedUrl || null
+    }
 
     return new Response(JSON.stringify({
       success: true,

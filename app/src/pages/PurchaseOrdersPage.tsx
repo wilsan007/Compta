@@ -9,6 +9,7 @@ import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlRe
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation('purchases')
@@ -120,24 +121,22 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
 
   const expenseAccounts = accounts.filter(a => a.type === 'expense')
 
-  async function checkBudget() {
-    if (!accountCode || total <= 0) return
-    setChecking(true)
-    try {
-      const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
-      setBudgetCheck(result)
-    } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
-    finally { setChecking(false) }
-  }
-
+  // Contrôle budgétaire différé de 300 ms après la dernière saisie
   useEffect(() => {
-    if (accountCode && total > 0) {
-      const t = setTimeout(checkBudget, 300)
-      return () => clearTimeout(t)
-    } else {
+    if (!accountCode || total <= 0) {
       setBudgetCheck(null)
+      return
     }
-  }, [accountCode, total, fiscalYearId])
+    const t = setTimeout(async () => {
+      setChecking(true)
+      try {
+        const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
+        setBudgetCheck(result)
+      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      finally { setChecking(false) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [accountCode, total, fiscalYearId, tCommon, toast])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -149,7 +148,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
           return
         }
       }
-      const number = `CF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('CF')
       const po = await createPurchaseOrder({ number, supplier_id: supplierId || null, order_date: orderDate, expected_date: expectedDate || null, status: 'draft', subtotal: total, vat: 0, total, notes: notes || null } as any)
       if (accountCode) {
         await createBudgetCommitment({

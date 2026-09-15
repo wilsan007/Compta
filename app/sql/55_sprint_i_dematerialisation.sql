@@ -19,6 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_es_doc ON electronic_signatures(document_type, do
 ALTER TABLE electronic_signatures ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_electronic_signatures') THEN
+    DROP POLICY IF EXISTS "allow_all_electronic_signatures" ON electronic_signatures;
     CREATE POLICY "allow_all_electronic_signatures" ON electronic_signatures FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -42,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_op_invoice ON online_payments(invoice_id);
 ALTER TABLE online_payments ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_online_payments') THEN
+    DROP POLICY IF EXISTS "allow_all_online_payments" ON online_payments;
     CREATE POLICY "allow_all_online_payments" ON online_payments FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -64,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_ds_token ON document_shares(share_token);
 ALTER TABLE document_shares ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_document_shares') THEN
+    DROP POLICY IF EXISTS "allow_all_document_shares" ON document_shares;
     CREATE POLICY "allow_all_document_shares" ON document_shares FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

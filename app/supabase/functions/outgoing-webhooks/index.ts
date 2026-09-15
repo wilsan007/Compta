@@ -29,7 +29,7 @@ const RETRY_DELAYS_MS = [1000, 5000, 30000]  // 1s, 5s, 30s
 // - Bloque IPv6 loopback/ULA/link-local
 function isAllowedWebhookUrl(raw: string): boolean {
   let u: URL
-  try { u = new URL(raw) } catch { return false }
+  try { u = new URL(raw) } catch (e) { console.error('isAllowedWebhookUrl: invalid URL:', e); return false }
   if (u.protocol !== 'https:') return false
   const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return false

@@ -25,8 +25,10 @@ CREATE TABLE IF NOT EXISTS payroll_legal_parameters (
 );
 
 ALTER TABLE payroll_legal_parameters ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS payroll_legal_params_select ON payroll_legal_parameters;
 CREATE POLICY payroll_legal_params_select ON payroll_legal_parameters
   FOR SELECT USING (tenant_id IS NULL OR tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS payroll_legal_params_all ON payroll_legal_parameters;
 CREATE POLICY payroll_legal_params_all ON payroll_legal_parameters
   FOR ALL USING (tenant_id IS NULL OR tenant_id = current_tenant_id())
   WITH CHECK (tenant_id IS NULL OR tenant_id = current_tenant_id());
@@ -101,6 +103,7 @@ CREATE TABLE IF NOT EXISTS payroll_cumulative (
 );
 
 ALTER TABLE payroll_cumulative ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS payroll_cumulative_tenant ON payroll_cumulative;
 CREATE POLICY payroll_cumulative_tenant ON payroll_cumulative
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

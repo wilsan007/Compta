@@ -106,7 +106,19 @@
     "notes": "Notes",
     "reference": "Référence",
     "noAdjustments": "Aucun ajustement",
-    "noAdjustmentsDescription": "Saisissez votre premier inventaire."
+    "noAdjustmentsDescription": "Saisissez votre premier inventaire.",
+    "valuationMethod": "Méthode de valorisation",
+    "valuationResult": "Valorisation du stock",
+    "totalValue": "Valeur totale",
+    "method": "Méthode",
+    "grandTotal": "Total général",
+    "noValuation": "Aucune valorisation",
+    "noValuationDescription": "Aucun produit en stock à valoriser.",
+    "methods": {
+      "cump": "CUMP (coût moyen pondéré)",
+      "fifo": "FIFO (premier entré, premier sorti)",
+      "lifo": "LIFO (dernier entré, premier sorti)"
+    }
   },
   "reorder": {
     "title": "Réapprovisionnement",
@@ -236,6 +248,9 @@
     "products": "produits",
     "initialQty": "Quantité initiale",
     "reorderLevel": "Seuil de réapprovisionnement",
+    "saleAccountCode": "Compte de vente",
+    "purchaseAccountCode": "Compte d'achat",
+    "stockAccountCode": "Compte de stock",
     "movementTypes": {
       "in": "Entrée",
       "out": "Sortie",

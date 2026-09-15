@@ -48,6 +48,7 @@ export function TrialBalancePage() {
     }
   }
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadBalance() }, [])
 
   const accountMap = new Map(accounts.map((a) => [a.code, a]))

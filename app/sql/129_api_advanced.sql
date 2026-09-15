@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS idempotency_records (
 );
 
 ALTER TABLE idempotency_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS idempotency_records_tenant ON idempotency_records;
 CREATE POLICY idempotency_records_tenant ON idempotency_records
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS api_call_logs (
 );
 
 ALTER TABLE api_call_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS api_call_logs_tenant ON api_call_logs;
 CREATE POLICY api_call_logs_tenant ON api_call_logs
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -85,6 +87,7 @@ CREATE TABLE IF NOT EXISTS webhook_event_catalog (
 );
 
 ALTER TABLE webhook_event_catalog ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS webhook_event_catalog_all ON webhook_event_catalog;
 CREATE POLICY webhook_event_catalog_all ON webhook_event_catalog
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -131,6 +134,7 @@ CREATE TABLE IF NOT EXISTS webhook_delivery_queue (
 );
 
 ALTER TABLE webhook_delivery_queue ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS webhook_delivery_queue_tenant ON webhook_delivery_queue;
 CREATE POLICY webhook_delivery_queue_tenant ON webhook_delivery_queue
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

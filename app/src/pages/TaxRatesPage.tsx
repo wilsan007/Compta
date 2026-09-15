@@ -63,6 +63,7 @@ export function TaxRatesPage() {
   }, [toast, t])
 
   useEffect(() => { load() }, [load])
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { if (activeTab === 'groups') loadGroups() }, [activeTab])
 
   function resetForm() {

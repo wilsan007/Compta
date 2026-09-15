@@ -38,9 +38,11 @@ CREATE INDEX IF NOT EXISTS idx_exchange_rates_latest
 -- RLS
 ALTER TABLE exchange_rates ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS exchange_rates_select ON exchange_rates;
   CREATE POLICY exchange_rates_select ON exchange_rates FOR SELECT USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS exchange_rates_all ON exchange_rates;
   CREATE POLICY exchange_rates_all ON exchange_rates FOR ALL USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 

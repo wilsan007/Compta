@@ -8,6 +8,7 @@ import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const contractTypeKeys: Record<string, string> = { cdi: 'cdi', cdd: 'cdd', apprentissage: 'apprentissage', stage: 'stage', interim: 'interim', freelance: 'freelance' }
 
@@ -118,7 +119,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `CTR-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+      const number = await nextDocumentNumber('CTR')
       await createContract({
         number, employee_id: employeeId, contract_type: contractType as any,
         start_date: startDate, end_date: endDate || null,

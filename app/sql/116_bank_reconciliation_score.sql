@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS bank_reconciliation_suggestions (
 );
 
 ALTER TABLE bank_reconciliation_suggestions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS bank_recon_suggestions_tenant ON bank_reconciliation_suggestions;
 CREATE POLICY bank_recon_suggestions_tenant ON bank_reconciliation_suggestions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

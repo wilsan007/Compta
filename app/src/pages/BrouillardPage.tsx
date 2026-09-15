@@ -17,6 +17,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [journalFilter, setJournalFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

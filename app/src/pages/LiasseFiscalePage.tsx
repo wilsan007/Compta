@@ -20,6 +20,7 @@ export function LiasseFiscalePage() {
 
   useEffect(() => {
     loadFiscalYears().catch(err => console.error('loadFiscalYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadFiscalYears() {

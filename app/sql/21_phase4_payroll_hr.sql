@@ -27,6 +27,7 @@ create index if not exists idx_payroll_components_type on payroll_components(typ
 alter table payroll_components enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_payroll_components') THEN
+    DROP POLICY IF EXISTS "allow_all_payroll_components" ON payroll_components;
     CREATE POLICY "allow_all_payroll_components" ON payroll_components FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -48,6 +49,7 @@ create index if not exists idx_payroll_rates_component on payroll_component_rate
 alter table payroll_component_rates enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_payroll_component_rates') THEN
+    DROP POLICY IF EXISTS "allow_all_payroll_component_rates" ON payroll_component_rates;
     CREATE POLICY "allow_all_payroll_component_rates" ON payroll_component_rates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -67,6 +69,7 @@ create index if not exists idx_payroll_templates_name on payroll_templates(name)
 alter table payroll_templates enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_payroll_templates') THEN
+    DROP POLICY IF EXISTS "allow_all_payroll_templates" ON payroll_templates;
     CREATE POLICY "allow_all_payroll_templates" ON payroll_templates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -88,6 +91,7 @@ create index if not exists idx_salary_advances_status on salary_advances(status)
 alter table salary_advances enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_salary_advances') THEN
+    DROP POLICY IF EXISTS "allow_all_salary_advances" ON salary_advances;
     CREATE POLICY "allow_all_salary_advances" ON salary_advances FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -108,6 +112,7 @@ create index if not exists idx_pay_recalls_employee on pay_recalls(employee_id);
 alter table pay_recalls enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_pay_recalls') THEN
+    DROP POLICY IF EXISTS "allow_all_pay_recalls" ON pay_recalls;
     CREATE POLICY "allow_all_pay_recalls" ON pay_recalls FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -131,6 +136,7 @@ create index if not exists idx_dsn_status on dsn_declarations(status);
 alter table dsn_declarations enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_dsn_declarations') THEN
+    DROP POLICY IF EXISTS "allow_all_dsn_declarations" ON dsn_declarations;
     CREATE POLICY "allow_all_dsn_declarations" ON dsn_declarations FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -153,6 +159,7 @@ create index if not exists idx_dpae_status on dpae_records(status);
 alter table dpae_records enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_dpae_records') THEN
+    DROP POLICY IF EXISTS "allow_all_dpae_records" ON dpae_records;
     CREATE POLICY "allow_all_dpae_records" ON dpae_records FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -174,6 +181,7 @@ create index if not exists idx_work_hardship_employee on work_hardship(employee_
 alter table work_hardship enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_work_hardship') THEN
+    DROP POLICY IF EXISTS "allow_all_work_hardship" ON work_hardship;
     CREATE POLICY "allow_all_work_hardship" ON work_hardship FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -197,6 +205,7 @@ create index if not exists idx_career_history_dates on career_history(start_date
 alter table career_history enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_career_history') THEN
+    DROP POLICY IF EXISTS "allow_all_career_history" ON career_history;
     CREATE POLICY "allow_all_career_history" ON career_history FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -216,6 +225,7 @@ create index if not exists idx_cpf_employee on cpf_accounts(employee_id);
 alter table cpf_accounts enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_cpf_accounts') THEN
+    DROP POLICY IF EXISTS "allow_all_cpf_accounts" ON cpf_accounts;
     CREATE POLICY "allow_all_cpf_accounts" ON cpf_accounts FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -237,6 +247,7 @@ create index if not exists idx_payroll_archives_period on payroll_archives(perio
 alter table payroll_archives enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_payroll_archives') THEN
+    DROP POLICY IF EXISTS "allow_all_payroll_archives" ON payroll_archives;
     CREATE POLICY "allow_all_payroll_archives" ON payroll_archives FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -259,6 +270,7 @@ create index if not exists idx_legal_watch_date on legal_watch(published_date);
 alter table legal_watch enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_legal_watch') THEN
+    DROP POLICY IF EXISTS "allow_all_legal_watch" ON legal_watch;
     CREATE POLICY "allow_all_legal_watch" ON legal_watch FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -279,6 +291,7 @@ create index if not exists idx_employee_documents_employee on employee_documents
 alter table employee_documents enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_employee_documents') THEN
+    DROP POLICY IF EXISTS "allow_all_employee_documents" ON employee_documents;
     CREATE POLICY "allow_all_employee_documents" ON employee_documents FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -304,6 +317,7 @@ create index if not exists idx_expense_reports_status on expense_reports(status)
 alter table expense_reports enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_expense_reports') THEN
+    DROP POLICY IF EXISTS "allow_all_expense_reports" ON expense_reports;
     CREATE POLICY "allow_all_expense_reports" ON expense_reports FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -326,6 +340,7 @@ create index if not exists idx_expense_lines_report on expense_report_lines(expe
 alter table expense_report_lines enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_expense_report_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_expense_report_lines" ON expense_report_lines;
     CREATE POLICY "allow_all_expense_report_lines" ON expense_report_lines FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -349,6 +364,7 @@ create index if not exists idx_interviews_employee on interviews(employee_id);
 alter table interviews enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_interviews') THEN
+    DROP POLICY IF EXISTS "allow_all_interviews" ON interviews;
     CREATE POLICY "allow_all_interviews" ON interviews FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

@@ -8,6 +8,7 @@ import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Target, Search, Kanban, List } from 'lucide-react'
 import type { CrmOpportunity, Customer, SalesRepresentative } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 type OppWithRelations = CrmOpportunity & { customer: { name: string } | null, prospect: { name: string } | null }
 
@@ -178,7 +179,7 @@ function OpportunityForm({ customers, reps, onClose, onSaved }: { customers: Cus
     if (!title) return
     setSaving(true)
     try {
-      const num = `OPP-${Date.now().toString().slice(-6)}`
+      const num = await nextDocumentNumber('OPP')
       await createOpportunity({
         tenant_id: null,
         number: num,

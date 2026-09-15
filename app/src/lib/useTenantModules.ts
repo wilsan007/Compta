@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getTenantEnabledModules, updateTenantModules } from '@/lib/queries/misc'
 
 const ALL_MODULES = [
@@ -60,7 +60,7 @@ export function useTenantModules() {
   // access controls (ModuleGuard / useModuleAccess decide in the browser).
   const [modules, setModules] = useState<string[]>(cachedModules || [])
   const [loading, setLoading] = useState(!cachedModules)
-  let lastResetCount = resetCounter
+  const lastResetCount = useRef(resetCounter)
 
   const refresh = useCallback(async () => {
     if (cachePromise) {
@@ -90,8 +90,8 @@ export function useTenantModules() {
     const handler = (newModules: string[], resetCount: number) => {
       setModules(newModules)
       setLoading(false)
-      if (resetCount > lastResetCount) {
-        lastResetCount = resetCount
+      if (resetCount > lastResetCount.current) {
+        lastResetCount.current = resetCount
         refresh()
       }
     }

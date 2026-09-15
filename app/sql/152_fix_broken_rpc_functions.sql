@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS price_list_customers (
 );
 ALTER TABLE price_list_customers ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS price_list_customers_tenant ON price_list_customers;
   CREATE POLICY price_list_customers_tenant ON price_list_customers
     FOR ALL USING (tenant_id = current_tenant_id())
     WITH CHECK (tenant_id = current_tenant_id());

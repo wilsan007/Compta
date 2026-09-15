@@ -17,6 +17,7 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<AnalyticSection | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

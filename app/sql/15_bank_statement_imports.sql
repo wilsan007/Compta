@@ -25,6 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_bank_stmt_imports_status ON bank_statement_import
 ALTER TABLE bank_statement_imports ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_bank_stmt_imports') THEN
+    DROP POLICY IF EXISTS "allow_all_bank_stmt_imports" ON bank_statement_imports;
     CREATE POLICY "allow_all_bank_stmt_imports" ON bank_statement_imports FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS collective_agreements (
 );
 
 ALTER TABLE collective_agreements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS collective_agreements_tenant ON collective_agreements;
 CREATE POLICY collective_agreements_tenant ON collective_agreements
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS collective_classifications (
 );
 
 ALTER TABLE collective_classifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS collective_classifications_tenant ON collective_classifications;
 CREATE POLICY collective_classifications_tenant ON collective_classifications
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -64,6 +66,7 @@ CREATE TABLE IF NOT EXISTS overtime_tiers (
 );
 
 ALTER TABLE overtime_tiers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS overtime_tiers_tenant ON overtime_tiers;
 CREATE POLICY overtime_tiers_tenant ON overtime_tiers
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -168,6 +171,7 @@ CREATE TABLE IF NOT EXISTS sick_leaves (
 );
 
 ALTER TABLE sick_leaves ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS sick_leaves_tenant ON sick_leaves;
 CREATE POLICY sick_leaves_tenant ON sick_leaves
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

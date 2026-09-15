@@ -294,6 +294,8 @@
     "parentIdPlaceholder": "Parent company UUID",
     "salesRepId": "Sales representative (ID)",
     "salesRepIdPlaceholder": "Sales rep UUID",
+    "accountTiers": "Auxiliary account",
+    "accountCollectif": "Collective account",
     "placeholders": {
       "name": "ABC Company",
       "contactName": "John Smith",

@@ -11,6 +11,7 @@ import { getLatestRate } from '@/lib/currencyRates'
 import type { CustomerPayment, Customer, BankAccount, Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function CustomerPaymentsPage() {
   const { toast } = useToast()
@@ -126,7 +127,7 @@ function PaymentForm({ customers, banks, onClose, onSaved }: { customers: Custom
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `RGT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('RGT')
       await createCustomerPayment({ number, customer_id: customerId || null, invoice_id: invoiceId || null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }

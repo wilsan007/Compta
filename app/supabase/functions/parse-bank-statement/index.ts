@@ -94,7 +94,8 @@ function tryRegex(pattern: string | null): boolean {
   try {
     new RegExp(pattern);
     return true;
-  } catch {
+  } catch (e) {
+    console.error('tryRegex: invalid pattern:', e);
     return false;
   }
 }

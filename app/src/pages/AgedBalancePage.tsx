@@ -15,6 +15,7 @@ export function AgedBalancePage() {
   const [typeFilter, setTypeFilter] = useState('')
   const [refDate, setRefDate] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

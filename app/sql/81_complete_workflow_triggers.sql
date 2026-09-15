@@ -455,12 +455,16 @@ DROP POLICY IF EXISTS "tenant_insert_module_documents" ON module_documents;
 DROP POLICY IF EXISTS "tenant_update_module_documents" ON module_documents;
 DROP POLICY IF EXISTS "tenant_delete_module_documents" ON module_documents;
 
+DROP POLICY IF EXISTS "tenant_select_module_documents" ON module_documents;
 CREATE POLICY "tenant_select_module_documents" ON module_documents
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_insert_module_documents" ON module_documents;
 CREATE POLICY "tenant_insert_module_documents" ON module_documents
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_update_module_documents" ON module_documents;
 CREATE POLICY "tenant_update_module_documents" ON module_documents
   FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_delete_module_documents" ON module_documents;
 CREATE POLICY "tenant_delete_module_documents" ON module_documents
   FOR DELETE USING (tenant_id = current_tenant_id());
 
@@ -470,12 +474,16 @@ DROP POLICY IF EXISTS "tenant_insert_module_document_shares" ON module_document_
 DROP POLICY IF EXISTS "tenant_update_module_document_shares" ON module_document_shares;
 DROP POLICY IF EXISTS "tenant_delete_module_document_shares" ON module_document_shares;
 
+DROP POLICY IF EXISTS "tenant_select_module_document_shares" ON module_document_shares;
 CREATE POLICY "tenant_select_module_document_shares" ON module_document_shares
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_insert_module_document_shares" ON module_document_shares;
 CREATE POLICY "tenant_insert_module_document_shares" ON module_document_shares
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_update_module_document_shares" ON module_document_shares;
 CREATE POLICY "tenant_update_module_document_shares" ON module_document_shares
   FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_delete_module_document_shares" ON module_document_shares;
 CREATE POLICY "tenant_delete_module_document_shares" ON module_document_shares
   FOR DELETE USING (tenant_id = current_tenant_id());
 
@@ -485,12 +493,16 @@ DROP POLICY IF EXISTS "tenant_insert_module_document_access_log" ON module_docum
 DROP POLICY IF EXISTS "tenant_update_module_document_access_log" ON module_document_access_log;
 DROP POLICY IF EXISTS "tenant_delete_module_document_access_log" ON module_document_access_log;
 
+DROP POLICY IF EXISTS "tenant_select_module_document_access_log" ON module_document_access_log;
 CREATE POLICY "tenant_select_module_document_access_log" ON module_document_access_log
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_insert_module_document_access_log" ON module_document_access_log;
 CREATE POLICY "tenant_insert_module_document_access_log" ON module_document_access_log
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_update_module_document_access_log" ON module_document_access_log;
 CREATE POLICY "tenant_update_module_document_access_log" ON module_document_access_log
   FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS "tenant_delete_module_document_access_log" ON module_document_access_log;
 CREATE POLICY "tenant_delete_module_document_access_log" ON module_document_access_log
   FOR DELETE USING (tenant_id = current_tenant_id());
 

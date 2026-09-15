@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { sendEmailViaResend, buildEmailTemplate } from "../_shared/email.ts"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 import { checkRateLimit, getClientIp } from "../_shared/rateLimit.ts"
 
 // ============================================
@@ -64,6 +65,19 @@ serve(async (req) => {
       tenant_id = null,
     } = body
 
+    // Pas de relais d'e-mails arbitraires : l'appelant doit appartenir au tenant et le
+    // destinataire doit être un utilisateur ou un salarié de ce tenant.
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+    if (!(await isTenantMember(supabaseAdmin, user.id, tenant_id))) return forbidden(corsHeaders)
+    const [{ data: tuMatch }, { data: empMatch }, { data: tenantRow }] = await Promise.all([
+      supabaseAdmin.from("tenant_users").select("id").eq("tenant_id", tenant_id).ilike("email", to_email || "").limit(1),
+      supabaseAdmin.from("employees").select("id").eq("tenant_id", tenant_id).ilike("email", to_email || "").limit(1),
+      supabaseAdmin.from("tenants").select("name").eq("id", tenant_id).maybeSingle(),
+    ])
+    if (!(tuMatch?.length || empMatch?.length)) return forbidden(corsHeaders)
+    const reqOrigin = req.headers.get("Origin")
+    const safeActionUrl = action_url && reqOrigin && String(action_url).startsWith(reqOrigin + "/") ? action_url : null
+
     if (!to_email || !title) {
       return new Response(
         JSON.stringify({ error: "to_email et title requis" }),
@@ -74,10 +88,10 @@ serve(async (req) => {
     // Build email from shared template
     const template = buildEmailTemplate({
       locale,
-      tenantName: tenant_name,
+      tenantName: tenantRow?.name || tenant_name,
       title,
       message: message || "",
-      actionUrl: action_url || null,
+      actionUrl: safeActionUrl,
     })
 
     // Send via shared Resend module

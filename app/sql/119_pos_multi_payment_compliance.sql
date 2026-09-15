@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS pos_payment_methods (
 );
 
 ALTER TABLE pos_payment_methods ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS pos_payment_methods_tenant ON pos_payment_methods;
 CREATE POLICY pos_payment_methods_tenant ON pos_payment_methods
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS pos_payments (
 );
 
 ALTER TABLE pos_payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS pos_payments_tenant ON pos_payments;
 CREATE POLICY pos_payments_tenant ON pos_payments
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

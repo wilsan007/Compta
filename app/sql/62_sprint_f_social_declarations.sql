@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_social_declarations_status ON social_declarations
 ALTER TABLE social_declarations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_social_declarations') THEN
+    DROP POLICY IF EXISTS "allow_all_social_declarations" ON social_declarations;
     CREATE POLICY "allow_all_social_declarations" ON social_declarations FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS cice_config (
 ALTER TABLE cice_config ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_cice_config') THEN
+    DROP POLICY IF EXISTS "allow_all_cice_config" ON cice_config;
     CREATE POLICY "allow_all_cice_config" ON cice_config FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -70,6 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_pas_rates_dates ON pas_rates(effective_date, expi
 ALTER TABLE pas_rates ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pas_rates') THEN
+    DROP POLICY IF EXISTS "allow_all_pas_rates" ON pas_rates;
     CREATE POLICY "allow_all_pas_rates" ON pas_rates FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -90,6 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_at_rates_employee ON at_rates(employee_id);
 ALTER TABLE at_rates ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_at_rates') THEN
+    DROP POLICY IF EXISTS "allow_all_at_rates" ON at_rates;
     CREATE POLICY "allow_all_at_rates" ON at_rates FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -114,6 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_bdes_category ON bdes_indicators(category);
 ALTER TABLE bdes_indicators ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_bdes_indicators') THEN
+    DROP POLICY IF EXISTS "allow_all_bdes_indicators" ON bdes_indicators;
     CREATE POLICY "allow_all_bdes_indicators" ON bdes_indicators FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -135,6 +140,7 @@ CREATE TABLE IF NOT EXISTS honorarium_records (
 ALTER TABLE honorarium_records ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_honorarium_records') THEN
+    DROP POLICY IF EXISTS "allow_all_honorarium_records" ON honorarium_records;
     CREATE POLICY "allow_all_honorarium_records" ON honorarium_records FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

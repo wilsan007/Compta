@@ -27,6 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_bank_connections_status ON bank_connections(statu
 ALTER TABLE bank_connections ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_bank_connections') THEN
+    DROP POLICY IF EXISTS "allow_all_bank_connections" ON bank_connections;
     CREATE POLICY "allow_all_bank_connections" ON bank_connections FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -74,6 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_partner_bank_accounts_partner ON partner_bank_acc
 ALTER TABLE partner_bank_accounts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_partner_bank_accounts') THEN
+    DROP POLICY IF EXISTS "allow_all_partner_bank_accounts" ON partner_bank_accounts;
     CREATE POLICY "allow_all_partner_bank_accounts" ON partner_bank_accounts FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

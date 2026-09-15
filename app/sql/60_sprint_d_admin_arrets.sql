@@ -42,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_work_stoppages_type ON work_stoppages(stoppage_ty
 ALTER TABLE work_stoppages ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_work_stoppages') THEN
+    DROP POLICY IF EXISTS "allow_all_work_stoppages" ON work_stoppages;
     CREATE POLICY "allow_all_work_stoppages" ON work_stoppages FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -67,6 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_ijss_history_employee ON ijss_history(employee_id
 ALTER TABLE ijss_history ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_ijss_history') THEN
+    DROP POLICY IF EXISTS "allow_all_ijss_history" ON ijss_history;
     CREATE POLICY "allow_all_ijss_history" ON ijss_history FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -92,6 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_hardship_type ON work_hardship_records(exposure_t
 ALTER TABLE work_hardship_records ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_work_hardship_records') THEN
+    DROP POLICY IF EXISTS "allow_all_work_hardship_records" ON work_hardship_records;
     CREATE POLICY "allow_all_work_hardship_records" ON work_hardship_records FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -115,6 +118,7 @@ CREATE INDEX IF NOT EXISTS idx_cpf_transactions_employee ON cpf_transactions(emp
 ALTER TABLE cpf_transactions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_cpf_transactions') THEN
+    DROP POLICY IF EXISTS "allow_all_cpf_transactions" ON cpf_transactions;
     CREATE POLICY "allow_all_cpf_transactions" ON cpf_transactions FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -139,6 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_medical_exams_date ON medical_exams(scheduled_dat
 ALTER TABLE medical_exams ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_medical_exams') THEN
+    DROP POLICY IF EXISTS "allow_all_medical_exams" ON medical_exams;
     CREATE POLICY "allow_all_medical_exams" ON medical_exams FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -160,6 +165,7 @@ CREATE TABLE IF NOT EXISTS expense_categories (
 ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_expense_categories') THEN
+    DROP POLICY IF EXISTS "allow_all_expense_categories" ON expense_categories;
     CREATE POLICY "allow_all_expense_categories" ON expense_categories FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -181,6 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_interview_campaigns_status ON interview_campaigns
 ALTER TABLE interview_campaigns ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_interview_campaigns') THEN
+    DROP POLICY IF EXISTS "allow_all_interview_campaigns" ON interview_campaigns;
     CREATE POLICY "allow_all_interview_campaigns" ON interview_campaigns FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -207,6 +214,7 @@ CREATE INDEX IF NOT EXISTS idx_objectives_campaign ON employee_objectives(campai
 ALTER TABLE employee_objectives ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_employee_objectives') THEN
+    DROP POLICY IF EXISTS "allow_all_employee_objectives" ON employee_objectives;
     CREATE POLICY "allow_all_employee_objectives" ON employee_objectives FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

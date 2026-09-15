@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS pos_terminals (
 ALTER TABLE pos_terminals ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pos_terminals') THEN
+    DROP POLICY IF EXISTS "allow_all_pos_terminals" ON pos_terminals;
     CREATE POLICY "allow_all_pos_terminals" ON pos_terminals FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -38,6 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_ps_status ON pos_sessions(status);
 ALTER TABLE pos_sessions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pos_sessions') THEN
+    DROP POLICY IF EXISTS "allow_all_pos_sessions" ON pos_sessions;
     CREATE POLICY "allow_all_pos_sessions" ON pos_sessions FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -67,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_pt_date ON pos_tickets(date);
 ALTER TABLE pos_tickets ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pos_tickets') THEN
+    DROP POLICY IF EXISTS "allow_all_pos_tickets" ON pos_tickets;
     CREATE POLICY "allow_all_pos_tickets" ON pos_tickets FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -88,6 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_ptl_ticket ON pos_ticket_lines(ticket_id);
 ALTER TABLE pos_ticket_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pos_ticket_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_pos_ticket_lines" ON pos_ticket_lines;
     CREATE POLICY "allow_all_pos_ticket_lines" ON pos_ticket_lines FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

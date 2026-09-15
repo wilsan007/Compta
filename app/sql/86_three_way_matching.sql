@@ -79,15 +79,19 @@ CREATE INDEX IF NOT EXISTS idx_three_way_match_status ON three_way_matches(match
 -- RLS
 ALTER TABLE three_way_matches ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_three_way_matches ON three_way_matches;
   CREATE POLICY tenant_select_three_way_matches ON three_way_matches FOR SELECT USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_three_way_matches ON three_way_matches;
   CREATE POLICY tenant_insert_three_way_matches ON three_way_matches FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_three_way_matches ON three_way_matches;
   CREATE POLICY tenant_update_three_way_matches ON three_way_matches FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_three_way_matches ON three_way_matches;
   CREATE POLICY tenant_delete_three_way_matches ON three_way_matches FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;
 

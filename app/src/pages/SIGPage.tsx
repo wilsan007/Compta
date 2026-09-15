@@ -21,6 +21,7 @@ export function SIGPage() {
 
   useEffect(() => {
     loadYears().catch(err => console.error('loadYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadYears() {
@@ -34,6 +35,7 @@ export function SIGPage() {
 
   useEffect(() => {
     loadSIG().catch(err => console.error('loadSIG:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedYear])
 
   async function loadSIG() {

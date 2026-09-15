@@ -23,6 +23,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [filterType, setFilterType] = useState('')
   const [tolerance, setTolerance] = useState('0.01')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadThirdParties() }, [])
 
   async function loadThirdParties() {
@@ -39,6 +40,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   useEffect(() => {
     if (selectedTiers) { loadLines() }
     else { setUnlettered([]); setLettered([]) }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedTiers])
 
   async function loadLines() {

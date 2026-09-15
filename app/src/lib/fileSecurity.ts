@@ -22,6 +22,9 @@ export interface FileValidationResult {
 // Magic bytes signatures for common file types
 const MAGIC_BYTES: Record<string, number[] | null> = {
   pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
+  png: [0x89, 0x50, 0x4E, 0x47], // \x89PNG
+  jpg: [0xFF, 0xD8, 0xFF],
+  jpeg: [0xFF, 0xD8, 0xFF],
   xlsx: [0x50, 0x4B, 0x03, 0x04], // PK (ZIP-based, also matches .docx, .xlsx)
   xls: [0xD0, 0xCF, 0x11, 0xE0], // OLE2 compound document
   csv: null, // Text-based, no magic bytes
@@ -94,6 +97,12 @@ export async function validateFileUpload(
     if (ext === '.xlsx' && MAGIC_BYTES.xlsx && !bytesStartsWith(bytes, MAGIC_BYTES.xlsx)) {
       return { ok: false, error: 'File claims to be XLSX but magic bytes do not match' }
     }
+    if (ext === '.png' && MAGIC_BYTES.png && !bytesStartsWith(bytes, MAGIC_BYTES.png)) {
+      return { ok: false, error: 'File claims to be PNG but magic bytes do not match' }
+    }
+    if ((ext === '.jpg' || ext === '.jpeg') && MAGIC_BYTES.jpg && !bytesStartsWith(bytes, MAGIC_BYTES.jpg)) {
+      return { ok: false, error: 'File claims to be JPEG but magic bytes do not match' }
+    }
   }
 
   // 5. Sanitize filename
@@ -156,6 +165,13 @@ export const FILE_PROFILES = {
     maxSize: 5 * 1024 * 1024, // 5 MB
     allowedExtensions: ['.pdf'],
     allowedMimeTypes: ['application/pdf', 'application/octet-stream'],
+    checkMagicBytes: true,
+  },
+  /** Factures fournisseurs scannées (OCR) */
+  invoiceScan: {
+    maxSize: 10 * 1024 * 1024, // 10 MB
+    allowedExtensions: ['.pdf', '.png', '.jpg', '.jpeg'],
+    allowedMimeTypes: ['application/pdf', 'image/png', 'image/jpeg', 'application/octet-stream'],
     checkMagicBytes: true,
   },
   /** Sage/MAE accounting files */

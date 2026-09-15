@@ -1,12 +1,22 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button, Select } from '@/components/ui'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { getStockMovements, getWarehouses, createStockMovement, getProducts } from '@/lib/queries/stock'
 import { calculateStockValuation, calculateInventoryVariance } from '@/lib/queries/businessFunctions'
-import { ClipboardList, Plus, X } from 'lucide-react'
+import { ClipboardList, Plus, X, Calculator } from 'lucide-react'
 import type { Warehouse, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+
+interface StockValuationRow {
+  product_id: string
+  product_name: string
+  warehouse_id: string | null
+  quantity: number
+  unit_cost: number
+  total_value: number
+  method: string
+}
 
 export function InventoryPage() {
   const { t } = useTranslation('stock')
@@ -17,6 +27,10 @@ const [movements, setMovements] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedWarehouse, setSelectedWarehouse] = useState('')
+  const [valuationMethod, setValuationMethod] = useState('cump')
+  const [valuationRows, setValuationRows] = useState<StockValuationRow[]>([])
+  const [valuationLoading, setValuationLoading] = useState(false)
+  const [showValuation, setShowValuation] = useState(false)
   const { toast } = useToast()
   const { t: tCommon } = useTranslation("common")
 
@@ -33,10 +47,16 @@ const [movements, setMovements] = useState<any[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleValuation() {
+    setValuationLoading(true)
+    setShowValuation(true)
     try {
-      const res = await calculateStockValuation('cump', selectedWarehouse || undefined)
-      toast('success', t('inventory.title'), `${res?.total_value ?? res} €`)
+      const res = await calculateStockValuation(valuationMethod, selectedWarehouse || undefined)
+      const rows = Array.isArray(res) ? res : (res ? [res] : [])
+      setValuationRows(rows)
+      const total = rows.reduce((sum, r) => sum + Number(r.total_value || 0), 0)
+      toast('success', t('inventory.title'), `${rows.length} produits — ${formatCurrency(total)}`)
     } catch (err: any) { toast('error', t('inventory.title'), err.message || 'Erreur') }
+    finally { setValuationLoading(false) }
   }
 
   async function handleVariance() {
@@ -68,7 +88,49 @@ const [movements, setMovements] = useState<any[]>([])
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
         </div>
+        <div className="w-48">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('inventory.valuationMethod')}</label>
+          <Select value={valuationMethod} onChange={(e) => setValuationMethod(e.target.value)} options={[
+            { value: 'cump', label: t('inventory.methods.cump') },
+            { value: 'fifo', label: t('inventory.methods.fifo') },
+            { value: 'lifo', label: t('inventory.methods.lifo') },
+          ]} />
+        </div>
       </div>
+
+      {showValuation && (
+        <Card className="mb-4">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Calculator className="w-4 h-4" /> {t('inventory.valuationResult')} — {t(`inventory.methods.${valuationMethod}`)}
+            </h3>
+            <button onClick={() => setShowValuation(false)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
+          </div>
+          {valuationLoading ? (
+            <SkeletonTable rows={4} cols={5} />
+          ) : valuationRows.length === 0 ? (
+            <EmptyState icon={<ClipboardList className="w-8 h-8" />} title={t('inventory.noValuation')} description={t('inventory.noValuationDescription')} />
+          ) : (
+            <Table headers={[t('inventory.product'), t('inventory.quantity'), t('inventory.unitCost'), t('inventory.totalValue'), t('inventory.method')]}>
+              {valuationRows.map((r) => (
+                <TableRow key={r.product_id + (r.warehouse_id || '')}>
+                  <TableCell className="font-medium">{r.product_name || '—'}</TableCell>
+                  <TableCell className="font-mono text-right">{Number(r.quantity || 0)}</TableCell>
+                  <TableCell className="font-mono text-right">{formatCurrency(Number(r.unit_cost || 0))}</TableCell>
+                  <TableCell className="font-mono text-right font-semibold">{formatCurrency(Number(r.total_value || 0))}</TableCell>
+                  <TableCell><span className="text-xs uppercase text-[var(--color-text-secondary)]">{r.method || valuationMethod}</span></TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )}
+          {valuationRows.length > 0 && (
+            <div className="px-4 py-3 border-t border-[var(--color-border)] text-right">
+              <span className="text-sm text-[var(--color-text-secondary)]">{t('inventory.grandTotal')}: </span>
+              <span className="font-bold font-mono">{formatCurrency(valuationRows.reduce((s, r) => s + Number(r.total_value || 0), 0))}</span>
+            </div>
+          )}
+        </Card>
+      )}
 
       {loading ? <SkeletonTable rows={6} cols={5} /> : adjustments.length === 0 ? (
         <EmptyState icon={<ClipboardList className="w-8 h-8" />} title={t('inventory.noAdjustments')} description={t('inventory.noAdjustmentsDescription')}

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS meal_voucher_config (
 ALTER TABLE meal_voucher_config ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_meal_voucher_config') THEN
+    DROP POLICY IF EXISTS "allow_all_meal_voucher_config" ON meal_voucher_config;
     CREATE POLICY "allow_all_meal_voucher_config" ON meal_voucher_config FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -43,6 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_variable_elements_payrun ON payroll_variable_elem
 ALTER TABLE payroll_variable_elements ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_payroll_variable_elements') THEN
+    DROP POLICY IF EXISTS "allow_all_payroll_variable_elements" ON payroll_variable_elements;
     CREATE POLICY "allow_all_payroll_variable_elements" ON payroll_variable_elements FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -69,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_sepa_orders_payrun ON sepa_payment_orders(pay_run
 ALTER TABLE sepa_payment_orders ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_sepa_payment_orders') THEN
+    DROP POLICY IF EXISTS "allow_all_sepa_payment_orders" ON sepa_payment_orders;
     CREATE POLICY "allow_all_sepa_payment_orders" ON sepa_payment_orders FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -94,6 +97,7 @@ CREATE INDEX IF NOT EXISTS idx_payslip_clarified_slip ON pay_slip_clarified(pay_
 ALTER TABLE pay_slip_clarified ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_pay_slip_clarified') THEN
+    DROP POLICY IF EXISTS "allow_all_pay_slip_clarified" ON pay_slip_clarified;
     CREATE POLICY "allow_all_pay_slip_clarified" ON pay_slip_clarified FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

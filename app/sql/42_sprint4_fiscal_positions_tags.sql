@@ -24,18 +24,22 @@ CREATE INDEX IF NOT EXISTS idx_fiscal_positions_country ON fiscal_positions(coun
 
 ALTER TABLE fiscal_positions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_fiscal_positions ON fiscal_positions;
   CREATE POLICY tenant_select_fiscal_positions ON fiscal_positions
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_fiscal_positions ON fiscal_positions;
   CREATE POLICY tenant_insert_fiscal_positions ON fiscal_positions
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_fiscal_positions ON fiscal_positions;
   CREATE POLICY tenant_update_fiscal_positions ON fiscal_positions
     FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_fiscal_positions ON fiscal_positions;
   CREATE POLICY tenant_delete_fiscal_positions ON fiscal_positions
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -59,18 +63,22 @@ CREATE INDEX IF NOT EXISTS idx_fiscal_mapping_tenant ON fiscal_position_mappings
 
 ALTER TABLE fiscal_position_mappings ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_fiscal_position_mappings ON fiscal_position_mappings;
   CREATE POLICY tenant_select_fiscal_position_mappings ON fiscal_position_mappings
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_fiscal_position_mappings ON fiscal_position_mappings;
   CREATE POLICY tenant_insert_fiscal_position_mappings ON fiscal_position_mappings
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_fiscal_position_mappings ON fiscal_position_mappings;
   CREATE POLICY tenant_update_fiscal_position_mappings ON fiscal_position_mappings
     FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_fiscal_position_mappings ON fiscal_position_mappings;
   CREATE POLICY tenant_delete_fiscal_position_mappings ON fiscal_position_mappings
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -99,18 +107,22 @@ CREATE INDEX IF NOT EXISTS idx_account_tags_applicability ON account_tags(applic
 
 ALTER TABLE account_tags ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_account_tags ON account_tags;
   CREATE POLICY tenant_select_account_tags ON account_tags
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_account_tags ON account_tags;
   CREATE POLICY tenant_insert_account_tags ON account_tags
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_account_tags ON account_tags;
   CREATE POLICY tenant_update_account_tags ON account_tags
     FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_account_tags ON account_tags;
   CREATE POLICY tenant_delete_account_tags ON account_tags
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -133,18 +145,22 @@ CREATE INDEX IF NOT EXISTS idx_account_tag_mappings_tenant ON account_tag_mappin
 
 ALTER TABLE account_tag_mappings ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_account_tag_mappings ON account_tag_mappings;
   CREATE POLICY tenant_select_account_tag_mappings ON account_tag_mappings
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_account_tag_mappings ON account_tag_mappings;
   CREATE POLICY tenant_insert_account_tag_mappings ON account_tag_mappings
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_account_tag_mappings ON account_tag_mappings;
   CREATE POLICY tenant_update_account_tag_mappings ON account_tag_mappings
     FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_account_tag_mappings ON account_tag_mappings;
   CREATE POLICY tenant_delete_account_tag_mappings ON account_tag_mappings
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

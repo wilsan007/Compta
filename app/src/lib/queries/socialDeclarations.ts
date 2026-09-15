@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type { SocialDeclaration, CiceConfig, PasRate, AtRate, BdesIndicator, HonorariumRecord } from '@/types'
 
 // ============ Social Declarations (CRUD) ============
@@ -53,7 +53,7 @@ export async function generateDsnFile(period: string, subtype?: string): Promise
   const tid = await getTenantId()
   const anomalies = await checkDsnAnomalies(period)
   const { data: decl, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DSN-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('DSN'),
     declaration_type: 'dsn',
     subtype: subtype || 'monthly',
     period,
@@ -71,13 +71,16 @@ export async function generateDsnFile(period: string, subtype?: string): Promise
 export async function transmitDsn(declarationId: string): Promise<{ declaration: SocialDeclaration; simulation: boolean; message?: string }> {
   // CNF-01.3 : Appeler l'Edge Function et propager le mode simulation
   const { data: fnResult, error } = await supabase.functions.invoke('transmit-dsn', {
-    body: { declarationId },
+    body: { dsn_id: declarationId, declarationId },
   })
   if (error) throw error
-  const simulation = (fnResult as any)?.mode === 'simulation'
+  // LOT7-08 : ne marquer « transmise » que sur confirmation réelle de net-entreprises
+  if (!(fnResult as any)?.success || (fnResult as any)?.mode === 'simulation') {
+    throw new Error((fnResult as any)?.error || (fnResult as any)?.message || 'Transmission DSN non confirmée')
+  }
+  const simulation = false
   const message = (fnResult as any)?.message
 
-  // Mettre à jour le statut en base (transmitted même en simulation pour traçabilité)
   const declaration = await updateSocialDeclaration(declarationId, {
     status: 'transmitted',
     transmitted_at: new Date().toISOString(),
@@ -105,7 +108,7 @@ export async function getDsnReturnCodes(declarationId: string): Promise<{ code: 
 export async function generateDsnStoppage(workStoppageId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DSN-EVT-STOP-${Date.now()}`,
+    number: await nextDocumentNumber('DSN-EVT-STOP'),
     declaration_type: 'dsn',
     subtype: 'event_stoppage',
     status: 'generated',
@@ -122,7 +125,7 @@ export async function generateDsnStoppage(workStoppageId: string): Promise<Socia
 export async function generateDsnReprise(workStoppageId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DSN-EVT-REPRISE-${Date.now()}`,
+    number: await nextDocumentNumber('DSN-EVT-REPRISE'),
     declaration_type: 'dsn',
     subtype: 'event_reprise',
     status: 'generated',
@@ -139,7 +142,7 @@ export async function generateDsnReprise(workStoppageId: string): Promise<Social
 export async function generateDsnExit(exitProcessId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DSN-EVT-EXIT-${Date.now()}`,
+    number: await nextDocumentNumber('DSN-EVT-EXIT'),
     declaration_type: 'dsn',
     subtype: 'event_exit',
     status: 'generated',
@@ -156,7 +159,7 @@ export async function generateDsnExit(exitProcessId: string): Promise<SocialDecl
 export async function generateDsnHire(employeeId: string, contractId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DSN-EVT-HIRE-${Date.now()}`,
+    number: await nextDocumentNumber('DSN-EVT-HIRE'),
     declaration_type: 'dsn',
     subtype: 'event_hire',
     status: 'generated',
@@ -174,7 +177,7 @@ export async function generateDsnHire(employeeId: string, contractId: string): P
 export async function generateDadsU(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DADS-U-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('DADS-U'),
     declaration_type: 'dads_u',
     period,
     status: 'generated',
@@ -192,7 +195,7 @@ export async function generateDadsU(period: string): Promise<SocialDeclaration> 
 export async function generateDucs(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DUCS-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('DUCS'),
     declaration_type: 'ducs',
     period,
     status: 'generated',
@@ -210,7 +213,7 @@ export async function generateDucs(period: string): Promise<SocialDeclaration> {
 export async function generateAed(employeeId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `AED-${Date.now()}`,
+    number: await nextDocumentNumber('AED'),
     declaration_type: 'aed',
     status: 'generated',
     file_format: 'pdf',
@@ -227,7 +230,7 @@ export async function generateAed(employeeId: string): Promise<SocialDeclaration
 export async function generateDpae(employeeId: string, contractId: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DPAE-${Date.now()}`,
+    number: await nextDocumentNumber('DPAE'),
     declaration_type: 'dpae',
     status: 'generated',
     file_format: 'pdf',
@@ -244,7 +247,7 @@ export async function generateDpae(employeeId: string, contractId: string): Prom
 export async function generateDtsMsa(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `DTS-MSA-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('DTS-MSA'),
     declaration_type: 'dts_msa',
     period,
     status: 'generated',
@@ -262,7 +265,7 @@ export async function generateDtsMsa(period: string): Promise<SocialDeclaration>
 export async function generateCibtp(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `CIBTP-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('CIBTP'),
     declaration_type: 'cibtp',
     period,
     status: 'generated',
@@ -279,7 +282,7 @@ export async function generateCibtp(period: string): Promise<SocialDeclaration> 
 export async function generateCongesPayesBtp(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `CP-BTP-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('CP-BTP'),
     declaration_type: 'conges_payes_btp',
     period,
     status: 'generated',
@@ -340,7 +343,7 @@ export async function calculateCice(year: number): Promise<any[]> {
 export async function generateCiceFile(year: number): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `CICE-${year}-${Date.now()}`,
+    number: await nextDocumentNumber('CICE'),
     declaration_type: 'cice',
     period_year: year,
     status: 'generated',
@@ -358,7 +361,7 @@ export async function generateCiceFile(year: number): Promise<SocialDeclaration>
 export async function generateRefusCdi(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `REFUS-CDI-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('REFUS-CDI'),
     declaration_type: 'refus_cdi',
     period,
     status: 'generated',
@@ -375,7 +378,7 @@ export async function generateRefusCdi(period: string): Promise<SocialDeclaratio
 export async function generateCt2025(period: string): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `CT2025-${period}-${Date.now()}`,
+    number: await nextDocumentNumber('CT2025'),
     declaration_type: 'ct2025',
     period,
     status: 'generated',
@@ -393,7 +396,7 @@ export async function generateCt2025(period: string): Promise<SocialDeclaration>
 export async function generatePasrau(year: number): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `PASRAU-${year}-${Date.now()}`,
+    number: await nextDocumentNumber('PASRAU'),
     declaration_type: 'pasrau',
     period_year: year,
     subtype: 'annual',
@@ -520,7 +523,7 @@ export async function calculateEqualityIndicators(year: number): Promise<BdesInd
 export async function generateBdesReport(year: number): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `BDES-${year}-${Date.now()}`,
+    number: await nextDocumentNumber('BDES'),
     declaration_type: 'other',
     period_year: year,
     status: 'generated',
@@ -538,7 +541,7 @@ export async function generateBdesReport(year: number): Promise<SocialDeclaratio
 export async function generateSocialReport(year: number): Promise<SocialDeclaration> {
   const tid = await getTenantId()
   const { data: row, error } = await supabase.from('social_declarations').insert(ti({
-    number: `BILAN-SOCIAL-${year}-${Date.now()}`,
+    number: await nextDocumentNumber('BILAN-SOCIAL'),
     declaration_type: 'other',
     period_year: year,
     status: 'generated',

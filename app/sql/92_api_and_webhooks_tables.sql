@@ -26,13 +26,17 @@ CREATE TABLE IF NOT EXISTS api_keys (
 ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_keys FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_api_keys ON api_keys;
 CREATE POLICY tenant_select_api_keys ON api_keys
   FOR SELECT USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
+DROP POLICY IF EXISTS tenant_insert_api_keys ON api_keys;
 CREATE POLICY tenant_insert_api_keys ON api_keys
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
+DROP POLICY IF EXISTS tenant_update_api_keys ON api_keys;
 CREATE POLICY tenant_update_api_keys ON api_keys
   FOR UPDATE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin')
   WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
+DROP POLICY IF EXISTS tenant_delete_api_keys ON api_keys;
 CREATE POLICY tenant_delete_api_keys ON api_keys
   FOR DELETE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
 
@@ -58,13 +62,17 @@ CREATE TABLE IF NOT EXISTS webhook_endpoints (
 ALTER TABLE webhook_endpoints ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_endpoints FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_webhook_endpoints ON webhook_endpoints;
 CREATE POLICY tenant_select_webhook_endpoints ON webhook_endpoints
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_webhook_endpoints ON webhook_endpoints;
 CREATE POLICY tenant_insert_webhook_endpoints ON webhook_endpoints
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_webhook_endpoints ON webhook_endpoints;
 CREATE POLICY tenant_update_webhook_endpoints ON webhook_endpoints
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_webhook_endpoints ON webhook_endpoints;
 CREATE POLICY tenant_delete_webhook_endpoints ON webhook_endpoints
   FOR DELETE USING (tenant_id = current_tenant_id());
 
@@ -91,8 +99,10 @@ CREATE TABLE IF NOT EXISTS webhook_delivery_logs (
 ALTER TABLE webhook_delivery_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_delivery_logs FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_webhook_logs ON webhook_delivery_logs;
 CREATE POLICY tenant_select_webhook_logs ON webhook_delivery_logs
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_webhook_logs ON webhook_delivery_logs;
 CREATE POLICY tenant_insert_webhook_logs ON webhook_delivery_logs
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 

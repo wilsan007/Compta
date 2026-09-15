@@ -91,6 +91,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [showDeprecated, setShowDeprecated] = useState(false)
   const [filterAccountType, setFilterAccountType] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadAccounts() }, [])
 
   async function loadAccounts() {

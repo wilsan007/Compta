@@ -16,6 +16,7 @@ export function TreasuryForecastPage() {
   const [horizon, setHorizon] = useState('90')
   const [forecastLoading, setForecastLoading] = useState(false)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [horizon])
 
   async function load() {

@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -30,31 +31,20 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
+    if (!(await isTenantMember(supabase, user.id, tenant_id))) return forbidden(corsHeaders)
 
     if (provider === "yousign") {
       const yousignKey = Deno.env.get("YOUSIGN_API_KEY")
       const yousignBase = Deno.env.get("YOUSIGN_API_URL") || "https://api-sandbox.yousign.app/v3"
 
       if (!yousignKey) {
-        // Mode simulation
-        const signatureId = crypto.randomUUID()
-        await supabase.from("electronic_signatures").insert({
-          tenant_id: tenant_id || null,
-          document_id: document_id || null,
-          provider: "yousign",
-          provider_signature_id: signatureId,
-          status: "pending",
-          signers: signers,
-          initiated_at: new Date().toISOString(),
-        })
-
+        // LOT7-08 : sans accès configuré, refuser plutôt que simuler.
+        // Une simulation enregistrait l'envoi comme effectué alors que rien n'était transmis.
         return new Response(JSON.stringify({
-          success: true,
-          provider: "yousign",
-          mode: "simulation",
-          signature_id: signatureId,
-          message: "Yousign non configuré — mode simulation",
-        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+          success: false,
+          code: "NOT_CONFIGURED",
+          error: "Yousign non configuré : définissez YOUSIGN_API_KEY pour activer la transmission. Aucune donnée n'a été transmise.",
+        }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
       }
 
       // Créer une procédure de signature Yousign
@@ -106,11 +96,11 @@ serve(async (req) => {
     if (provider === "universign") {
       const universignKey = Deno.env.get("UNIVERSIGN_API_KEY")
       if (!universignKey) {
-        return new Response(JSON.stringify({ error: "Universign non configuré" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        return new Response(JSON.stringify({ success: false, code: "NOT_CONFIGURED", error: "Universign non configuré" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
       }
 
-      // Implémentation Universign (simplifiée)
-      return new Response(JSON.stringify({ success: true, provider: "universign", mode: "simulation" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      // LOT7-08 : l'intégration Universign n'est pas implémentée — ne pas répondre « succès »
+      return new Response(JSON.stringify({ success: false, code: "NOT_IMPLEMENTED", error: "Signature Universign non disponible : utilisez Yousign." }), { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
     return new Response(JSON.stringify({ error: "Provider non reconnu" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })

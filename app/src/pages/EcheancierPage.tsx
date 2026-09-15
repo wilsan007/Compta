@@ -15,6 +15,7 @@ export function EcheancierPage() {
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

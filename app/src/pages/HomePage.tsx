@@ -70,7 +70,7 @@ export function HomePage() {
   }, [enabledModules])
 
   // Filter modules by enabled + RBAC
-  const moduleRoles = (user as any)?.module_roles || {}
+  const moduleRoles = useMemo(() => user?.module_roles || {}, [user])
   const isGlobalAdmin = user?.role === 'admin'
   const accessibleModules = useMemo(() => {
     return navModules.filter((mod) => {

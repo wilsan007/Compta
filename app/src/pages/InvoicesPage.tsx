@@ -32,6 +32,7 @@ export function InvoicesPage() {
 
   useEffect(() => {
     loadInvoices().catch(err => console.error('loadInvoices:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadInvoices() {

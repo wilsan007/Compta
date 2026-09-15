@@ -19,6 +19,12 @@ CREATE OR REPLACE FUNCTION check_journal_entry_balance() RETURNS trigger LANGUAG
 CREATE OR REPLACE FUNCTION update_tax_grid_timestamp() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
 CREATE OR REPLACE FUNCTION prevent_posted_entry_modification() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
 CREATE OR REPLACE FUNCTION check_fiscal_period_open() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+-- Utilisées par les politiques module_documents ci-dessous, définies réellement par la migration 69
+CREATE OR REPLACE FUNCTION current_module_role(p_module text) RETURNS text LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT NULL::text $$;
+CREATE OR REPLACE FUNCTION current_tenant_user_id() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT NULL::uuid $$;
+CREATE OR REPLACE FUNCTION current_guest_permissions() RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT '{}'::jsonb $$;
+CREATE OR REPLACE FUNCTION has_module_access(p_module text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT false $$;
+CREATE OR REPLACE FUNCTION has_module_permission(p_module text, p_permission text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT false $$;
 
 -- ============================================
 -- TABLES
@@ -3867,6 +3873,8 @@ CREATE TABLE IF NOT EXISTS social_declarations (
   created_at timestamptz DEFAULT now()
 );
 
+CREATE SEQUENCE IF NOT EXISTS sql_migrations_tracker_id_seq;
+
 CREATE TABLE IF NOT EXISTS sql_migrations_tracker (
   id integer NOT NULL DEFAULT nextval('sql_migrations_tracker_id_seq'::regclass),
   filename text NOT NULL,
@@ -5693,996 +5701,996 @@ DO $$ BEGIN ALTER TABLE workflows ADD CONSTRAINT workflows_workflow_type_check C
 -- ============================================
 -- INDEX
 -- ============================================
-CREATE UNIQUE INDEX account_tag_mappings_pkey ON public.account_tag_mappings USING btree (id);
-CREATE INDEX idx_account_tag_mappings_entity ON public.account_tag_mappings USING btree (entity_type, entity_id);
-CREATE INDEX idx_account_tag_mappings_tag ON public.account_tag_mappings USING btree (tag_id);
-CREATE INDEX idx_account_tag_mappings_tenant ON public.account_tag_mappings USING btree (tenant_id);
-CREATE UNIQUE INDEX account_tags_pkey ON public.account_tags USING btree (id);
-CREATE INDEX idx_account_tags_applicability ON public.account_tags USING btree (applicability);
-CREATE INDEX idx_account_tags_tenant ON public.account_tags USING btree (tenant_id);
-CREATE UNIQUE INDEX accounting_control_runs_pkey ON public.accounting_control_runs USING btree (id);
-CREATE INDEX idx_acct_control_runs_tenant ON public.accounting_control_runs USING btree (tenant_id);
-CREATE INDEX idx_acct_control_runs_type ON public.accounting_control_runs USING btree (control_type);
-CREATE UNIQUE INDEX analytic_distribution_lines_pkey ON public.analytic_distribution_lines USING btree (id);
-CREATE INDEX idx_analytic_dist_line ON public.analytic_distribution_lines USING btree (journal_line_id);
-CREATE INDEX idx_analytic_dist_line_plan ON public.analytic_distribution_lines USING btree (plan_id);
-CREATE UNIQUE INDEX analytic_journal_codes_pkey ON public.analytic_journal_codes USING btree (id);
-CREATE INDEX idx_analytic_journal_codes_code ON public.analytic_journal_codes USING btree (tenant_id, code);
-CREATE INDEX idx_analytic_journal_codes_tenant ON public.analytic_journal_codes USING btree (tenant_id);
-CREATE UNIQUE INDEX analytic_plans_pkey ON public.analytic_plans USING btree (id);
-CREATE UNIQUE INDEX idx_analytic_plans_code ON public.analytic_plans USING btree (tenant_id, code);
-CREATE INDEX idx_analytic_plans_tenant ON public.analytic_plans USING btree (tenant_id);
-CREATE UNIQUE INDEX analytic_sections_pkey ON public.analytic_sections USING btree (id);
-CREATE UNIQUE INDEX analytic_sections_tenant_code_key ON public.analytic_sections USING btree (tenant_id, code);
-CREATE INDEX idx_analytic_sections_tenant ON public.analytic_sections USING btree (tenant_id);
-CREATE UNIQUE INDEX approval_workflows_pkey ON public.approval_workflows USING btree (id);
-CREATE UNIQUE INDEX asset_batch_disposal_lines_pkey ON public.asset_batch_disposal_lines USING btree (id);
-CREATE INDEX idx_asset_batch_disposal_lines_tenant ON public.asset_batch_disposal_lines USING btree (tenant_id);
-CREATE INDEX idx_batch_disposal_lines_batch ON public.asset_batch_disposal_lines USING btree (batch_id);
-CREATE UNIQUE INDEX asset_batch_disposals_pkey ON public.asset_batch_disposals USING btree (id);
-CREATE INDEX idx_asset_batch_disposals_number ON public.asset_batch_disposals USING btree (batch_number);
-CREATE INDEX idx_asset_batch_disposals_tenant ON public.asset_batch_disposals USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_depreciation_plans_pkey ON public.asset_depreciation_plans USING btree (id);
-CREATE INDEX idx_asset_dep_plans_asset ON public.asset_depreciation_plans USING btree (asset_id);
-CREATE INDEX idx_asset_dep_plans_type ON public.asset_depreciation_plans USING btree (plan_type);
-CREATE INDEX idx_asset_depreciation_plans_tenant ON public.asset_depreciation_plans USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_depreciations_pkey ON public.asset_depreciations USING btree (id);
-CREATE INDEX idx_asset_depreciations_asset ON public.asset_depreciations USING btree (asset_id);
-CREATE INDEX idx_asset_depreciations_tenant ON public.asset_depreciations USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_documents_pkey ON public.asset_documents USING btree (id);
-CREATE INDEX idx_asset_documents_asset ON public.asset_documents USING btree (asset_id);
-CREATE INDEX idx_asset_documents_tenant ON public.asset_documents USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_families_pkey ON public.asset_families USING btree (id);
-CREATE INDEX idx_asset_families_code ON public.asset_families USING btree (code);
-CREATE INDEX idx_asset_families_parent ON public.asset_families USING btree (parent_id);
-CREATE INDEX idx_asset_families_tenant ON public.asset_families USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_free_fields_pkey ON public.asset_free_fields USING btree (id);
-CREATE INDEX idx_asset_free_fields_asset ON public.asset_free_fields USING btree (asset_id);
-CREATE INDEX idx_asset_free_fields_key ON public.asset_free_fields USING btree (field_key);
-CREATE INDEX idx_asset_free_fields_tenant ON public.asset_free_fields USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_revaluations_pkey ON public.asset_revaluations USING btree (id);
-CREATE INDEX idx_asset_revaluations_asset ON public.asset_revaluations USING btree (asset_id);
-CREATE INDEX idx_asset_revaluations_tenant ON public.asset_revaluations USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_split_components_pkey ON public.asset_split_components USING btree (id);
-CREATE INDEX idx_asset_split_components_split ON public.asset_split_components USING btree (split_id);
-CREATE INDEX idx_asset_split_components_tenant ON public.asset_split_components USING btree (tenant_id);
-CREATE UNIQUE INDEX asset_splits_pkey ON public.asset_splits USING btree (id);
-CREATE INDEX idx_asset_splits_original ON public.asset_splits USING btree (original_asset_id);
-CREATE INDEX idx_asset_splits_tenant ON public.asset_splits USING btree (tenant_id);
-CREATE UNIQUE INDEX at_rates_pkey ON public.at_rates USING btree (id);
-CREATE INDEX idx_at_rates_employee ON public.at_rates USING btree (employee_id);
-CREATE UNIQUE INDEX audit_log_pkey ON public.audit_log USING btree (id);
-CREATE INDEX idx_audit_log_action ON public.audit_log USING btree (action);
-CREATE INDEX idx_audit_log_created_at ON public.audit_log USING btree (created_at);
-CREATE INDEX idx_audit_log_entity_type ON public.audit_log USING btree (entity_type);
-CREATE INDEX idx_audit_log_tenant ON public.audit_log USING btree (tenant_id);
-CREATE INDEX idx_audit_log_user_id ON public.audit_log USING btree (user_id);
-CREATE UNIQUE INDEX auto_label_rules_pkey ON public.auto_label_rules USING btree (id);
-CREATE INDEX idx_auto_label_rules_active ON public.auto_label_rules USING btree (active);
-CREATE INDEX idx_auto_label_rules_tenant ON public.auto_label_rules USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_accounts_pkey ON public.bank_accounts USING btree (id);
-CREATE INDEX idx_bank_accounts_tenant ON public.bank_accounts USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_connections_pkey ON public.bank_connections USING btree (id);
-CREATE INDEX idx_bank_connections_status ON public.bank_connections USING btree (status);
-CREATE INDEX idx_bank_connections_tenant ON public.bank_connections USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_reconciliation_rules_pkey ON public.bank_reconciliation_rules USING btree (id);
-CREATE INDEX idx_bank_recon_rules_active ON public.bank_reconciliation_rules USING btree (active);
-CREATE INDEX idx_bank_recon_rules_afb ON public.bank_reconciliation_rules USING btree (afb_code);
-CREATE INDEX idx_bank_recon_rules_tenant ON public.bank_reconciliation_rules USING btree (tenant_id);
-CREATE INDEX idx_bank_reconciliation_rules_tenant ON public.bank_reconciliation_rules USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_rules_pkey ON public.bank_rules USING btree (id);
-CREATE INDEX idx_bank_rules_tenant ON public.bank_rules USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_statement_imports_pkey ON public.bank_statement_imports USING btree (id);
-CREATE INDEX idx_bank_statement_imports_tenant ON public.bank_statement_imports USING btree (tenant_id);
-CREATE INDEX idx_bank_stmt_imports_account ON public.bank_statement_imports USING btree (bank_account_id);
-CREATE INDEX idx_bank_stmt_imports_status ON public.bank_statement_imports USING btree (status);
-CREATE INDEX idx_bank_stmt_imports_tenant ON public.bank_statement_imports USING btree (tenant_id);
-CREATE UNIQUE INDEX bank_statement_templates_pkey ON public.bank_statement_templates USING btree (id);
-CREATE INDEX idx_bank_stmt_templates_bank ON public.bank_statement_templates USING btree (tenant_id, bank_name);
-CREATE INDEX idx_bank_stmt_templates_tenant ON public.bank_statement_templates USING btree (tenant_id);
-CREATE INDEX idx_bank_stmt_templates_validated ON public.bank_statement_templates USING btree (bank_id) WHERE (validation_status = 'validated'::text);
-CREATE UNIQUE INDEX bank_transactions_pkey ON public.bank_transactions USING btree (id);
-CREATE INDEX idx_bank_transactions_account_id ON public.bank_transactions USING btree (account_id);
-CREATE INDEX idx_bank_transactions_date ON public.bank_transactions USING btree (date);
-CREATE INDEX idx_bank_transactions_reconciled ON public.bank_transactions USING btree (reconciled);
-CREATE INDEX idx_bank_transactions_tenant ON public.bank_transactions USING btree (tenant_id);
-CREATE UNIQUE INDEX banks_name_key ON public.banks USING btree (name);
-CREATE UNIQUE INDEX banks_pkey ON public.banks USING btree (id);
-CREATE UNIQUE INDEX batch_entry_sessions_pkey ON public.batch_entry_sessions USING btree (id);
-CREATE INDEX idx_batch_entry_tenant ON public.batch_entry_sessions USING btree (tenant_id);
-CREATE UNIQUE INDEX bdes_indicators_pkey ON public.bdes_indicators USING btree (id);
-CREATE INDEX idx_bdes_category ON public.bdes_indicators USING btree (category);
-CREATE INDEX idx_bdes_year ON public.bdes_indicators USING btree (year);
-CREATE UNIQUE INDEX bom_lines_pkey ON public.bom_lines USING btree (id);
-CREATE INDEX idx_bom_lines_bom ON public.bom_lines USING btree (bom_id);
-CREATE INDEX idx_bom_lines_tenant ON public.bom_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX boms_code_key ON public.boms USING btree (code);
-CREATE UNIQUE INDEX boms_pkey ON public.boms USING btree (id);
-CREATE INDEX idx_boms_tenant ON public.boms USING btree (tenant_id);
-CREATE UNIQUE INDEX budget_commitments_pkey ON public.budget_commitments USING btree (id);
-CREATE INDEX idx_budget_commitments_account ON public.budget_commitments USING btree (account_code);
-CREATE INDEX idx_budget_commitments_fiscal_year ON public.budget_commitments USING btree (fiscal_year_id);
-CREATE INDEX idx_budget_commitments_status ON public.budget_commitments USING btree (status);
-CREATE INDEX idx_budget_commitments_tenant ON public.budget_commitments USING btree (tenant_id);
-CREATE UNIQUE INDEX budgets_pkey ON public.budgets USING btree (id);
-CREATE INDEX idx_budgets_tenant ON public.budgets USING btree (tenant_id);
-CREATE UNIQUE INDEX career_history_pkey ON public.career_history USING btree (id);
-CREATE INDEX idx_career_history_dates ON public.career_history USING btree (start_date, end_date);
-CREATE INDEX idx_career_history_employee ON public.career_history USING btree (employee_id);
-CREATE INDEX idx_career_history_tenant ON public.career_history USING btree (tenant_id);
-CREATE UNIQUE INDEX carry_forward_log_pkey ON public.carry_forward_log USING btree (id);
-CREATE INDEX idx_carry_forward_log_tenant ON public.carry_forward_log USING btree (tenant_id);
-CREATE UNIQUE INDEX cash_control_sessions_pkey ON public.cash_control_sessions USING btree (id);
-CREATE INDEX idx_cash_control_date ON public.cash_control_sessions USING btree (session_date);
-CREATE INDEX idx_cash_control_tenant ON public.cash_control_sessions USING btree (tenant_id);
-CREATE UNIQUE INDEX chart_account_templates_pack_code_code_key ON public.chart_account_templates USING btree (pack_code, code);
-CREATE UNIQUE INDEX chart_account_templates_pkey ON public.chart_account_templates USING btree (id);
-CREATE INDEX idx_chart_templates_pack ON public.chart_account_templates USING btree (pack_code);
-CREATE UNIQUE INDEX chart_accounts_pkey ON public.chart_accounts USING btree (id);
-CREATE UNIQUE INDEX chart_accounts_tenant_code_key ON public.chart_accounts USING btree (tenant_id, code);
-CREATE INDEX idx_chart_accounts_tenant ON public.chart_accounts USING btree (tenant_id);
-CREATE UNIQUE INDEX check_books_pkey ON public.check_books USING btree (id);
-CREATE INDEX idx_check_books_bank_account ON public.check_books USING btree (bank_account_id);
-CREATE INDEX idx_check_books_status ON public.check_books USING btree (status);
-CREATE INDEX idx_check_books_tenant ON public.check_books USING btree (tenant_id);
-CREATE UNIQUE INDEX checks_pkey ON public.checks USING btree (id);
-CREATE INDEX idx_checks_check_book ON public.checks USING btree (check_book_id);
-CREATE INDEX idx_checks_issue_date ON public.checks USING btree (issue_date);
-CREATE INDEX idx_checks_status ON public.checks USING btree (status);
-CREATE INDEX idx_checks_tenant ON public.checks USING btree (tenant_id);
-CREATE UNIQUE INDEX cice_config_pkey ON public.cice_config USING btree (id);
-CREATE UNIQUE INDEX collection_reminders_number_key ON public.collection_reminders USING btree (number);
-CREATE UNIQUE INDEX collection_reminders_payment_link_token_key ON public.collection_reminders USING btree (payment_link_token);
-CREATE UNIQUE INDEX collection_reminders_pkey ON public.collection_reminders USING btree (id);
-CREATE INDEX idx_collection_reminders_customer ON public.collection_reminders USING btree (customer_id);
-CREATE INDEX idx_collection_reminders_link_token ON public.collection_reminders USING btree (payment_link_token) WHERE (payment_link_token IS NOT NULL);
-CREATE INDEX idx_collection_reminders_payment_status ON public.collection_reminders USING btree (payment_status);
-CREATE INDEX idx_collection_reminders_status ON public.collection_reminders USING btree (status);
-CREATE INDEX idx_collection_reminders_tenant ON public.collection_reminders USING btree (tenant_id);
-CREATE UNIQUE INDEX compaction_logs_pkey ON public.compaction_logs USING btree (id);
-CREATE INDEX idx_compaction_logs_tenant ON public.compaction_logs USING btree (tenant_id);
-CREATE UNIQUE INDEX company_settings_pkey ON public.company_settings USING btree (id);
-CREATE INDEX idx_company_settings_tenant ON public.company_settings USING btree (tenant_id);
-CREATE UNIQUE INDEX consolidated_treasury_pkey ON public.consolidated_treasury USING btree (id);
-CREATE INDEX idx_consolidated_treasury_date ON public.consolidated_treasury USING btree (consolidation_date);
-CREATE INDEX idx_consolidated_treasury_tenant ON public.consolidated_treasury USING btree (tenant_id);
-CREATE UNIQUE INDEX contracts_number_key ON public.contracts USING btree (number);
-CREATE UNIQUE INDEX contracts_pkey ON public.contracts USING btree (id);
-CREATE INDEX idx_contracts_employee ON public.contracts USING btree (employee_id);
-CREATE INDEX idx_contracts_status ON public.contracts USING btree (status);
-CREATE INDEX idx_contracts_tenant ON public.contracts USING btree (tenant_id);
-CREATE UNIQUE INDEX corporate_tax_grid_lines_pkey ON public.corporate_tax_grid_lines USING btree (id);
-CREATE INDEX idx_ctgl_grid ON public.corporate_tax_grid_lines USING btree (grid_id);
-CREATE INDEX idx_ctgl_sort ON public.corporate_tax_grid_lines USING btree (grid_id, sort_order);
-CREATE UNIQUE INDEX corporate_tax_grids_pkey ON public.corporate_tax_grids USING btree (id);
-CREATE INDEX idx_ctg_active ON public.corporate_tax_grids USING btree (status) WHERE (status = 'active'::text);
-CREATE INDEX idx_ctg_country ON public.corporate_tax_grids USING btree (country_code);
-CREATE INDEX idx_ctg_tenant ON public.corporate_tax_grids USING btree (tenant_id);
-CREATE UNIQUE INDEX cpf_accounts_employee_unique ON public.cpf_accounts USING btree (employee_id);
-CREATE UNIQUE INDEX cpf_accounts_pkey ON public.cpf_accounts USING btree (id);
-CREATE INDEX idx_cpf_accounts_tenant ON public.cpf_accounts USING btree (tenant_id);
-CREATE INDEX idx_cpf_employee ON public.cpf_accounts USING btree (employee_id);
-CREATE UNIQUE INDEX cpf_transactions_pkey ON public.cpf_transactions USING btree (id);
-CREATE INDEX idx_cpf_transactions_employee ON public.cpf_transactions USING btree (employee_id);
-CREATE UNIQUE INDEX credit_lines_pkey ON public.credit_lines USING btree (id);
-CREATE INDEX idx_credit_lines_name ON public.credit_lines USING btree (name);
-CREATE INDEX idx_credit_lines_status ON public.credit_lines USING btree (status);
-CREATE INDEX idx_credit_lines_tenant ON public.credit_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX credit_note_lines_pkey ON public.credit_note_lines USING btree (id);
-CREATE INDEX idx_credit_note_lines_credit_note_id ON public.credit_note_lines USING btree (credit_note_id);
-CREATE INDEX idx_credit_note_lines_tenant ON public.credit_note_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX credit_notes_pkey ON public.credit_notes USING btree (id);
-CREATE UNIQUE INDEX credit_notes_tenant_number_key ON public.credit_notes USING btree (tenant_id, number);
-CREATE INDEX idx_credit_notes_tenant ON public.credit_notes USING btree (tenant_id);
-CREATE UNIQUE INDEX uniq_credit_note_number_tenant ON public.credit_notes USING btree (tenant_id, number);
-CREATE UNIQUE INDEX crm_activities_pkey ON public.crm_activities USING btree (id);
-CREATE INDEX idx_act_customer ON public.crm_activities USING btree (customer_id);
-CREATE INDEX idx_act_date ON public.crm_activities USING btree (scheduled_date);
-CREATE INDEX idx_act_opp ON public.crm_activities USING btree (opportunity_id);
-CREATE UNIQUE INDEX crm_campaign_recipients_pkey ON public.crm_campaign_recipients USING btree (id);
-CREATE INDEX idx_cr_camp ON public.crm_campaign_recipients USING btree (campaign_id);
-CREATE UNIQUE INDEX crm_campaigns_pkey ON public.crm_campaigns USING btree (id);
-CREATE INDEX idx_camp_status ON public.crm_campaigns USING btree (status);
-CREATE UNIQUE INDEX crm_forecasts_pkey ON public.crm_forecasts USING btree (id);
-CREATE INDEX idx_fc_period ON public.crm_forecasts USING btree (period);
-CREATE UNIQUE INDEX crm_opportunities_pkey ON public.crm_opportunities USING btree (id);
-CREATE INDEX idx_opp_customer ON public.crm_opportunities USING btree (customer_id);
-CREATE INDEX idx_opp_rep ON public.crm_opportunities USING btree (sales_rep_id);
-CREATE INDEX idx_opp_stage ON public.crm_opportunities USING btree (stage);
-CREATE UNIQUE INDEX crm_territories_pkey ON public.crm_territories USING btree (id);
-CREATE INDEX idx_terr_parent ON public.crm_territories USING btree (parent_id);
-CREATE UNIQUE INDEX currencies_code_unique ON public.currencies USING btree (code);
-CREATE UNIQUE INDEX currencies_pkey ON public.currencies USING btree (id);
-CREATE UNIQUE INDEX currencies_tenant_code_key ON public.currencies USING btree (tenant_id, code);
-CREATE INDEX idx_currencies_tenant ON public.currencies USING btree (tenant_id);
-CREATE UNIQUE INDEX currency_revaluations_pkey ON public.currency_revaluations USING btree (id);
-CREATE INDEX idx_currency_reval_period ON public.currency_revaluations USING btree (period_date);
-CREATE INDEX idx_currency_reval_status ON public.currency_revaluations USING btree (status);
-CREATE INDEX idx_currency_reval_tenant ON public.currency_revaluations USING btree (tenant_id);
-CREATE INDEX idx_currency_revaluations_tenant ON public.currency_revaluations USING btree (tenant_id);
-CREATE UNIQUE INDEX custom_report_templates_pkey ON public.custom_report_templates USING btree (id);
-CREATE INDEX idx_custom_reports_tenant ON public.custom_report_templates USING btree (tenant_id);
-CREATE INDEX idx_custom_reports_type ON public.custom_report_templates USING btree (report_type);
-CREATE UNIQUE INDEX customer_contacts_pkey ON public.customer_contacts USING btree (id);
-CREATE INDEX idx_cc_customer ON public.customer_contacts USING btree (customer_id);
-CREATE UNIQUE INDEX customer_payments_number_key ON public.customer_payments USING btree (number);
-CREATE UNIQUE INDEX customer_payments_pkey ON public.customer_payments USING btree (id);
-CREATE INDEX idx_customer_payments_customer ON public.customer_payments USING btree (customer_id);
-CREATE INDEX idx_customer_payments_invoice ON public.customer_payments USING btree (invoice_id);
-CREATE INDEX idx_customer_payments_tenant ON public.customer_payments USING btree (tenant_id);
-CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (id);
-CREATE INDEX idx_customers_tenant ON public.customers USING btree (tenant_id);
-CREATE UNIQUE INDEX dashboard_widgets_pkey ON public.dashboard_widgets USING btree (id);
-CREATE INDEX idx_dashboard_widgets_tenant ON public.dashboard_widgets USING btree (tenant_id);
-CREATE INDEX idx_dashboard_widgets_user ON public.dashboard_widgets USING btree (user_id);
-CREATE UNIQUE INDEX deferred_printing_jobs_pkey ON public.deferred_printing_jobs USING btree (id);
-CREATE INDEX idx_deferred_print_scheduled ON public.deferred_printing_jobs USING btree (scheduled_date);
-CREATE INDEX idx_deferred_print_status ON public.deferred_printing_jobs USING btree (status);
-CREATE INDEX idx_deferred_print_tenant ON public.deferred_printing_jobs USING btree (tenant_id);
-CREATE UNIQUE INDEX delivery_note_lines_pkey ON public.delivery_note_lines USING btree (id);
-CREATE INDEX idx_delivery_note_lines_dn ON public.delivery_note_lines USING btree (delivery_note_id);
-CREATE INDEX idx_delivery_note_lines_tenant ON public.delivery_note_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX delivery_notes_number_key ON public.delivery_notes USING btree (number);
-CREATE UNIQUE INDEX delivery_notes_pkey ON public.delivery_notes USING btree (id);
-CREATE INDEX idx_delivery_notes_customer ON public.delivery_notes USING btree (customer_id);
-CREATE INDEX idx_delivery_notes_tenant ON public.delivery_notes USING btree (tenant_id);
-CREATE UNIQUE INDEX delivery_schedules_pkey ON public.delivery_schedules USING btree (id);
-CREATE INDEX idx_delivery_schedules_customer ON public.delivery_schedules USING btree (customer_id);
-CREATE INDEX idx_delivery_schedules_product ON public.delivery_schedules USING btree (product_id);
-CREATE INDEX idx_delivery_schedules_tenant ON public.delivery_schedules USING btree (tenant_id);
-CREATE UNIQUE INDEX disputes_pkey ON public.disputes USING btree (id);
-CREATE INDEX idx_disputes_status ON public.disputes USING btree (status);
-CREATE INDEX idx_disputes_tenant ON public.disputes USING btree (tenant_id);
-CREATE UNIQUE INDEX distribution_grill_lines_pkey ON public.distribution_grill_lines USING btree (id);
-CREATE INDEX idx_distribution_grill_lines_grill ON public.distribution_grill_lines USING btree (grill_id);
-CREATE INDEX idx_distribution_grill_lines_tenant ON public.distribution_grill_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX distribution_grills_pkey ON public.distribution_grills USING btree (id);
-CREATE INDEX idx_distribution_grills_account ON public.distribution_grills USING btree (account_code);
-CREATE INDEX idx_distribution_grills_tenant ON public.distribution_grills USING btree (tenant_id);
-CREATE UNIQUE INDEX document_charges_pkey ON public.document_charges USING btree (id);
-CREATE INDEX idx_doc_charges_doc ON public.document_charges USING btree (document_type, document_id);
-CREATE UNIQUE INDEX document_distribution_logs_pkey ON public.document_distribution_logs USING btree (id);
-CREATE INDEX idx_dist_logs_batch ON public.document_distribution_logs USING btree (batch_id);
-CREATE INDEX idx_dist_logs_employee ON public.document_distribution_logs USING btree (employee_id);
-CREATE UNIQUE INDEX document_shares_pkey ON public.document_shares USING btree (id);
-CREATE INDEX idx_ds_token ON public.document_shares USING btree (share_token);
-CREATE UNIQUE INDEX document_templates_pkey ON public.document_templates USING btree (id);
-CREATE INDEX idx_document_templates_tenant ON public.document_templates USING btree (tenant_id);
-CREATE INDEX idx_document_templates_type ON public.document_templates USING btree (document_type);
-CREATE UNIQUE INDEX document_transformations_pkey ON public.document_transformations USING btree (id);
-CREATE INDEX idx_doc_trans_src ON public.document_transformations USING btree (source_type, source_id);
-CREATE INDEX idx_doc_trans_tgt ON public.document_transformations USING btree (target_type, target_id);
-CREATE UNIQUE INDEX dpae_records_pkey ON public.dpae_records USING btree (id);
-CREATE INDEX idx_dpae_employee ON public.dpae_records USING btree (employee_id);
-CREATE INDEX idx_dpae_records_tenant ON public.dpae_records USING btree (tenant_id);
-CREATE INDEX idx_dpae_status ON public.dpae_records USING btree (status);
-CREATE UNIQUE INDEX dsn_declarations_pkey ON public.dsn_declarations USING btree (id);
-CREATE INDEX idx_dsn_declarations_tenant ON public.dsn_declarations USING btree (tenant_id);
-CREATE INDEX idx_dsn_period ON public.dsn_declarations USING btree (period);
-CREATE INDEX idx_dsn_status ON public.dsn_declarations USING btree (status);
-CREATE UNIQUE INDEX electronic_signatures_pkey ON public.electronic_signatures USING btree (id);
-CREATE INDEX idx_es_doc ON public.electronic_signatures USING btree (document_type, document_id);
-CREATE UNIQUE INDEX employee_activity_logs_pkey ON public.employee_activity_logs USING btree (id);
-CREATE INDEX idx_activity_logs_date ON public.employee_activity_logs USING btree (created_at);
-CREATE INDEX idx_activity_logs_employee ON public.employee_activity_logs USING btree (employee_id);
-CREATE INDEX idx_activity_logs_tenant ON public.employee_activity_logs USING btree (tenant_id);
-CREATE INDEX idx_activity_logs_type ON public.employee_activity_logs USING btree (activity_type);
-CREATE UNIQUE INDEX employee_documents_pkey ON public.employee_documents USING btree (id);
-CREATE INDEX idx_emp_docs_employee ON public.employee_documents USING btree (employee_id);
-CREATE INDEX idx_emp_docs_period ON public.employee_documents USING btree (period);
-CREATE INDEX idx_emp_docs_type ON public.employee_documents USING btree (document_type);
-CREATE INDEX idx_employee_documents_employee ON public.employee_documents USING btree (employee_id);
-CREATE INDEX idx_employee_documents_tenant ON public.employee_documents USING btree (tenant_id);
-CREATE UNIQUE INDEX employee_exit_processes_pkey ON public.employee_exit_processes USING btree (id);
-CREATE INDEX idx_exit_processes_employee ON public.employee_exit_processes USING btree (employee_id);
-CREATE INDEX idx_exit_processes_status ON public.employee_exit_processes USING btree (status);
-CREATE UNIQUE INDEX employee_objectives_pkey ON public.employee_objectives USING btree (id);
-CREATE INDEX idx_objectives_campaign ON public.employee_objectives USING btree (campaign_id);
-CREATE INDEX idx_objectives_employee ON public.employee_objectives USING btree (employee_id);
-CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id);
-CREATE INDEX idx_employees_status ON public.employees USING btree (status);
-CREATE INDEX idx_employees_tenant ON public.employees USING btree (tenant_id);
-CREATE UNIQUE INDEX entry_templates_pkey ON public.entry_templates USING btree (id);
-CREATE INDEX idx_entry_templates_default ON public.entry_templates USING btree (is_default) WHERE (is_default = true);
-CREATE INDEX idx_entry_templates_journal ON public.entry_templates USING btree (journal_code);
-CREATE INDEX idx_entry_templates_tenant ON public.entry_templates USING btree (tenant_id);
-CREATE UNIQUE INDEX etat_rapprochement_pkey ON public.etat_rapprochement USING btree (id);
-CREATE INDEX idx_etat_rapprochement_account ON public.etat_rapprochement USING btree (account_code);
-CREATE INDEX idx_etat_rapprochement_tenant ON public.etat_rapprochement USING btree (tenant_id);
-CREATE UNIQUE INDEX exchange_gain_loss_entries_pkey ON public.exchange_gain_loss_entries USING btree (id);
-CREATE INDEX idx_exchange_gain_loss_invoice ON public.exchange_gain_loss_entries USING btree (invoice_id);
-CREATE INDEX idx_exchange_gain_loss_payment ON public.exchange_gain_loss_entries USING btree (payment_id);
-CREATE INDEX idx_exchange_gain_loss_tenant ON public.exchange_gain_loss_entries USING btree (tenant_id);
-CREATE UNIQUE INDEX exchange_rates_pkey ON public.exchange_rates USING btree (id);
-CREATE INDEX idx_exchange_rates_latest ON public.exchange_rates USING btree (tenant_id, base_currency, quote_currency, rate_date DESC);
-CREATE UNIQUE INDEX idx_exchange_rates_unique ON public.exchange_rates USING btree (tenant_id, base_currency, quote_currency, rate_date);
-CREATE UNIQUE INDEX expense_categories_pkey ON public.expense_categories USING btree (id);
-CREATE UNIQUE INDEX expense_report_lines_pkey ON public.expense_report_lines USING btree (id);
-CREATE INDEX idx_expense_lines_report ON public.expense_report_lines USING btree (expense_report_id);
-CREATE INDEX idx_expense_report_lines_tenant ON public.expense_report_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX expense_reports_pkey ON public.expense_reports USING btree (id);
-CREATE INDEX idx_expense_reports_employee ON public.expense_reports USING btree (employee_id);
-CREATE INDEX idx_expense_reports_status ON public.expense_reports USING btree (status);
-CREATE INDEX idx_expense_reports_tenant ON public.expense_reports USING btree (tenant_id);
-CREATE UNIQUE INDEX extourne_log_pkey ON public.extourne_log USING btree (id);
-CREATE INDEX idx_extourne_log_original ON public.extourne_log USING btree (original_entry_id);
-CREATE INDEX idx_extourne_log_tenant ON public.extourne_log USING btree (tenant_id);
-CREATE UNIQUE INDEX fec_attestations_pkey ON public.fec_attestations USING btree (id);
-CREATE INDEX idx_fec_attest_tenant ON public.fec_attestations USING btree (tenant_id);
-CREATE UNIQUE INDEX fiscal_backups_pkey ON public.fiscal_backups USING btree (id);
-CREATE INDEX idx_fiscal_backups_fiscal_year ON public.fiscal_backups USING btree (fiscal_year_id);
-CREATE INDEX idx_fiscal_backups_tenant ON public.fiscal_backups USING btree (tenant_id);
-CREATE UNIQUE INDEX fiscal_periods_pkey ON public.fiscal_periods USING btree (id);
-CREATE INDEX idx_fiscal_periods_tenant ON public.fiscal_periods USING btree (tenant_id);
-CREATE INDEX idx_fiscal_periods_year ON public.fiscal_periods USING btree (fiscal_year_id);
-CREATE UNIQUE INDEX fiscal_position_mappings_pkey ON public.fiscal_position_mappings USING btree (id);
-CREATE INDEX idx_fiscal_mapping_position ON public.fiscal_position_mappings USING btree (fiscal_position_id);
-CREATE INDEX idx_fiscal_mapping_tenant ON public.fiscal_position_mappings USING btree (tenant_id);
-CREATE UNIQUE INDEX fiscal_positions_pkey ON public.fiscal_positions USING btree (id);
-CREATE INDEX idx_fiscal_positions_country ON public.fiscal_positions USING btree (country_code);
-CREATE INDEX idx_fiscal_positions_tenant ON public.fiscal_positions USING btree (tenant_id);
-CREATE UNIQUE INDEX fiscal_years_pkey ON public.fiscal_years USING btree (id);
-CREATE UNIQUE INDEX fiscal_years_tenant_code_key ON public.fiscal_years USING btree (tenant_id, code);
-CREATE INDEX idx_fiscal_years_tenant ON public.fiscal_years USING btree (tenant_id);
-CREATE UNIQUE INDEX fixed_assets_pkey ON public.fixed_assets USING btree (id);
-CREATE UNIQUE INDEX fixed_assets_tenant_code_key ON public.fixed_assets USING btree (tenant_id, code);
-CREATE INDEX idx_fixed_assets_status ON public.fixed_assets USING btree (status);
-CREATE INDEX idx_fixed_assets_tenant ON public.fixed_assets USING btree (tenant_id);
-CREATE UNIQUE INDEX fusion_logs_pkey ON public.fusion_logs USING btree (id);
-CREATE INDEX idx_fusion_logs_target ON public.fusion_logs USING btree (target_account_code);
-CREATE INDEX idx_fusion_logs_tenant ON public.fusion_logs USING btree (tenant_id);
-CREATE UNIQUE INDEX future_accounting_movements_pkey ON public.future_accounting_movements USING btree (id);
-CREATE INDEX idx_future_accounting_movements_tenant ON public.future_accounting_movements USING btree (tenant_id);
-CREATE INDEX idx_mcf_account ON public.future_accounting_movements USING btree (account_code);
-CREATE INDEX idx_mcf_expected_date ON public.future_accounting_movements USING btree (expected_date);
-CREATE INDEX idx_mcf_incorporated ON public.future_accounting_movements USING btree (incorporated);
-CREATE UNIQUE INDEX goods_receipt_lines_pkey ON public.goods_receipt_lines USING btree (id);
-CREATE INDEX idx_goods_receipt_lines_gr ON public.goods_receipt_lines USING btree (goods_receipt_id);
-CREATE INDEX idx_goods_receipt_lines_tenant ON public.goods_receipt_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX goods_receipts_number_key ON public.goods_receipts USING btree (number);
-CREATE UNIQUE INDEX goods_receipts_pkey ON public.goods_receipts USING btree (id);
-CREATE INDEX idx_goods_receipts_supplier ON public.goods_receipts USING btree (supplier_id);
-CREATE INDEX idx_goods_receipts_tenant ON public.goods_receipts USING btree (tenant_id);
-CREATE UNIQUE INDEX grid_templates_pkey ON public.grid_templates USING btree (id);
-CREATE INDEX idx_grid_templates_code ON public.grid_templates USING btree (tenant_id, code);
-CREATE INDEX idx_grid_templates_tenant ON public.grid_templates USING btree (tenant_id);
-CREATE UNIQUE INDEX honorarium_records_pkey ON public.honorarium_records USING btree (id);
-CREATE INDEX idx_ifrs_adj_tenant ON public.ifrs_adjustments USING btree (tenant_id);
-CREATE UNIQUE INDEX ifrs_adjustments_pkey ON public.ifrs_adjustments USING btree (id);
-CREATE INDEX idx_ijss_history_employee ON public.ijss_history USING btree (employee_id);
-CREATE INDEX idx_ijss_history_stoppage ON public.ijss_history USING btree (work_stoppage_id);
-CREATE UNIQUE INDEX ijss_history_pkey ON public.ijss_history USING btree (id);
-CREATE INDEX idx_interview_campaigns_status ON public.interview_campaigns USING btree (status);
-CREATE UNIQUE INDEX interview_campaigns_pkey ON public.interview_campaigns USING btree (id);
-CREATE INDEX idx_interviews_employee ON public.interviews USING btree (employee_id);
-CREATE INDEX idx_interviews_tenant ON public.interviews USING btree (tenant_id);
-CREATE UNIQUE INDEX interviews_pkey ON public.interviews USING btree (id);
-CREATE INDEX idx_investments_name ON public.investments USING btree (name);
-CREATE INDEX idx_investments_status ON public.investments USING btree (status);
-CREATE INDEX idx_investments_tenant ON public.investments USING btree (tenant_id);
-CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
-CREATE INDEX idx_invoice_lines_invoice_id ON public.invoice_lines USING btree (invoice_id);
-CREATE INDEX idx_invoice_lines_tenant ON public.invoice_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX invoice_lines_pkey ON public.invoice_lines USING btree (id);
-CREATE INDEX idx_invoices_customer_id ON public.invoices USING btree (customer_id);
-CREATE INDEX idx_invoices_date ON public.invoices USING btree (date);
-CREATE INDEX idx_invoices_status ON public.invoices USING btree (status);
-CREATE INDEX idx_invoices_tenant ON public.invoices USING btree (tenant_id);
-CREATE UNIQUE INDEX invoices_pkey ON public.invoices USING btree (id);
-CREATE UNIQUE INDEX invoices_tenant_number_key ON public.invoices USING btree (tenant_id, number);
-CREATE UNIQUE INDEX uniq_invoice_number_tenant ON public.invoices USING btree (tenant_id, number);
-CREATE INDEX idx_journal_access_tenant ON public.journal_access_rights USING btree (tenant_id);
-CREATE INDEX idx_journal_access_user ON public.journal_access_rights USING btree (user_id);
-CREATE UNIQUE INDEX journal_access_rights_pkey ON public.journal_access_rights USING btree (id);
-CREATE UNIQUE INDEX journal_access_rights_tenant_id_user_id_journal_code_key ON public.journal_access_rights USING btree (tenant_id, user_id, journal_code);
-CREATE INDEX idx_journal_entries_date ON public.journal_entries USING btree (date);
-CREATE INDEX idx_journal_entries_journal_code ON public.journal_entries USING btree (journal_code);
-CREATE INDEX idx_journal_entries_period ON public.journal_entries USING btree (fiscal_period_id);
-CREATE INDEX idx_journal_entries_piece ON public.journal_entries USING btree (piece_number);
-CREATE INDEX idx_journal_entries_status ON public.journal_entries USING btree (status);
-CREATE INDEX idx_journal_entries_tenant ON public.journal_entries USING btree (tenant_id);
-CREATE UNIQUE INDEX journal_entries_pkey ON public.journal_entries USING btree (id);
-CREATE UNIQUE INDEX journal_entries_tenant_number_key ON public.journal_entries USING btree (tenant_id, number);
-CREATE UNIQUE INDEX uniq_journal_entry_number_tenant ON public.journal_entries USING btree (tenant_id, journal_code, number);
-CREATE INDEX idx_journal_lines_account_general ON public.journal_lines USING btree (account_general);
-CREATE INDEX idx_journal_lines_account_tiers ON public.journal_lines USING btree (account_tiers);
-CREATE INDEX idx_journal_lines_analytic ON public.journal_lines USING btree (analytic_section_id);
-CREATE INDEX idx_journal_lines_journal_id ON public.journal_lines USING btree (journal_id);
-CREATE INDEX idx_journal_lines_lettrage ON public.journal_lines USING btree (lettrage_code);
-CREATE INDEX idx_journal_lines_marked_bap ON public.journal_lines USING btree (marked_bap) WHERE (marked_bap = true);
-CREATE INDEX idx_journal_lines_tenant ON public.journal_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX journal_lines_pkey ON public.journal_lines USING btree (id);
-CREATE INDEX idx_journals_code ON public.journals USING btree (code);
-CREATE INDEX idx_journals_tenant ON public.journals USING btree (tenant_id);
-CREATE UNIQUE INDEX journals_pkey ON public.journals USING btree (id);
-CREATE UNIQUE INDEX journals_tenant_code_key ON public.journals USING btree (tenant_id, code);
-CREATE INDEX idx_justificatif_solde_account ON public.justificatif_solde USING btree (account_code);
-CREATE INDEX idx_justificatif_solde_tenant ON public.justificatif_solde USING btree (tenant_id);
-CREATE UNIQUE INDEX justificatif_solde_pkey ON public.justificatif_solde USING btree (id);
-CREATE INDEX idx_kb_category ON public.knowledge_base_articles USING btree (category);
-CREATE INDEX idx_kb_status ON public.knowledge_base_articles USING btree (status);
-CREATE UNIQUE INDEX knowledge_base_articles_pkey ON public.knowledge_base_articles USING btree (id);
-CREATE INDEX idx_leave_balances_employee ON public.leave_balances USING btree (employee_id);
-CREATE INDEX idx_leave_balances_year ON public.leave_balances USING btree (year);
-CREATE UNIQUE INDEX leave_balances_employee_id_leave_type_year_key ON public.leave_balances USING btree (employee_id, leave_type, year);
-CREATE UNIQUE INDEX leave_balances_pkey ON public.leave_balances USING btree (id);
-CREATE INDEX idx_leave_provisions_employee ON public.leave_provisions USING btree (employee_id);
-CREATE INDEX idx_leave_provisions_period ON public.leave_provisions USING btree (period);
-CREATE UNIQUE INDEX leave_provisions_pkey ON public.leave_provisions USING btree (id);
-CREATE INDEX idx_leave_requests_employee ON public.leave_requests USING btree (employee_id);
-CREATE INDEX idx_leave_requests_status ON public.leave_requests USING btree (status);
-CREATE INDEX idx_leave_requests_tenant ON public.leave_requests USING btree (tenant_id);
-CREATE UNIQUE INDEX leave_requests_pkey ON public.leave_requests USING btree (id);
-CREATE UNIQUE INDEX leave_rules_pkey ON public.leave_rules USING btree (id);
-CREATE INDEX idx_legal_declarations_status ON public.legal_declarations USING btree (status);
-CREATE INDEX idx_legal_declarations_tenant ON public.legal_declarations USING btree (tenant_id);
-CREATE INDEX idx_legal_declarations_type ON public.legal_declarations USING btree (declaration_type);
-CREATE UNIQUE INDEX legal_declarations_number_key ON public.legal_declarations USING btree (number);
-CREATE UNIQUE INDEX legal_declarations_pkey ON public.legal_declarations USING btree (id);
-CREATE INDEX idx_legal_watch_date ON public.legal_watch USING btree (published_date);
-CREATE INDEX idx_legal_watch_tenant ON public.legal_watch USING btree (tenant_id);
-CREATE UNIQUE INDEX legal_watch_pkey ON public.legal_watch USING btree (id);
-CREATE INDEX idx_legislation_packs_tenant ON public.legislation_packs USING btree (tenant_id);
-CREATE UNIQUE INDEX legislation_packs_pkey ON public.legislation_packs USING btree (code);
-CREATE INDEX idx_lettrage_diff_tenant ON public.lettrage_differences USING btree (tenant_id);
-CREATE UNIQUE INDEX lettrage_differences_pkey ON public.lettrage_differences USING btree (id);
-CREATE INDEX idx_machines_code ON public.machines USING btree (code);
-CREATE INDEX idx_machines_tenant ON public.machines USING btree (tenant_id);
-CREATE INDEX idx_machines_work_center ON public.machines USING btree (work_center_id);
-CREATE UNIQUE INDEX machines_pkey ON public.machines USING btree (id);
-CREATE INDEX idx_manufacturing_orders_bom ON public.manufacturing_orders USING btree (bom_id);
-CREATE INDEX idx_manufacturing_orders_status ON public.manufacturing_orders USING btree (status);
-CREATE INDEX idx_manufacturing_orders_tenant ON public.manufacturing_orders USING btree (tenant_id);
-CREATE UNIQUE INDEX manufacturing_orders_number_key ON public.manufacturing_orders USING btree (number);
-CREATE UNIQUE INDEX manufacturing_orders_pkey ON public.manufacturing_orders USING btree (id);
-CREATE INDEX idx_marking_types_tenant ON public.marking_types USING btree (tenant_id);
-CREATE UNIQUE INDEX marking_types_pkey ON public.marking_types USING btree (id);
-CREATE UNIQUE INDEX marking_types_tenant_id_code_key ON public.marking_types USING btree (tenant_id, code);
-CREATE UNIQUE INDEX meal_voucher_config_pkey ON public.meal_voucher_config USING btree (id);
-CREATE INDEX idx_medical_exams_date ON public.medical_exams USING btree (scheduled_date);
-CREATE INDEX idx_medical_exams_employee ON public.medical_exams USING btree (employee_id);
-CREATE UNIQUE INDEX medical_exams_pkey ON public.medical_exams USING btree (id);
-CREATE INDEX idx_mirror_servers_machine ON public.mirror_servers USING btree (machine_id);
-CREATE INDEX idx_mirror_servers_tenant ON public.mirror_servers USING btree (tenant_id);
-CREATE UNIQUE INDEX mirror_servers_pkey ON public.mirror_servers USING btree (id);
-CREATE INDEX idx_mirror_verification_details_tenant ON public.mirror_verification_details USING btree (tenant_id);
-CREATE INDEX idx_mirror_verification_server ON public.mirror_verification_details USING btree (mirror_server_id);
-CREATE INDEX idx_mirror_verification_tenant ON public.mirror_verification_details USING btree (tenant_id);
-CREATE UNIQUE INDEX mirror_verification_details_pkey ON public.mirror_verification_details USING btree (id);
-CREATE INDEX idx_doc_access_log_doc ON public.module_document_access_log USING btree (document_id);
-CREATE INDEX idx_doc_access_log_tenant ON public.module_document_access_log USING btree (tenant_id);
-CREATE INDEX idx_doc_access_log_user ON public.module_document_access_log USING btree (user_id);
-CREATE UNIQUE INDEX module_document_access_log_pkey ON public.module_document_access_log USING btree (id);
-CREATE INDEX idx_doc_shares_doc ON public.module_document_shares USING btree (document_id);
-CREATE INDEX idx_doc_shares_tenant ON public.module_document_shares USING btree (tenant_id);
-CREATE INDEX idx_doc_shares_token ON public.module_document_shares USING btree (share_token);
-CREATE UNIQUE INDEX module_document_shares_pkey ON public.module_document_shares USING btree (id);
-CREATE UNIQUE INDEX module_document_shares_share_token_key ON public.module_document_shares USING btree (share_token);
-CREATE INDEX idx_module_documents_confidentiality ON public.module_documents USING btree (confidentiality);
-CREATE INDEX idx_module_documents_created ON public.module_documents USING btree (created_at DESC);
-CREATE INDEX idx_module_documents_entity ON public.module_documents USING btree (entity_type, entity_id);
-CREATE INDEX idx_module_documents_expires ON public.module_documents USING btree (expires_at);
-CREATE INDEX idx_module_documents_module ON public.module_documents USING btree (module);
-CREATE INDEX idx_module_documents_status ON public.module_documents USING btree (status);
-CREATE INDEX idx_module_documents_tenant ON public.module_documents USING btree (tenant_id);
-CREATE INDEX idx_module_documents_uploaded_by ON public.module_documents USING btree (uploaded_by);
-CREATE UNIQUE INDEX module_documents_pkey ON public.module_documents USING btree (id);
-CREATE INDEX idx_mrp_pending_docs_tenant ON public.mrp_pending_docs USING btree (tenant_id);
-CREATE INDEX idx_mrp_pending_status ON public.mrp_pending_docs USING btree (status);
-CREATE UNIQUE INDEX mrp_pending_docs_pkey ON public.mrp_pending_docs USING btree (id);
-CREATE INDEX idx_mrp_proposals_product ON public.mrp_proposals USING btree (product_id);
-CREATE INDEX idx_mrp_proposals_run ON public.mrp_proposals USING btree (mrp_run_id);
-CREATE INDEX idx_mrp_proposals_status ON public.mrp_proposals USING btree (status);
-CREATE INDEX idx_mrp_proposals_tenant ON public.mrp_proposals USING btree (tenant_id);
-CREATE UNIQUE INDEX mrp_proposals_pkey ON public.mrp_proposals USING btree (id);
-CREATE INDEX idx_mrp_runs_date ON public.mrp_runs USING btree (run_date);
-CREATE INDEX idx_mrp_runs_tenant ON public.mrp_runs USING btree (tenant_id);
-CREATE UNIQUE INDEX mrp_runs_pkey ON public.mrp_runs USING btree (id);
-CREATE UNIQUE INDEX mrp_runs_run_number_key ON public.mrp_runs USING btree (run_number);
-CREATE INDEX idx_email_queue_created ON public.notification_email_queue USING btree (created_at DESC);
-CREATE INDEX idx_email_queue_recipient ON public.notification_email_queue USING btree (recipient_email);
-CREATE INDEX idx_email_queue_status ON public.notification_email_queue USING btree (status);
-CREATE INDEX idx_email_queue_tenant ON public.notification_email_queue USING btree (tenant_id);
-CREATE UNIQUE INDEX notification_email_queue_pkey ON public.notification_email_queue USING btree (id);
-CREATE INDEX idx_notif_prefs_employee ON public.notification_preferences USING btree (employee_id);
-CREATE INDEX idx_notif_prefs_tenant ON public.notification_preferences USING btree (tenant_id);
-CREATE UNIQUE INDEX notification_preferences_pkey ON public.notification_preferences USING btree (id);
-CREATE UNIQUE INDEX notification_preferences_tenant_id_employee_id_key ON public.notification_preferences USING btree (tenant_id, employee_id);
-CREATE INDEX idx_of_consumptions_mo ON public.of_consumptions USING btree (manufacturing_order_id);
-CREATE INDEX idx_of_consumptions_tenant ON public.of_consumptions USING btree (tenant_id);
-CREATE UNIQUE INDEX of_consumptions_pkey ON public.of_consumptions USING btree (id);
-CREATE INDEX idx_of_doc_access_user ON public.of_document_access USING btree (user_id);
-CREATE UNIQUE INDEX of_document_access_pkey ON public.of_document_access USING btree (id);
-CREATE INDEX idx_of_labels_mo ON public.of_labels USING btree (manufacturing_order_id);
-CREATE INDEX idx_of_labels_tenant ON public.of_labels USING btree (tenant_id);
-CREATE UNIQUE INDEX of_labels_label_number_key ON public.of_labels USING btree (label_number);
-CREATE UNIQUE INDEX of_labels_pkey ON public.of_labels USING btree (id);
-CREATE INDEX idx_of_lots_mo ON public.of_lots USING btree (manufacturing_order_id);
-CREATE INDEX idx_of_lots_tenant ON public.of_lots USING btree (tenant_id);
-CREATE UNIQUE INDEX of_lots_pkey ON public.of_lots USING btree (id);
-CREATE INDEX idx_op_invoice ON public.online_payments USING btree (invoice_id);
-CREATE UNIQUE INDEX online_payments_pkey ON public.online_payments USING btree (id);
-CREATE INDEX idx_partner_bank_accounts ON public.partner_bank_accounts USING btree (partner_type, partner_id);
-CREATE INDEX idx_partner_bank_accounts_partner ON public.partner_bank_accounts USING btree (partner_id);
-CREATE INDEX idx_partner_bank_accounts_tenant ON public.partner_bank_accounts USING btree (tenant_id);
-CREATE UNIQUE INDEX partner_bank_accounts_pkey ON public.partner_bank_accounts USING btree (id);
-CREATE UNIQUE INDEX partner_categories_pkey ON public.partner_categories USING btree (id);
-CREATE INDEX idx_partner_cat_mapping ON public.partner_category_mappings USING btree (partner_type, partner_id);
-CREATE INDEX idx_partner_cat_mapping_cat ON public.partner_category_mappings USING btree (category_id);
-CREATE UNIQUE INDEX partner_category_mappings_pkey ON public.partner_category_mappings USING btree (id);
-CREATE INDEX idx_partner_contacts_partner ON public.partner_contacts USING btree (partner_type, partner_id);
-CREATE UNIQUE INDEX partner_contacts_pkey ON public.partner_contacts USING btree (id);
-CREATE INDEX idx_pas_rates_dates ON public.pas_rates USING btree (effective_date, expiry_date);
-CREATE INDEX idx_pas_rates_employee ON public.pas_rates USING btree (employee_id);
-CREATE UNIQUE INDEX pas_rates_pkey ON public.pas_rates USING btree (id);
-CREATE INDEX idx_pay_recalls_employee ON public.pay_recalls USING btree (employee_id);
-CREATE INDEX idx_pay_recalls_tenant ON public.pay_recalls USING btree (tenant_id);
-CREATE UNIQUE INDEX pay_recalls_pkey ON public.pay_recalls USING btree (id);
-CREATE INDEX idx_pay_runs_status ON public.pay_runs USING btree (status);
-CREATE INDEX idx_pay_runs_tenant ON public.pay_runs USING btree (tenant_id);
-CREATE UNIQUE INDEX pay_runs_pkey ON public.pay_runs USING btree (id);
-CREATE UNIQUE INDEX pay_runs_tenant_number_key ON public.pay_runs USING btree (tenant_id, number);
-CREATE INDEX idx_payslip_clarified_slip ON public.pay_slip_clarified USING btree (pay_slip_id);
-CREATE UNIQUE INDEX pay_slip_clarified_pkey ON public.pay_slip_clarified USING btree (id);
-CREATE INDEX idx_pay_slips_employee ON public.pay_slips USING btree (employee_id);
-CREATE INDEX idx_pay_slips_pay_run ON public.pay_slips USING btree (pay_run_id);
-CREATE INDEX idx_pay_slips_status ON public.pay_slips USING btree (status);
-CREATE INDEX idx_pay_slips_tenant ON public.pay_slips USING btree (tenant_id);
-CREATE UNIQUE INDEX pay_slips_number_key ON public.pay_slips USING btree (number);
-CREATE UNIQUE INDEX pay_slips_pkey ON public.pay_slips USING btree (id);
-CREATE UNIQUE INDEX uniq_pay_slip_number_tenant ON public.pay_slips USING btree (tenant_id, number);
-CREATE INDEX idx_payment_orders_bank ON public.payment_orders USING btree (bank_account_id);
-CREATE INDEX idx_payment_orders_date ON public.payment_orders USING btree (payment_date);
-CREATE INDEX idx_payment_orders_status ON public.payment_orders USING btree (status);
-CREATE INDEX idx_payment_orders_tenant ON public.payment_orders USING btree (tenant_id);
-CREATE UNIQUE INDEX payment_orders_number_key ON public.payment_orders USING btree (number);
-CREATE UNIQUE INDEX payment_orders_pkey ON public.payment_orders USING btree (id);
-CREATE INDEX idx_payment_promises_date ON public.payment_promises USING btree (promised_date);
-CREATE INDEX idx_payment_promises_status ON public.payment_promises USING btree (status);
-CREATE INDEX idx_payment_promises_tenant ON public.payment_promises USING btree (tenant_id);
-CREATE UNIQUE INDEX payment_promises_pkey ON public.payment_promises USING btree (id);
-CREATE INDEX idx_payment_templates_compta_code ON public.payment_templates_compta USING btree (tenant_id, code);
-CREATE INDEX idx_payment_templates_compta_tenant ON public.payment_templates_compta USING btree (tenant_id);
-CREATE UNIQUE INDEX payment_templates_compta_pkey ON public.payment_templates_compta USING btree (id);
-CREATE INDEX idx_payment_terms_active ON public.payment_terms USING btree (active);
-CREATE INDEX idx_payment_terms_tenant ON public.payment_terms USING btree (tenant_id);
-CREATE UNIQUE INDEX payment_terms_pkey ON public.payment_terms USING btree (id);
-CREATE UNIQUE INDEX payment_terms_tenant_id_code_key ON public.payment_terms USING btree (tenant_id, code);
-CREATE INDEX idx_payroll_accounting_entries_tenant ON public.payroll_accounting_entries USING btree (tenant_id);
-CREATE INDEX idx_payroll_acct_pay_run ON public.payroll_accounting_entries USING btree (pay_run_id);
-CREATE INDEX idx_payroll_acct_status ON public.payroll_accounting_entries USING btree (status);
-CREATE UNIQUE INDEX payroll_accounting_entries_number_key ON public.payroll_accounting_entries USING btree (number);
-CREATE UNIQUE INDEX payroll_accounting_entries_pkey ON public.payroll_accounting_entries USING btree (id);
-CREATE INDEX idx_payroll_archives_employee ON public.payroll_archives USING btree (employee_id);
-CREATE INDEX idx_payroll_archives_period ON public.payroll_archives USING btree (period);
-CREATE INDEX idx_payroll_archives_tenant ON public.payroll_archives USING btree (tenant_id);
-CREATE UNIQUE INDEX payroll_archives_pkey ON public.payroll_archives USING btree (id);
-CREATE INDEX idx_payroll_component_rates_tenant ON public.payroll_component_rates USING btree (tenant_id);
-CREATE INDEX idx_payroll_rates_component ON public.payroll_component_rates USING btree (component_id);
-CREATE UNIQUE INDEX payroll_component_rates_pkey ON public.payroll_component_rates USING btree (id);
-CREATE INDEX idx_payroll_components_code ON public.payroll_components USING btree (code);
-CREATE INDEX idx_payroll_components_tenant ON public.payroll_components USING btree (tenant_id);
-CREATE INDEX idx_payroll_components_type ON public.payroll_components USING btree (type);
-CREATE UNIQUE INDEX payroll_components_pkey ON public.payroll_components USING btree (id);
-CREATE INDEX idx_ptgl_grid ON public.payroll_tax_grid_lines USING btree (grid_id);
-CREATE INDEX idx_ptgl_sort ON public.payroll_tax_grid_lines USING btree (grid_id, sort_order);
-CREATE UNIQUE INDEX payroll_tax_grid_lines_pkey ON public.payroll_tax_grid_lines USING btree (id);
-CREATE INDEX idx_ptg_active ON public.payroll_tax_grids USING btree (status) WHERE (status = 'active'::text);
-CREATE INDEX idx_ptg_country ON public.payroll_tax_grids USING btree (country_code);
-CREATE INDEX idx_ptg_tenant ON public.payroll_tax_grids USING btree (tenant_id);
-CREATE INDEX idx_ptg_type ON public.payroll_tax_grids USING btree (grid_type);
-CREATE UNIQUE INDEX payroll_tax_grids_pkey ON public.payroll_tax_grids USING btree (id);
-CREATE INDEX idx_payroll_templates_name ON public.payroll_templates USING btree (name);
-CREATE INDEX idx_payroll_templates_tenant ON public.payroll_templates USING btree (tenant_id);
-CREATE UNIQUE INDEX payroll_templates_pkey ON public.payroll_templates USING btree (id);
-CREATE INDEX idx_variable_elements_employee ON public.payroll_variable_elements USING btree (employee_id);
-CREATE INDEX idx_variable_elements_payrun ON public.payroll_variable_elements USING btree (pay_run_id);
-CREATE INDEX idx_variable_elements_period ON public.payroll_variable_elements USING btree (period);
-CREATE UNIQUE INDEX payroll_variable_elements_pkey ON public.payroll_variable_elements USING btree (id);
-CREATE INDEX idx_pick_list_lines_pick ON public.pick_list_lines USING btree (pick_list_id);
-CREATE INDEX idx_pick_list_lines_tenant ON public.pick_list_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX pick_list_lines_pkey ON public.pick_list_lines USING btree (id);
-CREATE INDEX idx_pick_lists_number ON public.pick_lists USING btree (number);
-CREATE INDEX idx_pick_lists_status ON public.pick_lists USING btree (status);
-CREATE INDEX idx_pick_lists_tenant ON public.pick_lists USING btree (tenant_id);
-CREATE UNIQUE INDEX pick_lists_pkey ON public.pick_lists USING btree (id);
-CREATE INDEX idx_planning_dates ON public.planning_slots USING btree (planned_start, planned_end);
-CREATE INDEX idx_planning_machine ON public.planning_slots USING btree (machine_id);
-CREATE INDEX idx_planning_mo ON public.planning_slots USING btree (manufacturing_order_id);
-CREATE INDEX idx_planning_slots_tenant ON public.planning_slots USING btree (tenant_id);
-CREATE UNIQUE INDEX planning_slots_pkey ON public.planning_slots USING btree (id);
-CREATE INDEX idx_ps_status ON public.pos_sessions USING btree (status);
-CREATE INDEX idx_ps_terminal ON public.pos_sessions USING btree (terminal_id);
-CREATE UNIQUE INDEX pos_sessions_pkey ON public.pos_sessions USING btree (id);
-CREATE UNIQUE INDEX pos_terminals_pkey ON public.pos_terminals USING btree (id);
-CREATE INDEX idx_ptl_ticket ON public.pos_ticket_lines USING btree (ticket_id);
-CREATE UNIQUE INDEX pos_ticket_lines_pkey ON public.pos_ticket_lines USING btree (id);
-CREATE INDEX idx_pt_date ON public.pos_tickets USING btree (date);
-CREATE INDEX idx_pt_session ON public.pos_tickets USING btree (session_id);
-CREATE UNIQUE INDEX pos_tickets_pkey ON public.pos_tickets USING btree (id);
-CREATE INDEX idx_price_list_lines_list ON public.price_list_lines USING btree (price_list_id);
-CREATE INDEX idx_price_list_lines_tenant ON public.price_list_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX price_list_lines_pkey ON public.price_list_lines USING btree (id);
-CREATE INDEX idx_price_lists_tenant ON public.price_lists USING btree (tenant_id);
-CREATE UNIQUE INDEX price_lists_code_key ON public.price_lists USING btree (code);
-CREATE UNIQUE INDEX price_lists_pkey ON public.price_lists USING btree (id);
-CREATE INDEX idx_product_attributes_name ON public.product_attributes USING btree (name);
-CREATE INDEX idx_product_attributes_tenant ON public.product_attributes USING btree (tenant_id);
-CREATE UNIQUE INDEX product_attributes_pkey ON public.product_attributes USING btree (id);
-CREATE INDEX idx_product_batches_number ON public.product_batches USING btree (batch_number);
-CREATE INDEX idx_product_batches_product ON public.product_batches USING btree (product_id);
-CREATE INDEX idx_product_batches_tenant ON public.product_batches USING btree (tenant_id);
-CREATE UNIQUE INDEX product_batches_pkey ON public.product_batches USING btree (id);
-CREATE INDEX idx_equiv_product ON public.product_equivalences USING btree (product_id);
-CREATE UNIQUE INDEX product_equivalences_pkey ON public.product_equivalences USING btree (id);
-CREATE INDEX idx_pgc_product ON public.product_grid_combinations USING btree (product_id);
-CREATE UNIQUE INDEX product_grid_combinations_pkey ON public.product_grid_combinations USING btree (id);
-CREATE INDEX idx_pg_product ON public.product_grids USING btree (product_id);
-CREATE UNIQUE INDEX product_grids_pkey ON public.product_grids USING btree (id);
-CREATE INDEX idx_pl_product ON public.product_links USING btree (product_id);
-CREATE UNIQUE INDEX product_links_pkey ON public.product_links USING btree (id);
-CREATE INDEX idx_pp_product ON public.product_packagings USING btree (product_id);
-CREATE UNIQUE INDEX product_packagings_pkey ON public.product_packagings USING btree (id);
-CREATE INDEX idx_product_serial_numbers_tenant ON public.product_serial_numbers USING btree (tenant_id);
-CREATE INDEX idx_product_serials_number ON public.product_serial_numbers USING btree (serial_number);
-CREATE INDEX idx_product_serials_product ON public.product_serial_numbers USING btree (product_id);
-CREATE UNIQUE INDEX product_serial_numbers_pkey ON public.product_serial_numbers USING btree (id);
-CREATE INDEX idx_product_substitutes_product ON public.product_substitutes USING btree (product_id);
-CREATE INDEX idx_product_substitutes_tenant ON public.product_substitutes USING btree (tenant_id);
-CREATE UNIQUE INDEX product_substitutes_pkey ON public.product_substitutes USING btree (id);
-CREATE INDEX idx_product_variants_product ON public.product_variants USING btree (product_id);
-CREATE INDEX idx_product_variants_sku ON public.product_variants USING btree (sku);
-CREATE INDEX idx_product_variants_tenant ON public.product_variants USING btree (tenant_id);
-CREATE UNIQUE INDEX product_variants_pkey ON public.product_variants USING btree (id);
-CREATE INDEX idx_forecasts_period ON public.production_forecasts USING btree (period);
-CREATE INDEX idx_forecasts_product ON public.production_forecasts USING btree (product_id);
-CREATE INDEX idx_production_forecasts_tenant ON public.production_forecasts USING btree (tenant_id);
-CREATE UNIQUE INDEX production_forecasts_forecast_number_key ON public.production_forecasts USING btree (forecast_number);
-CREATE UNIQUE INDEX production_forecasts_pkey ON public.production_forecasts USING btree (id);
-CREATE INDEX idx_products_tenant ON public.products USING btree (tenant_id);
-CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id);
-CREATE UNIQUE INDEX products_tenant_sku_key ON public.products USING btree (tenant_id, sku);
-CREATE INDEX idx_activity_log_created ON public.project_activity_log USING btree (created_at DESC);
-CREATE INDEX idx_activity_log_project ON public.project_activity_log USING btree (project_id);
-CREATE INDEX idx_activity_log_task ON public.project_activity_log USING btree (task_id);
-CREATE INDEX idx_activity_log_tenant ON public.project_activity_log USING btree (tenant_id);
-CREATE INDEX idx_activity_log_type ON public.project_activity_log USING btree (action_type);
-CREATE UNIQUE INDEX project_activity_log_pkey ON public.project_activity_log USING btree (id);
-CREATE INDEX idx_project_docs_project ON public.project_docs USING btree (project_id);
-CREATE INDEX idx_project_docs_tenant ON public.project_docs USING btree (tenant_id);
-CREATE INDEX idx_project_docs_updated ON public.project_docs USING btree (updated_at DESC);
-CREATE UNIQUE INDEX project_docs_pkey ON public.project_docs USING btree (id);
-CREATE INDEX idx_project_members_employee ON public.project_members USING btree (employee_id);
-CREATE INDEX idx_project_members_project ON public.project_members USING btree (project_id);
-CREATE INDEX idx_project_members_tenant ON public.project_members USING btree (tenant_id);
-CREATE UNIQUE INDEX project_members_pkey ON public.project_members USING btree (id);
-CREATE UNIQUE INDEX project_members_tenant_id_project_id_employee_id_key ON public.project_members USING btree (tenant_id, project_id, employee_id);
-CREATE INDEX idx_project_milestones_project ON public.project_milestones USING btree (project_id);
-CREATE INDEX idx_project_milestones_tenant ON public.project_milestones USING btree (tenant_id);
-CREATE UNIQUE INDEX project_milestones_pkey ON public.project_milestones USING btree (id);
-CREATE INDEX idx_notifications_created ON public.project_notifications USING btree (created_at DESC);
-CREATE INDEX idx_notifications_recipient ON public.project_notifications USING btree (recipient_id);
-CREATE INDEX idx_notifications_tenant ON public.project_notifications USING btree (tenant_id);
-CREATE INDEX idx_notifications_unread ON public.project_notifications USING btree (recipient_id, is_read);
-CREATE UNIQUE INDEX project_notifications_pkey ON public.project_notifications USING btree (id);
-CREATE INDEX idx_project_stages_sequence ON public.project_stages USING btree (sequence);
-CREATE INDEX idx_project_stages_tenant ON public.project_stages USING btree (tenant_id);
-CREATE UNIQUE INDEX project_stages_pkey ON public.project_stages USING btree (id);
-CREATE INDEX idx_project_tags_tenant ON public.project_tags USING btree (tenant_id);
-CREATE UNIQUE INDEX project_tags_pkey ON public.project_tags USING btree (id);
-CREATE UNIQUE INDEX project_task_assignees_pkey ON public.project_task_assignees USING btree (task_id, employee_id);
-CREATE INDEX idx_project_task_dependencies_depends ON public.project_task_dependencies USING btree (depends_on_task_id);
-CREATE INDEX idx_project_task_dependencies_task ON public.project_task_dependencies USING btree (task_id);
-CREATE UNIQUE INDEX project_task_dependencies_pkey ON public.project_task_dependencies USING btree (id);
-CREATE UNIQUE INDEX project_task_tags_pkey ON public.project_task_tags USING btree (task_id, tag_id);
-CREATE INDEX idx_task_templates_tenant ON public.project_task_templates USING btree (tenant_id);
-CREATE UNIQUE INDEX project_task_templates_pkey ON public.project_task_templates USING btree (id);
-CREATE INDEX idx_task_watchers_employee ON public.project_task_watchers USING btree (employee_id);
-CREATE INDEX idx_task_watchers_task ON public.project_task_watchers USING btree (task_id);
-CREATE UNIQUE INDEX project_task_watchers_pkey ON public.project_task_watchers USING btree (id);
-CREATE UNIQUE INDEX project_task_watchers_task_id_employee_id_key ON public.project_task_watchers USING btree (task_id, employee_id);
-CREATE INDEX idx_project_tasks_display_order ON public.project_tasks USING btree (display_order);
-CREATE INDEX idx_project_tasks_parent ON public.project_tasks USING btree (parent_id);
-CREATE INDEX idx_project_tasks_priority ON public.project_tasks USING btree (priority);
-CREATE INDEX idx_project_tasks_project ON public.project_tasks USING btree (project_id);
-CREATE INDEX idx_project_tasks_status ON public.project_tasks USING btree (status);
-CREATE INDEX idx_project_tasks_tenant ON public.project_tasks USING btree (tenant_id);
-CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id);
-CREATE INDEX idx_time_entries_employee ON public.project_time_entries USING btree (employee_id);
-CREATE INDEX idx_time_entries_project ON public.project_time_entries USING btree (project_id);
-CREATE INDEX idx_time_entries_start ON public.project_time_entries USING btree (start_time);
-CREATE INDEX idx_time_entries_task ON public.project_time_entries USING btree (task_id);
-CREATE INDEX idx_time_entries_tenant ON public.project_time_entries USING btree (tenant_id);
-CREATE UNIQUE INDEX project_time_entries_pkey ON public.project_time_entries USING btree (id);
-CREATE INDEX idx_projects_tenant ON public.projects USING btree (tenant_id);
-CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id);
-CREATE INDEX idx_promo_dates ON public.promotions USING btree (start_date, end_date);
-CREATE UNIQUE INDEX promotions_pkey ON public.promotions USING btree (id);
-CREATE INDEX idx_prospects_name ON public.prospects USING btree (name);
-CREATE INDEX idx_prospects_status ON public.prospects USING btree (status);
-CREATE INDEX idx_prospects_tenant ON public.prospects USING btree (tenant_id);
-CREATE UNIQUE INDEX prospects_pkey ON public.prospects USING btree (id);
-CREATE INDEX idx_public_holidays_date ON public.public_holidays USING btree (holiday_date);
-CREATE INDEX idx_public_holidays_region ON public.public_holidays USING btree (region);
-CREATE UNIQUE INDEX public_holidays_pkey ON public.public_holidays USING btree (id);
-CREATE INDEX idx_purchase_credit_lines_purchase_credit_id ON public.purchase_credit_lines USING btree (purchase_credit_id);
-CREATE INDEX idx_purchase_credit_lines_tenant ON public.purchase_credit_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_credit_lines_pkey ON public.purchase_credit_lines USING btree (id);
-CREATE INDEX idx_purchase_credit_notes_tenant ON public.purchase_credit_notes USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_credit_notes_pkey ON public.purchase_credit_notes USING btree (id);
-CREATE UNIQUE INDEX purchase_credit_notes_tenant_number_key ON public.purchase_credit_notes USING btree (tenant_id, number);
-CREATE INDEX idx_purchase_invoice_lines_purchase_invoice_id ON public.purchase_invoice_lines USING btree (purchase_invoice_id);
-CREATE INDEX idx_purchase_invoice_lines_tenant ON public.purchase_invoice_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_invoice_lines_pkey ON public.purchase_invoice_lines USING btree (id);
-CREATE INDEX idx_purchase_invoices_approval ON public.purchase_invoices USING btree (approval_status) WHERE (approval_status = 'pending'::text);
-CREATE INDEX idx_purchase_invoices_status ON public.purchase_invoices USING btree (status);
-CREATE INDEX idx_purchase_invoices_supplier_id ON public.purchase_invoices USING btree (supplier_id);
-CREATE INDEX idx_purchase_invoices_tenant ON public.purchase_invoices USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_invoices_pkey ON public.purchase_invoices USING btree (id);
-CREATE UNIQUE INDEX purchase_invoices_tenant_number_key ON public.purchase_invoices USING btree (tenant_id, number);
-CREATE INDEX idx_purchase_order_lines_order ON public.purchase_order_lines USING btree (purchase_order_id);
-CREATE INDEX idx_purchase_order_lines_tenant ON public.purchase_order_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_order_lines_pkey ON public.purchase_order_lines USING btree (id);
-CREATE INDEX idx_purchase_orders_supplier ON public.purchase_orders USING btree (supplier_id);
-CREATE INDEX idx_purchase_orders_tenant ON public.purchase_orders USING btree (tenant_id);
-CREATE UNIQUE INDEX purchase_orders_number_key ON public.purchase_orders USING btree (number);
-CREATE UNIQUE INDEX purchase_orders_pkey ON public.purchase_orders USING btree (id);
-CREATE INDEX idx_prl_request ON public.purchase_request_lines USING btree (purchase_request_id);
-CREATE UNIQUE INDEX purchase_request_lines_pkey ON public.purchase_request_lines USING btree (id);
-CREATE INDEX idx_pr_number ON public.purchase_requests USING btree (number);
-CREATE UNIQUE INDEX purchase_requests_pkey ON public.purchase_requests USING btree (id);
-CREATE INDEX idx_quality_checks_product ON public.quality_checks USING btree (product_id);
-CREATE INDEX idx_quality_checks_status ON public.quality_checks USING btree (status);
-CREATE INDEX idx_quality_checks_tenant ON public.quality_checks USING btree (tenant_id);
-CREATE UNIQUE INDEX quality_checks_pkey ON public.quality_checks USING btree (id);
-CREATE INDEX idx_quote_lines_quote_id ON public.quote_lines USING btree (quote_id);
-CREATE INDEX idx_quote_lines_tenant ON public.quote_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX quote_lines_pkey ON public.quote_lines USING btree (id);
-CREATE INDEX idx_quotes_tenant ON public.quotes USING btree (tenant_id);
-CREATE UNIQUE INDEX quotes_pkey ON public.quotes USING btree (id);
-CREATE UNIQUE INDEX quotes_tenant_number_key ON public.quotes USING btree (tenant_id, number);
-CREATE INDEX idx_recurring_entries_next_gen ON public.recurring_entries USING btree (next_generation_date) WHERE (status = 'active'::text);
-CREATE INDEX idx_recurring_entries_status ON public.recurring_entries USING btree (status);
-CREATE INDEX idx_recurring_entries_tenant ON public.recurring_entries USING btree (tenant_id);
-CREATE UNIQUE INDEX recurring_entries_pkey ON public.recurring_entries USING btree (id);
-CREATE INDEX idx_recurring_inv_templates_customer ON public.recurring_invoice_templates USING btree (customer_id);
-CREATE INDEX idx_recurring_invoice_templates_tenant ON public.recurring_invoice_templates USING btree (tenant_id);
-CREATE UNIQUE INDEX recurring_invoice_templates_pkey ON public.recurring_invoice_templates USING btree (id);
-CREATE INDEX idx_regularization_entries_tenant ON public.regularization_entries USING btree (tenant_id);
-CREATE INDEX idx_regularization_fiscal_year ON public.regularization_entries USING btree (fiscal_year_id);
-CREATE INDEX idx_regularization_status ON public.regularization_entries USING btree (status);
-CREATE INDEX idx_regularization_tenant ON public.regularization_entries USING btree (tenant_id);
-CREATE INDEX idx_regularization_type ON public.regularization_entries USING btree (type);
-CREATE UNIQUE INDEX regularization_entries_pkey ON public.regularization_entries USING btree (id);
-CREATE INDEX idx_reimputation_logs_entry ON public.reimputation_logs USING btree (tenant_id, original_entry_id);
-CREATE INDEX idx_reimputation_logs_tenant ON public.reimputation_logs USING btree (tenant_id);
-CREATE UNIQUE INDEX reimputation_logs_pkey ON public.reimputation_logs USING btree (id);
-CREATE INDEX idx_reminder_levels_active ON public.reminder_levels USING btree (active);
-CREATE INDEX idx_reminder_levels_tenant ON public.reminder_levels USING btree (tenant_id);
-CREATE UNIQUE INDEX reminder_levels_pkey ON public.reminder_levels USING btree (id);
-CREATE UNIQUE INDEX reminder_levels_tenant_id_level_key ON public.reminder_levels USING btree (tenant_id, level);
-CREATE INDEX idx_reporting_plans_active ON public.reporting_plans USING btree (active);
-CREATE INDEX idx_reporting_plans_tenant ON public.reporting_plans USING btree (tenant_id);
-CREATE UNIQUE INDEX reporting_plans_pkey ON public.reporting_plans USING btree (id);
-CREATE INDEX idx_revision_cycles_active ON public.revision_cycles USING btree (active);
-CREATE INDEX idx_revision_cycles_tenant ON public.revision_cycles USING btree (tenant_id);
-CREATE UNIQUE INDEX revision_cycles_pkey ON public.revision_cycles USING btree (id);
-CREATE INDEX idx_rgpd_requests_status ON public.rgpd_requests USING btree (status);
-CREATE INDEX idx_rgpd_requests_tenant ON public.rgpd_requests USING btree (tenant_id);
-CREATE UNIQUE INDEX rgpd_requests_pkey ON public.rgpd_requests USING btree (id);
-CREATE INDEX idx_rh_dashboard_configs_tenant ON public.rh_dashboard_configs USING btree (tenant_id);
-CREATE INDEX idx_rh_dashboard_configs_user ON public.rh_dashboard_configs USING btree (user_email);
-CREATE UNIQUE INDEX rh_dashboard_configs_pkey ON public.rh_dashboard_configs USING btree (id);
-CREATE UNIQUE INDEX rh_dashboard_configs_user_email_dashboard_type_key ON public.rh_dashboard_configs USING btree (user_email, dashboard_type);
-CREATE INDEX idx_rh_kb_category ON public.rh_knowledge_base USING btree (category);
-CREATE UNIQUE INDEX rh_knowledge_base_pkey ON public.rh_knowledge_base USING btree (id);
-CREATE INDEX idx_rh_reports_shared ON public.rh_reports USING btree (shared);
-CREATE INDEX idx_rh_reports_tenant ON public.rh_reports USING btree (tenant_id);
-CREATE INDEX idx_rh_reports_type ON public.rh_reports USING btree (report_type);
-CREATE UNIQUE INDEX rh_reports_pkey ON public.rh_reports USING btree (id);
-CREATE INDEX idx_rh_requests_employee ON public.rh_requests USING btree (employee_id);
-CREATE INDEX idx_rh_requests_status ON public.rh_requests USING btree (status);
-CREATE UNIQUE INDEX rh_requests_pkey ON public.rh_requests USING btree (id);
-CREATE INDEX idx_routing_operations_routing ON public.routing_operations USING btree (routing_id);
-CREATE INDEX idx_routing_operations_sequence ON public.routing_operations USING btree (sequence);
-CREATE INDEX idx_routing_operations_tenant ON public.routing_operations USING btree (tenant_id);
-CREATE UNIQUE INDEX routing_operations_pkey ON public.routing_operations USING btree (id);
-CREATE INDEX idx_routings_code ON public.routings USING btree (code);
-CREATE INDEX idx_routings_product ON public.routings USING btree (product_id);
-CREATE INDEX idx_routings_tenant ON public.routings USING btree (tenant_id);
-CREATE UNIQUE INDEX routings_pkey ON public.routings USING btree (id);
-CREATE INDEX idx_salary_advances_employee ON public.salary_advances USING btree (employee_id);
-CREATE INDEX idx_salary_advances_status ON public.salary_advances USING btree (status);
-CREATE INDEX idx_salary_advances_tenant ON public.salary_advances USING btree (tenant_id);
-CREATE UNIQUE INDEX salary_advances_pkey ON public.salary_advances USING btree (id);
-CREATE INDEX idx_sales_order_lines_order ON public.sales_order_lines USING btree (sales_order_id);
-CREATE INDEX idx_sales_order_lines_tenant ON public.sales_order_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX sales_order_lines_pkey ON public.sales_order_lines USING btree (id);
-CREATE INDEX idx_sales_orders_customer ON public.sales_orders USING btree (customer_id);
-CREATE INDEX idx_sales_orders_status ON public.sales_orders USING btree (status);
-CREATE INDEX idx_sales_orders_tenant ON public.sales_orders USING btree (tenant_id);
-CREATE UNIQUE INDEX sales_orders_number_key ON public.sales_orders USING btree (number);
-CREATE UNIQUE INDEX sales_orders_pkey ON public.sales_orders USING btree (id);
-CREATE INDEX idx_sales_representatives_tenant ON public.sales_representatives USING btree (tenant_id);
-CREATE INDEX idx_sales_reps_name ON public.sales_representatives USING btree (name);
-CREATE UNIQUE INDEX sales_representatives_pkey ON public.sales_representatives USING btree (id);
-CREATE INDEX idx_sf_tenant ON public.saved_filters USING btree (tenant_id);
-CREATE INDEX idx_sf_user_page ON public.saved_filters USING btree (user_email, page_name);
-CREATE UNIQUE INDEX saved_filters_pkey ON public.saved_filters USING btree (id);
-CREATE INDEX idx_sepa_orders_payrun ON public.sepa_payment_orders USING btree (pay_run_id);
-CREATE UNIQUE INDEX sepa_payment_orders_pkey ON public.sepa_payment_orders USING btree (id);
-CREATE INDEX idx_sc_customer ON public.service_contracts USING btree (customer_id);
-CREATE UNIQUE INDEX service_contracts_pkey ON public.service_contracts USING btree (id);
-CREATE INDEX idx_tm_ticket ON public.service_ticket_messages USING btree (ticket_id);
-CREATE UNIQUE INDEX service_ticket_messages_pkey ON public.service_ticket_messages USING btree (id);
-CREATE INDEX idx_tk_assigned ON public.service_tickets USING btree (assigned_to);
-CREATE INDEX idx_tk_customer ON public.service_tickets USING btree (customer_id);
-CREATE INDEX idx_tk_status ON public.service_tickets USING btree (status);
-CREATE UNIQUE INDEX service_tickets_pkey ON public.service_tickets USING btree (id);
-CREATE INDEX idx_social_declarations_period ON public.social_declarations USING btree (period);
-CREATE INDEX idx_social_declarations_status ON public.social_declarations USING btree (status);
-CREATE INDEX idx_social_declarations_type ON public.social_declarations USING btree (declaration_type);
-CREATE UNIQUE INDEX social_declarations_pkey ON public.social_declarations USING btree (id);
-CREATE UNIQUE INDEX sql_migrations_tracker_filename_key ON public.sql_migrations_tracker USING btree (filename);
-CREATE UNIQUE INDEX sql_migrations_tracker_pkey ON public.sql_migrations_tracker USING btree (id);
-CREATE INDEX idx_st_orders_mo ON public.st_orders USING btree (manufacturing_order_id);
-CREATE INDEX idx_st_orders_status ON public.st_orders USING btree (status);
-CREATE INDEX idx_st_orders_supplier ON public.st_orders USING btree (supplier_id);
-CREATE INDEX idx_st_orders_tenant ON public.st_orders USING btree (tenant_id);
-CREATE UNIQUE INDEX st_orders_number_key ON public.st_orders USING btree (number);
-CREATE UNIQUE INDEX st_orders_pkey ON public.st_orders USING btree (id);
-CREATE INDEX idx_st_receipt_lines_receipt ON public.st_receipt_lines USING btree (st_receipt_id);
-CREATE INDEX idx_st_receipt_lines_tenant ON public.st_receipt_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX st_receipt_lines_pkey ON public.st_receipt_lines USING btree (id);
-CREATE INDEX idx_st_receipts_order ON public.st_receipts USING btree (st_order_id);
-CREATE INDEX idx_st_receipts_tenant ON public.st_receipts USING btree (tenant_id);
-CREATE UNIQUE INDEX st_receipts_number_key ON public.st_receipts USING btree (number);
-CREATE UNIQUE INDEX st_receipts_pkey ON public.st_receipts USING btree (id);
-CREATE INDEX idx_st_shipment_lines_shipment ON public.st_shipment_lines USING btree (st_shipment_id);
-CREATE INDEX idx_st_shipment_lines_tenant ON public.st_shipment_lines USING btree (tenant_id);
-CREATE UNIQUE INDEX st_shipment_lines_pkey ON public.st_shipment_lines USING btree (id);
-CREATE INDEX idx_st_shipments_order ON public.st_shipments USING btree (st_order_id);
-CREATE INDEX idx_st_shipments_tenant ON public.st_shipments USING btree (tenant_id);
-CREATE UNIQUE INDEX st_shipments_number_key ON public.st_shipments USING btree (number);
-CREATE UNIQUE INDEX st_shipments_pkey ON public.st_shipments USING btree (id);
-CREATE UNIQUE INDEX staff_requirements_pkey ON public.staff_requirements USING btree (id);
-CREATE INDEX idx_standard_labels_category ON public.standard_labels USING btree (tenant_id, category);
-CREATE INDEX idx_standard_labels_tenant ON public.standard_labels USING btree (tenant_id);
-CREATE UNIQUE INDEX standard_labels_pkey ON public.standard_labels USING btree (id);
-CREATE UNIQUE INDEX standard_labels_tenant_label_key ON public.standard_labels USING btree (tenant_id, label);
-CREATE INDEX idx_stat_fields_entity ON public.stat_fields USING btree (entity_type, entity_id);
-CREATE INDEX idx_stat_fields_tenant ON public.stat_fields USING btree (tenant_id);
-CREATE UNIQUE INDEX stat_fields_pkey ON public.stat_fields USING btree (id);
-CREATE UNIQUE INDEX stat_fields_tenant_id_entity_type_entity_id_field_name_key ON public.stat_fields USING btree (tenant_id, entity_type, entity_id, field_name);
-CREATE INDEX idx_sa_product ON public.stock_alerts USING btree (product_id);
-CREATE INDEX idx_sa_status ON public.stock_alerts USING btree (status);
-CREATE UNIQUE INDEX stock_alerts_pkey ON public.stock_alerts USING btree (id);
-CREATE INDEX idx_stock_movements_date ON public.stock_movements USING btree (movement_date);
-CREATE INDEX idx_stock_movements_product ON public.stock_movements USING btree (product_id);
-CREATE INDEX idx_stock_movements_product_id ON public.stock_movements USING btree (product_id);
-CREATE INDEX idx_stock_movements_tenant ON public.stock_movements USING btree (tenant_id);
-CREATE INDEX idx_stock_movements_warehouse ON public.stock_movements USING btree (warehouse_id);
-CREATE UNIQUE INDEX stock_movements_pkey ON public.stock_movements USING btree (id);
-CREATE INDEX idx_stock_quantities_product ON public.stock_quantities USING btree (product_id);
-CREATE INDEX idx_stock_quantities_tenant ON public.stock_quantities USING btree (tenant_id);
-CREATE INDEX idx_stock_quantities_warehouse ON public.stock_quantities USING btree (warehouse_id);
-CREATE UNIQUE INDEX stock_quantities_pkey ON public.stock_quantities USING btree (id);
-CREATE UNIQUE INDEX stock_quantities_product_id_warehouse_id_key ON public.stock_quantities USING btree (product_id, warehouse_id);
-CREATE INDEX idx_sc_supplier ON public.supplier_contacts USING btree (supplier_id);
-CREATE UNIQUE INDEX supplier_contacts_pkey ON public.supplier_contacts USING btree (id);
-CREATE INDEX idx_sds_supplier ON public.supplier_delivery_schedules USING btree (supplier_id);
-CREATE UNIQUE INDEX supplier_delivery_schedules_pkey ON public.supplier_delivery_schedules USING btree (id);
-CREATE INDEX idx_supplier_payments_supplier ON public.supplier_payments USING btree (supplier_id);
-CREATE INDEX idx_supplier_payments_tenant ON public.supplier_payments USING btree (tenant_id);
-CREATE UNIQUE INDEX supplier_payments_number_key ON public.supplier_payments USING btree (number);
-CREATE UNIQUE INDEX supplier_payments_pkey ON public.supplier_payments USING btree (id);
-CREATE INDEX idx_spll_pl ON public.supplier_price_list_lines USING btree (price_list_id);
-CREATE INDEX idx_spll_product ON public.supplier_price_list_lines USING btree (product_id);
-CREATE UNIQUE INDEX supplier_price_list_lines_pkey ON public.supplier_price_list_lines USING btree (id);
-CREATE INDEX idx_spl_supplier ON public.supplier_price_lists USING btree (supplier_id);
-CREATE UNIQUE INDEX supplier_price_lists_pkey ON public.supplier_price_lists USING btree (id);
-CREATE INDEX idx_suppliers_tenant ON public.suppliers USING btree (tenant_id);
-CREATE UNIQUE INDEX suppliers_pkey ON public.suppliers USING btree (id);
-CREATE INDEX idx_task_action_attachments_action ON public.task_action_attachments USING btree (task_action_id);
-CREATE INDEX idx_task_action_attachments_task ON public.task_action_attachments USING btree (task_id);
-CREATE UNIQUE INDEX task_action_attachments_pkey ON public.task_action_attachments USING btree (id);
-CREATE INDEX idx_task_actions_task ON public.task_actions USING btree (task_id);
-CREATE INDEX idx_task_actions_tenant ON public.task_actions USING btree (tenant_id);
-CREATE UNIQUE INDEX task_actions_pkey ON public.task_actions USING btree (id);
-CREATE INDEX idx_task_comments_task ON public.task_comments USING btree (task_id);
-CREATE INDEX idx_task_comments_tenant ON public.task_comments USING btree (tenant_id);
-CREATE UNIQUE INDEX task_comments_pkey ON public.task_comments USING btree (id);
-CREATE INDEX idx_task_documents_task ON public.task_documents USING btree (task_id);
-CREATE INDEX idx_task_documents_tenant ON public.task_documents USING btree (tenant_id);
-CREATE UNIQUE INDEX task_documents_pkey ON public.task_documents USING btree (id);
-CREATE INDEX idx_tax_cash_basis_payment ON public.tax_cash_basis_entries USING btree (payment_id);
-CREATE INDEX idx_tax_cash_basis_tax ON public.tax_cash_basis_entries USING btree (tax_id);
-CREATE UNIQUE INDEX tax_cash_basis_entries_pkey ON public.tax_cash_basis_entries USING btree (id);
-CREATE INDEX idx_tax_groups_tenant ON public.tax_groups USING btree (tenant_id);
-CREATE UNIQUE INDEX tax_groups_pkey ON public.tax_groups USING btree (id);
-CREATE INDEX idx_tax_payments_tenant ON public.tax_payments USING btree (tenant_id);
-CREATE INDEX idx_tax_payments_type ON public.tax_payments USING btree (tax_type);
-CREATE UNIQUE INDEX tax_payments_pkey ON public.tax_payments USING btree (id);
-CREATE INDEX idx_tax_rates_effective ON public.tax_rates USING btree (pack_code, effective_from, effective_to);
-CREATE INDEX idx_tax_rates_pack ON public.tax_rates USING btree (pack_code);
-CREATE INDEX idx_tax_rates_tenant ON public.tax_rates USING btree (tenant_id);
-CREATE UNIQUE INDEX tax_rates_pkey ON public.tax_rates USING btree (id);
-CREATE INDEX idx_tax_repartition_tax ON public.tax_repartition_lines USING btree (tax_id);
-CREATE UNIQUE INDEX tax_repartition_lines_pkey ON public.tax_repartition_lines USING btree (id);
-CREATE INDEX idx_tenant_users_auth ON public.tenant_users USING btree (auth_id);
-CREATE INDEX idx_tenant_users_email ON public.tenant_users USING btree (email);
-CREATE INDEX idx_tenant_users_guest_perms ON public.tenant_users USING gin (guest_permissions);
-CREATE INDEX idx_tenant_users_module_roles ON public.tenant_users USING gin (module_roles);
-CREATE INDEX idx_tenant_users_tenant ON public.tenant_users USING btree (tenant_id);
-CREATE UNIQUE INDEX tenant_users_email_tenant_unique ON public.tenant_users USING btree (email, tenant_id) WHERE (email IS NOT NULL);
-CREATE UNIQUE INDEX tenant_users_pkey ON public.tenant_users USING btree (id);
-CREATE UNIQUE INDEX tenant_users_tenant_id_email_key ON public.tenant_users USING btree (tenant_id, email);
-CREATE INDEX tenant_users_valid_until_idx ON public.tenant_users USING btree (valid_until) WHERE (valid_until IS NOT NULL);
-CREATE INDEX idx_tenants_enabled_modules ON public.tenants USING gin (enabled_modules);
-CREATE UNIQUE INDEX tenants_pkey ON public.tenants USING btree (id);
-CREATE INDEX idx_third_party_accounts_tenant ON public.third_party_accounts USING btree (tenant_id);
-CREATE INDEX idx_third_party_code ON public.third_party_accounts USING btree (code);
-CREATE INDEX idx_third_party_type ON public.third_party_accounts USING btree (type);
-CREATE UNIQUE INDEX third_party_accounts_pkey ON public.third_party_accounts USING btree (id);
-CREATE UNIQUE INDEX third_party_accounts_tenant_code_key ON public.third_party_accounts USING btree (tenant_id, code);
-CREATE INDEX idx_tier_ribs_tenant ON public.tier_ribs USING btree (tenant_id);
-CREATE INDEX idx_tier_ribs_tp ON public.tier_ribs USING btree (third_party_account_id);
-CREATE UNIQUE INDEX tier_ribs_pkey ON public.tier_ribs USING btree (id);
-CREATE INDEX idx_timesheets_employee_id ON public.timesheets USING btree (employee_id);
-CREATE INDEX idx_timesheets_status ON public.timesheets USING btree (status);
-CREATE INDEX idx_timesheets_tenant ON public.timesheets USING btree (tenant_id);
-CREATE UNIQUE INDEX timesheets_pkey ON public.timesheets USING btree (id);
-CREATE INDEX idx_toolings_code ON public.toolings USING btree (code);
-CREATE INDEX idx_toolings_machine ON public.toolings USING btree (machine_id);
-CREATE INDEX idx_toolings_tenant ON public.toolings USING btree (tenant_id);
-CREATE UNIQUE INDEX toolings_pkey ON public.toolings USING btree (id);
-CREATE INDEX idx_treasury_recurring_next ON public.treasury_recurring USING btree (next_date);
-CREATE INDEX idx_treasury_recurring_tenant ON public.treasury_recurring USING btree (tenant_id);
-CREATE UNIQUE INDEX treasury_recurring_pkey ON public.treasury_recurring USING btree (id);
-CREATE INDEX idx_treasury_transfers_number ON public.treasury_transfers USING btree (number);
-CREATE INDEX idx_treasury_transfers_status ON public.treasury_transfers USING btree (status);
-CREATE INDEX idx_treasury_transfers_tenant ON public.treasury_transfers USING btree (tenant_id);
-CREATE UNIQUE INDEX treasury_transfers_pkey ON public.treasury_transfers USING btree (id);
-CREATE INDEX idx_tvs_declarations_tenant ON public.tvs_declarations USING btree (tenant_id);
-CREATE INDEX idx_tvs_fiscal_year ON public.tvs_declarations USING btree (fiscal_year);
-CREATE INDEX idx_tvs_tenant ON public.tvs_declarations USING btree (tenant_id);
-CREATE UNIQUE INDEX tvs_declarations_pkey ON public.tvs_declarations USING btree (id);
-CREATE INDEX idx_users_tenant ON public.users USING btree (tenant_id);
-CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
-CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id);
-CREATE INDEX idx_value_date_tracking_tenant ON public.value_date_tracking USING btree (tenant_id);
-CREATE INDEX idx_value_dates_account ON public.value_date_tracking USING btree (bank_account_id);
-CREATE INDEX idx_value_dates_value_date ON public.value_date_tracking USING btree (value_date);
-CREATE UNIQUE INDEX value_date_tracking_pkey ON public.value_date_tracking USING btree (id);
-CREATE INDEX idx_vat_collections_tenant ON public.vat_on_collections USING btree (tenant_id);
-CREATE UNIQUE INDEX vat_on_collections_pkey ON public.vat_on_collections USING btree (id);
-CREATE INDEX idx_vat_returns_edi_status ON public.vat_returns USING btree (edi_status) WHERE (edi_status <> 'not_submitted'::text);
-CREATE INDEX idx_vat_returns_tenant ON public.vat_returns USING btree (tenant_id);
-CREATE UNIQUE INDEX vat_returns_pkey ON public.vat_returns USING btree (id);
-CREATE INDEX idx_warehouse_locations_code ON public.warehouse_locations USING btree (code);
-CREATE INDEX idx_warehouse_locations_tenant ON public.warehouse_locations USING btree (tenant_id);
-CREATE INDEX idx_warehouse_locations_wh ON public.warehouse_locations USING btree (warehouse_id);
-CREATE UNIQUE INDEX warehouse_locations_pkey ON public.warehouse_locations USING btree (id);
-CREATE INDEX idx_wu_user ON public.warehouse_users USING btree (user_email);
-CREATE INDEX idx_wu_warehouse ON public.warehouse_users USING btree (warehouse_id);
-CREATE UNIQUE INDEX warehouse_users_pkey ON public.warehouse_users USING btree (id);
-CREATE INDEX idx_warehouses_tenant ON public.warehouses USING btree (tenant_id);
-CREATE UNIQUE INDEX warehouses_code_key ON public.warehouses USING btree (code);
-CREATE UNIQUE INDEX warehouses_pkey ON public.warehouses USING btree (id);
-CREATE INDEX idx_work_centers_code ON public.work_centers USING btree (code);
-CREATE INDEX idx_work_centers_tenant ON public.work_centers USING btree (tenant_id);
-CREATE UNIQUE INDEX work_centers_pkey ON public.work_centers USING btree (id);
-CREATE INDEX idx_work_hardship_employee ON public.work_hardship USING btree (employee_id);
-CREATE INDEX idx_work_hardship_tenant ON public.work_hardship USING btree (tenant_id);
-CREATE UNIQUE INDEX work_hardship_pkey ON public.work_hardship USING btree (id);
-CREATE INDEX idx_hardship_employee ON public.work_hardship_records USING btree (employee_id);
-CREATE INDEX idx_hardship_type ON public.work_hardship_records USING btree (exposure_type);
-CREATE UNIQUE INDEX work_hardship_records_pkey ON public.work_hardship_records USING btree (id);
-CREATE INDEX idx_work_stoppages_dates ON public.work_stoppages USING btree (start_date, end_date);
-CREATE INDEX idx_work_stoppages_employee ON public.work_stoppages USING btree (employee_id);
-CREATE INDEX idx_work_stoppages_type ON public.work_stoppages USING btree (stoppage_type);
-CREATE UNIQUE INDEX work_stoppages_pkey ON public.work_stoppages USING btree (id);
-CREATE UNIQUE INDEX workflows_pkey ON public.workflows USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS account_tag_mappings_pkey ON public.account_tag_mappings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_account_tag_mappings_entity ON public.account_tag_mappings USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_account_tag_mappings_tag ON public.account_tag_mappings USING btree (tag_id);
+CREATE INDEX IF NOT EXISTS idx_account_tag_mappings_tenant ON public.account_tag_mappings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS account_tags_pkey ON public.account_tags USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_account_tags_applicability ON public.account_tags USING btree (applicability);
+CREATE INDEX IF NOT EXISTS idx_account_tags_tenant ON public.account_tags USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS accounting_control_runs_pkey ON public.accounting_control_runs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_acct_control_runs_tenant ON public.accounting_control_runs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_acct_control_runs_type ON public.accounting_control_runs USING btree (control_type);
+CREATE UNIQUE INDEX IF NOT EXISTS analytic_distribution_lines_pkey ON public.analytic_distribution_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_analytic_dist_line ON public.analytic_distribution_lines USING btree (journal_line_id);
+CREATE INDEX IF NOT EXISTS idx_analytic_dist_line_plan ON public.analytic_distribution_lines USING btree (plan_id);
+CREATE UNIQUE INDEX IF NOT EXISTS analytic_journal_codes_pkey ON public.analytic_journal_codes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_analytic_journal_codes_code ON public.analytic_journal_codes USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_analytic_journal_codes_tenant ON public.analytic_journal_codes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS analytic_plans_pkey ON public.analytic_plans USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_analytic_plans_code ON public.analytic_plans USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_analytic_plans_tenant ON public.analytic_plans USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS analytic_sections_pkey ON public.analytic_sections USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS analytic_sections_tenant_code_key ON public.analytic_sections USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_analytic_sections_tenant ON public.analytic_sections USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS approval_workflows_pkey ON public.approval_workflows USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_batch_disposal_lines_pkey ON public.asset_batch_disposal_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_batch_disposal_lines_tenant ON public.asset_batch_disposal_lines USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_batch_disposal_lines_batch ON public.asset_batch_disposal_lines USING btree (batch_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_batch_disposals_pkey ON public.asset_batch_disposals USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_batch_disposals_number ON public.asset_batch_disposals USING btree (batch_number);
+CREATE INDEX IF NOT EXISTS idx_asset_batch_disposals_tenant ON public.asset_batch_disposals USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_depreciation_plans_pkey ON public.asset_depreciation_plans USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_dep_plans_asset ON public.asset_depreciation_plans USING btree (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_dep_plans_type ON public.asset_depreciation_plans USING btree (plan_type);
+CREATE INDEX IF NOT EXISTS idx_asset_depreciation_plans_tenant ON public.asset_depreciation_plans USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_depreciations_pkey ON public.asset_depreciations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_depreciations_asset ON public.asset_depreciations USING btree (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_depreciations_tenant ON public.asset_depreciations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_documents_pkey ON public.asset_documents USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_documents_asset ON public.asset_documents USING btree (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_documents_tenant ON public.asset_documents USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_families_pkey ON public.asset_families USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_families_code ON public.asset_families USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_asset_families_parent ON public.asset_families USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS idx_asset_families_tenant ON public.asset_families USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_free_fields_pkey ON public.asset_free_fields USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_free_fields_asset ON public.asset_free_fields USING btree (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_free_fields_key ON public.asset_free_fields USING btree (field_key);
+CREATE INDEX IF NOT EXISTS idx_asset_free_fields_tenant ON public.asset_free_fields USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_revaluations_pkey ON public.asset_revaluations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_revaluations_asset ON public.asset_revaluations USING btree (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_revaluations_tenant ON public.asset_revaluations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_split_components_pkey ON public.asset_split_components USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_split_components_split ON public.asset_split_components USING btree (split_id);
+CREATE INDEX IF NOT EXISTS idx_asset_split_components_tenant ON public.asset_split_components USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS asset_splits_pkey ON public.asset_splits USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_asset_splits_original ON public.asset_splits USING btree (original_asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_splits_tenant ON public.asset_splits USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS at_rates_pkey ON public.at_rates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_at_rates_employee ON public.at_rates USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS audit_log_pkey ON public.audit_log USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_action ON public.audit_log USING btree (action);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON public.audit_log USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_log_entity_type ON public.audit_log USING btree (entity_type);
+CREATE INDEX IF NOT EXISTS idx_audit_log_tenant ON public.audit_log USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON public.audit_log USING btree (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS auto_label_rules_pkey ON public.auto_label_rules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_auto_label_rules_active ON public.auto_label_rules USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_auto_label_rules_tenant ON public.auto_label_rules USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_accounts_pkey ON public.bank_accounts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_accounts_tenant ON public.bank_accounts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_connections_pkey ON public.bank_connections USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_connections_status ON public.bank_connections USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_bank_connections_tenant ON public.bank_connections USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_reconciliation_rules_pkey ON public.bank_reconciliation_rules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_recon_rules_active ON public.bank_reconciliation_rules USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_bank_recon_rules_afb ON public.bank_reconciliation_rules USING btree (afb_code);
+CREATE INDEX IF NOT EXISTS idx_bank_recon_rules_tenant ON public.bank_reconciliation_rules USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_bank_reconciliation_rules_tenant ON public.bank_reconciliation_rules USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_rules_pkey ON public.bank_rules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_rules_tenant ON public.bank_rules USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_statement_imports_pkey ON public.bank_statement_imports USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_statement_imports_tenant ON public.bank_statement_imports USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_imports_account ON public.bank_statement_imports USING btree (bank_account_id);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_imports_status ON public.bank_statement_imports USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_imports_tenant ON public.bank_statement_imports USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_statement_templates_pkey ON public.bank_statement_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_templates_bank ON public.bank_statement_templates USING btree (tenant_id, bank_name);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_templates_tenant ON public.bank_statement_templates USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_bank_stmt_templates_validated ON public.bank_statement_templates USING btree (bank_id) WHERE (validation_status = 'validated'::text);
+CREATE UNIQUE INDEX IF NOT EXISTS bank_transactions_pkey ON public.bank_transactions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_account_id ON public.bank_transactions USING btree (account_id);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_date ON public.bank_transactions USING btree (date);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_reconciled ON public.bank_transactions USING btree (reconciled);
+CREATE INDEX IF NOT EXISTS idx_bank_transactions_tenant ON public.bank_transactions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS banks_name_key ON public.banks USING btree (name);
+CREATE UNIQUE INDEX IF NOT EXISTS banks_pkey ON public.banks USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS batch_entry_sessions_pkey ON public.batch_entry_sessions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_batch_entry_tenant ON public.batch_entry_sessions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS bdes_indicators_pkey ON public.bdes_indicators USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bdes_category ON public.bdes_indicators USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_bdes_year ON public.bdes_indicators USING btree (year);
+CREATE UNIQUE INDEX IF NOT EXISTS bom_lines_pkey ON public.bom_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_bom_lines_bom ON public.bom_lines USING btree (bom_id);
+CREATE INDEX IF NOT EXISTS idx_bom_lines_tenant ON public.bom_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS boms_code_key ON public.boms USING btree (code);
+CREATE UNIQUE INDEX IF NOT EXISTS boms_pkey ON public.boms USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_boms_tenant ON public.boms USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS budget_commitments_pkey ON public.budget_commitments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_budget_commitments_account ON public.budget_commitments USING btree (account_code);
+CREATE INDEX IF NOT EXISTS idx_budget_commitments_fiscal_year ON public.budget_commitments USING btree (fiscal_year_id);
+CREATE INDEX IF NOT EXISTS idx_budget_commitments_status ON public.budget_commitments USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_budget_commitments_tenant ON public.budget_commitments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS budgets_pkey ON public.budgets USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_budgets_tenant ON public.budgets USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS career_history_pkey ON public.career_history USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_career_history_dates ON public.career_history USING btree (start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_career_history_employee ON public.career_history USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_career_history_tenant ON public.career_history USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS carry_forward_log_pkey ON public.carry_forward_log USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_carry_forward_log_tenant ON public.carry_forward_log USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cash_control_sessions_pkey ON public.cash_control_sessions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_cash_control_date ON public.cash_control_sessions USING btree (session_date);
+CREATE INDEX IF NOT EXISTS idx_cash_control_tenant ON public.cash_control_sessions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS chart_account_templates_pack_code_code_key ON public.chart_account_templates USING btree (pack_code, code);
+CREATE UNIQUE INDEX IF NOT EXISTS chart_account_templates_pkey ON public.chart_account_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_chart_templates_pack ON public.chart_account_templates USING btree (pack_code);
+CREATE UNIQUE INDEX IF NOT EXISTS chart_accounts_pkey ON public.chart_accounts USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS chart_accounts_tenant_code_key ON public.chart_accounts USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_chart_accounts_tenant ON public.chart_accounts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS check_books_pkey ON public.check_books USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_check_books_bank_account ON public.check_books USING btree (bank_account_id);
+CREATE INDEX IF NOT EXISTS idx_check_books_status ON public.check_books USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_check_books_tenant ON public.check_books USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS checks_pkey ON public.checks USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_checks_check_book ON public.checks USING btree (check_book_id);
+CREATE INDEX IF NOT EXISTS idx_checks_issue_date ON public.checks USING btree (issue_date);
+CREATE INDEX IF NOT EXISTS idx_checks_status ON public.checks USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_checks_tenant ON public.checks USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cice_config_pkey ON public.cice_config USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS collection_reminders_number_key ON public.collection_reminders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS collection_reminders_payment_link_token_key ON public.collection_reminders USING btree (payment_link_token);
+CREATE UNIQUE INDEX IF NOT EXISTS collection_reminders_pkey ON public.collection_reminders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_collection_reminders_customer ON public.collection_reminders USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_collection_reminders_link_token ON public.collection_reminders USING btree (payment_link_token) WHERE (payment_link_token IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_collection_reminders_payment_status ON public.collection_reminders USING btree (payment_status);
+CREATE INDEX IF NOT EXISTS idx_collection_reminders_status ON public.collection_reminders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_collection_reminders_tenant ON public.collection_reminders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS compaction_logs_pkey ON public.compaction_logs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_compaction_logs_tenant ON public.compaction_logs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS company_settings_pkey ON public.company_settings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_company_settings_tenant ON public.company_settings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS consolidated_treasury_pkey ON public.consolidated_treasury USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_consolidated_treasury_date ON public.consolidated_treasury USING btree (consolidation_date);
+CREATE INDEX IF NOT EXISTS idx_consolidated_treasury_tenant ON public.consolidated_treasury USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS contracts_number_key ON public.contracts USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS contracts_pkey ON public.contracts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_contracts_employee ON public.contracts USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_contracts_status ON public.contracts USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_contracts_tenant ON public.contracts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS corporate_tax_grid_lines_pkey ON public.corporate_tax_grid_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ctgl_grid ON public.corporate_tax_grid_lines USING btree (grid_id);
+CREATE INDEX IF NOT EXISTS idx_ctgl_sort ON public.corporate_tax_grid_lines USING btree (grid_id, sort_order);
+CREATE UNIQUE INDEX IF NOT EXISTS corporate_tax_grids_pkey ON public.corporate_tax_grids USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ctg_active ON public.corporate_tax_grids USING btree (status) WHERE (status = 'active'::text);
+CREATE INDEX IF NOT EXISTS idx_ctg_country ON public.corporate_tax_grids USING btree (country_code);
+CREATE INDEX IF NOT EXISTS idx_ctg_tenant ON public.corporate_tax_grids USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cpf_accounts_employee_unique ON public.cpf_accounts USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cpf_accounts_pkey ON public.cpf_accounts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_cpf_accounts_tenant ON public.cpf_accounts USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_cpf_employee ON public.cpf_accounts USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS cpf_transactions_pkey ON public.cpf_transactions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_cpf_transactions_employee ON public.cpf_transactions USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS credit_lines_pkey ON public.credit_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_credit_lines_name ON public.credit_lines USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_credit_lines_status ON public.credit_lines USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_credit_lines_tenant ON public.credit_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS credit_note_lines_pkey ON public.credit_note_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_credit_note_lines_credit_note_id ON public.credit_note_lines USING btree (credit_note_id);
+CREATE INDEX IF NOT EXISTS idx_credit_note_lines_tenant ON public.credit_note_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS credit_notes_pkey ON public.credit_notes USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS credit_notes_tenant_number_key ON public.credit_notes USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_credit_notes_tenant ON public.credit_notes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_credit_note_number_tenant ON public.credit_notes USING btree (tenant_id, number);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_activities_pkey ON public.crm_activities USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_act_customer ON public.crm_activities USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_act_date ON public.crm_activities USING btree (scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_act_opp ON public.crm_activities USING btree (opportunity_id);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_campaign_recipients_pkey ON public.crm_campaign_recipients USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_cr_camp ON public.crm_campaign_recipients USING btree (campaign_id);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_campaigns_pkey ON public.crm_campaigns USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_camp_status ON public.crm_campaigns USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_forecasts_pkey ON public.crm_forecasts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fc_period ON public.crm_forecasts USING btree (period);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_opportunities_pkey ON public.crm_opportunities USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_opp_customer ON public.crm_opportunities USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_opp_rep ON public.crm_opportunities USING btree (sales_rep_id);
+CREATE INDEX IF NOT EXISTS idx_opp_stage ON public.crm_opportunities USING btree (stage);
+CREATE UNIQUE INDEX IF NOT EXISTS crm_territories_pkey ON public.crm_territories USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_terr_parent ON public.crm_territories USING btree (parent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS currencies_code_unique ON public.currencies USING btree (code);
+CREATE UNIQUE INDEX IF NOT EXISTS currencies_pkey ON public.currencies USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS currencies_tenant_code_key ON public.currencies USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_currencies_tenant ON public.currencies USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS currency_revaluations_pkey ON public.currency_revaluations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_currency_reval_period ON public.currency_revaluations USING btree (period_date);
+CREATE INDEX IF NOT EXISTS idx_currency_reval_status ON public.currency_revaluations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_currency_reval_tenant ON public.currency_revaluations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_currency_revaluations_tenant ON public.currency_revaluations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS custom_report_templates_pkey ON public.custom_report_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_custom_reports_tenant ON public.custom_report_templates USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_custom_reports_type ON public.custom_report_templates USING btree (report_type);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_contacts_pkey ON public.customer_contacts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_cc_customer ON public.customer_contacts USING btree (customer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_payments_number_key ON public.customer_payments USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_payments_pkey ON public.customer_payments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON public.customer_payments USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_invoice ON public.customer_payments USING btree (invoice_id);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_tenant ON public.customer_payments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS customers_pkey ON public.customers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_customers_tenant ON public.customers USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS dashboard_widgets_pkey ON public.dashboard_widgets USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_dashboard_widgets_tenant ON public.dashboard_widgets USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_dashboard_widgets_user ON public.dashboard_widgets USING btree (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS deferred_printing_jobs_pkey ON public.deferred_printing_jobs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_deferred_print_scheduled ON public.deferred_printing_jobs USING btree (scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_deferred_print_status ON public.deferred_printing_jobs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_deferred_print_tenant ON public.deferred_printing_jobs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_note_lines_pkey ON public.delivery_note_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_delivery_note_lines_dn ON public.delivery_note_lines USING btree (delivery_note_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_note_lines_tenant ON public.delivery_note_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_notes_number_key ON public.delivery_notes USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_notes_pkey ON public.delivery_notes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_delivery_notes_customer ON public.delivery_notes USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_notes_tenant ON public.delivery_notes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_schedules_pkey ON public.delivery_schedules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_delivery_schedules_customer ON public.delivery_schedules USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_schedules_product ON public.delivery_schedules USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_schedules_tenant ON public.delivery_schedules USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS disputes_pkey ON public.disputes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_disputes_status ON public.disputes USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_disputes_tenant ON public.disputes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS distribution_grill_lines_pkey ON public.distribution_grill_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_distribution_grill_lines_grill ON public.distribution_grill_lines USING btree (grill_id);
+CREATE INDEX IF NOT EXISTS idx_distribution_grill_lines_tenant ON public.distribution_grill_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS distribution_grills_pkey ON public.distribution_grills USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_distribution_grills_account ON public.distribution_grills USING btree (account_code);
+CREATE INDEX IF NOT EXISTS idx_distribution_grills_tenant ON public.distribution_grills USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS document_charges_pkey ON public.document_charges USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_doc_charges_doc ON public.document_charges USING btree (document_type, document_id);
+CREATE UNIQUE INDEX IF NOT EXISTS document_distribution_logs_pkey ON public.document_distribution_logs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_dist_logs_batch ON public.document_distribution_logs USING btree (batch_id);
+CREATE INDEX IF NOT EXISTS idx_dist_logs_employee ON public.document_distribution_logs USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS document_shares_pkey ON public.document_shares USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ds_token ON public.document_shares USING btree (share_token);
+CREATE UNIQUE INDEX IF NOT EXISTS document_templates_pkey ON public.document_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_document_templates_tenant ON public.document_templates USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_document_templates_type ON public.document_templates USING btree (document_type);
+CREATE UNIQUE INDEX IF NOT EXISTS document_transformations_pkey ON public.document_transformations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_doc_trans_src ON public.document_transformations USING btree (source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_doc_trans_tgt ON public.document_transformations USING btree (target_type, target_id);
+CREATE UNIQUE INDEX IF NOT EXISTS dpae_records_pkey ON public.dpae_records USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_dpae_employee ON public.dpae_records USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_dpae_records_tenant ON public.dpae_records USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_dpae_status ON public.dpae_records USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS dsn_declarations_pkey ON public.dsn_declarations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_dsn_declarations_tenant ON public.dsn_declarations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_dsn_period ON public.dsn_declarations USING btree (period);
+CREATE INDEX IF NOT EXISTS idx_dsn_status ON public.dsn_declarations USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS electronic_signatures_pkey ON public.electronic_signatures USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_es_doc ON public.electronic_signatures USING btree (document_type, document_id);
+CREATE UNIQUE INDEX IF NOT EXISTS employee_activity_logs_pkey ON public.employee_activity_logs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON public.employee_activity_logs USING btree (created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_employee ON public.employee_activity_logs USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_tenant ON public.employee_activity_logs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON public.employee_activity_logs USING btree (activity_type);
+CREATE UNIQUE INDEX IF NOT EXISTS employee_documents_pkey ON public.employee_documents USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_emp_docs_employee ON public.employee_documents USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_emp_docs_period ON public.employee_documents USING btree (period);
+CREATE INDEX IF NOT EXISTS idx_emp_docs_type ON public.employee_documents USING btree (document_type);
+CREATE INDEX IF NOT EXISTS idx_employee_documents_employee ON public.employee_documents USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_employee_documents_tenant ON public.employee_documents USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS employee_exit_processes_pkey ON public.employee_exit_processes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_exit_processes_employee ON public.employee_exit_processes USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_exit_processes_status ON public.employee_exit_processes USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS employee_objectives_pkey ON public.employee_objectives USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_objectives_campaign ON public.employee_objectives USING btree (campaign_id);
+CREATE INDEX IF NOT EXISTS idx_objectives_employee ON public.employee_objectives USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS employees_pkey ON public.employees USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_employees_status ON public.employees USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_employees_tenant ON public.employees USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS entry_templates_pkey ON public.entry_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_entry_templates_default ON public.entry_templates USING btree (is_default) WHERE (is_default = true);
+CREATE INDEX IF NOT EXISTS idx_entry_templates_journal ON public.entry_templates USING btree (journal_code);
+CREATE INDEX IF NOT EXISTS idx_entry_templates_tenant ON public.entry_templates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS etat_rapprochement_pkey ON public.etat_rapprochement USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_etat_rapprochement_account ON public.etat_rapprochement USING btree (account_code);
+CREATE INDEX IF NOT EXISTS idx_etat_rapprochement_tenant ON public.etat_rapprochement USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS exchange_gain_loss_entries_pkey ON public.exchange_gain_loss_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_exchange_gain_loss_invoice ON public.exchange_gain_loss_entries USING btree (invoice_id);
+CREATE INDEX IF NOT EXISTS idx_exchange_gain_loss_payment ON public.exchange_gain_loss_entries USING btree (payment_id);
+CREATE INDEX IF NOT EXISTS idx_exchange_gain_loss_tenant ON public.exchange_gain_loss_entries USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS exchange_rates_pkey ON public.exchange_rates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_exchange_rates_latest ON public.exchange_rates USING btree (tenant_id, base_currency, quote_currency, rate_date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_exchange_rates_unique ON public.exchange_rates USING btree (tenant_id, base_currency, quote_currency, rate_date);
+CREATE UNIQUE INDEX IF NOT EXISTS expense_categories_pkey ON public.expense_categories USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS expense_report_lines_pkey ON public.expense_report_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_expense_lines_report ON public.expense_report_lines USING btree (expense_report_id);
+CREATE INDEX IF NOT EXISTS idx_expense_report_lines_tenant ON public.expense_report_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS expense_reports_pkey ON public.expense_reports USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_expense_reports_employee ON public.expense_reports USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_expense_reports_status ON public.expense_reports USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_expense_reports_tenant ON public.expense_reports USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS extourne_log_pkey ON public.extourne_log USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_extourne_log_original ON public.extourne_log USING btree (original_entry_id);
+CREATE INDEX IF NOT EXISTS idx_extourne_log_tenant ON public.extourne_log USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fec_attestations_pkey ON public.fec_attestations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fec_attest_tenant ON public.fec_attestations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_backups_pkey ON public.fiscal_backups USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_backups_fiscal_year ON public.fiscal_backups USING btree (fiscal_year_id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_backups_tenant ON public.fiscal_backups USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_periods_pkey ON public.fiscal_periods USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_periods_tenant ON public.fiscal_periods USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_periods_year ON public.fiscal_periods USING btree (fiscal_year_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_position_mappings_pkey ON public.fiscal_position_mappings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_mapping_position ON public.fiscal_position_mappings USING btree (fiscal_position_id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_mapping_tenant ON public.fiscal_position_mappings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_positions_pkey ON public.fiscal_positions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_positions_country ON public.fiscal_positions USING btree (country_code);
+CREATE INDEX IF NOT EXISTS idx_fiscal_positions_tenant ON public.fiscal_positions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_years_pkey ON public.fiscal_years USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS fiscal_years_tenant_code_key ON public.fiscal_years USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_fiscal_years_tenant ON public.fiscal_years USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fixed_assets_pkey ON public.fixed_assets USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS fixed_assets_tenant_code_key ON public.fixed_assets USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_fixed_assets_status ON public.fixed_assets USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_fixed_assets_tenant ON public.fixed_assets USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS fusion_logs_pkey ON public.fusion_logs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_fusion_logs_target ON public.fusion_logs USING btree (target_account_code);
+CREATE INDEX IF NOT EXISTS idx_fusion_logs_tenant ON public.fusion_logs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS future_accounting_movements_pkey ON public.future_accounting_movements USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_future_accounting_movements_tenant ON public.future_accounting_movements USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mcf_account ON public.future_accounting_movements USING btree (account_code);
+CREATE INDEX IF NOT EXISTS idx_mcf_expected_date ON public.future_accounting_movements USING btree (expected_date);
+CREATE INDEX IF NOT EXISTS idx_mcf_incorporated ON public.future_accounting_movements USING btree (incorporated);
+CREATE UNIQUE INDEX IF NOT EXISTS goods_receipt_lines_pkey ON public.goods_receipt_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_goods_receipt_lines_gr ON public.goods_receipt_lines USING btree (goods_receipt_id);
+CREATE INDEX IF NOT EXISTS idx_goods_receipt_lines_tenant ON public.goods_receipt_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS goods_receipts_number_key ON public.goods_receipts USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS goods_receipts_pkey ON public.goods_receipts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_goods_receipts_supplier ON public.goods_receipts USING btree (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_goods_receipts_tenant ON public.goods_receipts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS grid_templates_pkey ON public.grid_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_grid_templates_code ON public.grid_templates USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_grid_templates_tenant ON public.grid_templates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS honorarium_records_pkey ON public.honorarium_records USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ifrs_adj_tenant ON public.ifrs_adjustments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ifrs_adjustments_pkey ON public.ifrs_adjustments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ijss_history_employee ON public.ijss_history USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_ijss_history_stoppage ON public.ijss_history USING btree (work_stoppage_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ijss_history_pkey ON public.ijss_history USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_interview_campaigns_status ON public.interview_campaigns USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS interview_campaigns_pkey ON public.interview_campaigns USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_interviews_employee ON public.interviews USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_interviews_tenant ON public.interviews USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS interviews_pkey ON public.interviews USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_investments_name ON public.investments USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_investments_status ON public.investments USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_investments_tenant ON public.investments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS investments_pkey ON public.investments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_invoice_lines_invoice_id ON public.invoice_lines USING btree (invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_lines_tenant ON public.invoice_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS invoice_lines_pkey ON public.invoice_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON public.invoices USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_date ON public.invoices USING btree (date);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_invoices_tenant ON public.invoices USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_pkey ON public.invoices USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_tenant_number_key ON public.invoices USING btree (tenant_id, number);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_invoice_number_tenant ON public.invoices USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_journal_access_tenant ON public.journal_access_rights USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_journal_access_user ON public.journal_access_rights USING btree (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journal_access_rights_pkey ON public.journal_access_rights USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS journal_access_rights_tenant_id_user_id_journal_code_key ON public.journal_access_rights USING btree (tenant_id, user_id, journal_code);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_date ON public.journal_entries USING btree (date);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_journal_code ON public.journal_entries USING btree (journal_code);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_period ON public.journal_entries USING btree (fiscal_period_id);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_piece ON public.journal_entries USING btree (piece_number);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_status ON public.journal_entries USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_tenant ON public.journal_entries USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journal_entries_pkey ON public.journal_entries USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS journal_entries_tenant_number_key ON public.journal_entries USING btree (tenant_id, number);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_journal_entry_number_tenant ON public.journal_entries USING btree (tenant_id, journal_code, number);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_account_general ON public.journal_lines USING btree (account_general);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_account_tiers ON public.journal_lines USING btree (account_tiers);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_analytic ON public.journal_lines USING btree (analytic_section_id);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_journal_id ON public.journal_lines USING btree (journal_id);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_lettrage ON public.journal_lines USING btree (lettrage_code);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_marked_bap ON public.journal_lines USING btree (marked_bap) WHERE (marked_bap = true);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_tenant ON public.journal_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journal_lines_pkey ON public.journal_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_journals_code ON public.journals USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_journals_tenant ON public.journals USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS journals_pkey ON public.journals USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS journals_tenant_code_key ON public.journals USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_justificatif_solde_account ON public.justificatif_solde USING btree (account_code);
+CREATE INDEX IF NOT EXISTS idx_justificatif_solde_tenant ON public.justificatif_solde USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS justificatif_solde_pkey ON public.justificatif_solde USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_kb_category ON public.knowledge_base_articles USING btree (category);
+CREATE INDEX IF NOT EXISTS idx_kb_status ON public.knowledge_base_articles USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS knowledge_base_articles_pkey ON public.knowledge_base_articles USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_leave_balances_employee ON public.leave_balances USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_balances_year ON public.leave_balances USING btree (year);
+CREATE UNIQUE INDEX IF NOT EXISTS leave_balances_employee_id_leave_type_year_key ON public.leave_balances USING btree (employee_id, leave_type, year);
+CREATE UNIQUE INDEX IF NOT EXISTS leave_balances_pkey ON public.leave_balances USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_leave_provisions_employee ON public.leave_provisions USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_provisions_period ON public.leave_provisions USING btree (period);
+CREATE UNIQUE INDEX IF NOT EXISTS leave_provisions_pkey ON public.leave_provisions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee ON public.leave_requests USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_status ON public.leave_requests USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_tenant ON public.leave_requests USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS leave_requests_pkey ON public.leave_requests USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS leave_rules_pkey ON public.leave_rules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_legal_declarations_status ON public.legal_declarations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_legal_declarations_tenant ON public.legal_declarations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_legal_declarations_type ON public.legal_declarations USING btree (declaration_type);
+CREATE UNIQUE INDEX IF NOT EXISTS legal_declarations_number_key ON public.legal_declarations USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS legal_declarations_pkey ON public.legal_declarations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_legal_watch_date ON public.legal_watch USING btree (published_date);
+CREATE INDEX IF NOT EXISTS idx_legal_watch_tenant ON public.legal_watch USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS legal_watch_pkey ON public.legal_watch USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_legislation_packs_tenant ON public.legislation_packs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS legislation_packs_pkey ON public.legislation_packs USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_lettrage_diff_tenant ON public.lettrage_differences USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS lettrage_differences_pkey ON public.lettrage_differences USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_machines_code ON public.machines USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_machines_tenant ON public.machines USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_machines_work_center ON public.machines USING btree (work_center_id);
+CREATE UNIQUE INDEX IF NOT EXISTS machines_pkey ON public.machines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_manufacturing_orders_bom ON public.manufacturing_orders USING btree (bom_id);
+CREATE INDEX IF NOT EXISTS idx_manufacturing_orders_status ON public.manufacturing_orders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_manufacturing_orders_tenant ON public.manufacturing_orders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS manufacturing_orders_number_key ON public.manufacturing_orders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS manufacturing_orders_pkey ON public.manufacturing_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_marking_types_tenant ON public.marking_types USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS marking_types_pkey ON public.marking_types USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS marking_types_tenant_id_code_key ON public.marking_types USING btree (tenant_id, code);
+CREATE UNIQUE INDEX IF NOT EXISTS meal_voucher_config_pkey ON public.meal_voucher_config USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_medical_exams_date ON public.medical_exams USING btree (scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_medical_exams_employee ON public.medical_exams USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS medical_exams_pkey ON public.medical_exams USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_mirror_servers_machine ON public.mirror_servers USING btree (machine_id);
+CREATE INDEX IF NOT EXISTS idx_mirror_servers_tenant ON public.mirror_servers USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS mirror_servers_pkey ON public.mirror_servers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_mirror_verification_details_tenant ON public.mirror_verification_details USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mirror_verification_server ON public.mirror_verification_details USING btree (mirror_server_id);
+CREATE INDEX IF NOT EXISTS idx_mirror_verification_tenant ON public.mirror_verification_details USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS mirror_verification_details_pkey ON public.mirror_verification_details USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_doc_access_log_doc ON public.module_document_access_log USING btree (document_id);
+CREATE INDEX IF NOT EXISTS idx_doc_access_log_tenant ON public.module_document_access_log USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_doc_access_log_user ON public.module_document_access_log USING btree (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS module_document_access_log_pkey ON public.module_document_access_log USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_doc_shares_doc ON public.module_document_shares USING btree (document_id);
+CREATE INDEX IF NOT EXISTS idx_doc_shares_tenant ON public.module_document_shares USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_doc_shares_token ON public.module_document_shares USING btree (share_token);
+CREATE UNIQUE INDEX IF NOT EXISTS module_document_shares_pkey ON public.module_document_shares USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS module_document_shares_share_token_key ON public.module_document_shares USING btree (share_token);
+CREATE INDEX IF NOT EXISTS idx_module_documents_confidentiality ON public.module_documents USING btree (confidentiality);
+CREATE INDEX IF NOT EXISTS idx_module_documents_created ON public.module_documents USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_module_documents_entity ON public.module_documents USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_module_documents_expires ON public.module_documents USING btree (expires_at);
+CREATE INDEX IF NOT EXISTS idx_module_documents_module ON public.module_documents USING btree (module);
+CREATE INDEX IF NOT EXISTS idx_module_documents_status ON public.module_documents USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_module_documents_tenant ON public.module_documents USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_module_documents_uploaded_by ON public.module_documents USING btree (uploaded_by);
+CREATE UNIQUE INDEX IF NOT EXISTS module_documents_pkey ON public.module_documents USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_mrp_pending_docs_tenant ON public.mrp_pending_docs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mrp_pending_status ON public.mrp_pending_docs USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS mrp_pending_docs_pkey ON public.mrp_pending_docs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_mrp_proposals_product ON public.mrp_proposals USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_mrp_proposals_run ON public.mrp_proposals USING btree (mrp_run_id);
+CREATE INDEX IF NOT EXISTS idx_mrp_proposals_status ON public.mrp_proposals USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_mrp_proposals_tenant ON public.mrp_proposals USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS mrp_proposals_pkey ON public.mrp_proposals USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_mrp_runs_date ON public.mrp_runs USING btree (run_date);
+CREATE INDEX IF NOT EXISTS idx_mrp_runs_tenant ON public.mrp_runs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS mrp_runs_pkey ON public.mrp_runs USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS mrp_runs_run_number_key ON public.mrp_runs USING btree (run_number);
+CREATE INDEX IF NOT EXISTS idx_email_queue_created ON public.notification_email_queue USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_email_queue_recipient ON public.notification_email_queue USING btree (recipient_email);
+CREATE INDEX IF NOT EXISTS idx_email_queue_status ON public.notification_email_queue USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_email_queue_tenant ON public.notification_email_queue USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS notification_email_queue_pkey ON public.notification_email_queue USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_notif_prefs_employee ON public.notification_preferences USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_notif_prefs_tenant ON public.notification_preferences USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS notification_preferences_pkey ON public.notification_preferences USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS notification_preferences_tenant_id_employee_id_key ON public.notification_preferences USING btree (tenant_id, employee_id);
+CREATE INDEX IF NOT EXISTS idx_of_consumptions_mo ON public.of_consumptions USING btree (manufacturing_order_id);
+CREATE INDEX IF NOT EXISTS idx_of_consumptions_tenant ON public.of_consumptions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS of_consumptions_pkey ON public.of_consumptions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_of_doc_access_user ON public.of_document_access USING btree (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS of_document_access_pkey ON public.of_document_access USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_of_labels_mo ON public.of_labels USING btree (manufacturing_order_id);
+CREATE INDEX IF NOT EXISTS idx_of_labels_tenant ON public.of_labels USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS of_labels_label_number_key ON public.of_labels USING btree (label_number);
+CREATE UNIQUE INDEX IF NOT EXISTS of_labels_pkey ON public.of_labels USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_of_lots_mo ON public.of_lots USING btree (manufacturing_order_id);
+CREATE INDEX IF NOT EXISTS idx_of_lots_tenant ON public.of_lots USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS of_lots_pkey ON public.of_lots USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_op_invoice ON public.online_payments USING btree (invoice_id);
+CREATE UNIQUE INDEX IF NOT EXISTS online_payments_pkey ON public.online_payments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_partner_bank_accounts ON public.partner_bank_accounts USING btree (partner_type, partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_bank_accounts_partner ON public.partner_bank_accounts USING btree (partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_bank_accounts_tenant ON public.partner_bank_accounts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS partner_bank_accounts_pkey ON public.partner_bank_accounts USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS partner_categories_pkey ON public.partner_categories USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_partner_cat_mapping ON public.partner_category_mappings USING btree (partner_type, partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_cat_mapping_cat ON public.partner_category_mappings USING btree (category_id);
+CREATE UNIQUE INDEX IF NOT EXISTS partner_category_mappings_pkey ON public.partner_category_mappings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_partner_contacts_partner ON public.partner_contacts USING btree (partner_type, partner_id);
+CREATE UNIQUE INDEX IF NOT EXISTS partner_contacts_pkey ON public.partner_contacts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pas_rates_dates ON public.pas_rates USING btree (effective_date, expiry_date);
+CREATE INDEX IF NOT EXISTS idx_pas_rates_employee ON public.pas_rates USING btree (employee_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pas_rates_pkey ON public.pas_rates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pay_recalls_employee ON public.pay_recalls USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_pay_recalls_tenant ON public.pay_recalls USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_recalls_pkey ON public.pay_recalls USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pay_runs_status ON public.pay_runs USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_pay_runs_tenant ON public.pay_runs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_runs_pkey ON public.pay_runs USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_runs_tenant_number_key ON public.pay_runs USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_payslip_clarified_slip ON public.pay_slip_clarified USING btree (pay_slip_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_slip_clarified_pkey ON public.pay_slip_clarified USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pay_slips_employee ON public.pay_slips USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_pay_slips_pay_run ON public.pay_slips USING btree (pay_run_id);
+CREATE INDEX IF NOT EXISTS idx_pay_slips_status ON public.pay_slips USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_pay_slips_tenant ON public.pay_slips USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_slips_number_key ON public.pay_slips USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS pay_slips_pkey ON public.pay_slips USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_pay_slip_number_tenant ON public.pay_slips USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_bank ON public.payment_orders USING btree (bank_account_id);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_date ON public.payment_orders USING btree (payment_date);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_status ON public.payment_orders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_payment_orders_tenant ON public.payment_orders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_orders_number_key ON public.payment_orders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_orders_pkey ON public.payment_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payment_promises_date ON public.payment_promises USING btree (promised_date);
+CREATE INDEX IF NOT EXISTS idx_payment_promises_status ON public.payment_promises USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_payment_promises_tenant ON public.payment_promises USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_promises_pkey ON public.payment_promises USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payment_templates_compta_code ON public.payment_templates_compta USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_payment_templates_compta_tenant ON public.payment_templates_compta USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_templates_compta_pkey ON public.payment_templates_compta USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payment_terms_active ON public.payment_terms USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_payment_terms_tenant ON public.payment_terms USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_terms_pkey ON public.payment_terms USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_terms_tenant_id_code_key ON public.payment_terms USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_payroll_accounting_entries_tenant ON public.payroll_accounting_entries USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_acct_pay_run ON public.payroll_accounting_entries USING btree (pay_run_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_acct_status ON public.payroll_accounting_entries USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_accounting_entries_number_key ON public.payroll_accounting_entries USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_accounting_entries_pkey ON public.payroll_accounting_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payroll_archives_employee ON public.payroll_archives USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_archives_period ON public.payroll_archives USING btree (period);
+CREATE INDEX IF NOT EXISTS idx_payroll_archives_tenant ON public.payroll_archives USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_archives_pkey ON public.payroll_archives USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payroll_component_rates_tenant ON public.payroll_component_rates USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_rates_component ON public.payroll_component_rates USING btree (component_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_component_rates_pkey ON public.payroll_component_rates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payroll_components_code ON public.payroll_components USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_payroll_components_tenant ON public.payroll_components USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_payroll_components_type ON public.payroll_components USING btree (type);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_components_pkey ON public.payroll_components USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ptgl_grid ON public.payroll_tax_grid_lines USING btree (grid_id);
+CREATE INDEX IF NOT EXISTS idx_ptgl_sort ON public.payroll_tax_grid_lines USING btree (grid_id, sort_order);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_tax_grid_lines_pkey ON public.payroll_tax_grid_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ptg_active ON public.payroll_tax_grids USING btree (status) WHERE (status = 'active'::text);
+CREATE INDEX IF NOT EXISTS idx_ptg_country ON public.payroll_tax_grids USING btree (country_code);
+CREATE INDEX IF NOT EXISTS idx_ptg_tenant ON public.payroll_tax_grids USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ptg_type ON public.payroll_tax_grids USING btree (grid_type);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_tax_grids_pkey ON public.payroll_tax_grids USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_payroll_templates_name ON public.payroll_templates USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_payroll_templates_tenant ON public.payroll_templates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_templates_pkey ON public.payroll_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_variable_elements_employee ON public.payroll_variable_elements USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_variable_elements_payrun ON public.payroll_variable_elements USING btree (pay_run_id);
+CREATE INDEX IF NOT EXISTS idx_variable_elements_period ON public.payroll_variable_elements USING btree (period);
+CREATE UNIQUE INDEX IF NOT EXISTS payroll_variable_elements_pkey ON public.payroll_variable_elements USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pick_list_lines_pick ON public.pick_list_lines USING btree (pick_list_id);
+CREATE INDEX IF NOT EXISTS idx_pick_list_lines_tenant ON public.pick_list_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pick_list_lines_pkey ON public.pick_list_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pick_lists_number ON public.pick_lists USING btree (number);
+CREATE INDEX IF NOT EXISTS idx_pick_lists_status ON public.pick_lists USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_pick_lists_tenant ON public.pick_lists USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pick_lists_pkey ON public.pick_lists USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_planning_dates ON public.planning_slots USING btree (planned_start, planned_end);
+CREATE INDEX IF NOT EXISTS idx_planning_machine ON public.planning_slots USING btree (machine_id);
+CREATE INDEX IF NOT EXISTS idx_planning_mo ON public.planning_slots USING btree (manufacturing_order_id);
+CREATE INDEX IF NOT EXISTS idx_planning_slots_tenant ON public.planning_slots USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS planning_slots_pkey ON public.planning_slots USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ps_status ON public.pos_sessions USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_ps_terminal ON public.pos_sessions USING btree (terminal_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pos_sessions_pkey ON public.pos_sessions USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS pos_terminals_pkey ON public.pos_terminals USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_ptl_ticket ON public.pos_ticket_lines USING btree (ticket_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pos_ticket_lines_pkey ON public.pos_ticket_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pt_date ON public.pos_tickets USING btree (date);
+CREATE INDEX IF NOT EXISTS idx_pt_session ON public.pos_tickets USING btree (session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS pos_tickets_pkey ON public.pos_tickets USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_price_list_lines_list ON public.price_list_lines USING btree (price_list_id);
+CREATE INDEX IF NOT EXISTS idx_price_list_lines_tenant ON public.price_list_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS price_list_lines_pkey ON public.price_list_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_price_lists_tenant ON public.price_lists USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS price_lists_code_key ON public.price_lists USING btree (code);
+CREATE UNIQUE INDEX IF NOT EXISTS price_lists_pkey ON public.price_lists USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_product_attributes_name ON public.product_attributes USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_product_attributes_tenant ON public.product_attributes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_attributes_pkey ON public.product_attributes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_product_batches_number ON public.product_batches USING btree (batch_number);
+CREATE INDEX IF NOT EXISTS idx_product_batches_product ON public.product_batches USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_product_batches_tenant ON public.product_batches USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_batches_pkey ON public.product_batches USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_equiv_product ON public.product_equivalences USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_equivalences_pkey ON public.product_equivalences USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pgc_product ON public.product_grid_combinations USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_grid_combinations_pkey ON public.product_grid_combinations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pg_product ON public.product_grids USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_grids_pkey ON public.product_grids USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pl_product ON public.product_links USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_links_pkey ON public.product_links USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pp_product ON public.product_packagings USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_packagings_pkey ON public.product_packagings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_product_serial_numbers_tenant ON public.product_serial_numbers USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_product_serials_number ON public.product_serial_numbers USING btree (serial_number);
+CREATE INDEX IF NOT EXISTS idx_product_serials_product ON public.product_serial_numbers USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_serial_numbers_pkey ON public.product_serial_numbers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_product_substitutes_product ON public.product_substitutes USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_product_substitutes_tenant ON public.product_substitutes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_substitutes_pkey ON public.product_substitutes USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product ON public.product_variants USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON public.product_variants USING btree (sku);
+CREATE INDEX IF NOT EXISTS idx_product_variants_tenant ON public.product_variants USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS product_variants_pkey ON public.product_variants USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_forecasts_period ON public.production_forecasts USING btree (period);
+CREATE INDEX IF NOT EXISTS idx_forecasts_product ON public.production_forecasts USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_production_forecasts_tenant ON public.production_forecasts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS production_forecasts_forecast_number_key ON public.production_forecasts USING btree (forecast_number);
+CREATE UNIQUE INDEX IF NOT EXISTS production_forecasts_pkey ON public.production_forecasts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_products_tenant ON public.products USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS products_pkey ON public.products USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS products_tenant_sku_key ON public.products USING btree (tenant_id, sku);
+CREATE INDEX IF NOT EXISTS idx_activity_log_created ON public.project_activity_log USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_log_project ON public.project_activity_log USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_task ON public.project_activity_log USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_tenant ON public.project_activity_log USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_type ON public.project_activity_log USING btree (action_type);
+CREATE UNIQUE INDEX IF NOT EXISTS project_activity_log_pkey ON public.project_activity_log USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_project_docs_project ON public.project_docs USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_docs_tenant ON public.project_docs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_project_docs_updated ON public.project_docs USING btree (updated_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS project_docs_pkey ON public.project_docs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_project_members_employee ON public.project_members USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_project ON public.project_members USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_tenant ON public.project_members USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_members_pkey ON public.project_members USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_members_tenant_id_project_id_employee_id_key ON public.project_members USING btree (tenant_id, project_id, employee_id);
+CREATE INDEX IF NOT EXISTS idx_project_milestones_project ON public.project_milestones USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_milestones_tenant ON public.project_milestones USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_milestones_pkey ON public.project_milestones USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON public.project_notifications USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.project_notifications USING btree (recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_tenant ON public.project_notifications USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON public.project_notifications USING btree (recipient_id, is_read);
+CREATE UNIQUE INDEX IF NOT EXISTS project_notifications_pkey ON public.project_notifications USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_project_stages_sequence ON public.project_stages USING btree (sequence);
+CREATE INDEX IF NOT EXISTS idx_project_stages_tenant ON public.project_stages USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_stages_pkey ON public.project_stages USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_project_tags_tenant ON public.project_tags USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_tags_pkey ON public.project_tags USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_assignees_pkey ON public.project_task_assignees USING btree (task_id, employee_id);
+CREATE INDEX IF NOT EXISTS idx_project_task_dependencies_depends ON public.project_task_dependencies USING btree (depends_on_task_id);
+CREATE INDEX IF NOT EXISTS idx_project_task_dependencies_task ON public.project_task_dependencies USING btree (task_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_dependencies_pkey ON public.project_task_dependencies USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_tags_pkey ON public.project_task_tags USING btree (task_id, tag_id);
+CREATE INDEX IF NOT EXISTS idx_task_templates_tenant ON public.project_task_templates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_templates_pkey ON public.project_task_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_task_watchers_employee ON public.project_task_watchers USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_task_watchers_task ON public.project_task_watchers USING btree (task_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_watchers_pkey ON public.project_task_watchers USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_task_watchers_task_id_employee_id_key ON public.project_task_watchers USING btree (task_id, employee_id);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_display_order ON public.project_tasks USING btree (display_order);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_parent ON public.project_tasks USING btree (parent_id);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_priority ON public.project_tasks USING btree (priority);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_project ON public.project_tasks USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_status ON public.project_tasks USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_tenant ON public.project_tasks USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_tasks_pkey ON public.project_tasks USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_employee ON public.project_time_entries USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_project ON public.project_time_entries USING btree (project_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_start ON public.project_time_entries USING btree (start_time);
+CREATE INDEX IF NOT EXISTS idx_time_entries_task ON public.project_time_entries USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_tenant ON public.project_time_entries USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS project_time_entries_pkey ON public.project_time_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant ON public.projects USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS projects_pkey ON public.projects USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_promo_dates ON public.promotions USING btree (start_date, end_date);
+CREATE UNIQUE INDEX IF NOT EXISTS promotions_pkey ON public.promotions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_prospects_name ON public.prospects USING btree (name);
+CREATE INDEX IF NOT EXISTS idx_prospects_status ON public.prospects USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_prospects_tenant ON public.prospects USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS prospects_pkey ON public.prospects USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_public_holidays_date ON public.public_holidays USING btree (holiday_date);
+CREATE INDEX IF NOT EXISTS idx_public_holidays_region ON public.public_holidays USING btree (region);
+CREATE UNIQUE INDEX IF NOT EXISTS public_holidays_pkey ON public.public_holidays USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_purchase_credit_lines_purchase_credit_id ON public.purchase_credit_lines USING btree (purchase_credit_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_credit_lines_tenant ON public.purchase_credit_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_credit_lines_pkey ON public.purchase_credit_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_purchase_credit_notes_tenant ON public.purchase_credit_notes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_credit_notes_pkey ON public.purchase_credit_notes USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_credit_notes_tenant_number_key ON public.purchase_credit_notes USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoice_lines_purchase_invoice_id ON public.purchase_invoice_lines USING btree (purchase_invoice_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoice_lines_tenant ON public.purchase_invoice_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_invoice_lines_pkey ON public.purchase_invoice_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_approval ON public.purchase_invoices USING btree (approval_status) WHERE (approval_status = 'pending'::text);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_status ON public.purchase_invoices USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_supplier_id ON public.purchase_invoices USING btree (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_invoices_tenant ON public.purchase_invoices USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_invoices_pkey ON public.purchase_invoices USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_invoices_tenant_number_key ON public.purchase_invoices USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_purchase_order_lines_order ON public.purchase_order_lines USING btree (purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_order_lines_tenant ON public.purchase_order_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_order_lines_pkey ON public.purchase_order_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON public.purchase_orders USING btree (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_tenant ON public.purchase_orders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_orders_number_key ON public.purchase_orders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_orders_pkey ON public.purchase_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_prl_request ON public.purchase_request_lines USING btree (purchase_request_id);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_request_lines_pkey ON public.purchase_request_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_pr_number ON public.purchase_requests USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS purchase_requests_pkey ON public.purchase_requests USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_quality_checks_product ON public.quality_checks USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_quality_checks_status ON public.quality_checks USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_quality_checks_tenant ON public.quality_checks USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS quality_checks_pkey ON public.quality_checks USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_quote_lines_quote_id ON public.quote_lines USING btree (quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_lines_tenant ON public.quote_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS quote_lines_pkey ON public.quote_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_quotes_tenant ON public.quotes USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS quotes_pkey ON public.quotes USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS quotes_tenant_number_key ON public.quotes USING btree (tenant_id, number);
+CREATE INDEX IF NOT EXISTS idx_recurring_entries_next_gen ON public.recurring_entries USING btree (next_generation_date) WHERE (status = 'active'::text);
+CREATE INDEX IF NOT EXISTS idx_recurring_entries_status ON public.recurring_entries USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_recurring_entries_tenant ON public.recurring_entries USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS recurring_entries_pkey ON public.recurring_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_recurring_inv_templates_customer ON public.recurring_invoice_templates USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_recurring_invoice_templates_tenant ON public.recurring_invoice_templates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS recurring_invoice_templates_pkey ON public.recurring_invoice_templates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_regularization_entries_tenant ON public.regularization_entries USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_regularization_fiscal_year ON public.regularization_entries USING btree (fiscal_year_id);
+CREATE INDEX IF NOT EXISTS idx_regularization_status ON public.regularization_entries USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_regularization_tenant ON public.regularization_entries USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_regularization_type ON public.regularization_entries USING btree (type);
+CREATE UNIQUE INDEX IF NOT EXISTS regularization_entries_pkey ON public.regularization_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_reimputation_logs_entry ON public.reimputation_logs USING btree (tenant_id, original_entry_id);
+CREATE INDEX IF NOT EXISTS idx_reimputation_logs_tenant ON public.reimputation_logs USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS reimputation_logs_pkey ON public.reimputation_logs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_reminder_levels_active ON public.reminder_levels USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_reminder_levels_tenant ON public.reminder_levels USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS reminder_levels_pkey ON public.reminder_levels USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS reminder_levels_tenant_id_level_key ON public.reminder_levels USING btree (tenant_id, level);
+CREATE INDEX IF NOT EXISTS idx_reporting_plans_active ON public.reporting_plans USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_reporting_plans_tenant ON public.reporting_plans USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS reporting_plans_pkey ON public.reporting_plans USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_revision_cycles_active ON public.revision_cycles USING btree (active);
+CREATE INDEX IF NOT EXISTS idx_revision_cycles_tenant ON public.revision_cycles USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS revision_cycles_pkey ON public.revision_cycles USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_rgpd_requests_status ON public.rgpd_requests USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_rgpd_requests_tenant ON public.rgpd_requests USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS rgpd_requests_pkey ON public.rgpd_requests USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_rh_dashboard_configs_tenant ON public.rh_dashboard_configs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_rh_dashboard_configs_user ON public.rh_dashboard_configs USING btree (user_email);
+CREATE UNIQUE INDEX IF NOT EXISTS rh_dashboard_configs_pkey ON public.rh_dashboard_configs USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS rh_dashboard_configs_user_email_dashboard_type_key ON public.rh_dashboard_configs USING btree (user_email, dashboard_type);
+CREATE INDEX IF NOT EXISTS idx_rh_kb_category ON public.rh_knowledge_base USING btree (category);
+CREATE UNIQUE INDEX IF NOT EXISTS rh_knowledge_base_pkey ON public.rh_knowledge_base USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_rh_reports_shared ON public.rh_reports USING btree (shared);
+CREATE INDEX IF NOT EXISTS idx_rh_reports_tenant ON public.rh_reports USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_rh_reports_type ON public.rh_reports USING btree (report_type);
+CREATE UNIQUE INDEX IF NOT EXISTS rh_reports_pkey ON public.rh_reports USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_rh_requests_employee ON public.rh_requests USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_rh_requests_status ON public.rh_requests USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS rh_requests_pkey ON public.rh_requests USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_routing_operations_routing ON public.routing_operations USING btree (routing_id);
+CREATE INDEX IF NOT EXISTS idx_routing_operations_sequence ON public.routing_operations USING btree (sequence);
+CREATE INDEX IF NOT EXISTS idx_routing_operations_tenant ON public.routing_operations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS routing_operations_pkey ON public.routing_operations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_routings_code ON public.routings USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_routings_product ON public.routings USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_routings_tenant ON public.routings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS routings_pkey ON public.routings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_salary_advances_employee ON public.salary_advances USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_salary_advances_status ON public.salary_advances USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_salary_advances_tenant ON public.salary_advances USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS salary_advances_pkey ON public.salary_advances USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sales_order_lines_order ON public.sales_order_lines USING btree (sales_order_id);
+CREATE INDEX IF NOT EXISTS idx_sales_order_lines_tenant ON public.sales_order_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS sales_order_lines_pkey ON public.sales_order_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_customer ON public.sales_orders USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_status ON public.sales_orders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_sales_orders_tenant ON public.sales_orders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS sales_orders_number_key ON public.sales_orders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS sales_orders_pkey ON public.sales_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sales_representatives_tenant ON public.sales_representatives USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_sales_reps_name ON public.sales_representatives USING btree (name);
+CREATE UNIQUE INDEX IF NOT EXISTS sales_representatives_pkey ON public.sales_representatives USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sf_tenant ON public.saved_filters USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_sf_user_page ON public.saved_filters USING btree (user_email, page_name);
+CREATE UNIQUE INDEX IF NOT EXISTS saved_filters_pkey ON public.saved_filters USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sepa_orders_payrun ON public.sepa_payment_orders USING btree (pay_run_id);
+CREATE UNIQUE INDEX IF NOT EXISTS sepa_payment_orders_pkey ON public.sepa_payment_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sc_customer ON public.service_contracts USING btree (customer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS service_contracts_pkey ON public.service_contracts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tm_ticket ON public.service_ticket_messages USING btree (ticket_id);
+CREATE UNIQUE INDEX IF NOT EXISTS service_ticket_messages_pkey ON public.service_ticket_messages USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tk_assigned ON public.service_tickets USING btree (assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tk_customer ON public.service_tickets USING btree (customer_id);
+CREATE INDEX IF NOT EXISTS idx_tk_status ON public.service_tickets USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS service_tickets_pkey ON public.service_tickets USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_social_declarations_period ON public.social_declarations USING btree (period);
+CREATE INDEX IF NOT EXISTS idx_social_declarations_status ON public.social_declarations USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_social_declarations_type ON public.social_declarations USING btree (declaration_type);
+CREATE UNIQUE INDEX IF NOT EXISTS social_declarations_pkey ON public.social_declarations USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS sql_migrations_tracker_filename_key ON public.sql_migrations_tracker USING btree (filename);
+CREATE UNIQUE INDEX IF NOT EXISTS sql_migrations_tracker_pkey ON public.sql_migrations_tracker USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_st_orders_mo ON public.st_orders USING btree (manufacturing_order_id);
+CREATE INDEX IF NOT EXISTS idx_st_orders_status ON public.st_orders USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_st_orders_supplier ON public.st_orders USING btree (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_st_orders_tenant ON public.st_orders USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS st_orders_number_key ON public.st_orders USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS st_orders_pkey ON public.st_orders USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_st_receipt_lines_receipt ON public.st_receipt_lines USING btree (st_receipt_id);
+CREATE INDEX IF NOT EXISTS idx_st_receipt_lines_tenant ON public.st_receipt_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS st_receipt_lines_pkey ON public.st_receipt_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_st_receipts_order ON public.st_receipts USING btree (st_order_id);
+CREATE INDEX IF NOT EXISTS idx_st_receipts_tenant ON public.st_receipts USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS st_receipts_number_key ON public.st_receipts USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS st_receipts_pkey ON public.st_receipts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_st_shipment_lines_shipment ON public.st_shipment_lines USING btree (st_shipment_id);
+CREATE INDEX IF NOT EXISTS idx_st_shipment_lines_tenant ON public.st_shipment_lines USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS st_shipment_lines_pkey ON public.st_shipment_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_st_shipments_order ON public.st_shipments USING btree (st_order_id);
+CREATE INDEX IF NOT EXISTS idx_st_shipments_tenant ON public.st_shipments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS st_shipments_number_key ON public.st_shipments USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS st_shipments_pkey ON public.st_shipments USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS staff_requirements_pkey ON public.staff_requirements USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_standard_labels_category ON public.standard_labels USING btree (tenant_id, category);
+CREATE INDEX IF NOT EXISTS idx_standard_labels_tenant ON public.standard_labels USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS standard_labels_pkey ON public.standard_labels USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS standard_labels_tenant_label_key ON public.standard_labels USING btree (tenant_id, label);
+CREATE INDEX IF NOT EXISTS idx_stat_fields_entity ON public.stat_fields USING btree (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_stat_fields_tenant ON public.stat_fields USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS stat_fields_pkey ON public.stat_fields USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS stat_fields_tenant_id_entity_type_entity_id_field_name_key ON public.stat_fields USING btree (tenant_id, entity_type, entity_id, field_name);
+CREATE INDEX IF NOT EXISTS idx_sa_product ON public.stock_alerts USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_sa_status ON public.stock_alerts USING btree (status);
+CREATE UNIQUE INDEX IF NOT EXISTS stock_alerts_pkey ON public.stock_alerts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_date ON public.stock_movements USING btree (movement_date);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON public.stock_movements USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product_id ON public.stock_movements USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_tenant ON public.stock_movements USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_warehouse ON public.stock_movements USING btree (warehouse_id);
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_pkey ON public.stock_movements USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_stock_quantities_product ON public.stock_quantities USING btree (product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_quantities_tenant ON public.stock_quantities USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_stock_quantities_warehouse ON public.stock_quantities USING btree (warehouse_id);
+CREATE UNIQUE INDEX IF NOT EXISTS stock_quantities_pkey ON public.stock_quantities USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS stock_quantities_product_id_warehouse_id_key ON public.stock_quantities USING btree (product_id, warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_sc_supplier ON public.supplier_contacts USING btree (supplier_id);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_contacts_pkey ON public.supplier_contacts USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_sds_supplier ON public.supplier_delivery_schedules USING btree (supplier_id);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_delivery_schedules_pkey ON public.supplier_delivery_schedules USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_supplier ON public.supplier_payments USING btree (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_tenant ON public.supplier_payments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_payments_number_key ON public.supplier_payments USING btree (number);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_payments_pkey ON public.supplier_payments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_spll_pl ON public.supplier_price_list_lines USING btree (price_list_id);
+CREATE INDEX IF NOT EXISTS idx_spll_product ON public.supplier_price_list_lines USING btree (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_price_list_lines_pkey ON public.supplier_price_list_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_spl_supplier ON public.supplier_price_lists USING btree (supplier_id);
+CREATE UNIQUE INDEX IF NOT EXISTS supplier_price_lists_pkey ON public.supplier_price_lists USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_suppliers_tenant ON public.suppliers USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS suppliers_pkey ON public.suppliers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_task_action_attachments_action ON public.task_action_attachments USING btree (task_action_id);
+CREATE INDEX IF NOT EXISTS idx_task_action_attachments_task ON public.task_action_attachments USING btree (task_id);
+CREATE UNIQUE INDEX IF NOT EXISTS task_action_attachments_pkey ON public.task_action_attachments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_task_actions_task ON public.task_actions USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_task_actions_tenant ON public.task_actions USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS task_actions_pkey ON public.task_actions USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_task_comments_task ON public.task_comments USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_task_comments_tenant ON public.task_comments USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS task_comments_pkey ON public.task_comments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_task_documents_task ON public.task_documents USING btree (task_id);
+CREATE INDEX IF NOT EXISTS idx_task_documents_tenant ON public.task_documents USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS task_documents_pkey ON public.task_documents USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tax_cash_basis_payment ON public.tax_cash_basis_entries USING btree (payment_id);
+CREATE INDEX IF NOT EXISTS idx_tax_cash_basis_tax ON public.tax_cash_basis_entries USING btree (tax_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tax_cash_basis_entries_pkey ON public.tax_cash_basis_entries USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tax_groups_tenant ON public.tax_groups USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tax_groups_pkey ON public.tax_groups USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tax_payments_tenant ON public.tax_payments USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tax_payments_type ON public.tax_payments USING btree (tax_type);
+CREATE UNIQUE INDEX IF NOT EXISTS tax_payments_pkey ON public.tax_payments USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_effective ON public.tax_rates USING btree (pack_code, effective_from, effective_to);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_pack ON public.tax_rates USING btree (pack_code);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_tenant ON public.tax_rates USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tax_rates_pkey ON public.tax_rates USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tax_repartition_tax ON public.tax_repartition_lines USING btree (tax_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tax_repartition_lines_pkey ON public.tax_repartition_lines USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tenant_users_auth ON public.tenant_users USING btree (auth_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_users_email ON public.tenant_users USING btree (email);
+CREATE INDEX IF NOT EXISTS idx_tenant_users_guest_perms ON public.tenant_users USING gin (guest_permissions);
+CREATE INDEX IF NOT EXISTS idx_tenant_users_module_roles ON public.tenant_users USING gin (module_roles);
+CREATE INDEX IF NOT EXISTS idx_tenant_users_tenant ON public.tenant_users USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_users_email_tenant_unique ON public.tenant_users USING btree (email, tenant_id) WHERE (email IS NOT NULL);
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_users_pkey ON public.tenant_users USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_users_tenant_id_email_key ON public.tenant_users USING btree (tenant_id, email);
+CREATE INDEX IF NOT EXISTS tenant_users_valid_until_idx ON public.tenant_users USING btree (valid_until) WHERE (valid_until IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_tenants_enabled_modules ON public.tenants USING gin (enabled_modules);
+CREATE UNIQUE INDEX IF NOT EXISTS tenants_pkey ON public.tenants USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_third_party_accounts_tenant ON public.third_party_accounts USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_third_party_code ON public.third_party_accounts USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_third_party_type ON public.third_party_accounts USING btree (type);
+CREATE UNIQUE INDEX IF NOT EXISTS third_party_accounts_pkey ON public.third_party_accounts USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS third_party_accounts_tenant_code_key ON public.third_party_accounts USING btree (tenant_id, code);
+CREATE INDEX IF NOT EXISTS idx_tier_ribs_tenant ON public.tier_ribs USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tier_ribs_tp ON public.tier_ribs USING btree (third_party_account_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tier_ribs_pkey ON public.tier_ribs USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_employee_id ON public.timesheets USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_timesheets_status ON public.timesheets USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_timesheets_tenant ON public.timesheets USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS timesheets_pkey ON public.timesheets USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_toolings_code ON public.toolings USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_toolings_machine ON public.toolings USING btree (machine_id);
+CREATE INDEX IF NOT EXISTS idx_toolings_tenant ON public.toolings USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS toolings_pkey ON public.toolings USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_treasury_recurring_next ON public.treasury_recurring USING btree (next_date);
+CREATE INDEX IF NOT EXISTS idx_treasury_recurring_tenant ON public.treasury_recurring USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS treasury_recurring_pkey ON public.treasury_recurring USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_treasury_transfers_number ON public.treasury_transfers USING btree (number);
+CREATE INDEX IF NOT EXISTS idx_treasury_transfers_status ON public.treasury_transfers USING btree (status);
+CREATE INDEX IF NOT EXISTS idx_treasury_transfers_tenant ON public.treasury_transfers USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS treasury_transfers_pkey ON public.treasury_transfers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_tvs_declarations_tenant ON public.tvs_declarations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tvs_fiscal_year ON public.tvs_declarations USING btree (fiscal_year);
+CREATE INDEX IF NOT EXISTS idx_tvs_tenant ON public.tvs_declarations USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS tvs_declarations_pkey ON public.tvs_declarations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_users_tenant ON public.users USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON public.users USING btree (email);
+CREATE UNIQUE INDEX IF NOT EXISTS users_pkey ON public.users USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_value_date_tracking_tenant ON public.value_date_tracking USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_value_dates_account ON public.value_date_tracking USING btree (bank_account_id);
+CREATE INDEX IF NOT EXISTS idx_value_dates_value_date ON public.value_date_tracking USING btree (value_date);
+CREATE UNIQUE INDEX IF NOT EXISTS value_date_tracking_pkey ON public.value_date_tracking USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_vat_collections_tenant ON public.vat_on_collections USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS vat_on_collections_pkey ON public.vat_on_collections USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_vat_returns_edi_status ON public.vat_returns USING btree (edi_status) WHERE (edi_status <> 'not_submitted'::text);
+CREATE INDEX IF NOT EXISTS idx_vat_returns_tenant ON public.vat_returns USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS vat_returns_pkey ON public.vat_returns USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_warehouse_locations_code ON public.warehouse_locations USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_warehouse_locations_tenant ON public.warehouse_locations USING btree (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_warehouse_locations_wh ON public.warehouse_locations USING btree (warehouse_id);
+CREATE UNIQUE INDEX IF NOT EXISTS warehouse_locations_pkey ON public.warehouse_locations USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_wu_user ON public.warehouse_users USING btree (user_email);
+CREATE INDEX IF NOT EXISTS idx_wu_warehouse ON public.warehouse_users USING btree (warehouse_id);
+CREATE UNIQUE INDEX IF NOT EXISTS warehouse_users_pkey ON public.warehouse_users USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_warehouses_tenant ON public.warehouses USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS warehouses_code_key ON public.warehouses USING btree (code);
+CREATE UNIQUE INDEX IF NOT EXISTS warehouses_pkey ON public.warehouses USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_work_centers_code ON public.work_centers USING btree (code);
+CREATE INDEX IF NOT EXISTS idx_work_centers_tenant ON public.work_centers USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS work_centers_pkey ON public.work_centers USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_work_hardship_employee ON public.work_hardship USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_work_hardship_tenant ON public.work_hardship USING btree (tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS work_hardship_pkey ON public.work_hardship USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_hardship_employee ON public.work_hardship_records USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_hardship_type ON public.work_hardship_records USING btree (exposure_type);
+CREATE UNIQUE INDEX IF NOT EXISTS work_hardship_records_pkey ON public.work_hardship_records USING btree (id);
+CREATE INDEX IF NOT EXISTS idx_work_stoppages_dates ON public.work_stoppages USING btree (start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_work_stoppages_employee ON public.work_stoppages USING btree (employee_id);
+CREATE INDEX IF NOT EXISTS idx_work_stoppages_type ON public.work_stoppages USING btree (stoppage_type);
+CREATE UNIQUE INDEX IF NOT EXISTS work_stoppages_pkey ON public.work_stoppages USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS workflows_pkey ON public.workflows USING btree (id);
 
 -- ============================================
 -- RLS
@@ -10594,7 +10602,7 @@ AS $function$
     SELECT 1 FROM auth.users
     WHERE email = lower(trim(p_email))
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.auto_revoke_expired_auditors()
@@ -10614,7 +10622,7 @@ AS $function$
     RETURNING id
   )
   SELECT count(*)::integer FROM expired;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.bootstrap_tenant(p_tenant_id uuid)
@@ -10692,7 +10700,7 @@ BEGIN
     );
   END IF;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.can_perform(p_table text, p_action text)
@@ -10714,7 +10722,7 @@ AS $function$
       )
     ELSE false
   END
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.check_fiscal_period_open()
@@ -10741,7 +10749,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.check_journal_entry_balance()
@@ -10773,7 +10781,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.create_tenant_for_current_user(p_data jsonb)
@@ -10895,7 +10903,7 @@ EXCEPTION WHEN OTHERS THEN
     'error', SQLERRM
   );
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_guest_permissions()
@@ -10908,7 +10916,7 @@ AS $function$
     AND status = 'active'
     AND tenant_id = current_tenant_id()
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_module_role(p_module text)
@@ -10921,7 +10929,7 @@ AS $function$
     AND status = 'active'
     AND tenant_id = current_tenant_id()
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_tenant_id()
@@ -10951,7 +10959,7 @@ AS $function$
     )
   ORDER BY c.prio
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_tenant_user_id()
@@ -10964,7 +10972,7 @@ AS $function$
     AND status = 'active'
     AND tenant_id = current_tenant_id()
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_user_name(p_tenant_id uuid DEFAULT NULL::uuid)
@@ -10999,7 +11007,7 @@ BEGIN
 
   RETURN COALESCE(v_name, 'Unknown');
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_user_permissions()
@@ -11012,7 +11020,7 @@ AS $function$
     AND status = 'active'
     AND tenant_id = current_tenant_id()
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.current_user_role()
@@ -11025,7 +11033,7 @@ AS $function$
     AND status = 'active'
     AND tenant_id = current_tenant_id()
   LIMIT 1
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.decrement_stock(p_product_id uuid, p_qty numeric, p_warehouse_id uuid DEFAULT NULL::uuid)
@@ -11070,7 +11078,7 @@ BEGIN
         updated_at = NOW()
     WHERE id = p_product_id AND tenant_id = v_tid;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.fec_export(p_tenant_id uuid, p_start_date date, p_end_date date, p_offset integer DEFAULT 0, p_limit integer DEFAULT 1000)
@@ -11101,7 +11109,7 @@ BEGIN
   OFFSET p_offset
   LIMIT p_limit;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.generate_recurring_entry(p_entry_id uuid, p_tenant_id uuid DEFAULT NULL::uuid)
@@ -11163,7 +11171,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_journal_entry_count(p_tenant_id uuid, p_start_date date DEFAULT NULL::date, p_end_date date DEFAULT NULL::date)
@@ -11182,7 +11190,7 @@ BEGIN
     AND (p_end_date IS NULL OR je.date <= p_end_date);
   RETURN v_count;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_next_piece_number(p_journal_code text)
@@ -11224,7 +11232,7 @@ BEGIN
   v_padded := lpad(v_next::text, 4, '0');
   RETURN p_journal_code || '-' || v_padded;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.has_module_access(p_module text)
@@ -11238,7 +11246,7 @@ AS $function$
       current_module_role(p_module) IS NOT NULL
       AND current_module_role(p_module) != ''
     )
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.has_module_permission(p_module text, p_permission text)
@@ -11287,7 +11295,7 @@ BEGIN
     ELSE false
   END;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.increment_download_count(doc_id uuid)
@@ -11300,7 +11308,7 @@ BEGIN
   SET download_count = download_count + 1
   WHERE id = doc_id AND tenant_id = current_tenant_id();
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.increment_stock(p_product_id uuid, p_qty numeric, p_warehouse_id uuid DEFAULT NULL::uuid)
@@ -11337,7 +11345,7 @@ BEGIN
         updated_at = NOW()
     WHERE id = p_product_id AND tenant_id = v_tid;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.log_task_activity()
@@ -11378,7 +11386,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.log_task_created()
@@ -11404,7 +11412,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.post_journal_entry(p_entry jsonb, p_lines jsonb)
@@ -11471,7 +11479,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.prevent_posted_entry_modification()
@@ -11486,7 +11494,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.prevent_role_escalation()
@@ -11512,7 +11520,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.seed_standard_chart(p_tenant_id uuid)
@@ -12234,7 +12242,7 @@ BEGIN
     ('808400', 'Engagements divers recus', 'asset', 0, p_tenant_id)
   ON CONFLICT (tenant_id, code) DO NOTHING;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.set_active_tenant(p_tenant_id uuid)
@@ -12255,7 +12263,7 @@ BEGIN
 
   PERFORM set_config('app.active_tenant_id', p_tenant_id::text, false);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.set_tenant_id()
@@ -12268,7 +12276,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.set_user_name(p_name text)
@@ -12278,7 +12286,7 @@ AS $function$
 BEGIN
   PERFORM set_config('app.user_name', COALESCE(p_name, 'Unknown'), false);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_stock_on_movement()
@@ -12298,7 +12306,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_tax_grid_timestamp()
@@ -12309,7 +12317,7 @@ BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_updated_at()
@@ -12320,7 +12328,7 @@ begin
   new.updated_at = now();
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -12331,7 +12339,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 -- ============================================

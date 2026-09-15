@@ -30,9 +30,13 @@ DROP POLICY IF EXISTS tenant_insert_revision_cycles ON revision_cycles;
 DROP POLICY IF EXISTS tenant_update_revision_cycles ON revision_cycles;
 DROP POLICY IF EXISTS tenant_delete_revision_cycles ON revision_cycles;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_revision_cycles ON revision_cycles;
   CREATE POLICY tenant_select_revision_cycles ON revision_cycles FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_revision_cycles ON revision_cycles;
   CREATE POLICY tenant_insert_revision_cycles ON revision_cycles FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_revision_cycles ON revision_cycles;
   CREATE POLICY tenant_update_revision_cycles ON revision_cycles FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_revision_cycles ON revision_cycles;
   CREATE POLICY tenant_delete_revision_cycles ON revision_cycles FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'revision_cycles RLS: %', SQLERRM; END $$;
 
@@ -63,9 +67,13 @@ DROP POLICY IF EXISTS tenant_insert_reporting_plans ON reporting_plans;
 DROP POLICY IF EXISTS tenant_update_reporting_plans ON reporting_plans;
 DROP POLICY IF EXISTS tenant_delete_reporting_plans ON reporting_plans;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_reporting_plans ON reporting_plans;
   CREATE POLICY tenant_select_reporting_plans ON reporting_plans FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_reporting_plans ON reporting_plans;
   CREATE POLICY tenant_insert_reporting_plans ON reporting_plans FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_reporting_plans ON reporting_plans;
   CREATE POLICY tenant_update_reporting_plans ON reporting_plans FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_reporting_plans ON reporting_plans;
   CREATE POLICY tenant_delete_reporting_plans ON reporting_plans FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'reporting_plans RLS: %', SQLERRM; END $$;
 
@@ -94,9 +102,13 @@ DROP POLICY IF EXISTS tenant_insert_stat_fields ON stat_fields;
 DROP POLICY IF EXISTS tenant_update_stat_fields ON stat_fields;
 DROP POLICY IF EXISTS tenant_delete_stat_fields ON stat_fields;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_stat_fields ON stat_fields;
   CREATE POLICY tenant_select_stat_fields ON stat_fields FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_stat_fields ON stat_fields;
   CREATE POLICY tenant_insert_stat_fields ON stat_fields FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_stat_fields ON stat_fields;
   CREATE POLICY tenant_update_stat_fields ON stat_fields FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_stat_fields ON stat_fields;
   CREATE POLICY tenant_delete_stat_fields ON stat_fields FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'stat_fields RLS: %', SQLERRM; END $$;
 
@@ -126,9 +138,13 @@ DROP POLICY IF EXISTS tenant_insert_dashboard_widgets ON dashboard_widgets;
 DROP POLICY IF EXISTS tenant_update_dashboard_widgets ON dashboard_widgets;
 DROP POLICY IF EXISTS tenant_delete_dashboard_widgets ON dashboard_widgets;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_dashboard_widgets ON dashboard_widgets;
   CREATE POLICY tenant_select_dashboard_widgets ON dashboard_widgets FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_dashboard_widgets ON dashboard_widgets;
   CREATE POLICY tenant_insert_dashboard_widgets ON dashboard_widgets FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_dashboard_widgets ON dashboard_widgets;
   CREATE POLICY tenant_update_dashboard_widgets ON dashboard_widgets FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_dashboard_widgets ON dashboard_widgets;
   CREATE POLICY tenant_delete_dashboard_widgets ON dashboard_widgets FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'dashboard_widgets RLS: %', SQLERRM; END $$;
 
@@ -206,8 +222,11 @@ DROP POLICY IF EXISTS tenant_select_rgpd_requests ON rgpd_requests;
 DROP POLICY IF EXISTS tenant_insert_rgpd_requests ON rgpd_requests;
 DROP POLICY IF EXISTS tenant_update_rgpd_requests ON rgpd_requests;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_rgpd_requests ON rgpd_requests;
   CREATE POLICY tenant_select_rgpd_requests ON rgpd_requests FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_rgpd_requests ON rgpd_requests;
   CREATE POLICY tenant_insert_rgpd_requests ON rgpd_requests FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_rgpd_requests ON rgpd_requests;
   CREATE POLICY tenant_update_rgpd_requests ON rgpd_requests FOR UPDATE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'rgpd_requests RLS: %', SQLERRM; END $$;
 

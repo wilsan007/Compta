@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 import { createContext, useContext, type ReactNode } from 'react'
 import { useProjects } from '@/hooks/useProjects'
 

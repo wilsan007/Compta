@@ -35,9 +35,13 @@ DROP POLICY IF EXISTS tenant_insert_tax_rates ON tax_rates;
 DROP POLICY IF EXISTS tenant_update_tax_rates ON tax_rates;
 DROP POLICY IF EXISTS tenant_delete_tax_rates ON tax_rates;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_tax_rates ON tax_rates;
   CREATE POLICY tenant_select_tax_rates ON tax_rates FOR SELECT USING (tenant_id IS NULL OR tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_tax_rates ON tax_rates;
   CREATE POLICY tenant_insert_tax_rates ON tax_rates FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_tax_rates ON tax_rates;
   CREATE POLICY tenant_update_tax_rates ON tax_rates FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_tax_rates ON tax_rates;
   CREATE POLICY tenant_delete_tax_rates ON tax_rates FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'tax_rates RLS: %', SQLERRM; END $$;
 
@@ -105,9 +109,13 @@ DROP POLICY IF EXISTS tenant_insert_payment_terms ON payment_terms;
 DROP POLICY IF EXISTS tenant_update_payment_terms ON payment_terms;
 DROP POLICY IF EXISTS tenant_delete_payment_terms ON payment_terms;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_payment_terms ON payment_terms;
   CREATE POLICY tenant_select_payment_terms ON payment_terms FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_payment_terms ON payment_terms;
   CREATE POLICY tenant_insert_payment_terms ON payment_terms FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_payment_terms ON payment_terms;
   CREATE POLICY tenant_update_payment_terms ON payment_terms FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_payment_terms ON payment_terms;
   CREATE POLICY tenant_delete_payment_terms ON payment_terms FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'payment_terms RLS: %', SQLERRM; END $$;
 
@@ -134,9 +142,13 @@ DROP POLICY IF EXISTS tenant_insert_marking_types ON marking_types;
 DROP POLICY IF EXISTS tenant_update_marking_types ON marking_types;
 DROP POLICY IF EXISTS tenant_delete_marking_types ON marking_types;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_marking_types ON marking_types;
   CREATE POLICY tenant_select_marking_types ON marking_types FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_marking_types ON marking_types;
   CREATE POLICY tenant_insert_marking_types ON marking_types FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_marking_types ON marking_types;
   CREATE POLICY tenant_update_marking_types ON marking_types FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_marking_types ON marking_types;
   CREATE POLICY tenant_delete_marking_types ON marking_types FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'marking_types RLS: %', SQLERRM; END $$;
 

@@ -23,13 +23,17 @@ CREATE INDEX IF NOT EXISTS idx_user_totp_tenant ON user_totp(tenant_id);
 ALTER TABLE user_totp ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_totp FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_user_totp ON user_totp;
 CREATE POLICY tenant_select_user_totp ON user_totp
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_user_totp ON user_totp;
 CREATE POLICY tenant_insert_user_totp ON user_totp
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_user_totp ON user_totp;
 CREATE POLICY tenant_update_user_totp ON user_totp
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_user_totp ON user_totp;
 CREATE POLICY tenant_delete_user_totp ON user_totp
   FOR DELETE USING (tenant_id = current_tenant_id());
 
@@ -57,13 +61,17 @@ CREATE INDEX IF NOT EXISTS idx_email_templates_tenant ON email_templates(tenant_
 ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_templates FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_email_templates ON email_templates;
 CREATE POLICY tenant_select_email_templates ON email_templates
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_email_templates ON email_templates;
 CREATE POLICY tenant_insert_email_templates ON email_templates
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_email_templates ON email_templates;
 CREATE POLICY tenant_update_email_templates ON email_templates
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_email_templates ON email_templates;
 CREATE POLICY tenant_delete_email_templates ON email_templates
   FOR DELETE USING (tenant_id = current_tenant_id());
 
@@ -93,13 +101,17 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_notifications ON notifications;
 CREATE POLICY tenant_select_notifications ON notifications
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_notifications ON notifications;
 CREATE POLICY tenant_insert_notifications ON notifications
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_update_notifications ON notifications;
 CREATE POLICY tenant_update_notifications ON notifications
   FOR UPDATE USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_delete_notifications ON notifications;
 CREATE POLICY tenant_delete_notifications ON notifications
   FOR DELETE USING (tenant_id = current_tenant_id());
 

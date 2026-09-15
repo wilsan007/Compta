@@ -9,6 +9,7 @@ import { getManufacturingOrders } from '@/lib/queries/production'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { Supplier, Product } from '@/types'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function SubcontractingOrdersPage() {
   const { toast } = useToast()
@@ -102,7 +103,7 @@ function STOrderFormModal({ suppliers, products, mos, onClose, onSaved }: { supp
     e.preventDefault()
     if (!supplierId) { toast('error', tCommon('toast.error'), t('subcontracting.supplierRequired')); return }
     try {
-      const number = `ST-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('ST')
       await createSTOrder({
         number, supplier_id: supplierId, manufacturing_order_id: moId || null,
         routing_operation_id: null, product_id: productId || null,

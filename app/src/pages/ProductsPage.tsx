@@ -146,6 +146,9 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [reorderLevel, setReorderLevel] = useState(0)
   const [unit, setUnit] = useState('')
   const [category, setCategory] = useState('')
+  const [saleAccountCode, setSaleAccountCode] = useState('707000')
+  const [purchaseAccountCode, setPurchaseAccountCode] = useState('607000')
+  const [stockAccountCode, setStockAccountCode] = useState('310000')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -157,6 +160,9 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         sale_price: salePrice, purchase_price: purchasePrice, vat_rate: vatRate,
         stock_quantity: stockQty, reorder_level: reorderLevel, unit, category,
         active: true, description: '',
+        sale_account_code: saleAccountCode || null,
+        purchase_account_code: purchaseAccountCode || null,
+        stock_account_code: stockAccountCode || null,
       } as any)
       onSaved()
     } catch (err: any) {
@@ -197,6 +203,11 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
               <Input label={t('products.reorderLevel')} type="number" step="0.01" value={reorderLevel} onChange={(e) => setReorderLevel(Number(e.target.value))} />
             </div>
           )}
+          <div className="grid grid-cols-3 gap-4">
+            <Input label={t('products.saleAccountCode')} value={saleAccountCode} onChange={(e) => setSaleAccountCode(e.target.value)} placeholder="707000" />
+            <Input label={t('products.purchaseAccountCode')} value={purchaseAccountCode} onChange={(e) => setPurchaseAccountCode(e.target.value)} placeholder="607000" />
+            <Input label={t('products.stockAccountCode')} value={stockAccountCode} onChange={(e) => setStockAccountCode(e.target.value)} placeholder="310000" />
+          </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>

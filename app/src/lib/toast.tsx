@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import { CheckCircle, AlertCircle, Info, XCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'

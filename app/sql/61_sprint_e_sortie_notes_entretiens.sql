@@ -44,6 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_exit_processes_status ON employee_exit_processes(
 ALTER TABLE employee_exit_processes ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_employee_exit_processes') THEN
+    DROP POLICY IF EXISTS "allow_all_employee_exit_processes" ON employee_exit_processes;
     CREATE POLICY "allow_all_employee_exit_processes" ON employee_exit_processes FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

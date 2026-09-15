@@ -190,22 +190,26 @@ BEGIN
   DROP POLICY IF EXISTS "tenant_delete_mirror_servers" ON mirror_servers;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_select_mirror_servers" ON mirror_servers;
     CREATE POLICY "tenant_select_mirror_servers" ON mirror_servers
       FOR SELECT USING (tenant_id = current_tenant_id());
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'mirror_servers select: %', SQLERRM; END;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_insert_mirror_servers" ON mirror_servers;
     CREATE POLICY "tenant_insert_mirror_servers" ON mirror_servers
       FOR INSERT WITH CHECK (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'mirror_servers insert: %', SQLERRM; END;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_update_mirror_servers" ON mirror_servers;
     CREATE POLICY "tenant_update_mirror_servers" ON mirror_servers
       FOR UPDATE USING (tenant_id = current_tenant_id())
       WITH CHECK (tenant_id = current_tenant_id());
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'mirror_servers update: %', SQLERRM; END;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_delete_mirror_servers" ON mirror_servers;
     CREATE POLICY "tenant_delete_mirror_servers" ON mirror_servers
       FOR DELETE USING (tenant_id = current_tenant_id() AND current_user_role() = 'admin');
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'mirror_servers delete: %', SQLERRM; END;
@@ -226,11 +230,13 @@ BEGIN
   DROP POLICY IF EXISTS "tenant_delete_audit_log" ON audit_log;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_select_audit_log" ON audit_log;
     CREATE POLICY "tenant_select_audit_log" ON audit_log
       FOR SELECT USING (tenant_id = current_tenant_id());
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'audit_log select: %', SQLERRM; END;
 
   BEGIN
+    DROP POLICY IF EXISTS "tenant_insert_audit_log" ON audit_log;
     CREATE POLICY "tenant_insert_audit_log" ON audit_log
       FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
   EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'audit_log insert: %', SQLERRM; END;

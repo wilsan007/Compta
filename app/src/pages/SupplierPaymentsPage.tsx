@@ -11,6 +11,7 @@ import type { SupplierPayment, Supplier, BankAccount, PurchaseInvoice } from '@/
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function SupplierPaymentsPage() {
   const { t } = useTranslation('purchases')
@@ -127,7 +128,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `RSF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('RSF')
       await createSupplierPayment({ number, supplier_id: supplierId || null, purchase_invoice_id: purchaseInvoiceId || null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }

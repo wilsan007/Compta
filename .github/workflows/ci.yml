@@ -236,6 +236,8 @@ jobs:
 
       - name: Charger le schéma de base
         run: |
+          # Objets Supabase absents d'un PostgreSQL nu (auth, storage, rôles, pg_cron)
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
@@ -247,8 +249,10 @@ jobs:
 
       - name: Installer plpgsql_check
         run: |
-          docker exec postgres apt-get update -qq
-          docker exec postgres apt-get install -y -qq postgresql-16-plpgsql-check
+          # Le conteneur de service GitHub Actions a un nom aléatoire : le retrouver par son image
+          PG_CONTAINER=$(docker ps -q --filter "ancestor=postgres:16" | head -1)
+          docker exec "$PG_CONTAINER" apt-get update -qq
+          docker exec "$PG_CONTAINER" apt-get install -y -qq postgresql-16-plpgsql-check
           psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta

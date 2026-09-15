@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS tenant_onboarding_state (
 );
 
 ALTER TABLE tenant_onboarding_state ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_onboarding_tenant ON tenant_onboarding_state;
 CREATE POLICY tenant_onboarding_tenant ON tenant_onboarding_state
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS tenant_roles (
 );
 
 ALTER TABLE tenant_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_roles_tenant ON tenant_roles;
 CREATE POLICY tenant_roles_tenant ON tenant_roles
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -75,6 +77,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 );
 
 ALTER TABLE role_permissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS role_permissions_tenant ON role_permissions;
 CREATE POLICY role_permissions_tenant ON role_permissions
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

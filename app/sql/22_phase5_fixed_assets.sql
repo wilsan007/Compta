@@ -27,6 +27,7 @@ create index if not exists idx_asset_dep_plans_type on asset_depreciation_plans(
 alter table asset_depreciation_plans enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_depreciation_plans') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_depreciation_plans" ON asset_depreciation_plans;
     CREATE POLICY "allow_all_asset_depreciation_plans" ON asset_depreciation_plans FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -51,6 +52,7 @@ create index if not exists idx_asset_families_parent on asset_families(parent_id
 alter table asset_families enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_families') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_families" ON asset_families;
     CREATE POLICY "allow_all_asset_families" ON asset_families FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -72,6 +74,7 @@ create index if not exists idx_asset_revaluations_asset on asset_revaluations(as
 alter table asset_revaluations enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_revaluations') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_revaluations" ON asset_revaluations;
     CREATE POLICY "allow_all_asset_revaluations" ON asset_revaluations FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -91,6 +94,7 @@ create index if not exists idx_asset_documents_asset on asset_documents(asset_id
 alter table asset_documents enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_documents') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_documents" ON asset_documents;
     CREATE POLICY "allow_all_asset_documents" ON asset_documents FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -111,6 +115,7 @@ create index if not exists idx_asset_free_fields_key on asset_free_fields(field_
 alter table asset_free_fields enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_free_fields') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_free_fields" ON asset_free_fields;
     CREATE POLICY "allow_all_asset_free_fields" ON asset_free_fields FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -133,6 +138,7 @@ create index if not exists idx_asset_batch_disposals_number on asset_batch_dispo
 alter table asset_batch_disposals enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_batch_disposals') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_batch_disposals" ON asset_batch_disposals;
     CREATE POLICY "allow_all_asset_batch_disposals" ON asset_batch_disposals FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -153,6 +159,7 @@ create index if not exists idx_batch_disposal_lines_batch on asset_batch_disposa
 alter table asset_batch_disposal_lines enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_batch_disposal_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_batch_disposal_lines" ON asset_batch_disposal_lines;
     CREATE POLICY "allow_all_asset_batch_disposal_lines" ON asset_batch_disposal_lines FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -170,6 +177,7 @@ create index if not exists idx_asset_splits_original on asset_splits(original_as
 alter table asset_splits enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_splits') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_splits" ON asset_splits;
     CREATE POLICY "allow_all_asset_splits" ON asset_splits FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -188,6 +196,7 @@ create index if not exists idx_asset_split_components_split on asset_split_compo
 alter table asset_split_components enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_asset_split_components') THEN
+    DROP POLICY IF EXISTS "allow_all_asset_split_components" ON asset_split_components;
     CREATE POLICY "allow_all_asset_split_components" ON asset_split_components FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

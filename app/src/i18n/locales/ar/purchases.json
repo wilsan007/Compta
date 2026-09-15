@@ -257,6 +257,8 @@
     "parentIdPlaceholder": "معرف الشركة الأم",
     "salesRepId": "المندوب التجاري (المعرف)",
     "salesRepIdPlaceholder": "معرف المندوب التجاري",
+    "accountTiers": "حساب فرعي",
+    "accountCollectif": "حساب جمعي",
     "nameLabel": "اسم المورد",
     "nameRequired": "الاسم مطلوب",
     "deleted": "تم حذف المورد بنجاح",
@@ -298,7 +300,7 @@
     "processed": "الفواتير المعالجة",
     "pending": "الفواتير المعلقة",
     "rejected": "الفواتير المرفوضة",
-    "uploadTitle": "رفع فاتورة (OCR محاكى)",
+    "uploadTitle": "استيراد فاتورة (OCR)",
     "dragDropText": "اسحب فاتورة PDF أو صورة، أو انقر للتصفح",
     "fileTypes": "PDF, PNG, JPG — 10 ميجابايت كحد أقصى",
     "browse": "تصفح",
@@ -316,7 +318,9 @@
       "paid": "مدفوعة",
       "overdue": "متأخرة",
       "received": "مستلمة"
-    }
+    },
+    "subtotalAmount": "المبلغ دون ضريبة",
+    "totalMismatch": "المجموع المقروء في الفاتورة ({{total}}) يختلف عن المبلغ دون ضريبة + الضريبة: تحقق من المبالغ."
   },
   "approval": {
     "title": "موافقة على الدفع",

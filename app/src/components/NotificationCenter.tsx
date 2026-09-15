@@ -76,6 +76,7 @@ export function NotificationCenter() {
 
   useEffect(() => {
     if (open) loadNotifications().catch(err => console.error('loadNotifications:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [open])
 
   useEffect(() => {
@@ -98,6 +99,7 @@ export function NotificationCenter() {
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   useEffect(() => {

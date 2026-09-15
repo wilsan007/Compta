@@ -29,6 +29,7 @@ export function PurchaseInvoicesPage() {
 
   useEffect(() => {
     loadInvoices().catch(err => console.error('loadInvoices:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadInvoices() {
@@ -234,24 +235,22 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
   const expenseAccounts = accounts.filter(a => a.type === 'expense')
   const totalNum = Number(total) || 0
 
-  async function checkBudget() {
-    if (!accountCode || totalNum <= 0) return
-    setChecking(true)
-    try {
-      const result = await checkBudgetAvailability(accountCode, totalNum, fiscalYearId || undefined)
-      setBudgetCheck(result)
-    } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
-    finally { setChecking(false) }
-  }
-
+  // Contrôle budgétaire différé de 300 ms après la dernière saisie
   useEffect(() => {
-    if (accountCode && totalNum > 0) {
-      const t = setTimeout(checkBudget, 300)
-      return () => clearTimeout(t)
-    } else {
+    if (!accountCode || totalNum <= 0) {
       setBudgetCheck(null)
+      return
     }
-  }, [accountCode, total, fiscalYearId])
+    const t = setTimeout(async () => {
+      setChecking(true)
+      try {
+        const result = await checkBudgetAvailability(accountCode, totalNum, fiscalYearId || undefined)
+        setBudgetCheck(result)
+      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      finally { setChecking(false) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [accountCode, totalNum, fiscalYearId, tCommon, toast])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

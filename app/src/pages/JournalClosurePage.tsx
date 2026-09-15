@@ -31,6 +31,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
 
   useEffect(() => {
     loadFiscalYears().catch(err => console.error('loadFiscalYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadFiscalYears() {
@@ -47,6 +48,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
 
   useEffect(() => {
     if (selectedYear) loadMatrix().catch(err => console.error('loadMatrix:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedYear])
 
   async function loadMatrix() {

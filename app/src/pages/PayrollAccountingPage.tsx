@@ -7,6 +7,7 @@ import { Calculator, Plus, Trash2, X, ArrowRightLeft, CheckCircle2 } from 'lucid
 import type { PayRun, PayrollAccountingEntry } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { draft: 'warning', transferred: 'success', cancelled: 'danger' }
 
@@ -107,7 +108,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `OD-PAIE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+      const number = await nextDocumentNumber('OD-PAIE')
       await createPayrollAccountingEntry({
         number, pay_run_id: payRunId || null, period_date: periodDate,
         gross_total: Number(selectedRun?.gross_total) || 0,

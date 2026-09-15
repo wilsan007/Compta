@@ -106,7 +106,19 @@
     "notes": "ملاحظات",
     "reference": "المرجع",
     "noAdjustments": "لا توجد تسوية",
-    "noAdjustmentsDescription": "أدخل أول جرد لك."
+    "noAdjustmentsDescription": "أدخل أول جرد لك.",
+    "valuationMethod": "طريقة التقييم",
+    "valuationResult": "تقييم المخزون",
+    "totalValue": "القيمة الإجمالية",
+    "method": "الطريقة",
+    "grandTotal": "المجموع الكلي",
+    "noValuation": "لا يوجد تقييم",
+    "noValuationDescription": "لا توجد منتجات في المخزون لتقييمها.",
+    "methods": {
+      "cump": "متوسط التكلفة المرجح",
+      "fifo": "أول وارد أول صادر",
+      "lifo": "آخر وارد أول صادر"
+    }
   },
   "reorder": {
     "title": "إعادة الطلب",
@@ -236,6 +248,9 @@
     "products": "منتجات",
     "initialQty": "الكمية الأولية",
     "reorderLevel": "حد إعادة الطلب",
+    "saleAccountCode": "حساب المبيعات",
+    "purchaseAccountCode": "حساب المشتريات",
+    "stockAccountCode": "حساب المخزون",
     "movementTypes": {
       "in": "إدخال",
       "out": "إخراج",

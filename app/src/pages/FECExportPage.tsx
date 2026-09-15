@@ -63,6 +63,7 @@ export function FECExportPage() {
   const [entries, setEntries] = useState<any[]>([])
   const [validation, setValidation] = useState<FECValidationResult | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadYears() }, [])
 
   async function loadYears() {

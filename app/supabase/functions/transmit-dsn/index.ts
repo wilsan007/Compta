@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -31,22 +32,27 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    // Récupérer la DSN
-    const { data: dsn, error: dsnErr } = await supabase
-      .from("dsn_declarations")
-      .select("*")
-      .eq("id", dsn_id)
-      .single()
-
-    if (dsnErr || !dsn) {
-      return new Response(JSON.stringify({ error: "DSN non trouvée" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    // Récupérer la DSN : écran paie (dsn_declarations) ou déclarations sociales (social_declarations)
+    let dsnTable = "dsn_declarations"
+    let { data: dsn } = await supabase.from("dsn_declarations").select("*").eq("id", dsn_id).maybeSingle()
+    if (!dsn) {
+      dsnTable = "social_declarations"
+      const res = await supabase.from("social_declarations").select("*").eq("id", dsn_id).maybeSingle()
+      dsn = res.data
     }
 
-    // Récupérer les infos entreprise
+    if (!dsn) {
+      return new Response(JSON.stringify({ error: "DSN non trouvée" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+    if (!(await isTenantMember(supabase, user.id, dsn.tenant_id))) return forbidden(corsHeaders)
+
+    // Récupérer les infos entreprise du tenant de la DSN
     const { data: company, error } = await supabase
       .from("company_settings")
       .select("*")
-      .single()
+      .eq("tenant_id", dsn.tenant_id)
+      .limit(1)
+      .maybeSingle()
     if (error) { console.error('transmit-dsn:', error); }
 
     const dsnSiret = siret || company?.siret
@@ -59,29 +65,13 @@ serve(async (req) => {
     const dsnApiUrl = Deno.env.get("DSN_API_URL") || "https://api.net-entreprises.fr"
 
     if (!dsnApiToken) {
-      // Mode simulation
-      const transmissionId = "DSN-" + Date.now()
-      await supabase
-        .from("dsn_declarations")
-        .update({
-          status: "transmitted",
-          transmitted_at: new Date().toISOString(),
-          transmission_id: transmissionId,
-          transmission_method: "simulation",
-        })
-        .eq("id", dsn_id)
-        .eq("tenant_id", dsn.tenant_id)
-
+      // LOT7-08 : sans accès configuré, refuser plutôt que simuler.
+      // Une simulation enregistrait la déclaration comme transmise alors que rien n'était envoyé.
       return new Response(JSON.stringify({
-        success: true,
-        dsn_id: dsn_id,
-        transmission_id: transmissionId,
-        status: "transmitted",
-        mode: "simulation",
-        message: "DSN transmise en mode simulation (API net-entreprises non configurée)",
-        siret: dsnSiret,
-        period: dsn.period,
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        success: false,
+        code: "NOT_CONFIGURED",
+        error: "API net-entreprises non configuré : définissez DSN_API_TOKEN pour activer la transmission. Aucune donnée n'a été transmise.",
+      }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
     // Transmission réelle via API net-entreprises
@@ -124,14 +114,14 @@ serve(async (req) => {
     const transmitData = await transmitResponse.json()
 
     if (transmitResponse.ok) {
+      // Colonnes communes aux deux tables de déclaration
       await supabase
-        .from("dsn_declarations")
+        .from(dsnTable)
         .update({
           status: "transmitted",
           transmitted_at: new Date().toISOString(),
-          transmission_id: transmitData.idDepot,
-          transmission_method: "api",
-          acknowledgment: transmitData.accuse,
+          response_code: transmitData.idDepot ? String(transmitData.idDepot) : null,
+          response_message: transmitData.accuse ? JSON.stringify(transmitData.accuse).slice(0, 2000) : null,
         })
         .eq("id", dsn_id)
         .eq("tenant_id", dsn.tenant_id)

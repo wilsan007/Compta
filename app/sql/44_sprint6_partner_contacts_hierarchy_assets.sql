@@ -34,6 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_partner_contacts_partner ON partner_contacts(part
 ALTER TABLE partner_contacts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_partner_contacts') THEN
+    DROP POLICY IF EXISTS "allow_all_partner_contacts" ON partner_contacts;
     CREATE POLICY "allow_all_partner_contacts" ON partner_contacts FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS partner_categories (
 ALTER TABLE partner_categories ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_partner_categories') THEN
+    DROP POLICY IF EXISTS "allow_all_partner_categories" ON partner_categories;
     CREATE POLICY "allow_all_partner_categories" ON partner_categories FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -81,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_partner_cat_mapping_cat ON partner_category_mappi
 ALTER TABLE partner_category_mappings ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_partner_cat_mappings') THEN
+    DROP POLICY IF EXISTS "allow_all_partner_cat_mappings" ON partner_category_mappings;
     CREATE POLICY "allow_all_partner_cat_mappings" ON partner_category_mappings FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -116,6 +119,7 @@ CREATE INDEX IF NOT EXISTS idx_partner_bank_accounts ON partner_bank_accounts(pa
 ALTER TABLE partner_bank_accounts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_partner_bank_accounts') THEN
+    DROP POLICY IF EXISTS "allow_all_partner_bank_accounts" ON partner_bank_accounts;
     CREATE POLICY "allow_all_partner_bank_accounts" ON partner_bank_accounts FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

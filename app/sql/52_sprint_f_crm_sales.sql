@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_opp_rep ON crm_opportunities(sales_rep_id);
 ALTER TABLE crm_opportunities ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_opportunities') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_opportunities" ON crm_opportunities;
     CREATE POLICY "allow_all_crm_opportunities" ON crm_opportunities FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -57,6 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_act_date ON crm_activities(scheduled_date);
 ALTER TABLE crm_activities ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_activities') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_activities" ON crm_activities;
     CREATE POLICY "allow_all_crm_activities" ON crm_activities FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -86,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_camp_status ON crm_campaigns(status);
 ALTER TABLE crm_campaigns ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_campaigns') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_campaigns" ON crm_campaigns;
     CREATE POLICY "allow_all_crm_campaigns" ON crm_campaigns FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -111,6 +114,7 @@ CREATE INDEX IF NOT EXISTS idx_cr_camp ON crm_campaign_recipients(campaign_id);
 ALTER TABLE crm_campaign_recipients ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_campaign_recipients') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_campaign_recipients" ON crm_campaign_recipients;
     CREATE POLICY "allow_all_crm_campaign_recipients" ON crm_campaign_recipients FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -131,6 +135,7 @@ CREATE INDEX IF NOT EXISTS idx_terr_parent ON crm_territories(parent_id);
 ALTER TABLE crm_territories ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_territories') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_territories" ON crm_territories;
     CREATE POLICY "allow_all_crm_territories" ON crm_territories FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -153,6 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_fc_period ON crm_forecasts(period);
 ALTER TABLE crm_forecasts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_crm_forecasts') THEN
+    DROP POLICY IF EXISTS "allow_all_crm_forecasts" ON crm_forecasts;
     CREATE POLICY "allow_all_crm_forecasts" ON crm_forecasts FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

@@ -55,3 +55,6 @@ yarn.lock.bak
 *.bak
 *.bak2
 *.orig
+
+# CodeGraph local index
+.codegraph/

@@ -57,6 +57,7 @@ ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Email queue: only admins can view, system can insert
 DROP POLICY IF EXISTS "email_queue_select" ON notification_email_queue;
+DROP POLICY IF EXISTS email_queue_select ON notification_email_queue;
 CREATE POLICY email_queue_select ON notification_email_queue
   FOR SELECT TO authenticated
   USING (
@@ -67,6 +68,7 @@ CREATE POLICY email_queue_select ON notification_email_queue
   );
 
 DROP POLICY IF EXISTS "email_queue_insert" ON notification_email_queue;
+DROP POLICY IF EXISTS email_queue_insert ON notification_email_queue;
 CREATE POLICY email_queue_insert ON notification_email_queue
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -78,6 +80,7 @@ CREATE POLICY email_queue_insert ON notification_email_queue
 
 -- Notification preferences: users can read/update their own, admins can read all
 DROP POLICY IF EXISTS "notif_prefs_select" ON notification_preferences;
+DROP POLICY IF EXISTS notif_prefs_select ON notification_preferences;
 CREATE POLICY notif_prefs_select ON notification_preferences
   FOR SELECT TO authenticated
   USING (
@@ -88,6 +91,7 @@ CREATE POLICY notif_prefs_select ON notification_preferences
   );
 
 DROP POLICY IF EXISTS "notif_prefs_insert" ON notification_preferences;
+DROP POLICY IF EXISTS notif_prefs_insert ON notification_preferences;
 CREATE POLICY notif_prefs_insert ON notification_preferences
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -98,6 +102,7 @@ CREATE POLICY notif_prefs_insert ON notification_preferences
   );
 
 DROP POLICY IF EXISTS "notif_prefs_update" ON notification_preferences;
+DROP POLICY IF EXISTS notif_prefs_update ON notification_preferences;
 CREATE POLICY notif_prefs_update ON notification_preferences
   FOR UPDATE TO authenticated
   USING (

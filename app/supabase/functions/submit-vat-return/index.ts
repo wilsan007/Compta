@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -41,6 +42,7 @@ serve(async (req) => {
     if (vrErr || !vatReturn) {
       return new Response(JSON.stringify({ error: "Déclaration TVA non trouvée" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
+    if (!(await isTenantMember(supabase, user.id, vatReturn.tenant_id))) return forbidden(corsHeaders)
 
     if (vatReturn.status === "submitted") {
       return new Response(JSON.stringify({ error: "Déclaration déjà soumise", edi_tva_id: vatReturn.edi_tva_id }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
@@ -50,7 +52,9 @@ serve(async (req) => {
     const { data: company, error } = await supabase
       .from("company_settings")
       .select("*")
-      .single()
+      .eq("tenant_id", vatReturn.tenant_id)
+      .limit(1)
+      .maybeSingle()
     if (error) { console.error('submit-vat-return:', error); }
 
     if (!company?.siret) {
@@ -62,30 +66,13 @@ serve(async (req) => {
     const efiApiUrl = Deno.env.get("EFI_API_URL") || "https://api.impots.gouv.fr"
 
     if (!efiToken) {
-      // Mode simulation
-      const ediId = "CA3-" + Date.now()
-      await supabase
-        .from("vat_returns")
-        .update({
-          status: "submitted",
-          submitted_date: new Date().toISOString().split("T")[0],
-          edi_tva_id: ediId,
-          edi_status: "submitted",
-          edi_submitted_at: new Date().toISOString(),
-        })
-        .eq("id", vat_return_id)
-        .eq("tenant_id", vatReturn.tenant_id)
-
+      // LOT7-08 : sans accès configuré, refuser plutôt que simuler.
+      // Une simulation enregistrait la déclaration comme transmise alors que rien n'était envoyé.
       return new Response(JSON.stringify({
-        success: true,
-        vat_return_id: vat_return_id,
-        edi_tva_id: ediId,
-        status: "submitted",
-        mode: "simulation",
-        message: "Télédéclaration CA3 soumise en mode simulation (API EFI non configurée)",
-        period: `${vatReturn.period_start} → ${vatReturn.period_end}`,
-        vat_due: vatReturn.box3_vat_due,
-      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        success: false,
+        code: "NOT_CONFIGURED",
+        error: "API EFI (impots.gouv.fr) non configuré : définissez EFI_API_TOKEN pour activer la transmission. Aucune donnée n'a été transmise.",
+      }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
     // Transmission réelle via API EFI (impots.gouv.fr)

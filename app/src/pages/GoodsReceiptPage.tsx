@@ -9,6 +9,7 @@ import type { GoodsReceipt, Supplier, PurchaseOrder } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function GoodsReceiptPage() {
   const { t } = useTranslation('purchases')
@@ -111,7 +112,7 @@ function GRForm({ suppliers, onClose, onSaved }: { suppliers: Supplier[]; onClos
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `BR-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('BR')
       await createGoodsReceipt({ number, supplier_id: supplierId || null, purchase_order_id: purchaseOrderId || null, receipt_date: receiptDate, status: 'pending', notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }

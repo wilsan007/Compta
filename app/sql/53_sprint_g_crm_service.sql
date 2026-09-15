@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_tk_assigned ON service_tickets(assigned_to);
 ALTER TABLE service_tickets ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_service_tickets') THEN
+    DROP POLICY IF EXISTS "allow_all_service_tickets" ON service_tickets;
     CREATE POLICY "allow_all_service_tickets" ON service_tickets FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -52,6 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_tm_ticket ON service_ticket_messages(ticket_id);
 ALTER TABLE service_ticket_messages ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_service_ticket_messages') THEN
+    DROP POLICY IF EXISTS "allow_all_service_ticket_messages" ON service_ticket_messages;
     CREATE POLICY "allow_all_service_ticket_messages" ON service_ticket_messages FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -80,6 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_sc_customer ON service_contracts(customer_id);
 ALTER TABLE service_contracts ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_service_contracts') THEN
+    DROP POLICY IF EXISTS "allow_all_service_contracts" ON service_contracts;
     CREATE POLICY "allow_all_service_contracts" ON service_contracts FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -106,6 +109,7 @@ CREATE INDEX IF NOT EXISTS idx_kb_status ON knowledge_base_articles(status);
 ALTER TABLE knowledge_base_articles ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_kb_articles') THEN
+    DROP POLICY IF EXISTS "allow_all_kb_articles" ON knowledge_base_articles;
     CREATE POLICY "allow_all_kb_articles" ON knowledge_base_articles FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS lettrage_groups (
 );
 
 ALTER TABLE lettrage_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS lettrage_groups_tenant ON lettrage_groups;
 CREATE POLICY lettrage_groups_tenant ON lettrage_groups
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -177,6 +178,7 @@ CREATE TABLE IF NOT EXISTS fixed_asset_components (
 );
 
 ALTER TABLE fixed_asset_components ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS fixed_asset_components_tenant ON fixed_asset_components;
 CREATE POLICY fixed_asset_components_tenant ON fixed_asset_components
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

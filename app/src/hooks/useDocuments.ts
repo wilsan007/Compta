@@ -103,18 +103,21 @@ export function useDocuments(
   const currentModuleRole = moduleRoles[module] || null
   const guestPermissions = (user as any)?.guest_permissions || null
 
+  // Les appelants passent souvent un objet littéral recréé à chaque rendu :
+  // on dépend de sa sérialisation pour ne recharger que si les filtres changent.
+  const filtersKey = filters ? JSON.stringify(filters) : ''
   const fetchDocuments = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await getDocuments(module, filters)
+      const data = await getDocuments(module, filtersKey ? JSON.parse(filtersKey) as UseDocumentsFilters : undefined)
       setDocuments(data)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch documents')
     } finally {
       setLoading(false)
     }
-  }, [module, JSON.stringify(filters)])
+  }, [module, filtersKey])
 
   useEffect(() => {
     fetchDocuments()

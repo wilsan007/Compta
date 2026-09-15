@@ -5,6 +5,7 @@ import { Camera, Check, CloudOff, Cloud, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
 import { useToast } from '@/lib/toast'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function MobileExpenseCapture() {
   const { t } = useTranslation('employee')
@@ -49,7 +50,7 @@ const [ocrProcessing] = useState(false)
       let reportId = report?.id
       if (!reportId) {
         const { data: newReport, error: newReportError } = await supabase.from('expense_reports').insert({
-          tenant_id: tid, employee_id: emp.id, number: `EXP-${Date.now()}`, total_amount: 0, total_vat: 0, status: 'draft',
+          tenant_id: tid, employee_id: emp.id, number: await nextDocumentNumber('EXP'), total_amount: 0, total_vat: 0, status: 'draft',
         }).select().single()
         if (newReportError) throw newReportError
         reportId = newReport.id

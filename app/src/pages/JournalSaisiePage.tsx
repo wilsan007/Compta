@@ -69,6 +69,7 @@ const [journals, setJournals] = useState<Journal[]>([])
 
   useEffect(() => {
     loadInitial().catch(err => console.error('loadInitial:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadInitial() {
@@ -95,6 +96,7 @@ const [journals, setJournals] = useState<Journal[]>([])
     if (selectedYear) {
       loadPeriods(selectedYear).catch(err => console.error('loadPeriods:', err))
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedYear])
 
   async function loadPeriods(yearId: string) {
@@ -429,6 +431,7 @@ function SaisieForm({
         .then(setBalance)
         .catch(() => {})
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadFormData() {

@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS vat_account_mapping (
 );
 
 ALTER TABLE vat_account_mapping ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS vat_account_mapping_tenant_select ON vat_account_mapping;
 CREATE POLICY vat_account_mapping_tenant_select ON vat_account_mapping
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS vat_account_mapping_tenant_all ON vat_account_mapping;
 CREATE POLICY vat_account_mapping_tenant_all ON vat_account_mapping
   FOR ALL USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 

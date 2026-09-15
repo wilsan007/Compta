@@ -82,8 +82,12 @@ async function main() {
       'audit_schema.sql',
     ].filter(f => fs.existsSync(path.join(sqlDir, f)));
 
+    // 00_schema_dump.sql est l'instantané de base, chargé à part (psql) avant ce script :
+    // le rejouer comme migration échoue (clés primaires en double).
+    // Les fichiers *_tests.sql sont des tests d'intégration exécutés par la CI, jamais
+    // des migrations : ils insèrent et suppriment des données de test.
     const numberedFiles = fs.readdirSync(sqlDir)
-      .filter(f => /^\d{2,3}_.*\.sql$/.test(f))
+      .filter(f => /^\d{2,3}_.*\.sql$/.test(f) && f !== '00_schema_dump.sql' && !/_tests\.sql$/.test(f))
       .sort((a, b) => {
         const numA = parseInt(a.match(/^(\d+)/)?.[1] || '0', 10);
         const numB = parseInt(b.match(/^(\d+)/)?.[1] || '0', 10);
@@ -198,6 +202,8 @@ async function main() {
     
     if (errors > 0) {
       console.log('\n⚠️  Certaines migrations ont échoué. Vérifiez les erreurs ci-dessus.');
+      // LOT0-03 : sans code de sortie non nul, la CI passait au vert malgré l'échec
+      process.exitCode = 1;
     }
 
   } catch (err) {

@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -211,7 +212,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
   }, [enabledModules])
 
   // Filter modules by user's module_roles (RBAC)
-  const moduleRoles = (user as any)?.module_roles || {}
+  const moduleRoles = useMemo(() => user?.module_roles || {}, [user])
   const isGlobalAdmin = user?.role === 'admin'
   const accessibleNavModules = useMemo(() => {
     return getEnabledNavModules().filter(mod => {
@@ -253,7 +254,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
         }
       }
     }
-  }, [location.pathname])
+  }, [location.pathname, accessibleNavModules])
 
   // Close search when collapsing
   useEffect(() => {

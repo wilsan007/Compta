@@ -33,6 +33,8 @@ export interface Customer {
   email_settings?: Record<string, any> | null
   credit_used?: number
   credit_blocked?: boolean
+  account_tiers?: string | null
+  account_collectif?: string | null
 }
 
 export interface CustomerContact {
@@ -73,6 +75,8 @@ export interface Supplier {
   bank_account_id?: string | null
   price_list_id?: string | null
   email_settings?: Record<string, any> | null
+  account_tiers?: string | null
+  account_collectif?: string | null
 }
 
 export interface SupplierContact {
@@ -413,6 +417,10 @@ export interface Product {
   supplier_ref?: string | null
   criticality_level?: 'normal' | 'critical' | 'essential' | null
   cost_price?: number | null
+  sale_account_code?: string | null
+  purchase_account_code?: string | null
+  stock_account_code?: string | null
+  category_id?: string | null
 }
 
 export interface JournalLine {

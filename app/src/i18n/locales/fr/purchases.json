@@ -257,6 +257,8 @@
     "parentIdPlaceholder": "UUID de la société parente",
     "salesRepId": "Commercial assigné (ID)",
     "salesRepIdPlaceholder": "UUID du commercial",
+    "accountTiers": "Compte auxiliaire",
+    "accountCollectif": "Compte collectif",
     "nameLabel": "Nom du fournisseur",
     "nameRequired": "Le nom est obligatoire",
     "deleted": "Fournisseur supprimé avec succès",
@@ -298,7 +300,7 @@
     "processed": "Factures traitées",
     "pending": "Factures en attente",
     "rejected": "Factures rejetées",
-    "uploadTitle": "Importer une facture (OCR simulé)",
+    "uploadTitle": "Importer une facture (OCR)",
     "dragDropText": "Glissez une facture PDF ou image, ou cliquez pour parcourir",
     "fileTypes": "PDF, PNG, JPG — 10 Mo max",
     "browse": "Parcourir",
@@ -316,7 +318,9 @@
       "paid": "Payée",
       "overdue": "En retard",
       "received": "Reçue"
-    }
+    },
+    "subtotalAmount": "Montant HT",
+    "totalMismatch": "Le total lu sur la facture ({{total}}) diffère de HT + TVA : vérifiez les montants."
   },
   "approval": {
     "title": "Bon à payer",

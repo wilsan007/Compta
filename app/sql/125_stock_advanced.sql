@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS uom_categories (
 );
 
 ALTER TABLE uom_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS uom_categories_tenant ON uom_categories;
 CREATE POLICY uom_categories_tenant ON uom_categories
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS uoms (
 );
 
 ALTER TABLE uoms ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS uoms_tenant ON uoms;
 CREATE POLICY uoms_tenant ON uoms
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -97,6 +99,7 @@ CREATE TABLE IF NOT EXISTS landed_costs (
 );
 
 ALTER TABLE landed_costs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS landed_costs_tenant ON landed_costs;
 CREATE POLICY landed_costs_tenant ON landed_costs
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -114,6 +117,7 @@ CREATE TABLE IF NOT EXISTS landed_cost_lines (
 );
 
 ALTER TABLE landed_cost_lines ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS landed_cost_lines_tenant ON landed_cost_lines;
 CREATE POLICY landed_cost_lines_tenant ON landed_cost_lines
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -207,6 +211,7 @@ CREATE TABLE IF NOT EXISTS reorder_rules (
 );
 
 ALTER TABLE reorder_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS reorder_rules_tenant ON reorder_rules;
 CREATE POLICY reorder_rules_tenant ON reorder_rules
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -226,6 +231,7 @@ CREATE TABLE IF NOT EXISTS stock_count_cycles (
 );
 
 ALTER TABLE stock_count_cycles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS stock_count_cycles_tenant ON stock_count_cycles;
 CREATE POLICY stock_count_cycles_tenant ON stock_count_cycles
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -308,6 +314,7 @@ CREATE TABLE IF NOT EXISTS quality_control_plans (
 );
 
 ALTER TABLE quality_control_plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS quality_control_plans_tenant ON quality_control_plans;
 CREATE POLICY quality_control_plans_tenant ON quality_control_plans
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -326,6 +333,7 @@ CREATE TABLE IF NOT EXISTS quality_control_points (
 );
 
 ALTER TABLE quality_control_points ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS quality_control_points_tenant ON quality_control_points;
 CREATE POLICY quality_control_points_tenant ON quality_control_points
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -348,6 +356,7 @@ CREATE TABLE IF NOT EXISTS stock_transfers (
 );
 
 ALTER TABLE stock_transfers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS stock_transfers_tenant ON stock_transfers;
 CREATE POLICY stock_transfers_tenant ON stock_transfers
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -363,6 +372,7 @@ CREATE TABLE IF NOT EXISTS stock_transfer_lines (
 );
 
 ALTER TABLE stock_transfer_lines ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS stock_transfer_lines_tenant ON stock_transfer_lines;
 CREATE POLICY stock_transfer_lines_tenant ON stock_transfer_lines
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

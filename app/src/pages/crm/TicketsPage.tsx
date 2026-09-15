@@ -6,6 +6,7 @@ import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Ticket, CheckCircle } from 'lucide-react'
 import type { ServiceTicket, Customer } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 type TicketWithCustomer = ServiceTicket & { customer: { name: string } | null }
 
@@ -142,7 +143,7 @@ function TicketForm({ customers, onClose, onSaved }: { customers: Customer[]; on
     if (!subject || !customerId) return
     setSaving(true)
     try {
-      const num = `TK-${Date.now().toString().slice(-6)}`
+      const num = await nextDocumentNumber('TK')
       await createTicket({
         tenant_id: null,
         number: num,

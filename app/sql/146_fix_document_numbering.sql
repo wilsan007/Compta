@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS document_number_sequences (
 );
 
 ALTER TABLE document_number_sequences ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS document_number_sequences_tenant ON document_number_sequences;
 CREATE POLICY document_number_sequences_tenant ON document_number_sequences
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

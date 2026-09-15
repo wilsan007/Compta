@@ -24,6 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_leave_balances_year ON leave_balances(year);
 ALTER TABLE leave_balances ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_leave_balances') THEN
+    DROP POLICY IF EXISTS "allow_all_leave_balances" ON leave_balances;
     CREATE POLICY "allow_all_leave_balances" ON leave_balances FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -44,6 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_public_holidays_region ON public_holidays(region)
 ALTER TABLE public_holidays ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_public_holidays') THEN
+    DROP POLICY IF EXISTS "allow_all_public_holidays" ON public_holidays;
     CREATE POLICY "allow_all_public_holidays" ON public_holidays FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -71,6 +73,7 @@ CREATE TABLE IF NOT EXISTS leave_rules (
 ALTER TABLE leave_rules ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_leave_rules') THEN
+    DROP POLICY IF EXISTS "allow_all_leave_rules" ON leave_rules;
     CREATE POLICY "allow_all_leave_rules" ON leave_rules FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -88,6 +91,7 @@ CREATE TABLE IF NOT EXISTS approval_workflows (
 ALTER TABLE approval_workflows ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_approval_workflows') THEN
+    DROP POLICY IF EXISTS "allow_all_approval_workflows" ON approval_workflows;
     CREATE POLICY "allow_all_approval_workflows" ON approval_workflows FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -115,6 +119,7 @@ CREATE INDEX IF NOT EXISTS idx_leave_provisions_period ON leave_provisions(perio
 ALTER TABLE leave_provisions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_leave_provisions') THEN
+    DROP POLICY IF EXISTS "allow_all_leave_provisions" ON leave_provisions;
     CREATE POLICY "allow_all_leave_provisions" ON leave_provisions FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -134,6 +139,7 @@ CREATE TABLE IF NOT EXISTS staff_requirements (
 ALTER TABLE staff_requirements ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_staff_requirements') THEN
+    DROP POLICY IF EXISTS "allow_all_staff_requirements" ON staff_requirements;
     CREATE POLICY "allow_all_staff_requirements" ON staff_requirements FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

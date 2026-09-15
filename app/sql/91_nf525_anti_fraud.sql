@@ -43,8 +43,10 @@ CREATE INDEX IF NOT EXISTS idx_nf525_tenant_fiscal_year ON nf525_event_log(tenan
 ALTER TABLE nf525_event_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nf525_event_log FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_nf525_event_log ON nf525_event_log;
 CREATE POLICY tenant_select_nf525_event_log ON nf525_event_log
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_nf525_event_log ON nf525_event_log;
 CREATE POLICY tenant_insert_nf525_event_log ON nf525_event_log
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 
@@ -441,8 +443,10 @@ CREATE TABLE IF NOT EXISTS nf525_period_closures (
 ALTER TABLE nf525_period_closures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nf525_period_closures FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS tenant_select_nf525_closures ON nf525_period_closures;
 CREATE POLICY tenant_select_nf525_closures ON nf525_period_closures
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS tenant_insert_nf525_closures ON nf525_period_closures;
 CREATE POLICY tenant_insert_nf525_closures ON nf525_period_closures
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 

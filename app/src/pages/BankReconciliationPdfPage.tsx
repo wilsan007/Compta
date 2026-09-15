@@ -68,6 +68,7 @@ export function BankReconciliationPdfPage() {
     loadAccounts().catch(err => console.error('loadAccounts:', err))
     loadBanks().catch(err => console.error('loadBanks:', err))
     loadLearnedTemplates().catch(err => console.error('loadLearnedTemplates:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {

@@ -30,7 +30,7 @@ async function generateTypes() {
         c.column_default,
         c.ordinal_position
       FROM information_schema.tables t
-      JOIN information_schema.columns c ON c.table_name = c.table_name AND c.table_schema = c.table_schema
+      JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
       WHERE t.table_schema = 'public'
         AND t.table_type = 'BASE TABLE'
       ORDER BY t.table_name, c.ordinal_position
@@ -67,16 +67,16 @@ export interface Database {
       tsContent += `    ${tableName}: {\n      Row: {\n`
       for (const col of columns) {
         const optional = col.nullable ? '?' : ''
-        tsContent += `        ${col.name}${optional}: ${col.type}\n`
+        tsContent += `        ${tsKey(col.name)}${optional}: ${col.type}\n`
       }
       tsContent += `      }\n      Insert: {\n`
       for (const col of columns) {
         const optional = col.nullable || col.default ? '?' : ''
-        tsContent += `        ${col.name}${optional}: ${col.type}\n`
+        tsContent += `        ${tsKey(col.name)}${optional}: ${col.type}\n`
       }
       tsContent += `      }\n      Update: {\n`
       for (const col of columns) {
-        tsContent += `        ${col.name}?: ${col.type}\n`
+        tsContent += `        ${tsKey(col.name)}?: ${col.type}\n`
       }
       tsContent += `      }\n    }\n`
     }
@@ -93,6 +93,11 @@ export interface Database {
   } finally {
     await pool.end()
   }
+}
+
+// Nom de propriété TypeScript valide (colonnes avec espaces, tirets…)
+function tsKey(name) {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name)
 }
 
 function mapPostgresTypeToTs(pgType) {

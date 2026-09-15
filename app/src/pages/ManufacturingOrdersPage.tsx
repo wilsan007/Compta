@@ -11,6 +11,7 @@ import type { ManufacturingOrder, BOM, Warehouse, Routing } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Badge } from '@/components/ui'
 import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
 
@@ -138,7 +139,7 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `OF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('OF')
       await createManufacturingOrder({ number, bom_id: bomId || null, product_id: null, quantity, status: 'planned', start_date: startDate || null, end_date: endDate || null, warehouse_id: warehouseId || null, routing_id: routingId || null, notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }

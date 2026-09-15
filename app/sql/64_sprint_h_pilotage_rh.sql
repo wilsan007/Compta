@@ -20,6 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_rh_dashboard_configs_tenant ON rh_dashboard_confi
 ALTER TABLE rh_dashboard_configs ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_rh_dashboard_configs') THEN
+    DROP POLICY IF EXISTS "allow_all_rh_dashboard_configs" ON rh_dashboard_configs;
     CREATE POLICY "allow_all_rh_dashboard_configs" ON rh_dashboard_configs FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -46,6 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_rh_reports_shared ON rh_reports(shared);
 ALTER TABLE rh_reports ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_rh_reports') THEN
+    DROP POLICY IF EXISTS "allow_all_rh_reports" ON rh_reports;
     CREATE POLICY "allow_all_rh_reports" ON rh_reports FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;
@@ -69,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON employee_activity_logs(acti
 ALTER TABLE employee_activity_logs ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='allow_all_employee_activity_logs') THEN
+    DROP POLICY IF EXISTS "allow_all_employee_activity_logs" ON employee_activity_logs;
     CREATE POLICY "allow_all_employee_activity_logs" ON employee_activity_logs FOR ALL USING(true) WITH CHECK(true);
   END IF;
 END $$;

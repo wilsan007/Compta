@@ -212,6 +212,7 @@ CREATE TABLE IF NOT EXISTS data_import_logs (
 );
 
 ALTER TABLE data_import_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS data_import_logs_tenant ON data_import_logs;
 CREATE POLICY data_import_logs_tenant ON data_import_logs
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

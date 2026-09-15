@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, Link } from 'react-router-dom'
@@ -133,9 +134,10 @@ interface InputProps {
   className?: string
   step?: string
   disabled?: boolean
+  readOnly?: boolean
 }
 
-export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, disabled }: InputProps) {
+export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, disabled, readOnly }: InputProps) {
   return (
     <div className={className}>
       {label && (
@@ -151,6 +153,7 @@ export function Input({ label, type = 'text', value, defaultValue, onChange, pla
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
+        readOnly={readOnly}
         required={required}
         className="input"
       />

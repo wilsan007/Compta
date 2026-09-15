@@ -67,8 +67,10 @@ CREATE TABLE IF NOT EXISTS stock_valuation_layers (
 );
 
 ALTER TABLE stock_valuation_layers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS svl_tenant_select ON stock_valuation_layers;
 CREATE POLICY svl_tenant_select ON stock_valuation_layers
   FOR SELECT USING (tenant_id = current_tenant_id());
+DROP POLICY IF EXISTS svl_tenant_all ON stock_valuation_layers;
 CREATE POLICY svl_tenant_all ON stock_valuation_layers
   FOR ALL USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
 

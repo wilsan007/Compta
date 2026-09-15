@@ -21,6 +21,7 @@ DROP POLICY IF EXISTS module_documents_insert ON module_documents;
 DROP POLICY IF EXISTS module_documents_update ON module_documents;
 DROP POLICY IF EXISTS module_documents_delete ON module_documents;
 
+DROP POLICY IF EXISTS module_documents_select ON module_documents;
 CREATE POLICY module_documents_select ON module_documents
   FOR SELECT USING (
     tenant_id = current_tenant_id()
@@ -30,6 +31,7 @@ CREATE POLICY module_documents_select ON module_documents
     )
   );
 
+DROP POLICY IF EXISTS module_documents_insert ON module_documents;
 CREATE POLICY module_documents_insert ON module_documents
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
@@ -43,6 +45,7 @@ CREATE POLICY module_documents_insert ON module_documents
     )
   );
 
+DROP POLICY IF EXISTS module_documents_update ON module_documents;
 CREATE POLICY module_documents_update ON module_documents
   FOR UPDATE USING (
     tenant_id = current_tenant_id()
@@ -61,6 +64,7 @@ CREATE POLICY module_documents_update ON module_documents
     )
   );
 
+DROP POLICY IF EXISTS module_documents_delete ON module_documents;
 CREATE POLICY module_documents_delete ON module_documents
   FOR DELETE USING (
     tenant_id = current_tenant_id()
@@ -93,6 +97,7 @@ CREATE POLICY doc_access_log_select ON module_document_access_log
     )
   );
 
+DROP POLICY IF EXISTS doc_access_log_insert ON module_document_access_log;
 CREATE POLICY doc_access_log_insert ON module_document_access_log
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
@@ -109,6 +114,7 @@ DROP POLICY IF EXISTS doc_shares_insert ON module_document_shares;
 DROP POLICY IF EXISTS doc_shares_update ON module_document_shares;
 DROP POLICY IF EXISTS doc_shares_delete ON module_document_shares;
 
+DROP POLICY IF EXISTS doc_shares_select ON module_document_shares;
 CREATE POLICY doc_shares_select ON module_document_shares
   FOR SELECT USING (
     tenant_id = current_tenant_id()
@@ -118,18 +124,21 @@ CREATE POLICY doc_shares_select ON module_document_shares
     )
   );
 
+DROP POLICY IF EXISTS doc_shares_insert ON module_document_shares;
 CREATE POLICY doc_shares_insert ON module_document_shares
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
     AND created_by = current_tenant_user_id()
   );
 
+DROP POLICY IF EXISTS doc_shares_update ON module_document_shares;
 CREATE POLICY doc_shares_update ON module_document_shares
   FOR UPDATE USING (
     tenant_id = current_tenant_id()
     AND created_by = current_tenant_user_id()
   );
 
+DROP POLICY IF EXISTS doc_shares_delete ON module_document_shares;
 CREATE POLICY doc_shares_delete ON module_document_shares
   FOR DELETE USING (
     tenant_id = current_tenant_id()

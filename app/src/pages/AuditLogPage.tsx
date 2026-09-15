@@ -15,6 +15,7 @@ export function AuditLogPage() {
   const [actionFilter, setActionFilter] = useState('')
   const [search, setSearch] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {

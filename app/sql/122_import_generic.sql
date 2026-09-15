@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS import_column_mappings (
 );
 
 ALTER TABLE import_column_mappings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS import_column_mappings_tenant ON import_column_mappings;
 CREATE POLICY import_column_mappings_tenant ON import_column_mappings
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -43,6 +44,7 @@ CREATE TABLE IF NOT EXISTS import_batches (
 );
 
 ALTER TABLE import_batches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS import_batches_tenant ON import_batches;
 CREATE POLICY import_batches_tenant ON import_batches
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
@@ -266,6 +268,7 @@ CREATE TABLE IF NOT EXISTS payroll_cumulative (
 );
 
 ALTER TABLE payroll_cumulative ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS payroll_cumulative_tenant ON payroll_cumulative;
 CREATE POLICY payroll_cumulative_tenant ON payroll_cumulative
   FOR ALL USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());

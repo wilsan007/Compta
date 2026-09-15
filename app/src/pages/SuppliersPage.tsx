@@ -22,6 +22,7 @@ export function SuppliersPage() {
 
   useEffect(() => {
     loadSuppliers().catch(err => console.error('loadSuppliers:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadSuppliers() {
@@ -193,6 +194,8 @@ function SupplierForm({ supplier, onClose, onSaved }: {
   const [isCompany, setIsCompany] = useState(supplier?.is_company ?? true)
   const [parentId, setParentId] = useState(supplier?.parent_id || '')
   const [salesRepId, setSalesRepId] = useState(supplier?.sales_rep_id || '')
+  const [accountTiers, setAccountTiers] = useState(supplier?.account_tiers || '')
+  const [accountCollectif, setAccountCollectif] = useState(supplier?.account_collectif || '401000')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -200,7 +203,7 @@ function SupplierForm({ supplier, onClose, onSaved }: {
     if (!name.trim()) { toast('warning', tCommon('toast.warning'), t('suppliers.nameRequired')); return }
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null }
+      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null, account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000' }
       if (supplier) {
         await updateSupplier(supplier.id, data)
         toast('success', t('suppliers.updated'))
@@ -236,6 +239,8 @@ function SupplierForm({ supplier, onClose, onSaved }: {
           </label>
           <Input label={t('suppliers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('suppliers.parentIdPlaceholder')} />
           <Input label={t('suppliers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('suppliers.salesRepIdPlaceholder')} />
+          <Input label={t('suppliers.accountTiers')} value={accountTiers} onChange={(e) => setAccountTiers(e.target.value)} placeholder="FOU00001" />
+          <Input label={t('suppliers.accountCollectif')} value={accountCollectif} onChange={(e) => setAccountCollectif(e.target.value)} placeholder="401000" />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>

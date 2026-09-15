@@ -31,9 +31,13 @@ DROP POLICY IF EXISTS tenant_insert_reminder_levels ON reminder_levels;
 DROP POLICY IF EXISTS tenant_update_reminder_levels ON reminder_levels;
 DROP POLICY IF EXISTS tenant_delete_reminder_levels ON reminder_levels;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_reminder_levels ON reminder_levels;
   CREATE POLICY tenant_select_reminder_levels ON reminder_levels FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_reminder_levels ON reminder_levels;
   CREATE POLICY tenant_insert_reminder_levels ON reminder_levels FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_reminder_levels ON reminder_levels;
   CREATE POLICY tenant_update_reminder_levels ON reminder_levels FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_reminder_levels ON reminder_levels;
   CREATE POLICY tenant_delete_reminder_levels ON reminder_levels FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'reminder_levels RLS: %', SQLERRM; END $$;
 
@@ -64,9 +68,13 @@ DROP POLICY IF EXISTS tenant_insert_payment_promises ON payment_promises;
 DROP POLICY IF EXISTS tenant_update_payment_promises ON payment_promises;
 DROP POLICY IF EXISTS tenant_delete_payment_promises ON payment_promises;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_payment_promises ON payment_promises;
   CREATE POLICY tenant_select_payment_promises ON payment_promises FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_payment_promises ON payment_promises;
   CREATE POLICY tenant_insert_payment_promises ON payment_promises FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_payment_promises ON payment_promises;
   CREATE POLICY tenant_update_payment_promises ON payment_promises FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_payment_promises ON payment_promises;
   CREATE POLICY tenant_delete_payment_promises ON payment_promises FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'payment_promises RLS: %', SQLERRM; END $$;
 
@@ -98,9 +106,13 @@ DROP POLICY IF EXISTS tenant_insert_disputes ON disputes;
 DROP POLICY IF EXISTS tenant_update_disputes ON disputes;
 DROP POLICY IF EXISTS tenant_delete_disputes ON disputes;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_disputes ON disputes;
   CREATE POLICY tenant_select_disputes ON disputes FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_disputes ON disputes;
   CREATE POLICY tenant_insert_disputes ON disputes FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_update_disputes ON disputes;
   CREATE POLICY tenant_update_disputes ON disputes FOR UPDATE USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_disputes ON disputes;
   CREATE POLICY tenant_delete_disputes ON disputes FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'disputes RLS: %', SQLERRM; END $$;
 
@@ -155,8 +167,11 @@ DROP POLICY IF EXISTS tenant_select_justificatif_solde ON justificatif_solde;
 DROP POLICY IF EXISTS tenant_insert_justificatif_solde ON justificatif_solde;
 DROP POLICY IF EXISTS tenant_delete_justificatif_solde ON justificatif_solde;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_justificatif_solde ON justificatif_solde;
   CREATE POLICY tenant_select_justificatif_solde ON justificatif_solde FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_justificatif_solde ON justificatif_solde;
   CREATE POLICY tenant_insert_justificatif_solde ON justificatif_solde FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_justificatif_solde ON justificatif_solde;
   CREATE POLICY tenant_delete_justificatif_solde ON justificatif_solde FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'justificatif_solde RLS: %', SQLERRM; END $$;
 
@@ -187,8 +202,11 @@ DROP POLICY IF EXISTS tenant_select_etat_rapprochement ON etat_rapprochement;
 DROP POLICY IF EXISTS tenant_insert_etat_rapprochement ON etat_rapprochement;
 DROP POLICY IF EXISTS tenant_delete_etat_rapprochement ON etat_rapprochement;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_etat_rapprochement ON etat_rapprochement;
   CREATE POLICY tenant_select_etat_rapprochement ON etat_rapprochement FOR SELECT USING (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_insert_etat_rapprochement ON etat_rapprochement;
   CREATE POLICY tenant_insert_etat_rapprochement ON etat_rapprochement FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
+  DROP POLICY IF EXISTS tenant_delete_etat_rapprochement ON etat_rapprochement;
   CREATE POLICY tenant_delete_etat_rapprochement ON etat_rapprochement FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'etat_rapprochement RLS: %', SQLERRM; END $$;
 

@@ -63,6 +63,7 @@ export function SaisieParPiecePage() {
   const [rateLoading, setRateLoading] = useState(false)
   const [showAnalyticDist, setShowAnalyticDist] = useState<number | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadRef() }, [])
 
   async function loadRef() {

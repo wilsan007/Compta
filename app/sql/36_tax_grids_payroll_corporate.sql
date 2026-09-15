@@ -40,24 +40,28 @@ ALTER TABLE payroll_tax_grids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payroll_tax_grids FORCE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_select_payroll_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_select_payroll_tax_grids" ON payroll_tax_grids;
     CREATE POLICY "tenant_select_payroll_tax_grids" ON payroll_tax_grids
       FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_insert_payroll_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_insert_payroll_tax_grids" ON payroll_tax_grids;
     CREATE POLICY "tenant_insert_payroll_tax_grids" ON payroll_tax_grids
       FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_update_payroll_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_update_payroll_tax_grids" ON payroll_tax_grids;
     CREATE POLICY "tenant_update_payroll_tax_grids" ON payroll_tax_grids
       FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_delete_payroll_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_delete_payroll_tax_grids" ON payroll_tax_grids;
     CREATE POLICY "tenant_delete_payroll_tax_grids" ON payroll_tax_grids
       FOR DELETE USING (tenant_id = current_tenant_id());
   END IF;
@@ -95,6 +99,7 @@ ALTER TABLE payroll_tax_grid_lines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payroll_tax_grid_lines FORCE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_select_payroll_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_select_payroll_tax_grid_lines" ON payroll_tax_grid_lines;
     CREATE POLICY "tenant_select_payroll_tax_grid_lines" ON payroll_tax_grid_lines
       FOR SELECT USING (EXISTS (
         SELECT 1 FROM payroll_tax_grids g
@@ -104,6 +109,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_insert_payroll_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_insert_payroll_tax_grid_lines" ON payroll_tax_grid_lines;
     CREATE POLICY "tenant_insert_payroll_tax_grid_lines" ON payroll_tax_grid_lines
       FOR INSERT WITH CHECK (EXISTS (
         SELECT 1 FROM payroll_tax_grids g
@@ -113,6 +119,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_update_payroll_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_update_payroll_tax_grid_lines" ON payroll_tax_grid_lines;
     CREATE POLICY "tenant_update_payroll_tax_grid_lines" ON payroll_tax_grid_lines
       FOR UPDATE USING (EXISTS (
         SELECT 1 FROM payroll_tax_grids g
@@ -122,6 +129,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_delete_payroll_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_delete_payroll_tax_grid_lines" ON payroll_tax_grid_lines;
     CREATE POLICY "tenant_delete_payroll_tax_grid_lines" ON payroll_tax_grid_lines
       FOR DELETE USING (EXISTS (
         SELECT 1 FROM payroll_tax_grids g
@@ -163,24 +171,28 @@ ALTER TABLE corporate_tax_grids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE corporate_tax_grids FORCE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_select_corporate_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_select_corporate_tax_grids" ON corporate_tax_grids;
     CREATE POLICY "tenant_select_corporate_tax_grids" ON corporate_tax_grids
       FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_insert_corporate_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_insert_corporate_tax_grids" ON corporate_tax_grids;
     CREATE POLICY "tenant_insert_corporate_tax_grids" ON corporate_tax_grids
       FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_update_corporate_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_update_corporate_tax_grids" ON corporate_tax_grids;
     CREATE POLICY "tenant_update_corporate_tax_grids" ON corporate_tax_grids
       FOR UPDATE USING (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
   END IF;
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_delete_corporate_tax_grids') THEN
+    DROP POLICY IF EXISTS "tenant_delete_corporate_tax_grids" ON corporate_tax_grids;
     CREATE POLICY "tenant_delete_corporate_tax_grids" ON corporate_tax_grids
       FOR DELETE USING (tenant_id = current_tenant_id());
   END IF;
@@ -211,6 +223,7 @@ ALTER TABLE corporate_tax_grid_lines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE corporate_tax_grid_lines FORCE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_select_corporate_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_select_corporate_tax_grid_lines" ON corporate_tax_grid_lines;
     CREATE POLICY "tenant_select_corporate_tax_grid_lines" ON corporate_tax_grid_lines
       FOR SELECT USING (EXISTS (
         SELECT 1 FROM corporate_tax_grids g
@@ -220,6 +233,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_insert_corporate_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_insert_corporate_tax_grid_lines" ON corporate_tax_grid_lines;
     CREATE POLICY "tenant_insert_corporate_tax_grid_lines" ON corporate_tax_grid_lines
       FOR INSERT WITH CHECK (EXISTS (
         SELECT 1 FROM corporate_tax_grids g
@@ -229,6 +243,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_update_corporate_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_update_corporate_tax_grid_lines" ON corporate_tax_grid_lines;
     CREATE POLICY "tenant_update_corporate_tax_grid_lines" ON corporate_tax_grid_lines
       FOR UPDATE USING (EXISTS (
         SELECT 1 FROM corporate_tax_grids g
@@ -238,6 +253,7 @@ DO $$ BEGIN
 END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'tenant_delete_corporate_tax_grid_lines') THEN
+    DROP POLICY IF EXISTS "tenant_delete_corporate_tax_grid_lines" ON corporate_tax_grid_lines;
     CREATE POLICY "tenant_delete_corporate_tax_grid_lines" ON corporate_tax_grid_lines
       FOR DELETE USING (EXISTS (
         SELECT 1 FROM corporate_tax_grids g

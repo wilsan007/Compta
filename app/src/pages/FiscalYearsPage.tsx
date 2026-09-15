@@ -22,6 +22,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
 
   useEffect(() => {
     loadYears().catch(err => console.error('loadYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadYears() {
