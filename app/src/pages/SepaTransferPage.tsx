@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Input } from '@/components/ui'
-import { getPaymentOrders, getCompanySettings } from '@/lib/queries'
+import { getPaymentOrders, getCompanySettings } from '@/lib/queries/accounting'
 import { generateSEPAXML, downloadSEPAXML, type SEPAPaymentInfo, type SEPAInitiator } from '@/lib/sepa'
 import { useToast } from '@/lib/toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -10,6 +10,7 @@ import type { PaymentOrder, CompanySettings } from '@/types'
 
 export function SepaTransferPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [payments, setPayments] = useState<PaymentOrder[]>([])
   const [company, setCompany] = useState<CompanySettings | null>(null)
@@ -20,7 +21,7 @@ export function SepaTransferPage() {
   const [executionDate, setExecutionDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -31,8 +32,9 @@ export function SepaTransferPage() {
       ])
       setPayments((pays || []).filter((p) => p.type === 'sepa_transfer' && p.status !== 'cancelled' && p.status !== 'draft'))
       setCompany(comp)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading SEPA data:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

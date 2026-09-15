@@ -1,6 +1,94 @@
-import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { supabase } from '@/lib/supabase';
+import { getTenantId, ti, tud } from './core';
+import type { Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, InvoiceLine, SalesOrder, DeliveryNote } from '@/types';
+
+// ============ VTE-01 : Résolution de prix par grille tarifaire ============
+
+export interface ResolvedPrice {
+  unitPrice: number
+  discount: number
+  priceListId: string | null
+  priceListName: string | null
+  source: string
+}
+
+export async function resolvePrice(
+  productId: string,
+  customerId: string,
+  quantity: number = 1,
+  date: Date = new Date()
+): Promise<ResolvedPrice | null> {
+  const { data, error } = await supabase.rpc('resolve_price', {
+    p_product_id: productId,
+    p_customer_id: customerId,
+    p_quantity: quantity,
+    p_date: date.toISOString().split('T')[0],
+  })
+
+  if (error || !data || (data as any[]).length === 0) return null
+
+  const row = (data as any[])[0]
+  return {
+    unitPrice: Number(row.unit_price),
+    discount: Number(row.discount_percent || 0),
+    priceListId: row.price_list_id,
+    priceListName: row.price_list_name,
+    source: row.source,
+  }
+}
+
+// ============ VTE-02 : Contrôle d'encours client ============
+
+export interface CustomerCreditState {
+  creditLimit: number
+  creditUsed: number
+  outstandingInvoices: number
+  outstandingOrders: number
+  isBlocked: boolean
+  policy: 'blocking' | 'warning' | 'information'
+}
+
+export async function getCustomerCreditState(customerId: string): Promise<CustomerCreditState | null> {
+  const tid = await getTenantId()
+  const { data: customer, error: custError } = await supabase
+    .from('customers')
+    .select('credit_limit, credit_used, credit_policy')
+    .eq('id', customerId)
+    .maybeSingle()
+  if (custError) { console.error('getCustomerCreditState:', custError); return null }
+
+  if (!customer) return null
+
+  const { data: invoices, error: invError } = await supabase
+    .from('invoices')
+    .select('amount_due')
+    .eq('customer_id', customerId)
+    .eq('tenant_id', tid)
+    .in('payment_state', ['not_paid', 'partial'])
+  if (invError) { console.error('getCustomerCreditState:', invError); return null }
+
+  const { data: orders, error: ordError } = await supabase
+    .from('sales_orders')
+    .select('total')
+    .eq('customer_id', customerId)
+    .eq('tenant_id', tid)
+    .eq('status', 'confirmed')
+  if (ordError) { console.error('getCustomerCreditState:', ordError); return null }
+
+  const outstandingInvoices = (invoices || []).reduce((sum: number, inv: any) => sum + Number(inv.amount_due || 0), 0)
+  const outstandingOrders = (orders || []).reduce((sum: number, ord: any) => sum + Number(ord.total || 0), 0)
+  const creditLimit = Number(customer.credit_limit || 0)
+  const creditUsed = outstandingInvoices + outstandingOrders
+
+  return {
+    creditLimit,
+    creditUsed,
+    outstandingInvoices,
+    outstandingOrders,
+    isBlocked: creditLimit > 0 && creditUsed > creditLimit,
+    policy: customer.credit_policy || 'blocking',
+  }
+}
 
 // ============ Invoices ============
 export async function getInvoices() {
@@ -18,15 +106,16 @@ export async function getInvoices() {
 export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at'> & { lines: Omit<InvoiceLine, 'id' | 'created_at'>[] }) {
   const tid = await getTenantId()
   const { lines, ...invoiceData } = invoice
-  const { data: inv, error: invError } = await supabase.from('invoices').insert(ti(invoiceData, 'invoices', tid)).select().single()
+  // LOT4-11 : Utiliser la RPC atomique create_invoice_atomic
+  const { data: result, error: rpcError } = await supabase.rpc('create_invoice_atomic', {
+    p_invoice: { ...invoiceData, tenant_id: tid },
+    p_lines: (lines || []).map((l, i) => ({ ...l, line_order: i })),
+  })
+  if (rpcError) throw rpcError
+  if (result && result.success === false) throw new Error(result.error || 'Erreur création facture')
+  // Recharger la facture créée
+  const { data: inv, error: invError } = await supabase.from('invoices').select('*').eq('id', result.invoice_id).single()
   if (invError) throw invError
-  
-  if (lines && lines.length > 0) {
-    const { error: linesError } = await supabase
-      .from('invoice_lines')
-      .insert(lines.map((l, i) => ti({ ...l, invoice_id: inv.id, line_order: i }, 'invoice_lines', tid)))
-    if (linesError) throw linesError
-  }
   return inv as Invoice
 }
 

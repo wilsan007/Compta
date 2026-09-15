@@ -842,6 +842,8 @@
     "anomalyCheck": "Anomaly check", "noAnomalies": "No anomalies detected",
     "generate": "Generate", "generated": "Declaration generated",
     "transmit": "Transmit", "transmitted": "Declaration transmitted",
+    "simulationMode": "Simulation mode",
+    "simulationWarning": "The net-entreprises API is not configured — the DSN was transmitted in simulation mode. Configure the integration for a real transmission.",
     "transmitting": "Transmitting...", "confirmTransmit": "Confirm transmission",
     "fileReady": "File is ready to transmit", "newDsn": "New DSN",
     "history": "History", "noHistory": "No history",

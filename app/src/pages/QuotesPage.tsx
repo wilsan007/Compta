@@ -1,14 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice, transformQuoteToSalesOrder, getCustomers, getProducts } from '@/lib/queries'
+import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice } from '@/lib/queries/sales'
+import { transformQuoteToSalesOrder } from '@/lib/queries/misc'
+import { getCustomers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package, FileSignature } from 'lucide-react'
 import type { Quote, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
-import { getProductStock } from '@/lib/queries'
+import { getProductStock } from '@/lib/queries/stock'
+import { confirmSync } from '@/lib/confirm'
 
 const statusKeys: string[] = ['draft', 'sent', 'accepted', 'rejected', 'expired']
 
@@ -39,12 +43,12 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         sMap[prod.id] = (stockEntries[i] as any[] || []).reduce((sum, s) => sum + Number(s.quantity || 0), 0)
       })
       setStockMap(sMap)
-    } catch (err) {
-      console.error('Failed to load quotes:', err)
+    } catch (err: any) { console.error('Failed to load quotes:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -58,7 +62,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteQuote(id)
       await loadData()
@@ -68,7 +72,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleConvert(id: string) {
-    if (!window.confirm(t('quotes.convertToInvoice'))) return
+    if (!confirmSync(t('quotes.convertToInvoice'))) return
     try {
       await convertQuoteToInvoice(id)
       toast('success', tCommon('toast.success'), t('quotes.convertToInvoice'))
@@ -79,7 +83,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleTransformToOrder(id: string) {
-    if (!window.confirm(t('quotes.transformToOrder'))) return
+    if (!confirmSync(t('quotes.transformToOrder'))) return
     try {
       await transformQuoteToSalesOrder(id)
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))

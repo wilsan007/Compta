@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { getExitProcesses, createExitProcess, getEmployees } from '@/lib/queries'
+import { getExitProcesses, createExitProcess } from '@/lib/queries/sprintDE'
+import { getEmployees } from '@/lib/queries/payroll'
+import { calculateSeverancePay, calculateNoticeCompensation } from '@/lib/queries/businessFunctions'
 import { formatDate } from '@/lib/utils'
 import { LogOut, Plus, X, ChevronRight, FileText, Send, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
@@ -34,7 +36,7 @@ export function EmployeeExitPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -108,6 +110,37 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
   const [exitDate, setExitDate] = useState('')
   const [exitReason, setExitReason] = useState('resignation')
   const [saving, setSaving] = useState(false)
+  const [severance, setSeverance] = useState<number | null>(null)
+  const [calcLoading, setCalcLoading] = useState(false)
+  const [noticeComp, setNoticeComp] = useState<number | null>(null)
+  const [noticeLoading, setNoticeLoading] = useState(false)
+
+  async function handleCalcSeverance() {
+    if (!employeeId) { toast('error', tCommon('common.error'), t('exit.selectEmployee')); return }
+    if (!exitDate) { toast('error', tCommon('common.error'), t('exit.exitDate')); return }
+    setCalcLoading(true)
+    try {
+      const res = await calculateSeverancePay(employeeId, exitDate)
+      const amount = Number(res) || 0
+      setSeverance(amount)
+      toast('success', tCommon('common.success'), `${'Indemnité de rupture'}: ${amount.toFixed(2)} €`)
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally { setCalcLoading(false) }
+  }
+
+  async function handleCalcNoticeComp() {
+    if (!employeeId) { toast('error', tCommon('common.error'), t('exit.selectEmployee')); return }
+    setNoticeLoading(true)
+    try {
+      const res = await calculateNoticeCompensation(employeeId)
+      const amount = Number(res?.amount ?? res?.notice_compensation ?? res ?? 0)
+      setNoticeComp(amount)
+      toast('success', tCommon('common.success'), `Indemnité de préavis: ${amount.toFixed(2)} €`)
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally { setNoticeLoading(false) }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -147,9 +180,25 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
             { value: 'probation_fail', label: t('exit.reasons.probation_fail') },
           ]} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+            <Button type="button" variant="secondary" onClick={handleCalcSeverance} disabled={calcLoading}>
+              {calcLoading ? tCommon('actions.saving') : 'Calculer l\'indemnité de rupture'}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleCalcNoticeComp} disabled={noticeLoading}>
+              {noticeLoading ? tCommon('actions.saving') : 'Calculer l\'indemnité de préavis'}
+            </Button>
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
+          {severance !== null && (
+            <div className="mt-2 p-3 rounded bg-[var(--color-neutral-100)] text-sm">
+              <strong>Indemnité de rupture:</strong> <span className="font-mono">{severance.toFixed(2)} €</span>
+            </div>
+          )}
+          {noticeComp !== null && (
+            <div className="mt-2 p-3 rounded bg-[var(--color-neutral-100)] text-sm">
+              <strong>Indemnité de préavis:</strong> <span className="font-mono">{noticeComp.toFixed(2)} €</span>
+            </div>
+          )}
         </form>
       </div>
     </div>
@@ -176,7 +225,7 @@ function ExitWizard({ process, onClose }: { process: any; onClose: () => void })
       </div>
 
       <div className="flex items-center gap-2 mb-6">
-        {steps.map((label, i) => (
+        {steps.map((_label, i) => (
           <div key={i} className="flex items-center">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium ${i + 1 <= currentStep ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]'}`}>
               {i + 1}

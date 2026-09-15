@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Badge } from '@/components/ui'
-import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine } from '@/lib/queries'
+import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine } from '@/lib/queries/sprintDE'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusColors: Record<string, 'neutral' | 'warning' | 'success' | 'danger'> = {
   draft: 'neutral',
@@ -33,7 +34,7 @@ export function EmployeeExpensesPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -43,7 +44,7 @@ export function EmployeeExpensesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('actions.confirmDelete'))) return
+    if (!confirmSync(tCommon('actions.confirmDelete'))) return
     try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('common.deleted')) }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
@@ -76,6 +77,7 @@ export function EmployeeExpensesPage() {
             t('expenses.period'),
             t('expenses.amount'),
             t('expenses.status'),
+            'Paie',
             t('expenses.submittedAt'),
             tCommon('table.actions'),
           ]}>
@@ -84,6 +86,7 @@ export function EmployeeExpensesPage() {
                 <TableCell className="text-sm font-medium">{r.period || '—'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(r.total_ttc || 0)}</TableCell>
                 <TableCell><Badge variant={statusColors[r.status] || 'neutral'}>{t(`expenses.statuses.${r.status}`)}</Badge></TableCell>
+                <TableCell>{(r.payroll_integrated || r.payroll_variable_id) ? <Badge variant="success">Intégré</Badge> : <Badge variant="neutral">Non intégré</Badge>}</TableCell>
                 <TableCell className="text-xs">{r.submitted_at ? formatDate(r.submitted_at) : '—'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
@@ -177,8 +180,9 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
       setCategories(cats || [])
     } catch (err: any) {
       console.error(err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally { setLoading(false) }
-  }, [report.id])
+  }, [report.id, tCommon, toast])
 
   useEffect(() => { loadLines() }, [loadLines])
 

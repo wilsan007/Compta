@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getBankAccounts, getBankTransactions, getBankRules, getBankConnections } from '@/lib/queries'
+import { getBankAccounts, getBankTransactions, getBankRules, getBankConnections } from '@/lib/queries/banking'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { BankAccount, BankTransaction, BankRule, BankConnection } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -26,7 +26,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       setRules(r)
       setConnections(conns)
     } catch (err: any) { console.error(err); toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

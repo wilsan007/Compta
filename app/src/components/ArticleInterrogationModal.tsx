@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, RefreshCw, Package, Truck, FileText, Layers } from 'lucide-react'
 import { Button, Table, TableRow, TableCell, Badge, SkeletonTable } from '@/components/ui'
-import { getProductStock, getProductSupplierPrices, getProductDocuments, getProductBOMs } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getProductStock, getProductSupplierPrices, getProductDocuments, getProductBOMs } from '@/lib/queries/stock'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface ArticleInterrogationModalProps {
@@ -22,6 +24,8 @@ const tabs: { key: TabKey; label: string; icon: any }[] = [
 ]
 
 export function ArticleInterrogationModal({ productId, productName, productSku, open, onClose }: ArticleInterrogationModalProps) {
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<TabKey>('stock')
   const [loading, setLoading] = useState(true)
   const [stock, setStock] = useState<any[]>([])
@@ -42,12 +46,12 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
       } else if (activeTab === 'boms') {
         setBomsData(await getProductBOMs(productId))
       }
-    } catch (err) { console.error('Error loading article data:', err) }
+    } catch (err: any) { console.error('Error loading article data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [productId, activeTab])
+  }, [productId, activeTab, toast, tCommon])
 
   useEffect(() => {
-    if (open) loadData()
+    if (open) loadData().catch(err => console.error('loadData:', err))
   }, [open, loadData])
 
   function handleRefresh() { loadData() }
@@ -149,7 +153,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
                   ) : (
                     <Table headers={['Type', 'N°', 'Date', 'Quantité', 'Statut']}>
                       {documents.map((d, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={d.id || i}>
                           <TableCell className="text-sm">{d.type}</TableCell>
                           <TableCell className="font-mono text-xs">{d.number || '—'}</TableCell>
                           <TableCell className="text-xs">{d.date ? formatDate(d.date) : '—'}</TableCell>

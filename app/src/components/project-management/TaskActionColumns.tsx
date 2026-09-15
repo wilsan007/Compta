@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { getTaskActions, toggleAction } from '@/lib/queries/projectManagement'
 import type { TaskAction } from '@/types/projectManagement'
@@ -11,6 +13,8 @@ interface TaskActionColumnsProps {
 }
 
 export function TaskActionColumns({ taskId, className, onTaskProgressUpdate }: TaskActionColumnsProps) {
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [actions, setActions] = useState<TaskAction[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -20,23 +24,27 @@ export function TaskActionColumns({ taskId, className, onTaskProgressUpdate }: T
       try {
         const data = await getTaskActions(taskId)
         if (!cancelled) setActions(data)
-      } catch {
+      } catch (err: any) {
+        console.error("catch:", err)
         // ignore
+        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
     load()
     return () => { cancelled = true }
-  }, [taskId])
+  }, [taskId, toast, tCommon])
 
   async function handleToggle(actionId: string, isDone: boolean) {
     try {
       const { progress } = await toggleAction(actionId, !isDone)
       setActions((prev) => prev.map((a) => (a.id === actionId ? { ...a, is_done: !isDone } : a)))
       onTaskProgressUpdate?.(progress)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 

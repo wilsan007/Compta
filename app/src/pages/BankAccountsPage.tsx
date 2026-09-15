@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, StatCard, Breadcrumb, SkeletonCard, Input, Select } from '@/components/ui'
-import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries'
+import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries/banking'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Banknote, Plus, Landmark, CreditCard, Wallet, TrendingDown, TrendingUp, X, AlertTriangle } from 'lucide-react'
 import type { BankAccount } from '@/types'
@@ -10,6 +10,7 @@ import { useToast } from '@/lib/toast'
 export function BankAccountsPage() {
   const { t } = useTranslation('banking')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
 const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -17,7 +18,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    loadAccounts()
+    loadAccounts().catch(err => console.error('loadAccounts:', err))
   }, [])
 
   async function loadAccounts() {
@@ -29,8 +30,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
         const txns = await getBankTransactions(data[0].id)
         setTransactions(txns || [])
       }
-    } catch (err) {
-      console.error('Error loading bank accounts:', err)
+    } catch (err: any) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -41,8 +41,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
     try {
       const txns = await getBankTransactions(id)
       setTransactions(txns || [])
-    } catch (err) {
-      console.error('Error loading transactions:', err)
+    } catch (err: any) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 

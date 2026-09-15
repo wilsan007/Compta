@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getCollectionDashboard, createCollectionReminder, getCustomers } from '@/lib/queries'
+import { getCollectionDashboard, createCollectionReminder } from '@/lib/queries/accounting'
+import { getCustomers } from '@/lib/queries/partners'
 import { AlertTriangle, Plus, X, Mail } from 'lucide-react'
 import type { Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 
 export function CollectionDashboardPage() {
   const { t } = useTranslation('treasury')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
 const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -21,8 +24,7 @@ const [data, setData] = useState<any>(null)
       const [res, custs] = await Promise.all([getCollectionDashboard(), getCustomers()])
       setData(res)
       setCustomers(custs || [])
-    } catch (err) {
-      console.error('Error loading collection dashboard:', err)
+    } catch (err: any) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

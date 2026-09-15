@@ -61,7 +61,9 @@
     "amount": "Montant",
     "cumulativeBalance": "Solde cumulé",
     "incomingType": "Encaissement",
-    "outgoingType": "Décaissement"
+    "outgoingType": "Décaissement",
+    "runForecast": "Prévision à N jours",
+    "cashFlowResult": "Prévision de flux: {{amount}} sur {{days}} jours"
   },
   "paymentOrders": {
     "title": "Ordres de paiement",

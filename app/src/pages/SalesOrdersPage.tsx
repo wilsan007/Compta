@@ -2,10 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
-import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder, getCustomers, getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries'
+import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder } from '@/lib/queries/sales'
+import { getCustomers } from '@/lib/queries/partners'
+import { getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries/misc'
 import { Plus, Trash2, X, FileText, Truck } from 'lucide-react'
 import type { SalesOrder, SalesOrderLine, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusKeys: string[] = ['draft', 'confirmed', 'delivered', 'invoiced', 'cancelled']
 
@@ -27,9 +30,9 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       const [ords, custs] = await Promise.all([getSalesOrders(statusFilter || undefined), getCustomers()])
       setOrders(ords || [])
       setCustomers(custs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,7 +42,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSalesOrder(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }

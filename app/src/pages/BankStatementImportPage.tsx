@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankStatementImports, createBankStatementImport, getBankAccounts } from '@/lib/queries'
+import { getBankStatementImports, createBankStatementImport } from '@/lib/queries/accounting'
+import { getBankAccounts } from '@/lib/queries/banking'
 import { useLocale } from '@/hooks/useLocale'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText } from 'lucide-react'
@@ -26,12 +27,12 @@ export function BankStatementImportPage() {
       const [imps, accs] = await Promise.all([getBankStatementImports(), getBankAccounts()])
       setImports(imps || [])
       setAccounts(accs || [])
-    } catch (err) {
-      console.error('Failed to load bank statement imports:', err)
+    } catch (err: any) { console.error('Failed to load bank statement imports:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

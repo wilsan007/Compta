@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { getEcheancier } from '@/lib/queries'
+import { getEcheancier } from '@/lib/queries/accounting'
 import { CalendarClock, AlertTriangle } from 'lucide-react'
 
 export function EcheancierPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,8 +22,9 @@ export function EcheancierPage() {
     try {
       const res = await getEcheancier(typeFilter || undefined)
       setData(res)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading echeancier:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -71,7 +74,7 @@ export function EcheancierPage() {
         <Card>
           <Table headers={[t('echeancier.type'), t('echeancier.number'), t('echeancier.thirdParty'), t('echeancier.date'), t('echeancier.dueDate'), t('echeancier.amount'), t('echeancier.remaining'), t('echeancier.daysOverdue')]}>
             {data.map((r, i) => (
-              <TableRow key={i}>
+              <TableRow key={r.id || i}>
                 <TableCell>
                   <Badge variant={r.type === 'customer' ? 'success' : 'warning'}>
                     {r.type === 'customer' ? t('echeancier.customer') : t('echeancier.supplier')}

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { getRGPDRequests, createRGPDRequest, updateRGPDRequest } from '@/lib/queries'
+import { getRGPDRequests, createRGPDRequest, updateRGPDRequest } from '@/lib/queries/misc'
 import { Shield, Plus, X, CheckCircle, XCircle } from 'lucide-react'
 import type { RGPDRequest } from '@/types'
 

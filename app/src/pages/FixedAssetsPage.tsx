@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, calculateDepreciation, calculateAllDepreciation, getAssetDepreciations, disposeFixedAsset } from '@/lib/queries'
+import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset } from '@/lib/queries/accounting'
+import { calculateDepreciation } from '@/lib/queries/businessFunctions'
+import { calculateAllDepreciation } from '@/lib/queries/misc'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
 import type { FixedAsset, AssetDepreciation } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function FixedAssetsPage() {
   const { toast } = useToast()
@@ -26,12 +29,12 @@ export function FixedAssetsPage() {
     setLoading(true)
     try {
       setAssets(await getFixedAssets())
-    } catch (err) {
-      console.error('Failed to load fixed assets:', err)
+    } catch (err: any) { console.error('Failed to load fixed assets:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -45,14 +48,14 @@ export function FixedAssetsPage() {
         try {
           const deps = await getAssetDepreciations(asset.id)
           setDepreciations((prev) => ({ ...prev, [asset.id]: deps }))
-        } catch (err) { console.error('Error loading depreciations:', err) }
+        } catch (err: any) { console.error('Error loading depreciations:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteFixedAsset(id)
       await loadData()

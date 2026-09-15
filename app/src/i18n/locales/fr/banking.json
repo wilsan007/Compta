@@ -122,7 +122,10 @@
     "reconciledTitle": "Réconciliées ({{count}})",
     "action": "Action",
     "cancel": "Annuler",
-    "reconcileBtn": "Réconcilier"
+    "reconcileBtn": "Réconcilier",
+    "smartMatch": "Rapprochement intelligent",
+    "smartResult": "{{matched}} rapprochements trouvés",
+    "selectAccount": "Veuillez sélectionner un compte"
   },
   "rules": {
     "title": "Règles bancaires",

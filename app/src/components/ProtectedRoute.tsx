@@ -1,12 +1,19 @@
-import { type ReactNode, useMemo } from 'react'
+import { type ReactNode, useMemo, lazy, Suspense } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth'
-import { Layout } from '@/components/Layout'
-import { navModules } from '@/components/Sidebar'
+import { navModules } from '@/components/navModules'
 import { useTenantModules } from '@/lib/useTenantModules'
-import type { TenantUser } from '@/lib/queries'
+import type { TenantUser } from '@/lib/queries/misc'
 import { Lock, ArrowLeft, ShieldAlert } from 'lucide-react'
+
+// PRF-02 : Layout lazy-loaded pour réduire le chunk initial
+const Layout = lazy(() => import('@/components/Layout').then(m => ({ default: m.Layout })))
+const LayoutFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+  </div>
+)
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -67,7 +74,9 @@ export function ProtectedLayout() {
   return (
     <ProtectedRoute>
       <ModuleGuard>
-        <Layout />
+        <Suspense fallback={<LayoutFallback />}>
+          <Layout />
+        </Suspense>
       </ModuleGuard>
     </ProtectedRoute>
   )

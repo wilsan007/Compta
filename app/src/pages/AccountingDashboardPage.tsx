@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, Breadcrumb, SkeletonTable, StatCard } from '@/components/ui'
-import { getJournalEntries, getChartAccounts, getTrialBalance } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getJournalEntries, getChartAccounts, getTrialBalance } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { CalendarDays, FileText, TrendingUp, AlertTriangle, Plus, BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -10,6 +11,7 @@ import type { JournalEntry, ChartAccount } from '@/types'
 export function AccountingDashboardPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const navigate = useNavigate()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
@@ -17,7 +19,7 @@ export function AccountingDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -30,8 +32,9 @@ export function AccountingDashboardPage() {
       setEntries(je || [])
       setAccounts(accs || [])
       setTrialBalance(tb || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading accounting dashboard:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

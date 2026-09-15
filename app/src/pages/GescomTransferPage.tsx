@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries'
+import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries/accounting'
 import { ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
@@ -19,9 +19,9 @@ const [data, setData] = useState<any>(null)
 
   const loadData = useCallback(async () => {
     try { setData(await getGescomTransferData()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

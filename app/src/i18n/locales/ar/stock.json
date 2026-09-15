@@ -101,6 +101,8 @@
     "adjustment": "تسوية",
     "initialStock": "مخزون أولي",
     "quantity": "الكمية",
+    "unitCost": "التكلفة للوحدة",
+    "type": "نوع الحركة",
     "notes": "ملاحظات",
     "reference": "المرجع",
     "noAdjustments": "لا توجد تسوية",

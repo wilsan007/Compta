@@ -511,7 +511,9 @@
     "thirdParty": "الطرف الثالث",
     "debitBalance": "رصيد مدين",
     "creditBalance": "رصيد دائن",
-    "export": "تصدير دفتر الأستاذ"
+    "export": "تصدير دفتر الأستاذ",
+    "generate": "إنشاء",
+    "generated": "تم إنشاء دفتر الأستاذ بنجاح"
   },
   "trialBalance": {
     "title": "ميزان المراجعة",
@@ -531,6 +533,8 @@
     "exportCSV": "تصدير CSV",
     "showZeroBalances": "عرض الأرصدة الصفرية",
     "groupByClass": "تجميع حسب الفئة",
+    "generate": "إنشاء",
+    "generated": "تم إنشاء ميزان المراجعة بنجاح",
     "classLabels": {
       "1": "الفئة 1 — رأس المال",
       "2": "الفئة 2 — الأصول الثابتة",
@@ -946,7 +950,9 @@
     "financialCharges": "المصاريف المالية (66)",
     "netResultFinal": "النتيجة الصافية",
     "category": "البند",
-    "amountCol": "المبلغ"
+    "amountCol": "المبلغ",
+    "generate": "إنشاء حساب النتائج",
+    "generated": "تم إنشاء حساب النتائج بنجاح"
   },
   "analytic": {
     "title": "الأقسام التحليلية",
@@ -1253,7 +1259,9 @@
     "account": "الحساب",
     "amount": "المبلغ",
     "totalAssets": "إجمالي الأصول",
-    "totalLiabilitiesEquity": "إجمالي الخصوم + حقوق الملكية"
+    "totalLiabilitiesEquity": "إجمالي الخصوم + حقوق الملكية",
+    "generate": "إنشاء الميزانية",
+    "generated": "تم إنشاء الميزانية بنجاح"
   },
   "cashFlow": {
     "title": "التدفق النقدي",
@@ -1291,7 +1299,9 @@
     "vat": "ضريبة القيمة المضافة",
     "legendRevenues": "الإيرادات",
     "legendExpenses": "المصاريف",
-    "legendProfit": "الربح"
+    "legendProfit": "الربح",
+    "generateAnnex": "إنشاء الملحق المحاسبي",
+    "annexGenerated": "تم إنشاء الملحق المحاسبي بنجاح"
   },
   "reports": {
     "paymentDelay": {
@@ -1384,7 +1394,13 @@
       "extourned": "معكوس"
     },
     "filterByType": "تصفية حسب النوع",
-    "all": "الكل"
+    "all": "الكل",
+    "generateAdjusting": "تسوية",
+    "calculateProvisions": "مخصصات",
+    "adjustingGenerated": "تم إنشاء قيود التسوية",
+    "provisionsCalculated": "تم حساب المخصصات بنجاح",
+    "postDeferred": "ترحيل المصروفات المؤجلة",
+    "deferredPosted": "تم ترحيل المصروفات المؤجلة بنجاح"
   },
   "gdpr": {
     "title": "الامتثال لـ RGPD",

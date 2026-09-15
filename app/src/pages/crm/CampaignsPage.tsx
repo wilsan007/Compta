@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getCampaigns, createCampaign, launchCampaign, getCampaignStats } from '@/lib/queries'
+import { getCampaigns, createCampaign, launchCampaign, getCampaignStats } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Megaphone, Rocket } from 'lucide-react'
 import type { CrmCampaign } from '@/types'
@@ -29,7 +29,7 @@ export function CampaignsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { load() }, [load])
 

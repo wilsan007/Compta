@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
-import { getBudgetTracking, getFiscalYears } from '@/lib/queries'
+import { getBudgetTracking, getFiscalYears } from '@/lib/queries/accounting'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useTranslation } from 'react-i18next'
@@ -21,6 +22,8 @@ interface BudgetItem {
 
 export function BudgetTrackingPage() {
   const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [items, setItems] = useState<BudgetItem[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,8 +36,9 @@ export function BudgetTrackingPage() {
       const [b, fy] = await Promise.all([getBudgetTracking(yearFilter || undefined), getFiscalYears()])
       setItems(b || [])
       setYears(fy || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading budget tracking:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

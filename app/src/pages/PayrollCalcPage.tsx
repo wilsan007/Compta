@@ -1,13 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input, Badge } from '@/components/ui'
-import { getEmployees, getActiveLegislationPack, getActivePayrollTaxGrid, getPayrollTaxGridLines } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getEmployees } from '@/lib/queries/payroll'
+import { getActiveLegislationPack, getActivePayrollTaxGrid, getPayrollTaxGridLines } from '@/lib/queries/accounting'
 import { calculatePayroll, type PayrollInput, type PayrollResult, formatPayrollAmount } from '@/lib/payroll'
 import { Calculator, FileText, Globe } from 'lucide-react'
 import type { Employee, PayrollTaxGridLine, LegislationPack } from '@/types'
 
 export function PayrollCalcPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEmp, setSelectedEmp] = useState('')
@@ -59,15 +63,16 @@ export function PayrollCalcPage() {
         }
       }
       setUsingGrid(false)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading payroll data:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [loadData])
 
   function handleEmployeeChange(id: string) {
@@ -75,6 +80,10 @@ export function PayrollCalcPage() {
     const emp = employees.find((e) => e.id === id)
     if (emp) {
       setGrossSalary(Number(emp.salary) || 2500)
+      // PAY-01 : Utiliser le taux PAS personnalisé DGFiP de l'employé si disponible
+      if (emp.withholding_tax_rate != null) {
+        setTaxRate(Number(emp.withholding_tax_rate))
+      }
     }
   }
 
@@ -89,6 +98,9 @@ export function PayrollCalcPage() {
       age: 30,
       department: '',
       taxRate,
+      // PAY-01 : Transmettre le taux PAS personnalisé de l'employé
+      withholdingTaxRate: employees.find(e => e.id === selectedEmp)?.withholding_tax_rate ?? null,
+      withholdingRateSource: employees.find(e => e.id === selectedEmp)?.withholding_rate_source ?? null,
     }
     setResult(calculatePayroll(input, usingGrid ? gridLines : undefined))
   }
@@ -204,6 +216,7 @@ export function PayrollCalcPage() {
                 </div>
                 <div className="space-y-2">
                   <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)]">{t('payroll.netPay')}</h4>
+                  <Row label={t('payroll.netImposable') || 'Net imposable'} value={formatPayrollAmount(result.netImposable)} />
                   <Row label={t('payroll.incomeTax')} value={formatPayrollAmount(result.incomeTax)} />
                   <Row label={t('payroll.netPay')} value={formatPayrollAmount(result.netPay)} bold />
                   <Row label={t('payroll.netPayable')} value={formatPayrollAmount(result.netPayable)} bold />

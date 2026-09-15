@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll'
-import type { Employee, PayRun, PaySlip, Contract, LeaveRequest, PayrollComponent, PayrollTaxGridLine, PayrollAccountingEntry, SalaryAdvance, DsnDeclaration, EmployeeDocument } from '@/types'
+import { describe, it, expect } from 'vitest';
+import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll';
+import type { Employee, PayRun, PaySlip, Contract, LeaveRequest, PayrollTaxGridLine, PayrollAccountingEntry, SalaryAdvance, DsnDeclaration, EmployeeDocument } from '@/types';
 
 const mockEmp1: Employee = { id: 'emp-001', name: 'Ahmed Benali', email: 'a@co.com', phone: '06', position: 'Dev', department: 'IT', salary: 3500, hire_date: '2022-03-01', status: 'active', employee_number: 'E1', social_security_number: '1', birth_date: '1990-05-15', address: 'rue', city: 'Paris', postal_code: '75002', contract_type: 'CDI', contract_end_date: null, created_at: '2022-03-01', updated_at: '2024-01-01' }
 const mockEmp2: Employee = { ...mockEmp1, id: 'emp-002', name: 'Fatima', salary: 2800, contract_type: 'CDD', contract_end_date: '2025-12-31' }
@@ -48,13 +48,16 @@ describe('2a. Calculs de paie', () => {
       const r = calculatePayroll({ grossSalary: 3500, contractType: 'cdi', hoursPerWeek: 35, overtimeHours: 0, mealVouchers: 0, transportAllowance: 0, age: 34, department: 'IT', taxRate: 10 })
       expect(r.socialSecurityEmployee).toBeCloseTo(244.30, 0)
     })
-    it('CSG/CRDS: 3500*0.9825*9.2% = 316.365', () => {
+    it('CSG/CRDS: 3500*0.9825*9.7% (scindée PAY-05)', () => {
       const r = calculatePayroll({ grossSalary: 3500, contractType: 'cdi', hoursPerWeek: 35, overtimeHours: 0, mealVouchers: 0, transportAllowance: 0, age: 34, department: 'IT', taxRate: 10 })
-      expect(r.csgCrds).toBeCloseTo(316.365, 1)
+      // PAY-05 : CSG déductible 6.80% + non déductible 2.40% + CRDS 0.50% = 9.70%
+      const expected = 3500 * 0.9825 * 9.70 / 100
+      expect(r.csgCrds).toBeCloseTo(expected, 1)
     })
-    it('IR: 3500*10% = 350', () => {
+    it('IR: PAS sur net imposable (PAY-05)', () => {
       const r = calculatePayroll({ grossSalary: 3500, contractType: 'cdi', hoursPerWeek: 35, overtimeHours: 0, mealVouchers: 0, transportAllowance: 0, age: 34, department: 'IT', taxRate: 10 })
-      expect(r.incomeTax).toBeCloseTo(350, 0)
+      // PAY-05 : PAS = netImposable × 10%, pas taxableGross × 10%
+      expect(r.incomeTax).toBeCloseTo(r.netImposable * 0.10, 0)
     })
     it('Net > 0 et < brut', () => {
       const r = calculatePayroll({ grossSalary: 3500, contractType: 'cdi', hoursPerWeek: 35, overtimeHours: 0, mealVouchers: 0, transportAllowance: 0, age: 34, department: 'IT', taxRate: 10 })
@@ -180,9 +183,9 @@ describe('2f. Contrats', () => {
   })
   it('Transitions statut', () => {
     let c = { ...mockCT, status: 'active' as const }
-    c = { ...c, status: 'suspended' as const }
+    c = { ...c, status: 'suspended' as any }
     expect(c.status).toBe('suspended')
-    c = { ...c, status: 'terminated' as const }
+    c = { ...c, status: 'terminated' as any }
     expect(c.status).toBe('terminated')
   })
 })
@@ -213,9 +216,9 @@ describe('2h. DSN', () => {
   it('Transitions: draft → generated → transmitted → accepted', () => {
     let d = { ...mockDsn, status: 'generated' as const, file_url: '/dsn.xml', generated_at: '2024-02-05' }
     expect(d.status).toBe('generated')
-    d = { ...d, status: 'transmitted' as const, transmitted_at: '2024-02-06', response_code: 'OK' }
+    d = { ...d, status: 'transmitted' as any, transmitted_at: '2024-02-06', response_code: 'OK' }
     expect(d.status).toBe('transmitted')
-    d = { ...d, status: 'accepted' as const }
+    d = { ...d, status: 'accepted' as any }
     expect(d.status).toBe('accepted')
   })
   it('Types valides', () => {

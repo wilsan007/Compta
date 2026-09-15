@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, Badge } from '@/components/ui'
-import {
-  exportAllData, generateSqlDump, generateCsvForTable,
-  preRegisterMirrorServer, getMirrorServerStatus,
-  generateMacInstaller, generateWindowsInstaller,
-  type ExportResult,
-} from '@/lib/queries'
+import { exportAllData, generateSqlDump, generateCsvForTable, preRegisterMirrorServer, getMirrorServerStatus, generateMacInstaller, generateWindowsInstaller } from '@/lib/queries/misc'
+import { type ExportResult } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +23,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function DataExportPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { user } = useAuth()
   const { formatDateTime } = useLocale()
@@ -46,15 +43,16 @@ export function DataExportPage() {
     try {
       const status = await getMirrorServerStatus(user.tenantId)
       setMirrorStatus(status)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading mirror status:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setMirrorLoading(false)
     }
-  }, [user?.tenantId])
+  }, [user?.tenantId, tCommon, toast])
 
   useEffect(() => {
-    loadMirrorStatus()
+    loadMirrorStatus().catch(err => console.error('loadMirrorStatus:', err))
     const interval = setInterval(loadMirrorStatus, 10000)
     return () => clearInterval(interval)
   }, [loadMirrorStatus])

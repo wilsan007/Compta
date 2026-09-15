@@ -7,10 +7,40 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set in environment variables')
 }
 
+// SEC-03: Tenant actif déclaré avant createClient pour être disponible
+// dans les headers de chaque requête (x-tenant-id transmis à PostgREST).
+let _tenantId: string | null | undefined = undefined
+let _userName: string | null = null
+
+// DAT-01 : Limite par défaut pour les requêtes non paginées
+// PostgREST respecte le header Range pour limiter les résultats
+// Les requêtes qui spécifient explicitement .range() ou .limit() ne sont pas affectées
+const DEFAULT_PAGE_SIZE = 1000  // Limite sûre pour éviter les payloads énormes
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    // SEC-03: supabase-js n'accepte pas une fonction pour `headers`.
+    // On injecte x-tenant-id dynamiquement via un fetch custom,
+    // lu par current_tenant_id() via request.headers en base.
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers || {})
+      if (_tenantId) headers.set('x-tenant-id', _tenantId)
+      // DAT-01 : Ajouter un Range par défaut pour les requêtes GET sans pagination explicite
+      // PostgREST utilise Range: 0-999 pour limiter à 1000 résultats
+      // Les requêtes avec .range() ou .limit() explicites écrasent ce header
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      const isGetRequest = !init?.method || init.method === 'GET'
+      const hasExplicitRange = headers.has('Range') || headers.has('range')
+      if (isGetRequest && !hasExplicitRange && url.includes('/rest/v1/')) {
+        headers.set('Range', `0-${DEFAULT_PAGE_SIZE - 1}`)
+        headers.set('Range-Unit', 'items')
+      }
+      return fetch(input, { ...init, headers })
+    },
   },
 })
 
@@ -135,6 +165,18 @@ const TENANT_TABLES = new Set([
   'task_actions', 'task_action_attachments', 'task_documents', 'task_comments',
   // Document Management System
   'module_documents', 'module_document_access_log', 'module_document_shares',
+  // Migration 84: Missing tenant-scoped tables (32 tables identified by audit)
+  'accounting_control_runs', 'auto_label_rules', 'bank_connections',
+  'batch_entry_sessions', 'carry_forward_log', 'cash_control_sessions',
+  'custom_report_templates', 'deferred_printing_jobs', 'employee_activity_logs',
+  'extourne_log', 'fec_attestations', 'ifrs_adjustments',
+  'journal_access_rights', 'lettrage_differences',
+  'partner_bank_accounts', 'partner_categories', 'partner_category_mappings', 'partner_contacts',
+  'project_activity_log', 'project_docs', 'project_notifications',
+  'project_task_templates', 'project_task_watchers', 'project_time_entries',
+  'rh_dashboard_configs', 'rh_reports',
+  'tax_cash_basis_entries', 'tax_groups', 'tax_payments', 'tax_repartition_lines',
+  'tier_ribs', 'vat_on_collections',
 ])
 
 const EXEMPT_TABLES = new Set([
@@ -142,9 +184,6 @@ const EXEMPT_TABLES = new Set([
   'mirror_servers', 'mirror_verification_details',
   'banks',
 ])
-
-let _tenantId: string | null | undefined = undefined
-let _userName: string | null = null
 
 export async function setTenantId(id: string | null) {
   _tenantId = id

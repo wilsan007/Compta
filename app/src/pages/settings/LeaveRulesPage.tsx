@@ -3,21 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
 import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
-import {
-  getLeaveRules, createLeaveRule, updateLeaveRule, deleteLeaveRule,
-  getPublicHolidays, createPublicHoliday, deletePublicHoliday,
-  getApprovalWorkflows, createApprovalWorkflow, updateApprovalWorkflow,
-  getStaffRequirements, createStaffRequirement, updateStaffRequirement,
-} from '@/lib/queries'
+import { getLeaveRules, createLeaveRule, updateLeaveRule, deleteLeaveRule, getPublicHolidays, createPublicHoliday, deletePublicHoliday, getApprovalWorkflows, createApprovalWorkflow, getStaffRequirements, createStaffRequirement, updateStaffRequirement } from '@/lib/queries/leavesAbsences'
 import type { LeaveRule, PublicHoliday, ApprovalWorkflow, StaffRequirement } from '@/types'
 import { useToast } from '@/lib/toast'
-import { Settings, Plus, Trash2, X, Calendar, Workflow, Users, CalendarDays } from 'lucide-react'
+import { Settings, Plus, Trash2, X, Workflow, Users, CalendarDays } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
 
 type Tab = 'rules' | 'holidays' | 'workflows' | 'staff'
 
 export function LeaveRulesPage() {
   const { t } = useTranslation('hr')
-  const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const [tab, setTab] = useState<Tab>('rules')
 
@@ -69,14 +64,14 @@ function RulesTab() {
     try {
       const data = await getLeaveRules()
       setRules(data || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLeaveRule(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
@@ -168,7 +163,7 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
             <Input label={t('leaveRules.minNotice')} type="number" value={minNotice} onChange={(e) => setMinNotice(e.target.value)} />
             <Input label={t('leaveRules.maxConsecutive')} type="number" value={maxConsecutive} onChange={(e) => setMaxConsecutive(e.target.value)} />
           </div>
-          <Select label={t('leaveRules.countMethod')} value={countMethod} onChange={(e) => setCountMethod(e.target.value)} options={[
+          <Select label={t('leaveRules.countMethod')} value={countMethod} onChange={(e) => setCountMethod(e.target.value as typeof countMethod)} options={[
             { value: 'working_days', label: t('leaveRules.countMethods.working_days') },
             { value: 'working_days_excl_saturday', label: t('leaveRules.countMethods.working_days_excl_saturday') },
             { value: 'calendar_days', label: t('leaveRules.countMethods.calendar_days') },
@@ -206,14 +201,14 @@ function HolidaysTab() {
     try {
       const data = await getPublicHolidays(year)
       setHolidays(data || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [year])
+  }, [year, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePublicHoliday(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
@@ -308,9 +303,9 @@ function WorkflowsTab() {
     try {
       const data = await getApprovalWorkflows()
       setWorkflows(data || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -399,9 +394,9 @@ function StaffTab() {
     try {
       const data = await getStaffRequirements()
       setReqs(data || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

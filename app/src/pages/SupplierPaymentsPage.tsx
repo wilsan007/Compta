@@ -1,13 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getSupplierPayments, createSupplierPayment, deleteSupplierPayment, getSuppliers, getBankAccounts } from '@/lib/queries'
+import { getSupplierPayments, createSupplierPayment, deleteSupplierPayment, getSuppliers } from '@/lib/queries/partners'
+import { getBankAccounts } from '@/lib/queries/banking'
+import { getPurchaseInvoices } from '@/lib/queries/sales'
 import { Plus, Trash2, X, CreditCard, RefreshCw } from 'lucide-react'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { getLatestRate } from '@/lib/currencyRates'
-import type { SupplierPayment, Supplier, BankAccount } from '@/types'
+import type { SupplierPayment, Supplier, BankAccount, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function SupplierPaymentsPage() {
   const { t } = useTranslation('purchases')
@@ -26,14 +29,14 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
       setPayments(pays || [])
       setSuppliers(sups || [])
       setBanks(bks || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('payments.deleteConfirm'))) return
+  if (!confirmSync(t('payments.deleteConfirm'))) return
     try { await deleteSupplierPayment(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
   }
@@ -51,7 +54,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payments.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('payments.number'), t('payments.supplier'), t('payments.date'), t('payments.amount'), t('payments.currency'), t('payments.method'), t('payments.reference'), t('payments.actions')]}>
+          <Table headers={[t('payments.number'), t('payments.supplier'), t('payments.date'), t('payments.amount'), t('payments.currency'), t('payments.method'), t('payments.reference'), 'Compta', 'Banque', t('payments.actions')]}>
             {payments.map((p) => {
               const sup = suppliers.find((s) => s.id === p.supplier_id)
               return (
@@ -63,6 +66,8 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
                   <TableCell className="font-mono text-xs">{p.currency_code || 'EUR'}</TableCell>
                   <TableCell className="text-xs">{t(`payments.methods.${p.method || 'other'}`) as string}</TableCell>
                   <TableCell className="font-mono text-xs">{p.reference || '—'}</TableCell>
+                  <TableCell>{p.journal_entry_id || p.journal_posted ? <Badge variant="success">OK</Badge> : <Badge variant="neutral">—</Badge>}</TableCell>
+                  <TableCell>{p.bank_transaction_id ? <Badge variant="success">OK</Badge> : <Badge variant="neutral">—</Badge>}</TableCell>
                   <TableCell>
                     <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                       <Trash2 className="w-4 h-4" />
@@ -84,6 +89,8 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const [supplierId, setSupplierId] = useState('')
+  const [purchaseInvoiceId, setPurchaseInvoiceId] = useState('')
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([])
   const { toast } = useToast()
   const [amount, setAmount] = useState(0)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
@@ -121,7 +128,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
     setSaving(true)
     try {
       const number = `RSF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-      await createSupplierPayment({ number, supplier_id: supplierId || null, purchase_invoice_id: null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
+      await createSupplierPayment({ number, supplier_id: supplierId || null, purchase_invoice_id: purchaseInvoiceId || null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
@@ -137,9 +144,16 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.supplier')}</label>
-            <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required>
+            <select className="input" value={supplierId} onChange={async (e) => { setSupplierId(e.target.value); setPurchaseInvoiceId(''); setPurchaseInvoices([]); if (e.target.value) { try { const all = await getPurchaseInvoices(); setPurchaseInvoices((all || []).filter((i) => i.supplier_id === e.target.value && i.status !== 'paid')) } catch { /* ignore */ } } }} required>
               <option value="">{tCommon('form.selectPlaceholder')}</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.invoice')}</label>
+            <select className="input" value={purchaseInvoiceId} onChange={(e) => setPurchaseInvoiceId(e.target.value)} disabled={!supplierId}>
+              <option value="">{tCommon('form.selectPlaceholder')}</option>
+              {purchaseInvoices.map((i) => <option key={i.id} value={i.id}>{i.number}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">

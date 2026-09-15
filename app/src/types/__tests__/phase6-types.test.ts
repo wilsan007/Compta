@@ -154,7 +154,7 @@ describe('Phase 6 — TypeScript Interface Shape Validation', () => {
       id: '1', tenant_id: 'tid', job_name: 'Monthly', report_type: 'trial_balance',
       scheduled_date: '2024-12-31', output_format: 'pdf', status: 'pending',
       parameters: {}, generated_file_path: null, created_at: '2024-01-01',
-    } as DeferredPrintingJob
+    } as unknown as DeferredPrintingJob
     expect(job.job_name).toBe('Monthly')
     expect(job.output_format).toBe('pdf')
     expect(job.status).toBe('pending')

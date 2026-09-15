@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, Select, SkeletonTable } from '@/components/ui'
-import { getThirdPartyAccounts, getJournalEntries } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getThirdPartyAccounts, getJournalEntries } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import type { ThirdPartyAccount, JournalEntry } from '@/types'
 
 export function ProgressiveBalancePage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [entries, setEntries] = useState<JournalEntry[]>([])
@@ -27,12 +30,13 @@ export function ProgressiveBalancePage() {
       } else {
         setEntries([])
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load progressive balance:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [selectedThirdParty])
+  }, [selectedThirdParty, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -96,7 +100,7 @@ export function ProgressiveBalancePage() {
         <Card>
           <Table headers={tableHeaders}>
             {rows.map((row, idx) => (
-              <TableRow key={idx}>
+              <TableRow key={row.id || idx}>
                 <TableCell className="text-xs">{formatDate(row.date)}</TableCell>
                 <TableCell className="text-sm">{row.description}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{row.debit > 0 ? formatCurrency(row.debit) : ''}</TableCell>

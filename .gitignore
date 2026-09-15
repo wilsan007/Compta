@@ -50,3 +50,8 @@ Thumbs.db
 # SECURITY: Lock files that could leak dependency versions
 package-lock.json.bak
 yarn.lock.bak
+
+# SOC-08: Backup files
+*.bak
+*.bak2
+*.orig

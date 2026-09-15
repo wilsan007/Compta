@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill } from '@/lib/queries'
+import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill } from '@/lib/queries/accounting'
 import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function DistributionGrillsPage() {
   const { t } = useTranslation('accounting')
@@ -19,17 +20,17 @@ export function DistributionGrillsPage() {
     try {
       const data = await getDistributionGrills()
       setGrills(data || [])
-    } catch (err) {
-      console.error('Failed to load distribution grills:', err)
+    } catch (err: any) { console.error('Failed to load distribution grills:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('grills.deleteConfirm'))) return
+    if (!confirmSync(t('grills.deleteConfirm'))) return
     try {
       await deleteDistributionGrill(id)
       toast('success', tCommon('common.success'), t('grills.deleteSuccess'))
@@ -170,7 +171,7 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             </div>
             <Table headers={[t('grills.section'), t('grills.percentage'), '']}>
               {lines.map((line, idx) => (
-                <TableRow key={idx}>
+                <TableRow key={line.id || idx}>
                   <TableCell>
                     <input className="input text-xs" placeholder="A001" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)} />
                   </TableCell>

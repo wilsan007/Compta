@@ -115,7 +115,7 @@ export function sanitizeFilename(filename: string): string {
   // Remove directory traversal
   name = name.replace(/\.\./g, '')
   // Remove null bytes and control characters
-  name = name.replace(/[\x00-\x1f\x7f]/g, '')
+  name = Array.from(name).filter(c => { const code = c.charCodeAt(0); return code > 0x1f && code !== 0x7f }).join('')
   // Limit length
   if (name.length > 255) {
     const ext = name.match(/\.[^.]+$/)?.[0] || ''

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select } from '@/components/ui'
-import { getFiscalYears, getBalanceSheet, getTrialBalance } from '@/lib/queries'
+import { getFiscalYears, getBalanceSheet, getTrialBalance } from '@/lib/queries/accounting'
 import { formatCurrency } from '@/lib/utils'
 import { FileText, FileBarChart } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 
 export function LiasseFiscalePage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
   const [loading, setLoading] = useState(true)
@@ -16,15 +19,14 @@ export function LiasseFiscalePage() {
   const [trialBalance, setTrialBalance] = useState<any[]>([])
 
   useEffect(() => {
-    loadFiscalYears()
+    loadFiscalYears().catch(err => console.error('loadFiscalYears:', err))
   }, [])
 
   async function loadFiscalYears() {
     try {
       const years = await getFiscalYears()
       setFiscalYears(years || [])
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err: any) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -40,8 +42,7 @@ export function LiasseFiscalePage() {
       ])
       setData(bs)
       setTrialBalance(tb || [])
-    } catch (err) {
-      console.error('Error generating liasse:', err)
+    } catch (err: any) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setGenerating(false)
     }

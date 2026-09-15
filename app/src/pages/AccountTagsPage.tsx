@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getAccountTags, createAccountTag, updateAccountTag, deleteAccountTag, getAccountTagMappings, createAccountTagMapping, deleteAccountTagMapping } from '@/lib/queries'
+import { getAccountTags, createAccountTag, updateAccountTag, deleteAccountTag, getAccountTagMappings, createAccountTagMapping, deleteAccountTagMapping } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, Tag, Link2 } from 'lucide-react'
 import type { AccountTag, AccountTagMapping } from '@/types'
 
@@ -36,8 +36,7 @@ export function AccountTagsPage() {
     try {
       setLoading(true)
       setTags(await getAccountTags())
-    } catch (err) {
-      console.error('Error loading account tags:', err)
+    } catch (err: any) { console.error('Error loading account tags:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     } finally {
       setLoading(false)
@@ -80,8 +79,7 @@ export function AccountTagsPage() {
       }
       resetForm()
       await load()
-    } catch (err) {
-      console.error('Error saving tag:', err)
+    } catch (err: any) { console.error('Error saving tag:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     }
   }
@@ -92,8 +90,8 @@ export function AccountTagsPage() {
       await deleteAccountTag(id)
       toast('success', t('accountTags.title'), t('accountTags.deleteSuccess'))
       await load()
-    } catch (err) {
-      console.error('Error deleting tag:', err)
+    } catch (err: any) { console.error('Error deleting tag:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -102,8 +100,8 @@ export function AccountTagsPage() {
     setActiveTab('application')
     try {
       setMappings(await getAccountTagMappings(tag.id))
-    } catch (err) {
-      console.error('Error loading tag mappings:', err)
+    } catch (err: any) { console.error('Error loading tag mappings:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -118,8 +116,7 @@ export function AccountTagsPage() {
       setMappingForm({ entity_type: 'account', entity_id: '' })
       setMappings(await getAccountTagMappings(selectedTag.id))
       toast('success', t('accountTags.title'), t('accountTags.mappingCreateSuccess'))
-    } catch (err) {
-      console.error('Error creating tag mapping:', err)
+    } catch (err: any) { console.error('Error creating tag mapping:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     }
   }
@@ -130,8 +127,8 @@ export function AccountTagsPage() {
       await deleteAccountTagMapping(id)
       if (selectedTag) setMappings(await getAccountTagMappings(selectedTag.id))
       toast('success', t('accountTags.title'), t('accountTags.mappingDeleteSuccess'))
-    } catch (err) {
-      console.error('Error deleting tag mapping:', err)
+    } catch (err: any) { console.error('Error deleting tag mapping:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 

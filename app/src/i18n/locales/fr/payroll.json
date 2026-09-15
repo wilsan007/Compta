@@ -234,7 +234,14 @@
       "absence": "Absence",
       "meal_voucher": "Titre restaurant",
       "transport": "Transport",
-      "other": "Autre"
+      "other": "Autre",
+      "advance_deduction": "Acompte sur salaire",
+      "pay_recall": "Rappel de paie",
+      "expense_reimbursement": "Remboursement de frais",
+      "unpaid_leave_deduction": "Congé sans solde",
+      "timesheet_hours": "Heures travaillées",
+      "lateness_deduction": "Déduction retard",
+      "unpaid_absence": "Absence non payée"
     },
     "validate": "Valider la préparation",
     "validated": "Préparation validée",

@@ -2,45 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { sendEmailViaResend, buildEmailTemplate } from "../_shared/email.ts"
-
-// ============================================
-// CONFIG
-// ============================================
-const APP_URL = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
-
-const ALLOWED_ORIGINS = [
-  APP_URL,
-  "http://localhost:5173",
-  "http://localhost:4173",
-]
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || ""
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ""
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
-  }
-}
-
-// ============================================
-// RATE LIMITING
-// ============================================
-interface RateLimitEntry { count: number; resetAt: number }
-const rateLimitMap = new Map<string, RateLimitEntry>()
-function checkRateLimit(key: string, max: number, windowMs: number): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return true
-  }
-  if (entry.count >= max) return false
-  entry.count++
-  return true
-}
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { checkRateLimit, getClientIp } from "../_shared/rateLimit.ts"
 
 // ============================================
 // MAIN HANDLER
@@ -49,11 +12,11 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return handleOptions(corsHeaders)
   }
 
   // Rate limit: max 30 emails per minute per IP
-  const clientIp = req.headers.get("X-Forwarded-For")?.split(",")[0].trim() || "unknown"
+  const clientIp = getClientIp(req)
   if (!checkRateLimit(`ip:${clientIp}`, 30, 60_000)) {
     return new Response(
       JSON.stringify({ error: "Trop de requêtes" }),
@@ -98,6 +61,7 @@ serve(async (req) => {
       action_url,
       locale = "en",
       tenant_name = "",
+      tenant_id = null,
     } = body
 
     if (!to_email || !title) {
@@ -141,8 +105,10 @@ serve(async (req) => {
         status: "sent",
         resend_id: emailResult.id || null,
         sent_at: new Date().toISOString(),
+        tenant_id: tenant_id,
       })
-    } catch {
+    } catch (err) {
+      console.error("catch:", err)
       // Queue logging failure should not block the response
     }
 

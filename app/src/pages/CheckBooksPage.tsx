@@ -4,14 +4,12 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { BookCheck, Plus, Trash2, X, Printer, CheckCircle, Ban } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import {
-  getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook,
-  getChecks, createCheck, updateCheck, deleteCheck,
-} from '@/lib/queries'
+import { getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook, getChecks, createCheck, updateCheck, deleteCheck } from '@/lib/queries/accounting'
 import type { CheckBook, Check } from '@/types'
 
 export function CheckBooksPage() {
   const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
   const [activeTab, setActiveTab] = useState<'checkBooks' | 'checks' | 'print'>('checkBooks')
@@ -30,8 +28,8 @@ export function CheckBooksPage() {
       const [books, chks] = await Promise.all([getCheckBooks(), getChecks()])
       setCheckBooks(books || [])
       setChecks(chks || [])
-    } catch { } finally { setLoading(false) }
-  }, [])
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

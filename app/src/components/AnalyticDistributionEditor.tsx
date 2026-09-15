@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { X, Plus, Trash2, CheckCircle, Layers } from 'lucide-react'
 import { Button, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getAnalyticPlans } from '@/lib/queries'
-import { getAnalyticSections } from '@/lib/queries'
+import { getAnalyticPlans } from '@/lib/queries/accounting'
+import { getAnalyticSections } from '@/lib/queries/accounting'
 import {
   validateDistribution,
   distributeEvenly,
@@ -50,15 +50,15 @@ export function AnalyticDistributionEditor({
         const existing = await getDistributionLines(journalLineId)
         setDist(existing)
       }
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       // ignore
     } finally {
       setLoading(false)
     }
-  }, [journalLineId])
+  }, [journalLineId, tCommon, toast])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [loadData])
 
   function getSectionsForPlan(planId: string): AnalyticSection[] {

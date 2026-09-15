@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
+import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPromotions, createPromotion, deletePromotion, getProducts, getCustomers } from '@/lib/queries'
+import { getPromotions, createPromotion, deletePromotion } from '@/lib/queries/catalogAdvanced'
+import { getProducts } from '@/lib/queries/stock'
+import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2, X, Tag, Search } from 'lucide-react'
 import type { Promotion, Product, Customer } from '@/types'
@@ -31,7 +33,7 @@ export function PromotionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

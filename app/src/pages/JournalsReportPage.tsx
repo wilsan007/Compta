@@ -1,13 +1,16 @@
 import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Input, Button } from '@/components/ui'
-import { getJournalsReport } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getJournalsReport } from '@/lib/queries/misc'
 import { useLocale } from '@/hooks/useLocale'
 import { Search } from 'lucide-react'
 import type { JournalEntry } from '@/types'
 
 export function JournalsReportPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -19,12 +22,13 @@ export function JournalsReportPage() {
     setLoading(true)
     try {
       setEntries(await getJournalsReport(startDate || undefined, endDate || undefined))
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load journals report:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [startDate, endDate])
+  }, [startDate, endDate, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

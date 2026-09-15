@@ -1,14 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getStockQuantities, getWarehouses } from '@/lib/queries'
+import { getStockQuantities, getWarehouses } from '@/lib/queries/stock'
 import { Boxes } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 
 export function StockQuantitiesPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [stock, setStock] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
@@ -19,9 +22,9 @@ export function StockQuantitiesPage() {
       const [stk, whs] = await Promise.all([getStockQuantities(whFilter || undefined), getWarehouses()])
       setStock(stk || [])
       setWarehouses(whs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [whFilter])
+  }, [whFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

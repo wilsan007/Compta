@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getCollectionReminders, generatePaymentLink } from '@/lib/queries'
+import { getCollectionReminders } from '@/lib/queries/accounting'
+import { generatePaymentLink } from '@/lib/queries/payroll'
 import { useLocale } from '@/hooks/useLocale'
 import { Link2, Copy, Mail } from 'lucide-react'
 import type { CollectionReminder } from '@/types'
@@ -20,12 +21,12 @@ export function PaymentRemindersPage() {
     try {
       const data = await getCollectionReminders()
       setReminders(data || [])
-    } catch (err) {
-      console.error('Failed to load reminders:', err)
+    } catch (err: any) { console.error('Failed to load reminders:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

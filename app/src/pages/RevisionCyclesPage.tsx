@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getRevisionCycles, createRevisionCycle, updateRevisionCycle, deleteRevisionCycle } from '@/lib/queries'
+import { getRevisionCycles, createRevisionCycle, updateRevisionCycle, deleteRevisionCycle } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, RefreshCw } from 'lucide-react'
 import type { RevisionCycle } from '@/types'
 

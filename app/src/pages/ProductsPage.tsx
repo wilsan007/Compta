@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement } from '@/lib/queries'
+import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement } from '@/lib/queries/stock'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown } from 'lucide-react'
 import type { Product, StockMovement } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
+import { confirmSync } from '@/lib/confirm'
 
 export function ProductsPage() {
   const { toast } = useToast()
@@ -26,17 +27,17 @@ const [products, setProducts] = useState<Product[]>([])
       const [p, m] = await Promise.all([getProducts(), getStockMovements()])
       setProducts(p)
       setMovements(m)
-    } catch (err) {
-      console.error('Failed to load products:', err)
+    } catch (err: any) { console.error('Failed to load products:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteProduct(id)
       await loadData()

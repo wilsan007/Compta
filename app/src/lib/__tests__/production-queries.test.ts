@@ -591,7 +591,7 @@ describe('Echeancier', () => {
     const { getEcheancier } = await import('@/lib/queries')
     const result = await getEcheancier('customer')
     expect(result).toBeDefined()
-    expect(result.every((r: any) => r.type === 'customer')).toBe(true)
+    expect(result?.every((r: any) => r.type === 'customer')).toBe(true)
   })
 })
 
@@ -679,19 +679,24 @@ describe('calcVatFromEntries', () => {
   beforeEach(() => resetMock())
 
   it('calculates VAT from journal lines in date range', async () => {
-    setMockData([
-      { account_general: '445710', debit: 0, credit: 200 },
-      { account_general: '445660', debit: 100, credit: 0 },
-      { account_general: '701000', debit: 0, credit: 1000 },
-      { account_general: '601000', debit: 500, credit: 0 },
-    ])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [
+        { vat_code: 'FR20', direction: 'collected', account_code: '445711', ca3_box: 'A1', base_ht: 1000, vat_amount: 200, rate: 20 },
+        { vat_code: 'FR20', direction: 'deductible', account_code: '445661', ca3_box: '08', base_ht: 500, vat_amount: 100, rate: 20 },
+      ],
+      error: null
+    }))
     const { calcVatFromEntries } = await import('@/lib/queries')
     const result = await calcVatFromEntries('2024-01-01', '2024-12-31')
-    expect(result.outputVat).toBe(200)
-    expect(result.inputVat).toBe(100)
-    expect(result.netVat).toBe(100)
-    expect(result.totalSales).toBe(1000)
-    expect(result.totalPurchases).toBe(500)
+    expect(result?.outputVat).toBe(200)
+    expect(result?.inputVat).toBe(100)
+    expect(result?.netVat).toBe(100)
+    expect(result?.totalSales).toBe(1000)
+    expect(result?.totalPurchases).toBe(500)
   })
 })
 
@@ -867,7 +872,7 @@ describe('checkBudgetAvailability', () => {
     const { checkBudgetAvailability } = await import('@/lib/queries')
     const result = await checkBudgetAvailability('601000', 500)
     expect(result).toBeDefined()
-    expect(result.account_code).toBe('601000')
+    expect(result?.account_code).toBe('601000')
     expect(typeof result.would_exceed).toBe('boolean')
     expect(typeof result.available).toBe('number')
   })
@@ -945,12 +950,14 @@ describe('Fiscal Year Closure', () => {
   beforeEach(() => resetMock())
 
   it('closeFiscalYear closes year and generates opening entries', async () => {
-    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 'fy-1', code: '2024', status: 'open' }, error: null }))
-    mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [{ id: 'p1' }, { id: 'p2' }], error: null }).then(resolve))
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: { success: true, fiscal_year_id: 'fy-1', result: 5000, carry_forward_entry_id: 'cf-1', close_entry_id: 'cl-1', hash: 'abc123', log_id: 'log-1' },
+      error: null
+    }))
     const { closeFiscalYear } = await import('@/lib/queries')
     const result = await closeFiscalYear('fy-1', 'fy-2')
     expect(result).toBeDefined()
-    expect(typeof result.openingLinesCount).toBe('number')
+    expect(result?.success).toBe(true)
   })
 })
 
@@ -977,10 +984,47 @@ describe('generateExtourne', () => {
 describe('generateCarryForward', () => {
   beforeEach(() => resetMock())
 
+  // Réponses successives : log de report existant, périodes de l'exercice, écritures
+  function queueResponses(...responses: any[]) {
+    for (const data of responses) {
+      mockChain.then.mockImplementationOnce((resolve: any) => Promise.resolve({ data, error: null }).then(resolve))
+    }
+  }
+
   it('generates carry forward entries between fiscal years', async () => {
-    setMockData([{ id: 'je-1', journal_lines: [{ account_general: '401000', debit: 500, credit: 0 }] }])
+    queueResponses([], [{ id: 'fp-1' }], [
+      { id: 'je-1', status: 'posted', journal_lines: [
+        { account_general: '512000', debit: 1000, credit: 0 },
+        { account_general: '401000', account_tiers: 'F001', debit: 0, credit: 600 },
+        { account_general: '607000', debit: 200, credit: 0 },
+        { account_general: '707000', debit: 0, credit: 600 },
+      ] },
+    ])
+    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 'an-1' }, error: null }))
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: 'AN-2026-000001', error: null } as any)
     const { generateCarryForward } = await import('@/lib/queries')
     const result = await generateCarryForward('fy-1', 'fy-2')
-    expect(result).toBeDefined()
+    expect(result).toEqual({ id: 'an-1' })
+
+    // LOT4-10 : numéro séquentiel issu de la RPC
+    expect(supabase.rpc).toHaveBeenCalledWith('get_next_document_number', { p_prefix: 'AN' })
+    const entryInsert = mockChain.insert.mock.calls.find((c: any[]) => !Array.isArray(c[0]))[0]
+    expect(entryInsert.number).toBe('AN-2026-000001')
+
+    // LOT4-01 : aucune ligne de classe 6 ou 7, résultat (+400) porté au 120000
+    const lines = mockChain.insert.mock.calls.find((c: any[]) => Array.isArray(c[0]))[0]
+    const accounts = lines.map((l: any) => l.account_general)
+    expect(accounts.some((a: string) => a.startsWith('6') || a.startsWith('7'))).toBe(false)
+    expect(lines.find((l: any) => l.account_general === '120000')).toMatchObject({ debit: 0, credit: 400 })
+    expect(lines.find((l: any) => l.account_general === '401000')).toMatchObject({ account_tiers: 'F001', credit: 600 })
+    const totalDebit = lines.reduce((s: number, l: any) => s + l.debit, 0)
+    const totalCredit = lines.reduce((s: number, l: any) => s + l.credit, 0)
+    expect(totalDebit).toBeCloseTo(totalCredit, 2)
+  })
+
+  it('refuse un second report pour le même exercice', async () => {
+    queueResponses([{ id: 'log-1' }])
+    const { generateCarryForward } = await import('@/lib/queries')
+    await expect(generateCarryForward('fy-1', 'fy-2')).rejects.toThrow('déjà été générés')
   })
 })

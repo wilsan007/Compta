@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, getFiscalPeriods, createFiscalPeriodsForYear, updateFiscalPeriod } from '@/lib/queries'
+import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, getFiscalPeriods, createFiscalPeriodsForYear, updateFiscalPeriod } from '@/lib/queries/accounting'
 import { Calendar, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Lock, Unlock } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function FiscalYearsPage() {
   const { toast } = useToast()
@@ -20,7 +21,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
   const [editing, setEditing] = useState<FiscalYear | null>(null)
 
   useEffect(() => {
-    loadYears()
+    loadYears().catch(err => console.error('loadYears:', err))
   }, [])
 
   async function loadYears() {
@@ -35,8 +36,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
         } catch { periodsMap[y.id] = [] }
       }
       setPeriods(periodsMap)
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err: any) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -53,11 +54,11 @@ const [years, setYears] = useState<FiscalYear[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('fiscalYears.deleteConfirm'))) return
+    if (!confirmSync(t('fiscalYears.deleteConfirm'))) return
     try {
       await deleteFiscalYear(id)
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
@@ -67,7 +68,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
     try {
       await updateFiscalPeriod(period.id, { status: newStatus })
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.updateError'))
     }
   }
@@ -77,7 +78,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
     try {
       await updateFiscalYear(y.id, { status: newStatus, closed_at: newStatus === 'closed' ? new Date().toISOString() : null })
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.updateError'))
     }
   }

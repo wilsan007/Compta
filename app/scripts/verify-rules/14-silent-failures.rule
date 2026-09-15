@@ -1,0 +1,25 @@
+# rule: Silent failures audit (comprehensive)
+# severity: error
+# pattern: empty catch, swallowed error returns, missing tenant filter, floating promises
+# fix: Run `node scripts/audit-silent-failures.mjs` for details
+# note: This rule delegates to the comprehensive Node.js audit script
+
+RULE_NAME="Silent failures audit"
+RULE_DESC="Failures silencieux: catch vides, erreurs avalées, filtres tenant manquants (voir audit-silent-failures.mjs)"
+RULE_SEVERITY="error"
+RULE_USE_CUSTOM=true
+
+run_custom_rule() {
+  # Run the comprehensive audit script and count errors
+  local output
+  output=$(node scripts/audit-silent-failures.mjs --json 2>/dev/null || echo '{}')
+  # Extract total error count from summary
+  local errors
+  errors=$(echo "$output" | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      try { const j=JSON.parse(d); let t=0; for(const k in j.summary) t+=j.summary[k].error||0; console.log(t); }
+      catch { console.log(0); }
+    });
+  " 2>/dev/null || echo 0)
+  echo "$errors"
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, EmptyState } from '@/components/ui'
 import { MessageSquare, Send, Paperclip, AtSign, Clock } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 import type { ProjectTask, TaskComment } from '@/types/projectManagement'
@@ -14,6 +15,8 @@ interface TaskChatterProps {
 
 export function TaskChatter({ task, className }: TaskChatterProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [comments, setComments] = useState<TaskComment[]>([])
   const [loading, setLoading] = useState(true)
   const [input, setInput] = useState('')
@@ -32,7 +35,7 @@ export function TaskChatter({ task, className }: TaskChatterProps) {
   }, [task.id])
 
   useEffect(() => {
-    loadComments()
+    loadComments().catch(err => console.error('loadComments:', err))
   }, [loadComments])
 
   async function handleSend() {
@@ -42,8 +45,10 @@ export function TaskChatter({ task, className }: TaskChatterProps) {
       const newComment = await addTaskComment(task.id, input.trim())
       setComments((prev) => [newComment, ...prev])
       setInput('')
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       /* ignore */
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSending(false)
     }

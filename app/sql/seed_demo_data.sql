@@ -1111,7 +1111,7 @@ BEGIN
     i.date,
     'Vente ' || i.customer_name,
     i.number,
-    'posted',
+    'draft',
     'VT',
     v_period_ids[extract(month from i.date)::int],
     i.total,
@@ -1140,6 +1140,9 @@ BEGIN
   JOIN invoices i ON je.reference = i.number AND i.tenant_id = v_tenant_id
   WHERE je.journal_code = 'VT' AND je.tenant_id = v_tenant_id AND extract(year from je.date) = 2025;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'VT' AND tenant_id = v_tenant_id AND extract(year from date) = 2025 AND status = 'draft';
+
   -- ============================================
   -- 12. JOURNAL ENTRIES 2025 - Purchases (AC)
   -- ============================================
@@ -1149,7 +1152,7 @@ BEGIN
     p.date,
     'Achat ' || p.supplier_name,
     p.number,
-    'posted',
+    'draft',
     'AC',
     v_period_ids[extract(month from p.date)::int],
     p.total,
@@ -1178,6 +1181,9 @@ BEGIN
   JOIN purchase_invoices p ON je.reference = p.number AND p.tenant_id = v_tenant_id
   WHERE je.journal_code = 'AC' AND je.tenant_id = v_tenant_id AND extract(year from je.date) = 2025;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'AC' AND tenant_id = v_tenant_id AND extract(year from date) = 2025 AND status = 'draft';
+
   -- ============================================
   -- 13. JOURNAL ENTRIES 2025 - Bank receipts (BQ)
   -- ============================================
@@ -1187,7 +1193,7 @@ BEGIN
     i.due_date + interval '5 days',
     'Encaissement client ' || i.number,
     i.number,
-    'posted',
+    'draft',
     'BQ',
     v_period_ids[extract(month from (i.due_date + interval '5 days'))::int],
     i.total,
@@ -1210,6 +1216,9 @@ BEGIN
   JOIN invoices i ON je.reference = i.number AND i.tenant_id = v_tenant_id
   WHERE je.journal_code = 'BQ' AND je.number LIKE 'BQ-2025-ENC-%' AND je.tenant_id = v_tenant_id;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'BQ' AND number LIKE 'BQ-2025-ENC-%' AND tenant_id = v_tenant_id AND status = 'draft';
+
   -- ============================================
   -- 14. JOURNAL ENTRIES 2025 - Bank payments (BQ)
   -- ============================================
@@ -1219,7 +1228,7 @@ BEGIN
     p.due_date + interval '3 days',
     'Paiement fournisseur ' || p.number,
     p.number,
-    'posted',
+    'draft',
     'BQ',
     v_period_ids[extract(month from (p.due_date + interval '3 days'))::int],
     p.total,
@@ -1242,6 +1251,9 @@ BEGIN
   JOIN purchase_invoices p ON je.reference = p.number AND p.tenant_id = v_tenant_id
   WHERE je.journal_code = 'BQ' AND je.number LIKE 'BQ-2025-DEC-%' AND je.tenant_id = v_tenant_id;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'BQ' AND number LIKE 'BQ-2025-DEC-%' AND tenant_id = v_tenant_id AND status = 'draft';
+
   -- ============================================
   -- 15. JOURNAL ENTRIES 2025 - OD (salaries + rent monthly)
   -- ============================================
@@ -1249,7 +1261,7 @@ BEGIN
     v_date := make_date(2025, v_month, 28);
 
     INSERT INTO journal_entries (number, date, description, reference, status, journal_code, fiscal_period_id, total_debit, total_credit, status_detail, tenant_id)
-    VALUES ('OD-2025-SAL-' || lpad(v_month::text, 2, '0'), v_date, 'Salaires mois ' || to_char(v_date, 'YYYY-MM'), 'SAL-' || v_month, 'posted', 'OD', v_period_ids[v_month], 5000, 5000, 'closed', v_tenant_id)
+    VALUES ('OD-2025-SAL-' || lpad(v_month::text, 2, '0'), v_date, 'Salaires mois ' || to_char(v_date, 'YYYY-MM'), 'SAL-' || v_month, 'draft', 'OD', v_period_ids[v_month], 5000, 5000, 'closed', v_tenant_id)
     RETURNING id INTO v_je_id;
 
     INSERT INTO journal_lines (journal_id, account_code, account_name, debit, credit, description, line_order, tenant_id) VALUES
@@ -1257,25 +1269,31 @@ BEGIN
       (v_je_id, '645000', 'Charges sociales', 1000, 0, 'Charges patronales', 2, v_tenant_id),
       (v_je_id, '421000', 'Personnel - remunerations dues', 0, 3200, 'Net a payer', 3, v_tenant_id),
       (v_je_id, '431000', 'Securite sociale', 0, 1800, 'Charges sociales', 4, v_tenant_id);
+    -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+    UPDATE journal_entries SET status = 'posted' WHERE id = v_je_id AND tenant_id = v_tenant_id;
 
     INSERT INTO journal_entries (number, date, description, reference, status, journal_code, fiscal_period_id, total_debit, total_credit, status_detail, tenant_id)
-    VALUES ('OD-2025-LOC-' || lpad(v_month::text, 2, '0'), v_date, 'Loyer mois ' || to_char(v_date, 'YYYY-MM'), 'LOC-' || v_month, 'posted', 'OD', v_period_ids[v_month], 1200, 1200, 'closed', v_tenant_id)
+    VALUES ('OD-2025-LOC-' || lpad(v_month::text, 2, '0'), v_date, 'Loyer mois ' || to_char(v_date, 'YYYY-MM'), 'LOC-' || v_month, 'draft', 'OD', v_period_ids[v_month], 1200, 1200, 'closed', v_tenant_id)
     RETURNING id INTO v_je_id;
 
     INSERT INTO journal_lines (journal_id, account_code, account_name, debit, credit, description, line_order, tenant_id) VALUES
       (v_je_id, '613000', 'Locations', 1000, 0, 'Loyer HT', 1, v_tenant_id),
       (v_je_id, '445660', 'TVA deductible', 200, 0, 'TVA 20%', 2, v_tenant_id),
       (v_je_id, '512000', 'Banque', 0, 1200, 'Prelevement automatique', 3, v_tenant_id);
+    -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+    UPDATE journal_entries SET status = 'posted' WHERE id = v_je_id AND tenant_id = v_tenant_id;
   END LOOP;
 
   -- Depreciation OD (Dec 2025)
   INSERT INTO journal_entries (number, date, description, reference, status, journal_code, fiscal_period_id, total_debit, total_credit, status_detail, tenant_id)
-  VALUES ('OD-2025-AMORT', '2025-12-31', 'Dotations aux amortissements 2025', 'AMORT-2025', 'posted', 'OD', v_period_ids[12], 3000, 3000, 'closed', v_tenant_id)
+  VALUES ('OD-2025-AMORT', '2025-12-31', 'Dotations aux amortissements 2025', 'AMORT-2025', 'draft', 'OD', v_period_ids[12], 3000, 3000, 'closed', v_tenant_id)
   RETURNING id INTO v_je_id;
 
   INSERT INTO journal_lines (journal_id, account_code, account_name, debit, credit, description, line_order, tenant_id) VALUES
     (v_je_id, '681000', 'Dotations aux amortissements', 3000, 0, 'Dotation annuelle', 1, v_tenant_id),
     (v_je_id, '281000', 'Amortissements des immobilisations', 0, 3000, 'Amortissements cumules', 2, v_tenant_id);
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE id = v_je_id AND tenant_id = v_tenant_id;
 
   -- ============================================
   -- 16. VAT RETURNS 2025
@@ -1342,7 +1360,7 @@ BEGIN
     i.date,
     'Vente ' || i.customer_name,
     i.number,
-    'posted',
+    'draft',
     'VT',
     v_period_2026_ids[extract(month from i.date)::int],
     i.total,
@@ -1368,6 +1386,9 @@ BEGIN
   FROM journal_entries je JOIN invoices i ON je.reference = i.number AND i.tenant_id = v_tenant_id
   WHERE je.journal_code = 'VT' AND je.tenant_id = v_tenant_id AND extract(year from je.date) = 2026;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'VT' AND tenant_id = v_tenant_id AND extract(year from date) = 2026 AND status = 'draft';
+
   -- ============================================
   -- 21. JOURNAL ENTRIES 2026 - Purchases (AC)
   -- ============================================
@@ -1377,7 +1398,7 @@ BEGIN
     p.date,
     'Achat ' || p.supplier_name,
     p.number,
-    'posted',
+    'draft',
     'AC',
     v_period_2026_ids[extract(month from p.date)::int],
     p.total,
@@ -1403,6 +1424,9 @@ BEGIN
   FROM journal_entries je JOIN purchase_invoices p ON je.reference = p.number AND p.tenant_id = v_tenant_id
   WHERE je.journal_code = 'AC' AND je.tenant_id = v_tenant_id AND extract(year from je.date) = 2026;
 
+  -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+  UPDATE journal_entries SET status = 'posted' WHERE journal_code = 'AC' AND tenant_id = v_tenant_id AND extract(year from date) = 2026 AND status = 'draft';
+
   -- ============================================
   -- 22. JOURNAL ENTRIES 2026 - OD (salaries + rent Jan-Jun)
   -- ============================================
@@ -1410,7 +1434,7 @@ BEGIN
     v_date := make_date(2026, v_month, 28);
 
     INSERT INTO journal_entries (number, date, description, reference, status, journal_code, fiscal_period_id, total_debit, total_credit, status_detail, tenant_id)
-    VALUES ('OD-2026-SAL-' || lpad(v_month::text, 2, '0'), v_date, 'Salaires mois ' || to_char(v_date, 'YYYY-MM'), 'SAL-' || v_month, 'posted', 'OD', v_period_2026_ids[v_month], 5200, 5200, 'closed', v_tenant_id)
+    VALUES ('OD-2026-SAL-' || lpad(v_month::text, 2, '0'), v_date, 'Salaires mois ' || to_char(v_date, 'YYYY-MM'), 'SAL-' || v_month, 'draft', 'OD', v_period_2026_ids[v_month], 5200, 5200, 'closed', v_tenant_id)
     RETURNING id INTO v_je_id;
 
     INSERT INTO journal_lines (journal_id, account_code, account_name, debit, credit, description, line_order, tenant_id) VALUES
@@ -1418,15 +1442,19 @@ BEGIN
       (v_je_id, '645000', 'Charges sociales', 1000, 0, 'Charges patronales', 2, v_tenant_id),
       (v_je_id, '421000', 'Personnel - remunerations dues', 0, 3300, 'Net a payer', 3, v_tenant_id),
       (v_je_id, '431000', 'Securite sociale', 0, 1900, 'Charges sociales', 4, v_tenant_id);
+    -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+    UPDATE journal_entries SET status = 'posted' WHERE id = v_je_id AND tenant_id = v_tenant_id;
 
     INSERT INTO journal_entries (number, date, description, reference, status, journal_code, fiscal_period_id, total_debit, total_credit, status_detail, tenant_id)
-    VALUES ('OD-2026-LOC-' || lpad(v_month::text, 2, '0'), v_date, 'Loyer mois ' || to_char(v_date, 'YYYY-MM'), 'LOC-' || v_month, 'posted', 'OD', v_period_2026_ids[v_month], 1200, 1200, 'closed', v_tenant_id)
+    VALUES ('OD-2026-LOC-' || lpad(v_month::text, 2, '0'), v_date, 'Loyer mois ' || to_char(v_date, 'YYYY-MM'), 'LOC-' || v_month, 'draft', 'OD', v_period_2026_ids[v_month], 1200, 1200, 'closed', v_tenant_id)
     RETURNING id INTO v_je_id;
 
     INSERT INTO journal_lines (journal_id, account_code, account_name, debit, credit, description, line_order, tenant_id) VALUES
       (v_je_id, '613000', 'Locations', 1000, 0, 'Loyer HT', 1, v_tenant_id),
       (v_je_id, '445660', 'TVA deductible', 200, 0, 'TVA 20%', 2, v_tenant_id),
       (v_je_id, '512000', 'Banque', 0, 1200, 'Prelevement automatique', 3, v_tenant_id);
+    -- Bascule en 'posted' APRÈS les lignes (SOC-01)
+    UPDATE journal_entries SET status = 'posted' WHERE id = v_je_id AND tenant_id = v_tenant_id;
   END LOOP;
 
   -- ============================================

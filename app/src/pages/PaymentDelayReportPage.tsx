@@ -1,13 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getCustomers, getInvoices } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getCustomers } from '@/lib/queries/partners'
+import { getInvoices } from '@/lib/queries/sales'
 import { useLocale } from '@/hooks/useLocale'
 import type { Customer, Invoice } from '@/types'
 
 export function PaymentDelayReportPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -20,12 +23,13 @@ export function PaymentDelayReportPage() {
       const [custs, invs] = await Promise.all([getCustomers(), getInvoices()])
       setCustomers(custs || [])
       setInvoices(invs || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load payment delay data:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

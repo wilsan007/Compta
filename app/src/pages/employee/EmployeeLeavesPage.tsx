@@ -29,7 +29,8 @@ export function EmployeeLeavesPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
       if (!userEmail) return
-      const { data: emp } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      if (error) throw error
       if (!emp?.id) return
       const tid = await getTenantId()
       let rq = supabase.from('leave_requests').select('*').eq('employee_id', emp.id)
@@ -43,7 +44,7 @@ export function EmployeeLeavesPage() {
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -52,7 +53,8 @@ export function EmployeeLeavesPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
-      const { data: emp } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error: empError } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      if (empError) throw empError
       if (!emp?.id) return
       const tid = await getTenantId()
       const { error } = await supabase.from('leave_requests').insert({
@@ -69,7 +71,7 @@ export function EmployeeLeavesPage() {
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       setShowForm(false)
       setLeaveType(''); setStartDate(''); setEndDate(''); setHalfDay(false); setJustification('')
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
@@ -81,7 +83,7 @@ export function EmployeeLeavesPage() {
       const { error } = await supabase.from('leave_requests').update({ status: 'cancelled' }).eq('id', id).eq('tenant_id', tid)
       if (error) throw error
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }

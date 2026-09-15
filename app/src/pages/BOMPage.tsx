@@ -2,18 +2,20 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts } from '@/lib/queries'
+import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Layers, ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
 import type { BOM, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { getRoutings } from '@/lib/queries'
+import { getRoutings } from '@/lib/queries/stock'
 import type { Routing } from '@/types'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
+import { confirmSync } from '@/lib/confirm'
 
 export function BOMPage() {
   const { t } = useTranslation('production')
   const { toast } = useToast()
+  const { t: tCommon } = useTranslation("common")
   const { getStatusLabel } = useStatusLabels()
 const [boms, setBOMs] = useState<BOM[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -32,9 +34,9 @@ const [boms, setBOMs] = useState<BOM[]>([])
       setBOMs(bs || [])
       setProducts(prods || [])
       setRoutings(rts || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -47,14 +49,14 @@ const [boms, setBOMs] = useState<BOM[]>([])
         try {
           const lns = await getBOMLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err) { console.error('Error:', err) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('bom.confirmDelete'))) return
+  if (!confirmSync(t('bom.confirmDelete'))) return
     try { await deleteBOM(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
@@ -149,6 +151,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
 function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]; routings: Routing[]; onClose: () => void; onSaved: () => void }) {
   const [code, setCode] = useState('')
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [name, setName] = useState('')
   const [productId, setProductId] = useState('')
@@ -213,6 +216,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
 function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [quantity, setQuantity] = useState(1)
   const [unitCost, setUnitCost] = useState(0)

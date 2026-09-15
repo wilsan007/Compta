@@ -11,7 +11,7 @@ export function MobileExpenseCapture() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [photo, setPhoto] = useState<string | null>(null)
-  const [ocrProcessing, setOcrProcessing] = useState(false)
+const [ocrProcessing] = useState(false)
   const [synced, setSynced] = useState(true)
   const [amount, setAmount] = useState('')
   const [vatRate, setVatRate] = useState('20')
@@ -37,18 +37,21 @@ export function MobileExpenseCapture() {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
       if (!userEmail) throw new Error('Not authenticated')
-      const { data: emp } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error: empError } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      if (empError) throw empError
       if (!emp?.id) throw new Error('Employee not found')
       const tid = await getTenantId()
       const amountNum = Number(amount)
       const vatNum = Number(vatRate)
       const ht = amountNum / (1 + vatNum / 100)
-      const { data: report } = await supabase.from('expense_reports').select('id').eq('employee_id', emp.id).eq('status', 'draft').limit(1).maybeSingle()
+      const { data: report, error: reportError } = await supabase.from('expense_reports').select('id').eq('employee_id', emp.id).eq('status', 'draft').limit(1).maybeSingle()
+      if (reportError) throw reportError
       let reportId = report?.id
       if (!reportId) {
-        const { data: newReport } = await supabase.from('expense_reports').insert({
+        const { data: newReport, error: newReportError } = await supabase.from('expense_reports').insert({
           tenant_id: tid, employee_id: emp.id, number: `EXP-${Date.now()}`, total_amount: 0, total_vat: 0, status: 'draft',
         }).select().single()
+        if (newReportError) throw newReportError
         reportId = newReport.id
       }
       const { error } = await supabase.from('expense_report_lines').insert({

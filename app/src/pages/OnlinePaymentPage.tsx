@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, EmptyState, SkeletonTable } from '@/components/ui'
-import { getOnlinePaymentByToken, updateOnlinePaymentStatus } from '@/lib/queries'
+import { getOnlinePaymentByToken, updateOnlinePaymentStatus } from '@/lib/queries/dematerialisation'
 import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
 import { CreditCard, CheckCircle, XCircle, Loader2 } from 'lucide-react'
@@ -32,7 +32,7 @@ export function OnlinePaymentPage() {
         setLoading(false)
       }
     })()
-  }, [token])
+  }, [token, toast, tCommon])
 
   async function handlePay() {
     if (!payment) return
@@ -41,7 +41,7 @@ export function OnlinePaymentPage() {
       await updateOnlinePaymentStatus(payment.id, 'completed')
       setPaid(true)
       toast('success', tCommon('toast.success'), t('onlinePayment.paymentSuccess'))
-    } catch (err: any) {
+    } catch {
       toast('error', tCommon('toast.error'), t('onlinePayment.paymentFailed'))
     } finally {
       setPaying(false)

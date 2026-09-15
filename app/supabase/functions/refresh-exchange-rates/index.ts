@@ -1,28 +1,7 @@
 // @ts-nocheck — This file runs in Deno (Supabase Edge Function), not in the local TS environment.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-
-// ============================================
-// CONFIG
-// ============================================
-const APP_URL = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
-
-const ALLOWED_ORIGINS = [
-  APP_URL,
-  "http://localhost:5173",
-  "http://localhost:4173",
-]
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || ""
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ""
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
-  }
-}
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
 
 // ============================================
 // FRANKFURTER API (BCE rates — free, no API key)
@@ -75,7 +54,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return handleOptions(corsHeaders)
   }
 
   try {
@@ -86,7 +65,7 @@ serve(async (req) => {
     //
     // Auth: accept either a service role key (cron) or a valid JWT (admin manual trigger)
     const authHeader = req.headers.get("Authorization") || ""
-    const token = authHeader.replace("Bearer ", "")
+    const _token = authHeader.replace("Bearer ", "")
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -142,7 +121,7 @@ serve(async (req) => {
 
     // 4. Store cross-rates between key local currencies (for pricing display)
     // XOF → MAD, XOF → TND, XOF → DZD, XOF → USD, etc.
-    const eurToXof = FIXED_RATES.XOF
+    const _eurToXof = FIXED_RATES.XOF
     const crossRatePairs: { from: string; to: string }[] = [
       { from: "XOF", to: "MAD" },
       { from: "XOF", to: "TND" },

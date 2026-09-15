@@ -50,7 +50,8 @@ async function logAccess(
         action,
       }, 'module_document_access_log', tid)
     )
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // Best-effort logging — don't fail the operation
   }
 }

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, Select } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
 import { useToast } from '@/lib/toast'
-import { getBankAccounts, createBankTransaction, autoMatchBankTransactions, getBanks, getCompanyCountry, validateTemplateResult } from '@/lib/queries'
+import { getBankAccounts, createBankTransaction, autoMatchBankTransactions, getBanks, getCompanyCountry } from '@/lib/queries/banking'
+import { validateTemplateResult } from '@/lib/queries/misc'
 import { extractPdfText, parseBankStatement, getAvailableTemplates, getLearnedTemplates, parseWithLearnedTemplate, parseWithAI, parseWithBankTemplate, type ParsedBankTransaction, type AIParseResult } from '@/lib/pdfBankParser'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText, Zap, CheckCircle, XCircle, AlertTriangle, Loader2, Eye, EyeOff, Sparkles, ThumbsUp, Edit3 } from 'lucide-react'
@@ -39,8 +40,8 @@ export function BankReconciliationPdfPage() {
     try {
       const accs = await getBankAccounts()
       setAccounts(accs || [])
-    } catch (err) {
-      console.error('Failed to load bank accounts:', err)
+    } catch (err: any) { console.error('Failed to load bank accounts:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -49,8 +50,8 @@ export function BankReconciliationPdfPage() {
       const countryCode = await getCompanyCountry()
       const bankList = await getBanks(countryCode || undefined)
       setBanks(bankList || [])
-    } catch (err) {
-      console.error('Failed to load banks:', err)
+    } catch (err: any) { console.error('Failed to load banks:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -58,15 +59,15 @@ export function BankReconciliationPdfPage() {
     try {
       const learned = await getLearnedTemplates()
       setLearnedTemplates(learned)
-    } catch (err) {
-      console.error('Failed to load learned templates:', err)
+    } catch (err: any) { console.error('Failed to load learned templates:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
   useEffect(() => {
-    loadAccounts()
-    loadBanks()
-    loadLearnedTemplates()
+    loadAccounts().catch(err => console.error('loadAccounts:', err))
+    loadBanks().catch(err => console.error('loadBanks:', err))
+    loadLearnedTemplates().catch(err => console.error('loadLearnedTemplates:', err))
   }, [])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { Modal } from './Modal'
 import { getTaskComments, addTaskComment } from '@/lib/queries/projectManagement'
 import type { TaskComment } from '@/types/projectManagement'
@@ -12,6 +13,8 @@ interface CommentCellColumnProps {
 
 export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [comments, setComments] = useState<TaskComment[]>([])
   const [content, setContent] = useState('')
@@ -21,13 +24,15 @@ export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
     try {
       const data = await getTaskComments(taskId)
       setComments(data)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [taskId])
+  }, [taskId, toast, tCommon])
 
   useEffect(() => {
-    if (open) loadComments()
+    if (open) loadComments().catch(err => console.error('loadComments:', err))
   }, [open, loadComments])
 
   async function handleSend() {
@@ -37,8 +42,10 @@ export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
       await addTaskComment(taskId, content.trim())
       setContent('')
       await loadComments()
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSending(false)
     }

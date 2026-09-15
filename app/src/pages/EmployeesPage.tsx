@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries'
+import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries/payroll'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Users, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function EmployeesPage() {
   const { toast } = useToast()
@@ -22,12 +23,12 @@ const [employees, setEmployees] = useState<Employee[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try { setEmployees(await getEmployees()) } catch (err) { console.error(err); toast('error', tCommon('common.error'), tCommon('common.error')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteEmployee(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 

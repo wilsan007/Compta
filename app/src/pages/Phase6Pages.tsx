@@ -47,7 +47,7 @@ export function BatchEntryPage() {
       const [s, j] = await Promise.all([getBatchEntrySessions(), getJournals()])
       setSessions(s || [])
       setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -120,7 +120,7 @@ export function AutoLabelRulesPage() {
     try {
       const [r, j] = await Promise.all([getAutoLabelRules(), getJournals()])
       setRules(r || []); setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -198,7 +198,7 @@ export function ExtournePage() {
     try {
       const [l, e] = await Promise.all([getExtourneLogs(), getJournalEntries()])
       setLogs(l || []); setEntries((e || []).filter((x: any) => x.status === 'posted'))
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -263,7 +263,7 @@ export function CarryForwardPage() {
     try {
       const [l, y] = await Promise.all([getCarryForwardLogs(), getFiscalYears()])
       setLogs(l || []); setYears(y || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -323,7 +323,7 @@ export function LettrageDifferencesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setDiffs(await getLettrageDifferences() || []) } catch { } finally { setLoading(false) }
+    try { setDiffs(await getLettrageDifferences() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -369,7 +369,7 @@ export function AccountingControlsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setRuns(await getAccountingControlRuns() || []) } catch { } finally { setLoading(false) }
+    try { setRuns(await getAccountingControlRuns() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -439,7 +439,7 @@ export function CashControlPage() {
     try {
       const [s, j] = await Promise.all([getCashControlSessions(), getJournals()])
       setSessions(s || []); setJournals((j || []).filter(x => x.type === 'cash'))
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -527,7 +527,7 @@ export function FECAttestationPage() {
     try {
       const [a, y] = await Promise.all([getFECAttestations(), getFiscalYears()])
       setAttestations(a || []); setYears(y || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -624,7 +624,7 @@ export function TierRIBsPage() {
     try {
       const [r, tp] = await Promise.all([getTierRIBs(), getThirdPartyAccounts()])
       setRibs(r || []); setThirdParties(tp || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -701,7 +701,7 @@ export function IFRSAdjustmentsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getIFRSAdjustments() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getIFRSAdjustments() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -778,7 +778,7 @@ export function TaxPaymentsPage() {
     try {
       const [p, b] = await Promise.all([getTaxPayments(), getBankAccounts()])
       setItems(p || []); setBankAccounts(b || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -868,7 +868,7 @@ export function CustomReportTemplatesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getCustomReportTemplates() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getCustomReportTemplates() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -949,7 +949,7 @@ export function DeferredPrintingPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getDeferredPrintingJobs() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getDeferredPrintingJobs() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -1022,7 +1022,7 @@ export function JournalAccessRightsPage() {
     try {
       const [r, j] = await Promise.all([getJournalAccessRights(), getJournals()])
       setItems(r || []); setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -1097,7 +1097,7 @@ export function VATOnCollectionsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getVATOnCollections() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getVATOnCollections() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 

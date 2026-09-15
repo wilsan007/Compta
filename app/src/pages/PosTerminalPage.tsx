@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Input, Select, Badge, EmptyState, SkeletonTable, PageHeader } from '@/components/ui'
-import { getPosTerminals, createPosTerminal, openPosSession, closePosSession, getActiveSession, createPosTicket, getProducts } from '@/lib/queries'
+import { getPosTerminals, createPosTerminal, openPosSession, closePosSession, getActiveSession, createPosTicket } from '@/lib/queries/posAdvanced'
+import { getProducts } from '@/lib/queries/stock'
 import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
 import { Monitor, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Lock } from 'lucide-react'
@@ -45,7 +46,7 @@ export function PosTerminalPage() {
         toast('error', tCommon('toast.error'), err.message)
       }
     })()
-  }, [])
+  }, [toast, tCommon])
   const [showPayment, setShowPayment] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [amountReceived, setAmountReceived] = useState('0')
@@ -75,7 +76,7 @@ export function PosTerminalPage() {
     } finally {
       setLoading(false)
     }
-  }, [terminalId])
+  }, [terminalId, toast, tCommon])
 
   useEffect(() => { load() }, [load])
 
@@ -191,7 +192,8 @@ export function PosTerminalPage() {
         unit_price: c.unit_price,
         vat_rate: c.vat_rate,
         line_total: c.line_total,
-      })))
+        tenant_id: null,
+      }) as any))
       toast('success', tCommon('toast.success'), t('sale.ticketCreated'))
       setCart([])
       setShowPayment(false)

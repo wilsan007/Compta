@@ -1,16 +1,19 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getStockMovements, getWarehouses } from '@/lib/queries'
+import { getStockMovements, getWarehouses } from '@/lib/queries/stock'
 import { ArrowLeftRight } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 
 const typeColors: Record<string, string> = { in: 'text-[var(--color-success)]', out: 'text-[var(--color-danger)]', transfer: 'text-[var(--color-primary)]', adjustment: 'text-[var(--color-warning)]', initial: 'text-[var(--color-text-secondary)]' }
 
 export function StockMovementsPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [movements, setMovements] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,9 +24,9 @@ export function StockMovementsPage() {
       const [movs, whs] = await Promise.all([getStockMovements(undefined, whFilter || undefined), getWarehouses()])
       setMovements(movs || [])
       setWarehouses(whs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [whFilter])
+  }, [whFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

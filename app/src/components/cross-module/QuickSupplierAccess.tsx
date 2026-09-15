@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { QuickAccessModal } from './QuickAccessModal'
 import { Button, Input, EmptyState, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getSuppliers, createSupplier } from '@/lib/queries'
+import { getSuppliers, createSupplier } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { useModuleAwareAccess } from './useModuleAwareAccess'
 import { Truck, Plus, ExternalLink, Search } from 'lucide-react'
@@ -41,15 +41,15 @@ export function QuickSupplierAccess({ onClose, onSaved, forceInline }: QuickSupp
     setLoading(true)
     try {
       setSuppliers(await getSuppliers())
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       /* ignore */
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => {
-    if (strategy === 'inline') loadData()
+    if (strategy === 'inline') loadData().catch(err => console.error('loadData:', err))
   }, [strategy, loadData])
 
   async function handleSave(e: React.FormEvent) {

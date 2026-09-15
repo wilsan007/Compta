@@ -15,11 +15,12 @@ export async function getEmployeeDocuments(employeeId: string): Promise<Employee
 
 export async function getMyDocuments(): Promise<EmployeeDocument[]> {
   const tid = await getTenantId()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error('Not authenticated')
-  let empQ = supabase.from('employees').select('id').eq('auth_user_id', userData.user.id).single()
+  const { data: userData, error } = await supabase.auth.getUser()
+  if (error) throw error
+  if (!userData?.user) throw new Error('Not authenticated')
+  let empQ = supabase.from('employees').select('id').eq('auth_user_id', userData.user.id)
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: emp, error: empError } = await empQ
+  const { data: emp, error: empError } = await empQ.single()
   if (empError || !emp) throw new Error('Employee not found')
   return getEmployeeDocuments(emp.id)
 }
@@ -38,7 +39,7 @@ export async function uploadEmployeeDocument(employeeId: string, file: File, met
     file_size: file.size,
     mime_type: file.type,
     period: metadata.period || null,
-    uploaded_by: (await supabase.auth.getUser()).user?.email || null,
+    uploaded_by: (await supabase.auth.getUser()).data?.user?.email || null,
     visible_to_employee: metadata.visible_to_employee ?? true,
     requires_acknowledgment: metadata.requires_acknowledgment ?? false,
     acknowledged: false,
@@ -51,17 +52,16 @@ export async function uploadEmployeeDocument(employeeId: string, file: File, met
 }
 
 export async function deleteEmployeeDocument(id: string): Promise<void> {
-  const tid = await getTenantId()
   const { error } = await supabase.from('employee_documents').delete().eq('id', id)
   if (error) throw error
 }
 
 export async function acknowledgeDocument(id: string): Promise<void> {
   const tid = await getTenantId()
-  const { error } = await supabase.from('employee_documents').update(tud({
+  const { error } = await tud(supabase.from('employee_documents').update({
     acknowledged: true,
     acknowledged_at: new Date().toISOString(),
-  }, 'employee_documents', tid)).eq('id', id)
+  }), 'employee_documents', tid).eq('id', id)
   if (error) throw error
 }
 
@@ -100,7 +100,7 @@ export async function distributePaySlips(payRunId: string): Promise<DocumentDist
       retention_years: 50,
     }, 'employee_documents', tid)).select().single()
     if (docError) continue
-    const { data: logRow } = await supabase.from('document_distribution_logs').insert(ti({
+    const { data: logRow, error } = await supabase.from('document_distribution_logs').insert(ti({
       batch_id: batchId,
       employee_document_id: doc.id,
       employee_id: slip.employee_id,
@@ -109,6 +109,7 @@ export async function distributePaySlips(payRunId: string): Promise<DocumentDist
       distributed_at: new Date().toISOString(),
       status: 'distributed',
     }, 'document_distribution_logs', tid)).select().single()
+    if (error) { console.error('distributePaySlips:', error); continue }
     if (logRow) logs.push(logRow as DocumentDistributionLog)
   }
   return logs
@@ -131,8 +132,8 @@ export async function controlBatchBeforeDiffusion(payRunId: string): Promise<{ o
     issues.push('Doublons détectés: certains employés ont plusieurs bulletins')
   }
   for (const slip of payslips) {
-    if (!slip.file_url) {
-      issues.push(`Bulletin manquant pour ${slip.employees?.name || slip.employee_id}`)
+    if (!(slip as any).file_url) {
+      issues.push(`Bulletin manquant pour ${(slip as any).employees?.name || slip.employee_id}`)
     }
   }
   return { ok: issues.length === 0, issues, recipientCount: uniqueEmpIds.length }
@@ -160,23 +161,24 @@ export async function sendDistributionReminders(batchId: string): Promise<void> 
 }
 
 // ============ e-Signature ============
-export async function requestESignature(documentId: string, employeeId: string): Promise<void> {
+export async function requestESignature(documentId: string, _employeeId: string): Promise<void> {
   const tid = await getTenantId()
-  const { error } = await supabase.from('employee_documents').update(tud({
+  const { error } = await tud(supabase.from('employee_documents').update({
     e_signed: false,
-  }, 'employee_documents', tid)).eq('id', documentId)
+  }), 'employee_documents', tid).eq('id', documentId)
   if (error) throw error
 }
 
 export async function signRhDocument(documentId: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: doc } = await supabase.from('employee_documents').select('file_url').eq('id', documentId).single()
+  const { data: doc, error: docError } = await supabase.from('employee_documents').select('file_url').eq('id', documentId).single()
+  if (docError) throw docError
   const hash = doc ? btoa(doc.file_url + Date.now()) : 'unknown'
-  const { error } = await supabase.from('employee_documents').update(tud({
+  const { error } = await tud(supabase.from('employee_documents').update({
     e_signed: true,
     e_signed_at: new Date().toISOString(),
     e_signature_hash: hash,
-  }, 'employee_documents', tid)).eq('id', documentId)
+  }), 'employee_documents', tid).eq('id', documentId)
   if (error) throw error
 }
 
@@ -222,7 +224,7 @@ export async function createRhRequest(data: Omit<RhRequest, 'id' | 'created_at'>
 
 export async function updateRhRequest(id: string, updates: Partial<RhRequest>): Promise<RhRequest> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('rh_requests').update(tud(updates, 'rh_requests', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('rh_requests').update(updates), 'rh_requests', tid).eq('id', id).select().single()
   if (error) throw error
   return data as RhRequest
 }
@@ -259,7 +261,7 @@ export async function createRhKnowledgeBaseArticle(data: Omit<RhKnowledgeBaseArt
 
 export async function updateRhKnowledgeBaseArticle(id: string, updates: Partial<RhKnowledgeBaseArticle>): Promise<RhKnowledgeBaseArticle> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('rh_knowledge_base').update(tud({ ...updates, updated_at: new Date().toISOString() }, 'rh_knowledge_base', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('rh_knowledge_base').update({ ...updates, updated_at: new Date().toISOString() }), 'rh_knowledge_base', tid).eq('id', id).select().single()
   if (error) throw error
   return data as RhKnowledgeBaseArticle
 }
@@ -273,8 +275,10 @@ export async function deleteRhKnowledgeBaseArticle(id: string): Promise<void> {
 }
 
 export async function incrementArticleViews(id: string): Promise<void> {
-  const { data: article } = await supabase.from('rh_knowledge_base').select('views').eq('id', id).single()
+  const tid = await getTenantId()
+  const { data: article, error } = await supabase.from('rh_knowledge_base').select('views').eq('id', id).eq('tenant_id', tid || '').single()
+  if (error) { console.error('incrementArticleViews:', error); return }
   if (article) {
-    await supabase.from('rh_knowledge_base').update({ views: (article.views || 0) + 1 }).eq('id', id)
+    await supabase.from('rh_knowledge_base').update({ views: (article.views || 0) + 1 }).eq('id', id).eq('tenant_id', tid || '')
   }
 }

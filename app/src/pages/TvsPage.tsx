@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getTvsDeclarations, createTvsDeclaration, deleteTvsDeclaration } from '@/lib/queries'
+import { getTvsDeclarations, createTvsDeclaration, deleteTvsDeclaration } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Car, X } from 'lucide-react'
 import type { TvsDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function TvsPage() {
   const { t } = useTranslation('accounting')
@@ -21,17 +22,17 @@ export function TvsPage() {
     try {
       const data = await getTvsDeclarations()
       setDecls(data || [])
-    } catch (err) {
-      console.error('Failed to load TVS declarations:', err)
+    } catch (err: any) { console.error('Failed to load TVS declarations:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('tvs.deleteConfirm'))) return
+    if (!confirmSync(t('tvs.deleteConfirm'))) return
     try {
       await deleteTvsDeclaration(id)
       toast('success', tCommon('common.success'), t('tvs.deleteSuccess'))

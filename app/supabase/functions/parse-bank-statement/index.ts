@@ -15,61 +15,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-// ============================================
-// INLINE RATE LIMITING (shared logic)
-// ============================================
-interface RateLimitEntry { count: number; resetAt: number }
-const rateLimitMap = new Map<string, RateLimitEntry>()
-let lastCleanup = Date.now()
-function cleanupExpired() {
-  const now = Date.now()
-  if (now - lastCleanup < 300_000) return
-  lastCleanup = now
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key)
-  }
-}
-function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  cleanupExpired()
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return true
-  }
-  if (entry.count >= maxRequests) return false
-  entry.count++
-  return true
-}
-function getClientIp(req: Request): string {
-  const xff = req.headers.get("X-Forwarded-For")
-  if (xff) return xff.split(",")[0].trim()
-  const xreal = req.headers.get("X-Real-IP")
-  if (xreal) return xreal.trim()
-  const cfip = req.headers.get("CF-Connecting-IP")
-  if (cfip) return cfip.trim()
-  return "unknown"
-}
-const MAX_BODY_SIZE = 100 * 1024
-async function validateBodySize(req: Request, maxSize: number = MAX_BODY_SIZE): Promise<{ ok: boolean; error?: string }> {
-  const contentLength = req.headers.get("Content-Length")
-  if (contentLength && parseInt(contentLength, 10) > maxSize) {
-    return { ok: false, error: `Body too large (max ${maxSize} bytes)` }
-  }
-  const clone = req.clone()
-  const text = await clone.text()
-  if (text.length > maxSize) {
-    return { ok: false, error: `Body too large (max ${maxSize} bytes)` }
-  }
-  return { ok: true }
-}
-function rateLimitResponse(corsHeaders: Record<string, string>, retryAfter: number = 60): Response {
-  return new Response(
-    JSON.stringify({ error: "Trop de requêtes. Réessayez plus tard." }),
-    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(retryAfter) } },
-  )
-}
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
+import { checkRateLimit, getClientIp, validateBodySize, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 interface PreviousAttempt {
   date_pattern: string;
@@ -124,26 +71,10 @@ interface ParseResponse {
   warnings: string[];
 }
 
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev",
-  "http://localhost:5173",
-  "http://localhost:4173",
-];
-
 const MAX_INPUT_CHARS = 15000;
 const MAX_TRANSACTIONS = 500;
 const OPENAI_TIMEOUT_MS = 30_000;
 const OPENAI_MAX_RETRIES = 3;
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Vary": "Origin",
-  } as const;
-}
 
 function isValidDate(s: string): boolean {
   if (!s || typeof s !== "string") return false;
@@ -286,7 +217,7 @@ serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return handleOptions(corsHeaders);
   }
 
   if (req.method !== "POST") {

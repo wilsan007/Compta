@@ -1,232 +1,310 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from '@/lib/theme'
 import { ToastProvider } from '@/lib/toast'
 import { AuthProvider } from '@/lib/auth'
 import { LegislationProvider } from '@/lib/legislation'
-import { ProtectedLayout, AdminRoute } from '@/components/ProtectedRoute'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { HomePage } from '@/pages/HomePage'
-import { LandingPage } from '@/pages/LandingPage'
-import { TermsPage } from '@/pages/TermsPage'
-import { PrivacyPage } from '@/pages/PrivacyPage'
-import { LoginPage } from '@/pages/LoginPage'
-import { CustomersPage } from '@/pages/CustomersPage'
-import { InvoicesPage } from '@/pages/InvoicesPage'
-import { SuppliersPage } from '@/pages/SuppliersPage'
-import { PurchaseInvoicesPage } from '@/pages/PurchaseInvoicesPage'
-import { BankAccountsPage } from '@/pages/BankAccountsPage'
-import { ReportsPage } from '@/pages/ReportsPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { AccountingDashboardPage } from '@/pages/AccountingDashboardPage'
-import { JournalEntriesPage } from '@/pages/JournalEntriesPage'
-import { GeneralLedgerPage } from '@/pages/GeneralLedgerPage'
-import { TrialBalancePage } from '@/pages/TrialBalancePage'
-import { ChartAccountsPage } from '@/pages/ChartAccountsPage'
-import { QuotesPage } from '@/pages/QuotesPage'
-import { CreditNotesPage } from '@/pages/CreditNotesPage'
-import { RecurringInvoicesPage } from '@/pages/RecurringInvoicesPage'
-import { ProductsPage } from '@/pages/ProductsPage'
-import { PurchaseCreditNotesPage } from '@/pages/PurchaseCreditNotesPage'
-import { BankTransactionsPage } from '@/pages/BankTransactionsPage'
-import { BankReconciliationPage } from '@/pages/BankReconciliationPage'
-import { BankReconciliationPdfPage } from '@/pages/BankReconciliationPdfPage'
-import { BankRulesPage } from '@/pages/BankRulesPage'
-import { BankSyncPage } from '@/pages/BankSyncPage'
-import { BalanceSheetPage } from '@/pages/BalanceSheetPage'
-import { CashFlowPage } from '@/pages/CashFlowPage'
-import { VatReturnsPage } from '@/pages/VatReturnsPage'
-import { JournalsReportPage } from '@/pages/JournalsReportPage'
-import { ProjectsPage } from '@/pages/ProjectsPage'
-import { ProjectManagementPage } from '@/pages/ProjectManagementPage'
-import { FixedAssetsPage } from '@/pages/FixedAssetsPage'
-import { EmployeesPage } from '@/pages/EmployeesPage'
-import { PayRunsPage } from '@/pages/PayRunsPage'
-import { TimesheetsPage } from '@/pages/TimesheetsPage'
-import { SalesDashboardPage } from '@/pages/SalesDashboardPage'
-import { PurchasesDashboardPage } from '@/pages/PurchasesDashboardPage'
-import { BankingDashboardPage } from '@/pages/BankingDashboardPage'
-import { HRDashboardPage } from '@/pages/HRDashboardPage'
-import { CurrenciesPage } from '@/pages/CurrenciesPage'
-import { ExchangeRatesPage } from '@/pages/ExchangeRatesPage'
-import { WorkspacePage } from '@/pages/WorkspacePage'
-import { JournalsPage } from '@/pages/JournalsPage'
-import { FiscalYearsPage } from '@/pages/FiscalYearsPage'
-import { EntryTemplatesPage } from '@/pages/EntryTemplatesPage'
-import { ThirdPartyAccountsPage } from '@/pages/ThirdPartyAccountsPage'
-import { PaymentGenerationPage } from '@/pages/PaymentGenerationPage'
-import { AccountingHomePage } from '@/pages/AccountingHomePage'
-import { JournalSaisiePage } from '@/pages/JournalSaisiePage'
-import { LettragePage } from '@/pages/LettragePage'
-import { SearchEntriesPage } from '@/pages/SearchEntriesPage'
-import { JournalClosurePage } from '@/pages/JournalClosurePage'
-import { FiscalYearClosurePage } from '@/pages/FiscalYearClosurePage'
-import { RecurringEntriesPage } from '@/pages/RecurringEntriesPage'
-import { RegularizationPage } from '@/pages/RegularizationPage'
-import { PurchaseInvoiceApprovalPage } from '@/pages/PurchaseInvoiceApprovalPage'
-import { PaymentDelayReportPage } from '@/pages/PaymentDelayReportPage'
-import { CurrencyRevaluationPage } from '@/pages/CurrencyRevaluationPage'
-import { PaymentRemindersPage } from '@/pages/PaymentRemindersPage'
-import { AnalyticPlansPage } from '@/pages/AnalyticPlansPage'
-import { DistributionGrillsPage } from '@/pages/DistributionGrillsPage'
-import { BankReconciliationRulesPage } from '@/pages/BankReconciliationRulesPage'
-import { BankStatementImportPage } from '@/pages/BankStatementImportPage'
-import { ExchangeGainLossPage } from '@/pages/ExchangeGainLossPage'
-import { CheckBooksPage } from '@/pages/CheckBooksPage'
-import { EdiTvaPage } from '@/pages/EdiTvaPage'
-import { TvsPage } from '@/pages/TvsPage'
-import { ProgressiveBalancePage } from '@/pages/ProgressiveBalancePage'
-import { CompanySettingsPage } from '@/pages/CompanySettingsPage'
-import { TaxGridSettingsPage } from '@/pages/TaxGridSettingsPage'
-import { FiscalBackupPage } from '@/pages/FiscalBackupPage'
-import { BrouillardPage } from '@/pages/BrouillardPage'
-import { AgedBalancePage } from '@/pages/AgedBalancePage'
-import { EcheancierPage } from '@/pages/EcheancierPage'
-import { GrandLivreTiersPage } from '@/pages/GrandLivreTiersPage'
-import { FECExportPage } from '@/pages/FECExportPage'
-import { SIGPage } from '@/pages/SIGPage'
-import { AnalyticBalancePage } from '@/pages/AnalyticBalancePage'
-import { AnalyticSectionsPage } from '@/pages/AnalyticSectionsPage'
-import { BudgetsPage } from '@/pages/BudgetsPage'
-import { TreasuryDashboardPage } from '@/pages/TreasuryDashboardPage'
-import { TreasuryForecastPage } from '@/pages/TreasuryForecastPage'
-import { PaymentOrdersPage } from '@/pages/PaymentOrdersPage'
-import { SupplierInvoiceAutomationPage } from '@/pages/SupplierInvoiceAutomationPage'
-import { CollectionDashboardPage } from '@/pages/CollectionDashboardPage'
-import { SalesOrdersPage } from '@/pages/SalesOrdersPage'
-import { DeliveryNotesPage } from '@/pages/DeliveryNotesPage'
-import { CustomerPaymentsPage } from '@/pages/CustomerPaymentsPage'
-import { PurchaseOrdersPage } from '@/pages/PurchaseOrdersPage'
-import { GoodsReceiptPage } from '@/pages/GoodsReceiptPage'
-import { SupplierPaymentsPage } from '@/pages/SupplierPaymentsPage'
-import { WarehousesPage } from '@/pages/WarehousesPage'
-import { StockQuantitiesPage } from '@/pages/StockQuantitiesPage'
-import { StockMovementsPage } from '@/pages/StockMovementsPage'
-import { InventoryPage } from '@/pages/InventoryPage'
-import { ReorderPage } from '@/pages/ReorderPage'
-import { PriceListsPage } from '@/pages/PriceListsPage'
-import { GescomTransferPage } from '@/pages/GescomTransferPage'
-import { BOMPage } from '@/pages/BOMPage'
-import { ManufacturingOrdersPage } from '@/pages/ManufacturingOrdersPage'
-import { RoutingsPage } from '@/pages/RoutingsPage'
-import { MachinesPage } from '@/pages/MachinesPage'
-import { ToolingsPage } from '@/pages/ToolingsPage'
-import { ManufacturingOrderDetailPage } from '@/pages/ManufacturingOrderDetailPage'
-import { SubcontractingOrdersPage, SubcontractingShipmentsPage, SubcontractingReceiptsPage, SubcontractingSupervisorPage } from '@/pages/SubcontractingPages'
-import { MRPPage, MRPPendingDocsPage } from '@/pages/MRPPages'
-import { ForecastsPage } from '@/pages/ForecastsPage'
-import { PlanningPage } from '@/pages/PlanningPage'
-import { WorkflowsPage, EquivalencesPage, OFDocumentAccessPage } from '@/pages/ComplementaryPages'
-import { ProductionDashboardPage } from '@/pages/ProductionDashboardPage'
-import { PaySlipsPage } from '@/pages/PaySlipsPage'
-import { PayrollAccountingPage } from '@/pages/PayrollAccountingPage'
-import { LeaveRequestsPage } from '@/pages/LeaveRequestsPage'
-import { LeaveRulesPage } from '@/pages/settings/LeaveRulesPage'
-import { LeaveBalancesPage } from '@/pages/hr/LeaveBalancesPage'
-import { LeavePlanningPage } from '@/pages/hr/LeavePlanningPage'
-import { ManagerLeaveApprovalsPage } from '@/pages/employee/ManagerLeaveApprovalsPage'
-import { PayrollPreparationPage } from '@/pages/payroll/PayrollPreparationPage'
-import { MealVouchersPage } from '@/pages/payroll/MealVouchersPage'
-import { SepaPaymentsPage } from '@/pages/payroll/SepaPaymentsPage'
-import { ContractsPage } from '@/pages/ContractsPage'
-import { LegalDeclarationsPage } from '@/pages/LegalDeclarationsPage'
-import { FinancialDashboardPage } from '@/pages/FinancialDashboardPage'
-import { BIReportingPage } from '@/pages/BIReportingPage'
-import { BudgetTrackingPage } from '@/pages/BudgetTrackingPage'
-import { BudgetCommitmentsPage } from '@/pages/BudgetCommitmentsPage'
-import { DataExportPage } from '@/pages/DataExportPage'
-import { ImportPage } from '@/pages/ImportPage'
-import { TeamPage } from '@/pages/TeamPage'
-import { OnboardingPage } from '@/pages/OnboardingPage'
-import { SignupPage } from '@/pages/SignupPage'
-import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
-import { TenantSelectionPage } from '@/pages/TenantSelectionPage'
-import { AuditLogPage } from '@/pages/AuditLogPage'
-import { TrainingPage } from '@/pages/TrainingPage'
-import { SocialDeclarationsPage } from '@/pages/hr/SocialDeclarationsPage'
-import { BdesPage } from '@/pages/hr/BdesPage'
-import { DocumentManagementPage } from '@/pages/hr/DocumentManagementPage'
-import { RhRequestsPage } from '@/pages/hr/RhRequestsPage'
-import { RhKnowledgeBasePage } from '@/pages/hr/RhKnowledgeBasePage'
-import { EmployeeDocumentsPage as EmployeeSelfDocsPage } from '@/pages/employee/EmployeeDocumentsPage'
-import { EInvoicePage } from '@/pages/EInvoicePage'
-import { SageImportPage } from '@/pages/SageImportPage'
-import { AccountantPortalPage } from '@/pages/AccountantPortalPage'
-import { SepaTransferPage } from '@/pages/SepaTransferPage'
-import { PayrollCalcPage } from '@/pages/PayrollCalcPage'
-import { CorporateTaxCalcPage } from '@/pages/CorporateTaxCalcPage'
-import { LiasseFiscalePage } from '@/pages/LiasseFiscalePage'
-import { MultiCompanyPage } from '@/pages/MultiCompanyPage'
-import { ModuleHubPage, SubGroupHubPage } from '@/components/ModuleHub'
-import { ModuleHomePage } from '@/components/ModuleHomePage'
-import { ProspectsPage, RepresentativesPage, WarehouseLocationsPage, QualityCheckPage, PickListPage, SerialNumbersPage, ProductBatchesPage, DocumentTemplatesPage, DeliverySchedulePage, ProductSubstitutesPage, DormantStockPage } from '@/pages/Phase2Pages'
-import { PromotionsPage } from '@/pages/PromotionsPage'
-import { ProductGridsPage } from '@/pages/ProductGridsPage'
-import { StockAlertsPage } from '@/pages/StockAlertsPage'
-import { OpportunitiesPage } from '@/pages/crm/OpportunitiesPage'
-import { ActivitiesPage } from '@/pages/crm/ActivitiesPage'
-import { CampaignsPage } from '@/pages/crm/CampaignsPage'
-import { TerritoriesPage } from '@/pages/crm/TerritoriesPage'
-import { SalesForecastPage } from '@/pages/crm/SalesForecastPage'
-import { TicketsPage } from '@/pages/crm/TicketsPage'
-import { ServiceContractsPage } from '@/pages/crm/ServiceContractsPage'
-import { KnowledgeBasePage } from '@/pages/crm/KnowledgeBasePage'
-import { CustomerPortalPage } from '@/pages/crm/CustomerPortalPage'
-import { MCFPage, TreasuryTransfersPage, CreditLinesPage, InvestmentsPage, ValueDateTrackingPage, TreasuryRecurringPage, ConsolidatedTreasuryPage } from '@/pages/Phase3Pages'
-import { PayrollComponentsPage, PayrollTemplatesPage, SalaryAdvancesPage, DSNPage, DPAEPage, LegalWatchPage, ExpenseReportsPage, PayRecallsPage, PayrollArchivePage, InterviewsPage } from '@/pages/Phase4Pages'
-import { AssetDepreciationPlansPage, AssetFamiliesPage, AssetRevaluationPage, BatchDisposalPage, AssetFromEntryPage } from '@/pages/Phase5Pages'
-import { BatchEntryPage, AutoLabelRulesPage, ExtournePage, CarryForwardPage, LettrageDifferencesPage, AccountingControlsPage, CashControlPage, FECAttestationPage, TierRIBsPage, IFRSAdjustmentsPage, TaxPaymentsPage, CustomReportTemplatesPage, DeferredPrintingPage, JournalAccessRightsPage, VATOnCollectionsPage } from '@/pages/Phase6Pages'
-import { TaxRatesPage } from '@/pages/TaxRatesPage'
-import { FiscalPositionsPage } from '@/pages/FiscalPositionsPage'
-import { AccountTagsPage } from '@/pages/AccountTagsPage'
-import { PaymentTermsPage } from '@/pages/PaymentTermsPage'
-import { SaisieParPiecePage } from '@/pages/SaisieParPiecePage'
-import { JustificatifSoldePage } from '@/pages/JustificatifSoldePage'
-import { EtatRapprochementPage } from '@/pages/EtatRapprochementPage'
-import { ReminderLevelsPage } from '@/pages/ReminderLevelsPage'
-import { RevisionCyclesPage } from '@/pages/RevisionCyclesPage'
-import { FusionComptesPage } from '@/pages/FusionComptesPage'
-import { PlanReportingPage } from '@/pages/PlanReportingPage'
-import { CompactionPage } from '@/pages/CompactionPage'
-import { RGPDPage } from '@/pages/RGPDPage'
-import { GridTemplatesPage, PaymentTemplatesComptaPage, StandardLabelsPage, AnalyticJournalCodesPage } from '@/pages/Phase7DPages'
-import { AnalyticODEntryPage, ThirdPartyInquiryPage, AnalyticInquiryPage, ReimputationPage } from '@/pages/Phase7DInquiryPages'
-import { PartnerCategoriesPage } from '@/pages/PartnerCategoriesPage'
-import { Customer360Page } from '@/pages/Customer360Page'
-import { PurchaseRequestsPage } from '@/pages/PurchaseRequestsPage'
-import { SupplierPriceListsPage } from '@/pages/SupplierPriceListsPage'
-import { SupplierDeliverySchedulePage } from '@/pages/SupplierDeliverySchedulePage'
-import { PosTerminalPage } from '@/pages/PosTerminalPage'
-import { PosSessionsPage } from '@/pages/PosSessionsPage'
-import { PosStatsPage } from '@/pages/PosStatsPage'
-import { OnlinePaymentPage } from '@/pages/OnlinePaymentPage'
-import { SharedDocumentPage } from '@/pages/SharedDocumentPage'
-import { RevenueSimulationPage } from '@/pages/sales/RevenueSimulationPage'
-import { MarginAnalysisPage } from '@/pages/sales/MarginAnalysisPage'
-import { WorkHardshipPage } from '@/pages/WorkHardshipPage'
-import { CareerHistoryPage } from '@/pages/CareerHistoryPage'
-import { CPFPage } from '@/pages/CPFPage'
-import { EmployeeDocumentsPage } from '@/pages/EmployeeDocumentsPage'
-import { WorkStoppagesPage } from '@/pages/WorkStoppagesPage'
-import { MedicalExamsPage } from '@/pages/MedicalExamsPage'
-import { ExpenseCategoriesPage } from '@/pages/ExpenseCategoriesPage'
-import { EmployeeExitPage } from '@/pages/EmployeeExitPage'
-import { InterviewCampaignsPage } from '@/pages/InterviewCampaignsPage'
-import { EmployeeExpensesPage } from '@/pages/EmployeeExpensesPage'
-import { ManagerExpenseApprovalsPage } from '@/pages/ManagerExpenseApprovalsPage'
-import { EmployeeInterviewsPage } from '@/pages/EmployeeInterviewsPage'
-import { EmployeeLayout } from '@/components/EmployeeLayout'
-import { EmployeeDashboardPage } from '@/pages/employee/EmployeeDashboardPage'
-import { EmployeeProfilePage } from '@/pages/employee/EmployeeProfilePage'
-import { EmployeeLeavesPage } from '@/pages/employee/EmployeeLeavesPage'
-import { RhReportsPage } from '@/pages/hr/RhReportsPage'
+import { ConfirmProvider } from '@/lib/hooks/useConfirm'
+import { ProtectedLayout, AdminRoute, ProtectedRoute } from '@/components/ProtectedRoute'
+import { AppErrorBoundary } from '@/components/AppErrorBoundary'
+
+// PRF-02 : Composants de layout lazy-loaded pour réduire le bundle initial
+const ModuleHubPage = lazy(() => import('@/components/ModuleHub').then(m => ({ default: m.ModuleHubPage })))
+const SubGroupHubPage = lazy(() => import('@/components/ModuleHub').then(m => ({ default: m.SubGroupHubPage })))
+const ModuleHomePage = lazy(() => import('@/components/ModuleHomePage').then(m => ({ default: m.ModuleHomePage })))
+const EmployeeLayout = lazy(() => import('@/components/EmployeeLayout').then(m => ({ default: m.EmployeeLayout })))
+
+// PRF-02 : Pages publiques lazy-loaded pour réduire le bundle initial
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })))
+const TermsPage = lazy(() => import('@/pages/TermsPage').then(m => ({ default: m.TermsPage })))
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })))
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })))
+
+// Lazy-loaded pages — split into separate chunks so the landing page bundle stays small
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
+const CustomersPage = lazy(() => import('@/pages/CustomersPage').then(m => ({ default: m.CustomersPage })))
+const InvoicesPage = lazy(() => import('@/pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
+const SuppliersPage = lazy(() => import('@/pages/SuppliersPage').then(m => ({ default: m.SuppliersPage })))
+const PurchaseInvoicesPage = lazy(() => import('@/pages/PurchaseInvoicesPage').then(m => ({ default: m.PurchaseInvoicesPage })))
+const BankAccountsPage = lazy(() => import('@/pages/BankAccountsPage').then(m => ({ default: m.BankAccountsPage })))
+const ReportsPage = lazy(() => import('@/pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const AccountingDashboardPage = lazy(() => import('@/pages/AccountingDashboardPage').then(m => ({ default: m.AccountingDashboardPage })))
+const JournalEntriesPage = lazy(() => import('@/pages/JournalEntriesPage').then(m => ({ default: m.JournalEntriesPage })))
+const GeneralLedgerPage = lazy(() => import('@/pages/GeneralLedgerPage').then(m => ({ default: m.GeneralLedgerPage })))
+const TrialBalancePage = lazy(() => import('@/pages/TrialBalancePage').then(m => ({ default: m.TrialBalancePage })))
+const ChartAccountsPage = lazy(() => import('@/pages/ChartAccountsPage').then(m => ({ default: m.ChartAccountsPage })))
+const QuotesPage = lazy(() => import('@/pages/QuotesPage').then(m => ({ default: m.QuotesPage })))
+const CreditNotesPage = lazy(() => import('@/pages/CreditNotesPage').then(m => ({ default: m.CreditNotesPage })))
+const RecurringInvoicesPage = lazy(() => import('@/pages/RecurringInvoicesPage').then(m => ({ default: m.RecurringInvoicesPage })))
+const ProductsPage = lazy(() => import('@/pages/ProductsPage').then(m => ({ default: m.ProductsPage })))
+const PurchaseCreditNotesPage = lazy(() => import('@/pages/PurchaseCreditNotesPage').then(m => ({ default: m.PurchaseCreditNotesPage })))
+const BankTransactionsPage = lazy(() => import('@/pages/BankTransactionsPage').then(m => ({ default: m.BankTransactionsPage })))
+const BankReconciliationPage = lazy(() => import('@/pages/BankReconciliationPage').then(m => ({ default: m.BankReconciliationPage })))
+const BankReconciliationPdfPage = lazy(() => import('@/pages/BankReconciliationPdfPage').then(m => ({ default: m.BankReconciliationPdfPage })))
+const BankRulesPage = lazy(() => import('@/pages/BankRulesPage').then(m => ({ default: m.BankRulesPage })))
+const BankSyncPage = lazy(() => import('@/pages/BankSyncPage').then(m => ({ default: m.BankSyncPage })))
+const BalanceSheetPage = lazy(() => import('@/pages/BalanceSheetPage').then(m => ({ default: m.BalanceSheetPage })))
+const CashFlowPage = lazy(() => import('@/pages/CashFlowPage').then(m => ({ default: m.CashFlowPage })))
+const VatReturnsPage = lazy(() => import('@/pages/VatReturnsPage').then(m => ({ default: m.VatReturnsPage })))
+const JournalsReportPage = lazy(() => import('@/pages/JournalsReportPage').then(m => ({ default: m.JournalsReportPage })))
+const ProjectsPage = lazy(() => import('@/pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
+const ProjectManagementPage = lazy(() => import('@/pages/ProjectManagementPage').then(m => ({ default: m.ProjectManagementPage })))
+const FixedAssetsPage = lazy(() => import('@/pages/FixedAssetsPage').then(m => ({ default: m.FixedAssetsPage })))
+const EmployeesPage = lazy(() => import('@/pages/EmployeesPage').then(m => ({ default: m.EmployeesPage })))
+const PayRunsPage = lazy(() => import('@/pages/PayRunsPage').then(m => ({ default: m.PayRunsPage })))
+const TimesheetsPage = lazy(() => import('@/pages/TimesheetsPage').then(m => ({ default: m.TimesheetsPage })))
+const SalesDashboardPage = lazy(() => import('@/pages/SalesDashboardPage').then(m => ({ default: m.SalesDashboardPage })))
+const PurchasesDashboardPage = lazy(() => import('@/pages/PurchasesDashboardPage').then(m => ({ default: m.PurchasesDashboardPage })))
+const BankingDashboardPage = lazy(() => import('@/pages/BankingDashboardPage').then(m => ({ default: m.BankingDashboardPage })))
+const HRDashboardPage = lazy(() => import('@/pages/HRDashboardPage').then(m => ({ default: m.HRDashboardPage })))
+const CurrenciesPage = lazy(() => import('@/pages/CurrenciesPage').then(m => ({ default: m.CurrenciesPage })))
+const ExchangeRatesPage = lazy(() => import('@/pages/ExchangeRatesPage').then(m => ({ default: m.ExchangeRatesPage })))
+const WorkspacePage = lazy(() => import('@/pages/WorkspacePage').then(m => ({ default: m.WorkspacePage })))
+const JournalsPage = lazy(() => import('@/pages/JournalsPage').then(m => ({ default: m.JournalsPage })))
+const FiscalYearsPage = lazy(() => import('@/pages/FiscalYearsPage').then(m => ({ default: m.FiscalYearsPage })))
+const EntryTemplatesPage = lazy(() => import('@/pages/EntryTemplatesPage').then(m => ({ default: m.EntryTemplatesPage })))
+const ThirdPartyAccountsPage = lazy(() => import('@/pages/ThirdPartyAccountsPage').then(m => ({ default: m.ThirdPartyAccountsPage })))
+const PaymentGenerationPage = lazy(() => import('@/pages/PaymentGenerationPage').then(m => ({ default: m.PaymentGenerationPage })))
+const AccountingHomePage = lazy(() => import('@/pages/AccountingHomePage').then(m => ({ default: m.AccountingHomePage })))
+const JournalSaisiePage = lazy(() => import('@/pages/JournalSaisiePage').then(m => ({ default: m.JournalSaisiePage })))
+const LettragePage = lazy(() => import('@/pages/LettragePage').then(m => ({ default: m.LettragePage })))
+const SearchEntriesPage = lazy(() => import('@/pages/SearchEntriesPage').then(m => ({ default: m.SearchEntriesPage })))
+const JournalClosurePage = lazy(() => import('@/pages/JournalClosurePage').then(m => ({ default: m.JournalClosurePage })))
+const FiscalYearClosurePage = lazy(() => import('@/pages/FiscalYearClosurePage').then(m => ({ default: m.FiscalYearClosurePage })))
+const RecurringEntriesPage = lazy(() => import('@/pages/RecurringEntriesPage').then(m => ({ default: m.RecurringEntriesPage })))
+const RegularizationPage = lazy(() => import('@/pages/RegularizationPage').then(m => ({ default: m.RegularizationPage })))
+const PurchaseInvoiceApprovalPage = lazy(() => import('@/pages/PurchaseInvoiceApprovalPage').then(m => ({ default: m.PurchaseInvoiceApprovalPage })))
+const PaymentDelayReportPage = lazy(() => import('@/pages/PaymentDelayReportPage').then(m => ({ default: m.PaymentDelayReportPage })))
+const CurrencyRevaluationPage = lazy(() => import('@/pages/CurrencyRevaluationPage').then(m => ({ default: m.CurrencyRevaluationPage })))
+const PaymentRemindersPage = lazy(() => import('@/pages/PaymentRemindersPage').then(m => ({ default: m.PaymentRemindersPage })))
+const AnalyticPlansPage = lazy(() => import('@/pages/AnalyticPlansPage').then(m => ({ default: m.AnalyticPlansPage })))
+const DistributionGrillsPage = lazy(() => import('@/pages/DistributionGrillsPage').then(m => ({ default: m.DistributionGrillsPage })))
+const BankReconciliationRulesPage = lazy(() => import('@/pages/BankReconciliationRulesPage').then(m => ({ default: m.BankReconciliationRulesPage })))
+const BankStatementImportPage = lazy(() => import('@/pages/BankStatementImportPage').then(m => ({ default: m.BankStatementImportPage })))
+const ExchangeGainLossPage = lazy(() => import('@/pages/ExchangeGainLossPage').then(m => ({ default: m.ExchangeGainLossPage })))
+const CheckBooksPage = lazy(() => import('@/pages/CheckBooksPage').then(m => ({ default: m.CheckBooksPage })))
+const EdiTvaPage = lazy(() => import('@/pages/EdiTvaPage').then(m => ({ default: m.EdiTvaPage })))
+const TvsPage = lazy(() => import('@/pages/TvsPage').then(m => ({ default: m.TvsPage })))
+const ProgressiveBalancePage = lazy(() => import('@/pages/ProgressiveBalancePage').then(m => ({ default: m.ProgressiveBalancePage })))
+const CompanySettingsPage = lazy(() => import('@/pages/CompanySettingsPage').then(m => ({ default: m.CompanySettingsPage })))
+const TaxGridSettingsPage = lazy(() => import('@/pages/TaxGridSettingsPage').then(m => ({ default: m.TaxGridSettingsPage })))
+const FiscalBackupPage = lazy(() => import('@/pages/FiscalBackupPage').then(m => ({ default: m.FiscalBackupPage })))
+const BrouillardPage = lazy(() => import('@/pages/BrouillardPage').then(m => ({ default: m.BrouillardPage })))
+const AgedBalancePage = lazy(() => import('@/pages/AgedBalancePage').then(m => ({ default: m.AgedBalancePage })))
+const EcheancierPage = lazy(() => import('@/pages/EcheancierPage').then(m => ({ default: m.EcheancierPage })))
+const GrandLivreTiersPage = lazy(() => import('@/pages/GrandLivreTiersPage').then(m => ({ default: m.GrandLivreTiersPage })))
+const FECExportPage = lazy(() => import('@/pages/FECExportPage').then(m => ({ default: m.FECExportPage })))
+const SIGPage = lazy(() => import('@/pages/SIGPage').then(m => ({ default: m.SIGPage })))
+const AnalyticBalancePage = lazy(() => import('@/pages/AnalyticBalancePage').then(m => ({ default: m.AnalyticBalancePage })))
+const AnalyticSectionsPage = lazy(() => import('@/pages/AnalyticSectionsPage').then(m => ({ default: m.AnalyticSectionsPage })))
+const BudgetsPage = lazy(() => import('@/pages/BudgetsPage').then(m => ({ default: m.BudgetsPage })))
+const TreasuryDashboardPage = lazy(() => import('@/pages/TreasuryDashboardPage').then(m => ({ default: m.TreasuryDashboardPage })))
+const TreasuryForecastPage = lazy(() => import('@/pages/TreasuryForecastPage').then(m => ({ default: m.TreasuryForecastPage })))
+const PaymentOrdersPage = lazy(() => import('@/pages/PaymentOrdersPage').then(m => ({ default: m.PaymentOrdersPage })))
+const SupplierInvoiceAutomationPage = lazy(() => import('@/pages/SupplierInvoiceAutomationPage').then(m => ({ default: m.SupplierInvoiceAutomationPage })))
+const CollectionDashboardPage = lazy(() => import('@/pages/CollectionDashboardPage').then(m => ({ default: m.CollectionDashboardPage })))
+const SalesOrdersPage = lazy(() => import('@/pages/SalesOrdersPage').then(m => ({ default: m.SalesOrdersPage })))
+const DeliveryNotesPage = lazy(() => import('@/pages/DeliveryNotesPage').then(m => ({ default: m.DeliveryNotesPage })))
+const CustomerPaymentsPage = lazy(() => import('@/pages/CustomerPaymentsPage').then(m => ({ default: m.CustomerPaymentsPage })))
+const PurchaseOrdersPage = lazy(() => import('@/pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })))
+const GoodsReceiptPage = lazy(() => import('@/pages/GoodsReceiptPage').then(m => ({ default: m.GoodsReceiptPage })))
+const SupplierPaymentsPage = lazy(() => import('@/pages/SupplierPaymentsPage').then(m => ({ default: m.SupplierPaymentsPage })))
+const WarehousesPage = lazy(() => import('@/pages/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
+const StockQuantitiesPage = lazy(() => import('@/pages/StockQuantitiesPage').then(m => ({ default: m.StockQuantitiesPage })))
+const StockMovementsPage = lazy(() => import('@/pages/StockMovementsPage').then(m => ({ default: m.StockMovementsPage })))
+const InventoryPage = lazy(() => import('@/pages/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const ReorderPage = lazy(() => import('@/pages/ReorderPage').then(m => ({ default: m.ReorderPage })))
+const PriceListsPage = lazy(() => import('@/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
+const GescomTransferPage = lazy(() => import('@/pages/GescomTransferPage').then(m => ({ default: m.GescomTransferPage })))
+const BOMPage = lazy(() => import('@/pages/BOMPage').then(m => ({ default: m.BOMPage })))
+const ManufacturingOrdersPage = lazy(() => import('@/pages/ManufacturingOrdersPage').then(m => ({ default: m.ManufacturingOrdersPage })))
+const RoutingsPage = lazy(() => import('@/pages/RoutingsPage').then(m => ({ default: m.RoutingsPage })))
+const MachinesPage = lazy(() => import('@/pages/MachinesPage').then(m => ({ default: m.MachinesPage })))
+const ToolingsPage = lazy(() => import('@/pages/ToolingsPage').then(m => ({ default: m.ToolingsPage })))
+const ManufacturingOrderDetailPage = lazy(() => import('@/pages/ManufacturingOrderDetailPage').then(m => ({ default: m.ManufacturingOrderDetailPage })))
+const SubcontractingOrdersPage = lazy(() => import('@/pages/SubcontractingPages').then(m => ({ default: m.SubcontractingOrdersPage })))
+const SubcontractingShipmentsPage = lazy(() => import('@/pages/SubcontractingPages').then(m => ({ default: m.SubcontractingShipmentsPage })))
+const SubcontractingReceiptsPage = lazy(() => import('@/pages/SubcontractingPages').then(m => ({ default: m.SubcontractingReceiptsPage })))
+const SubcontractingSupervisorPage = lazy(() => import('@/pages/SubcontractingPages').then(m => ({ default: m.SubcontractingSupervisorPage })))
+const MRPPage = lazy(() => import('@/pages/MRPPages').then(m => ({ default: m.MRPPage })))
+const MRPPendingDocsPage = lazy(() => import('@/pages/MRPPages').then(m => ({ default: m.MRPPendingDocsPage })))
+const ForecastsPage = lazy(() => import('@/pages/ForecastsPage').then(m => ({ default: m.ForecastsPage })))
+const PlanningPage = lazy(() => import('@/pages/PlanningPage').then(m => ({ default: m.PlanningPage })))
+const WorkflowsPage = lazy(() => import('@/pages/ComplementaryPages').then(m => ({ default: m.WorkflowsPage })))
+const EquivalencesPage = lazy(() => import('@/pages/ComplementaryPages').then(m => ({ default: m.EquivalencesPage })))
+const OFDocumentAccessPage = lazy(() => import('@/pages/ComplementaryPages').then(m => ({ default: m.OFDocumentAccessPage })))
+const ProductionDashboardPage = lazy(() => import('@/pages/ProductionDashboardPage').then(m => ({ default: m.ProductionDashboardPage })))
+const PaySlipsPage = lazy(() => import('@/pages/PaySlipsPage').then(m => ({ default: m.PaySlipsPage })))
+const PayrollAccountingPage = lazy(() => import('@/pages/PayrollAccountingPage').then(m => ({ default: m.PayrollAccountingPage })))
+const LeaveRequestsPage = lazy(() => import('@/pages/LeaveRequestsPage').then(m => ({ default: m.LeaveRequestsPage })))
+const LeaveRulesPage = lazy(() => import('@/pages/settings/LeaveRulesPage').then(m => ({ default: m.LeaveRulesPage })))
+const ApiWebhooksPage = lazy(() => import('@/pages/settings/ApiWebhooksPage').then(m => ({ default: m.ApiWebhooksPage })))
+const EmailTemplatesPage = lazy(() => import('@/pages/settings/EmailTemplatesPage').then(m => ({ default: m.EmailTemplatesPage })))
+const TwoFactorPage = lazy(() => import('@/pages/settings/TwoFactorPage').then(m => ({ default: m.TwoFactorPage })))
+const ApiDocsPage = lazy(() => import('@/pages/settings/ApiDocsPage').then(m => ({ default: m.ApiDocsPage })))
+const Nf525AuditPage = lazy(() => import('@/pages/settings/Nf525AuditPage').then(m => ({ default: m.Nf525AuditPage })))
+const LeaveBalancesPage = lazy(() => import('@/pages/hr/LeaveBalancesPage').then(m => ({ default: m.LeaveBalancesPage })))
+const LeavePlanningPage = lazy(() => import('@/pages/hr/LeavePlanningPage').then(m => ({ default: m.LeavePlanningPage })))
+const ManagerLeaveApprovalsPage = lazy(() => import('@/pages/employee/ManagerLeaveApprovalsPage').then(m => ({ default: m.ManagerLeaveApprovalsPage })))
+const PayrollPreparationPage = lazy(() => import('@/pages/payroll/PayrollPreparationPage').then(m => ({ default: m.PayrollPreparationPage })))
+const MealVouchersPage = lazy(() => import('@/pages/payroll/MealVouchersPage').then(m => ({ default: m.MealVouchersPage })))
+const SepaPaymentsPage = lazy(() => import('@/pages/payroll/SepaPaymentsPage').then(m => ({ default: m.SepaPaymentsPage })))
+const ContractsPage = lazy(() => import('@/pages/ContractsPage').then(m => ({ default: m.ContractsPage })))
+const LegalDeclarationsPage = lazy(() => import('@/pages/LegalDeclarationsPage').then(m => ({ default: m.LegalDeclarationsPage })))
+const FinancialDashboardPage = lazy(() => import('@/pages/FinancialDashboardPage').then(m => ({ default: m.FinancialDashboardPage })))
+const BIReportingPage = lazy(() => import('@/pages/BIReportingPage').then(m => ({ default: m.BIReportingPage })))
+const BudgetTrackingPage = lazy(() => import('@/pages/BudgetTrackingPage').then(m => ({ default: m.BudgetTrackingPage })))
+const BudgetCommitmentsPage = lazy(() => import('@/pages/BudgetCommitmentsPage').then(m => ({ default: m.BudgetCommitmentsPage })))
+const DataExportPage = lazy(() => import('@/pages/DataExportPage').then(m => ({ default: m.DataExportPage })))
+const ImportPage = lazy(() => import('@/pages/ImportPage').then(m => ({ default: m.ImportPage })))
+const TeamPage = lazy(() => import('@/pages/TeamPage').then(m => ({ default: m.TeamPage })))
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })))
+const SignupPage = lazy(() => import('@/pages/SignupPage').then(m => ({ default: m.SignupPage })))
+const AcceptInvitationPage = lazy(() => import('@/pages/AcceptInvitationPage').then(m => ({ default: m.AcceptInvitationPage })))
+const TenantSelectionPage = lazy(() => import('@/pages/TenantSelectionPage').then(m => ({ default: m.TenantSelectionPage })))
+const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
+const TrainingPage = lazy(() => import('@/pages/TrainingPage').then(m => ({ default: m.TrainingPage })))
+const SocialDeclarationsPage = lazy(() => import('@/pages/hr/SocialDeclarationsPage').then(m => ({ default: m.SocialDeclarationsPage })))
+const BdesPage = lazy(() => import('@/pages/hr/BdesPage').then(m => ({ default: m.BdesPage })))
+const DocumentManagementPage = lazy(() => import('@/pages/hr/DocumentManagementPage').then(m => ({ default: m.DocumentManagementPage })))
+const RhRequestsPage = lazy(() => import('@/pages/hr/RhRequestsPage').then(m => ({ default: m.RhRequestsPage })))
+const RhKnowledgeBasePage = lazy(() => import('@/pages/hr/RhKnowledgeBasePage').then(m => ({ default: m.RhKnowledgeBasePage })))
+const EmployeeSelfDocsPage = lazy(() => import('@/pages/employee/EmployeeDocumentsPage').then(m => ({ default: m.EmployeeDocumentsPage })))
+const EInvoicePage = lazy(() => import('@/pages/EInvoicePage').then(m => ({ default: m.EInvoicePage })))
+const SageImportPage = lazy(() => import('@/pages/SageImportPage').then(m => ({ default: m.SageImportPage })))
+const AccountantPortalPage = lazy(() => import('@/pages/AccountantPortalPage').then(m => ({ default: m.AccountantPortalPage })))
+const SepaTransferPage = lazy(() => import('@/pages/SepaTransferPage').then(m => ({ default: m.SepaTransferPage })))
+const PayrollCalcPage = lazy(() => import('@/pages/PayrollCalcPage').then(m => ({ default: m.PayrollCalcPage })))
+const CorporateTaxCalcPage = lazy(() => import('@/pages/CorporateTaxCalcPage').then(m => ({ default: m.CorporateTaxCalcPage })))
+const LiasseFiscalePage = lazy(() => import('@/pages/LiasseFiscalePage').then(m => ({ default: m.LiasseFiscalePage })))
+const MultiCompanyPage = lazy(() => import('@/pages/MultiCompanyPage').then(m => ({ default: m.MultiCompanyPage })))
+const ProspectsPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.ProspectsPage })))
+const RepresentativesPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.RepresentativesPage })))
+const WarehouseLocationsPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.WarehouseLocationsPage })))
+const QualityCheckPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.QualityCheckPage })))
+const PickListPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.PickListPage })))
+const SerialNumbersPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.SerialNumbersPage })))
+const ProductBatchesPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.ProductBatchesPage })))
+const DocumentTemplatesPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.DocumentTemplatesPage })))
+const DeliverySchedulePage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.DeliverySchedulePage })))
+const ProductSubstitutesPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.ProductSubstitutesPage })))
+const DormantStockPage = lazy(() => import('@/pages/Phase2Pages').then(m => ({ default: m.DormantStockPage })))
+const PromotionsPage = lazy(() => import('@/pages/PromotionsPage').then(m => ({ default: m.PromotionsPage })))
+const ProductGridsPage = lazy(() => import('@/pages/ProductGridsPage').then(m => ({ default: m.ProductGridsPage })))
+const StockAlertsPage = lazy(() => import('@/pages/StockAlertsPage').then(m => ({ default: m.StockAlertsPage })))
+const StockReservationsPage = lazy(() => import('@/pages/StockReservationsPage').then(m => ({ default: m.StockReservationsPage })))
+const LotTraceabilityPage = lazy(() => import('@/pages/LotTraceabilityPage').then(m => ({ default: m.LotTraceabilityPage })))
+const PosPaymentMethodsPage = lazy(() => import('@/pages/PosPaymentMethodsPage').then(m => ({ default: m.PosPaymentMethodsPage })))
+const OnboardingDashboardPage = lazy(() => import('@/pages/OnboardingDashboardPage').then(m => ({ default: m.OnboardingDashboardPage })))
+const CreditControlPage = lazy(() => import('@/pages/CreditControlPage').then(m => ({ default: m.CreditControlPage })))
+const OpportunitiesPage = lazy(() => import('@/pages/crm/OpportunitiesPage').then(m => ({ default: m.OpportunitiesPage })))
+const ActivitiesPage = lazy(() => import('@/pages/crm/ActivitiesPage').then(m => ({ default: m.ActivitiesPage })))
+const CampaignsPage = lazy(() => import('@/pages/crm/CampaignsPage').then(m => ({ default: m.CampaignsPage })))
+const TerritoriesPage = lazy(() => import('@/pages/crm/TerritoriesPage').then(m => ({ default: m.TerritoriesPage })))
+const SalesForecastPage = lazy(() => import('@/pages/crm/SalesForecastPage').then(m => ({ default: m.SalesForecastPage })))
+const TicketsPage = lazy(() => import('@/pages/crm/TicketsPage').then(m => ({ default: m.TicketsPage })))
+const ServiceContractsPage = lazy(() => import('@/pages/crm/ServiceContractsPage').then(m => ({ default: m.ServiceContractsPage })))
+const KnowledgeBasePage = lazy(() => import('@/pages/crm/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })))
+const CustomerPortalPage = lazy(() => import('@/pages/crm/CustomerPortalPage').then(m => ({ default: m.CustomerPortalPage })))
+const MCFPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.MCFPage })))
+const TreasuryTransfersPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.TreasuryTransfersPage })))
+const CreditLinesPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.CreditLinesPage })))
+const InvestmentsPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.InvestmentsPage })))
+const ValueDateTrackingPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.ValueDateTrackingPage })))
+const TreasuryRecurringPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.TreasuryRecurringPage })))
+const ConsolidatedTreasuryPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.ConsolidatedTreasuryPage })))
+const PayrollComponentsPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.PayrollComponentsPage })))
+const PayrollTemplatesPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.PayrollTemplatesPage })))
+const SalaryAdvancesPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.SalaryAdvancesPage })))
+const DSNPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.DSNPage })))
+const DPAEPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.DPAEPage })))
+const LegalWatchPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.LegalWatchPage })))
+const ExpenseReportsPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.ExpenseReportsPage })))
+const PayRecallsPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.PayRecallsPage })))
+const PayrollArchivePage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.PayrollArchivePage })))
+const InterviewsPage = lazy(() => import('@/pages/Phase4Pages').then(m => ({ default: m.InterviewsPage })))
+const AssetDepreciationPlansPage = lazy(() => import('@/pages/Phase5Pages').then(m => ({ default: m.AssetDepreciationPlansPage })))
+const AssetFamiliesPage = lazy(() => import('@/pages/Phase5Pages').then(m => ({ default: m.AssetFamiliesPage })))
+const AssetRevaluationPage = lazy(() => import('@/pages/Phase5Pages').then(m => ({ default: m.AssetRevaluationPage })))
+const BatchDisposalPage = lazy(() => import('@/pages/Phase5Pages').then(m => ({ default: m.BatchDisposalPage })))
+const AssetFromEntryPage = lazy(() => import('@/pages/Phase5Pages').then(m => ({ default: m.AssetFromEntryPage })))
+const BatchEntryPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.BatchEntryPage })))
+const AutoLabelRulesPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.AutoLabelRulesPage })))
+const ExtournePage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.ExtournePage })))
+const CarryForwardPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.CarryForwardPage })))
+const LettrageDifferencesPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.LettrageDifferencesPage })))
+const AccountingControlsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.AccountingControlsPage })))
+const CashControlPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.CashControlPage })))
+const FECAttestationPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.FECAttestationPage })))
+const TierRIBsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.TierRIBsPage })))
+const IFRSAdjustmentsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.IFRSAdjustmentsPage })))
+const TaxPaymentsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.TaxPaymentsPage })))
+const CustomReportTemplatesPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.CustomReportTemplatesPage })))
+const DeferredPrintingPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.DeferredPrintingPage })))
+const JournalAccessRightsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.JournalAccessRightsPage })))
+const VATOnCollectionsPage = lazy(() => import('@/pages/Phase6Pages').then(m => ({ default: m.VATOnCollectionsPage })))
+const TaxRatesPage = lazy(() => import('@/pages/TaxRatesPage').then(m => ({ default: m.TaxRatesPage })))
+const FiscalPositionsPage = lazy(() => import('@/pages/FiscalPositionsPage').then(m => ({ default: m.FiscalPositionsPage })))
+const AccountTagsPage = lazy(() => import('@/pages/AccountTagsPage').then(m => ({ default: m.AccountTagsPage })))
+const PaymentTermsPage = lazy(() => import('@/pages/PaymentTermsPage').then(m => ({ default: m.PaymentTermsPage })))
+const SaisieParPiecePage = lazy(() => import('@/pages/SaisieParPiecePage').then(m => ({ default: m.SaisieParPiecePage })))
+const JustificatifSoldePage = lazy(() => import('@/pages/JustificatifSoldePage').then(m => ({ default: m.JustificatifSoldePage })))
+const EtatRapprochementPage = lazy(() => import('@/pages/EtatRapprochementPage').then(m => ({ default: m.EtatRapprochementPage })))
+const ReminderLevelsPage = lazy(() => import('@/pages/ReminderLevelsPage').then(m => ({ default: m.ReminderLevelsPage })))
+const RevisionCyclesPage = lazy(() => import('@/pages/RevisionCyclesPage').then(m => ({ default: m.RevisionCyclesPage })))
+const FusionComptesPage = lazy(() => import('@/pages/FusionComptesPage').then(m => ({ default: m.FusionComptesPage })))
+const PlanReportingPage = lazy(() => import('@/pages/PlanReportingPage').then(m => ({ default: m.PlanReportingPage })))
+const CompactionPage = lazy(() => import('@/pages/CompactionPage').then(m => ({ default: m.CompactionPage })))
+const RGPDPage = lazy(() => import('@/pages/RGPDPage').then(m => ({ default: m.RGPDPage })))
+const GridTemplatesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.GridTemplatesPage })))
+const PaymentTemplatesComptaPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.PaymentTemplatesComptaPage })))
+const StandardLabelsPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.StandardLabelsPage })))
+const AnalyticJournalCodesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.AnalyticJournalCodesPage })))
+const AnalyticODEntryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticODEntryPage })))
+const ThirdPartyInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ThirdPartyInquiryPage })))
+const AnalyticInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticInquiryPage })))
+const ReimputationPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ReimputationPage })))
+const PartnerCategoriesPage = lazy(() => import('@/pages/PartnerCategoriesPage').then(m => ({ default: m.PartnerCategoriesPage })))
+const Customer360Page = lazy(() => import('@/pages/Customer360Page').then(m => ({ default: m.Customer360Page })))
+const PurchaseRequestsPage = lazy(() => import('@/pages/PurchaseRequestsPage').then(m => ({ default: m.PurchaseRequestsPage })))
+const SupplierPriceListsPage = lazy(() => import('@/pages/SupplierPriceListsPage').then(m => ({ default: m.SupplierPriceListsPage })))
+const SupplierDeliverySchedulePage = lazy(() => import('@/pages/SupplierDeliverySchedulePage').then(m => ({ default: m.SupplierDeliverySchedulePage })))
+const PosTerminalPage = lazy(() => import('@/pages/PosTerminalPage').then(m => ({ default: m.PosTerminalPage })))
+const PosSessionsPage = lazy(() => import('@/pages/PosSessionsPage').then(m => ({ default: m.PosSessionsPage })))
+const PosStatsPage = lazy(() => import('@/pages/PosStatsPage').then(m => ({ default: m.PosStatsPage })))
+const OnlinePaymentPage = lazy(() => import('@/pages/OnlinePaymentPage').then(m => ({ default: m.OnlinePaymentPage })))
+const SharedDocumentPage = lazy(() => import('@/pages/SharedDocumentPage').then(m => ({ default: m.SharedDocumentPage })))
+const RevenueSimulationPage = lazy(() => import('@/pages/sales/RevenueSimulationPage').then(m => ({ default: m.RevenueSimulationPage })))
+const MarginAnalysisPage = lazy(() => import('@/pages/sales/MarginAnalysisPage').then(m => ({ default: m.MarginAnalysisPage })))
+const WorkHardshipPage = lazy(() => import('@/pages/WorkHardshipPage').then(m => ({ default: m.WorkHardshipPage })))
+const CareerHistoryPage = lazy(() => import('@/pages/CareerHistoryPage').then(m => ({ default: m.CareerHistoryPage })))
+const CPFPage = lazy(() => import('@/pages/CPFPage').then(m => ({ default: m.CPFPage })))
+const EmployeeDocumentsPage = lazy(() => import('@/pages/EmployeeDocumentsPage').then(m => ({ default: m.EmployeeDocumentsPage })))
+const WorkStoppagesPage = lazy(() => import('@/pages/WorkStoppagesPage').then(m => ({ default: m.WorkStoppagesPage })))
+const MedicalExamsPage = lazy(() => import('@/pages/MedicalExamsPage').then(m => ({ default: m.MedicalExamsPage })))
+const ExpenseCategoriesPage = lazy(() => import('@/pages/ExpenseCategoriesPage').then(m => ({ default: m.ExpenseCategoriesPage })))
+const EmployeeExitPage = lazy(() => import('@/pages/EmployeeExitPage').then(m => ({ default: m.EmployeeExitPage })))
+const InterviewCampaignsPage = lazy(() => import('@/pages/InterviewCampaignsPage').then(m => ({ default: m.InterviewCampaignsPage })))
+const EmployeeExpensesPage = lazy(() => import('@/pages/EmployeeExpensesPage').then(m => ({ default: m.EmployeeExpensesPage })))
+const ManagerExpenseApprovalsPage = lazy(() => import('@/pages/ManagerExpenseApprovalsPage').then(m => ({ default: m.ManagerExpenseApprovalsPage })))
+const EmployeeInterviewsPage = lazy(() => import('@/pages/EmployeeInterviewsPage').then(m => ({ default: m.EmployeeInterviewsPage })))
+const EmployeeDashboardPage = lazy(() => import('@/pages/employee/EmployeeDashboardPage').then(m => ({ default: m.EmployeeDashboardPage })))
+const EmployeeProfilePage = lazy(() => import('@/pages/employee/EmployeeProfilePage').then(m => ({ default: m.EmployeeProfilePage })))
+const EmployeeLeavesPage = lazy(() => import('@/pages/employee/EmployeeLeavesPage').then(m => ({ default: m.EmployeeLeavesPage })))
+const RhReportsPage = lazy(() => import('@/pages/hr/RhReportsPage').then(m => ({ default: m.RhReportsPage })))
 
 function App() {
   return (
+    <AppErrorBoundary>
     <ThemeProvider>
       <AuthProvider>
         <LegislationProvider>
         <ToastProvider>
+          <ConfirmProvider>
           <BrowserRouter>
+            <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
             <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -236,6 +314,9 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          {/* SEC-05: Routes publiques hors ProtectedLayout — accessibles sans authentification */}
+          <Route path="/pay/:token" element={<OnlinePaymentPage />} />
+          <Route path="/shared/:token" element={<SharedDocumentPage />} />
 
           <Route element={<ProtectedLayout />}>
           {/* Home + Dashboard */}
@@ -349,7 +430,7 @@ function App() {
           <Route path="/production/home" element={<ModuleHomePage moduleId="production" />} />
           <Route path="/production/manufacturing" element={<SubGroupHubPage moduleId="production" sectionIndex={0} />} />
           <Route path="/production/subcontracting" element={<SubGroupHubPage moduleId="production" sectionIndex={1} />} />
-          <Route path="/production/planning" element={<SubGroupHubPage moduleId="production" sectionIndex={2} />} />
+          <Route path="/production/planning-hub" element={<SubGroupHubPage moduleId="production" sectionIndex={2} />} />
           <Route path="/production/routings" element={<RoutingsPage />} />
           <Route path="/production/machines" element={<MachinesPage />} />
           <Route path="/production/toolings" element={<ToolingsPage />} />
@@ -392,23 +473,23 @@ function App() {
           {/* Projects & Fixed Assets */}
           <Route path="/accounting/projects" element={<ProjectManagementPage />} />
           <Route path="/accounting/projects/legacy" element={<ProjectsPage />} />
-          <Route path="/project-management" element={<ProjectManagementPage />} />
-          <Route path="/project-management/tasks" element={<ProjectManagementPage initialView="table" />} />
-          <Route path="/project-management/graph" element={<ProjectManagementPage initialView="graph" />} />
+          <Route path="/project-management" element={<ModuleHubPage moduleId="projectManagement" />} />
+          <Route path="/project-management/tasks" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={0} />} />
+          <Route path="/project-management/graph" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={1} />} />
           <Route path="/project-management/pivot" element={<ProjectManagementPage initialView="pivot" />} />
           <Route path="/project-management/burndown" element={<ProjectManagementPage initialView="burndown" />} />
-          <Route path="/project-management/my-tasks" element={<ProjectManagementPage initialView="my-tasks" />} />
+          <Route path="/project-management/my-tasks" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={2} />} />
           <Route path="/project-management/calendar" element={<ProjectManagementPage initialView="calendar" />} />
-          <Route path="/project-management/large-screen" element={<ProjectManagementPage initialView="large-screen" />} />
+          <Route path="/project-management/large-screen" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={3} />} />
           <Route path="/project-management/workload" element={<ProjectManagementPage initialView="workload" />} />
           <Route path="/project-management/timeline" element={<ProjectManagementPage initialView="timeline" />} />
           <Route path="/project-management/activity" element={<ProjectManagementPage initialView="activity" />} />
           <Route path="/project-management/notifications" element={<ProjectManagementPage initialView="notifications" />} />
           <Route path="/project-management/kanban" element={<ProjectManagementPage initialView="kanban" />} />
           <Route path="/project-management/gantt" element={<ProjectManagementPage initialView="gantt" />} />
-          <Route path="/project-management/mind-map" element={<ProjectManagementPage initialView="mind-map" />} />
+          <Route path="/project-management/mind-map" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={4} />} />
           <Route path="/project-management/box" element={<ProjectManagementPage initialView="box" />} />
-          <Route path="/project-management/doc" element={<ProjectManagementPage initialView="doc" />} />
+          <Route path="/project-management/doc" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={5} />} />
           <Route path="/project-management/chat" element={<ProjectManagementPage initialView="chat" />} />
           <Route path="/accounting/fixed-assets" element={<FixedAssetsPage />} />
 
@@ -461,6 +542,11 @@ function App() {
           <Route path="/settings/currencies" element={<AdminRoute><CurrenciesPage /></AdminRoute>} />
           <Route path="/settings/exchange-rates" element={<AdminRoute><ExchangeRatesPage /></AdminRoute>} />
           <Route path="/settings/tax-grids" element={<AdminRoute><TaxGridSettingsPage /></AdminRoute>} />
+          <Route path="/settings/api-webhooks" element={<AdminRoute><ApiWebhooksPage /></AdminRoute>} />
+          <Route path="/settings/email-templates" element={<AdminRoute><EmailTemplatesPage /></AdminRoute>} />
+          <Route path="/settings/2fa" element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />
+          <Route path="/settings/api-docs" element={<ProtectedRoute><ApiDocsPage /></ProtectedRoute>} />
+          <Route path="/settings/nf525-audit" element={<AdminRoute><Nf525AuditPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
           <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
 
@@ -487,6 +573,11 @@ function App() {
           <Route path="/stock/dormant-stock" element={<DormantStockPage />} />
           <Route path="/stock/product-grids" element={<ProductGridsPage />} />
           <Route path="/stock/alerts" element={<StockAlertsPage />} />
+          <Route path="/stock/reservations" element={<StockReservationsPage />} />
+          <Route path="/stock/traceability" element={<LotTraceabilityPage />} />
+          <Route path="/sales/credit-control" element={<CreditControlPage />} />
+          <Route path="/pos/payment-methods" element={<PosPaymentMethodsPage />} />
+          <Route path="/settings/onboarding" element={<OnboardingDashboardPage />} />
           <Route path="/sales/promotions" element={<PromotionsPage />} />
           <Route path="/crm/opportunities" element={<OpportunitiesPage />} />
           <Route path="/crm/activities" element={<ActivitiesPage />} />
@@ -594,8 +685,6 @@ function App() {
           <Route path="/accounting/analytic-inquiry" element={<AnalyticInquiryPage />} />
           <Route path="/accounting/reimputation" element={<ReimputationPage />} />
           <Route path="/accounting/partner-categories" element={<PartnerCategoriesPage />} />
-          <Route path="/banking/check-books" element={<CheckBooksPage />} />
-          <Route path="/banking/exchange-gain-loss" element={<ExchangeGainLossPage />} />
           {/* Sprint B: Customer Advanced */}
           <Route path="/sales/customers/:id/360" element={<Customer360Page />} />
           {/* Sprint C: Purchase Advanced */}
@@ -603,28 +692,28 @@ function App() {
           <Route path="/purchases/supplier-price-lists" element={<SupplierPriceListsPage />} />
           <Route path="/purchases/delivery-schedules" element={<SupplierDeliverySchedulePage />} />
           {/* Sprint D: Catalog Extended */}
-          <Route path="/sales/promotions" element={<PromotionsPage />} />
-          <Route path="/stock/product-grids" element={<ProductGridsPage />} />
           {/* Sprint E: Stock Advanced */}
-          <Route path="/stock/alerts" element={<StockAlertsPage />} />
           {/* Sprint H: POS */}
           <Route path="/pos/terminal/:terminalId" element={<PosTerminalPage />} />
           <Route path="/pos/terminal" element={<PosTerminalPage />} />
           <Route path="/pos/sessions" element={<PosSessionsPage />} />
           <Route path="/pos/stats" element={<PosStatsPage />} />
-          {/* Sprint I: Dématérialisation */}
-          <Route path="/pay/:token" element={<OnlinePaymentPage />} />
-          <Route path="/shared/:token" element={<SharedDocumentPage />} />
+          {/* Sprint I: Dématérialisation — routes publiques déplacées hors ProtectedLayout (SEC-05) */}
           {/* Sprint J: Pilotage */}
           <Route path="/sales/simulation" element={<RevenueSimulationPage />} />
           <Route path="/sales/margins" element={<MarginAnalysisPage />} />
           </Route>
+          {/* Catch-all: redirect unmatched routes to landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+            </Suspense>
         </BrowserRouter>
+          </ConfirmProvider>
         </ToastProvider>
         </LegislationProvider>
     </AuthProvider>
     </ThemeProvider>
+    </AppErrorBoundary>
   )
 }
 

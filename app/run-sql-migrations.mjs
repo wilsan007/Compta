@@ -6,14 +6,34 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sqlDir = path.join(__dirname, 'sql');
 
-const client = new pg.Client({
-  host: 'aws-1-eu-west-2.pooler.supabase.com',
-  port: 6543,
-  user: 'postgres.ndtaedcgwnaopopugiql',
-  password: 'Aod@@1002@@',
-  database: 'postgres',
-  ssl: { rejectUnauthorized: false }
-});
+// SEC-01: Never hardcode credentials. Read from DATABASE_URL or individual env vars.
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl && !process.env.PGHOST) {
+  console.error('❌ ERREUR DE SÉCURITÉ: Aucune connexion configurée.');
+  console.error('   Définissez DATABASE_URL ou PGHOST/PGUSER/PGPASSWORD/PGDATABASE dans votre environnement.');
+  console.error('   Exemple: export DATABASE_URL="postgresql://user:pass@host:port/db"');
+  process.exit(1);
+}
+
+// Détecter si on est en local (localhost/127.0.0.1) pour désactiver SSL
+const isLocal = databaseUrl
+  ? /localhost|127\.0\.0\.1/.test(databaseUrl)
+  : /localhost|127\.0\.0\.1/.test(process.env.PGHOST || '');
+
+const sslConfig = isLocal ? false : { rejectUnauthorized: false };
+
+const client = new pg.Client(
+  databaseUrl
+    ? { connectionString: databaseUrl, ssl: sslConfig }
+    : {
+        host: process.env.PGHOST,
+        port: Number(process.env.PGPORT || 5432),
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        database: process.env.PGDATABASE,
+        ssl: sslConfig,
+      }
+);
 
 async function main() {
   
@@ -53,10 +73,43 @@ async function main() {
     
     const executedMap = new Map(executed.map(r => [r.filename, r]));
 
-    // Get only numbered SQL files (01_xxx.sql through 66_xxx.sql)
-    const allFiles = fs.readdirSync(sqlDir)
-      .filter(f => /^\d{2}_.*\.sql$/.test(f))
-      .sort();
+    // DB-01: Inclure les fichiers de fondation non numérotés (multi_tenant_migration.sql,
+    // legislation_packs_migration.sql, audit_schema.sql) en les exécutant en premier.
+    // Ordre: fondations → migrations numérotées.
+    const foundationFiles = [
+      'multi_tenant_migration.sql',
+      'legislation_packs_migration.sql',
+      'audit_schema.sql',
+    ].filter(f => fs.existsSync(path.join(sqlDir, f)));
+
+    const numberedFiles = fs.readdirSync(sqlDir)
+      .filter(f => /^\d{2,3}_.*\.sql$/.test(f))
+      .sort((a, b) => {
+        const numA = parseInt(a.match(/^(\d+)/)?.[1] || '0', 10);
+        const numB = parseInt(b.match(/^(\d+)/)?.[1] || '0', 10);
+        return numA - numB || a.localeCompare(b);
+      });
+
+    // SOC-06: Détecter les doublons de numéros et ÉCHOUER (au lieu d'avertir)
+    const numMap = new Map();
+    for (const f of numberedFiles) {
+      const num = f.match(/^(\d+)/)?.[1] || f.substring(0, 2);
+      if (!numMap.has(num)) numMap.set(num, []);
+      numMap.get(num).push(f);
+    }
+    let hasDuplicates = false;
+    for (const [num, files] of numMap) {
+      if (files.length > 1) {
+        console.error(`❌ DOUBLON: migration ${num} existe ${files.length} fois: ${files.join(', ')}`);
+        hasDuplicates = true;
+      }
+    }
+    if (hasDuplicates) {
+      console.error('\n❌ Des numéros de migration sont en doublon. Renumérotez-les avant de continuer.');
+      process.exit(1);
+    }
+
+    const allFiles = [...foundationFiles, ...numberedFiles];
 
     console.log(`📂 ${allFiles.length} fichiers SQL trouvés dans /sql\n`);
     console.log('━'.repeat(80));
@@ -133,6 +186,10 @@ async function main() {
         
         errors++;
         console.log(`  ❌ Erreur: ${err.message.substring(0, 200)}`);
+        // DB-01: Arrêter à la première erreur — les migrations suivantes
+        // s'appuient sur le schéma créé par les précédentes.
+        console.log(`\n⛔ ARRÊT: une migration a échoué. Corrigez-la avant de continuer.`);
+        break;
       }
     }
 

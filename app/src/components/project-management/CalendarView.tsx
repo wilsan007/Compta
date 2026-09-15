@@ -26,7 +26,7 @@ interface CalendarViewProps {
   projectId?: string
 }
 
-export function CalendarView({ projectId }: CalendarViewProps) {
+export function CalendarView(_props: CalendarViewProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()

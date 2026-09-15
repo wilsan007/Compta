@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getReminderLevels, createReminderLevel, updateReminderLevel, deleteReminderLevel } from '@/lib/queries'
+import { getReminderLevels, createReminderLevel, updateReminderLevel, deleteReminderLevel } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, Bell } from 'lucide-react'
 import type { ReminderLevel } from '@/types'
 

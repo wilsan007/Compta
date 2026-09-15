@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCpfAccounts, createCpfAccount, deleteCpfAccount, getEmployees } from '@/lib/queries'
+import { getCpfAccounts, createCpfAccount, deleteCpfAccount, getEmployees } from '@/lib/queries/payroll'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Wallet, Plus, Trash2, X } from 'lucide-react'
 import type { Employee, CpfAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function CPFPage() {
   const { toast } = useToast()
@@ -28,12 +29,12 @@ export function CPFPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteCpfAccount(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
@@ -126,7 +127,7 @@ function CpfForm({ employees, onClose, onSaved }: { employees: Employee[]; onClo
         balance_hours: balanceHours,
         balance_amount: balanceAmount,
         history: [],
-      } as Omit<CpfAccount, 'id' | 'created_at' | 'updated_at'>)
+      } as unknown as Omit<CpfAccount, 'id' | 'created_at' | 'updated_at'>)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
     } catch (err: any) {

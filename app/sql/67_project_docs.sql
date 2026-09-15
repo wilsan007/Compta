@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS project_docs (
 -- RLS policies
 ALTER TABLE project_docs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS project_docs_tenant_select ON project_docs;
+DROP POLICY IF EXISTS project_docs_tenant_insert ON project_docs;
+DROP POLICY IF EXISTS project_docs_tenant_update ON project_docs;
+DROP POLICY IF EXISTS project_docs_tenant_delete ON project_docs;
+
 CREATE POLICY project_docs_tenant_select
   ON project_docs FOR SELECT
   USING (tenant_id = (SELECT id FROM tenants LIMIT 1));

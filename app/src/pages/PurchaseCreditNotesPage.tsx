@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, getSuppliers, getPurchaseInvoices } from '@/lib/queries'
+import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function PurchaseCreditNotesPage() {
   const { t } = useTranslation('purchases')
@@ -27,12 +29,12 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
       setCreditNotes(cn)
       setSuppliers(s)
       setInvoices(inv)
-    } catch (err) {
-      console.error('Failed to load:', err)
+    } catch (err: any) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -41,7 +43,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('creditNotes.deleteConfirm'))) return
+    if (!confirmSync(t('creditNotes.deleteConfirm'))) return
     try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 

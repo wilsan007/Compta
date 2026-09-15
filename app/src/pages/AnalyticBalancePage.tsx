@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
-import { getAnalyticBalance, getAnalyticPlans } from '@/lib/queries'
+import { getAnalyticBalance, getAnalyticPlans } from '@/lib/queries/accounting'
 import { PieChart } from 'lucide-react'
 
 export function AnalyticBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [selectedPlan, setSelectedPlan] = useState('')
@@ -23,8 +25,9 @@ export function AnalyticBalancePage() {
       ])
       setData(res)
       setPlans(p || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading analytic balance:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

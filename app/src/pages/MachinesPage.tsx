@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Cog, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter } from '@/lib/queries'
+import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function MachinesPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { getStatusLabel, getStatusVariant } = useStatusLabels()
   const [machines, setMachines] = useState<Machine[]>([])
@@ -23,20 +25,20 @@ export function MachinesPage() {
       const [macs, wcs] = await Promise.all([getMachines(), getWorkCenters()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('machines.confirmDelete'))) return
+    if (!confirmSync(t('machines.confirmDelete'))) return
     try { await deleteMachine(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   async function handleDeleteWc(id: string) {
-    if (!window.confirm(t('machines.confirmDeleteWorkCenter'))) return
+    if (!confirmSync(t('machines.confirmDeleteWorkCenter'))) return
     try { await deleteWorkCenter(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }

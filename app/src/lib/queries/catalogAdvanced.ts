@@ -282,15 +282,16 @@ export async function checkStockThresholds() {
     else if (maxLevel > 0 && qty >= maxLevel) alertType = 'overstock'
 
     if (alertType) {
-      const { data: existing } = await supabase
+      const { data: existing, error: existError } = await supabase
         .from('stock_alerts')
         .select('id')
         .eq('product_id', s.product_id)
         .eq('status', 'active')
         .eq('alert_type', alertType)
+      if (existError) throw existError
       if (existing && existing.length > 0) continue
 
-      const { data: alert } = await supabase.from('stock_alerts').insert({
+      const { data: alert, error: alertError } = await supabase.from('stock_alerts').insert({
         tenant_id: tid,
         product_id: s.product_id,
         warehouse_id: s.warehouse_id,
@@ -299,6 +300,7 @@ export async function checkStockThresholds() {
         current_value: qty,
         status: 'active',
       }).select().single()
+      if (alertError) throw alertError
       if (alert) alertsCreated.push(alert as StockAlert)
     }
   }

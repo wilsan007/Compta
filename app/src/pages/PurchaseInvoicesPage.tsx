@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
-import { getPurchaseInvoices, getSuppliers, createPurchaseInvoice, updatePurchaseInvoice, getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries'
+import { getPurchaseInvoices, createPurchaseInvoice, updatePurchaseInvoice } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
+import { performThreeWayMatch } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle, UserPlus } from 'lucide-react'
+import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle, UserPlus, ShieldCheck } from 'lucide-react'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickSupplierAccess } from '@/components/cross-module/QuickSupplierAccess'
 import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function PurchaseInvoicesPage() {
   const { toast } = useToast()
@@ -24,7 +28,7 @@ export function PurchaseInvoicesPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    loadInvoices()
+    loadInvoices().catch(err => console.error('loadInvoices:', err))
   }, [])
 
   async function loadInvoices() {
@@ -34,8 +38,8 @@ export function PurchaseInvoicesPage() {
       setSuppliers(sup || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err) {
-      console.error('Error loading purchase invoices:', err)
+    } catch (err: any) { console.error('Error loading purchase invoices:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -49,6 +53,24 @@ export function PurchaseInvoicesPage() {
       await updatePurchaseInvoice(id, { status: 'paid', amount_paid: inv.total, amount_due: 0 })
       toast('success', t('purchaseInvoices.markedPaid'))
       await loadInvoices()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleThreeWayMatch(id: string) {
+    setActionLoading('3way-' + id)
+    try {
+      const result = await performThreeWayMatch(id)
+      const matched = result?.matched ?? result?.success ?? false
+      const discrepancies = result?.discrepancies || result?.discrepancy_count || 0
+      if (matched) {
+        toast('success', 'Rapprochement 3 voies', `Conforme — ${discrepancies} écart(s)`)
+      } else {
+        toast('warning', 'Rapprochement 3 voies', `Écarts détectés — ${discrepancies} différence(s)`)
+      }
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {
@@ -124,6 +146,7 @@ export function PurchaseInvoicesPage() {
               { label: tCommon('common.status'), key: 'status', sortable: true },
               { label: t('purchaseInvoices.total'), key: 'total', sortable: true, className: 'text-right' },
               { label: t('purchaseInvoices.toPay'), key: 'amount_due', sortable: true, className: 'text-right' },
+              { label: 'Compta', key: 'journal_entry_id', sortable: false },
               { label: tCommon('table.actions') },
             ]}
             data={filtered as any}
@@ -142,6 +165,7 @@ export function PurchaseInvoicesPage() {
                   <TableCell className={Number(inv.amount_due) > 0 ? 'text-[var(--color-danger)] font-medium text-right' : 'text-right'}>
                     {formatCurrency(Number(inv.amount_due) || 0)}
                   </TableCell>
+                  <TableCell>{inv.journal_entry_id || inv.journal_posted ? <Badge variant="success">Comptabilisé</Badge> : <Badge variant="neutral">Non comptabilisé</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setViewing(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.view')}>
@@ -152,6 +176,9 @@ export function PurchaseInvoicesPage() {
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
+                      <button onClick={() => handleThreeWayMatch(inv.id)} disabled={actionLoading === '3way-' + inv.id} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" title="Rapprochement 3 voies">
+                        <ShieldCheck className="w-4 h-4" />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -213,7 +240,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
     try {
       const result = await checkBudgetAvailability(accountCode, totalNum, fiscalYearId || undefined)
       setBudgetCheck(result)
-    } catch (err) { console.error('Budget check error:', err) }
+    } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setChecking(false) }
   }
 
@@ -233,7 +260,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!window.confirm(t('purchaseInvoices.budgetExceedWarning', { amount: formatCurrency(totalNum), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!confirmSync(t('purchaseInvoices.budgetExceedWarning', { amount: formatCurrency(totalNum), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
           setSaving(false)
           return
         }

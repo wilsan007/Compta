@@ -542,5 +542,22 @@
     "profitability": "الربحية",
     "noActiveProjects": "لا توجد مشاريع نشطة",
     "noQuotes": "لا توجد عروض"
+  },
+  "nf525": {
+    "pageDescription": "سجل أحداث NF525 والتحقق من سلامة السلسلة",
+    "integrityCheck": "فحص السلامة",
+    "integrityCheckDescription": "يتحقق من أن سلسلة التجزئة NF525 لم يتم العبث بها.",
+    "verifyIntegrity": "التحقق من السلامة",
+    "integrityVerified": "تم التحقق من السلامة",
+    "integrityFailed": "السلامة مخترقة",
+    "chainValid": "سلسلة NF525 سليمة. لم يتم اكتشاف أي عبث.",
+    "chainCorrupted": "تم العبث بسلسلة NF525. مطلوب تحقيق.",
+    "allEvents": "جميع الأحداث",
+    "events": "أحداث",
+    "noEvents": "لا توجد أحداث NF525",
+    "noEventsDescription": "ستظهر أحداث تسجيل NF525 هنا.",
+    "eventType": "النوع",
+    "entity": "الكيان",
+    "date": "التاريخ"
   }
 }

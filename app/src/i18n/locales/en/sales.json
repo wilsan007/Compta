@@ -581,5 +581,8 @@
     "apply": "Apply",
     "delete": "Delete",
     "noFilters": "No saved filters"
-  }
+  },
+  "calculate_penalties": "Calculate late payment penalties",
+  "penalties_result": "{{count}} invoices - Penalties: {{amount}}",
+  "no_overdue_invoices": "No overdue invoices"
 }

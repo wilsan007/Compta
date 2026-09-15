@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input, Button } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
-import { getAgedBalance } from '@/lib/queries'
+import { getAgedBalance } from '@/lib/queries/accounting'
 import { Clock } from 'lucide-react'
 
 export function AgedBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
@@ -20,8 +22,9 @@ export function AgedBalancePage() {
     try {
       const res = await getAgedBalance(typeFilter || undefined, refDate || undefined)
       setData(res)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading aged balance:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

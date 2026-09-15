@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCareerHistory, createCareerHistory, deleteCareerHistory, getEmployees } from '@/lib/queries'
+import { getCareerHistory, createCareerHistory, deleteCareerHistory, getEmployees } from '@/lib/queries/payroll'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { TrendingUp, Plus, Trash2, X } from 'lucide-react'
 import type { Employee, CareerHistory } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const changeTypeColors: Record<string, string> = {
   hire: 'var(--color-success)',
@@ -36,12 +37,12 @@ export function CareerHistoryPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteCareerHistory(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

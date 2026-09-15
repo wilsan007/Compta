@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getGoodsReceipts, createGoodsReceipt, updateGoodsReceipt, deleteGoodsReceipt, getSuppliers } from '@/lib/queries'
+import { getGoodsReceipts, createGoodsReceipt, updateGoodsReceipt, deleteGoodsReceipt } from '@/lib/queries/misc'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getPurchaseOrders } from '@/lib/queries/purchases'
 import { Plus, Trash2, X, PackageCheck } from 'lucide-react'
-import type { GoodsReceipt, Supplier } from '@/types'
+import type { GoodsReceipt, Supplier, PurchaseOrder } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function GoodsReceiptPage() {
   const { t } = useTranslation('purchases')
@@ -23,9 +26,9 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
       const [rcpts, sups] = await Promise.all([getGoodsReceipts(statusFilter || undefined), getSuppliers()])
       setReceipts(rcpts || [])
       setSuppliers(sups || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -35,7 +38,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('goodsReceipts.deleteConfirm'))) return
+    if (!confirmSync(t('goodsReceipts.deleteConfirm'))) return
     try { await deleteGoodsReceipt(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
@@ -61,7 +64,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('goodsReceipts.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('goodsReceipts.number'), t('goodsReceipts.supplier'), t('goodsReceipts.date'), t('goodsReceipts.status'), t('goodsReceipts.actions')]}>
+          <Table headers={[t('goodsReceipts.number'), t('goodsReceipts.supplier'), t('goodsReceipts.date'), t('goodsReceipts.status'), 'Stock', t('goodsReceipts.actions')]}>
             {receipts.map((r) => {
               const sup = suppliers.find((s) => s.id === r.supplier_id)
               return (
@@ -75,6 +78,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
                       {['pending', 'received', 'partial', 'cancelled'].map((k) => <option key={k} value={k}>{t(`goodsReceipts.statuses.${k}`) as string}</option>)}
                     </select>
                   </TableCell>
+                  <TableCell>{(r as any).stock_movement_id || (r as any).stock_created || r.status === 'received' ? <Badge variant="success">Entré</Badge> : <Badge variant="neutral">En attente</Badge>}</TableCell>
                   <TableCell>
                     <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                       <Trash2 className="w-4 h-4" />
@@ -96,6 +100,8 @@ function GRForm({ suppliers, onClose, onSaved }: { suppliers: Supplier[]; onClos
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const [supplierId, setSupplierId] = useState('')
+  const [purchaseOrderId, setPurchaseOrderId] = useState('')
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([])
   const { toast } = useToast()
   const [receiptDate, setReceiptDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
@@ -106,7 +112,7 @@ function GRForm({ suppliers, onClose, onSaved }: { suppliers: Supplier[]; onClos
     setSaving(true)
     try {
       const number = `BR-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-      await createGoodsReceipt({ number, supplier_id: supplierId || null, purchase_order_id: null, receipt_date: receiptDate, status: 'pending', notes: notes || null } as any)
+      await createGoodsReceipt({ number, supplier_id: supplierId || null, purchase_order_id: purchaseOrderId || null, receipt_date: receiptDate, status: 'pending', notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setSaving(false) }
@@ -122,9 +128,16 @@ function GRForm({ suppliers, onClose, onSaved }: { suppliers: Supplier[]; onClos
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('goodsReceipts.supplier')}</label>
-            <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required>
+            <select className="input" value={supplierId} onChange={async (e) => { setSupplierId(e.target.value); setPurchaseOrderId(''); setPurchaseOrders([]); if (e.target.value) { try { const [pend, conf] = await Promise.all([getPurchaseOrders('pending'), getPurchaseOrders('confirmed')]); setPurchaseOrders([...(pend || []), ...(conf || [])].filter((o) => o.supplier_id === e.target.value)) } catch { /* ignore */ } } }} required>
               <option value="">{tCommon('form.selectPlaceholder')}</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('goodsReceipts.purchaseOrder')}</label>
+            <select className="input" value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)} disabled={!supplierId}>
+              <option value="">{tCommon('form.selectPlaceholder')}</option>
+              {purchaseOrders.map((o) => <option key={o.id} value={o.id}>{o.number}</option>)}
             </select>
           </div>
           <Input label={t('goodsReceipts.receiptDate')} type="date" required value={receiptDate} onChange={(e) => setReceiptDate(e.target.value)} />

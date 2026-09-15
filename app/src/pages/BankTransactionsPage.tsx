@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankTransactions, getBankAccounts, updateBankTransaction, deleteBankTransaction } from '@/lib/queries'
+import { getBankTransactions, getBankAccounts, updateBankTransaction, deleteBankTransaction } from '@/lib/queries/banking'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeftRight, Trash2, CheckCircle } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BankTransactionsPage() {
   const { toast } = useToast()
@@ -23,12 +24,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(filterAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err) {
-      console.error('Failed to load transactions:', err)
+    } catch (err: any) { console.error('Failed to load transactions:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [filterAccount])
+  }, [filterAccount, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -42,7 +43,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('transactions.deleteConfirm'))) return
+    if (!confirmSync(t('transactions.deleteConfirm'))) return
     try {
       await deleteBankTransaction(id)
       await loadData()

@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getInvoices, getQuotes, getCreditNotes } from '@/lib/queries'
+import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge, Button } from '@/components/ui'
+import { getInvoices, getQuotes, getCreditNotes } from '@/lib/queries/sales'
+import { calculateSalesCommissions } from '@/lib/queries/businessFunctions'
 import { formatCurrency, translateStatus } from '@/lib/utils'
 import type { Invoice, Quote, CreditNote } from '@/types'
 import { useToast } from '@/lib/toast'
+import { Calculator } from 'lucide-react'
 
 export function SalesDashboardPage() {
   const { toast } = useToast()
@@ -14,6 +16,23 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
   const [loading, setLoading] = useState(true)
+  const [calculatingCommissions, setCalculatingCommissions] = useState(false)
+
+  async function handleCalcCommissions() {
+    const period = new Date().toISOString().slice(0, 7)
+    setCalculatingCommissions(true)
+    try {
+      const result = await calculateSalesCommissions(period)
+      const summary = Array.isArray(result)
+        ? result.map((r: any) => `${r.rep_name || r.name || r.rep_id}: ${formatCurrency(r.commission || r.amount || 0)}`).join(' | ')
+        : JSON.stringify(result)
+      toast('success', tCommon('common.success'), `Commissions: ${summary}`)
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('common.error'))
+    } finally {
+      setCalculatingCommissions(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -23,7 +42,7 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
       setQuotes(q)
       setCreditNotes(cn)
     } catch (err) { console.error(err); toast('error', tCommon('toast.error'), tCommon('toast.loadingError')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -37,7 +56,11 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
   return (
     <div>
       <Breadcrumb items={[{ label: t('dashboard.title') }]} />
-      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} action={
+        <Button variant="secondary" onClick={handleCalcCommissions} disabled={calculatingCommissions}>
+          <Calculator className="w-4 h-4" /> {calculatingCommissions ? '…' : 'Calculer les commissions'}
+        </Button>
+      } />
 
       {loading ? (
         <SkeletonTable rows={4} cols={4} />

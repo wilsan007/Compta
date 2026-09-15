@@ -581,5 +581,8 @@
     "apply": "Appliquer",
     "delete": "Supprimer",
     "noFilters": "Aucun filtre sauvegardé"
-  }
+  },
+  "calculate_penalties": "Calculer les pénalités de retard",
+  "penalties_result": "{{count}} factures - Pénalités: {{amount}}",
+  "no_overdue_invoices": "Aucune facture en retard"
 }

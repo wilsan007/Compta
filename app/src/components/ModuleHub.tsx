@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import { navModules, getEnabledNavModules, type NavModule, type NavSection, type ModuleColor } from './Sidebar'
+import { getEnabledNavModules, type NavModule, type NavSection, type ModuleColor } from './Sidebar'
 import {
   ArrowRight,
   ChevronRight,
@@ -50,13 +50,10 @@ export function ModuleHubPage({ moduleId }: ModuleHubPageProps) {
   const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const mod = navModules.find((m) => m.id === moduleId)
-  if (!mod) return null
-
-  const colorVar = colorVarMap[mod.color]
-  const colorBg = colorBgMap[mod.color]
+  const mod = getEnabledNavModules().find((m) => m.id === moduleId)
 
   const allItems = useMemo(() => {
+    if (!mod) return []
     if (mod.sections) {
       return mod.sections.flatMap((s) => s.items.map((i) => ({ ...i, section: s })))
     }
@@ -68,6 +65,16 @@ export function ModuleHubPage({ moduleId }: ModuleHubPageProps) {
     const q = searchQuery.toLowerCase()
     return allItems.filter((item) => t(item.labelKey).toLowerCase().includes(q))
   }, [searchQuery, allItems, t])
+
+  if (!mod) return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <h3 className="text-lg font-semibold text-[var(--color-text)] mb-1">Module introuvable</h3>
+      <p className="text-sm text-[var(--color-text-secondary)]">Ce module n'est pas disponible ou n'est pas activé pour votre tenant.</p>
+    </div>
+  )
+
+  const colorVar = colorVarMap[mod.color]
+  const colorBg = colorBgMap[mod.color]
 
   function isActive(path: string): boolean {
     if (path === '/') return location.pathname === '/'
@@ -350,11 +357,21 @@ export function SubGroupHubPage({ moduleId, sectionIndex }: SubGroupHubPageProps
   const navigate = useNavigate()
   const location = useLocation()
 
-  const mod = navModules.find((m) => m.id === moduleId)
-  if (!mod || !mod.sections) return null
+  const mod = getEnabledNavModules().find((m) => m.id === moduleId)
+  if (!mod || !mod.sections) return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <h3 className="text-lg font-semibold text-[var(--color-text)] mb-1">Module introuvable</h3>
+      <p className="text-sm text-[var(--color-text-secondary)]">Ce module n'est pas disponible ou n'est pas activé pour votre tenant.</p>
+    </div>
+  )
 
   const section = mod.sections[sectionIndex]
-  if (!section) return null
+  if (!section) return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <h3 className="text-lg font-semibold text-[var(--color-text)] mb-1">Module introuvable</h3>
+      <p className="text-sm text-[var(--color-text-secondary)]">Ce module n'est pas disponible ou n'est pas activé pour votre tenant.</p>
+    </div>
+  )
 
   const colorVar = colorVarMap[mod.color]
   const colorBg = colorBgMap[mod.color]

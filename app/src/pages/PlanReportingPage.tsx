@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { getReportingPlans, createReportingPlan, updateReportingPlan, deleteReportingPlan } from '@/lib/queries'
+import { getReportingPlans, createReportingPlan, updateReportingPlan, deleteReportingPlan } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, FileBarChart } from 'lucide-react'
 import type { ReportingPlan } from '@/types'
 

@@ -1,15 +1,12 @@
-import { useEffect, useState, useCallback } from 'react'
+import { confirmSync } from '@/lib/confirm'
+import { useEffect, useState, useCallback  } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2 } from 'lucide-react'
-import {
-  getAssetDepreciationPlans, createAssetDepreciationPlan,
-  getAssetFamilies, createAssetFamily, deleteAssetFamily,
-  getAssetRevaluations, createAssetRevaluation,
-  getAssetBatchDisposals, createAssetBatchDisposal, updateAssetBatchDisposal,
-} from '@/lib/queries'
+import { getAssetDepreciationPlans, createAssetDepreciationPlan } from '@/lib/queries/accounting'
+import { getAssetFamilies, createAssetFamily, deleteAssetFamily, getAssetRevaluations, createAssetRevaluation, getAssetBatchDisposals, createAssetBatchDisposal, updateAssetBatchDisposal } from '@/lib/queries/misc'
 
 // ============ Asset Depreciation Plans Page ============
 export function AssetDepreciationPlansPage() {
@@ -22,7 +19,7 @@ export function AssetDepreciationPlansPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', plan_type: 'economic' as const, depreciation_method: 'linear' as const, duration_months: 12, residual_value: 0, start_date: '', active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetDepreciationPlans() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetDepreciationPlans() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createAssetDepreciationPlan(form as any); toast('success', tCommon('common.success'), t('depPlans.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -51,11 +48,11 @@ export function AssetFamiliesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear' as const, depreciation_rate: 0, description: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetFamilies() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetFamilies() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createAssetFamily(form as any); toast('success', tCommon('common.success'), t('families.created')); setShowForm(false); setForm({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear', depreciation_rate: 0, description: '' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleDelete(id: string) { if (!window.confirm(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
 
   return (
     <div>
@@ -82,7 +79,7 @@ export function AssetRevaluationPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', revaluation_date: '', old_value: 0, new_value: 0, reason: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetRevaluations() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetRevaluations() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { const diff = form.new_value - form.old_value; await createAssetRevaluation({ ...form, difference: diff } as any); toast('success', tCommon('common.success'), t('revaluations.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -112,7 +109,7 @@ export function BatchDisposalPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ batch_number: '', disposal_date: '', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetBatchDisposals() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetBatchDisposals() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createAssetBatchDisposal(form as any); toast('success', tCommon('common.success'), t('batchDisposals.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }

@@ -1,0 +1,158 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Onusuite API",
+    "version": "1.0.0",
+    "description": "API publique REST pour intégrations tierces. Authentification par clé API (header X-API-Key). Rate limiting : 100 req/min par clé.",
+    "contact": { "email": "support@onusuite.com" },
+    "license": { "name": "Proprietary" }
+  },
+  "servers": [
+    { "url": "https://ndtaedcgwnaopopugiql.supabase.co/functions/v1/public-api", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": { "type": "apiKey", "in": "header", "name": "X-API-Key" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string" },
+              "details": { "type": "object" }
+            }
+          }
+        }
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "number": { "type": "string" },
+          "customer_id": { "type": "string", "format": "uuid" },
+          "date": { "type": "string", "format": "date" },
+          "due_date": { "type": "string", "format": "date" },
+          "status": { "type": "string", "enum": ["draft", "sent", "paid", "overdue", "cancelled"] },
+          "subtotal": { "type": "number" },
+          "vat_total": { "type": "number" },
+          "total": { "type": "number" }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "siret": { "type": "string" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": {} },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "total": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "security": [{ "ApiKeyAuth": [] }],
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "summary": "Statut de l'API",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/v1/invoices": {
+      "get": {
+        "summary": "Liste des factures",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 100 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Liste paginée", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedResponse" } } } },
+          "401": { "description": "Non authentifié" },
+          "429": { "description": "Rate limit exceeded" }
+        }
+      },
+      "post": {
+        "summary": "Créer une facture",
+        "parameters": [
+          { "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" }, "description": "Clé d'idempotence pour éviter les doublons" }
+        ],
+        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+        "responses": {
+          "201": { "description": "Créée" },
+          "400": { "description": "Erreur de validation" },
+          "409": { "description": "Conflit (idempotence)" }
+        }
+      }
+    },
+    "/v1/invoices/{id}": {
+      "get": {
+        "summary": "Détail d'une facture",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Détail" }, "404": { "description": "Introuvable" } }
+      }
+    },
+    "/v1/customers": {
+      "get": { "summary": "Liste des clients", "responses": { "200": { "description": "Liste" } } }
+    },
+    "/v1/customers/{id}": {
+      "get": { "summary": "Détail d'un client", "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Détail" } } }
+    },
+    "/v1/suppliers": {
+      "get": { "summary": "Liste des fournisseurs", "responses": { "200": { "description": "Liste" } } }
+    },
+    "/v1/products": {
+      "get": { "summary": "Liste des produits", "responses": { "200": { "description": "Liste" } } }
+    },
+    "/v1/journal-entries": {
+      "get": {
+        "summary": "Liste des écritures comptables",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 100 } }
+        ],
+        "responses": { "200": { "description": "Liste paginée" } }
+      }
+    },
+    "/v1/vat-returns": {
+      "get": { "summary": "Déclarations TVA", "responses": { "200": { "description": "Liste" } } }
+    },
+    "/v1/pay-slips": {
+      "get": { "summary": "Bulletins de paie", "responses": { "200": { "description": "Liste" } } }
+    },
+    "/v1/balance-sheet": {
+      "get": {
+        "summary": "Bilan",
+        "parameters": [{ "name": "fiscal_year_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Bilan" } }
+      }
+    },
+    "/v1/profit-loss": {
+      "get": {
+        "summary": "Compte de résultat",
+        "parameters": [{ "name": "fiscal_year_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Compte de résultat" } }
+      }
+    },
+    "/v1/trial-balance": {
+      "get": {
+        "summary": "Balance générale",
+        "parameters": [{ "name": "fiscal_year_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Balance" } }
+      }
+    }
+  }
+}

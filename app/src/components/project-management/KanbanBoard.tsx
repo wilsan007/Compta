@@ -22,7 +22,7 @@ const COLUMNS: { status: TaskStatus; color: string }[] = [
   { status: 'canceled', color: '#6b7280' },
 ]
 
-export function KanbanBoard({ projectId, className }: KanbanBoardProps) {
+export function KanbanBoard({ className }: KanbanBoardProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading, error, refetch, updateTask } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()

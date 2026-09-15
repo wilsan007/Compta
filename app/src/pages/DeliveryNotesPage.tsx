@@ -1,13 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate, translateStatus } from '@/lib/utils'
-import { getDeliveryNotes, createDeliveryNote, updateDeliveryNote, deleteDeliveryNote, getCustomers, getDeliveryNoteLines, transformDeliveryNoteToInvoice } from '@/lib/queries'
+import { getDeliveryNotes, createDeliveryNote, updateDeliveryNote, deleteDeliveryNote, getSalesOrders } from '@/lib/queries/sales'
+import { getCustomers } from '@/lib/queries/partners'
+import { getDeliveryNoteLines, transformDeliveryNoteToInvoice } from '@/lib/queries/misc'
 import { Plus, Trash2, X, Truck, FileText } from 'lucide-react'
-import type { DeliveryNote, DeliveryNoteLine, Customer } from '@/types'
+import type { DeliveryNote, DeliveryNoteLine, Customer, SalesOrder } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
-const statusKeys: string[] = ['pending', 'delivered', 'returned', 'cancelled']
+const statusKeys: string[] = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
 export function DeliveryNotesPage() {
   const { toast } = useToast()
@@ -27,9 +30,9 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       const [ns, custs] = await Promise.all([getDeliveryNotes(statusFilter || undefined), getCustomers()])
       setNotes(ns || [])
       setCustomers(custs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,7 +42,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteDeliveryNote(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }
@@ -89,7 +92,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('deliveryNotes.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('deliveryNotes.number'), t('deliveryNotes.customer'), t('deliveryNotes.date'), t('deliveryNotes.carrier'), t('deliveryNotes.tracking'), t('deliveryNotes.status'), t('deliveryNotes.invoiceStatus'), tCommon('table.actions')]}>
+          <Table headers={[t('deliveryNotes.number'), t('deliveryNotes.customer'), t('deliveryNotes.date'), t('deliveryNotes.carrier'), t('deliveryNotes.tracking'), t('deliveryNotes.status'), t('deliveryNotes.invoiceStatus'), 'Stock', tCommon('table.actions')]}>
             {notes.map((n) => {
               const cust = customers.find((c) => c.id === n.customer_id)
               return (
@@ -110,6 +113,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
                       {n.invoice_status === 'invoiced' ? t('deliveryNotes.invoiceInvoiced') : n.invoice_status === 'partial' ? t('deliveryNotes.invoicePartial') : t('deliveryNotes.invoicePending')}
                     </span>
                   </TableCell>
+                  <TableCell>{(n as any).stock_movement_id || (n as any).stock_out_created ? <Badge variant="success">Sorti</Badge> : <Badge variant="neutral">En attente</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {n.status !== 'cancelled' && n.invoice_status !== 'invoiced' && (
@@ -145,6 +149,8 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
 
 function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClose: () => void; onSaved: () => void }) {
   const [customerId, setCustomerId] = useState('')
+  const [salesOrderId, setSalesOrderId] = useState('')
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([])
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
@@ -159,7 +165,7 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
     setSaving(true)
     try {
       const number = `BL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-      await createDeliveryNote({ number, customer_id: customerId || null, sales_order_id: null, delivery_date: deliveryDate, status: 'pending', carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null } as any)
+      await createDeliveryNote({ number, customer_id: customerId || null, sales_order_id: salesOrderId || null, delivery_date: deliveryDate, status: 'pending', carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
@@ -175,9 +181,16 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('deliveryNotes.customer')}</label>
-            <select className="input" value={customerId} onChange={(e) => setCustomerId(e.target.value)} required>
+            <select className="input" value={customerId} onChange={async (e) => { setCustomerId(e.target.value); setSalesOrderId(''); setSalesOrders([]); if (e.target.value) { try { const all = await getSalesOrders('confirmed'); setSalesOrders((all || []).filter((o) => o.customer_id === e.target.value)) } catch { /* ignore */ } } }} required>
               <option value="">— {tCommon('form.selectOption')} —</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('deliveryNotes.salesOrder')}</label>
+            <select className="input" value={salesOrderId} onChange={(e) => setSalesOrderId(e.target.value)} disabled={!customerId}>
+              <option value="">— {tCommon('form.selectOption')} —</option>
+              {salesOrders.map((o) => <option key={o.id} value={o.id}>{o.number}</option>)}
             </select>
           </div>
           <Input label={t('deliveryNotes.date')} type="date" required value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />

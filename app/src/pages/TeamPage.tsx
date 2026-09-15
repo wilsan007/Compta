@@ -4,11 +4,8 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import {
-  getTenantUsers, inviteUser, updateUserRole, revokeUser, reactivateUser, reinviteUser,
-  PERMISSION_TABLES, PERMISSION_ACTIONS,
-  type TenantUser,
-} from '@/lib/queries'
+import { getTenantUsers, inviteUser, updateUserRole, revokeUser, reactivateUser, reinviteUser, PERMISSION_TABLES, PERMISSION_ACTIONS } from '@/lib/queries/misc'
+import { type TenantUser } from '@/lib/queries'
 import { Users, UserPlus, Loader2, Ban, RotateCcw, Send, Shield, Check, CalendarClock } from 'lucide-react'
 import { GuestAccessConfigPanel } from '@/components/team/GuestAccessConfigPanel'
 import { getEnabledModuleRoleOptions } from '@/lib/moduleRoles'
@@ -36,7 +33,7 @@ export function TeamPage() {
     } finally {
       setLoading(false)
     }
-  }, [user?.tenantId, toast])
+  }, [user?.tenantId, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

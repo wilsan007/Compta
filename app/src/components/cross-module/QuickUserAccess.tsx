@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { QuickAccessModal } from './QuickAccessModal'
 import { Button, Input, Select, EmptyState, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getTenantUsers, inviteUser } from '@/lib/queries'
+import { getTenantUsers, inviteUser } from '@/lib/queries/misc'
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/lib/toast'
 import { useModuleAwareAccess } from './useModuleAwareAccess'
 import { getModuleRoles, type ModuleName } from '@/lib/moduleRoles'
 import { Users, ExternalLink, UserPlus } from 'lucide-react'
-import type { TenantUser } from '@/lib/queries'
+import type { TenantUser } from '@/lib/queries/misc'
 import type { ModuleRole } from '@/types/documents'
 
 interface QuickUserAccessProps {
@@ -52,15 +52,15 @@ export function QuickUserAccess({ onClose, onSaved, forceInline, module }: Quick
     setLoading(true)
     try {
       setUsers(await getTenantUsers(user.tenantId))
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       /* ignore */
     } finally {
       setLoading(false)
     }
-  }, [user?.tenantId])
+  }, [user?.tenantId, tCommon, toast])
 
   useEffect(() => {
-    if (strategy === 'inline') loadData()
+    if (strategy === 'inline') loadData().catch(err => console.error('loadData:', err))
   }, [strategy, loadData])
 
   async function handleInvite(e: React.FormEvent) {

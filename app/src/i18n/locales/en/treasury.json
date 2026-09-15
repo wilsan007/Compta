@@ -61,7 +61,9 @@
     "amount": "Amount",
     "cumulativeBalance": "Cumulative balance",
     "incomingType": "Inflow",
-    "outgoingType": "Outflow"
+    "outgoingType": "Outflow",
+    "runForecast": "Run forecast",
+    "cashFlowResult": "Cash flow forecast: {{amount}} over {{days}} days"
   },
   "paymentOrders": {
     "title": "Payment orders",

@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, TrendingUp, Upload, Calculator } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries'
+import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries/stock'
 import type { Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function ForecastsPage() {
   const { toast } = useToast()
@@ -21,14 +22,14 @@ export function ForecastsPage() {
       const [f, p] = await Promise.all([getProductionForecasts(), getProducts()])
       setForecasts(f || [])
       setProducts(p || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteProductionForecast(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
   }

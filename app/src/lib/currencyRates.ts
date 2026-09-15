@@ -23,7 +23,8 @@ export async function getRate(base: string, quote: string, date?: string): Promi
   if (tid) q = q.eq('tenant_id', tid)
   if (date) q = q.eq('rate_date', date)
   const { data, error } = await q
-  if (error || !data || data.length === 0) return null
+  if (error) { console.error('getRate:', error); return null }
+  if (!data || data.length === 0) return null
   return Number(data[0].rate)
 }
 
@@ -38,7 +39,8 @@ export async function getLatestRate(base: string, quote: string): Promise<{ rate
     .limit(1)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
-  if (error || !data || data.length === 0) return null
+  if (error) { console.error('getLatestRate:', error); return null }
+  if (!data || data.length === 0) return null
   return { rate: Number(data[0].rate), date: data[0].rate_date }
 }
 
@@ -149,11 +151,12 @@ export function getRateAge(rateDate: string): 'fresh' | 'recent' | 'stale' {
 async function getTenantId(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('tenant_users')
     .select('tenant_id')
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
     .maybeSingle()
+  if (error) { console.error('getTenantId:', error); return null }
   return data?.tenant_id || null
 }

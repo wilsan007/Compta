@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import i18n from '@/i18n'
+import i18n from 'i18next'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -66,7 +66,8 @@ export function evaluateExpression(expr: string): number | null {
       return Math.round(result * 100) / 100
     }
     return null
-  } catch {
+  } catch (err) {
+    console.error('safeEvalNumber:', err)
     return null
   }
 }

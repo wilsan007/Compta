@@ -2,86 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { sendEmailViaResend, buildInvitationEmail } from "../_shared/email.ts"
-
-// ============================================
-// INLINE RATE LIMITING (shared logic)
-// ============================================
-interface RateLimitEntry { count: number; resetAt: number }
-const rateLimitMap = new Map<string, RateLimitEntry>()
-let lastCleanup = Date.now()
-function cleanupExpired() {
-  const now = Date.now()
-  if (now - lastCleanup < 300_000) return
-  lastCleanup = now
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key)
-  }
-}
-function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  cleanupExpired()
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return true
-  }
-  if (entry.count >= maxRequests) return false
-  entry.count++
-  return true
-}
-function getClientIp(req: Request): string {
-  const xff = req.headers.get("X-Forwarded-For")
-  if (xff) return xff.split(",")[0].trim()
-  const xreal = req.headers.get("X-Real-IP")
-  if (xreal) return xreal.trim()
-  const cfip = req.headers.get("CF-Connecting-IP")
-  if (cfip) return cfip.trim()
-  return "unknown"
-}
-const MAX_BODY_SIZE = 100 * 1024
-async function validateBodySize(req: Request, maxSize: number = MAX_BODY_SIZE): Promise<{ ok: boolean; error?: string }> {
-  const contentLength = req.headers.get("Content-Length")
-  if (contentLength && parseInt(contentLength, 10) > maxSize) {
-    return { ok: false, error: `Body too large (max ${maxSize} bytes)` }
-  }
-  const clone = req.clone()
-  const text = await clone.text()
-  if (text.length > maxSize) {
-    return { ok: false, error: `Body too large (max ${maxSize} bytes)` }
-  }
-  return { ok: true }
-}
-function rateLimitResponse(corsHeaders: Record<string, string>, retryAfter: number = 60): Response {
-  return new Response(
-    JSON.stringify({ error: "Trop de requêtes. Réessayez plus tard." }),
-    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(retryAfter) } },
-  )
-}
-
-const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev",
-  "http://localhost:5173",
-  "http://localhost:4173",
-]
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || ""
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ""
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
-  }
-}
-
-function validatePassword(pw: string): string | null {
-  if (!pw || pw.length < 8) return "Le mot de passe doit contenir au moins 8 caractères"
-  if (!/[A-Z]/.test(pw)) return "Le mot de passe doit contenir au moins une majuscule"
-  if (!/[a-z]/.test(pw)) return "Le mot de passe doit contenir au moins une minuscule"
-  if (!/[0-9]/.test(pw)) return "Le mot de passe doit contenir au moins un chiffre"
-  return null
-}
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { checkRateLimit, getClientIp, validateBodySize, rateLimitResponse } from "../_shared/rateLimit.ts"
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -93,7 +15,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return handleOptions(corsHeaders)
   }
 
   // ============================================
@@ -212,12 +134,13 @@ serve(async (req) => {
     }
 
     // 1. Check if user already exists in this tenant
-    const { data: existingTenantUser } = await supabase
+    const { data: existingTenantUser, error } = await supabase
       .from("tenant_users")
       .select("id, status, auth_id")
       .eq("tenant_id", tenant_id)
       .eq("email", email)
       .maybeSingle()
+    if (error) { console.error('create-user:', error); }
 
     if (existingTenantUser) {
       // User already has a row in this tenant
@@ -275,22 +198,24 @@ serve(async (req) => {
           console.error("Failed to generate magic link for re-invitation:", linkError.message)
         } else if (linkData?.properties?.action_link) {
           // Fetch tenant name and inviter name for the email template
-          const { data: tenantData } = await supabase
+          const { data: tenantData, error } = await supabase
             .from("tenants")
             .select("name")
             .eq("id", tenant_id)
             .single()
+          if (error) { console.error('create-user:', error); }
           const tenantName = tenantData?.name || tenant_id
 
           // Fetch inviter name
           let inviterName: string | undefined
           if (invited_by) {
-            const { data: inviterData } = await supabase
+            const { data: inviterData, error: inviterErr } = await supabase
               .from("tenant_users")
               .select("name")
               .eq("auth_id", invited_by)
               .eq("tenant_id", tenant_id)
               .maybeSingle()
+            if (inviterErr) { console.error('create-user:', inviterErr); }
             inviterName = inviterData?.name || undefined
           }
 
@@ -449,22 +374,24 @@ serve(async (req) => {
       console.error("Failed to generate magic link:", linkError.message)
     } else if (linkData?.properties?.action_link) {
       // Fetch tenant name and inviter name for the email template
-      const { data: tenantData } = await supabase
+      const { data: tenantData, error } = await supabase
         .from("tenants")
         .select("name")
         .eq("id", tenant_id)
         .single()
+      if (error) { console.error('create-user:', error); }
       const tenantName = tenantData?.name || tenant_id
 
       // Fetch inviter name
       let inviterName: string | undefined
       if (invited_by) {
-        const { data: inviterData } = await supabase
+        const { data: inviterData, error: inviterErr } = await supabase
           .from("tenant_users")
           .select("name")
           .eq("auth_id", invited_by)
           .eq("tenant_id", tenant_id)
           .maybeSingle()
+        if (inviterErr) { console.error('create-user:', inviterErr); }
         inviterName = inviterData?.name || undefined
       }
 
@@ -517,14 +444,15 @@ serve(async (req) => {
         success: true,
         email,
         existing_user: existingUser,
-        email_sent: !otpError,
+        email_sent: emailSent,
         message,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   } catch (err) {
+    console.error("create-user error:", err)
     return new Response(
-      JSON.stringify({ error: "Erreur interne du serveur" }),
+      JSON.stringify({ error: "Erreur interne du serveur", details: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
   }

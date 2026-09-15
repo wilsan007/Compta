@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getDocumentCharges, addDocumentCharge, deleteDocumentCharge, getSuppliers } from '@/lib/queries'
+import { getDocumentCharges, addDocumentCharge, deleteDocumentCharge } from '@/lib/queries/misc'
+import { getSuppliers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2, X, Truck } from 'lucide-react'
 import type { DocumentCharge, Supplier } from '@/types'
@@ -28,12 +29,12 @@ export function DocumentCharges({ documentType, documentId }: Props) {
       const [ch, sup] = await Promise.all([getDocumentCharges(documentType, documentId), getSuppliers()])
       setCharges(ch || [])
       setSuppliers(sup || [])
-    } catch (err) {
-      console.error('Failed to load charges:', err)
+    } catch (err: any) { console.error('Failed to load charges:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [documentType, documentId])
+  }, [documentType, documentId, tCommon, toast])
 
   useEffect(() => { loadCharges() }, [loadCharges])
 

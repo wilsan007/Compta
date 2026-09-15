@@ -2,11 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getFiscalPositions, createFiscalPosition, updateFiscalPosition, deleteFiscalPosition,
-  getFiscalPositionMappings, createFiscalPositionMapping, deleteFiscalPositionMapping,
-  getTaxRates,
-} from '@/lib/queries'
+import { getFiscalPositions, createFiscalPosition, updateFiscalPosition, deleteFiscalPosition, getFiscalPositionMappings, createFiscalPositionMapping, deleteFiscalPositionMapping } from '@/lib/queries/misc'
+import { getTaxRates } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2, X, MapPin, ArrowRight } from 'lucide-react'
 import type { FiscalPosition, FiscalPositionMapping, TaxRate } from '@/types'
 
@@ -46,8 +43,7 @@ export function FiscalPositionsPage() {
     try {
       setLoading(true)
       setPositions(await getFiscalPositions())
-    } catch (err) {
-      console.error('Error loading fiscal positions:', err)
+    } catch (err: any) { console.error('Error loading fiscal positions:', err)
       toast('error', t('fiscalPositions.title'), t('fiscalPositions.loadError'))
     } finally {
       setLoading(false)
@@ -99,8 +95,7 @@ export function FiscalPositionsPage() {
       }
       resetForm()
       await load()
-    } catch (err) {
-      console.error('Error saving fiscal position:', err)
+    } catch (err: any) { console.error('Error saving fiscal position:', err)
       toast('error', t('fiscalPositions.title'), t('fiscalPositions.saveError'))
     }
   }
@@ -111,8 +106,8 @@ export function FiscalPositionsPage() {
       await deleteFiscalPosition(id)
       toast('success', t('fiscalPositions.title'), t('fiscalPositions.deleteSuccess'))
       await load()
-    } catch (err) {
-      console.error('Error deleting fiscal position:', err)
+    } catch (err: any) { console.error('Error deleting fiscal position:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -121,8 +116,8 @@ export function FiscalPositionsPage() {
     setActiveTab('mappings')
     try {
       setMappings(await getFiscalPositionMappings(fp.id))
-    } catch (err) {
-      console.error('Error loading mappings:', err)
+    } catch (err: any) { console.error('Error loading mappings:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -139,8 +134,8 @@ export function FiscalPositionsPage() {
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingCreateSuccess'))
       setMappingForm({ source_tax_id: '', target_tax_id: '', source_account_code: '', target_account_code: '' })
       setMappings(await getFiscalPositionMappings(selectedPosition.id))
-    } catch (err) {
-      console.error('Error creating mapping:', err)
+    } catch (err: any) { console.error('Error creating mapping:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -150,8 +145,8 @@ export function FiscalPositionsPage() {
       await deleteFiscalPositionMapping(id)
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingDeleteSuccess'))
       if (selectedPosition) setMappings(await getFiscalPositionMappings(selectedPosition.id))
-    } catch (err) {
-      console.error('Error deleting mapping:', err)
+    } catch (err: any) { console.error('Error deleting mapping:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 

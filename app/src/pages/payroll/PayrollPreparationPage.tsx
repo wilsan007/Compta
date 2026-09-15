@@ -2,15 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import {
-  getPayRuns, getEmployees, getVariableElements, createVariableElement,
-  deleteVariableElement, importTimesheetElements, importLeaveElements,
-  importExpenseElements, generateMealVoucherElements, getPayrollComponents,
-  calculateGrossFromNet,
-} from '@/lib/queries'
+import { getPayRuns, getEmployees, getPayrollComponents } from '@/lib/queries/payroll'
+import { getVariableElements, createVariableElement, deleteVariableElement, importTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet } from '@/lib/queries/leavesAbsences'
+import { calculateOvertimePay, calculateSickLeavePay } from '@/lib/queries/businessFunctions'
 import type { PayRun, Employee, PayrollVariableElement, PayrollComponent } from '@/types'
 import { useToast } from '@/lib/toast'
-import { Wand2, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Download, Upload } from 'lucide-react'
+import { Wand2, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Upload } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
 
 type Step = 1 | 2 | 3 | 4 | 5
 
@@ -28,6 +26,8 @@ export function PayrollPreparationPage() {
   const [loading, setLoading] = useState(true)
   const [showAddElement, setShowAddElement] = useState(false)
   const [showReverseCalc, setShowReverseCalc] = useState(false)
+  const [showOvertimeCalc, setShowOvertimeCalc] = useState(false)
+  const [showSickLeaveCalc, setShowSickLeaveCalc] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -35,9 +35,9 @@ export function PayrollPreparationPage() {
       setPayRuns(runs || [])
       setEmployees(emps || [])
       setComponents(comps || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -46,8 +46,8 @@ export function PayrollPreparationPage() {
     try {
       const els = await getVariableElements(selectedPayRun)
       setVariableElements(els || [])
-    } catch (err: any) { console.error(err) }
-  }, [selectedPayRun])
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+  }, [selectedPayRun, tCommon, toast])
 
   useEffect(() => { loadVariableElements() }, [loadVariableElements])
 
@@ -75,17 +75,12 @@ export function PayrollPreparationPage() {
   }
 
   async function handleDeleteElement(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteVariableElement(id); await loadVariableElements() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
 
   const totalVariable = variableElements.reduce((s, e) => s + Number(e.amount), 0)
-  const elementsByEmp = variableElements.reduce((acc, e) => {
-    if (!acc[e.employee_id]) acc[e.employee_id] = []
-    acc[e.employee_id].push(e)
-    return acc
-  }, {} as Record<string, PayrollVariableElement[]>)
 
   const steps = [
     { num: 1, label: t('preparation.steps.period') },
@@ -154,6 +149,12 @@ export function PayrollPreparationPage() {
               <div className="flex items-center gap-2 mb-4">
                 <Button variant="secondary" onClick={() => setShowReverseCalc(true)}>
                   <Calculator className="w-4 h-4" /> {t('preparation.reverseCalc')}
+                </Button>
+                <Button variant="secondary" onClick={() => setShowOvertimeCalc(true)}>
+                  <Calculator className="w-4 h-4" /> Calculer les heures sup
+                </Button>
+                <Button variant="secondary" onClick={() => setShowSickLeaveCalc(true)}>
+                  <Calculator className="w-4 h-4" /> Calculer les IJSS
                 </Button>
               </div>
               <div className="flex justify-between">
@@ -256,6 +257,20 @@ export function PayrollPreparationPage() {
           onClose={() => setShowReverseCalc(false)}
         />
       )}
+
+      {showOvertimeCalc && (
+        <OvertimeCalcModal
+          employees={activeEmployees}
+          onClose={() => setShowOvertimeCalc(false)}
+        />
+      )}
+
+      {showSickLeaveCalc && (
+        <SickLeaveCalcModal
+          employees={activeEmployees}
+          onClose={() => setShowSickLeaveCalc(false)}
+        />
+      )}
     </div>
   )
 }
@@ -308,6 +323,11 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
             { value: 'absence', label: t('preparation.elementTypes.absence') },
             { value: 'meal_voucher', label: t('preparation.elementTypes.meal_voucher') },
             { value: 'transport', label: t('preparation.elementTypes.transport') },
+            { value: 'advance_deduction', label: t('preparation.elementTypes.advance_deduction') },
+            { value: 'pay_recall', label: t('preparation.elementTypes.pay_recall') },
+            { value: 'expense_reimbursement', label: t('preparation.elementTypes.expense_reimbursement') },
+            { value: 'unpaid_leave_deduction', label: t('preparation.elementTypes.unpaid_leave_deduction') },
+            { value: 'lateness_deduction', label: t('preparation.elementTypes.lateness_deduction') },
             { value: 'other', label: t('preparation.elementTypes.other') },
           ]} />
           <Input label={t('preparation.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -375,6 +395,108 @@ function ReverseCalcModal({ components, employees, onClose }: {
                   </Table>
                 </Card>
               )}
+            </div>
+          )}
+          <div className="flex justify-end pt-2 border-t border-[var(--color-border)]">
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.close')}</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onClose: () => void }) {
+  const { t } = useTranslation('payroll')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
+  const [employeeId, setEmployeeId] = useState('')
+  const [hours, setHours] = useState('')
+  const [rate, setRate] = useState('1.25')
+  const [result, setResult] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleCalculate() {
+    if (!employeeId) { toast('warning', tCommon('form.requiredField'), t('preparation.employee')); return }
+    setLoading(true)
+    try {
+      const res = await calculateOvertimePay(employeeId, Number(hours) || 0, Number(rate) || 1.25)
+      const amount = Number(res?.amount ?? res?.overtime_pay ?? res ?? 0)
+      setResult(amount)
+      toast('success', tCommon('common.success'), `Heures sup: ${amount.toFixed(2)} €`)
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
+      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">Calculer les heures sup</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <Select label={t('preparation.employee')} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} options={[
+            { value: '', label: '—' },
+            ...employees.map((e) => ({ value: e.id, label: e.name })),
+          ]} />
+          <Input label="Heures" type="number" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="0" />
+          <Input label="Taux (ex: 1.25 = 25%)" type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} />
+          <Button onClick={handleCalculate} disabled={loading || !employeeId}><Calculator className="w-4 h-4" /> {loading ? '…' : 'Calculer'}</Button>
+          {result !== null && (
+            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)]">
+              <div className="text-xs text-[var(--color-text-secondary)]">Montant heures supplémentaires</div>
+              <div className="text-2xl font-bold">{formatCurrency(result)}</div>
+            </div>
+          )}
+          <div className="flex justify-end pt-2 border-t border-[var(--color-border)]">
+            <Button variant="secondary" onClick={onClose}>{tCommon('actions.close')}</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onClose: () => void }) {
+  const { t } = useTranslation('payroll')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
+  const [employeeId, setEmployeeId] = useState('')
+  const [days, setDays] = useState('')
+  const [result, setResult] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleCalculate() {
+    if (!employeeId) { toast('warning', tCommon('form.requiredField'), t('preparation.employee')); return }
+    setLoading(true)
+    try {
+      const res = await calculateSickLeavePay(employeeId, Number(days) || 0)
+      const amount = Number(res?.amount ?? res?.sick_leave_pay ?? res?.ijss ?? res ?? 0)
+      setResult(amount)
+      toast('success', tCommon('common.success'), `IJSS: ${amount.toFixed(2)} €`)
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
+      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold">Calculer les IJSS</h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <Select label={t('preparation.employee')} value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} options={[
+            { value: '', label: '—' },
+            ...employees.map((e) => ({ value: e.id, label: e.name })),
+          ]} />
+          <Input label="Jours d'arrêt" type="number" step="1" value={days} onChange={(e) => setDays(e.target.value)} placeholder="0" />
+          <Button onClick={handleCalculate} disabled={loading || !employeeId}><Calculator className="w-4 h-4" /> {loading ? '…' : 'Calculer'}</Button>
+          {result !== null && (
+            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)]">
+              <div className="text-xs text-[var(--color-text-secondary)]">Indemnités journalières (IJSS)</div>
+              <div className="text-2xl font-bold">{formatCurrency(result)}</div>
             </div>
           )}
           <div className="flex justify-end pt-2 border-t border-[var(--color-border)]">

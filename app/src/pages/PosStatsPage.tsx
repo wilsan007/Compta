@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, EmptyState, SkeletonTable, Select, StatCard, PageHeader } from '@/components/ui'
-import { getPosTerminals, getPosTickets } from '@/lib/queries'
+import { getPosTerminals, getPosTickets } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
 import { BarChart3, TrendingUp, Receipt, DollarSign } from 'lucide-react'
@@ -35,7 +35,7 @@ export function PosStatsPage() {
     } finally {
       setLoading(false)
     }
-  }, [period])
+  }, [period, tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

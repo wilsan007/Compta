@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '@/lib/queries'
+import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Warehouse as WarehouseIcon } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function WarehousesPage() {
   const { t } = useTranslation('stock')
@@ -17,9 +18,9 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   const loadData = useCallback(async () => {
     try { setWarehouses(await getWarehouses()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -29,7 +30,7 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('warehouses.deleteConfirm'))) return
+    if (!confirmSync(t('warehouses.deleteConfirm'))) return
     try { await deleteWarehouse(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

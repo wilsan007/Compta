@@ -1,8 +1,5 @@
-import * as pdfjsLib from 'pdfjs-dist'
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+// PRF-02 : pdfjs-dist chargé dynamiquement pour réduire le bundle initial
 import { supabase } from '@/lib/supabase'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
 export interface ParsedBankTransaction {
   date: string
@@ -44,22 +41,22 @@ const TEMPLATES: BankTemplate[] = [
   {
     id: 'generic',
     name: 'Générique',
-    datePattern: /(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/,
+    datePattern: /(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/,
     amountPattern: /(-?\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})?)\s*(?:USD|EUR|DJF|FCFA|F)?$/i,
-    descriptionPattern: /[A-Z]{2,}.*?(?=\d{2}[\/\-.]|\d+(?:[.,]\d{2})\s*$|$)/,
+    descriptionPattern: /[A-Z]{2,}.*?(?=\d{2}[/\-.]|\d+(?:[.,]\d{2})\s*$|$)/,
     skipLines: /^(solde|total|page|relevé|compte|date|libell|montant|définition)/i,
   },
   {
     id: 'bcim',
     name: 'BCIM Djibouti',
-    datePattern: /(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/,
+    datePattern: /(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/,
     amountPattern: /(-?\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})?)\s*(?:DJF|USD|EUR)?$/i,
     descriptionPattern: /(.+?)(?=\s+\d)/,
-    referencePattern: /(REF[:\s]*[A-Z0-9\-]+)/i,
+    referencePattern: /(REF[:\s]*[A-Z0-9-]+)/i,
     debitIndicator: /(débit|debit|retrait|DR)/i,
     creditIndicator: /(crédit|credit|dépôt|depot|CR)/i,
-    accountNumberPattern: /compte[:\s]*(\d[\d\s\-]{5,30})/i,
-    periodPattern: /période[:\s]*(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})\s*(?:au|to|à|a)\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/i,
+    accountNumberPattern: /compte[:\s]*(\d[\d\s-]{5,30})/i,
+    periodPattern: /période[:\s]*(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})\s*(?:au|to|à|a)\s*(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/i,
     balancePattern: /(?:nouveau|ancien|initial)[\s:]*solde[:\s]*(-?\d[\d\s.,]*)/i,
     currencyPattern: /(USD|EUR|DJF|FCFA)/i,
     skipLines: /^(solde|total|page|relevé|compte n|date|libellé|montant|définition|banque)/i,
@@ -67,33 +64,33 @@ const TEMPLATES: BankTemplate[] = [
   {
     id: 'bred',
     name: 'BRED',
-    datePattern: /(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/,
+    datePattern: /(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/,
     amountPattern: /(-?\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})?)\s*(?:EUR|USD|DJF)?$/i,
     descriptionPattern: /(.+?)(?=\s+-?\d)/,
-    referencePattern: /(?:n°|no|ref)[:\s]*([A-Z0-9\-]+)/i,
+    referencePattern: /(?:n°|no|ref)[:\s]*([A-Z0-9-]+)/i,
     debitIndicator: /(débit|debit|retrait)/i,
     creditIndicator: /(crédit|credit|dépôt|depot)/i,
-    accountNumberPattern: /compte[:\s]*(\d[\d\s\-]{5,30})/i,
-    periodPattern: /du\s+(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})\s*(?:au|to)\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/i,
+    accountNumberPattern: /compte[:\s]*(\d[\d\s-]{5,30})/i,
+    periodPattern: /du\s+(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})\s*(?:au|to)\s*(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/i,
     skipLines: /^(solde|total|page|relevé|date|libellé|montant)/i,
   },
   {
     id: 'boa',
     name: 'Bank of Africa',
-    datePattern: /(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/,
+    datePattern: /(\d{2}[/\-.]\d{2}[/\-.]\d{2,4})/,
     amountPattern: /(-?\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{2})?)\s*(?:DJF|USD|EUR|FCFA)?$/i,
     descriptionPattern: /(.+?)(?=\s+-?\d)/,
-    referencePattern: /(?:op|operation)[:\s]*([A-Z0-9\-]+)/i,
+    referencePattern: /(?:op|operation)[:\s]*([A-Z0-9-]+)/i,
     debitIndicator: /(débit|debit|retrait|DR)/i,
     creditIndicator: /(crédit|credit|dépôt|depot|CR)/i,
-    accountNumberPattern: /compte[:\s]*(\d[\d\s\-]{5,30})/i,
+    accountNumberPattern: /compte[:\s]*(\d[\d\s-]{5,30})/i,
     skipLines: /^(solde|total|page|relevé|date|libellé|montant|bank of)/i,
   },
 ]
 
 function parseDate(dateStr: string): string {
   const cleaned = dateStr.trim().replace(/\s/g, '')
-  const parts = cleaned.split(/[\/\-.]/)
+  const parts = cleaned.split(/[/\-.]/)
   if (parts.length !== 3) return dateStr
   let [dd, mm, yy] = parts
   if (yy.length === 2) yy = '20' + yy
@@ -123,6 +120,9 @@ function detectType(line: string, template: BankTemplate): 'debit' | 'credit' {
 
 export async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer()
+  const pdfjsLib = await import('pdfjs-dist')
+  const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
 
   // SECURITY: Cap page count to prevent DoS via huge PDFs
@@ -282,7 +282,8 @@ export async function getLearnedTemplates(): Promise<{ id: string; name: string 
       .order('bank_name')
     if (error) throw error
     return (data || []).map((t: any) => ({ id: `db_${t.id}`, name: `🤖 ${t.bank_name}` }))
-  } catch {
+  } catch (err) {
+    console.error('getLearnedTemplates:', err)
     return []
   }
 }
@@ -295,7 +296,8 @@ export async function parseWithLearnedTemplate(rawText: string, templateId: stri
     .select('*')
     .eq('id', dbId)
     .single()
-  if (error || !data) return null
+  if (error) { console.error('pdfBankParser getTemplateById:', error); return null }
+  if (!data) return null
   const template = dbTemplateToBankTemplate(data as DBTemplate)
   return parseBankStatementWithTemplate(rawText, template)
 }
@@ -426,7 +428,8 @@ export async function parseWithBankTemplate(rawText: string, bankId: string): Pr
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  if (error || !data) return null
+  if (error) { console.error('pdfBankParser getTemplateByBankId:', error); return null }
+  if (!data) return null
   const template = dbTemplateToBankTemplate(data as DBTemplate)
   return parseBankStatementWithTemplate(rawText, template)
 }

@@ -29,6 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_project_members_employee ON project_members(emplo
 ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: users with access to the tenant can see project members
+DROP POLICY IF EXISTS "project_members_select" ON project_members;
 CREATE POLICY project_members_select ON project_members
   FOR SELECT TO authenticated
   USING (
@@ -39,6 +40,7 @@ CREATE POLICY project_members_select ON project_members
   );
 
 -- INSERT: only admins and project managers can add members
+DROP POLICY IF EXISTS "project_members_insert" ON project_members;
 CREATE POLICY project_members_insert ON project_members
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -51,6 +53,7 @@ CREATE POLICY project_members_insert ON project_members
   );
 
 -- UPDATE: only admins and project managers can update member roles
+DROP POLICY IF EXISTS "project_members_update" ON project_members;
 CREATE POLICY project_members_update ON project_members
   FOR UPDATE TO authenticated
   USING (
@@ -63,6 +66,7 @@ CREATE POLICY project_members_update ON project_members
   );
 
 -- DELETE: only admins can remove members
+DROP POLICY IF EXISTS "project_members_delete" ON project_members;
 CREATE POLICY project_members_delete ON project_members
   FOR DELETE TO authenticated
   USING (

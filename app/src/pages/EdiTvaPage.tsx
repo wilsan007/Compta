@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getVatReturns, submitEdiTva } from '@/lib/queries'
+import { getVatReturns } from '@/lib/queries/accounting'
+import { submitEdiTva } from '@/lib/queries/misc'
 import { useLocale } from '@/hooks/useLocale'
 import { Send, FileCheck } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function EdiTvaPage() {
   const { t } = useTranslation('accounting')
@@ -20,17 +22,17 @@ export function EdiTvaPage() {
     try {
       const data = await getVatReturns()
       setReturns(data || [])
-    } catch (err) {
-      console.error('Failed to load VAT returns:', err)
+    } catch (err: any) { console.error('Failed to load VAT returns:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleSubmit(id: string) {
-    if (!window.confirm(t('ediTva.submitConfirm'))) return
+    if (!confirmSync(t('ediTva.submitConfirm'))) return
     try {
       await submitEdiTva(id)
       toast('success', tCommon('common.success'), t('ediTva.submitSuccess'))

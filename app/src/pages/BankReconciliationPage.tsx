@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries'
+import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries/banking'
+import { smartBankReconciliation, applyBankReconciliationRules } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
@@ -22,12 +23,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(selectedAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err) {
-      console.error('Failed to load:', err)
+    } catch (err: any) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [selectedAccount])
+  }, [selectedAccount, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -44,6 +45,36 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
     try {
       const result = await autoMatchBankTransactions(selectedAccount || undefined)
       toast('success', tCommon('common.success'), t('reconciliation.autoMatchResult', { matched: result.matched, unmatched: result.unmatched }))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    }
+  }
+
+  async function handleSmartReconciliation() {
+    if (!selectedAccount) {
+      toast('error', tCommon('common.error'), t('reconciliation.selectAccount'))
+      return
+    }
+    try {
+      const result = await smartBankReconciliation(selectedAccount)
+      const matched = result?.matched ?? result?.match_count ?? result ?? 0
+      toast('success', tCommon('common.success'), t('reconciliation.smartResult', { matched: typeof matched === 'number' ? matched : 0 }))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    }
+  }
+
+  async function handleApplyRules() {
+    if (!selectedAccount) {
+      toast('error', tCommon('common.error'), t('reconciliation.selectAccount'))
+      return
+    }
+    try {
+      const result = await applyBankReconciliationRules(selectedAccount)
+      const applied = result?.applied ?? result?.matched ?? result?.count ?? 0
+      toast('success', tCommon('common.success'), `${applied} règle(s) appliquée(s)`)
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
@@ -69,6 +100,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         ]} />
         <Button onClick={handleAutoMatch} disabled={loading || unreconciled.length === 0}>
           <Zap className="w-4 h-4" /> {t('reconciliation.autoMatch')}
+        </Button>
+        <Button onClick={handleSmartReconciliation} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
+          <Zap className="w-4 h-4" /> {t('reconciliation.smartMatch')}
+        </Button>
+        <Button onClick={handleApplyRules} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
+          <Zap className="w-4 h-4" /> Appliquer les règles
         </Button>
       </div>
 

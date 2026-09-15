@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Wrench, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getToolings, createTooling, deleteTooling, getMachines } from '@/lib/queries'
+import { getToolings, createTooling, deleteTooling, getMachines } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Tooling, Machine } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function ToolingsPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { getStatusLabel, getStatusVariant } = useStatusLabels()
   const [toolings, setToolings] = useState<Tooling[]>([])
@@ -22,14 +24,14 @@ export function ToolingsPage() {
       const [tls, macs] = await Promise.all([getToolings(), getMachines()])
       setToolings(tls || [])
       setMachines(macs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('toolings.confirmDelete'))) return
+    if (!confirmSync(t('toolings.confirmDelete'))) return
     try { await deleteTooling(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }

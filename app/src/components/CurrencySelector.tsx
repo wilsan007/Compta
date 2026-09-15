@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCurrencies } from '@/lib/queries'
+import { getCurrencies } from '@/lib/queries/accounting'
 import type { Currency } from '@/types'
 
 interface CurrencySelectorProps {
@@ -26,7 +26,7 @@ export function CurrencySelector({ value, onChange, className, showBase = true }
   const [currencies, setCurrencies] = useState<Currency[]>([])
 
   useEffect(() => {
-    getCurrencies()
+    void getCurrencies()
       .then((c) => setCurrencies(c || []))
       .catch(() => {})
   }, [])

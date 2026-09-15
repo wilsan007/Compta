@@ -84,6 +84,8 @@ function resetMock() {
   ;(supabase as any).functions.invoke = vi.fn(() => Promise.resolve({
     data: { success: true }, error: null
   }))
+  // ACC-01: Réinitialiser rpc au mock par défaut
+  ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: null, error: null }))
 }
 
 // ============================================================
@@ -215,7 +217,7 @@ describe('checkMaterialAvailability', () => {
     }
 
     const { checkMaterialAvailability } = await import('@/lib/queries')
-    const result = await checkMaterialAvailability('bom1', 2)
+    const result = await checkMaterialAvailability('bom1')
     expect(result).toBeDefined()
     expect(result.available).toBeDefined()
     expect(result.missing).toBeDefined()
@@ -229,14 +231,17 @@ describe('transferGescomToAccounting', () => {
   beforeEach(() => resetMock())
 
   it('transfers items to accounting', async () => {
-    let callIdx = 0
+    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
     _fromOverride = () => {
-      const c = chainWith({ id: 'entry-' + callIdx++ })
-      c.insert = vi.fn(() => c)
+      const c = chainWith({ id: 'entry-1', transferred_entry_id: null })
       c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { id: 'entry-' + callIdx++ }, error: null }))
+      c.eq = vi.fn(() => c)
+      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
+      c.update = vi.fn(() => c)
       return c
     }
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, entry_id: 'entry-1', number: 'VTE-0001' }, error: null }))
 
     const { transferGescomToAccounting } = await import('@/lib/queries')
     const results = await transferGescomToAccounting([
@@ -250,13 +255,17 @@ describe('transferGescomToAccounting', () => {
   })
 
   it('handles errors per item', async () => {
+    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
     _fromOverride = () => {
-      const c = chainWith(null, { message: 'Insert failed' })
-      c.insert = vi.fn(() => c)
+      const c = chainWith({ transferred_entry_id: null })
       c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: null, error: { message: 'Insert failed' } }))
+      c.eq = vi.fn(() => c)
+      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
+      c.update = vi.fn(() => c)
       return c
     }
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: false, error: 'Insert failed' }, error: null }))
 
     const { transferGescomToAccounting } = await import('@/lib/queries')
     const results = await transferGescomToAccounting([
@@ -301,12 +310,16 @@ describe('Pay Slips & Payroll', () => {
   })
 
   it('generatePaySlipsForRun generates for active employees only', async () => {
+    // LOT4-02 : generatePaySlipsForRun appelle maintenant le RPC calculate_payslip
     let callIdx = 0
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: { success: true, pay_slip_id: 'ps-' + (++callIdx) },
+      error: null,
+    }))
     _fromOverride = () => {
-      const c = chainWith({ id: 'ps-' + callIdx++, number: 'BS-PR-001-ALI' })
-      c.insert = vi.fn(() => c)
+      const c = chainWith({ id: 'ps-' + callIdx, number: 'BS-PR-001-ALI' })
       c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { id: 'ps-' + callIdx++ }, error: null }))
+      c.single = vi.fn(() => Promise.resolve({ data: { id: 'ps-' + callIdx, number: 'BS-PR-001-ALI' }, error: null }))
       return c
     }
 
@@ -382,22 +395,27 @@ describe('getJournalPeriodBalance', () => {
 describe('getNextPieceNumber', () => {
   beforeEach(() => resetMock())
 
+  // ACC-01: getNextPieceNumber utilise maintenant le RPC get_next_piece_number
+
   it('returns default when no entries', async () => {
-    setMockData([])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0001', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0001')
   })
 
   it('increments last piece number', async () => {
-    setMockData([{ piece_number: 'VTE-0023' }])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0024', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0024')
   })
 
   it('returns default when no numeric suffix', async () => {
-    setMockData([{ piece_number: 'VTE-ABC' }])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0001', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0001')
@@ -805,16 +823,25 @@ describe('createTenant', () => {
   })
 
   it('creates tenant and tenant_users entry', async () => {
+    // DB-01: createTenantForUser utilise maintenant un RPC atomique
     _fromOverride = (table: string) => {
       const c = chainWith({ id: 't1', name: 'Test Co' })
-      if (table === 'tenants' || table === 'tenant_users') {
-        c.insert = vi.fn(() => c)
+      if (table === 'tenants') {
         c.select = vi.fn(() => c)
+        c.eq = vi.fn(() => c)
         c.single = vi.fn(() => Promise.resolve({ data: { id: 't1', name: 'Test Co' }, error: null }))
       }
-      if (table === 'company_settings') c.insert = vi.fn(() => c)
       return c
     }
+
+    // Mock the RPC to return success with tenant_id
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn((fn: string) => {
+      if (fn === 'create_tenant_for_current_user') {
+        return Promise.resolve({ data: { success: true, tenant_id: 't1' }, error: null })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
 
     const queries = await import('@/lib/queries')
     expect(queries.createTenantForUser).toBeDefined()

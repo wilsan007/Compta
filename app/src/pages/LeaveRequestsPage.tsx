@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, deleteLeaveRequest, getEmployees } from '@/lib/queries'
+import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, deleteLeaveRequest, getEmployees } from '@/lib/queries/payroll'
 import { CalendarDays, Plus, Trash2, X, Check, XCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'neutral' }
 
@@ -25,9 +26,9 @@ const [requests, setRequests] = useState<any[]>([])
       const [reqs, emps] = await Promise.all([getLeaveRequests(statusFilter || undefined), getEmployees()])
       setRequests(reqs || [])
       setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -42,7 +43,7 @@ const [requests, setRequests] = useState<any[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLeaveRequest(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

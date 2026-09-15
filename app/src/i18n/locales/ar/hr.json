@@ -842,6 +842,8 @@
     "anomalyCheck": "فحص الشذوذ", "noAnomalies": "لا توجد شذوذات",
     "generate": "توليد", "generated": "تم توليد التصريح",
     "transmit": "إرسال", "transmitted": "تم إرسال التصريح",
+    "simulationMode": "وضع المحاكاة",
+    "simulationWarning": "لم يتم تكوين واجهة برمجة تطبيقات net-entreprises — تم إرسال DSN في وضع المحاكاة. قم بتكوين التكامل للإرسال الفعلي.",
     "transmitting": "جاري الإرسال...", "confirmTransmit": "تأكيد الإرسال",
     "fileReady": "الملف جاهز للإرسال", "newDsn": "DSN جديدة",
     "history": "السجل", "noHistory": "لا يوجد سجل",

@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne } from '@/lib/queries'
+import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -23,7 +24,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -34,8 +35,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       ])
       setEntries(je || [])
       setAccounts(accs || [])
-    } catch (err) {
-      console.error('Error loading journal entries:', err)
+    } catch (err: any) { console.error('Error loading journal entries:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -51,17 +52,17 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('entries.deleteConfirm'))) return
+    if (!confirmSync(t('entries.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await loadData()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), t('entries.deleteError'))
     }
   }
 
   async function handleExtourne(id: string) {
-    if (!window.confirm(t('writingsEnhancement.extourneConfirm'))) return
+    if (!confirmSync(t('writingsEnhancement.extourneConfirm'))) return
     try {
       await generateExtourne(id, 'Extourne manuelle')
       toast('success', tCommon('toast.success'), t('writingsEnhancement.extourneSuccess'))

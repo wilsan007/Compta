@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getActivities, createActivity, completeActivity } from '@/lib/queries'
+import { getActivities, createActivity, completeActivity } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Calendar, CheckCircle } from 'lucide-react'
 import type { CrmActivity } from '@/types'
@@ -29,7 +29,7 @@ export function ActivitiesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { load() }, [load])
 

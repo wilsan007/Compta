@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
-import { getInvoices, getCustomers, createInvoice, updateInvoice, transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries'
+import { getInvoices, createInvoice, updateInvoice } from '@/lib/queries/sales'
+import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
+import { transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries/misc'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
 import { generateFacturX, downloadXML } from '@/lib/facturX'
-import { getCompanySettings } from '@/lib/queries'
+import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import type { Invoice, Customer, CompanySettings } from '@/types'
@@ -29,7 +31,7 @@ export function InvoicesPage() {
   const [typeFilter, setTypeFilter] = useState('')
 
   useEffect(() => {
-    loadInvoices()
+    loadInvoices().catch(err => console.error('loadInvoices:', err))
   }, [])
 
   async function loadInvoices() {
@@ -42,8 +44,8 @@ export function InvoicesPage() {
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
-    } catch (err) {
-      console.error('Error loading invoices:', err)
+    } catch (err: any) { console.error('Error loading invoices:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -62,12 +64,44 @@ export function InvoicesPage() {
     }
   }
 
+  async function handleValidate(id: string) {
+    setActionLoading(id)
+    try {
+      await updateInvoice(id, { validation_status: 'validated' as any })
+      toast('success', t('invoices.title'), tCommon('toast.saved'))
+      await loadInvoices()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   async function handleMarkPaid(id: string) {
     setActionLoading(id)
     try {
       const inv = invoices.find(i => i.id === id)
       if (!inv) return
-      await updateInvoice(id, { status: 'paid', amount_paid: inv.total, amount_due: 0 })
+      // Do NOT mutate invoice status directly. Instead record a customer_payment
+      // so the balance agée, treasury and accounting stay consistent. A DB
+      // trigger is expected to flip the invoice status / payment_state once the
+      // payment covers the outstanding amount.
+      const amount = Number(inv.amount_due ?? inv.total ?? 0)
+      if (amount <= 0) {
+        toast('warning', t('invoices.title'), tCommon('toast.updateError'))
+        return
+      }
+      await createCustomerPayment({
+        number: `PAY-${inv.number || id}`,
+        customer_id: inv.customer_id,
+        invoice_id: inv.id,
+        payment_date: new Date().toISOString().split('T')[0],
+        amount,
+        method: 'other',
+        bank_account_id: null,
+        reference: inv.number || null,
+        status: 'recorded',
+      })
       toast('success', t('invoices.title'), tCommon('toast.updated'))
       await loadInvoices()
     } catch (err: any) {
@@ -210,6 +244,7 @@ export function InvoicesPage() {
               { label: t('invoices.status'), key: 'status', sortable: true },
               { label: t('invoices.total'), key: 'total', sortable: true, className: 'text-right' },
               { label: t('invoices.balance'), key: 'amount_due', sortable: true, className: 'text-right' },
+              { label: 'Compta', key: 'journal_entry_id', sortable: false },
               { label: tCommon('table.actions') },
             ]}
             data={filtered as any}
@@ -233,6 +268,7 @@ export function InvoicesPage() {
                   <TableCell className={Number(inv.amount_due) > 0 ? 'text-[var(--color-warning)] font-medium text-right' : 'text-right'}>
                     {formatCurrency(Number(inv.amount_due) || 0)}
                   </TableCell>
+                  <TableCell>{inv.journal_entry_id || inv.journal_posted ? <Badge variant="success">Comptabilisé</Badge> : <Badge variant="neutral">Non comptabilisé</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setViewing(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.view')}>
@@ -241,6 +277,11 @@ export function InvoicesPage() {
                       {inv.status === 'draft' && (
                         <button onClick={() => handleSend(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[rgba(0,102,204,0.1)] disabled:opacity-40" title={tCommon('actions.send')}>
                           {actionLoading === inv.id ? <CheckCircle className="w-4 h-4 animate-pulse" /> : <Send className="w-4 h-4" />}
+                        </button>
+                      )}
+                      {inv.validation_status !== 'validated' && inv.status !== 'cancelled' && (
+                        <button onClick={() => handleValidate(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={tCommon('actions.validate')}>
+                          {actionLoading === inv.id ? <CheckCircle className="w-4 h-4 animate-pulse" /> : <FileCode className="w-4 h-4" />}
                         </button>
                       )}
                       {inv.status !== 'paid' && inv.status !== 'cancelled' && (

@@ -2,10 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getSepaPaymentOrders, transmitSepaOrder, getPayRuns } from '@/lib/queries'
+import { getSepaPaymentOrders, transmitSepaOrder } from '@/lib/queries/leavesAbsences'
+import { getPayRuns } from '@/lib/queries/payroll'
 import type { SepaPaymentOrder, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { FileText, Send, Download } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
 
 export function SepaPaymentsPage() {
   const { t } = useTranslation('payroll')
@@ -21,14 +23,14 @@ export function SepaPaymentsPage() {
       const [ords, runs] = await Promise.all([getSepaPaymentOrders(), getPayRuns()])
       setOrders(ords || [])
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleTransmit(id: string) {
-    if (!window.confirm(t('sepa.confirmTransmit'))) return
+    if (!confirmSync(t('sepa.confirmTransmit'))) return
     try {
       await transmitSepaOrder(id)
       toast('success', tCommon('common.success'), t('sepa.transmitted'))

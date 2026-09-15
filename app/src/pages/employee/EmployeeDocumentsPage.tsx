@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getMyDocuments, acknowledgeDocument } from '@/lib/queries'
+import { getMyDocuments, acknowledgeDocument } from '@/lib/queries/dematRh'
 import type { EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Download, CheckCircle, PenTool, Lock } from 'lucide-react'
@@ -33,7 +33,7 @@ export function EmployeeDocumentsPage() {
     try {
       await acknowledgeDocument(id)
       toast('success', t('documents.acknowledge'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }

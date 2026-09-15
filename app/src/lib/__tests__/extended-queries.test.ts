@@ -13,7 +13,7 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     single: vi.fn(() => Promise.resolve(resolvedValue)),
     maybeSingle: vi.fn(() => Promise.resolve(resolvedValue)),
     limit: vi.fn(() => chain),
-    range: vi.fn(() => Promise.resolve(resolvedValue)),
+    range: vi.fn(() => chain),
     in: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),
@@ -61,6 +61,9 @@ function resetMock() {
   mockChain.maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }))
   mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve))
   vi.clearAllMocks()
+  // Restaurer from et rpc après clearAllMocks
+  ;(supabase as any).from = vi.fn(() => mockChain)
+  ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: null, error: null }))
 }
 
 beforeEach(() => resetMock())
@@ -515,31 +518,37 @@ describe('Lettrage', () => {
   })
 
   it('applyLettrage updates lines with code and date', async () => {
-    setMockData(null, null)
+    // LOT4-08/09 : applyLettrage utilise maintenant la RPC apply_lettrage
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true }, error: null }))
     const { applyLettrage } = await import('@/lib/queries')
     await applyLettrage(['l1', 'l2'], 'A001')
-    expect((supabase as any).from).toHaveBeenCalledWith('journal_lines')
-    expect(mockChain.update).toHaveBeenCalled()
-    expect(mockChain.in).toHaveBeenCalledWith('id', ['l1', 'l2'])
+    expect((supabase as any).rpc).toHaveBeenCalledWith('apply_lettrage', {
+      p_line_ids: ['l1', 'l2'],
+      p_code: 'A001',
+    })
   })
 
   it('removeLettrage clears lettrage_code and date', async () => {
-    setMockData(null, null)
+    // LOT4-09 : removeLettrage utilise maintenant la RPC remove_lettrage
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true }, error: null }))
     const { removeLettrage } = await import('@/lib/queries')
     await removeLettrage(['l1'])
-    expect((supabase as any).from).toHaveBeenCalledWith('journal_lines')
-    expect(mockChain.update).toHaveBeenCalled()
+    expect((supabase as any).rpc).toHaveBeenCalledWith('remove_lettrage', {
+      p_line_ids: ['l1'],
+    })
   })
 
   it('getNextLettrageCode returns A001 when no existing codes', async () => {
-    setMockData([])
+    // LOT4-08 : getNextLettrageCode utilise maintenant la RPC next_lettrage_code
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'A001', error: null }))
     const { getNextLettrageCode } = await import('@/lib/queries')
     const result = await getNextLettrageCode()
     expect(result).toBe('A001')
   })
 
   it('getNextLettrageCode increments last code', async () => {
-    setMockData([{ lettrage_code: 'A005' }])
+    // LOT4-08 : getNextLettrageCode utilise maintenant la RPC next_lettrage_code
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'A006', error: null }))
     const { getNextLettrageCode } = await import('@/lib/queries')
     const result = await getNextLettrageCode()
     expect(result).toBe('A006')
@@ -551,13 +560,14 @@ describe('Lettrage', () => {
 describe('searchEntries', () => {
   beforeEach(() => resetMock())
 
-  it('searches with no criteria returns all entries (limited to 200)', async () => {
+  it('searches with no criteria returns paginated results', async () => {
     setMockData([{ id: '1', number: 'JE-001', journal_lines: [] }])
     const { searchEntries } = await import('@/lib/queries')
     const result = await searchEntries({})
     expect((supabase as any).from).toHaveBeenCalledWith('journal_entries')
-    expect(mockChain.limit).toHaveBeenCalledWith(200)
-    expect(result).toHaveLength(1)
+    // ACC-02: Utilise .range() au lieu de .limit()
+    expect(mockChain.range).toHaveBeenCalled()
+    expect(result.data).toHaveLength(1)
   })
 
   it('filters by journalCode', async () => {
@@ -589,7 +599,7 @@ describe('searchEntries', () => {
     }])
     const { searchEntries } = await import('@/lib/queries')
     const result = await searchEntries({ accountCode: '400000' })
-    expect(result).toHaveLength(1)
+    expect(result.data).toHaveLength(1)
   })
 
   it('filters out entries without matching accountCode', async () => {
@@ -599,7 +609,7 @@ describe('searchEntries', () => {
     }])
     const { searchEntries } = await import('@/lib/queries')
     const result = await searchEntries({ accountCode: '400000' })
-    expect(result).toHaveLength(0)
+    expect(result.data).toHaveLength(0)
   })
 })
 
@@ -878,7 +888,7 @@ describe('Dashboard Widgets', () => {
   it('getDashboardWidgets queries dashboard_widgets', async () => {
     setMockData([{ id: '1', widget_type: 'chart' }])
     const { getDashboardWidgets } = await import('@/lib/queries')
-    const result = await getDashboardWidgets()
+    const result = await getDashboardWidgets('user-1')
     expect((supabase as any).from).toHaveBeenCalledWith('dashboard_widgets')
     expect(result).toHaveLength(1)
   })

@@ -9,7 +9,7 @@ interface BurndownChartProps {
   projectId?: string
 }
 
-export function BurndownChart({ projectId }: BurndownChartProps) {
+export function BurndownChart(_props: BurndownChartProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
 

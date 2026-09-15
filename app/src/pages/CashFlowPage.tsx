@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell } from '@/components/ui'
-import { getCashFlow } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getCashFlow } from '@/lib/queries/accounting'
 import { formatCurrency } from '@/lib/utils'
 
 export function CashFlowPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<{ inflow: number; outflow: number; net: number; byMonth: any[] } | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -14,12 +16,13 @@ export function CashFlowPage() {
     setLoading(true)
     try {
       setData(await getCashFlow())
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load cash flow:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

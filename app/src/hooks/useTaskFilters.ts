@@ -9,7 +9,8 @@ export function useTaskFilters() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) return { ...emptyTaskFilters, ...JSON.parse(stored) }
-    } catch {
+    } catch (err) {
+      console.error("catch:", err)
       // ignore
     }
     return emptyTaskFilters
@@ -18,7 +19,8 @@ export function useTaskFilters() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filters))
-    } catch {
+    } catch (err) {
+      console.error("catch:", err)
       // ignore
     }
   }, [filters])

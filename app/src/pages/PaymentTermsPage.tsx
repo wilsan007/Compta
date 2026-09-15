@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getPaymentTerms, createPaymentTerm, updatePaymentTerm, deletePaymentTerm } from '@/lib/queries'
-import { Plus, Trash2, Edit2, X, CalendarDays } from 'lucide-react'
+import { getPaymentTerms, createPaymentTerm, updatePaymentTerm, deletePaymentTerm } from '@/lib/queries/payroll'
+import { calculatePaymentDueDates } from '@/lib/queries/businessFunctions'
+import { Plus, Trash2, Edit2, X, CalendarDays, Calculator } from 'lucide-react'
 import type { PaymentTerm } from '@/types'
 
 export function PaymentTermsPage() {
@@ -14,6 +15,21 @@ export function PaymentTermsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<PaymentTerm | null>(null)
+  const [calculatingId, setCalculatingId] = useState<string | null>(null)
+
+  async function handleCalcDueDates(termId: string) {
+    const invoiceDate = new Date().toISOString().split('T')[0]
+    setCalculatingId(termId)
+    try {
+      const result = await calculatePaymentDueDates(invoiceDate, termId)
+      const dates = Array.isArray(result) ? result.map((d: any) => d.due_date || d.date).join(', ') : JSON.stringify(result)
+      toast('success', t('paymentTerms.title'), `Échéances: ${dates}`)
+    } catch (err: any) {
+      toast('error', t('paymentTerms.title'), err.message || t('paymentTerms.saveError'))
+    } finally {
+      setCalculatingId(null)
+    }
+  }
 
   const [form, setForm] = useState({
     code: '',
@@ -189,6 +205,9 @@ export function PaymentTermsPage() {
                 <TableCell><Badge variant={term.active ? 'success' : 'neutral'}>{term.active ? tCommon('common.active') : tCommon('common.inactive')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    <button onClick={() => handleCalcDueDates(term.id)} disabled={calculatingId === term.id} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" title="Calculer les échéances">
+                      {calculatingId === term.id ? <span className="text-xs">…</span> : <Calculator className="w-4 h-4" />}
+                    </button>
                     <button onClick={() => startEdit(term)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
                     <button onClick={() => handleDelete(term.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
                   </div>

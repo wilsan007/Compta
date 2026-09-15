@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getBankReconciliationRules, createBankReconciliationRule, deleteBankReconciliationRule } from '@/lib/queries'
+import { getBankReconciliationRules, createBankReconciliationRule, deleteBankReconciliationRule } from '@/lib/queries/accounting'
 import { Plus, Trash2, Zap, X } from 'lucide-react'
 import type { BankReconciliationRule } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BankReconciliationRulesPage() {
   const { t } = useTranslation('accounting')
@@ -19,17 +20,17 @@ export function BankReconciliationRulesPage() {
     try {
       const data = await getBankReconciliationRules()
       setRules(data || [])
-    } catch (err) {
-      console.error('Failed to load bank recon rules:', err)
+    } catch (err: any) { console.error('Failed to load bank recon rules:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('bankRecon.deleteConfirm'))) return
+    if (!confirmSync(t('bankRecon.deleteConfirm'))) return
     try {
       await deleteBankReconciliationRule(id)
       toast('success', tCommon('common.success'), t('bankRecon.deleteSuccess'))

@@ -16,11 +16,11 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'fs'
-import { join, dirname, resolve } from 'path'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { hostname, platform, release, networkInterfaces, homedir } from 'os'
-import { randomUUID, createCipheriv, createDecipheriv, scryptSync } from 'crypto'
+import { randomUUID, randomBytes, createCipheriv,  scryptSync } from 'crypto'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const configPath = join(__dirname, 'config.json')
@@ -47,9 +47,12 @@ if (mirrorDir.startsWith('~/')) {
 
 const ENCRYPT = config.encrypt === true && !!process.env.MIRROR_ENCRYPTION_KEY
 const ENC_KEY = process.env.MIRROR_ENCRYPTION_KEY || ''
+// SEC-10: Le chiffrement est OBLIGATOIRE — refuser de démarrer sans
 if (!ENCRYPT) {
-  console.warn('⚠️  WARNING: Encryption is DISABLED. Local mirror data will be stored in plaintext.')
-  console.warn('   Set config.encrypt=true and provide encryptionKey (or MIRROR_ENCRYPTION_KEY env var) to enable.')
+  console.error('❌ ERREUR DE SÉCURITÉ: Le chiffrement est obligatoire.')
+  console.error('   Configurer config.encrypt=true et MIRROR_ENCRYPTION_KEY dans l\'environnement.')
+  console.error('   Le démon ne peut pas démarrer sans chiffrement (SEC-10).')
+  process.exit(1)
 }
 
 // ============ Machine identification ============
@@ -105,7 +108,7 @@ async function authenticateDaemon() {
   const daemonEmail = process.env.MIRROR_DAEMON_EMAIL || ''
   const daemonPassword = process.env.MIRROR_DAEMON_PASSWORD || ''
   if (daemonEmail && daemonPassword) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: daemonEmail, password: daemonPassword })
+    const { _data, error } = await supabase.auth.signInWithPassword({ email: daemonEmail, password: daemonPassword })
     if (error) {
       console.error('ERROR: Daemon authentication failed:', error.message)
       console.error('Set MIRROR_DAEMON_EMAIL and MIRROR_DAEMON_PASSWORD env vars with a valid tenant user account.')
@@ -196,13 +199,13 @@ function escapeSqlValue(val) {
   if (val === null || val === undefined) return 'NULL'
   if (typeof val === 'number') return String(val)
   if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')}'`
-  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')
+  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replaceAll('\0', '')}'`
+  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replaceAll('\0', '')
   return `'${str}'`
 }
 
 function quoteIdentifier(name) {
-  return '"' + String(name).replace(/"/g, '""').replace(/\0/g, '') + '"'
+  return '"' + String(name).replace(/"/g, '""').replaceAll('\0', '') + '"'
 }
 
 function generateSqlDump(tables, exportedAt) {
@@ -262,13 +265,23 @@ function generateCsv(table) {
 }
 
 // ============ Encryption ============
+// SEC-10: Utilise AES-256-GCM (chiffrement authentifié) au lieu de AES-256-CBC.
+// L'IV doit faire exactement 16 bytes (32 caractères hex), pas 8 bytes.
 function encryptBuffer(data, key) {
   const salt = randomUUID()
   const keyBuf = scryptSync(key, salt, 32)
-  const iv = randomUUID().replace(/-/g, '').slice(0, 16)
-  const cipher = createCipheriv('aes-256-cbc', keyBuf, Buffer.from(iv, 'hex'))
+  const iv = randomBytes(16) // 16 bytes pour AES-256-GCM (et CBC)
+  const cipher = createCipheriv('aes-256-gcm', keyBuf, iv)
   const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
-  return Buffer.concat([Buffer.from(salt, 'utf-8'), Buffer.from([0]), Buffer.from(iv, 'hex'), encrypted])
+  const authTag = cipher.getAuthTag()
+  // Format: salt(36 bytes) + 0x00 separator + iv(16 bytes) + authTag(16 bytes) + encrypted
+  return Buffer.concat([
+    Buffer.from(salt, 'utf-8'),
+    Buffer.from([0]),
+    iv,
+    authTag,
+    encrypted,
+  ])
 }
 
 function encryptFile(filePath, key) {
@@ -405,7 +418,6 @@ function escapeHtml(str) {
 }
 
 // ============ Sync logic ============
-let lastSyncAt = null
 let syncRunning = false
 
 async function syncAll(reason = 'scheduled') {
@@ -447,7 +459,6 @@ async function syncAll(reason = 'scheduled') {
   }
 
   const now = new Date().toISOString()
-  lastSyncAt = now
 
   // Ensure mirror dir exists
   const sqlDir = join(mirrorDir, 'sql')

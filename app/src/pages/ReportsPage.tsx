@@ -1,12 +1,43 @@
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, StatCard, Breadcrumb } from '@/components/ui'
+import { useState, useEffect } from 'react'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, StatCard, Breadcrumb, Select } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
 import { TrendingUp, TrendingDown, DollarSign, FileText, Download } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts'
+import { getFiscalYears } from '@/lib/queries/accounting'
+import { generateAccountingAnnex } from '@/lib/queries/businessFunctions'
+import { useToast } from '@/lib/toast'
+import type { FiscalYear } from '@/types'
 
 export function ReportsPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency } = useLocale()
+  const [years, setYears] = useState<FiscalYear[]>([])
+  const [selectedYear, setSelectedYear] = useState('')
+  const [generating, setGenerating] = useState(false)
+
+  useEffect(() => {
+    getFiscalYears().then((fy) => {
+      setYears(fy || [])
+      const open = (fy || []).find((y) => y.status === 'open')
+      if (open) setSelectedYear(open.id)
+    }).catch(() => {})
+  }, [])
+
+  async function handleGenerateAnnex() {
+    if (!selectedYear) return
+    setGenerating(true)
+    try {
+      await generateAccountingAnnex(selectedYear)
+      toast('success', tCommon('common.success'), t('financialReports.annexGenerated'))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
   const plData = [
     { category: t('financialReports.revenues'), amount: 85600 },
     { category: t('financialReports.costOfSales'), amount: -32000 },
@@ -36,7 +67,19 @@ export function ReportsPage() {
       <PageHeader
         title={t('financialReports.title')}
         subtitle={t('financialReports.subtitle')}
-        action={<Button variant="secondary"><Download className="w-4 h-4" /> {t('financialReports.export')}</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              options={years.map((y) => ({ value: y.id, label: y.code }))}
+            />
+            <Button onClick={handleGenerateAnnex} disabled={generating || !selectedYear}>
+              {generating ? tCommon('common.loading') : t('financialReports.generateAnnex')}
+            </Button>
+            <Button variant="secondary"><Download className="w-4 h-4" /> {t('financialReports.export')}</Button>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

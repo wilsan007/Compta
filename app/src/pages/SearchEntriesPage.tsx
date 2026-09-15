@@ -4,8 +4,10 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useLocale } from '@/hooks/useLocale'
 import { useToast } from '@/lib/toast'
 import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts, markLineBAP, markLineWithCode, getMarkingTypes } from '@/lib/queries'
-import { Search, ChevronDown, ChevronRight, Filter, X, Download, CheckCircle2 } from 'lucide-react'
+import { Search, ChevronDown, ChevronRight, ChevronLeft, Filter, X, Download, CheckCircle2 } from 'lucide-react'
 import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount, MarkingType } from '@/types'
+
+const PAGE_SIZE = 100
 
 export function SearchEntriesPage() {
   const { t } = useTranslation('accounting')
@@ -20,6 +22,9 @@ export function SearchEntriesPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters] = useState(true)
   const [markingTypes, setMarkingTypes] = useState<MarkingType[]>([])
+  // ACC-02/DAT-01 : pagination
+  const [page, setPage] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [criteria, setCriteria] = useState({
     journalCode: '',
@@ -83,7 +88,8 @@ export function SearchEntriesPage() {
     setCriteria((prev) => ({ ...prev, [field]: value }))
   }
 
-  async function handleSearch() {
+  // ACC-02/DAT-01 : Recherche paginée côté serveur
+  async function handleSearch(targetPage = 0) {
     setLoading(true)
     setHasSearched(true)
     setExpanded(new Set())
@@ -98,11 +104,17 @@ export function SearchEntriesPage() {
         amountMax: criteria.amountMax ? Number(criteria.amountMax) : undefined,
         description: criteria.description || undefined,
         pieceNumber: criteria.pieceNumber || undefined,
+        page: targetPage,
+        pageSize: PAGE_SIZE,
       })
-      setResults(res || [])
-    } catch (err) {
+      setResults(res?.data || [])
+      setTotalCount(res?.count ?? 0)
+      setPage(targetPage)
+    } catch (err: any) {
       console.error('Error searching entries:', err)
       setResults([])
+      setTotalCount(0)
+      toast('error', t('search.title'), err?.message || t('search.searchError', { defaultValue: 'Échec de la recherche' }))
     } finally {
       setLoading(false)
     }
@@ -116,6 +128,8 @@ export function SearchEntriesPage() {
     })
     setResults([])
     setHasSearched(false)
+    setPage(0)
+    setTotalCount(0)
   }
 
   function toggleExpand(id: string) {
@@ -207,6 +221,9 @@ export function SearchEntriesPage() {
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-[var(--color-text-secondary)]">
               {t('search.resultsCount', { count: results.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
+              {totalCount > results.length && (
+                <span className="ml-2 opacity-70">— {totalCount} au total</span>
+              )}
             </p>
             {results.length > 0 && (
               <Button variant="secondary" size="sm" onClick={handleExportCSV}>
@@ -288,6 +305,20 @@ export function SearchEntriesPage() {
                 ))}
               </Table>
             </Card>
+          )}
+          {/* ACC-02/DAT-01 : navigation de pagination */}
+          {!loading && totalCount > PAGE_SIZE && (
+            <div className="flex items-center justify-between mt-3">
+              <Button variant="secondary" size="sm" disabled={page === 0} onClick={() => handleSearch(page - 1)}>
+                <ChevronLeft className="w-4 h-4" /> Précédent
+              </Button>
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                Page {page + 1} / {Math.max(1, Math.ceil(totalCount / PAGE_SIZE))}
+              </span>
+              <Button variant="secondary" size="sm" disabled={(page + 1) * PAGE_SIZE >= totalCount} onClick={() => handleSearch(page + 1)}>
+                Suivant <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           )}
         </div>
       )}

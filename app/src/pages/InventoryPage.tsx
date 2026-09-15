@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getStockMovements, getWarehouses, createStockMovement, getProducts } from '@/lib/queries'
+import { getStockMovements, getWarehouses, createStockMovement, getProducts } from '@/lib/queries/stock'
+import { calculateStockValuation, calculateInventoryVariance } from '@/lib/queries/businessFunctions'
 import { ClipboardList, Plus, X } from 'lucide-react'
 import type { Warehouse, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -15,6 +16,9 @@ const [movements, setMovements] = useState<any[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [selectedWarehouse, setSelectedWarehouse] = useState('')
+  const { toast } = useToast()
+  const { t: tCommon } = useTranslation("common")
 
   const loadData = useCallback(async () => {
     try {
@@ -22,11 +26,25 @@ const [movements, setMovements] = useState<any[]>([])
       setMovements(movs || [])
       setWarehouses(whs || [])
       setProducts(prods || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
+
+  async function handleValuation() {
+    try {
+      const res = await calculateStockValuation('cump', selectedWarehouse || undefined)
+      toast('success', t('inventory.title'), `${res?.total_value ?? res} €`)
+    } catch (err: any) { toast('error', t('inventory.title'), err.message || 'Erreur') }
+  }
+
+  async function handleVariance() {
+    try {
+      const res = await calculateInventoryVariance(selectedWarehouse || undefined)
+      toast('success', t('inventory.title'), JSON.stringify(res))
+    } catch (err: any) { toast('error', t('inventory.title'), err.message || 'Erreur') }
+  }
 
   const adjustments = movements.filter((m) => m.movement_type === 'adjustment' || m.movement_type === 'initial')
 
@@ -34,7 +52,23 @@ const [movements, setMovements] = useState<any[]>([])
     <div>
       <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('inventory.title') }]} />
       <PageHeader title={t('inventory.title')} subtitle={t('inventory.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('inventory.newAdjustment')}</Button>} />
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleValuation}>Valoriser le stock</Button>
+            <Button variant="secondary" onClick={handleVariance}>Calculer les écarts</Button>
+            <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('inventory.newAdjustment')}</Button>
+          </div>
+        } />
+
+      <div className="flex gap-3 mb-4 items-end">
+        <div className="w-56">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('inventory.warehouse')}</label>
+          <select className="input" value={selectedWarehouse} onChange={(e) => setSelectedWarehouse(e.target.value)}>
+            <option value="">{t('common.all') || '—'}</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </div>
+      </div>
 
       {loading ? <SkeletonTable rows={6} cols={5} /> : adjustments.length === 0 ? (
         <EmptyState icon={<ClipboardList className="w-8 h-8" />} title={t('inventory.noAdjustments')} description={t('inventory.noAdjustmentsDescription')}
@@ -69,6 +103,8 @@ function AdjustmentForm({ warehouses, products, onClose, onSaved }: { warehouses
 const [productId, setProductId] = useState('')
   const [warehouseId, setWarehouseId] = useState('')
   const [quantity, setQuantity] = useState(0)
+  const [unitCost, setUnitCost] = useState(0)
+  const [movementType, setMovementType] = useState<'adjustment' | 'initial'>('adjustment')
   const [movementDate, setMovementDate] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -79,7 +115,7 @@ const [productId, setProductId] = useState('')
     try {
       await createStockMovement({
         product_id: productId, warehouse_id: warehouseId || null,
-        movement_type: 'adjustment', quantity, unit_cost: 0,
+        movement_type: movementType, quantity, unit_cost: unitCost,
         reference: 'INV-' + new Date().toISOString().split('T')[0],
         reference_type: 'inventory', reference_id: null,
         movement_date: movementDate, notes: notes || null,
@@ -112,7 +148,17 @@ const [productId, setProductId] = useState('')
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('inventory.type', { defaultValue: 'Type' })}</label>
+              <select className="input" value={movementType} onChange={(e) => setMovementType(e.target.value as 'adjustment' | 'initial')}>
+                <option value="adjustment">{t('inventory.adjustment')}</option>
+                <option value="initial">{t('inventory.initialStock')}</option>
+              </select>
+            </div>
             <Input label={t('inventory.quantity')} type="number" step="0.01" required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('inventory.unitCost', { defaultValue: 'Coût unitaire' })} type="number" step="0.01" value={unitCost} onChange={(e) => setUnitCost(Number(e.target.value))} />
             <Input label={t('inventory.date')} type="date" required value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />
           </div>
           <Input label={t('inventory.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />

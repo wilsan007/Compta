@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getOpportunities, createOpportunity, updateOpportunityStage, getCustomers, getSalesRepresentatives } from '@/lib/queries'
+import { getOpportunities, createOpportunity, updateOpportunityStage } from '@/lib/queries/crmAdvanced'
+import { getCustomers } from '@/lib/queries/partners'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Target, Search, Kanban, List } from 'lucide-react'
 import type { CrmOpportunity, Customer, SalesRepresentative } from '@/types'
@@ -36,7 +38,7 @@ export function OpportunitiesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 
@@ -116,7 +118,10 @@ export function OpportunitiesPage() {
                         <div className="text-xs text-[var(--color-text-secondary)]">{o.customer?.name || o.prospect?.name || '-'}</div>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-xs font-mono">{formatCurrency(Number(o.expected_amount))}</span>
-                          <Badge variant={getStageBadgeVariant(o.stage)}>{o.probability}%</Badge>
+                          <div className="flex items-center gap-1">
+                            {(o as any).quote_id || (o as any).quote_generated ? <Badge variant="success">Devis</Badge> : null}
+                            <Badge variant={getStageBadgeVariant(o.stage)}>{o.probability}%</Badge>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -130,7 +135,7 @@ export function OpportunitiesPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Target className="w-8 h-8" />} title={t('opportunities.noOpportunities')} description={t('opportunities.noOpportunitiesDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('opportunities.createFirst')}</Button>} />
       ) : (
-        <Table headers={[t('opportunities.number'), t('opportunities.titleField'), t('opportunities.customer'), t('opportunities.stage'), t('opportunities.expectedAmount'), t('opportunities.probability'), t('opportunities.expectedCloseDate')]}>
+        <Table headers={[t('opportunities.number'), t('opportunities.titleField'), t('opportunities.customer'), t('opportunities.stage'), t('opportunities.expectedAmount'), t('opportunities.probability'), t('opportunities.expectedCloseDate'), 'Devis']}>
           {filtered.map(o => (
             <TableRow key={o.id}>
               <TableCell className="font-mono text-xs">{o.number}</TableCell>
@@ -140,6 +145,7 @@ export function OpportunitiesPage() {
               <TableCell className="font-mono text-xs">{formatCurrency(Number(o.expected_amount))}</TableCell>
               <TableCell className="text-xs">{o.probability}%</TableCell>
               <TableCell className="text-xs">{o.expected_close_date ? formatDate(o.expected_close_date) : '-'}</TableCell>
+              <TableCell>{(o as any).quote_id || (o as any).quote_generated ? <Badge variant="success">Devis créé</Badge> : <span className="text-xs text-[var(--color-text-secondary)]">—</span>}</TableCell>
             </TableRow>
           ))}
         </Table>
@@ -215,7 +221,7 @@ function OpportunityForm({ customers, reps, onClose, onSaved }: { customers: Cus
           ]} />
           <div className="grid grid-cols-2 gap-4">
             <Select label={t('opportunities.stage')} value={stage} onChange={(e) => setStage(e.target.value as any)} options={STAGES.map(s => ({ value: s, label: t(`opportunities.stage${s.charAt(0).toUpperCase() + s.slice(1)}`) }))} />
-            <Input label={t('opportunities.probability')} type="number" min="0" max="100" value={probability} onChange={(e) => setProbability(Number(e.target.value))} />
+            <Input label={t('opportunities.probability')} type="number" step="1" value={probability} onChange={(e) => setProbability(Number(e.target.value))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('opportunities.expectedAmount')} type="number" step="0.01" value={expectedAmount} onChange={(e) => setExpectedAmount(Number(e.target.value))} />

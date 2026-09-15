@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getAnalyticPlans, createAnalyticPlan, updateAnalyticPlan, deleteAnalyticPlan } from '@/lib/queries'
+import { getAnalyticPlans, createAnalyticPlan, updateAnalyticPlan, deleteAnalyticPlan } from '@/lib/queries/accounting'
 import { Plus, Trash2, Pencil, Layers, X } from 'lucide-react'
 import type { AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function AnalyticPlansPage() {
   const { t } = useTranslation('accounting')
@@ -20,12 +21,12 @@ export function AnalyticPlansPage() {
     try {
       const data = await getAnalyticPlans()
       setPlans(data || [])
-    } catch (err) {
-      console.error('Failed to load analytic plans:', err)
+    } catch (err: any) { console.error('Failed to load analytic plans:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -40,7 +41,7 @@ export function AnalyticPlansPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('analyticPlans.deleteConfirm'))) return
+    if (!confirmSync(t('analyticPlans.deleteConfirm'))) return
     try {
       await deleteAnalyticPlan(id)
       toast('success', tCommon('common.success'), t('analyticPlans.deleteSuccess'))

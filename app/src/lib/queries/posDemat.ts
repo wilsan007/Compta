@@ -60,7 +60,8 @@ export async function deleteDocumentShare(id: string) {
 }
 
 export async function markDocumentShareViewed(token: string) {
-  const { data, error } = await supabase.from('document_shares').update({ viewed: true, viewed_at: new Date().toISOString() }).eq('share_token', token).select().single()
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('document_shares').update({ viewed: true, viewed_at: new Date().toISOString() }).eq('share_token', token).eq('tenant_id', tid || '').select().single()
   if (error) throw error
   return data as DocumentShare
 }

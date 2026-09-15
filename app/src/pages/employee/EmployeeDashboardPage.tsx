@@ -25,7 +25,7 @@ export function EmployeeDashboardPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

@@ -122,7 +122,10 @@
     "reconciledTitle": "مسواة ({{count}})",
     "action": "إجراء",
     "cancel": "إلغاء",
-    "reconcileBtn": "تسوية"
+    "reconcileBtn": "تسوية",
+    "smartMatch": "تسوية ذكية",
+    "smartResult": "تم العثور على {{matched}} تطابق",
+    "selectAccount": "يرجى اختيار حساب"
   },
   "rules": {
     "title": "قواعد بنكية",

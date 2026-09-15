@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getStockAlerts, acknowledgeStockAlert, resolveStockAlert, checkStockThresholds } from '@/lib/queries'
+import { getStockAlerts, acknowledgeStockAlert, resolveStockAlert, checkStockThresholds } from '@/lib/queries/catalogAdvanced'
 import { useToast } from '@/lib/toast'
 import { AlertTriangle, CheckCircle, Bell, ShieldCheck } from 'lucide-react'
 import type { StockAlert, Product } from '@/types'
@@ -29,7 +29,7 @@ export function StockAlertsPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterStatus])
+  }, [filterStatus, toast, tCommon])
 
   useEffect(() => { load() }, [load])
 

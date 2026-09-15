@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getFiscalYears, getFECData, getCompanySettings } from '@/lib/queries'
+import { getFiscalYears, getFECData, getCompanySettings } from '@/lib/queries/accounting'
 import { validateFECData, generateFECFileName, downloadFEC, type FECValidationResult } from '@/lib/fecValidator'
 import { useToast } from '@/lib/toast'
 import { Download, FileText, ShieldCheck, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
@@ -54,6 +54,7 @@ function generateFECText(entries: any[]): string {
 
 export function FECExportPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [years, setYears] = useState<FiscalYear[]>([])
   const [company, setCompany] = useState<CompanySettings | null>(null)
@@ -72,8 +73,9 @@ export function FECExportPage() {
       ])
       setYears(data || [])
       setCompany(comp)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading fiscal years:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -85,8 +87,9 @@ export function FECExportPage() {
       const data = await getFECData(selectedYear)
       setEntries(data || [])
       setValidation(validateFECData(data || []))
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading FEC data:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

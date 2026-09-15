@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV } from '@/components/ui'
-import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getCustomers, getSuppliers, getChartAccounts } from '@/lib/queries'
+import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getChartAccounts } from '@/lib/queries/accounting'
+import { getCustomers, getSuppliers } from '@/lib/queries/partners'
 import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download, Landmark } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
@@ -18,6 +19,7 @@ const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | '
 
 export function ThirdPartyAccountsPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
   const [accounts, setAccounts] = useState<ThirdPartyAccount[]>([])
   const { toast } = useToast()
@@ -33,7 +35,7 @@ export function ThirdPartyAccountsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ThirdPartyAccount | null>(null)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -48,8 +50,9 @@ export function ThirdPartyAccountsPage() {
       setCustomers(c || [])
       setSuppliers(s || [])
       setChartAccounts(ca || [])
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading third party accounts:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -93,9 +96,9 @@ export function ThirdPartyAccountsPage() {
       getLinkedName(a),
       Number(a.balance || 0),
       a.lettrage_code || '',
-      (a as any).siret || '',
-      (a as any).vat_intra || '',
-      (a as any).iban || '',
+      a.siret || '',
+      a.vat_intra || '',
+      a.iban || '',
     ])
     exportToCSV(`plan-tiers-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
     toast('info', t('thirdParty.exportCSV'), t('thirdParty.exported', { count: filtered.length }))
@@ -188,9 +191,9 @@ export function ThirdPartyAccountsPage() {
               { label: t('thirdParty.vatIntra'), key: 'vat_intra', sortable: true },
               { label: t('thirdParty.actions') },
             ]}
-            data={filtered as any}
+            data={filtered as ThirdPartyAccount[]}
             initialSortKey="code"
-            renderRow={(a: any) => (
+            renderRow={(a: ThirdPartyAccount) => (
               <TableRow key={a.id}>
                 <TableCell className="font-mono font-semibold">{a.code}</TableCell>
                 <TableCell>{a.name}</TableCell>
@@ -203,7 +206,7 @@ export function ThirdPartyAccountsPage() {
                 </TableCell>
                 <TableCell className="font-mono text-right">{formatCurrency(Number(a.balance) || 0)}</TableCell>
                 <TableCell className="font-mono text-xs">{a.lettrage_code || '—'}</TableCell>
-                <TableCell className="font-mono text-xs">{(a as any).vat_intra || '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{a.vat_intra || '—'}</TableCell>
                 <TableCell>
                   <div className="relative flex gap-2">
                     <button onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={t('thirdParty.editAccount')}>
@@ -288,29 +291,29 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   const [supplierId, setSupplierId] = useState(account?.supplier_id || '')
   const [currency, setCurrency] = useState(account?.currency || 'EUR')
   const [active, setActive] = useState(account?.active ?? true)
-  const [address, setAddress] = useState((account as any)?.address || '')
-  const [postalCode, setPostalCode] = useState((account as any)?.postal_code || '')
-  const [city, setCity] = useState((account as any)?.city || '')
-  const [country, setCountry] = useState((account as any)?.country || 'France')
-  const [siret, setSiret] = useState((account as any)?.siret || '')
-  const [vatIntra, setVatIntra] = useState((account as any)?.vat_intra || '')
-  const [iban, setIban] = useState((account as any)?.iban || '')
-  const [bic, setBic] = useState((account as any)?.bic || '')
-  const [bankCode, setBankCode] = useState((account as any)?.bank_code || '')
-  const [branchCode, setBranchCode] = useState((account as any)?.branch_code || '')
-  const [accountNumber, setAccountNumber] = useState((account as any)?.bank_account_number || '')
-  const [key, setKey] = useState((account as any)?.bank_key || '')
-  const [echeanceModel, setEcheanceModel] = useState((account as any)?.echeance_model || '')
-  const [paymentCondition, setPaymentCondition] = useState((account as any)?.payment_condition || '')
-  const [paymentMode, setPaymentMode] = useState((account as any)?.payment_mode || '')
-  const [encoursAutorise, setEncoursAutorise] = useState((account as any)?.encours_autorise != null ? String((account as any).encours_autorise) : '')
-  const [relanceNiveau, setRelanceNiveau] = useState((account as any)?.relance_niveau || '')
-  const [relanceModel, setRelanceModel] = useState((account as any)?.relance_model || '')
-  const [delaiPaiement, setDelaiPaiement] = useState((account as any)?.delai_paiement || '')
-  const [escompte, setEscompte] = useState((account as any)?.escompte != null ? String((account as any).escompte) : '')
-  const [contactName, setContactName] = useState((account as any)?.contact_name || '')
-  const [zoneGeo, setZoneGeo] = useState((account as any)?.zone_geo || '')
-  const [categorie, setCategorie] = useState((account as any)?.categorie || '')
+  const [address, setAddress] = useState(account?.address || '')
+  const [postalCode, setPostalCode] = useState(account?.postal_code || '')
+  const [city, setCity] = useState(account?.city || '')
+  const [country, setCountry] = useState(account?.country || 'France')
+  const [siret, setSiret] = useState(account?.siret || '')
+  const [vatIntra, setVatIntra] = useState(account?.vat_intra || '')
+  const [iban, setIban] = useState(account?.iban || '')
+  const [bic, setBic] = useState(account?.bic || '')
+  const [bankCode, setBankCode] = useState(account?.bank_code || '')
+  const [branchCode, setBranchCode] = useState(account?.branch_code || '')
+  const [accountNumber, setAccountNumber] = useState(account?.bank_account_number || '')
+  const [key, setKey] = useState(account?.bank_key || '')
+  const [echeanceModel, setEcheanceModel] = useState(account?.echeance_model || '')
+  const [paymentCondition, setPaymentCondition] = useState(account?.payment_condition || '')
+  const [paymentMode, setPaymentMode] = useState(account?.payment_mode || '')
+  const [encoursAutorise, setEncoursAutorise] = useState(account?.encours_autorise != null ? String(account.encours_autorise) : '')
+  const [relanceNiveau, setRelanceNiveau] = useState(account?.relance_niveau || '')
+  const [relanceModel, setRelanceModel] = useState(account?.relance_model || '')
+  const [delaiPaiement, setDelaiPaiement] = useState(account?.delai_paiement || '')
+  const [escompte, setEscompte] = useState(account?.escompte != null ? String(account.escompte) : '')
+  const [contactName, setContactName] = useState(account?.contact_name || '')
+  const [zoneGeo, setZoneGeo] = useState(account?.zone_geo || '')
+  const [categorie, setCategorie] = useState(account?.categorie || '')
   const [saving, setSaving] = useState(false)
   const [showPartnerBankModal, setShowPartnerBankModal] = useState(false)
 
@@ -360,7 +363,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
         await updateThirdPartyAccount(account.id, data)
         toast('success', t('thirdParty.updated'))
       } else {
-        await createThirdPartyAccount(data as any)
+        await createThirdPartyAccount(data as Omit<ThirdPartyAccount, 'id' | 'created_at' | 'updated_at'>)
         toast('success', t('thirdParty.saved'))
       }
       onSaved()

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { getTickets, createTicket, updateTicketStatus, getCustomers } from '@/lib/queries'
+import { getTickets, createTicket, updateTicketStatus } from '@/lib/queries/crmAdvanced'
+import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Ticket, CheckCircle } from 'lucide-react'
 import type { ServiceTicket, Customer } from '@/types'
@@ -34,7 +35,7 @@ export function TicketsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

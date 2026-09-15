@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getThirdPartyAccounts, getGrandLivreTiers, generateExtourne, exportToExcel } from '@/lib/queries'
+import { getThirdPartyAccounts, getGrandLivreTiers, generateExtourne } from '@/lib/queries/accounting'
+import { exportToExcel } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { BookOpen, RotateCcw, Download } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
@@ -30,8 +31,8 @@ export function GrandLivreTiersPage() {
     try {
       const data = await getThirdPartyAccounts()
       setTiers(data || [])
-    } catch (err) {
-      console.error('Error loading tiers:', err)
+    } catch (err: any) { console.error('Error loading tiers:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoadingTiers(false)
     }
@@ -43,8 +44,8 @@ export function GrandLivreTiersPage() {
     try {
       const data = await getGrandLivreTiers(selectedTiers, dateFrom || undefined, dateTo || undefined)
       setMovements(data || [])
-    } catch (err) {
-      console.error('Error loading grand livre tiers:', err)
+    } catch (err: any) { console.error('Error loading grand livre tiers:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

@@ -16,7 +16,6 @@ import {
   BRAND_PALETTE,
   decodePng,
   hexToLab,
-  rgbToHex,
   deltaE2000,
 } from './palette.mjs'
 

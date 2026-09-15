@@ -68,13 +68,13 @@ export async function createOnlinePayment(
 }
 
 export async function getOnlinePaymentByToken(token: string): Promise<OnlinePayment | null> {
-  const tid = await getTenantId()
-  let q = supabase
+  // SEC-05: Route publique — pas de filtre tenant_id (l'utilisateur n'est pas connecté).
+  // Utiliser une correspondance exacte sur l'URL de paiement, pas de wildcard.
+  const { data, error } = await supabase
     .from('online_payments')
     .select('*, invoice:invoices(number, total, customer_id)')
     .eq('payment_url', `${window.location.origin}/pay/${token}`)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q.maybeSingle()
+    .maybeSingle()
   if (error) throw error
   return data as OnlinePayment | null
 }
@@ -125,6 +125,8 @@ export async function shareDocument(
 }
 
 export async function getDocumentShare(token: string): Promise<DocumentShare | null> {
+  // SEC-05: Route publique — pas de filtre tenant_id (l'utilisateur n'est pas connecté).
+  // Correspondance exacte sur share_token.
   const { data, error } = await supabase
     .from('document_shares')
     .select('*')
@@ -132,10 +134,17 @@ export async function getDocumentShare(token: string): Promise<DocumentShare | n
     .maybeSingle()
   if (error) throw error
   if (data) {
+    // SEC-05: Vérifier l'expiration du partage
+    const share = data as any
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return null
+    }
+    const tid = await getTenantId()
     const { error: updateError } = await supabase
       .from('document_shares')
       .update({ viewed: true, viewed_at: new Date().toISOString() })
-      .eq('id', (data as any).id)
+      .eq('id', share.id)
+      .eq('tenant_id', tid || '')
     if (updateError) console.error('Failed to mark share as viewed:', updateError.message)
   }
   return data as DocumentShare | null

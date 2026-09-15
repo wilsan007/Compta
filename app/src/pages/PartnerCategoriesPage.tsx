@@ -3,9 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
 import { Tag, Plus, Trash2, Edit2, X } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import {
-  getPartnerCategories, createPartnerCategory, updatePartnerCategory, deletePartnerCategory,
-} from '@/lib/queries'
+import { getPartnerCategories, createPartnerCategory, updatePartnerCategory, deletePartnerCategory } from '@/lib/queries/partners'
 import type { PartnerCategory } from '@/types'
 
 export function PartnerCategoriesPage() {
@@ -23,8 +21,8 @@ export function PartnerCategoriesPage() {
     try {
       const data = await getPartnerCategories()
       setCategories(data || [])
-    } catch { } finally { setLoading(false) }
-  }, [])
+    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

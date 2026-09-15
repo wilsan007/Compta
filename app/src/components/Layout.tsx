@@ -1,6 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Bell,
   HelpCircle,
   Search,
   Sparkles,
@@ -21,6 +20,7 @@ import { CommandPalette } from './CommandPalette'
 import { AIAssistant } from './AIAssistant'
 import { OnboardingModal } from './OnboardingModal'
 import { Sidebar } from './Sidebar'
+import { NotificationCenter } from './NotificationCenter'
 
 export function Layout({ children }: { children?: React.ReactNode }) {
   const navigate = useNavigate()
@@ -220,10 +220,7 @@ export function Layout({ children }: { children?: React.ReactNode }) {
             </button>
 
             {/* Notifications */}
-            <button className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] transition-colors relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--color-danger)] rounded-full"></span>
-            </button>
+            <NotificationCenter />
 
             {/* Profile */}
             <div className="relative">

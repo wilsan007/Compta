@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getTimesheets, createTimesheet, updateTimesheet, deleteTimesheet, getEmployees, getProjects } from '@/lib/queries'
+import { getTimesheets, createTimesheet, updateTimesheet, deleteTimesheet, getEmployees } from '@/lib/queries/payroll'
+import { getProjects } from '@/lib/queries/accounting'
 import { formatDate, translateStatus } from '@/lib/utils'
 import { Clock, Plus, Trash2, X, CheckCircle, XCircle } from 'lucide-react'
 import type { Employee, Project } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   pending: 'warning', approved: 'success', rejected: 'danger',
@@ -30,7 +32,7 @@ const [timesheets, setTimesheets] = useState<any[]>([])
       setEmployees(e)
       setProjects(p)
     } catch (err) { console.error(err); toast('error', tCommon('toast.error'), tCommon('toast.loadingError')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -43,7 +45,7 @@ const [timesheets, setTimesheets] = useState<any[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteTimesheet(id); await loadData() } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }
 
@@ -82,7 +84,7 @@ const [timesheets, setTimesheets] = useState<any[]>([])
         <EmptyState icon={<Clock className="w-8 h-8" />} title={t('timesheets.noTimesheets')} description={t('timesheets.noTimesheetsDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('timesheets.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[tCommon('common.date'), t('timesheets.employee'), t('timesheets.hours'), t('timesheets.description'), t('timesheets.project'), tCommon('common.status'), tCommon('table.actions')]}>
+          <Table headers={[tCommon('common.date'), t('timesheets.employee'), t('timesheets.hours'), t('timesheets.description'), t('timesheets.project'), tCommon('common.status'), 'Paie', tCommon('table.actions')]}>
             {filtered.map((t: any) => (
               <TableRow key={t.id}>
                 <TableCell className="text-xs">{formatDate(t.date)}</TableCell>
@@ -91,6 +93,13 @@ const [timesheets, setTimesheets] = useState<any[]>([])
                 <TableCell className="text-sm max-w-xs truncate">{t.description || '—'}</TableCell>
                 <TableCell className="text-xs">{projName(t.project_id)}</TableCell>
                 <TableCell><Badge variant={statusBadge[t.status]}>{translateStatus(t.status)}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    {Number(t.lateness_minutes) > 0 && <Badge variant="warning">{t.lateness_minutes} min</Badge>}
+                    {(t.deduction_generated || t.payroll_variable_id) && <Badge variant="success">Déduction générée</Badge>}
+                    {!Number(t.lateness_minutes) && !t.deduction_generated && !t.payroll_variable_id && <span className="text-xs text-[var(--color-text-secondary)]">—</span>}
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     {t.status === 'pending' && (

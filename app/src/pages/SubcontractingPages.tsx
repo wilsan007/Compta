@@ -3,15 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Send, Truck, PackageCheck, Eye } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getSTOrders, createSTOrder, deleteSTOrder, updateSTOrder,
-  getSTShipments, deleteSTShipment,
-  getSTReceipts, deleteSTReceipt,
-  getSTSupervisorData,
-  getSuppliers, getProducts, getManufacturingOrders,
-} from '@/lib/queries'
+import { getSTOrders, createSTOrder, deleteSTOrder, updateSTOrder, getSTShipments, deleteSTShipment, getSTReceipts, deleteSTReceipt, getSTSupervisorData, getProducts } from '@/lib/queries/stock'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getManufacturingOrders } from '@/lib/queries/production'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { Supplier, Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function SubcontractingOrdersPage() {
   const { toast } = useToast()
@@ -31,14 +28,14 @@ export function SubcontractingOrdersPage() {
       setSuppliers(sups || [])
       setProducts(prods || [])
       setMOs(moList || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTOrder(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
   }
@@ -153,14 +150,14 @@ export function SubcontractingShipmentsPage() {
 
   const loadData = useCallback(async () => {
     try { setShipments(await getSTShipments() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTShipment(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
   }
@@ -205,14 +202,14 @@ export function SubcontractingReceiptsPage() {
 
   const loadData = useCallback(async () => {
     try { setReceipts(await getSTReceipts() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTReceipt(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
   }
@@ -252,14 +249,15 @@ export function SubcontractingReceiptsPage() {
 export function SubcontractingSupervisorPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     try { setData(await getSTSupervisorData() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

@@ -1,12 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import {
-  getEmployeeDocuments, uploadEmployeeDocument, deleteEmployeeDocument,
-  distributePaySlips, controlBatchBeforeDiffusion, getDistributionLogs, sendDistributionReminders,
-  signRhDocument, getDocumentStats,
-  getEmployees, getPayRuns,
-} from '@/lib/queries'
+import { getEmployeeDocuments, uploadEmployeeDocument, deleteEmployeeDocument, distributePaySlips, controlBatchBeforeDiffusion, getDistributionLogs, sendDistributionReminders, signRhDocument, getDocumentStats } from '@/lib/queries/dematRh'
+import { getEmployees, getPayRuns } from '@/lib/queries/payroll'
 import type { EmployeeDocument, DocumentDistributionLog, Employee, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Upload, Trash2, Send, CheckCircle, PenTool, AlertTriangle, BarChart3 } from 'lucide-react'
@@ -46,7 +42,7 @@ export function DocumentManagementPage() {
           try {
             const docs = await getEmployeeDocuments(emp.id)
             allDocs.push(...docs)
-          } catch {}
+          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
         }
         setDocuments(allDocs)
       }
@@ -84,7 +80,7 @@ export function DocumentManagementPage() {
     try {
       await distributePaySlips(selectedPayRun)
       toast('success', t('demat.distributed'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -94,7 +90,7 @@ export function DocumentManagementPage() {
     try {
       await signRhDocument(docId)
       toast('success', t('demat.signed'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -247,7 +243,7 @@ export function DocumentManagementPage() {
                     })
                     toast('success', t('demat.uploaded'))
                     setShowUpload(false)
-                    loadData()
+                    loadData().catch(err => console.error('loadData:', err))
                   }
                 } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
               }} disabled={!uploadEmp}>{tCommon('actions.save')}</Button>

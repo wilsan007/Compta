@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getLeaveRequests, getEmployees, getPublicHolidays, getLeaveRules } from '@/lib/queries'
+import { getLeaveRequests, getEmployees } from '@/lib/queries/payroll'
+import { getPublicHolidays, getLeaveRules } from '@/lib/queries/leavesAbsences'
 import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
 import type { Employee, LeaveRule, PublicHoliday } from '@/types'
 import { CalendarDays } from 'lucide-react'
@@ -10,6 +12,7 @@ export function LeavePlanningPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
+  const { toast } = useToast()
   const [requests, setRequests] = useState<any[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [rules, setRules] = useState<LeaveRule[]>([])
@@ -31,9 +34,9 @@ export function LeavePlanningPage() {
       setEmployees(emps || [])
       setRules(rls || [])
       setHolidays(hols || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [year])
+  }, [year, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

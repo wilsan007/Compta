@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getLegalDeclarations, createLegalDeclaration, updateLegalDeclaration, deleteLegalDeclaration } from '@/lib/queries'
+import { getLegalDeclarations, createLegalDeclaration, updateLegalDeclaration, deleteLegalDeclaration } from '@/lib/queries/payroll'
 import { ShieldCheck, Plus, Trash2, X, Send } from 'lucide-react'
 import type { LegalDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', submitted: 'success', late: 'danger', cancelled: 'neutral' }
 const monthLabels = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
@@ -22,9 +23,9 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
 
   const loadData = useCallback(async () => {
     try { setDeclarations(await getLegalDeclarations(statusFilter || undefined)) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -34,7 +35,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLegalDeclaration(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Factory, Clock, CheckCircle2, AlertTriangle, Truck, ClipboardList, ArrowRight } from 'lucide-react'
 import { Card, StatCard, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
-import { getManufacturingOrders, getSTOrders, getMRPProposals, getMRPRuns } from '@/lib/queries'
+import { getManufacturingOrders } from '@/lib/queries/production'
+import { getSTOrders, getMRPProposals, getMRPRuns } from '@/lib/queries/stock'
 import { formatDate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 
@@ -12,6 +14,8 @@ const statusVariants: Record<string, 'neutral' | 'warning' | 'success' | 'danger
 
 export function ProductionDashboardPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [mos, setMOs] = useState<any[]>([])
   const [stOrders, setSTOrders] = useState<any[]>([])
   const [mrpProposals, setMRPProposals] = useState<any[]>([])
@@ -31,9 +35,9 @@ export function ProductionDashboardPage() {
       if (latestRun) {
         try { setMRPProposals(await getMRPProposals(latestRun.id)) } catch { setMRPProposals([]) }
       }
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

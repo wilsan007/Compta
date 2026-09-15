@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { getInterviewCampaigns, createInterviewCampaign, launchInterviewCampaign, closeCampaign } from '@/lib/queries'
+import { getInterviewCampaigns, createInterviewCampaign, launchInterviewCampaign, closeCampaign } from '@/lib/queries/sprintDE'
 import { formatDate } from '@/lib/utils'
 import { Users, Plus, X, Play, Lock } from 'lucide-react'
 import { useToast } from '@/lib/toast'
@@ -30,7 +30,7 @@ export function InterviewCampaignsPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

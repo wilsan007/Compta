@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getAnalyticSections, createAnalyticSection, updateAnalyticSection, deleteAnalyticSection, getAnalyticPlans } from '@/lib/queries'
+import { getAnalyticSections, createAnalyticSection, updateAnalyticSection, deleteAnalyticSection, getAnalyticPlans } from '@/lib/queries/accounting'
 import { Plus, Pencil, Trash2, X, PieChart } from 'lucide-react'
 import type { AnalyticSection, AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function AnalyticSectionsPage() {
   const { t } = useTranslation('accounting')
@@ -24,8 +25,8 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
       const pl = await getAnalyticPlans().catch(() => [])
       setSections(data || [])
       setPlans(pl || [])
-    } catch (err) {
-      console.error('Error loading analytic sections:', err)
+    } catch (err: any) { console.error('Error loading analytic sections:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -35,9 +36,9 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
   function openEdit(s: AnalyticSection) { setEditing(s); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('analyticSections.deleteConfirm'))) return
+  if (!confirmSync(t('analyticSections.deleteConfirm'))) return
     try { await deleteAnalyticSection(id); toast('success', tCommon('common.success'), t('analyticSections.deleteSuccess')); await load() }
-    catch (err) { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
+    catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }
 
   return (

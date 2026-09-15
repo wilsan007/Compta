@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getBudgetCommitments, createBudgetCommitment, updateBudgetCommitment, deleteBudgetCommitment, getChartAccounts, getFiscalYears, getSuppliers } from '@/lib/queries'
+import { getBudgetCommitments, createBudgetCommitment, updateBudgetCommitment, deleteBudgetCommitment, getChartAccounts, getFiscalYears } from '@/lib/queries/accounting'
+import { getSuppliers } from '@/lib/queries/partners'
 import { Plus, Trash2, X, FileText } from 'lucide-react'
 import type { BudgetCommitment, ChartAccount, FiscalYear, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusVariants: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'warning',
@@ -39,8 +41,8 @@ export function BudgetCommitmentsPage() {
       setAccounts(accs || [])
       setYears(fys || [])
       setSuppliers(sups || [])
-    } catch (err) {
-      console.error('Error loading commitments:', err)
+    } catch (err: any) { console.error('Error loading commitments:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -52,7 +54,7 @@ export function BudgetCommitmentsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('budgetCommitments.deleteConfirm'))) return
+    if (!confirmSync(t('budgetCommitments.deleteConfirm'))) return
     try { await deleteBudgetCommitment(id); await load() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }

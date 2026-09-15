@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getPendingLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from '@/lib/queries'
+import { getPendingLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from '@/lib/queries/leavesAbsences'
 import { useToast } from '@/lib/toast'
 import { CheckCircle, XCircle, CalendarClock, AlertTriangle, X } from 'lucide-react'
 
@@ -20,9 +20,9 @@ export function ManagerLeaveApprovalsPage() {
     try {
       const data = await getPendingLeaveRequests()
       setRequests(data || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

@@ -15,7 +15,7 @@ export async function getPurchaseRequests(status?: string) {
 
 export async function createPurchaseRequest(pr: Omit<PurchaseRequest, 'id' | 'created_at' | 'purchase_request_lines'> & { purchase_request_lines?: PurchaseRequestLine[] }) {
   const tid = await getTenantId()
-  const { lines, ...header } = pr
+  const { purchase_request_lines: lines, ...header } = pr
   const { data, error } = await supabase.from('purchase_requests').insert(ti(header, 'purchase_requests', tid)).select().single()
   if (error) throw error
   const created = data as PurchaseRequest

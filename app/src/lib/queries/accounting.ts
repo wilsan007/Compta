@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { getTenantId, ti, tud } from './core'
+import { getJournals } from './misc'
+import { getPaymentTermById } from './payroll'
+import type { Invoice, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, DashboardStats, FixedAsset, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, AuditLog, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, RecurringInvoiceTemplate, FutureAccountingMovement, TreasuryTransfer, TreasuryRecurring, ConsolidatedTreasury, AssetDepreciationPlan, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, DashboardWidget, AnalyticJournalCode, BankStatementTemplate, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check } from '@/types'
 
 // ============ Company Settings ============
 export async function getCompanySettings(): Promise<CompanySettings | null> {
@@ -55,8 +57,9 @@ export async function getActiveLegislationPack() {
     if (settings?.legislation_pack_code) {
       return await getLegislationPack(settings.legislation_pack_code)
     }
-  } catch {
+  } catch (e) {
     // no settings yet — fall through to default
+    console.error('getActiveLegislationPack: settings lookup failed:', e)
   }
   const { data, error } = await supabase
     .from('legislation_packs')
@@ -163,19 +166,27 @@ export async function getJournalEntries() {
   return data as JournalEntry[]
 }
 
-export async function createJournalEntry(entry: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at'> & { lines: Omit<JournalLine, 'id' | 'created_at'>[] }) {
+// SOC-04 : Résout l'exercice courant pour les RPC d'agrégation
+async function getCurrentFiscalYearId(): Promise<string | null> {
   const tid = await getTenantId()
+  let q = supabase.from('fiscal_years').select('id').order('start_date', { ascending: false }).limit(1)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data } = await q
+  return (data && data.length > 0) ? (data[0] as any).id : null
+}
+
+export async function createJournalEntry(entry: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at'> & { lines: Omit<JournalLine, 'id' | 'created_at'>[] }) {
   const { lines, ...entryData } = entry
-  const { data: je, error: jeError } = await supabase.from('journal_entries').insert(ti(entryData, 'journal_entries', tid)).select().single()
-  if (jeError) throw jeError
-  
-  if (lines && lines.length > 0) {
-    const { error: linesError } = await supabase
-      .from('journal_lines')
-      .insert(lines.map((l, i) => ti({ ...l, journal_id: je.id, line_order: i }, 'journal_lines', tid)))
-    if (linesError) throw linesError
-  }
-  return je as JournalEntry
+  // SOC-01/ACC-01 : RPC atomique — entête + lignes dans une seule transaction serveur,
+  // numérotation atomique et contrôle d'équilibre par trigger.
+  const { data, error } = await supabase.rpc('post_journal_entry', {
+    p_entry: entryData,
+    p_lines: (lines || []).map((l, i) => ({ ...l, line_order: (l as any).line_order ?? i })),
+  })
+  if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec de la création de l\'écriture')
+  return { ...entryData, id: res?.entry_id, number: res?.number } as unknown as JournalEntry
 }
 
 export async function updateJournalEntry(id: string, updates: Partial<JournalEntry>) {
@@ -205,53 +216,69 @@ export async function getJournalEntry(id: string) {
 
 
 // ============ General Ledger (mouvements par compte) ============
-export async function getGeneralLedger(accountCode?: string) {
-  const tid = await getTenantId()
-  let query = supabase
-    .from('journal_lines')
-    .select(`
-      id,
-      account_code,
-      account_name,
-      debit,
-      credit,
-      description,
-      line_order,
-      created_at,
-      journal_id,
-      journal_entries!inner(number, date, description, reference, status)
-    `)
-    .order('created_at', { ascending: false })
-  if (tid) query = query.eq('tenant_id', tid)
-  if (accountCode) query = query.eq('account_code', accountCode)
-  const { data, error } = await query
+export async function getGeneralLedger(accountCode?: string, opts?: { dateFrom?: string; dateTo?: string; journalCode?: string; limit?: number; offset?: number }) {
+  // SOC-04 : Agrégation et pagination côté serveur (évite la truncation silencieuse)
+  const fiscalYearId = await getCurrentFiscalYearId()
+  const { data, error } = await supabase.rpc('get_general_ledger', {
+    p_fiscal_year_id: fiscalYearId,
+    p_account_code: accountCode ?? null,
+    p_date_from: opts?.dateFrom ?? null,
+    p_date_to: opts?.dateTo ?? null,
+    p_journal_code: opts?.journalCode ?? null,
+    p_limit: opts?.limit ?? 1000,
+    p_offset: opts?.offset ?? 0,
+  })
   if (error) throw error
-  return data as any[]
+  return (data || []) as any[]
+}
+
+// --- Analytic ledger lines: lignes imputées analytiquement (bornées, hors périmètre du RPC get_general_ledger) ---
+export async function getAnalyticLedgerLines(sectionId?: string, limit = 200) {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('journal_lines')
+    .select('id, account_code, description, debit, credit, analytic_section_id, analytic_amount, journal_entries!inner(date)')
+    .not('analytic_section_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (tid) q = q.eq('tenant_id', tid)
+  if (sectionId) q = q.eq('analytic_section_id', sectionId)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []).map((l: any) => ({
+    id: l.id,
+    date: l.journal_entries?.date,
+    account_code: l.account_code,
+    description: l.description,
+    debit: l.debit,
+    credit: l.credit,
+    analytic_section_id: l.analytic_section_id,
+    analytic_amount: l.analytic_amount,
+  }))
 }
 
 
 // ============ Trial Balance (soldes par compte) ============
-export async function getTrialBalance() {
-  const tid = await getTenantId()
-  let tbQ = supabase
-    .from('journal_lines')
-    .select('account_code, account_name, debit, credit')
-  if (tid) tbQ = tbQ.eq('tenant_id', tid)
-  const { data, error } = await tbQ
+export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: string; journalCode?: string }) {
+  // SOC-04 : Agrégation côté serveur (évite la truncation silencieuse et l'effondrement navigateur)
+  const fiscalYearId = await getCurrentFiscalYearId()
+  const { data, error } = await supabase.rpc('get_trial_balance', {
+    p_fiscal_year_id: fiscalYearId,
+    p_date_from: opts?.dateFrom ?? null,
+    p_date_to: opts?.dateTo ?? null,
+    p_journal_code: opts?.journalCode ?? null,
+  })
   if (error) throw error
-
-  const map = new Map<string, { account_code: string; account_name: string; total_debit: number; total_credit: number }>()
-  for (const line of data || []) {
-    const key = line.account_code
-    if (!map.has(key)) {
-      map.set(key, { account_code: line.account_code, account_name: line.account_name, total_debit: 0, total_credit: 0 })
-    }
-    const entry = map.get(key)!
-    entry.total_debit += Number(line.debit) || 0
-    entry.total_credit += Number(line.credit) || 0
-  }
-
-  return Array.from(map.values()).sort((a, b) => a.account_code.localeCompare(b.account_code))
+  return (data || []).map((row: any) => ({
+    account_code: row.account_code,
+    account_name: row.account_name,
+    opening_debit: Number(row.opening_debit) || 0,
+    opening_credit: Number(row.opening_credit) || 0,
+    total_debit: Number(row.period_debit) || 0,
+    total_credit: Number(row.period_credit) || 0,
+    closing_debit: Number(row.closing_debit) || 0,
+    closing_credit: Number(row.closing_credit) || 0,
+  })).sort((a: any, b: any) => a.account_code.localeCompare(b.account_code))
 }
 
 
@@ -470,39 +497,29 @@ export async function getRecentActivity(): Promise<Array<{
 
 
 // ============ Balance Sheet ============
-export async function getBalanceSheet() {
-  const tid = await getTenantId()
-  let bsQ = supabase
-    .from('journal_lines')
-    .select('account_code, account_name, debit, credit')
-  if (tid) bsQ = bsQ.eq('tenant_id', tid)
-  const { data, error } = await bsQ
+export async function getBalanceSheet(opts?: { dateTo?: string }) {
+  // SOC-04 : Agrégation côté serveur — le RPC renvoie déjà account_type
+  const fiscalYearId = await getCurrentFiscalYearId()
+  const { data, error } = await supabase.rpc('get_balance_sheet', {
+    p_fiscal_year_id: fiscalYearId,
+    p_date_to: opts?.dateTo ?? null,
+  })
   if (error) throw error
 
-  let caQ = supabase
-    .from('chart_accounts')
-    .select('code, name, type')
-  if (tid) caQ = caQ.eq('tenant_id', tid)
-  const { data: accounts } = await caQ
+  const all = (data || []).map((row: any) => ({
+    code: row.account_code,
+    name: row.account_name,
+    type: row.account_type || 'unknown',
+    debit: Number(row.debit) || 0,
+    credit: Number(row.credit) || 0,
+    balance: Number(row.balance) || 0,
+  }))
 
-  const accountMap = new Map((accounts || []).map((a: any) => [a.code, a.type]))
-
-  const map = new Map<string, { code: string; name: string; type: string; debit: number; credit: number }>()
-  for (const line of data || []) {
-    const key = line.account_code
-    if (!map.has(key)) {
-      map.set(key, { code: line.account_code, name: line.account_name, type: accountMap.get(line.account_code) || 'unknown', debit: 0, credit: 0 })
-    }
-    const entry = map.get(key)!
-    entry.debit += Number(line.debit) || 0
-    entry.credit += Number(line.credit) || 0
+  return {
+    assets: all.filter((a: any) => a.type === 'asset'),
+    liabilities: all.filter((a: any) => a.type === 'liability'),
+    equity: all.filter((a: any) => a.type === 'equity'),
   }
-
-  const assets = Array.from(map.values()).filter(a => a.type === 'asset')
-  const liabilities = Array.from(map.values()).filter(a => a.type === 'liability')
-  const equity = Array.from(map.values()).filter(a => a.type === 'equity')
-
-  return { assets, liabilities, equity }
 }
 
 
@@ -996,25 +1013,10 @@ export async function updateEntryStatusDetail(id: string, statusDetail: 'open' |
 
 // --- Saisie: get next piece number for a journal ---
 export async function getNextPieceNumber(journalCode: string) {
-  const tid = await getTenantId()
-  let q = supabase
-    .from('journal_entries')
-    .select('piece_number')
-    .eq('journal_code', journalCode)
-    .not('piece_number', 'is', null)
-    .order('piece_number', { ascending: false })
-    .limit(1)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
+  // ACC-01 : Numérotation atomique côté serveur (évite les doublons en concurrence)
+  const { data, error } = await supabase.rpc('get_next_piece_number', { p_journal_code: journalCode })
   if (error) throw error
-  if (!data || data.length === 0) return `${journalCode}-0001`
-  const last = data[0].piece_number
-  const match = last?.match(/(\d+)$/)
-  if (match) {
-    const next = String(Number(match[1]) + 1).padStart(match[1].length, '0')
-    return `${journalCode}-${next}`
-  }
-  return `${journalCode}-0001`
+  return (data as string) || `${journalCode}-0001`
 }
 
 // --- Lettrage: get unlettered lines for a third party ---
@@ -1049,48 +1051,29 @@ export async function getLetteredLines(accountTiers: string) {
 }
 
 // --- Lettrage: apply lettrage code to multiple lines ---
+// LOT4-08/09 : RPC serveur — contrôle d'équilibre débit/crédit et numérotation atomique
 export async function applyLettrage(lineIds: string[], code: string) {
-  const tid = await getTenantId()
-  const today = new Date().toISOString().slice(0, 10)
-  const { error } = await tud(supabase
-    .from('journal_lines')
-    .update({ lettrage_code: code, lettrage_date: today }), 'journal_lines', tid)
-    .in('id', lineIds)
+  const { data, error } = await supabase.rpc('apply_lettrage', { p_line_ids: lineIds, p_code: code })
   if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec du lettrage')
+  return res
 }
 
 // --- Lettrage: remove lettrage (delettrer) ---
 export async function removeLettrage(lineIds: string[]) {
-  const tid = await getTenantId()
-  const { error } = await tud(supabase
-    .from('journal_lines')
-    .update({ lettrage_code: null, lettrage_date: null }), 'journal_lines', tid)
-    .in('id', lineIds)
+  const { data, error } = await supabase.rpc('remove_lettrage', { p_line_ids: lineIds })
   if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec du délettrage')
+  return res
 }
 
 // --- Lettrage: get next lettrage code ---
 export async function getNextLettrageCode() {
-  const tid = await getTenantId()
-  let q = supabase
-    .from('journal_lines')
-    .select('lettrage_code')
-    .not('lettrage_code', 'is', null)
-    .neq('lettrage_code', '')
-    .order('lettrage_code', { ascending: false })
-    .limit(1)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
+  const { data, error } = await supabase.rpc('next_lettrage_code')
   if (error) throw error
-  if (!data || data.length === 0) return 'A001'
-  const last = data[0].lettrage_code
-  const match = last?.match(/^([A-Z])(\d+)$/)
-  if (match) {
-    const letter = match[1]
-    const num = Number(match[2]) + 1
-    return `${letter}${String(num).padStart(3, '0')}`
-  }
-  return 'A001'
+  return (data as string) || 'A001'
 }
 
 // --- Search: multi-criteria search on journal entries + lines ---
@@ -1104,11 +1087,16 @@ export async function searchEntries(criteria: {
   amountMax?: number
   description?: string
   pieceNumber?: string
+  page?: number
+  pageSize?: number
 }) {
   const tid = await getTenantId()
+  // ACC-02/DAT-01 : Pagination bornée côté serveur (.range + count exact)
+  const page = criteria.page ?? 0
+  const pageSize = Math.min(criteria.pageSize ?? 100, 500)
   let query = supabase
     .from('journal_entries')
-    .select('*, journal_lines(*)')
+    .select('*, journal_lines(*)', { count: 'exact' })
     .order('date', { ascending: false })
   if (tid) query = query.eq('tenant_id', tid)
 
@@ -1118,12 +1106,10 @@ export async function searchEntries(criteria: {
   if (criteria.pieceNumber) query = query.ilike('piece_number', `%${criteria.pieceNumber.replace(/[%_]/g, '\\$&')}%`)
   if (criteria.description) query = query.ilike('description', `%${criteria.description.replace(/[%_]/g, '\\$&')}%`)
 
-  if (import.meta.env.DEV) console.debug('[searchEntries] criteria:', JSON.stringify(criteria))
-  const { data, error } = await query.limit(200)
-  if (import.meta.env.DEV) console.debug('[searchEntries] result count:', data?.length, 'error:', error?.message)
+  const { data, error, count } = await query.range(page * pageSize, page * pageSize + pageSize - 1)
   if (error) throw error
 
-  let results = data as JournalEntry[]
+  let results = (data || []) as JournalEntry[]
 
   // Filter by line-level criteria in JS (Supabase can't filter on nested array easily)
   if (criteria.accountCode || criteria.accountTiers || criteria.amountMin !== undefined || criteria.amountMax !== undefined) {
@@ -1138,7 +1124,7 @@ export async function searchEntries(criteria: {
     )
   }
 
-  return results
+  return { data: results, count: count ?? results.length, page, pageSize }
 }
 
 // --- Closure: get journal × period status matrix ---
@@ -1470,117 +1456,52 @@ export async function getAnalyticBalance() {
 }
 
 // --- Fiscal Year Closure: close year + generate opening entries ---
-export async function closeFiscalYear(fiscalYearId: string, newFiscalYearId: string) {
-  const tid = await getTenantId()
-  let fyQ = supabase.from('fiscal_years').select('*').eq('id', fiscalYearId)
-  if (tid) fyQ = fyQ.eq('tenant_id', tid)
-  const { data: year, error: yError } = await fyQ.single()
-  if (yError) throw yError
-
-  let fpQ2 = supabase.from('fiscal_periods').select('id').eq('fiscal_year_id', fiscalYearId)
-  if (tid) fpQ2 = fpQ2.eq('tenant_id', tid)
-  const { data: periods } = await fpQ2
-  if (!periods) return
-
-  const periodIds = periods.map((p) => p.id)
-
-  let jlQ3 = supabase
-    .from('journal_lines')
-    .select('account_code, account_general, debit, credit')
-    .in('journal_entries.fiscal_period_id', periodIds)
-  if (tid) jlQ3 = jlQ3.eq('tenant_id', tid)
-  const { data: lines, error: lError } = await jlQ3
-  if (lError) throw lError
-
-  const accountBalances: Record<string, number> = {}
-  for (const line of lines || []) {
-    const code = line.account_general || line.account_code || ''
-    if (!code) continue
-    if (!accountBalances[code]) accountBalances[code] = 0
-    accountBalances[code] += Number(line.debit) - Number(line.credit)
+// ACC-05 : RPC atomique — détermination du résultat, écriture de clôture, report à nouveau
+// (classes 6/7 exclues des à-nouveaux), hash d'intégrité et journalisation.
+export async function closeFiscalYear(fiscalYearId: string, newFiscalYearId?: string, carryForward = true) {
+  const { data, error } = await supabase.rpc('close_fiscal_year', {
+    p_fiscal_year_id: fiscalYearId,
+    p_next_fiscal_year_id: newFiscalYearId ?? null,
+    p_carry_forward: carryForward,
+  })
+  if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec de la clôture')
+  return res as {
+    success: boolean
+    fiscal_year_id: string
+    result: number
+    result_account?: string
+    carry_forward_entry_id?: string
+    close_entry_id?: string
+    hash?: string
+    log_id?: string
   }
-
-  let npQ = supabase.from('fiscal_periods').select('id').eq('fiscal_year_id', newFiscalYearId).order('period_number', { ascending: true }).limit(1)
-  if (tid) npQ = npQ.eq('tenant_id', tid)
-  const { data: newPeriods } = await npQ
-
-  const newPeriodId = newPeriods?.[0]?.id
-  if (!newPeriodId) throw new Error('Nouvel exercice sans période')
-
-  const openingLines: Array<any> = []
-  let order = 0
-  for (const [code, balance] of Object.entries(accountBalances)) {
-    if (Math.abs(balance) < 0.01) continue
-    if (code.match(/^[67]/)) continue
-    const { data: acc } = await supabase
-      .from('chart_accounts')
-      .select('name')
-      .eq('code', code)
-      .single()
-    openingLines.push({
-      account_code: code,
-      account_name: acc?.name || code,
-      account_general: code,
-      debit: balance > 0 ? balance : 0,
-      credit: balance < 0 ? Math.abs(balance) : 0,
-      description: `Report à nouveau — ${code}`,
-      line_order: order++,
-      line_date: new Date().toISOString().slice(0, 10),
-    })
-  }
-
-  if (openingLines.length > 0) {
-    const totalD = openingLines.reduce((s, l) => s + l.debit, 0)
-    const totalC = openingLines.reduce((s, l) => s + l.credit, 0)
-    await createSaisieEntry({
-      number: `OUV-${year.code}`,
-      date: new Date().toISOString().slice(0, 10),
-      description: `Report à nouveau — ${year.code}`,
-      journal_code: 'OD',
-      fiscal_period_id: newPeriodId,
-      status: 'draft',
-      status_detail: 'open',
-      total_debit: totalD,
-      total_credit: totalC,
-      lines: openingLines,
-    })
-  }
-
-  const { error: closeError } = await tud(supabase
-    .from('fiscal_years')
-    .update({ status: 'closed', closed_at: new Date().toISOString() }), 'fiscal_years', tid)
-    .eq('id', fiscalYearId)
-  if (closeError) throw closeError
-
-  return { openingLinesCount: openingLines.length }
 }
 
 // --- VAT auto-calc from journal lines (accounts 4456x / 4457x) ---
 export async function calcVatFromEntries(dateFrom: string, dateTo: string) {
-  const tid = await getTenantId()
-  let q = supabase
-    .from('journal_lines')
-    .select('account_code, account_general, debit, credit, journal_entries!inner(date)')
-    .gte('journal_entries.date', dateFrom)
-    .lte('journal_entries.date', dateTo)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data: lines, error } = await q
+  // ACC-02 : TVA multi-taux agrégée côté serveur par code de TVA (base HT + montant)
+  const fiscalYearId = await getCurrentFiscalYearId()
+  const { data: rows, error } = await supabase.rpc('get_vat_summary_by_code', {
+    p_fiscal_year_id: fiscalYearId,
+    p_date_from: dateFrom,
+    p_date_to: dateTo,
+  })
   if (error) throw error
 
   let outputVat = 0
   let inputVat = 0
   let totalSales = 0
   let totalPurchases = 0
+  const byCode: Array<{ vat_code: string; direction: string; ca3_box: string; rate: number; base_ht: number; vat_amount: number }> = []
 
-  for (const line of lines || []) {
-    const code = line.account_general || line.account_code || ''
-    const debit = Number(line.debit) || 0
-    const credit = Number(line.credit) || 0
-
-    if (code.startsWith('4457')) outputVat += credit - debit
-    if (code.startsWith('4456')) inputVat += debit - credit
-    if (code.startsWith('70')) totalSales += credit - debit
-    if (code.startsWith('60')) totalPurchases += debit - credit
+  for (const row of (rows || []) as any[]) {
+    const baseHt = Number(row.base_ht) || 0
+    const vatAmount = Number(row.vat_amount) || 0
+    byCode.push({ vat_code: row.vat_code, direction: row.direction, ca3_box: row.ca3_box, rate: Number(row.rate) || 0, base_ht: baseHt, vat_amount: vatAmount })
+    if (row.direction === 'collected') { outputVat += vatAmount; totalSales += baseHt }
+    else if (row.direction === 'deductible') { inputVat += vatAmount; totalPurchases += baseHt }
   }
 
   return {
@@ -1589,6 +1510,7 @@ export async function calcVatFromEntries(dateFrom: string, dateTo: string) {
     netVat: outputVat - inputVat,
     totalSales: Math.max(0, totalSales),
     totalPurchases: Math.max(0, totalPurchases),
+    byCode, // ACC-02 : détail par code/taux de TVA pour la CA3
   }
 }
 
@@ -1612,6 +1534,7 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
   if (filters?.dateFrom) query = query.gte('journal_entries.date', filters.dateFrom)
   if (filters?.dateTo) query = query.lte('journal_entries.date', filters.dateTo)
   if (filters?.ifrsMode !== undefined) query = query.eq('journal_entries.ifrs_mode', filters.ifrsMode)
+  query = query.limit(100000) // SOC-04 : Limite explicite
 
   const { data, error } = await query
   if (error) throw error
@@ -1633,6 +1556,7 @@ export async function getTrialBalanceFiltered(filters?: {
   if (filters?.dateFrom) query = query.gte('journal_entries.date', filters.dateFrom)
   if (filters?.dateTo) query = query.lte('journal_entries.date', filters.dateTo)
   if (filters?.journalCode) query = query.eq('journal_entries.journal_code', filters.journalCode)
+  query = query.limit(100000) // SOC-04 : Limite explicite
 
   const { data, error } = await query
   if (error) throw error
@@ -1977,21 +1901,34 @@ export async function transferGescomToAccounting(items: Array<{ type: 'sales' | 
       else if (item.type === 'customer_payment') { journalCode = 'BQ'; accountDebit = '512000'; accountCredit = '411000' }
       else if (item.type === 'supplier_payment') { journalCode = 'BQ'; accountDebit = '401000'; accountCredit = '512000' }
 
-      const entryNumber = `${journalCode}-${item.number}`
-      const { data: entry, error: entryErr } = await supabase.from('journal_entries').insert(ti({
-        number: entryNumber,
-        date: item.date,
-        journal_code: journalCode,
-        status: 'draft',
-        invoice_ref: item.number,
-      }, 'journal_entries', tid)).select().single()
-      if (entryErr) throw entryErr
+      // ACC-01.7 : Idempotence — ne pas retransférer un document déjà comptabilisé
+      const sourceTable = item.type === 'sales' ? 'invoices'
+        : item.type === 'purchase' ? 'purchase_invoices'
+        : item.type === 'customer_payment' ? 'customer_payments'
+        : 'supplier_payments'
+      let srcQ = supabase.from(sourceTable).select('transferred_entry_id').eq('id', item.id)
+      if (tid) srcQ = srcQ.eq('tenant_id', tid)
+      const { data: source } = await srcQ.single()
+      if (source?.transferred_entry_id) {
+        results.push({ success: true, number: item.number, error: 'Déjà transféré' })
+        continue
+      }
 
-      const { error: lineErr } = await supabase.from('journal_lines').insert([
-        ti({ journal_id: entry.id, account_code: accountDebit, account_general: accountDebit, debit: item.amount, credit: 0, description: item.number }, 'journal_lines', tid),
-        ti({ journal_id: entry.id, account_code: accountCredit, account_general: accountCredit, debit: 0, credit: item.amount, description: item.number }, 'journal_lines', tid),
-      ])
-      if (lineErr) throw lineErr
+      // SOC-01/ACC-01 : RPC atomique — entête et lignes dans une seule transaction
+      const entryNumber = `${journalCode}-${item.number}`
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('post_journal_entry', {
+        p_entry: { number: entryNumber, date: item.date, journal_code: journalCode, status: 'draft', invoice_ref: item.number },
+        p_lines: [
+          { account_code: accountDebit, account_general: accountDebit, debit: item.amount, credit: 0, description: item.number, line_order: 0 },
+          { account_code: accountCredit, account_general: accountCredit, debit: 0, credit: item.amount, description: item.number, line_order: 1 },
+        ],
+      })
+      if (rpcErr) throw rpcErr
+      const res = rpcRes as any
+      if (res?.success === false) throw new Error(res.error || 'Échec du transfert')
+
+      // Marquer la source comme transférée (idempotence)
+      await tud(supabase.from(sourceTable).update({ transferred_entry_id: res?.entry_id }), sourceTable, tid).eq('id', item.id)
 
       results.push({ success: true, number: item.number })
     } catch (err: any) {
@@ -3044,7 +2981,9 @@ export async function generateExtourne(originalEntryId: string, reason: string) 
   const { data: original, error: e1 } = await q.single()
   if (e1) throw e1
 
-  const extourneNumber = `EXT-${Date.now()}`
+  // LOT4-10 : numérotation séquentielle continue (RPC 146), plus d'horodatage
+  const { data: extourneNumber, error: eNum } = await supabase.rpc('get_next_document_number', { p_prefix: 'EXT' })
+  if (eNum) throw eNum
   const { data: newEntry, error: e2 } = await supabase.from('journal_entries').insert({
     tenant_id: tid,
     number: extourneNumber,
@@ -3094,36 +3033,70 @@ export async function generateExtourne(originalEntryId: string, reason: string) 
 // --- Carry Forward: generate reports à-nouveaux ---
 export async function generateCarryForward(sourceFiscalYearId: string, targetFiscalYearId: string) {
   const tid = await getTenantId()
+
+  // Un seul report par exercice source (close_fiscal_year en génère déjà un)
+  let logQ = supabase.from('carry_forward_log').select('id').eq('source_fiscal_year_id', sourceFiscalYearId).eq('status', 'completed').limit(1)
+  if (tid) logQ = logQ.eq('tenant_id', tid)
+  const { data: existingLogs, error: eLog } = await logQ
+  if (eLog) throw eLog
+  if (existingLogs && existingLogs.length > 0) throw new Error('Les à-nouveaux de cet exercice ont déjà été générés')
+
   const fecData = await getFECData(sourceFiscalYearId)
-  const balanceMap = new Map<string, { debit: number; credit: number }>()
+  // Solde par compte général + compte tiers (les tiers sont reportés ligne à ligne)
+  const balanceMap = new Map<string, { account: string; tiers: string | null; debit: number; credit: number }>()
+  let result = 0 // produits (classe 7) − charges (classe 6)
   for (const entry of fecData) {
+    if (entry.status !== 'posted') continue
     for (const line of entry.journal_lines || []) {
-      const key = line.account_general || line.account_code
-      if (!key) continue
-      const existing = balanceMap.get(key) || { debit: 0, credit: 0 }
-      existing.debit += Number(line.debit) || 0
-      existing.credit += Number(line.credit) || 0
+      const account = line.account_general || line.account_code
+      if (!account) continue
+      const debit = Number(line.debit) || 0
+      const credit = Number(line.credit) || 0
+      // LOT4-01 : les classes 6 et 7 sont soldées dans le résultat, jamais reportées
+      if (account.startsWith('6') || account.startsWith('7')) {
+        result += credit - debit
+        continue
+      }
+      const tiers = line.account_tiers || null
+      const key = `${account}|${tiers ?? ''}`
+      const existing = balanceMap.get(key) || { account, tiers, debit: 0, credit: 0 }
+      existing.debit += debit
+      existing.credit += credit
       balanceMap.set(key, existing)
     }
   }
+  const resultAccount = result >= 0 ? '120000' : '129000'
+  if (Math.abs(result) >= 0.01) {
+    const key = `${resultAccount}|`
+    const existing = balanceMap.get(key) || { account: resultAccount, tiers: null, debit: 0, credit: 0 }
+    if (result > 0) existing.credit += result
+    else existing.debit += -result
+    balanceMap.set(key, existing)
+  }
+
   const anLines: any[] = []
   let totalDebit = 0, totalCredit = 0
-  for (const [accountCode, bal] of balanceMap) {
-    const solde = bal.debit - bal.credit
+  for (const { account, tiers, debit, credit } of balanceMap.values()) {
+    const solde = debit - credit
     if (Math.abs(solde) < 0.01) continue
+    const base = { tenant_id: tid, account_code: account, account_general: account, account_tiers: tiers, description: 'Report à-nouveau', line_order: anLines.length + 1 }
     if (solde > 0) {
-      anLines.push({ tenant_id: tid, account_code: accountCode, account_general: accountCode, debit: solde, credit: 0, description: 'Report à-nouveau', line_order: anLines.length + 1 })
+      anLines.push({ ...base, debit: solde, credit: 0 })
       totalDebit += solde
     } else {
-      anLines.push({ tenant_id: tid, account_code: accountCode, account_general: accountCode, debit: 0, credit: -solde, description: 'Report à-nouveau', line_order: anLines.length + 1 })
+      anLines.push({ ...base, debit: 0, credit: -solde })
       totalCredit += -solde
     }
   }
   if (anLines.length === 0) return null
 
+  // LOT4-10 : numérotation séquentielle continue (RPC 146)
+  const { data: anNumber, error: eNum } = await supabase.rpc('get_next_document_number', { p_prefix: 'AN' })
+  if (eNum) throw eNum
+
   const { data: newEntry, error } = await supabase.from('journal_entries').insert({
     tenant_id: tid,
-    number: `AN-${Date.now()}`,
+    number: anNumber,
     date: new Date().toISOString().slice(0, 10),
     description: 'Reports à-nouveaux',
     reference: 'AN',
@@ -3359,7 +3332,8 @@ export async function createTaxGroup(tg: Omit<TaxGroup, 'id' | 'created_at' | 't
 }
 
 export async function deleteTaxGroup(id: string): Promise<void> {
-  const { error } = await supabase.from('tax_groups').delete().eq('id', id)
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('tax_groups').delete(), 'tax_groups', tid).eq('id', id)
   if (error) throw error
 }
 
@@ -3383,7 +3357,8 @@ export async function createTaxRepartitionLine(line: Omit<TaxRepartitionLine, 'i
 }
 
 export async function deleteTaxRepartitionLine(id: string): Promise<void> {
-  const { error } = await supabase.from('tax_repartition_lines').delete().eq('id', id)
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('tax_repartition_lines').delete(), 'tax_repartition_lines', tid).eq('id', id)
   if (error) throw error
 }
 
@@ -3407,7 +3382,8 @@ export async function createTaxCashBasisEntry(entry: Omit<TaxCashBasisEntry, 'id
 }
 
 export async function updateTaxCashBasisEntry(id: string, updates: Partial<TaxCashBasisEntry>): Promise<void> {
-  const { error } = await supabase.from('tax_cash_basis_entries').update(updates).eq('id', id)
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('tax_cash_basis_entries').update(updates), 'tax_cash_basis_entries', tid).eq('id', id)
   if (error) throw error
 }
 

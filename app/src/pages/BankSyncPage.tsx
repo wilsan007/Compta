@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankConnections, createBankConnection, updateBankConnection, deleteBankConnection, syncBankConnection, getBankAccounts, getBankTransactions } from '@/lib/queries'
+import { getBankConnections, createBankConnection, updateBankConnection, deleteBankConnection, syncBankConnection, getBankAccounts, getBankTransactions } from '@/lib/queries/banking'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Plus, Trash2, X, Zap, Link2, AlertCircle } from 'lucide-react'
 import type { BankConnection, BankAccount, BankTransaction } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -45,7 +46,7 @@ export function BankSyncPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterAccount])
+  }, [filterAccount, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -63,7 +64,7 @@ export function BankSyncPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteBankConnection(id)
       await loadData()

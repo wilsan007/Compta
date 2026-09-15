@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
-import { getPendingExpenseReports, approveExpenseReport, rejectExpenseReport, getExpenseReportLines } from '@/lib/queries'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
+import { getPendingExpenseReports, approveExpenseReport, rejectExpenseReport, getExpenseReportLines } from '@/lib/queries/sprintDE'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { CheckCircle, XCircle, ChevronRight, Receipt } from 'lucide-react'
 import { useToast } from '@/lib/toast'
@@ -25,7 +25,7 @@ export function ManagerExpenseApprovalsPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -46,7 +46,7 @@ export function ManagerExpenseApprovalsPage() {
     try {
       const l = await getExpenseReportLines(r.id)
       setLines(l || [])
-    } catch (e: any) { console.error(e) }
+    } catch (e: any) { console.error(e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
   }
 
   if (selectedReport) {

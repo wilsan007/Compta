@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPurchaseInvoices, getSuppliers, createPurchaseInvoice } from '@/lib/queries'
+import { getPurchaseInvoices, createPurchaseInvoice } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText, CheckCircle2, X, Sparkles, AlertCircle } from 'lucide-react'
 import type { PurchaseInvoice, Supplier } from '@/types'
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 export function SupplierInvoiceAutomationPage() {
   const { t } = useTranslation('purchases')
   const { t: tNav } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -26,8 +28,7 @@ export function SupplierInvoiceAutomationPage() {
       const [inv, sup] = await Promise.all([getPurchaseInvoices(), getSuppliers()])
       setInvoices(inv || [])
       setSuppliers(sup || [])
-    } catch (err) {
-      console.error('Error loading data:', err)
+    } catch (err: any) { console.error('Error loading data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

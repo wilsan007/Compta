@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRateHistory, saveRate, refreshRatesFromECB, type ExchangeRate } from '@/lib/currencyRates'
 import { formatDate } from '@/lib/utils'
-import { getCurrencies } from '@/lib/queries'
+import { getCurrencies } from '@/lib/queries/accounting'
 import { RefreshCw, Plus, X, TrendingUp, TrendingDown, Calendar } from 'lucide-react'
 import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -29,12 +29,12 @@ export function ExchangeRatesPage() {
       ])
       setRates(history)
       setCurrencies(curs || [])
-    } catch (err) {
-      console.error('Error loading exchange rates:', err)
+    } catch (err: any) { console.error('Error loading exchange rates:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [baseCurrency, quoteCurrency])
+  }, [baseCurrency, quoteCurrency, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

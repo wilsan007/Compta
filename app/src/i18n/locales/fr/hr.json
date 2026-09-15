@@ -922,6 +922,8 @@
     "generated": "Déclaration générée",
     "transmit": "Transmettre",
     "transmitted": "Déclaration transmise",
+    "simulationMode": "Mode simulation",
+    "simulationWarning": "L'API net-entreprises n'est pas configurée — la DSN a été transmise en mode simulation. Configurez l'intégration pour une transmission réelle.",
     "transmitting": "Transmission en cours...",
     "confirmTransmit": "Confirmer la transmission",
     "fileReady": "Le fichier est prêt à être transmis",

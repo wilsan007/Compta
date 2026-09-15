@@ -207,6 +207,7 @@ export interface Invoice {
   advance_amount?: number | null
   invoice_type?: 'standard' | 'advance' | 'balance' | 'proforma'
   parent_invoice_id?: string | null
+  validation_status?: 'draft' | 'pending' | 'validated' | 'rejected' | null
 }
 
 export interface QuoteLine {
@@ -894,6 +895,8 @@ export interface Employee {
   postal_code?: string | null
   contract_type?: 'CDI' | 'CDD' | 'Apprentissage' | 'Stage' | 'Interim' | null
   contract_end_date?: string | null
+  withholding_tax_rate?: number | null
+  withholding_rate_source?: string | null
   created_at: string
   updated_at: string
 }
@@ -1042,6 +1045,29 @@ export interface ThirdPartyAccount {
   payment_term_id?: string | null
   default_bank_account_id?: string | null
   credit_limit?: number
+  siret?: string | null
+  vat_intra?: string | null
+  iban?: string | null
+  bic?: string | null
+  address?: string | null
+  postal_code?: string | null
+  city?: string | null
+  country?: string | null
+  bank_code?: string | null
+  branch_code?: string | null
+  bank_account_number?: string | null
+  bank_key?: string | null
+  echeance_model?: string | null
+  payment_condition?: string | null
+  payment_mode?: string | null
+  encours_autorise?: number | null
+  relance_niveau?: string | null
+  relance_model?: string | null
+  delai_paiement?: string | null
+  escompte?: number | null
+  contact_name?: string | null
+  zone_geo?: string | null
+  categorie?: string | null
 }
 
 // ============ Analytic Sections ============
@@ -1602,6 +1628,9 @@ export interface CustomerPayment {
   exchange_rate?: number
   amount_currency?: number | null
   exchange_gain_loss?: number
+  journal_entry_id?: string | null
+  journal_posted?: boolean
+  bank_transaction_id?: string | null
 }
 
 export interface PurchaseOrder {
@@ -1666,6 +1695,9 @@ export interface SupplierPayment {
   exchange_rate?: number
   amount_currency?: number | null
   exchange_gain_loss?: number
+  journal_entry_id?: string | null
+  journal_posted?: boolean
+  bank_transaction_id?: string | null
 }
 
 export interface Warehouse {

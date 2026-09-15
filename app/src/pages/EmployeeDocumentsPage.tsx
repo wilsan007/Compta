@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getEmployeeDocuments, createEmployeeDocument, deleteEmployeeDocument, getEmployees, getPayRuns, distributePaySlips } from '@/lib/queries'
+import { getEmployeeDocuments, deleteEmployeeDocument, distributePaySlips } from '@/lib/queries/dematRh'
+import { createEmployeeDocument, getEmployees, getPayRuns } from '@/lib/queries/payroll'
 import { formatDate } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, Send } from 'lucide-react'
 import type { Employee, EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const docTypeColors: Record<string, string> = {
   payslip: 'var(--color-primary)',
@@ -34,7 +36,7 @@ export function EmployeeDocumentsPage() {
     setLoading(true)
     try {
       const [docs, emps, prs] = await Promise.all([
-        getEmployeeDocuments(),
+        getEmployeeDocuments(''),
         getEmployees(),
         getPayRuns(),
       ])
@@ -45,12 +47,12 @@ export function EmployeeDocumentsPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteEmployeeDocument(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

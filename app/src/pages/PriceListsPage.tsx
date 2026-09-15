@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries'
+import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Tag, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PriceList, Product } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function PriceListsPage() {
   const { toast } = useToast()
@@ -24,9 +25,9 @@ const [lists, setLists] = useState<PriceList[]>([])
       const [pls, prods] = await Promise.all([getPriceLists(), getProducts()])
       setLists(pls || [])
       setProducts(prods || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,14 +40,14 @@ const [lists, setLists] = useState<PriceList[]>([])
         try {
           const lns = await getPriceListLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err) { console.error('Error:', err) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePriceList(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
   }

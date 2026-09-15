@@ -211,7 +211,7 @@
     "quantity": "Quantity", "unitPrice": "Unit Price", "amount": "Amount",
     "noElements": "No Variable Elements", "noElementsDescription": "No variable elements imported for this pay run",
     "imported": "Import successful",
-    "elementTypes": { "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "transport": "Transport", "other": "Other" },
+    "elementTypes": { "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "transport": "Transport", "other": "Other", "advance_deduction": "Salary Advance Deduction", "pay_recall": "Pay Recall", "expense_reimbursement": "Expense Reimbursement", "unpaid_leave_deduction": "Unpaid Leave Deduction", "timesheet_hours": "Timesheet Hours", "lateness_deduction": "Lateness Deduction", "unpaid_absence": "Unpaid Absence" },
     "validate": "Validate Preparation", "validated": "Preparation validated",
     "validateHint": "Review the elements above then validate the preparation"
   },

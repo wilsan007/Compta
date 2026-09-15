@@ -1,6 +1,8 @@
-import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { supabase, isTenantTable } from '@/lib/supabase'
+import { getTenantId, ti, tud } from './core'
+import { createJournalEntry } from './accounting'
+import { createStockMovement } from './stock'
+import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, FixedAsset, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
 
 // ============ Journals Report ============
 export async function getJournalsReport(startDate?: string, endDate?: string) {
@@ -290,13 +292,13 @@ function escapeSqlValue(val: any): string {
   if (val === null || val === undefined) return 'NULL'
   if (typeof val === 'number') return String(val)
   if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')}'`
-  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/\0/g, '')
+  if (typeof val === 'object') return `'${JSON.stringify(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replaceAll('\0', '')}'`
+  const str = String(val).replace(/\\/g, '\\\\').replace(/'/g, "''").replaceAll('\0', '')
   return `'${str}'`
 }
 
 function quoteIdentifier(name: string): string {
-  return '"' + String(name).replace(/"/g, '""').replace(/\0/g, '') + '"'
+  return '"' + String(name).replace(/"/g, '""').replaceAll('\0', '') + '"'
 }
 
 export function generateSqlDump(tables: ExportResult[], exportedAt: string): string {
@@ -548,7 +550,8 @@ export async function getMirrorServerStatus(tenantId: string): Promise<{
     .eq('tenant_id', tenantId)
     .maybeSingle()
 
-  if (error || !data) return { exists: false }
+  if (error) { console.error('checkMirrorServerExists:', error); return { exists: false } }
+  if (!data) return { exists: false }
 
   return {
     exists: true,
@@ -567,7 +570,7 @@ export async function getMirrorVerificationDetails(serverId: string): Promise<an
     .select('*')
     .eq('mirror_server_id', serverId)
     .order('table_name')
-  if (error) return []
+  if (error) { console.error('getMirrorVerificationDetails:', error); return [] }
   return data || []
 }
 
@@ -810,6 +813,7 @@ export interface Tenant {
   trial_ends_at: string | null
   enabled_modules: string[]
   created_at: string
+  legislation_pack_code?: string | null
 }
 
 export interface TenantUser {
@@ -1019,7 +1023,8 @@ export async function getCurrentTenant(): Promise<Tenant | null> {
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
 
-  if (error || !data || data.length === 0) return null
+  if (error) { console.error('getActiveTenant:', error); return null }
+  if (!data || data.length === 0) return null
   const stored = localStorage.getItem('active_tenant_id')
   const match = data.find(tu => tu.tenant_id === stored) || data[0]
   return (match as any).tenants as Tenant
@@ -1035,7 +1040,8 @@ export async function getCurrentTenantUser(): Promise<TenantUser | null> {
     .eq('auth_id', session.user.id)
     .eq('status', 'active')
 
-  if (error || !data || data.length === 0) return null
+  if (error) { console.error('getActiveTenantUser:', error); return null }
+  if (!data || data.length === 0) return null
   const stored = localStorage.getItem('active_tenant_id')
   const match = data.find(tu => tu.tenant_id === stored) || data[0]
   return match as TenantUser
@@ -1241,8 +1247,9 @@ export async function reinviteUser(tenantUserId: string, email: string): Promise
       options: otpOptions,
     })
     emailSent = !inviteError
-  } catch {
+  } catch (e) {
     // Email service might not be configured
+    console.error('inviteUser: email send failed:', e)
   }
 
   return { success: true, emailSent }
@@ -2408,7 +2415,8 @@ export async function checkCreditLimit(tpaCode: string): Promise<{ exceeded: boo
   let q = supabase.from('third_party_accounts').select('balance, credit_limit').eq('code', tpaCode)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.single()
-  if (error || !data) return { exceeded: false, balance: 0, limit: null }
+  if (error) { console.error('checkCreditLimit:', error); return { exceeded: false, balance: 0, limit: null } }
+  if (!data) return { exceeded: false, balance: 0, limit: null }
   const balance = Number(data.balance || 0)
   const limit = data.credit_limit != null ? Number(data.credit_limit) : null
   return { exceeded: limit != null && balance > limit, balance, limit }

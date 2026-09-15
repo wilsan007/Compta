@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { getWorkStoppages, createWorkStoppage, closeWorkStoppage, importBpij, regularizeIjss, getEmployees } from '@/lib/queries'
+import { getWorkStoppages, createWorkStoppage, closeWorkStoppage, importBpij, regularizeIjss } from '@/lib/queries/sprintDE'
+import { getEmployees } from '@/lib/queries/payroll'
 import { formatDate } from '@/lib/utils'
 import { HeartPulse, Plus, X, Upload, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
@@ -35,7 +36,7 @@ export function WorkStoppagesPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

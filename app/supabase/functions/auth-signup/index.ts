@@ -2,59 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { sendEmailViaResend, buildSignupConfirmationEmail } from "../_shared/email.ts"
+import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { checkRateLimit, getClientIp } from "../_shared/rateLimit.ts"
 
 // ============================================
-// INLINE RATE LIMITING
+// CORS (SEC-07: utilise shared cors.ts — pas de domaine de test en dur)
 // ============================================
-interface RateLimitEntry { count: number; resetAt: number }
-const rateLimitMap = new Map<string, RateLimitEntry>()
-let lastCleanup = Date.now()
-function cleanupExpired() {
-  const now = Date.now()
-  if (now - lastCleanup < 300_000) return
-  lastCleanup = now
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key)
-  }
-}
-function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  cleanupExpired()
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs })
-    return true
-  }
-  if (entry.count >= maxRequests) return false
-  entry.count++
-  return true
-}
-function getClientIp(req: Request): string {
-  const xff = req.headers.get("X-Forwarded-For")
-  if (xff) return xff.split(",")[0].trim()
-  const xreal = req.headers.get("X-Real-IP")
-  if (xreal) return xreal.trim()
-  const cfip = req.headers.get("CF-Connecting-IP")
-  if (cfip) return cfip.trim()
-  return "unknown"
-}
-
-// ============================================
-// CORS
-// ============================================
-const APP_URL = Deno.env.get("APP_URL") || "https://projet-compta.zdouce-zz.workers.dev"
-const ALLOWED_ORIGINS = [APP_URL, "http://localhost:5173", "http://localhost:4173"]
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") || ""
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ""
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
-  }
-}
 
 // ============================================
 // VALIDATION
@@ -78,7 +31,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return handleOptions(corsHeaders)
   }
 
   // Rate limit: max 3 signups per minute per IP
@@ -120,22 +73,24 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    // 1. Check if user already exists
-    const { data: existingUsers, error: listErr } = await supabase.auth.admin.listUsers()
-    if (listErr) {
-      console.error("listUsers error:", listErr.message)
-    } else {
-      const exists = existingUsers.users.find(u => u.email === email)
-      if (exists) {
-        return new Response(
-          JSON.stringify({ error: "An account already exists with this email. Please log in." }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        )
-      }
+    // SEC-07: Check if user already exists — use targeted search instead of listUsers()
+    // listUsers() is paginated and won't find users beyond the first page (1000 users)
+    const { data: existingUser, error: lookupErr } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .eq("email", email)
+      .maybeSingle()
+    if (lookupErr) {
+      console.error("User lookup error:", lookupErr.message)
+    } else if (existingUser) {
+      return new Response(
+        JSON.stringify({ error: "An account already exists with this email. Please log in." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      )
     }
 
     // 2. Create user with email_confirm=false (no Supabase email sent)
-    const { data: userData, error: createErr } = await supabase.auth.admin.createUser({
+    const { data: _userData, error: createErr } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: false,
@@ -150,7 +105,7 @@ serve(async (req) => {
     }
 
     // 3. Generate signup confirmation link
-    const appUrl = Deno.env.get("APP_URL") || APP_URL
+    const appUrl = Deno.env.get("APP_URL") || "http://localhost:5173"
     const redirectTo = `${appUrl}/onboarding`
 
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
@@ -191,6 +146,7 @@ serve(async (req) => {
             status: "sent",
             resend_id: emailResult.id || null,
             sent_at: new Date().toISOString(),
+            tenant_id: null, // Pas de tenant lors du signup — créé ultérieurement
           })
         } catch { /* queue logging failure is non-blocking */ }
       }

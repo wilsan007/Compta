@@ -4,13 +4,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getManufacturingOrder,
-  getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel,
-  getOFLots, createOFLot, deleteOFLot,
-  getOFConsumptions, createOFConsumption, deleteOFConsumption,
-  getSubManufacturingOrders, getProducts,
-} from '@/lib/queries'
+import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
+import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
@@ -20,6 +15,7 @@ export function ManufacturingOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [mo, setMo] = useState<any>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -34,6 +30,8 @@ export function ManufacturingOrderDetailPage() {
   const [labelCount, setLabelCount] = useState(1)
   const [labelQty, setLabelQty] = useState(0)
   const [allowDeferred, setAllowDeferred] = useState(false)
+  const [productionCost, setProductionCost] = useState<number | null>(null)
+  const [costLoading, setCostLoading] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -45,25 +43,25 @@ export function ManufacturingOrderDetailPage() {
         const prod = (prods || []).find((p: any) => p.id === moData.product_id)
         if ((prod as any)?.units_per_carton) setLabelQty((prod as any).units_per_carton)
       }
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [id])
+  }, [id, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function loadTabData(tab: string) {
     if (!id) return
     if (tab === 'labels' && labels.length === 0) {
-      try { setLabels(await getOFLabels(id)) } catch (err) { console.error(err) }
+      try { setLabels(await getOFLabels(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     }
     if (tab === 'lots' && lots.length === 0) {
-      try { setLots(await getOFLots(id)) } catch (err) { console.error(err) }
+      try { setLots(await getOFLots(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     }
     if (tab === 'consumptions' && consumptions.length === 0) {
-      try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err) }
+      try { setConsumptions(await getOFConsumptions(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
-      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err) }
+      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     }
   }
 
@@ -97,6 +95,18 @@ export function ManufacturingOrderDetailPage() {
   async function handleDeleteCons(consId: string) {
     try { await deleteOFConsumption(consId); setConsumptions(await getOFConsumptions(id!)) }
     catch (err: any) { toast('error', t('common.error'), err.message) }
+  }
+
+  async function handleProductionCost() {
+    if (!id) return
+    setCostLoading(true)
+    try {
+      const res = await calculateProductionCost(id)
+      const cost = (res as any)?.total_cost ?? res
+      setProductionCost(typeof cost === 'number' ? cost : Number(cost))
+      toast('success', t('manufacturing.detail.info.cost'), `${cost} €`)
+    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    finally { setCostLoading(false) }
   }
 
   if (loading) return <SkeletonTable rows={4} cols={4} />
@@ -144,25 +154,36 @@ export function ManufacturingOrderDetailPage() {
 
       {/* Tab: Informations */}
       {activeTab === 'info' && (
-        <Card>
-          <div className="grid grid-cols-2 gap-4 p-4">
-            <InfoRow label={t('manufacturing.detail.info.number')} value={mo.number} />
-            <InfoRow label={t('manufacturing.detail.info.status')} value={t('manufacturing.statuses.' + mo.status)} />
-            <InfoRow label={t('manufacturing.detail.info.bom')} value={mo.boms ? `${mo.boms.code} — ${mo.boms.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.product')} value={mo.products ? `${mo.products.sku} — ${mo.products.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.quantity')} value={String(mo.quantity)} />
-            <InfoRow label={t('manufacturing.detail.info.warehouse')} value={mo.warehouses?.name || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.routing')} value={mo.routings ? `${mo.routings.code} — ${mo.routings.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.startDate')} value={mo.start_date || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.endDate')} value={mo.end_date || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.origin')} value={t('manufacturing.origins.' + (mo.origin || 'manual'))} />
-            {mo.lot_number && <InfoRow label={t('manufacturing.detail.info.lotNumber')} value={mo.lot_number} />}
-            {mo.expiry_date && <InfoRow label={t('manufacturing.detail.info.expiryDate')} value={mo.expiry_date} />}
-            {mo.expiry_type && <InfoRow label={t('manufacturing.detail.info.expiryType')} value={mo.expiry_type} />}
-            {mo.additional_text && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.additionalText')} value={mo.additional_text} /></div>}
-            {mo.notes && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.notes')} value={mo.notes} /></div>}
-          </div>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <div className="grid grid-cols-2 gap-4 p-4">
+              <InfoRow label={t('manufacturing.detail.info.number')} value={mo.number} />
+              <InfoRow label={t('manufacturing.detail.info.status')} value={t('manufacturing.statuses.' + mo.status)} />
+              <InfoRow label={t('manufacturing.detail.info.bom')} value={mo.boms ? `${mo.boms.code} — ${mo.boms.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.product')} value={mo.products ? `${mo.products.sku} — ${mo.products.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.quantity')} value={String(mo.quantity)} />
+              <InfoRow label={t('manufacturing.detail.info.warehouse')} value={mo.warehouses?.name || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.routing')} value={mo.routings ? `${mo.routings.code} — ${mo.routings.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.startDate')} value={mo.start_date || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.endDate')} value={mo.end_date || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.origin')} value={t('manufacturing.origins.' + (mo.origin || 'manual'))} />
+              {mo.lot_number && <InfoRow label={t('manufacturing.detail.info.lotNumber')} value={mo.lot_number} />}
+              {mo.expiry_date && <InfoRow label={t('manufacturing.detail.info.expiryDate')} value={mo.expiry_date} />}
+              {mo.expiry_type && <InfoRow label={t('manufacturing.detail.info.expiryType')} value={mo.expiry_type} />}
+              {mo.additional_text && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.additionalText')} value={mo.additional_text} /></div>}
+              {mo.notes && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.notes')} value={mo.notes} /></div>}
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between p-4">
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{t('manufacturing.detail.info.cost')}</p>
+                <p className="text-sm font-medium">{productionCost != null ? `${productionCost} €` : '—'}</p>
+              </div>
+              <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : 'Calculer le coût'}</Button>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Tab: Suivi Quantité (Étiquettes) */}

@@ -18,7 +18,7 @@ interface GanttChartProps {
 
 const ROW_HEIGHT = 32
 
-export function GanttChart({ projectId, className }: GanttChartProps) {
+export function GanttChart({ className }: GanttChartProps) {
   const { tasks, loading, error, refetch, updateTask } = useTaskContext()
   const { projects } = useProjectContext()
   const [viewMode, setViewMode] = useState<ViewMode>('month')

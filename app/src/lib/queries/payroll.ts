@@ -1,7 +1,6 @@
-import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import { calculatePayroll } from '@/lib/payroll'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { supabase } from '@/lib/supabase';
+import { getTenantId, ti, tud } from './core';
+import type { Employee, PayRun, Timesheet, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, PaymentTerm, PaymentPromise, PaymentTemplateCompta } from '@/types';
 
 // ============ Employees ============
 export async function getEmployees() {
@@ -72,7 +71,7 @@ export async function getTimesheets() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 
 export async function createTimesheet(ts: Omit<Timesheet, 'id' | 'created_at'>) {
@@ -104,7 +103,7 @@ export async function getPaySlips(payRunId?: string) {
   if (payRunId) q = q.eq('pay_run_id', payRunId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 
 export async function createPaySlip(ps: Omit<PaySlip, 'id' | 'created_at'>) {
@@ -128,48 +127,40 @@ export async function deletePaySlip(id: string) {
 }
 
 export async function generatePaySlipsForRun(payRunId: string, employees: Employee[], payRun: PayRun) {
-  const tid = await getTenantId()
+  // LOT4-02 : Moteur unique en SQL — le RPC calculate_payslip fait tout le calcul
+  // légal (PMSS, CSG/CRDS, tranches, cumuls) et crée/met à jour le bulletin.
+  // Le moteur TypeScript (calculatePayroll) n'est plus utilisé pour la génération.
   const results: PaySlip[] = []
+  const period = String(payRun.period_start).slice(0, 7) // YYYY-MM
+
   for (const emp of employees) {
     if (emp.status === 'inactive') continue
-    const grossSalary = Number(emp.salary)
-    const calc = calculatePayroll({
-      grossSalary,
-      contractType: (String(emp.contract_type).toLowerCase() === 'cdd' ? 'cdd' : 'cdi') as 'cdi' | 'cdd',
-      hoursPerWeek: 35,
-      overtimeHours: 0,
-      mealVouchers: 0,
-      transportAllowance: 0,
-      age: emp.birth_date ? Math.floor((Date.now() - new Date(emp.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 30,
-      department: emp.department || '',
-      taxRate: 10,
-    })
-    const overtimePay = calc.overtimePay
-    const bonus = 0
-    const totalGross = calc.totalGross + bonus
-    const socialSecurity = calc.socialSecurityEmployee + calc.retirementEmployee + calc.healthEmployee + calc.unemploymentEmployee
-    const incomeTax = calc.incomeTax
-    const otherDeductions = calc.csgCrds
-    const totalDeductions = socialSecurity + incomeTax + otherDeductions
-    const netSalary = calc.netPay
-    const employerContributions = calc.totalEmployerContributions
 
-    const number = `BS-${payRun.number}-${emp.name.substring(0, 3).toUpperCase()}`
-    const { data, error } = await supabase.from('pay_slips').insert(ti({
-      number, pay_run_id: payRunId, employee_id: emp.id,
-      period_start: payRun.period_start, period_end: payRun.period_end,
-      gross_salary: grossSalary, overtime_pay: overtimePay, bonus,
-      total_gross: totalGross, social_security_employee: socialSecurity,
-      income_tax: incomeTax, other_deductions: otherDeductions,
-      total_deductions: totalDeductions, net_salary: netSalary,
-      employer_contributions: employerContributions, status: 'draft',
-    }, 'pay_slips', tid)).select().single()
+    // Appeler le RPC SQL qui calcule et persiste le bulletin
+    const { data, error } = await supabase.rpc('calculate_payslip', {
+      p_employee_id: emp.id,
+      p_period: period,
+      p_pay_run_id: payRunId,
+    })
     if (error) throw error
-    results.push(data as PaySlip)
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Erreur calcul bulletin')
+    }
+
+    // Recharger le bulletin créé par le RPC
+    if (data && data.pay_slip_id) {
+      const { data: slip, error: slipError } = await supabase
+        .from('pay_slips')
+        .select('*')
+        .eq('id', data.pay_slip_id)
+        .single()
+      if (!slipError && slip) {
+        results.push(slip as PaySlip)
+      }
+    }
   }
   return results
 }
-
 
 // ============ Sprint 7: Payroll Accounting Entries ============
 export async function getPayrollAccountingEntries() {
@@ -178,7 +169,7 @@ export async function getPayrollAccountingEntries() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 
 export async function createPayrollAccountingEntry(pae: Omit<PayrollAccountingEntry, 'id' | 'created_at'>) {
@@ -233,7 +224,7 @@ export async function getLeaveRequests(status?: string) {
   if (status) q = q.eq('status', status)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 
 export async function createLeaveRequest(lr: Omit<LeaveRequest, 'id' | 'created_at' | 'approved_by' | 'approved_at'>) {
@@ -264,7 +255,7 @@ export async function getContracts() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 
 export async function createContract(c: Omit<Contract, 'id' | 'created_at'>) {
@@ -400,7 +391,7 @@ export async function getSalaryAdvances() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createSalaryAdvance(s: Omit<SalaryAdvance, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -423,7 +414,7 @@ export async function getPayRecalls() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createPayRecall(r: Omit<PayRecall, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -463,7 +454,7 @@ export async function getDpaeRecords() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createDpaeRecord(d: Omit<DpaeRecord, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -481,7 +472,7 @@ export async function getWorkHardship(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createWorkHardship(w: Omit<WorkHardship, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -510,7 +501,7 @@ export async function getCareerHistory(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createCareerHistory(c: Omit<CareerHistory, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -539,7 +530,7 @@ export async function getCpfAccounts(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createCpfAccount(c: Omit<CpfAccount, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
@@ -567,7 +558,7 @@ export async function getPayrollArchives() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createPayrollArchive(a: Omit<PayrollArchive, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -617,7 +608,7 @@ export async function getExpenseReports() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createExpenseReport(e: Omit<ExpenseReport, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -641,7 +632,7 @@ export async function getInterviews(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as Record<string, unknown>[]
 }
 export async function createInterview(i: Omit<Interview, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -673,7 +664,7 @@ export async function getPaymentTermById(id: string): Promise<PaymentTerm | null
   let q = supabase.from('payment_terms').select('*').eq('id', id)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.single()
-  if (error) return null
+  if (error) { console.error('getPaymentTermById:', error); return null }
   return data as PaymentTerm
 }
 

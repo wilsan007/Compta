@@ -542,5 +542,22 @@
     "profitability": "Rentabilité",
     "noActiveProjects": "Aucun projet actif",
     "noQuotes": "Aucun devis"
+  },
+  "nf525": {
+    "pageDescription": "Journal d'événements NF525 et vérification de l'intégrité de la chaîne",
+    "integrityCheck": "Vérification de l'intégrité",
+    "integrityCheckDescription": "Vérifie que la chaîne de hachage NF525 n'a pas été altérée.",
+    "verifyIntegrity": "Vérifier l'intégrité",
+    "integrityVerified": "Intégrité vérifiée",
+    "integrityFailed": "Intégrité compromise",
+    "chainValid": "La chaîne NF525 est intacte. Aucune altération détectée.",
+    "chainCorrupted": "La chaîne NF525 a été altérée. Une investigation est nécessaire.",
+    "allEvents": "Tous les événements",
+    "events": "événements",
+    "noEvents": "Aucun événement NF525",
+    "noEventsDescription": "Les événements de journalisation NF525 apparaîtront ici.",
+    "eventType": "Type",
+    "entity": "Entité",
+    "date": "Date"
   }
 }

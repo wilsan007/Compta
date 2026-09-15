@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, StatCard, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState } from '@/components/ui'
-import { getDashboardStats, getInvoices, getBankAccounts, getDashboardChartData, getRecentActivity } from '@/lib/queries'
+import { getDashboardStats, getDashboardChartData, getRecentActivity } from '@/lib/queries/accounting'
+import { getInvoices } from '@/lib/queries/sales'
+import { getBankAccounts } from '@/lib/queries/banking'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import {
@@ -80,8 +82,8 @@ export function DashboardPage() {
         setTimeout(() => setAnimateKpis(true), 100)
       }
     }
-    loadData()
-  }, [])
+    loadData().catch(err => console.error('loadData:', err))
+  }, [t, toast])
 
   const monthlyData = chartData.monthly.length > 0 ? chartData.monthly : []
   const cashFlowData = chartData.cashFlow

@@ -511,7 +511,9 @@
     "thirdParty": "Tiers",
     "debitBalance": "Solde débiteur",
     "creditBalance": "Solde créditeur",
-    "export": "Exporter le grand livre"
+    "export": "Exporter le grand livre",
+    "generate": "Générer",
+    "generated": "Grand livre généré avec succès"
   },
   "trialBalance": {
     "title": "Balance générale",
@@ -531,6 +533,8 @@
     "exportCSV": "Export CSV",
     "showZeroBalances": "Afficher les soldes nuls",
     "groupByClass": "Regrouper par classe",
+    "generate": "Générer",
+    "generated": "Balance générée avec succès",
     "classLabels": {
       "1": "Classe 1 — Capitaux",
       "2": "Classe 2 — Immobilisations",
@@ -946,7 +950,9 @@
     "financialCharges": "Charges financières (66)",
     "netResultFinal": "RÉSULTAT NET",
     "category": "Rubrique",
-    "amountCol": "Montant"
+    "amountCol": "Montant",
+    "generate": "Générer le compte de résultat",
+    "generated": "Compte de résultat généré avec succès"
   },
   "analytic": {
     "title": "Sections analytiques",
@@ -1253,7 +1259,9 @@
     "account": "Compte",
     "amount": "Montant",
     "totalAssets": "Total Actif",
-    "totalLiabilitiesEquity": "Total Passif + Capitaux"
+    "totalLiabilitiesEquity": "Total Passif + Capitaux",
+    "generate": "Générer le bilan",
+    "generated": "Bilan généré avec succès"
   },
   "cashFlow": {
     "title": "Flux de trésorerie",
@@ -1291,7 +1299,9 @@
     "vat": "TVA",
     "legendRevenues": "Revenus",
     "legendExpenses": "Dépenses",
-    "legendProfit": "Profit"
+    "legendProfit": "Profit",
+    "generateAnnex": "Générer l'annexe comptable",
+    "annexGenerated": "Annexe comptable générée avec succès"
   },
   "reports": {
     "paymentDelay": {
@@ -1384,7 +1394,13 @@
       "extourned": "Extourné"
     },
     "filterByType": "Filtrer par type",
-    "all": "Tous"
+    "all": "Tous",
+    "generateAdjusting": "Régulariser",
+    "calculateProvisions": "Provisions",
+    "adjustingGenerated": "Écritures de régularisation générées",
+    "provisionsCalculated": "Provisions calculées avec succès",
+    "postDeferred": "Poster le CCA/PCA",
+    "deferredPosted": "Charge/produit reporté avec succès"
   },
   "gdpr": {
     "title": "Conformité RGPD",

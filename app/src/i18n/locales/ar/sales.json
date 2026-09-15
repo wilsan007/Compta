@@ -581,5 +581,8 @@
     "apply": "تطبيق",
     "delete": "حذف",
     "noFilters": "لا توجد مرشحات محفوظة"
-  }
+  },
+  "calculate_penalties": "احسب غرامات التأخير",
+  "penalties_result": "{{count}} فواتير - غرامات: {{amount}}",
+  "no_overdue_invoices": "لا توجد فواتير متأخرة"
 }

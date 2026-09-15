@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { FileText, Plus, Trash2, Save, Edit3, Eye } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -22,6 +23,8 @@ interface ProjectDoc {
 
 export function DocView({ projectId }: DocViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [docs, setDocs] = useState<ProjectDoc[]>([])
   const [selectedDoc, setSelectedDoc] = useState<ProjectDoc | null>(null)
   const [loading, setLoading] = useState(true)
@@ -48,7 +51,7 @@ export function DocView({ projectId }: DocViewProps) {
   }, [projectId])
 
   useEffect(() => {
-    loadDocs()
+    loadDocs().catch(err => console.error('loadDocs:', err))
   }, [loadDocs])
 
   const handleNewDoc = useCallback(async () => {
@@ -112,10 +115,12 @@ export function DocView({ projectId }: DocViewProps) {
         setDocs((prev) => prev.map((d) => (d.id === selectedDoc.id ? saved : d)))
         setSelectedDoc(saved)
       } else {
+        const tid = await getTenantId()
         const { error } = await supabase
           .from('project_docs')
           .update({ title, content, updated_at: new Date().toISOString() })
           .eq('id', selectedDoc.id)
+          .eq('tenant_id', tid || '')
         if (error) throw error
         setDocs((prev) =>
           prev.map((d) => (d.id === selectedDoc.id ? { ...d, title, content, updated_at: new Date().toISOString() } : d))
@@ -135,17 +140,18 @@ export function DocView({ projectId }: DocViewProps) {
     if (!confirm(t('doc.deleteConfirm'))) return
     try {
       if (!docId.startsWith('draft-')) {
-        await supabase.from('project_docs').delete().eq('id', docId)
+        const tid = await getTenantId()
+        await supabase.from('project_docs').delete().eq('id', docId).eq('tenant_id', tid || '')
       }
       setDocs((prev) => prev.filter((d) => d.id !== docId))
       if (selectedDoc?.id === docId) {
         setSelectedDoc(null)
         setEditMode(false)
       }
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       // ignore
     }
-  }, [selectedDoc, t])
+  }, [selectedDoc, t, tCommon, toast])
 
   const handleSelectDoc = (doc: ProjectDoc) => {
     setSelectedDoc(doc)

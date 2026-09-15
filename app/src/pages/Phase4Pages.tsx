@@ -27,7 +27,7 @@ export function PayrollComponentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ code: '', name: '', type: 'gross' as const, calculation_type: 'fixed' as const, default_value: 0, rate_employer: 0, rate_employee: 0, display_order: 100, active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollComponents() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollComponents() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPayrollComponent(form as any); toast('success', tCommon('common.success'), t('components.created')); setShowForm(false); setForm({ code: '', name: '', type: 'gross', calculation_type: 'fixed', default_value: 0, rate_employer: 0, rate_employee: 0, display_order: 100, active: true }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -57,7 +57,7 @@ export function PayrollTemplatesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', category: 'standard' as const, description: '', active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollTemplates() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollTemplates() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPayrollTemplate(form as any); toast('success', tCommon('common.success'), t('templates.created')); setShowForm(false); setForm({ name: '', category: 'standard', description: '', active: true }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -88,7 +88,7 @@ export function SalaryAdvancesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ employee_id: '', amount: 0, advance_date: '', deduction_month: '', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getSalaryAdvances() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getSalaryAdvances() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createSalaryAdvance(form as any); toast('success', tCommon('common.success'), t('advances.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -118,7 +118,7 @@ export function DSNPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ period: '', type: 'mensuelle' as const })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDsnDeclarations() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDsnDeclarations() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDsnDeclaration(form as any); toast('success', tCommon('common.success'), t('dsn.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -148,7 +148,7 @@ export function DPAEPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ employee_id: '', hire_date: '', contract_type: '', position: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDpaeRecords() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDpaeRecords() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDpaeRecord(form as any); toast('success', tCommon('common.success'), t('dpae.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -177,7 +177,7 @@ export function LegalWatchPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', category: '', source: '', summary: '', content_url: '', published_date: '', relevance: 'info' as const })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getLegalWatch() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getLegalWatch() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createLegalWatch(form as any); toast('success', tCommon('common.success'), t('legalWatch.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -208,7 +208,7 @@ export function ExpenseReportsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ employee_id: '', number: '', period: '', total_amount: 0, notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getExpenseReports() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getExpenseReports() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createExpenseReport(form as any); toast('success', tCommon('common.success'), t('expenseReports.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -239,7 +239,7 @@ export function PayRecallsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ employee_id: '', reference_period: '', recall_amount: 0, reason: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayRecalls() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayRecalls() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPayRecall(form as any); toast('success', tCommon('common.success'), t('recalls.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -264,7 +264,7 @@ export function PayrollArchivePage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollArchives() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPayrollArchives() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   return (
@@ -290,7 +290,7 @@ export function InterviewsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ employee_id: '', type: 'annual' as const, scheduled_date: '', objectives: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getInterviews() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getInterviews() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createInterview(form as any); toast('success', tCommon('common.success'), t('interviews.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }

@@ -53,9 +53,10 @@ export async function carryOverLeaveBalances(employeeId: string, fromYear: numbe
     const { data: rules } = await rulesQ.limit(1).maybeSingle()
     const maxCarry = rules ? Number(rules.max_carry_over) : 0
     const carryOver = Math.min(remaining, maxCarry)
-    const { data: existing } = await supabase.from('leave_balances')
+    const { data: existing, error: existError } = await supabase.from('leave_balances')
       .select('id').eq('employee_id', employeeId).eq('leave_type', bal.leave_type).eq('year', toYear)
       .maybeSingle()
+    if (existError) throw existError
     if (existing) {
       await tud(supabase.from('leave_balances').update({ carry_over: carryOver }), 'leave_balances', tid).eq('id', existing.id)
     } else {
@@ -82,9 +83,10 @@ export async function initializeYearLeaveBalances(year: number): Promise<void> {
   for (const emp of employees) {
     for (const rule of rules) {
       const acquired = Number(rule.accrual_rate) * 12
-      const { data: existing } = await supabase.from('leave_balances')
+      const { data: existing, error } = await supabase.from('leave_balances')
         .select('id').eq('employee_id', emp.id).eq('leave_type', rule.leave_type).eq('year', year)
         .maybeSingle()
+      if (error) throw error
       if (!existing) {
         await supabase.from('leave_balances').insert(ti({
           employee_id: emp.id, leave_type: rule.leave_type, year,
@@ -98,7 +100,8 @@ export async function initializeYearLeaveBalances(year: number): Promise<void> {
 // ============ Leave Requests (extension) ============
 export async function getMyLeaveRequests(): Promise<LeaveRequest[]> {
   const tid = await getTenantId()
-  const { data: userData } = await supabase.auth.getUser()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
   if (!userData.user) return []
   let q = supabase.from('leave_requests').select('*').order('start_date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
@@ -117,7 +120,7 @@ export async function createMyLeaveRequest(data: {
 }): Promise<LeaveRequest> {
   const tid = await getTenantId()
   const { data: result, error } = await supabase.from('leave_requests').insert(ti({
-    ...data, status: 'pending',
+    ...(data || {}), status: 'pending',
   }, 'leave_requests', tid)).select().single()
   if (error) throw error
   const balQ = supabase.from('leave_balances').select('*').eq('employee_id', data.employee_id).eq('leave_type', data.leave_type)
@@ -132,11 +135,13 @@ export async function createMyLeaveRequest(data: {
 
 export async function cancelMyLeaveRequest(id: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  if (error) { console.error('cancelMyLeaveRequest:', error); return }
   if (!lr) return
   await tud(supabase.from('leave_requests').update({ status: 'cancelled' }), 'leave_requests', tid).eq('id', id)
   if (lr.status === 'pending') {
-    const { data: bal } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+    const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+    if (balError) { console.error('cancelMyLeaveRequest:', balError); return }
     if (bal) {
       const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
       const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - Number(bal.taken) - newPending
@@ -159,12 +164,14 @@ export async function getPendingLeaveRequests(managerId?: string): Promise<any[]
 
 export async function approveLeaveRequest(id: string, _managerId: string, comment?: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  if (error) { console.error('approveLeaveRequest:', error); return }
   if (!lr) return
   await tud(supabase.from('leave_requests').update({
     status: 'approved', approved_at: new Date().toISOString(), approved_by: _managerId, reason: comment || lr.reason,
   }), 'leave_requests', tid).eq('id', id)
-  const { data: bal } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+  const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+  if (balError) { console.error('approveLeaveRequest:', balError); return }
   if (bal) {
     const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
     const newTaken = Number(bal.taken) + Number(lr.days)
@@ -175,13 +182,15 @@ export async function approveLeaveRequest(id: string, _managerId: string, commen
 
 export async function rejectLeaveRequest(id: string, _managerId: string, comment?: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
+  if (error) { console.error('rejectLeaveRequest:', error); return }
   if (!lr) return
   await tud(supabase.from('leave_requests').update({
     status: 'rejected', approved_by: _managerId, reason: comment || lr.reason,
   }), 'leave_requests', tid).eq('id', id)
   if (lr.status === 'pending') {
-    const { data: bal } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+    const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
+    if (balError) { console.error('rejectLeaveRequest:', balError); return }
     if (bal) {
       const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
       const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - Number(bal.taken) - newPending
@@ -306,8 +315,9 @@ export async function calculateLeaveProvisions(period: string): Promise<LeavePro
     const rttProv = rttDays * dailyRate
     const recProv = recDays * dailyRate
     const total = cpProv + rttProv + recProv
-    const { data: existing } = await supabase.from('leave_provisions')
+    const { data: existing, error } = await supabase.from('leave_provisions')
       .select('id').eq('employee_id', emp.id).eq('period', period).maybeSingle()
+    if (error) throw error
     if (existing) {
       const { data: updated } = await tud(supabase.from('leave_provisions').update({
         cp_remaining_days: cpDays, rtt_remaining_days: rttDays, recovery_remaining_days: recDays,
@@ -316,12 +326,13 @@ export async function calculateLeaveProvisions(period: string): Promise<LeavePro
       }), 'leave_provisions', tid).eq('id', existing.id).select().single()
       if (updated) results.push(updated as LeaveProvision)
     } else {
-      const { data: created } = await supabase.from('leave_provisions').insert(ti({
+      const { data: created, error: createError } = await supabase.from('leave_provisions').insert(ti({
         employee_id: emp.id, period, cp_remaining_days: cpDays, rtt_remaining_days: rttDays,
         recovery_remaining_days: recDays, daily_rate: dailyRate, cp_provision: cpProv,
         rtt_provision: rttProv, recovery_provision: recProv, total_provision: total,
         status: 'calculated',
       }, 'leave_provisions', tid)).select().single()
+      if (createError) throw createError
       if (created) results.push(created as LeaveProvision)
     }
   }
@@ -689,7 +700,8 @@ export async function generateClarifiedPaySlip(paySlipId: string): Promise<PaySl
     { category: 'deduction', label: 'Autres déductions', amount: -Number(slip.other_deductions) },
     { category: 'net', label: 'Net à payer', amount: Number(slip.net_salary) },
   ]
-  const { data: existing } = await supabase.from('pay_slip_clarified').select('id').eq('pay_slip_id', paySlipId).maybeSingle()
+  const { data: existing, error } = await supabase.from('pay_slip_clarified').select('id').eq('pay_slip_id', paySlipId).maybeSingle()
+  if (error) throw error
   if (existing) {
     const { data: updated, error } = await tud(supabase.from('pay_slip_clarified').update({
       gross_salary: slip.total_gross, social_charges_employee: slip.social_security_employee,

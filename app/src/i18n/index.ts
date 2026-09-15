@@ -2,81 +2,6 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
-import frCommon from './locales/fr/common.json'
-import frNav from './locales/fr/nav.json'
-import frAuth from './locales/fr/auth.json'
-import frSales from './locales/fr/sales.json'
-import frPurchases from './locales/fr/purchases.json'
-import frAccounting from './locales/fr/accounting.json'
-import frBanking from './locales/fr/banking.json'
-import frTreasury from './locales/fr/treasury.json'
-import frStock from './locales/fr/stock.json'
-import frProduction from './locales/fr/production.json'
-import frHr from './locales/fr/hr.json'
-import frPayroll from './locales/fr/payroll.json'
-import frAssets from './locales/fr/assets.json'
-import frReports from './locales/fr/reports.json'
-import frSettings from './locales/fr/settings.json'
-import frErrors from './locales/fr/errors.json'
-import frFeatures from './locales/fr/features.json'
-import frCrm from './locales/fr/crm.json'
-import frPos from './locales/fr/pos.json'
-import frDemat from './locales/fr/demat.json'
-import frEmployee from './locales/fr/employee.json'
-import frTaskManagement from './locales/fr/taskManagement.json'
-import frDocuments from './locales/fr/documents.json'
-import frCrossModule from './locales/fr/crossModule.json'
-
-import enCommon from './locales/en/common.json'
-import enNav from './locales/en/nav.json'
-import enAuth from './locales/en/auth.json'
-import enSales from './locales/en/sales.json'
-import enPurchases from './locales/en/purchases.json'
-import enAccounting from './locales/en/accounting.json'
-import enBanking from './locales/en/banking.json'
-import enTreasury from './locales/en/treasury.json'
-import enStock from './locales/en/stock.json'
-import enProduction from './locales/en/production.json'
-import enHr from './locales/en/hr.json'
-import enPayroll from './locales/en/payroll.json'
-import enAssets from './locales/en/assets.json'
-import enReports from './locales/en/reports.json'
-import enSettings from './locales/en/settings.json'
-import enErrors from './locales/en/errors.json'
-import enFeatures from './locales/en/features.json'
-import enCrm from './locales/en/crm.json'
-import enPos from './locales/en/pos.json'
-import enDemat from './locales/en/demat.json'
-import enEmployee from './locales/en/employee.json'
-import enTaskManagement from './locales/en/taskManagement.json'
-import enDocuments from './locales/en/documents.json'
-import enCrossModule from './locales/en/crossModule.json'
-
-import arCommon from './locales/ar/common.json'
-import arNav from './locales/ar/nav.json'
-import arAuth from './locales/ar/auth.json'
-import arSales from './locales/ar/sales.json'
-import arPurchases from './locales/ar/purchases.json'
-import arAccounting from './locales/ar/accounting.json'
-import arBanking from './locales/ar/banking.json'
-import arTreasury from './locales/ar/treasury.json'
-import arStock from './locales/ar/stock.json'
-import arProduction from './locales/ar/production.json'
-import arHr from './locales/ar/hr.json'
-import arPayroll from './locales/ar/payroll.json'
-import arAssets from './locales/ar/assets.json'
-import arReports from './locales/ar/reports.json'
-import arSettings from './locales/ar/settings.json'
-import arErrors from './locales/ar/errors.json'
-import arFeatures from './locales/ar/features.json'
-import arCrm from './locales/ar/crm.json'
-import arPos from './locales/ar/pos.json'
-import arDemat from './locales/ar/demat.json'
-import arEmployee from './locales/ar/employee.json'
-import arTaskManagement from './locales/ar/taskManagement.json'
-import arDocuments from './locales/ar/documents.json'
-import arCrossModule from './locales/ar/crossModule.json'
-
 export const SUPPORTED_LANGUAGES = ['fr', 'en', 'ar'] as const
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 
@@ -91,90 +16,42 @@ export const ALL_NAMESPACES = [
   'banking', 'treasury', 'stock', 'production', 'hr', 'payroll', 'assets', 'reports', 'settings', 'errors', 'features', 'crm', 'pos', 'demat', 'employee', 'taskManagement', 'documents', 'crossModule',
 ] as const
 
+// PRF-02 : Chargement dynamique des traductions pour réduire le chunk initial
+// Au lieu d'importer les 75 fichiers JSON statiquement (~500 KB),
+// on les charge dynamiquement selon la langue détectée.
+const localeLoaders: Record<string, () => Promise<Record<string, any>>> = {
+  fr: () => import('./locales/fr').then(m => ({
+    common: m.common, nav: m.nav, auth: m.auth, sales: m.sales, purchases: m.purchases,
+    accounting: m.accounting, banking: m.banking, treasury: m.treasury, stock: m.stock,
+    production: m.production, hr: m.hr, payroll: m.payroll, assets: m.assets,
+    reports: m.reports, settings: m.settings, errors: m.errors, features: m.features,
+    crm: m.crm, pos: m.pos, demat: m.demat, employee: m.employee,
+    taskManagement: m.taskManagement, documents: m.documents, crossModule: m.crossModule,
+  })),
+  en: () => import('./locales/en').then(m => ({
+    common: m.common, nav: m.nav, auth: m.auth, sales: m.sales, purchases: m.purchases,
+    accounting: m.accounting, banking: m.banking, treasury: m.treasury, stock: m.stock,
+    production: m.production, hr: m.hr, payroll: m.payroll, assets: m.assets,
+    reports: m.reports, settings: m.settings, errors: m.errors, features: m.features,
+    crm: m.crm, pos: m.pos, demat: m.demat, employee: m.employee,
+    taskManagement: m.taskManagement, documents: m.documents, crossModule: m.crossModule,
+  })),
+  ar: () => import('./locales/ar').then(m => ({
+    common: m.common, nav: m.nav, auth: m.auth, sales: m.sales, purchases: m.purchases,
+    accounting: m.accounting, banking: m.banking, treasury: m.treasury, stock: m.stock,
+    production: m.production, hr: m.hr, payroll: m.payroll, assets: m.assets,
+    reports: m.reports, settings: m.settings, errors: m.errors, features: m.features,
+    crm: m.crm, pos: m.pos, demat: m.demat, employee: m.employee,
+    taskManagement: m.taskManagement, documents: m.documents, crossModule: m.crossModule,
+  })),
+}
+
+// Initialiser i18n sans resources — elles seront chargées dynamiquement
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: {
-      fr: {
-        common: frCommon,
-        nav: frNav,
-        auth: frAuth,
-        sales: frSales,
-        purchases: frPurchases,
-        accounting: frAccounting,
-        banking: frBanking,
-        treasury: frTreasury,
-        stock: frStock,
-        production: frProduction,
-        hr: frHr,
-        payroll: frPayroll,
-        assets: frAssets,
-        reports: frReports,
-        settings: frSettings,
-        errors: frErrors,
-        features: frFeatures,
-        crm: frCrm,
-        pos: frPos,
-        demat: frDemat,
-        employee: frEmployee,
-        taskManagement: frTaskManagement,
-        documents: frDocuments,
-        crossModule: frCrossModule,
-      },
-      en: {
-        common: enCommon,
-        nav: enNav,
-        auth: enAuth,
-        sales: enSales,
-        purchases: enPurchases,
-        accounting: enAccounting,
-        banking: enBanking,
-        treasury: enTreasury,
-        stock: enStock,
-        production: enProduction,
-        hr: enHr,
-        payroll: enPayroll,
-        assets: enAssets,
-        reports: enReports,
-        settings: enSettings,
-        errors: enErrors,
-        features: enFeatures,
-        crm: enCrm,
-        pos: enPos,
-        demat: enDemat,
-        employee: enEmployee,
-        taskManagement: enTaskManagement,
-        documents: enDocuments,
-        crossModule: enCrossModule,
-      },
-      ar: {
-        common: arCommon,
-        nav: arNav,
-        auth: arAuth,
-        sales: arSales,
-        purchases: arPurchases,
-        accounting: arAccounting,
-        banking: arBanking,
-        treasury: arTreasury,
-        stock: arStock,
-        production: arProduction,
-        hr: arHr,
-        payroll: arPayroll,
-        assets: arAssets,
-        reports: arReports,
-        settings: arSettings,
-        errors: arErrors,
-        features: arFeatures,
-        crm: arCrm,
-        pos: arPos,
-        demat: arDemat,
-        employee: arEmployee,
-        taskManagement: arTaskManagement,
-        documents: arDocuments,
-        crossModule: arCrossModule,
-      },
-    },
+    resources: {},
     fallbackLng: 'en',
     supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
     nonExplicitSupportedLngs: true,
@@ -188,14 +65,10 @@ i18n
       lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage'],
       convertDetectedLanguage: (lng: string) => {
-        // Map browser language to supported language
-        // e.g. 'sv-SE' -> not supported -> falls back to 'en' via fallbackLng
-        // e.g. 'fr-FR' -> 'fr', 'ar-MA' -> 'ar', 'en-US' -> 'en'
         const base = lng.split('-')[0]
         if ((SUPPORTED_LANGUAGES as readonly string[]).includes(base)) {
           return base
         }
-        // Unsupported language -> default to English
         return 'en'
       },
     },
@@ -204,8 +77,26 @@ i18n
     },
   })
 
-export function setLanguage(lng: SupportedLanguage) {
-  i18n.changeLanguage(lng)
+// Charger la langue détectée au démarrage
+const detectedLang = (i18n.language || 'en').split('-')[0] as SupportedLanguage
+const loadPromise = localeLoaders[detectedLang]?.().then(resources => {
+  for (const [ns, data] of Object.entries(resources)) {
+    i18n.addResourceBundle(detectedLang, ns, data, true, true)
+  }
+}) || Promise.resolve()
+
+// Exporter une promesse que main.tsx peut attendre si nécessaire
+export const i18nReady = loadPromise
+
+export async function setLanguage(lng: SupportedLanguage) {
+  // Charger les resources si pas déjà chargées
+  if (!i18n.hasResourceBundle(lng, 'common')) {
+    const resources = await localeLoaders[lng]()
+    for (const [ns, data] of Object.entries(resources)) {
+      i18n.addResourceBundle(lng, ns, data, true, true)
+    }
+  }
+  await i18n.changeLanguage(lng)
   const dir = LANGUAGE_LABELS[lng].dir
   document.documentElement.dir = dir
   document.documentElement.lang = lng

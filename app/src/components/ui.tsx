@@ -239,7 +239,7 @@ export function SortableTable<T extends Record<string, any>>({
 
   const sorted = useMemo(() => {
     if (!sortKey) return data
-    const sortedData = [...data].sort((a, b) => {
+    const sortedData = [...(data || [])].sort((a, b) => {
       const av = a[sortKey]
       const bv = b[sortKey]
       if (av == null && bv == null) return 0
@@ -814,4 +814,119 @@ export function exportToExcel(filename: string, headers: string[], rows: (string
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ============================================================
+// Modal
+// ============================================================
+interface ModalProps {
+  open: boolean
+  onClose: () => void
+  title?: string
+  children: ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+}
+
+export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+  if (!open) return null
+  const sizeClass = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+  }[size]
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} max-h-[90vh] overflow-y-auto`}>
+        {title && (
+          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+            <h2 className="font-semibold">{title}</h2>
+            <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// Textarea
+// ============================================================
+interface TextareaProps {
+  value?: string
+  defaultValue?: string
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  rows?: number
+  placeholder?: string
+  className?: string
+  label?: string
+  required?: boolean
+}
+
+export function Textarea({ value, defaultValue, onChange, rows = 4, placeholder, className, label, required }: TextareaProps) {
+  return (
+    <div className={className}>
+      {label && <label className="text-sm font-medium">{label}{required && <span className="text-[var(--color-danger)]"> *</span>}</label>}
+      <textarea
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y"
+      />
+    </div>
+  )
+}
+
+// ============================================================
+// Tabs
+// ============================================================
+import { createContext, useContext } from 'react'
+
+interface TabsProps {
+  defaultValue: string
+  children: ReactNode
+  className?: string
+}
+export function Tabs({ defaultValue, children, className }: TabsProps) {
+  const [value, setValue] = useState(defaultValue)
+  return (
+    <TabsContext.Provider value={{ value, setValue }}>
+      <div className={className}>{children}</div>
+    </TabsContext.Provider>
+  )
+}
+
+const TabsContext = createContext<{ value: string; setValue: (v: string) => void }>({ value: '', setValue: () => {} })
+
+export function TabsList({ children }: { children: ReactNode }) {
+  return <div className="flex gap-1 border-b border-[var(--color-border)] mb-4">{children}</div>
+}
+
+export function TabsTrigger({ value, children }: { value: string; children: ReactNode }) {
+  const ctx = useContext(TabsContext)
+  const active = ctx.value === value
+  return (
+    <button
+      onClick={() => ctx.setValue(value)}
+      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+        active
+          ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+          : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function TabsContent({ value, children, className }: { value: string; children: ReactNode; className?: string }) {
+  const ctx = useContext(TabsContext)
+  if (ctx.value !== value) return null
+  return <div className={className}>{children}</div>
 }

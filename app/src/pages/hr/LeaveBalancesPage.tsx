@@ -2,11 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import {
-  getLeaveBalances, initializeYearLeaveBalances,
-  carryOverLeaveBalances, getLeaveProvisions, calculateLeaveProvisions, postLeaveProvisions,
-  getEmployees,
-} from '@/lib/queries'
+import { getLeaveBalances, initializeYearLeaveBalances, carryOverLeaveBalances, getLeaveProvisions, calculateLeaveProvisions, postLeaveProvisions } from '@/lib/queries/leavesAbsences'
+import { getEmployees } from '@/lib/queries/payroll'
+import { calculateLeaveAcquisition } from '@/lib/queries/businessFunctions'
 import type { LeaveBalance, LeaveProvision, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Scale, Calendar, RefreshCw, CheckCircle, Wallet } from 'lucide-react'
@@ -35,9 +33,9 @@ export function LeaveBalancesPage() {
         const provs = await getLeaveProvisions(period || undefined)
         setProvisions(provs || [])
       }
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [year, tab, period])
+  }, [year, tab, period, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -72,6 +70,20 @@ export function LeaveBalancesPage() {
     try {
       await postLeaveProvisions(period)
       toast('success', tCommon('common.success'), t('leaveBalances.provisionsPosted'))
+      await loadData()
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+  }
+
+  async function handleCalcAcquisition() {
+    try {
+      const targets = employees.length > 0 ? employees : []
+      if (targets.length === 0) { toast('error', tCommon('common.error'), t('leaveBalances.noBalances')); return }
+      let totalDays = 0
+      for (const emp of targets) {
+        const res = await calculateLeaveAcquisition(emp.id, year)
+        totalDays += Number(res) || 0
+      }
+      toast('success', tCommon('common.success'), `${'Droits acquis calculés'} — ${totalDays.toFixed(2)} j (2,5/mois)`)
       await loadData()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
@@ -115,6 +127,7 @@ export function LeaveBalancesPage() {
               </div>
               <Button variant="secondary" onClick={handleInitYear}><Calendar className="w-4 h-4" /> {t('leaveBalances.initYear')}</Button>
               <Button variant="secondary" onClick={handleCarryOver}><RefreshCw className="w-4 h-4" /> {t('leaveBalances.carryOverBtn')}</Button>
+              <Button variant="secondary" onClick={handleCalcAcquisition}><RefreshCw className="w-4 h-4" /> Calculer les droits acquis</Button>
             </div>
           </div>
           {loading ? <SkeletonTable rows={5} cols={7} /> : Object.keys(groupedByEmp).length === 0 ? (

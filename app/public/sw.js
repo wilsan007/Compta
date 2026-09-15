@@ -31,11 +31,15 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== location.origin) return;
 
   if (request.mode === 'navigate') {
+    // OPS-04: Network-first for navigations — only cache successful responses.
+    // This prevents caching 404/500 pages and ensures users see fresh content.
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
           return res;
         })
         .catch(() => caches.match('/index.html'))
@@ -43,17 +47,36 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // OPS-04: Cache-first only for /assets/ paths (immutable bundled assets).
+  // For all other same-origin GET requests, use network-first to avoid
+  // masking updates and serving stale content.
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((res) => {
+          if (res.ok && res.type === 'basic') {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-first for everything else
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((res) => {
-        if (res.status === 200 && res.type === 'basic') {
+    fetch(request)
+      .then((res) => {
+        if (res.ok && res.type === 'basic') {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return res;
-      });
-    })
+      })
+      .catch(() => caches.match(request))
   );
 });
 

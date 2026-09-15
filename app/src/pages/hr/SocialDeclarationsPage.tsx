@@ -1,15 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import {
-  getSocialDeclarations, generateDsnFile, transmitDsn, checkDsnAnomalies,
-  generateDadsU, generateDucs, generateAed, generateDpae, generateDtsMsa,
-  generateCibtp, generateCongesPayesBtp, generateRefusCdi, generateCt2025, generatePasrau,
-  getCiceConfig, calculateCice, generateCiceFile,
-  getPasRates, getAtRates, importPasRates, importAtRates,
-  getHonorariumRecords, createHonorariumRecord, updateHonorariumRecord, generateHonorariumAccounting,
-  getEmployees,
-} from '@/lib/queries'
+import { getSocialDeclarations, generateDsnFile, transmitDsn, checkDsnAnomalies, generateDadsU, generateDucs, generateAed, generateDpae, generateDtsMsa, generateCibtp, generateCongesPayesBtp, generateRefusCdi, generateCt2025, generatePasrau, getCiceConfig, calculateCice, generateCiceFile, getPasRates, getAtRates, importPasRates, importAtRates, getHonorariumRecords, createHonorariumRecord, updateHonorariumRecord, generateHonorariumAccounting } from '@/lib/queries/socialDeclarations'
+import { getEmployees } from '@/lib/queries/payroll'
 import type { SocialDeclaration, CiceConfig, HonorariumRecord, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { FileText, Send, AlertTriangle, Download, Calculator, Upload, Plus } from 'lucide-react'
@@ -91,7 +84,7 @@ export function SocialDeclarationsPage() {
       await generateDsnFile(period)
       setDsnStep(3)
       toast('success', t('socialDecl.generated'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -101,10 +94,15 @@ export function SocialDeclarationsPage() {
     try {
       const latest = declarations.find(d => d.declaration_type === 'dsn' && d.period === period)
       if (latest) {
-        await transmitDsn(latest.id)
+        const result = await transmitDsn(latest.id)
         setDsnStep(5)
-        toast('success', t('socialDecl.transmitted'))
-        loadData()
+        // CNF-01.3 : Afficher clairement le mode simulation
+        if (result.simulation) {
+          toast('error', t('socialDecl.simulationMode'), result.message || t('socialDecl.simulationWarning'))
+        } else {
+          toast('success', t('socialDecl.transmitted'))
+        }
+        loadData().catch(err => console.error('loadData:', err))
       }
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
@@ -115,7 +113,7 @@ export function SocialDeclarationsPage() {
     try {
       await fn()
       toast('success', label)
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -199,7 +197,7 @@ export function SocialDeclarationsPage() {
                   ) : (
                     <Table headers={[t('socialDecl.employee'), t('socialDecl.field'), t('socialDecl.message')]}>
                       {anomalies.map((a, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={a.id || i}>
                           <TableCell className="text-sm">{a.employee_name}</TableCell>
                           <TableCell className="text-xs font-mono">{a.field}</TableCell>
                           <TableCell className="text-xs">{a.message}</TableCell>
@@ -331,7 +329,7 @@ export function SocialDeclarationsPage() {
               {ciceResults.length > 0 && (
                 <Table headers={[t('socialDecl.employee'), t('socialDecl.grossSalary'), t('socialDecl.ciceAmount')]}>
                   {ciceResults.map((r, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={r.id || i}>
                       <TableCell className="text-sm">{r.employee_name}</TableCell>
                       <TableCell className="font-mono text-xs">{r.gross_salary.toFixed(2)}</TableCell>
                       <TableCell className="font-mono text-xs font-bold">{r.cice_amount.toFixed(2)}</TableCell>
@@ -475,7 +473,7 @@ export function SocialDeclarationsPage() {
                   toast('success', tCommon('common.saved'))
                   setShowHonorariumForm(false)
                   setHonName(''); setHonPeriod(''); setHonAmount(''); setHonDesc('')
-                  loadData()
+                  loadData().catch(err => console.error('loadData:', err))
                 } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
               }} disabled={!honName || !honAmount}>{tCommon('actions.save')}</Button>
               <Button variant="secondary" onClick={() => setShowHonorariumForm(false)}>{tCommon('actions.cancel')}</Button>

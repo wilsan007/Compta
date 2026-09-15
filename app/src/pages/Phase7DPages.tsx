@@ -2,14 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getGridTemplates, createGridTemplate, updateGridTemplate, deleteGridTemplate,
-  getPaymentTemplatesCompta, createPaymentTemplateCompta, updatePaymentTemplateCompta, deletePaymentTemplateCompta,
-  getStandardLabels, createStandardLabel, deleteStandardLabel,
-  getAnalyticJournalCodes, createAnalyticJournalCode, updateAnalyticJournalCode, deleteAnalyticJournalCode,
-} from '@/lib/queries'
+import { getGridTemplates, createGridTemplate, updateGridTemplate, deleteGridTemplate } from '@/lib/queries/misc'
+import { getPaymentTemplatesCompta, createPaymentTemplateCompta, updatePaymentTemplateCompta, deletePaymentTemplateCompta } from '@/lib/queries/payroll'
+import { getStandardLabels, createStandardLabel, deleteStandardLabel, getAnalyticJournalCodes, createAnalyticJournalCode, updateAnalyticJournalCode, deleteAnalyticJournalCode } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import type { GridTemplate, PaymentTemplateCompta, StandardLabel, AnalyticJournalCode } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 // ============ Grid Templates Page (Modèles de grille) ============
 export function GridTemplatesPage() {
@@ -66,7 +64,7 @@ export function GridTemplatesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('confirmDelete'))) return
     try {
       await deleteGridTemplate(id)
       await load()
@@ -171,7 +169,7 @@ export function PaymentTemplatesComptaPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('confirmDelete'))) return
     try {
       await deletePaymentTemplateCompta(id)
       await load()
@@ -268,7 +266,7 @@ export function StandardLabelsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('confirmDelete'))) return
     try {
       await deleteStandardLabel(id)
       await load()
@@ -368,7 +366,7 @@ export function AnalyticJournalCodesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('confirmDelete'))) return
     try {
       await deleteAnalyticJournalCode(id)
       await load()

@@ -26,7 +26,7 @@ export function RhReportsPage() {
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -53,7 +53,7 @@ export function RhReportsPage() {
     try {
       await calculateReportData(reportId)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
@@ -63,7 +63,7 @@ export function RhReportsPage() {
     try {
       await deleteRhReport(id)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
@@ -75,7 +75,7 @@ export function RhReportsPage() {
       await createRhReport({ ...newReport, parameters: {}, data: null, data_calculated_at: null, created_by: null, shared: false } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       setNewReport({ name: '', report_type: 'effectifs', chart_type: 'bar' })
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }

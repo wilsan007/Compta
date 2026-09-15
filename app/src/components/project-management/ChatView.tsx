@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/lib/toast'
 import { MessageSquare, Send, Hash } from 'lucide-react'
 import { useTaskContext } from '@/contexts/TaskContext'
 import { useProjectContext } from '@/contexts/ProjectContext'
@@ -21,6 +22,8 @@ interface ChatChannel {
 
 export function ChatView({ projectId }: ChatViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { tasks, loading: tasksLoading } = useTaskContext()
   const { projects } = useProjectContext()
   const [channels, setChannels] = useState<ChatChannel[]>([])
@@ -91,7 +94,7 @@ export function ChatView({ projectId }: ChatViewProps) {
   }, [activeChannel])
 
   useEffect(() => {
-    loadMessages()
+    loadMessages().catch(err => console.error('loadMessages:', err))
   }, [loadMessages])
 
   // Auto-scroll to bottom
@@ -106,12 +109,14 @@ export function ChatView({ projectId }: ChatViewProps) {
       const comment = await addTaskComment(activeChannel.taskId, input.trim())
       setMessages((prev) => [...prev, comment])
       setInput('')
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSending(false)
     }
-  }, [input, activeChannel])
+  }, [input, activeChannel, toast, tCommon])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

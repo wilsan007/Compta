@@ -27,6 +27,7 @@ DROP POLICY IF EXISTS module_documents_update ON module_documents;
 DROP POLICY IF EXISTS module_documents_delete ON module_documents;
 
 -- SELECT: same tenant + has module access
+DROP POLICY IF EXISTS "module_documents_select" ON module_documents;
 CREATE POLICY module_documents_select ON module_documents
   FOR SELECT USING (
     tenant_id = current_tenant_id()
@@ -37,6 +38,7 @@ CREATE POLICY module_documents_select ON module_documents
   );
 
 -- INSERT: same tenant + non-guest role in module
+DROP POLICY IF EXISTS "module_documents_insert" ON module_documents;
 CREATE POLICY module_documents_insert ON module_documents
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
@@ -51,6 +53,7 @@ CREATE POLICY module_documents_insert ON module_documents
   );
 
 -- UPDATE: admin or director/manager in the module
+DROP POLICY IF EXISTS "module_documents_update" ON module_documents;
 CREATE POLICY module_documents_update ON module_documents
   FOR UPDATE USING (
     tenant_id = current_tenant_id()
@@ -70,6 +73,7 @@ CREATE POLICY module_documents_update ON module_documents
   );
 
 -- DELETE: admin or director in the module
+DROP POLICY IF EXISTS "module_documents_delete" ON module_documents;
 CREATE POLICY module_documents_delete ON module_documents
   FOR DELETE USING (
     tenant_id = current_tenant_id()
@@ -102,6 +106,7 @@ CREATE POLICY doc_access_log_select ON module_document_access_log
     )
   );
 
+DROP POLICY IF EXISTS "doc_access_log_insert" ON module_document_access_log;
 CREATE POLICY doc_access_log_insert ON module_document_access_log
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
@@ -118,6 +123,7 @@ DROP POLICY IF EXISTS doc_shares_insert ON module_document_shares;
 DROP POLICY IF EXISTS doc_shares_update ON module_document_shares;
 DROP POLICY IF EXISTS doc_shares_delete ON module_document_shares;
 
+DROP POLICY IF EXISTS "doc_shares_select" ON module_document_shares;
 CREATE POLICY doc_shares_select ON module_document_shares
   FOR SELECT USING (
     tenant_id = current_tenant_id()
@@ -127,18 +133,21 @@ CREATE POLICY doc_shares_select ON module_document_shares
     )
   );
 
+DROP POLICY IF EXISTS "doc_shares_insert" ON module_document_shares;
 CREATE POLICY doc_shares_insert ON module_document_shares
   FOR INSERT WITH CHECK (
     tenant_id = current_tenant_id()
     AND created_by = current_tenant_user_id()
   );
 
+DROP POLICY IF EXISTS "doc_shares_update" ON module_document_shares;
 CREATE POLICY doc_shares_update ON module_document_shares
   FOR UPDATE USING (
     tenant_id = current_tenant_id()
     AND created_by = current_tenant_user_id()
   );
 
+DROP POLICY IF EXISTS "doc_shares_delete" ON module_document_shares;
 CREATE POLICY doc_shares_delete ON module_document_shares
   FOR DELETE USING (
     tenant_id = current_tenant_id()
@@ -217,6 +226,7 @@ DROP POLICY IF EXISTS project_docs_upload ON storage.objects;
 DROP POLICY IF EXISTS project_docs_download ON storage.objects;
 DROP POLICY IF EXISTS project_docs_delete ON storage.objects;
 
+DROP POLICY IF EXISTS "project_docs_upload" ON storage.objects;
 CREATE POLICY project_docs_upload ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'project-docs'
@@ -230,6 +240,7 @@ CREATE POLICY project_docs_upload ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "project_docs_download" ON storage.objects;
 CREATE POLICY project_docs_download ON storage.objects
   FOR SELECT USING (
     bucket_id = 'project-docs'
@@ -240,6 +251,7 @@ CREATE POLICY project_docs_download ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "project_docs_delete" ON storage.objects;
 CREATE POLICY project_docs_delete ON storage.objects
   FOR DELETE USING (
     bucket_id = 'project-docs'
@@ -255,6 +267,7 @@ DROP POLICY IF EXISTS accounting_docs_upload ON storage.objects;
 DROP POLICY IF EXISTS accounting_docs_download ON storage.objects;
 DROP POLICY IF EXISTS accounting_docs_delete ON storage.objects;
 
+DROP POLICY IF EXISTS "accounting_docs_upload" ON storage.objects;
 CREATE POLICY accounting_docs_upload ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'accounting-docs'
@@ -265,6 +278,7 @@ CREATE POLICY accounting_docs_upload ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "accounting_docs_download" ON storage.objects;
 CREATE POLICY accounting_docs_download ON storage.objects
   FOR SELECT USING (
     bucket_id = 'accounting-docs'
@@ -275,6 +289,7 @@ CREATE POLICY accounting_docs_download ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "accounting_docs_delete" ON storage.objects;
 CREATE POLICY accounting_docs_delete ON storage.objects
   FOR DELETE USING (
     bucket_id = 'accounting-docs'
@@ -290,6 +305,7 @@ DROP POLICY IF EXISTS hr_docs_upload ON storage.objects;
 DROP POLICY IF EXISTS hr_docs_download ON storage.objects;
 DROP POLICY IF EXISTS hr_docs_delete ON storage.objects;
 
+DROP POLICY IF EXISTS "hr_docs_upload" ON storage.objects;
 CREATE POLICY hr_docs_upload ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'hr-docs'
@@ -303,6 +319,7 @@ CREATE POLICY hr_docs_upload ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "hr_docs_download" ON storage.objects;
 CREATE POLICY hr_docs_download ON storage.objects
   FOR SELECT USING (
     bucket_id = 'hr-docs'
@@ -313,6 +330,7 @@ CREATE POLICY hr_docs_download ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "hr_docs_delete" ON storage.objects;
 CREATE POLICY hr_docs_delete ON storage.objects
   FOR DELETE USING (
     bucket_id = 'hr-docs'
@@ -328,6 +346,7 @@ DROP POLICY IF EXISTS commercial_docs_upload ON storage.objects;
 DROP POLICY IF EXISTS commercial_docs_download ON storage.objects;
 DROP POLICY IF EXISTS commercial_docs_delete ON storage.objects;
 
+DROP POLICY IF EXISTS "commercial_docs_upload" ON storage.objects;
 CREATE POLICY commercial_docs_upload ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'commercial-docs'
@@ -341,6 +360,7 @@ CREATE POLICY commercial_docs_upload ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "commercial_docs_download" ON storage.objects;
 CREATE POLICY commercial_docs_download ON storage.objects
   FOR SELECT USING (
     bucket_id = 'commercial-docs'
@@ -351,6 +371,7 @@ CREATE POLICY commercial_docs_download ON storage.objects
     )
   );
 
+DROP POLICY IF EXISTS "commercial_docs_delete" ON storage.objects;
 CREATE POLICY commercial_docs_delete ON storage.objects
   FOR DELETE USING (
     bucket_id = 'commercial-docs'
@@ -366,6 +387,7 @@ DROP POLICY IF EXISTS general_docs_upload ON storage.objects;
 DROP POLICY IF EXISTS general_docs_download ON storage.objects;
 DROP POLICY IF EXISTS general_docs_delete ON storage.objects;
 
+DROP POLICY IF EXISTS "general_docs_upload" ON storage.objects;
 CREATE POLICY general_docs_upload ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'general-docs'
@@ -373,6 +395,7 @@ CREATE POLICY general_docs_upload ON storage.objects
     AND current_user_role() = 'admin'
   );
 
+DROP POLICY IF EXISTS "general_docs_download" ON storage.objects;
 CREATE POLICY general_docs_download ON storage.objects
   FOR SELECT USING (
     bucket_id = 'general-docs'
@@ -380,6 +403,7 @@ CREATE POLICY general_docs_download ON storage.objects
     AND current_user_role() = 'admin'
   );
 
+DROP POLICY IF EXISTS "general_docs_delete" ON storage.objects;
 CREATE POLICY general_docs_delete ON storage.objects
   FOR DELETE USING (
     bucket_id = 'general-docs'

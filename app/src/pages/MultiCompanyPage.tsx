@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input } from '@/components/ui'
-import { getCompanySettings } from '@/lib/queries'
+import { getCompanySettings } from '@/lib/queries/accounting'
 import { useToast } from '@/lib/toast'
 import { Building2, Plus, Check } from 'lucide-react'
 
@@ -27,7 +27,7 @@ export function MultiCompanyPage() {
   const [form, setForm] = useState({ name: '', siret: '', vatNumber: '', type: 'subsidiary', currency: 'EUR', country: 'FR' })
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -47,8 +47,8 @@ export function MultiCompanyPage() {
         setEntities([primary])
         setActiveEntity(comp.id)
       }
-    } catch (err) {
-      console.error('Error loading company data:', err)
+    } catch (err: any) { console.error('Error loading company data:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

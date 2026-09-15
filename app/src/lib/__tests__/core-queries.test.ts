@@ -39,6 +39,7 @@ vi.mock('@/lib/supabase', () => ({
     },
     channel: vi.fn(),
     removeChannel: vi.fn(),
+    rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
   },
   getCachedTenantId: vi.fn(() => 'test-tenant-id'),
   isTenantTable: vi.fn(() => true),
@@ -55,7 +56,11 @@ function setMockData(data: any, error: any = null) {
 function resetMock() {
   mockChain.single = vi.fn(() => Promise.resolve({ data: null, error: null }))
   mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve))
+  // ACC-01: Réinitialiser rpc au mock par défaut
+  ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: null, error: null }))
   vi.clearAllMocks()
+  // Restaurer from après clearAllMocks
+  ;(supabase as any).from = vi.fn(() => mockChain)
 }
 
 beforeEach(() => resetMock())
@@ -337,6 +342,8 @@ describe('Invoices CRUD', () => {
   })
 
   it('createInvoice inserts invoice with tenant_id', async () => {
+    // LOT4-11 : createInvoice utilise maintenant la RPC atomique create_invoice_atomic
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, invoice_id: '1' }, error: null }))
     setMockData({ id: '1', number: 'INV-001' })
     const { createInvoice } = await import('@/lib/queries')
     await createInvoice({
@@ -344,10 +351,15 @@ describe('Invoices CRUD', () => {
       date: '2024-01-01', due_date: '2024-01-31', status: 'draft',
       lines: [],
     } as any)
-    expect(mockChain.insert).toHaveBeenCalled()
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_invoice_atomic', expect.objectContaining({
+      p_invoice: expect.objectContaining({ number: 'INV-001', tenant_id: 'test-tenant-id' }),
+      p_lines: [],
+    }))
   })
 
   it('createInvoice inserts lines when provided', async () => {
+    // LOT4-11 : createInvoice utilise maintenant la RPC atomique create_invoice_atomic
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, invoice_id: '1' }, error: null }))
     setMockData({ id: '1', number: 'INV-001' })
     const { createInvoice } = await import('@/lib/queries')
     await createInvoice({
@@ -355,8 +367,10 @@ describe('Invoices CRUD', () => {
       date: '2024-01-01', due_date: '2024-01-31', status: 'draft',
       lines: [{ description: 'Item 1', quantity: 1, unit_price: 100, line_total: 100 }],
     } as any)
-    // insert should be called at least for the invoice
-    expect(mockChain.insert).toHaveBeenCalled()
+    // La RPC atomique reçoit les lignes dans p_lines
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_invoice_atomic', expect.objectContaining({
+      p_lines: expect.arrayContaining([expect.objectContaining({ description: 'Item 1', line_order: 0 })]),
+    }))
   })
 
   it('updateInvoice updates with id', async () => {
@@ -390,24 +404,30 @@ describe('Journal Entries CRUD', () => {
   })
 
   it('createJournalEntry inserts entry with tenant_id', async () => {
+    // ACC-01: createJournalEntry utilise maintenant le RPC post_journal_entry
     setMockData({ id: '1', number: 'JE-001' })
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, entry_id: '1', number: 'JE-001' }, error: null }))
     const { createJournalEntry } = await import('@/lib/queries')
     await createJournalEntry({
       number: 'JE-001', date: '2024-01-01', description: 'Test',
       journal_code: 'VT', status: 'draft', lines: [],
     } as any)
-    expect(mockChain.insert).toHaveBeenCalled()
+    expect((supabaseMock.supabase as any).rpc).toHaveBeenCalledWith('post_journal_entry', expect.any(Object))
   })
 
   it('createJournalEntry inserts lines when provided', async () => {
+    // ACC-01: createJournalEntry utilise maintenant le RPC post_journal_entry
     setMockData({ id: '1', number: 'JE-001' })
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, entry_id: '1', number: 'JE-001' }, error: null }))
     const { createJournalEntry } = await import('@/lib/queries')
     await createJournalEntry({
       number: 'JE-001', date: '2024-01-01', description: 'Test',
       journal_code: 'VT', status: 'draft',
       lines: [{ account_code: '411000', debit: 100, credit: 0, description: 'Line 1' }],
     } as any)
-    expect(mockChain.insert).toHaveBeenCalled()
+    expect((supabaseMock.supabase as any).rpc).toHaveBeenCalledWith('post_journal_entry', expect.any(Object))
   })
 
   it('updateJournalEntry updates with id', async () => {
@@ -441,18 +461,31 @@ describe('General Ledger', () => {
   beforeEach(() => resetMock())
 
   it('getGeneralLedger queries journal_lines', async () => {
-    setMockData([{ id: '1', account_code: '400000', debit: 100, credit: 0 }])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') {
+        const fyChain = createMockChain({ data: [{ id: 'fy-1' }], error: null })
+        return fyChain
+      }
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: [{ line_id: '1', account_code: '400000', debit: 100, credit: 0, total_count: 1 }], error: null }))
     const { getGeneralLedger } = await import('@/lib/queries')
     const result = await getGeneralLedger()
-    expect((supabase as any).from).toHaveBeenCalledWith('journal_lines')
+    expect((supabase as any).rpc).toHaveBeenCalledWith('get_general_ledger', expect.any(Object))
     expect(result).toHaveLength(1)
   })
 
   it('getGeneralLedger filters by accountCode when provided', async () => {
-    setMockData([])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') {
+        return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      }
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: [], error: null }))
     const { getGeneralLedger } = await import('@/lib/queries')
     await getGeneralLedger('400000')
-    expect(mockChain.eq).toHaveBeenCalledWith('account_code', '400000')
+    expect((supabase as any).rpc).toHaveBeenCalledWith('get_general_ledger', expect.objectContaining({ p_account_code: '400000' }))
   })
 })
 
@@ -462,21 +495,31 @@ describe('Trial Balance', () => {
   beforeEach(() => resetMock())
 
   it('getTrialBalance aggregates debit/credit by account', async () => {
-    setMockData([
-      { account_code: '400000', account_name: 'Clients', debit: 100, credit: 0 },
-      { account_code: '400000', account_name: 'Clients', debit: 50, credit: 30 },
-      { account_code: '411000', account_name: 'Fournisseurs', debit: 0, credit: 200 },
-    ])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [
+        { account_code: '400000', account_name: 'Clients', opening_debit: 0, opening_credit: 0, period_debit: 150, period_credit: 30, closing_debit: 120, closing_credit: 0 },
+        { account_code: '411000', account_name: 'Fournisseurs', opening_debit: 0, opening_credit: 0, period_debit: 0, period_credit: 200, closing_debit: 0, closing_credit: 200 },
+      ],
+      error: null
+    }))
     const { getTrialBalance } = await import('@/lib/queries')
     const result = await getTrialBalance()
     expect(result).toHaveLength(2)
     const clients = result.find((r: any) => r.account_code === '400000')
-    expect(clients.total_debit).toBe(150)
-    expect(clients.total_credit).toBe(30)
+    expect(clients?.total_debit).toBe(150)
+    expect(clients?.total_credit).toBe(30)
   })
 
   it('getTrialBalance returns empty array for no data', async () => {
-    setMockData([])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: [], error: null }))
     const { getTrialBalance } = await import('@/lib/queries')
     const result = await getTrialBalance()
     expect(result).toHaveLength(0)
@@ -489,10 +532,17 @@ describe('Balance Sheet', () => {
   beforeEach(() => resetMock())
 
   it('getBalanceSheet queries journal_lines', async () => {
-    setMockData([{ account_code: '100000', debit: 0, credit: 10000 }])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [{ account_code: '100000', account_name: 'Capital', account_type: 'equity', debit: 0, credit: 10000, balance: -10000 }],
+      error: null
+    }))
     const { getBalanceSheet } = await import('@/lib/queries')
     const result = await getBalanceSheet()
-    expect((supabase as any).from).toHaveBeenCalledWith('journal_lines')
+    expect((supabase as any).rpc).toHaveBeenCalledWith('get_balance_sheet', expect.any(Object))
     expect(result).toBeDefined()
   })
 })

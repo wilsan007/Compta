@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Badge } from '@/components/ui'
-import { getExpenseCategories, createExpenseCategory, updateExpenseCategory } from '@/lib/queries'
+import { getExpenseCategories, createExpenseCategory, updateExpenseCategory } from '@/lib/queries/sprintDE'
 import { Tag, Plus, X, Edit2 } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 
@@ -24,7 +24,7 @@ export function ExpenseCategoriesPage() {
       console.error(err)
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

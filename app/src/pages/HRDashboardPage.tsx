@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getEmployees, getPayRuns, getTimesheets } from '@/lib/queries'
+import { getEmployees, getPayRuns, getTimesheets } from '@/lib/queries/payroll'
 import { getRhDashboardData } from '@/lib/queries/sprintH'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import type { Employee, PayRun } from '@/types'
@@ -28,7 +28,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
       setTimesheets(ts)
       setDashData(dash)
     } catch (err) { console.error(err); toast('error', tCommon('common.error'), tCommon('common.error')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

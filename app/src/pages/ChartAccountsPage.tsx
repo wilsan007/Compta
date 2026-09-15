@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
-import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
+import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries/accounting'
 import { formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   asset: 'primary',
@@ -97,8 +98,8 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
       const [accs, tp] = await Promise.all([getChartAccounts(), getThirdPartyAccounts()])
       setAccounts(accs || [])
       setTiers(tp || [])
-    } catch (err) {
-      console.error('Error loading chart accounts:', err)
+    } catch (err: any) { console.error('Error loading chart accounts:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -270,12 +271,11 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('chartAccounts.deleteConfirm'))) return
+    if (!confirmSync(t('chartAccounts.deleteConfirm'))) return
     try {
       await deleteChartAccount(id)
       await loadAccounts()
-    } catch (err) {
-      console.error('Error deleting account:', err)
+    } catch (err: any) { console.error('Error deleting account:', err)
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }

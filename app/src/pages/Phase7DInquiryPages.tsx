@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { getReimputationLogs, createReimputationLog, getJournalEntries, getChartAccounts, getAnalyticSections, getGeneralLedger } from '@/lib/queries'
+import { getReimputationLogs, createReimputationLog } from '@/lib/queries/misc'
+import { getJournalEntries, getChartAccounts, getAnalyticSections, getAnalyticLedgerLines } from '@/lib/queries/accounting'
 import { Plus, Search } from 'lucide-react'
 import type { ReimputationLog } from '@/types'
 
@@ -130,8 +131,9 @@ export function AnalyticInquiryPage() {
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getGeneralLedger()
-      setLines((data || []).filter((l: any) => l.analytic_section_id))
+      // ACC-04 : lignes imputées analytiquement, requête bornée dédiée
+      const data = await getAnalyticLedgerLines()
+      setLines(data || [])
     } catch (err) {
       console.error('Error loading analytic lines:', err)
       toast('error', t('analyticInquiry.title'), t('analyticInquiry.loadError'))

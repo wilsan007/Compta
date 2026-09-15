@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { getTenantId, ti, tud } from './core'
+import { getManufacturingOrders, updateManufacturingOrder } from './production'
+import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
 
 // ============ Products ============
 export async function getProducts() {
@@ -694,13 +695,14 @@ export async function runMRPCalculation(): Promise<MRPRun> {
   })
 
   try {
-    const [products, boms, bomLines, stockQtys, openMOs, openPOs] = await Promise.all([
+    const [products, boms, bomLines, stockQtys, openMOs, openPOLines] = await Promise.all([
       getProducts(),
       getBOMs(),
       supabase.from('bom_lines').select('*').eq('tenant_id', tid).then(r => r.data || []),
       supabase.from('stock_quantities').select('*').eq('tenant_id', tid).then(r => r.data || []),
       supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).then(r => r.data || []),
-      supabase.from('purchase_orders').select('*').eq('tenant_id', tid).in('status', ['draft', 'sent']).then(r => r.data || []),
+      // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
+      supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'sent', 'confirmed']).then(r => r.data || []),
     ])
 
     // Build stock map: product_id -> total quantity
@@ -709,20 +711,25 @@ export async function runMRPCalculation(): Promise<MRPRun> {
       stockMap[sq.product_id] = (stockMap[sq.product_id] || 0) + Number(sq.quantity || 0)
     }
 
-    // Build open MO map: product_id -> total quantity (from MO product_id or BOM product_id)
+    // PRD-05 : Build open MO map — déduire qty_produced (reste à produire)
     const openMOMap: Record<string, number> = {}
     for (const mo of openMOs as any[]) {
-      if (mo.product_id) openMOMap[mo.product_id] = (openMOMap[mo.product_id] || 0) + Number(mo.quantity || 0)
+      const remaining = Number(mo.quantity || 0) - Number(mo.qty_produced || 0)
+      if (remaining <= 0) continue
+      if (mo.product_id) openMOMap[mo.product_id] = (openMOMap[mo.product_id] || 0) + remaining
       if (mo.bom_id) {
         const bom = (boms as any[]).find((b) => b.id === mo.bom_id)
-        if (bom?.product_id) openMOMap[bom.product_id] = (openMOMap[bom.product_id] || 0) + Number(mo.quantity || 0)
+        if (bom?.product_id) openMOMap[bom.product_id] = (openMOMap[bom.product_id] || 0) + remaining
       }
     }
 
-    // Build open PO map: product_id -> total quantity
+    // PRD-05 : Build open PO map from purchase_order_lines (reste à recevoir)
     const openPOMap: Record<string, number> = {}
-    for (const po of openPOs as any[]) {
-      if (po.product_id) openPOMap[po.product_id] = (openPOMap[po.product_id] || 0) + Number(po.quantity || 0)
+    for (const pol of openPOLines as any[]) {
+      const remaining = Number(pol.quantity || 0) - Number(pol.quantity_received || 0)
+      if (remaining > 0 && pol.product_id) {
+        openPOMap[pol.product_id] = (openPOMap[pol.product_id] || 0) + remaining
+      }
     }
 
     // Build BOM line map: product_id -> [{component_id, quantity}]
@@ -1283,3 +1290,40 @@ export async function deleteProductSubstitute(id: string) {
   if (error) throw error
 }
 
+
+// ============ Stock Reservations & Lot Traceability ============
+
+export async function getStockReservations() {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_reservations').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data || []
+}
+
+export async function releaseStockReservation(id: string) {
+  const tid = await getTenantId()
+  const { error } = await supabase.from('stock_reservations').delete().eq('id', id).eq('tenant_id', tid || '')
+  if (error) throw error
+}
+
+export async function traceLotDownstream(lotId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_movements').select('*, products(name, sku)').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  q = q.eq('lot_number', lotId)
+  const { data, error } = await q
+  if (error) throw error
+  return { lotId, movements: data || [], direction: 'downstream' as const }
+}
+
+export async function traceLotUpstream(lotId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_movements').select('*, products(name, sku)').order('created_at', { ascending: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  q = q.eq('lot_number', lotId)
+  const { data, error } = await q
+  if (error) throw error
+  return { lotId, movements: data || [], direction: 'upstream' as const }
+}

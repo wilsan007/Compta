@@ -14,7 +14,7 @@ interface PivotViewProps {
   projectId?: string
 }
 
-export function PivotView({ projectId }: PivotViewProps) {
+export function PivotView(_props: PivotViewProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
   const { projects } = useProjectContext()

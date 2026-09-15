@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getTickets, getKbArticles, getServiceContracts } from '@/lib/queries'
+import { getTickets, getKbArticles, getServiceContracts } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Ticket, BookOpen, FileText, Plus } from 'lucide-react'
 import type { ServiceTicket, KnowledgeBaseArticle, ServiceContract } from '@/types'
@@ -35,7 +35,7 @@ export function CustomerPortalPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, EmptyState, SkeletonTable } from '@/components/ui'
-import { getDocumentShare } from '@/lib/queries'
+import { getDocumentShare } from '@/lib/queries/dematerialisation'
 import { useToast } from '@/lib/toast'
 import { FileText, Download, Eye, Clock } from 'lucide-react'
 import type { DocumentShare } from '@/types'
@@ -32,7 +32,7 @@ export function SharedDocumentPage() {
         setLoading(false)
       }
     })()
-  }, [token])
+  }, [token, tCommon, toast])
 
   if (loading) {
     return (

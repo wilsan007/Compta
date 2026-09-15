@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBdesIndicators, calculateBdesIndicators, generateBdesReport, generateSocialReport } from '@/lib/queries'
+import { getBdesIndicators, calculateBdesIndicators, generateBdesReport, generateSocialReport } from '@/lib/queries/socialDeclarations'
 import type { BdesIndicator } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Calculator, Download, FileText } from 'lucide-react'
@@ -36,7 +36,7 @@ export function BdesPage() {
     try {
       await calculateBdesIndicators(year)
       toast('success', t('bdes.calculated'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }

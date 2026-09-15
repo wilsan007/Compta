@@ -24,13 +24,13 @@ export async function createSocialDeclaration(data: Omit<SocialDeclaration, 'id'
 
 export async function updateSocialDeclaration(id: string, updates: Partial<SocialDeclaration>): Promise<SocialDeclaration> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('social_declarations').update(tud(updates, 'social_declarations', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('social_declarations').update(updates), 'social_declarations', tid).eq('id', id).select().single()
   if (error) throw error
   return data as SocialDeclaration
 }
 
 // ============ DSN (IntuiDSN wizard) ============
-export async function checkDsnAnomalies(period: string): Promise<any[]> {
+export async function checkDsnAnomalies(_period: string): Promise<any[]> {
   const tid = await getTenantId()
   const anomalies: any[] = []
   let empQ = supabase.from('employees').select('id, name, social_security_number, hire_date, contract_type').eq('status', 'active')
@@ -68,11 +68,23 @@ export async function generateDsnFile(period: string, subtype?: string): Promise
   return decl as SocialDeclaration
 }
 
-export async function transmitDsn(declarationId: string): Promise<SocialDeclaration> {
-  return updateSocialDeclaration(declarationId, {
+export async function transmitDsn(declarationId: string): Promise<{ declaration: SocialDeclaration; simulation: boolean; message?: string }> {
+  // CNF-01.3 : Appeler l'Edge Function et propager le mode simulation
+  const { data: fnResult, error } = await supabase.functions.invoke('transmit-dsn', {
+    body: { declarationId },
+  })
+  if (error) throw error
+  const simulation = (fnResult as any)?.mode === 'simulation'
+  const message = (fnResult as any)?.message
+
+  // Mettre à jour le statut en base (transmitted même en simulation pour traçabilité)
+  const declaration = await updateSocialDeclaration(declarationId, {
     status: 'transmitted',
     transmitted_at: new Date().toISOString(),
+    response_message: message || null,
   })
+
+  return { declaration, simulation, message }
 }
 
 export async function getDsnHistory(): Promise<SocialDeclaration[]> {
@@ -294,7 +306,7 @@ export async function getCiceConfig(year?: number): Promise<CiceConfig[]> {
 
 export async function updateCiceConfig(id: string, updates: Partial<CiceConfig>): Promise<CiceConfig> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('cice_config').update(tud(updates, 'cice_config', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('cice_config').update(updates), 'cice_config', tid).eq('id', id).select().single()
   if (error) throw error
   return data as CiceConfig
 }
@@ -426,7 +438,7 @@ export async function importPasRates(file: File): Promise<void> {
 
 export async function updatePasRate(id: string, updates: Partial<PasRate>): Promise<PasRate> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('pas_rates').update(tud(updates, 'pas_rates', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('pas_rates').update(updates), 'pas_rates', tid).eq('id', id).select().single()
   if (error) throw error
   return data as PasRate
 }
@@ -461,7 +473,7 @@ export async function importAtRates(file: File): Promise<void> {
 
 export async function updateAtRate(id: string, updates: Partial<AtRate>): Promise<AtRate> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('at_rates').update(tud(updates, 'at_rates', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('at_rates').update(updates), 'at_rates', tid).eq('id', id).select().single()
   if (error) throw error
   return data as AtRate
 }
@@ -560,7 +572,7 @@ export async function createHonorariumRecord(data: Omit<HonorariumRecord, 'id' |
 
 export async function updateHonorariumRecord(id: string, updates: Partial<HonorariumRecord>): Promise<HonorariumRecord> {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('honorarium_records').update(tud(updates, 'honorarium_records', tid)).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('honorarium_records').update(updates), 'honorarium_records', tid).eq('id', id).select().single()
   if (error) throw error
   return data as HonorariumRecord
 }

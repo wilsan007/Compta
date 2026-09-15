@@ -2,10 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import {
-  getMealVoucherConfig, updateMealVoucherConfig, calculateMealVouchers,
-  generateMealVoucherElements, getPayRuns,
-} from '@/lib/queries'
+import { getMealVoucherConfig, updateMealVoucherConfig, calculateMealVouchers, generateMealVoucherElements } from '@/lib/queries/leavesAbsences'
+import { getPayRuns } from '@/lib/queries/payroll'
 import type { MealVoucherConfig, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Utensils, Save, Download, X } from 'lucide-react'
@@ -30,9 +28,9 @@ export function MealVouchersPage() {
       const [cfg, runs] = await Promise.all([getMealVoucherConfig(), getPayRuns()])
       setConfig(cfg)
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

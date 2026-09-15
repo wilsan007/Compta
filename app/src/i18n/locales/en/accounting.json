@@ -511,7 +511,9 @@
     "thirdParty": "Third party",
     "debitBalance": "Debit balance",
     "creditBalance": "Credit balance",
-    "export": "Export general ledger"
+    "export": "Export general ledger",
+    "generate": "Generate",
+    "generated": "General ledger generated successfully"
   },
   "trialBalance": {
     "title": "Trial balance",
@@ -531,6 +533,8 @@
     "exportCSV": "Export CSV",
     "showZeroBalances": "Show zero balances",
     "groupByClass": "Group by class",
+    "generate": "Generate",
+    "generated": "Trial balance generated successfully",
     "classLabels": {
       "1": "Class 1 — Equity",
       "2": "Class 2 — Fixed assets",
@@ -946,7 +950,9 @@
     "financialCharges": "Financial charges (66)",
     "netResultFinal": "NET RESULT",
     "category": "Category",
-    "amountCol": "Amount"
+    "amountCol": "Amount",
+    "generate": "Generate income statement",
+    "generated": "Income statement generated successfully"
   },
   "analytic": {
     "title": "Analytic sections",
@@ -1253,7 +1259,9 @@
     "account": "Account",
     "amount": "Amount",
     "totalAssets": "Total Assets",
-    "totalLiabilitiesEquity": "Total Liabilities + Equity"
+    "totalLiabilitiesEquity": "Total Liabilities + Equity",
+    "generate": "Generate balance sheet",
+    "generated": "Balance sheet generated successfully"
   },
   "cashFlow": {
     "title": "Cash flow",
@@ -1291,7 +1299,9 @@
     "vat": "VAT",
     "legendRevenues": "Revenue",
     "legendExpenses": "Expenses",
-    "legendProfit": "Profit"
+    "legendProfit": "Profit",
+    "generateAnnex": "Generate accounting annex",
+    "annexGenerated": "Accounting annex generated successfully"
   },
   "reports": {
     "paymentDelay": {
@@ -1384,7 +1394,13 @@
       "extourned": "Reversed"
     },
     "filterByType": "Filter by type",
-    "all": "All"
+    "all": "All",
+    "generateAdjusting": "Adjust",
+    "calculateProvisions": "Provisions",
+    "adjustingGenerated": "Adjusting entries generated",
+    "provisionsCalculated": "Provisions calculated successfully",
+    "postDeferred": "Post deferred charge",
+    "deferredPosted": "Deferred charge posted successfully"
   },
   "gdpr": {
     "title": "GDPR compliance",

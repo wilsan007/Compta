@@ -43,8 +43,9 @@ wrangler pages deploy dist --project-name=onusuite
 4. Variables d'environnement (Settings → Environment variables):
    - `VITE_SUPABASE_URL` = votre URL Supabase
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = votre clé publique Supabase
-   - `VITE_RESEND_API_KEY` = votre clé API Resend
    - `VITE_R2_PUBLIC_URL` = votre URL publique R2
+   - `RESEND_API_KEY` = votre clé API Resend (**sans** préfixe VITE_ — utilisée côté edge function uniquement)
+   - `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` = clés R2 (**sans** préfixe VITE_)
 
 ### Fichiers de config déjà en place
 

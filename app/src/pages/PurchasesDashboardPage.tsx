@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getPurchaseInvoices, getSuppliers, getProducts } from '@/lib/queries'
+import { getPurchaseInvoices } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { formatCurrency, translateStatus } from '@/lib/utils'
 import type { PurchaseInvoice, Supplier, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -24,7 +26,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
       setSuppliers(s)
       setProducts(p)
     } catch (err) { console.error(err); toast('error', tCommon('common.error'), t('dashboard.loadError')) } finally { setLoading(false) }
-  }, [])
+  }, [t, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

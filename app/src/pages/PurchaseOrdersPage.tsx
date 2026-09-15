@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, getSuppliers, getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries'
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } from '@/lib/queries/purchases'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
 import { Plus, Trash2, X, FileText, AlertTriangle } from 'lucide-react'
 import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation('purchases')
@@ -27,9 +30,9 @@ export function PurchaseOrdersPage() {
       setSuppliers(sups || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,7 +42,7 @@ export function PurchaseOrdersPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('orders.deleteConfirm'))) return
+    if (!confirmSync(t('orders.deleteConfirm'))) return
     try { await deletePurchaseOrder(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
@@ -123,7 +126,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
     try {
       const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
       setBudgetCheck(result)
-    } catch (err) { console.error('Budget check error:', err) }
+    } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setChecking(false) }
   }
 
@@ -141,7 +144,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!window.confirm(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!confirmSync(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
           setSaving(false)
           return
         }

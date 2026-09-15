@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
-import { getInvoices, getPurchaseInvoices, getBankAccounts, getJournalEntries, getCustomers, getSuppliers, getProducts } from '@/lib/queries'
+import { getInvoices, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getBankAccounts } from '@/lib/queries/banking'
+import { getJournalEntries } from '@/lib/queries/accounting'
+import { getCustomers, getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { Download, FileSpreadsheet, BarChart3, TrendingUp, TrendingDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -20,6 +25,8 @@ interface ReportData {
 
 export function BIReportingPage() {
   const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [reportType, setReportType] = useState('summary')
@@ -42,8 +49,9 @@ export function BIReportingPage() {
         purchaseInvoiceCount: (pur || []).length, journalEntryCount: (journals || []).length,
         bankBalance,
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading BI report:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

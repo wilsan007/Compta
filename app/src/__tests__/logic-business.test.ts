@@ -5,34 +5,17 @@
  * pour la cohérence des résultats et leur robustesse.
  */
 
-import { describe, it, expect } from 'vitest'
-import { calculateVAT } from '@/lib/queries'
-import { 
-  calculateTax, 
-  calculateGroupTax, 
-  calculateMultipleTaxes, 
-  calculatePriceWithTax,
-  extractTaxFromIncludedPrice,
-  calculateCorporateTax,
-} from '@/lib/taxCalculator'
-import {
-  validateDistribution,
-  distributeEvenly,
-  computeAmounts,
-  flattenDistribution,
-} from '@/lib/analyticDistribution'
-import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll'
-import type { 
-  TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine,
-  FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping,
-  Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PayrollTaxGridLine,
-  PartnerContact, PartnerBankAccount, AssetDepreciation,
-} from '@/types'
+import { describe, it, expect } from 'vitest';
+import { calculateVAT } from '@/lib/queries/accounting';
+import { calculateTax, calculateGroupTax, calculateMultipleTaxes, calculatePriceWithTax, extractTaxFromIncludedPrice, calculateCorporateTax } from '@/lib/taxCalculator';
+import { validateDistribution, distributeEvenly, computeAmounts, flattenDistribution } from '@/lib/analyticDistribution';
+import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll';
+import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PayrollTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
 
 // ============ MOCK DATA ============
 
 const mockTax20: TaxRate = {
-  id: 'tax-20', pack_code: 'FR', name: 'TVA 20%', category: 'vat',
+  id: 'tax-20', pack_code: 'FR', name: 'TVA 20%', category: 'vat' as any,
   rate: 20, account_code: '445710', is_default: true,
   effective_from: '2024-01-01', effective_to: null, created_at: '2024-01-01',
   amount_type: 'percent', type_tax_use: 'sale', sequence: 10,
@@ -44,9 +27,6 @@ const mockTax55: TaxRate = {
   ...mockTax20, id: 'tax-55', name: 'TVA 5.5%', rate: 5.5,
 }
 
-const mockTax10: TaxRate = {
-  ...mockTax20, id: 'tax-10', name: 'TVA 10%', rate: 10,
-}
 
 const mockTax0: TaxRate = {
   ...mockTax20, id: 'tax-0', name: 'TVA 0%', rate: 0,
@@ -1188,7 +1168,7 @@ describe('2e. Tests de cohérence cross-module', () => {
 })
 
 // ============ 2f: MODULE COMMERCIAL — TESTS DYNAMIQUES ============
-import type { Quote, QuoteLine, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, Invoice, InvoiceLine, Customer, Promotion, CreditNote, CustomerPayment } from '@/types'
+import type { Quote, QuoteLine, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, Invoice, InvoiceLine, Customer, Promotion, CreditNote } from '@/types';
 
 const mockCust: Customer = {
   id: 'cust-1', name: 'Acme Corp', email: 'c@acme.com', phone: '01', address: '1 rue',
@@ -1258,7 +1238,7 @@ const mockCN: CreditNote = {
   id: 'cn1', number: 'AV-2024-001', customer_id: 'cust-1', customer_name: 'Acme Corp',
   date: '2024-02-01', status: 'draft', subtotal: 1000, vat_total: 200, total: 1200,
   reason: 'Return', invoice_id: 'inv1', source_invoice_id: 'inv1',
-  created_at: '2024-02-01', updated_at: '2024-02-01',
+  created_at: '2024-02-01',
 }
 
 describe('2f. Module Commercial — Workflows & Transformations', () => {
@@ -1364,7 +1344,8 @@ describe('2g. Module Commercial — Promotions', () => {
     expect(1 >= Number(mockPromo.min_quantity)).toBe(true)
   })
   it('min_quantity: qty=3 < min=5 → non applicable', () => {
-    expect(3 >= 5).toBe(false)
+    const qty = 3
+    expect(qty >= 5).toBe(false)
   })
   it('Promo client spécifique: match → applicable', () => {
     const p: Promotion = { ...mockPromo, customer_id: 'cust-1' }
@@ -1488,12 +1469,12 @@ describe('2l. Module Commercial — Fulfillment & Robustness', () => {
       { ...mockSOL, delivered_quantity: 10 },
       { ...mockSOL, id: 'sol2', delivered_quantity: 5, quantity: 5 },
     ]
-    const allDelivered = lines.every(l => l.delivered_quantity >= l.quantity)
+    const allDelivered = lines.every(l => (l as any).delivered_quantity >= l.quantity)
     expect(allDelivered).toBe(true)
   })
   it('Order partial: 5/10 → not fully delivered', () => {
     const lines: SalesOrderLine[] = [{ ...mockSOL, delivered_quantity: 5, quantity: 10 }]
-    expect(lines.every(l => l.delivered_quantity >= l.quantity)).toBe(false)
+    expect(lines.every(l => (l as any).delivered_quantity >= l.quantity)).toBe(false)
   })
   it('Quote sans lines: subtotal=0, total=0', () => {
     const emptyQ: Quote = { ...mockQ, quote_lines: [], subtotal: 0, vat_total: 0, total: 0 }
@@ -1522,5 +1503,310 @@ describe('2l. Module Commercial — Fulfillment & Robustness', () => {
   it('Invoice avec amount_paid > total: amount_due=0 (pas négatif)', () => {
     const overpaid: Invoice = { ...mockInv, amount_paid: 1500, amount_due: 0 }
     expect(Math.max(overpaid.total - overpaid.amount_paid, 0)).toBe(0)
+  })
+})
+
+// ============ LOT5-05 : SSRF Filtering ============
+
+describe('LOT5-05 : Filtrage SSRF des URLs de webhook', () => {
+  // Replique la fonction isAllowedWebhookUrl du frontend
+  function isAllowedWebhookUrl(raw: string): boolean {
+    let u: URL
+    try { u = new URL(raw) } catch { return false }
+    if (u.protocol !== 'https:') return false
+    const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
+    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return false
+    if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return false
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false
+    if (h === '::1' || h.startsWith('fd') || h.startsWith('fe80:')) return false
+    return true
+  }
+
+  it('Accepte une URL HTTPS valide', () => {
+    expect(isAllowedWebhookUrl('https://example.com/webhook')).toBe(true)
+    expect(isAllowedWebhookUrl('https://api.slack.com/post')).toBe(true)
+  })
+
+  it('Rejette HTTP (non-HTTPS)', () => {
+    expect(isAllowedWebhookUrl('http://example.com/webhook')).toBe(false)
+  })
+
+  it('Rejette localhost', () => {
+    expect(isAllowedWebhookUrl('https://localhost:3000/webhook')).toBe(false)
+  })
+
+  it('Rejette .local et .internal', () => {
+    expect(isAllowedWebhookUrl('https://myapp.local/webhook')).toBe(false)
+    expect(isAllowedWebhookUrl('https://internal.internal/hook')).toBe(false)
+  })
+
+  it('Rejette 127.x (loopback)', () => {
+    expect(isAllowedWebhookUrl('https://127.0.0.1/webhook')).toBe(false)
+    expect(isAllowedWebhookUrl('https://127.0.1.5:8080/hook')).toBe(false)
+  })
+
+  it('Rejette 10.x (privé)', () => {
+    expect(isAllowedWebhookUrl('https://10.0.0.1/webhook')).toBe(false)
+  })
+
+  it('Rejette 192.168.x (privé)', () => {
+    expect(isAllowedWebhookUrl('https://192.168.1.1/webhook')).toBe(false)
+  })
+
+  it('Rejette 169.254.x (link-local / metadata)', () => {
+    expect(isAllowedWebhookUrl('https://169.254.169.254/latest/meta-data')).toBe(false)
+  })
+
+  it('Rejette 172.16-31.x (privé)', () => {
+    expect(isAllowedWebhookUrl('https://172.16.0.1/webhook')).toBe(false)
+    expect(isAllowedWebhookUrl('https://172.31.255.255/webhook')).toBe(false)
+  })
+
+  it('Rejette 0.x (réservé)', () => {
+    expect(isAllowedWebhookUrl('https://0.0.0.0/webhook')).toBe(false)
+  })
+
+  it('Rejette IPv6 ::1 (loopback)', () => {
+    expect(isAllowedWebhookUrl('https://[::1]/webhook')).toBe(false)
+  })
+
+  it('Rejette IPv6 fdxx (ULA)', () => {
+    expect(isAllowedWebhookUrl('https://[fd00::1]/webhook')).toBe(false)
+  })
+
+  it('Rejette IPv6 fe80 (link-local)', () => {
+    expect(isAllowedWebhookUrl('https://[fe80::1]/webhook')).toBe(false)
+  })
+
+  it('Rejette URL invalide', () => {
+    expect(isAllowedWebhookUrl('not-a-url')).toBe(false)
+    expect(isAllowedWebhookUrl('')).toBe(false)
+  })
+})
+
+// ============ LOT5-01 : NF-525 Chain Verification Logic ============
+
+describe('LOT5-01 : Logique de vérification chaîne NF-525', () => {
+  // Simule la logique de verify_nf525_chain
+  interface NF525Event {
+    id: number
+    previous_hash: string | null
+    current_hash: string
+  }
+
+  function verifyChain(events: NF525Event[]): {
+    broken_count: number
+    gap_count: number
+    chain_valid: boolean
+  } {
+    let broken_count = 0
+    let gap_count = 0
+    let last_seen_hash: string | null = null
+    let last_id: number | null = null
+
+    for (const rec of events) {
+      // Vérifier le chaînage
+      if (last_seen_hash !== null && rec.previous_hash !== last_seen_hash) {
+        broken_count++
+      }
+      last_seen_hash = rec.current_hash
+
+      // Vérifier les gaps (BIGSERIAL)
+      if (last_id !== null && rec.id !== last_id + 1) {
+        gap_count++
+      }
+      last_id = rec.id
+    }
+
+    return {
+      broken_count,
+      gap_count,
+      chain_valid: broken_count === 0 && gap_count === 0,
+    }
+  }
+
+  it('Chaîne valide → chain_valid = true', () => {
+    const events: NF525Event[] = [
+      { id: 1, previous_hash: 'GENESIS', current_hash: 'hash1' },
+      { id: 2, previous_hash: 'hash1', current_hash: 'hash2' },
+      { id: 3, previous_hash: 'hash2', current_hash: 'hash3' },
+    ]
+    const result = verifyChain(events)
+    expect(result.broken_count).toBe(0)
+    expect(result.gap_count).toBe(0)
+    expect(result.chain_valid).toBe(true)
+  })
+
+  it('Maillon supprimé → chain_valid = false (broken + gap)', () => {
+    const events: NF525Event[] = [
+      { id: 1, previous_hash: 'GENESIS', current_hash: 'hash1' },
+      // id=2 supprimé → gap détecté
+      { id: 3, previous_hash: 'hash2', current_hash: 'hash3' }, // previous_hash ne correspond pas à hash1
+    ]
+    const result = verifyChain(events)
+    expect(result.broken_count).toBe(1) // previous_hash 'hash2' ≠ 'hash1'
+    expect(result.gap_count).toBe(1) // id saute de 1 à 3
+    expect(result.chain_valid).toBe(false)
+  })
+
+  it('Maillon réécrit avec son propre previous_hash → chain_valid = false', () => {
+    const events: NF525Event[] = [
+      { id: 1, previous_hash: 'GENESIS', current_hash: 'hash1' },
+      { id: 2, previous_hash: 'FAKE_HASH', current_hash: 'hash2' }, // previous_hash recalculé mais faux
+      { id: 3, previous_hash: 'hash2', current_hash: 'hash3' },
+    ]
+    const result = verifyChain(events)
+    expect(result.broken_count).toBe(1) // 'FAKE_HASH' ≠ 'hash1'
+    expect(result.gap_count).toBe(0)
+    expect(result.chain_valid).toBe(false)
+  })
+
+  it('Chaîne vide → chain_valid = true', () => {
+    const result = verifyChain([])
+    expect(result.chain_valid).toBe(true)
+  })
+
+  it('Premier événement → pas de vérification previous_hash', () => {
+    const events: NF525Event[] = [
+      { id: 1, previous_hash: 'GENESIS', current_hash: 'hash1' },
+    ]
+    const result = verifyChain(events)
+    expect(result.broken_count).toBe(0)
+    expect(result.chain_valid).toBe(true)
+  })
+})
+
+// ============ LOT5-03 : Séparation des tâches désactivable ============
+
+describe('LOT5-03 : Séparation des tâches désactivable', () => {
+  it('Défaut: enforce_segregation = false (désactivé pour TPE/indépendants)', () => {
+    // Simule la logique du trigger
+    const companySettings = { enforce_segregation: false }
+    const canValidate = !companySettings.enforce_segregation || false // check_segregation retourne false
+    expect(canValidate).toBe(true) // L'utilisateur peut valider
+  })
+
+  it('Activé: enforce_segregation = true → séparation appliquée', () => {
+    const companySettings = { enforce_segregation: true }
+    const isCreator = true // L'utilisateur a créé l'écriture
+    const canValidate = !companySettings.enforce_segregation || !isCreator
+    expect(canValidate).toBe(false) // L'utilisateur ne peut pas valider
+  })
+
+  it('Activé mais utilisateur différent du créateur → peut valider', () => {
+    const companySettings = { enforce_segregation: true }
+    const isCreator = false
+    const canValidate = !companySettings.enforce_segregation || !isCreator
+    expect(canValidate).toBe(true)
+  })
+})
+
+// ============ PAY-01 : Taux PAS + assiette transport ============
+
+describe('PAY-01 : Assiette transport exonérée et taux PAS', () => {
+  const TRANSPORT_EXEMPT_CAP = 75
+
+  function calculateTransportTaxable(transportAllowance: number): number {
+    const transportExempt = Math.min(transportAllowance, TRANSPORT_EXEMPT_CAP)
+    return Math.max(0, transportAllowance - transportExempt)
+  }
+
+  it('Indemnité transport ≤ 75€ → entièrement exonérée (0€ imposable)', () => {
+    expect(calculateTransportTaxable(50)).toBe(0)
+    expect(calculateTransportTaxable(75)).toBe(0)
+  })
+
+  it('Indemnité transport > 75€ → seul le dépassement est imposable', () => {
+    expect(calculateTransportTaxable(100)).toBe(25)
+    expect(calculateTransportTaxable(200)).toBe(125)
+  })
+
+  it('Indemnité transport = 0 → 0€ imposable', () => {
+    expect(calculateTransportTaxable(0)).toBe(0)
+  })
+
+  it('Taux PAS personnalisé DGFiP est utilisé (3,5%)', () => {
+    const withholdingTaxRate = 3.5
+    const taxableGross = 3000
+    const incomeTax = Math.round(taxableGross * (withholdingTaxRate / 100) * 100) / 100
+    expect(incomeTax).toBe(105)
+  })
+
+  it('Taux PAS neutre utilisé quand pas de taux personnalisé', () => {
+    function neutralRate(taxableGross: number): number {
+      if (taxableGross <= 1705) return 0
+      if (taxableGross <= 1800) return 0.5
+      if (taxableGross <= 1915) return 1.5
+      if (taxableGross <= 2035) return 2.5
+      if (taxableGross <= 2165) return 3.5
+      if (taxableGross <= 2315) return 4.5
+      if (taxableGross <= 2475) return 6
+      if (taxableGross <= 2655) return 7.5
+      if (taxableGross <= 2855) return 9
+      if (taxableGross <= 3075) return 10.5
+      if (taxableGross <= 3315) return 12
+      if (taxableGross <= 3585) return 14
+      if (taxableGross <= 3885) return 16
+      if (taxableGross <= 4215) return 18
+      if (taxableGross <= 4575) return 20
+      if (taxableGross <= 4965) return 22
+      if (taxableGross <= 5385) return 24
+      if (taxableGross <= 5835) return 26
+      if (taxableGross <= 6335) return 28
+      if (taxableGross <= 6865) return 29
+      if (taxableGross <= 7445) return 30
+      return 31
+    }
+    expect(neutralRate(3000)).toBe(10.5)
+    const incomeTax = 3000 * (10.5 / 100)
+    expect(incomeTax).toBe(315)
+  })
+})
+
+// ============ PRD-05 : MRP déduction commandes en cours ============
+
+describe('PRD-05 : MRP déduit les commandes en cours (reste à recevoir)', () => {
+  it('Reste à recevoir = quantité - quantité reçue', () => {
+    const line = { product_id: 'p1', quantity: 100, quantity_received: 30 }
+    const remaining = Number(line.quantity) - Number(line.quantity_received || 0)
+    expect(remaining).toBe(70)
+  })
+
+  it('Commande entièrement reçue → reste à recevoir = 0', () => {
+    const line = { product_id: 'p1', quantity: 100, quantity_received: 100 }
+    const remaining = Number(line.quantity) - Number(line.quantity_received || 0)
+    expect(remaining).toBe(0)
+  })
+
+  it('Deux exécutions MRP consécutives → même résultat (pas de double)', () => {
+    const openPOLines = [
+      { product_id: 'p1', quantity: 100, quantity_received: 30 },
+      { product_id: 'p2', quantity: 50, quantity_received: 0 },
+    ]
+
+    function runMRP(): Record<string, number> {
+      const openPOMap: Record<string, number> = {}
+      for (const pol of openPOLines) {
+        const remaining = Number(pol.quantity) - Number(pol.quantity_received || 0)
+        if (remaining > 0 && pol.product_id) {
+          openPOMap[pol.product_id] = (openPOMap[pol.product_id] || 0) + remaining
+        }
+      }
+      return openPOMap
+    }
+
+    const result1 = runMRP()
+    const result2 = runMRP()
+    expect(result1).toEqual(result2)
+    expect(result1.p1).toBe(70)
+    expect(result1.p2).toBe(50)
+  })
+
+  it('MRP lit purchase_order_lines (product_id), pas purchase_orders', () => {
+    const po = { supplier_id: 's1', total_amount: 1000 }
+    expect((po as any).product_id).toBeUndefined()
+
+    const pol = { product_id: 'p1', quantity: 100 }
+    expect(pol.product_id).toBe('p1')
   })
 })

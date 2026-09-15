@@ -2,18 +2,22 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
-import { getManufacturingOrders, createManufacturingOrder, updateManufacturingOrder, deleteManufacturingOrder, getBOMs, getWarehouses, getRoutings } from '@/lib/queries'
+import { getManufacturingOrders, createManufacturingOrder, updateManufacturingOrder, deleteManufacturingOrder } from '@/lib/queries/production'
+import { getBOMs, getWarehouses, getRoutings } from '@/lib/queries/stock'
+import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import { Plus, Trash2, X, Factory, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { ManufacturingOrder, BOM, Warehouse, Routing } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Badge } from '@/components/ui'
+import { confirmSync } from '@/lib/confirm'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
 
 export function ManufacturingOrdersPage() {
   const { t } = useTranslation('production')
   const { toast } = useToast()
+  const { t: tCommon } = useTranslation("common")
 const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   const [boms, setBOMs] = useState<BOM[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
@@ -29,9 +33,9 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
       setBOMs(bs || [])
       setWarehouses(whs || [])
       setRoutings(rts || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -41,9 +45,16 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('manufacturing.confirmDelete'))) return
+    if (!confirmSync(t('manufacturing.confirmDelete'))) return
     try { await deleteManufacturingOrder(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+  }
+
+  async function handleProductionCost(id: string) {
+    try {
+      const res = await calculateProductionCost(id)
+      toast('success', t('manufacturing.title'), `${res?.total_cost ?? res} €`)
+    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 
   return (
@@ -66,7 +77,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('manufacturing.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('manufacturing.number'), t('manufacturing.bom'), t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), t('common.actions')]}>
+          <Table headers={[t('manufacturing.number'), t('manufacturing.bom'), t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), 'Stock', t('common.actions')]}>
             {orders.map((o) => {
               const bom = boms.find((b) => b.id === o.bom_id)
               return (
@@ -87,10 +98,16 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
                       {['planned', 'in_progress', 'completed', 'cancelled'].map((k) => <option key={k} value={k}>{t('manufacturing.statuses.' + k)}</option>)}
                     </select>
                   </TableCell>
+                  <TableCell>{(o as any).stock_movement_id || (o as any).stock_created || o.status === 'completed' ? <Badge variant="success">Généré</Badge> : <Badge variant="neutral">En attente</Badge>}</TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleProductionCost(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Calculer le coût de production">
+                        <Factory className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )
@@ -107,6 +124,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
 function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[]; warehouses: Warehouse[]; routings: Routing[]; onClose: () => void; onSaved: () => void }) {
   const [bomId, setBomId] = useState('')
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [quantity, setQuantity] = useState(1)
   const [startDate, setStartDate] = useState('')

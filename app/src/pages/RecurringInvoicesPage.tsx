@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getRecurringInvoices, toggleRecurringInvoice, getInvoices } from '@/lib/queries'
+import { getRecurringInvoices, toggleRecurringInvoice } from '@/lib/queries/accounting'
+import { getInvoices } from '@/lib/queries/sales'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Power, PowerOff, X } from 'lucide-react'
 import type { Invoice } from '@/types'
@@ -22,12 +23,12 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
       const [rec, inv] = await Promise.all([getRecurringInvoices(), getInvoices()])
       setRecurring(rec)
       setAllInvoices(inv)
-    } catch (err) {
-      console.error('Failed to load recurring invoices:', err)
+    } catch (err: any) { console.error('Failed to load recurring invoices:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

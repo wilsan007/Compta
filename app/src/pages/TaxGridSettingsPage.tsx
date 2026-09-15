@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, Input, Select } from '@/components/ui'
-import {
-  getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, deletePayrollTaxGrid,
-  getCorporateTaxGrids, getCorporateTaxGridLines, createCorporateTaxGrid, deleteCorporateTaxGrid,
-} from '@/lib/queries'
+import { getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, deletePayrollTaxGrid, getCorporateTaxGrids, getCorporateTaxGridLines, createCorporateTaxGrid, deleteCorporateTaxGrid } from '@/lib/queries/accounting'
 import type { PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
 import { Plus, Trash2, FileText, AlertCircle } from 'lucide-react'
 
 export function TaxGridSettingsPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [tab, setTab] = useState<'payroll' | 'corporate'>('payroll')
   const [payrollGrids, setPayrollGrids] = useState<PayrollTaxGrid[]>([])
   const [corporateGrids, setCorporateGrids] = useState<CorporateTaxGrid[]>([])
@@ -20,7 +20,7 @@ export function TaxGridSettingsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -57,8 +57,7 @@ export function TaxGridSettingsPage() {
         setCorporateGrids((prev) => prev.filter((g) => g.id !== id))
       }
       if (selectedGridId === id) setSelectedGridId(null)
-    } catch (err) {
-      console.error('Failed to delete grid:', err)
+    } catch (err: any) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -231,6 +230,7 @@ export function TaxGridSettingsPage() {
 
 function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corporate'; onCancel: () => void; onCreated: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
   const [countryCode, setCountryCode] = useState('')
   const [gridType, setGridType] = useState('')

@@ -61,7 +61,9 @@
     "amount": "المبلغ",
     "cumulativeBalance": "الرصيد التراكمي",
     "incomingType": "إيراد",
-    "outgoingType": "مصروف"
+    "outgoingType": "مصروف",
+    "runForecast": "توقع نقدية",
+    "cashFlowResult": "توقع التدفق: {{amount}} خلال {{days}} يوم"
   },
   "paymentOrders": {
     "title": "أوامر الدفع",

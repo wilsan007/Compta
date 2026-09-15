@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries'
+import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries/payroll'
 import { Calculator, Plus, Trash2, X, ArrowRightLeft, CheckCircle2 } from 'lucide-react'
 import type { PayRun, PayrollAccountingEntry } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { draft: 'warning', transferred: 'success', cancelled: 'danger' }
 
@@ -25,9 +26,9 @@ const [entries, setEntries] = useState<any[]>([])
       const [es, prs] = await Promise.all([getPayrollAccountingEntries(), getPayRuns()])
       setEntries(es || [])
       setPayRuns(prs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -42,7 +43,7 @@ const [entries, setEntries] = useState<any[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePayrollAccountingEntry(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
@@ -67,7 +68,7 @@ const [entries, setEntries] = useState<any[]>([])
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.gross_total))}</TableCell>
                 <TableCell className="font-mono text-xs text-[var(--color-danger)] text-right">{formatCurrency(Number(e.employer_contributions_total))}</TableCell>
                 <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(e.net_total))}</TableCell>
-                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{t(`payrollAccounting.statuses.${e.status}`) || statusLabels[e.status] || e.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{t(`payrollAccounting.statuses.${e.status}`) || e.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {e.status === 'draft' && (

@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import {
-  getThirdPartyAccounts, getInvoices, getPurchaseInvoices, getBankAccounts,
-  createCustomerPayment, createSupplierPayment, updateInvoice, updatePurchaseInvoice,
-  getPaymentTerms, generateMultiEcheances,
-} from '@/lib/queries'
+import { getThirdPartyAccounts } from '@/lib/queries/accounting'
+import { getInvoices, getPurchaseInvoices, updateInvoice, updatePurchaseInvoice } from '@/lib/queries/sales'
+import { getBankAccounts } from '@/lib/queries/banking'
+import { createCustomerPayment, createSupplierPayment } from '@/lib/queries/partners'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { generateMultiEcheances } from '@/lib/queries/misc'
 import { Wallet, CheckSquare, Square, Landmark, CalendarClock } from 'lucide-react'
 import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount, PaymentTerm } from '@/types'
 
@@ -50,7 +51,7 @@ export function PaymentGenerationPage() {
   const [echeancePreview, setEcheancePreview] = useState<{ date: string; amount_pct: number; label: string }[]>([])
 
   useEffect(() => {
-    loadRef()
+    loadRef().catch(err => console.error('loadRef:', err))
   }, [])
 
   async function loadRef() {
@@ -59,8 +60,8 @@ export function PaymentGenerationPage() {
       setThirdParties(tp || [])
       setBanks(ba || [])
       setPaymentTerms(pt || [])
-    } catch (err) {
-      console.error('Error loading reference data:', err)
+    } catch (err: any) { console.error('Error loading reference data:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -78,8 +79,8 @@ export function PaymentGenerationPage() {
         const data = await getInvoices()
         setInvoices(data || [])
       }
-    } catch (err) {
-      console.error('Error loading invoices:', err)
+    } catch (err: any) { console.error('Error loading invoices:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

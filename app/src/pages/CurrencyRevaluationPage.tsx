@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries'
+import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function CurrencyRevaluationPage() {
   const { t } = useTranslation('accounting')
@@ -22,12 +23,12 @@ export function CurrencyRevaluationPage() {
     try {
       const data = await getCurrencyRevaluations()
       setEntries(data || [])
-    } catch (err) {
-      console.error('Failed to load currency revaluations:', err)
+    } catch (err: any) { console.error('Failed to load currency revaluations:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -42,7 +43,7 @@ export function CurrencyRevaluationPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('revaluation.deleteConfirm'))) return
+    if (!confirmSync(t('revaluation.deleteConfirm'))) return
     try {
       await deleteCurrencyRevaluation(id)
       toast('success', tCommon('common.success'), t('revaluation.deleteSuccess'))

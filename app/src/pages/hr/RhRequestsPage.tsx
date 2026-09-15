@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { getRhRequests, createRhRequest, assignRhRequest, resolveRhRequest, getEmployees } from '@/lib/queries'
+import { getRhRequests, createRhRequest, assignRhRequest, resolveRhRequest } from '@/lib/queries/dematRh'
+import { getEmployees } from '@/lib/queries/payroll'
 import type { RhRequest, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Plus, UserCheck, CheckCircle } from 'lucide-react'
@@ -57,7 +58,7 @@ export function RhRequestsPage() {
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       setShowForm(false)
       setFormEmp(''); setFormSubject(''); setFormDesc('')
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -67,7 +68,7 @@ export function RhRequestsPage() {
     try {
       await assignRhRequest(id, assignedTo)
       toast('success', t('requests.assigned'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -80,7 +81,7 @@ export function RhRequestsPage() {
       toast('success', t('requests.resolved'))
       setShowResolve(null)
       setResolveText('')
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }

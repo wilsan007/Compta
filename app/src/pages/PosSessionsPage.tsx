@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, SortableTable, Badge, EmptyState, SkeletonTable, Select, PageHeader } from '@/components/ui'
-import { getPosSessions, getPosTickets, getPosStats, getPosTerminals } from '@/lib/queries'
+import { getPosSessions, getPosTickets, getPosStats, getPosTerminals, closePosSession } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Clock, Eye } from 'lucide-react'
@@ -21,6 +21,9 @@ export function PosSessionsPage() {
   const [tickets, setTickets] = useState<PosTicket[]>([])
   const [stats, setStats] = useState<{ ticketCount: number; totalRevenue: number; byPaymentMethod: Record<string, number>; totalVat: number } | null>(null)
   const [terminals, setTerminals] = useState<PosTerminal[]>([])
+  const [closingSession, setClosingSession] = useState<SessionWithTerminal | null>(null)
+  const [closingAmount, setClosingAmount] = useState(0)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,7 +39,7 @@ export function PosSessionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [filterTerminal])
+  }, [filterTerminal, tCommon, toast])
 
   useEffect(() => { load() }, [load])
 
@@ -49,6 +52,22 @@ export function PosSessionsPage() {
       setStats(s)
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message)
+    }
+  }
+
+  async function handleCloseSession() {
+    if (!closingSession) return
+    setActionLoading(true)
+    try {
+      await closePosSession(closingSession.id, closingAmount)
+      toast('success', t('sessions.title'), t('sessions.closed', { defaultValue: 'Session clôturée' }))
+      setClosingSession(null)
+      setClosingAmount(0)
+      await load()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -105,9 +124,16 @@ export function PosSessionsPage() {
                   ) : '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <Button size="sm" variant="ghost" onClick={() => viewSessionDetails(session)}>
-                    <Eye className="w-4 h-4" /> {t('sessions.viewTickets')}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => viewSessionDetails(session)}>
+                      <Eye className="w-4 h-4" /> {t('sessions.viewTickets')}
+                    </Button>
+                    {session.status === 'open' && (
+                      <Button size="sm" variant="primary" onClick={() => { setClosingSession(session); setClosingAmount(Number(session.opening_amount || 0)) }}>
+                        {t('sessions.close', { defaultValue: 'Clôturer' })}
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             )}
@@ -161,6 +187,35 @@ export function PosSessionsPage() {
             </div>
             <div className="mt-4">
               <Button variant="secondary" onClick={() => setSelectedSession(null)}>{tCommon('actions.close')}</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+      {/* Close Session Modal */}
+      {closingSession && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card title={t('sessions.closeTitle', { defaultValue: 'Clôturer la session' })} className="w-full max-w-md">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                  {t('sessions.closingAmount', { defaultValue: 'Montant de clôture' })}
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input"
+                  value={closingAmount}
+                  onChange={(e) => setClosingAmount(Number(e.target.value))}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="secondary" onClick={() => setClosingSession(null)}>
+                  {tCommon('actions.cancel')}
+                </Button>
+                <Button onClick={handleCloseSession} disabled={actionLoading}>
+                  {actionLoading ? tCommon('actions.saving') : t('sessions.confirmClose', { defaultValue: 'Confirmer la clôture' })}
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

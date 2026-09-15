@@ -2,13 +2,11 @@ import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  getThirdPartyAccounts, getUnletteredLines, getLetteredLines,
-  applyLettrage, removeLettrage, getNextLettrageCode,
-} from '@/lib/queries'
+import { getThirdPartyAccounts, getUnletteredLines, getLetteredLines, applyLettrage, removeLettrage, getNextLettrageCode } from '@/lib/queries/accounting'
 import { Link2, Unlink, Search, Wand2 } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function LettragePage() {
   const { toast } = useToast()
@@ -31,8 +29,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
     try {
       const tp = await getThirdPartyAccounts()
       setThirdParties(tp || [])
-    } catch (err) {
-      console.error('Error loading third parties:', err)
+    } catch (err: any) { console.error('Error loading third parties:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -53,8 +51,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       ])
       setUnlettered(ul || [])
       setLettered(l || [])
-    } catch (err) {
-      console.error('Error loading lines:', err)
+    } catch (err: any) { console.error('Error loading lines:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoadingLines(false)
     }
@@ -88,7 +86,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   }
 
   async function handleDelettrer(lineIds: string[]) {
-    if (!window.confirm(t('lettrage.unletterConfirm'))) return
+    if (!confirmSync(t('lettrage.unletterConfirm'))) return
     try {
       await removeLettrage(lineIds)
       await loadLines()

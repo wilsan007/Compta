@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCustomer360, createCustomerContact, updateCustomerContact, deleteCustomerContact } from '@/lib/queries'
+import { getCustomer360, createCustomerContact, updateCustomerContact, deleteCustomerContact } from '@/lib/queries/customerAdvanced'
+import { customerCreditScore, checkCustomerCreditLimit } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ArrowLeft, UserCircle, FileText, CreditCard, Bell, BarChart3, Users, Plus, Trash2, Edit2, AlertTriangle } from 'lucide-react'
@@ -17,13 +18,44 @@ export function Customer360Page() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<ReturnType<typeof getCustomer360> extends Promise<infer T> ? T : never | null>(null)
+  const [data, setData] = useState<Awaited<ReturnType<typeof getCustomer360>> | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('infos')
   const [showContactForm, setShowContactForm] = useState(false)
   const [editingContact, setEditingContact] = useState<CustomerContact | null>(null)
+  const [scoringCredit, setScoringCredit] = useState(false)
+
+  async function handleCreditScore() {
+    if (!id) return
+    setScoringCredit(true)
+    try {
+      const result = await customerCreditScore(id)
+      toast('success', t('customer360.title'), `Score: ${result.score ?? result.credit_score ?? 0}/100 — Rating: ${result.rating ?? result.grade ?? '—'}`)
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message)
+    } finally {
+      setScoringCredit(false)
+    }
+  }
+
+  async function handleCheckCreditLimit() {
+    if (!id) return
+    try {
+      const result = await checkCustomerCreditLimit(id)
+      const exceeded = result?.exceeded ?? result?.limit_exceeded ?? false
+      const used = result?.used ?? result?.credit_used ?? 0
+      const limit = result?.limit ?? result?.credit_limit ?? 0
+      if (exceeded) {
+        toast('warning', 'Limite de crédit', `Limite dépassée — utilisé: ${used} / limite: ${limit}`)
+      } else {
+        toast('success', 'Limite de crédit', `OK — utilisé: ${used} / limite: ${limit}`)
+      }
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message)
+    }
+  }
 
   useEffect(() => {
-    if (id) loadData()
+    if (id) loadData().catch(err => console.error('loadData:', err))
   }, [id])
 
   async function loadData() {
@@ -69,9 +101,17 @@ export function Customer360Page() {
         title={`${t('customer360.title')} — ${customer?.name || ''}`}
         subtitle={customer?.email || ''}
         action={
-          <Button variant="secondary" onClick={() => navigate('/sales/customers')}>
-            <ArrowLeft className="w-4 h-4" /> {tCommon('actions.back')}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleCheckCreditLimit}>
+              <CreditCard className="w-4 h-4" /> Vérifier la limite de crédit
+            </Button>
+            <Button variant="secondary" onClick={handleCreditScore} disabled={scoringCredit}>
+              <BarChart3 className="w-4 h-4" /> {scoringCredit ? '…' : 'Calculer le score de crédit'}
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/sales/customers')}>
+              <ArrowLeft className="w-4 h-4" /> {tCommon('actions.back')}
+            </Button>
+          </div>
         }
       />
 
@@ -151,10 +191,10 @@ export function Customer360Page() {
                   { label: t('invoices.amount'), key: 'total', sortable: true, className: 'text-right' },
                 ]}
                 data={[
-                  ...data.invoices.map((i: any) => ({ type: 'invoice', number: i.number, status: i.status, date: i.date, total: Number(i.total || 0) })),
-                  ...data.quotes.map((q: any) => ({ type: 'quote', number: q.number, status: q.status, date: q.date, total: Number(q.total || 0) })),
-                  ...data.orders.map((o: any) => ({ type: 'order', number: o.number, status: o.status, date: o.date, total: Number(o.total || 0) })),
-                  ...data.deliveryNotes.map((d: any) => ({ type: 'delivery', number: d.number, status: d.status, date: d.date, total: 0 })),
+                  ...(data.invoices || []).map((i: any) => ({ type: 'invoice', number: i.number, status: i.status, date: i.date, total: Number(i.total || 0) })),
+                  ...(data.quotes || []).map((q: any) => ({ type: 'quote', number: q.number, status: q.status, date: q.date, total: Number(q.total || 0) })),
+                  ...(data.orders || []).map((o: any) => ({ type: 'order', number: o.number, status: o.status, date: o.date, total: Number(o.total || 0) })),
+                  ...(data.deliveryNotes || []).map((d: any) => ({ type: 'delivery', number: d.number, status: d.status, date: d.date, total: 0 })),
                 ]}
                 initialSortKey="date"
                 renderRow={(row: any) => (
@@ -337,7 +377,7 @@ function ContactForm({ customerId, contact, onClose, onSaved }: {
     try {
       const data = { ...form, customer_id: customerId }
       if (contact) {
-        await updateCustomerContact(contact.id, data)
+        await updateCustomerContact(contact.id, data as any)
         toast('success', t('customer360.title'), tCommon('toast.updated'))
       } else {
         await createCustomerContact(data as any)

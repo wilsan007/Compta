@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getTreasuryForecast } from '@/lib/queries'
+import { getTreasuryForecast } from '@/lib/queries/accounting'
+import { cashFlowForecast } from '@/lib/queries/businessFunctions'
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 
 export function TreasuryForecastPage() {
   const { t } = useTranslation('treasury')
+  const { toast } = useToast()
+  const { t: tCommon } = useTranslation('common')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [horizon, setHorizon] = useState('90')
+  const [forecastLoading, setForecastLoading] = useState(false)
 
   useEffect(() => { load() }, [horizon])
 
@@ -18,10 +23,24 @@ export function TreasuryForecastPage() {
     try {
       const res = await getTreasuryForecast(Number(horizon))
       setData(res)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading treasury forecast:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCashFlowForecast() {
+    setForecastLoading(true)
+    try {
+      const result = await cashFlowForecast(Number(horizon) || 90)
+      const net = result?.net_flow ?? result?.projected_balance ?? result
+      toast('success', tCommon('common.success'), t('forecast.cashFlowResult', { amount: typeof net === 'number' ? net : 0, days: horizon }))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setForecastLoading(false)
     }
   }
 
@@ -47,6 +66,9 @@ export function TreasuryForecastPage() {
             ]}
           />
         </div>
+        <Button onClick={handleCashFlowForecast} disabled={forecastLoading}>
+          <TrendingUp className="w-4 h-4" /> {t('forecast.runForecast')}
+        </Button>
       </div>
 
       {loading ? (

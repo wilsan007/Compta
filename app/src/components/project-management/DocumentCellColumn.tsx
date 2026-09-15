@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Paperclip, Download, Upload, File as FileIcon } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { Modal } from './Modal'
 import { getTaskDocuments, uploadTaskDocument } from '@/lib/queries/projectManagement'
 import type { TaskDocument } from '@/types/projectManagement'
@@ -12,6 +13,8 @@ interface DocumentCellColumnProps {
 
 export function DocumentCellColumn({ taskId, projectId }: DocumentCellColumnProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [documents, setDocuments] = useState<TaskDocument[]>([])
   const [uploading, setUploading] = useState(false)
@@ -20,13 +23,15 @@ export function DocumentCellColumn({ taskId, projectId }: DocumentCellColumnProp
     try {
       const docs = await getTaskDocuments(taskId)
       setDocuments(docs)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [taskId])
+  }, [taskId, tCommon, toast])
 
   useEffect(() => {
-    if (open) loadDocuments()
+    if (open) loadDocuments().catch(err => console.error('loadDocuments:', err))
   }, [open, loadDocuments])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -36,8 +41,10 @@ export function DocumentCellColumn({ taskId, projectId }: DocumentCellColumnProp
     try {
       await uploadTaskDocument(taskId, file, projectId)
       await loadDocuments()
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setUploading(false)
     }

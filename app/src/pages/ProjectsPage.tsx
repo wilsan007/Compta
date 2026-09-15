@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getProjects, createProject, updateProject, deleteProject, getCustomers } from '@/lib/queries'
+import { getProjects, createProject, updateProject, deleteProject } from '@/lib/queries/accounting'
+import { getCustomers } from '@/lib/queries/partners'
+import { calculateProjectProfitability } from '@/lib/queries/businessFunctions'
 import { formatCurrency } from '@/lib/utils'
-import { FolderKanban, Plus, Trash2, X } from 'lucide-react'
+import { FolderKanban, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { Project, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function ProjectsPage() {
   const { toast } = useToast()
@@ -24,17 +27,17 @@ const [projects, setProjects] = useState<Project[]>([])
       const [p, c] = await Promise.all([getProjects(), getCustomers()])
       setProjects(p)
       setCustomers(c)
-    } catch (err) {
-      console.error('Failed to load projects:', err)
+    } catch (err: any) { console.error('Failed to load projects:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('projects.deleteConfirm'))) return
+  if (!confirmSync(t('projects.deleteConfirm'))) return
     try {
       await deleteProject(id)
       await loadData()
@@ -47,6 +50,19 @@ const [projects, setProjects] = useState<Project[]>([])
     try {
       await updateProject(id, { status: status as any })
       await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    }
+  }
+
+  async function handleProfitability(id: string) {
+    try {
+      const r: any = await calculateProjectProfitability(id)
+      const eac = Number(r?.eac ?? 0)
+      const etc = Number(r?.etc ?? 0)
+      const cpi = Number(r?.cpi ?? 0)
+      const margin = Number(r?.margin ?? 0)
+      toast('success', t('projects.title'), `EAC: ${formatCurrency(eac)} • ETC: ${formatCurrency(etc)} • CPI: ${cpi.toFixed(2)} • ${t('projects.profitability')}: ${formatCurrency(margin)}`)
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     }
@@ -98,9 +114,14 @@ const [projects, setProjects] = useState<Project[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => handleProfitability(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-info)]" title={t('projects.profitability')}>
+                        <Calculator className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

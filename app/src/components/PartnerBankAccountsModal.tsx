@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Input, Select } from '@/components/ui'
-import { getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount, validateIBAN } from '@/lib/queries'
+import { getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount } from '@/lib/queries/partners'
+import { validateIBAN } from '@/lib/queries/misc'
 import { Plus, Trash2, X, Pencil, CheckCircle, XCircle, Landmark } from 'lucide-react'
 import type { PartnerBankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 interface Props {
   partnerType: 'customer' | 'supplier'
@@ -31,12 +33,12 @@ export function PartnerBankAccountsModal({ partnerType, partnerId, onClose }: Pr
     } finally {
       setLoading(false)
     }
-  }, [partnerType, partnerId])
+  }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('partnerBankAccounts.deleteConfirm'))) return
+    if (!confirmSync(t('partnerBankAccounts.deleteConfirm'))) return
     try {
       await deletePartnerBankAccount(id)
       toast('success', tCommon('common.success'), t('partnerBankAccounts.deleted'))

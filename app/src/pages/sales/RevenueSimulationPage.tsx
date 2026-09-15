@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Button, Input, Select, Badge, EmptyState } from '@/components/ui'
-import { getRevenueSimulation } from '@/lib/queries'
+import { getRevenueSimulation } from '@/lib/queries/pilotage'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
@@ -27,7 +27,7 @@ export function RevenueSimulationPage() {
     } finally {
       setLoading(false)
     }
-  }, [period, growthRate])
+  }, [period, growthRate, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

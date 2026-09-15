@@ -64,7 +64,7 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
       await deleteEntryTemplate(id)
       toast('success', tCommon('common.success'), t('templates.deleteSuccess'))
       await loadData()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }

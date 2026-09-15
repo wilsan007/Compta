@@ -1,6 +1,6 @@
-import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud, clearTenantCache } from './core'
-import type { Customer, Supplier, Product, Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, BankAccount, BankTransaction, BankRule, BankConnection, PartnerBankAccount, PartnerContact, PartnerCategory, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, InvoiceLine, DashboardStats, FixedAsset, Employee, PayRun, Timesheet, StockMovement, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, CustomerPayment, PurchaseOrder, GoodsReceipt, SupplierPayment, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, AuditLog, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, QualityCheck, PickList, SalesRepresentative, Prospect, ProductSubstitute, DeliverySchedule, RecurringInvoiceTemplate, DocumentTemplate, FutureAccountingMovement, TreasuryTransfer, CreditLine, Investment, ValueDateTracking, TreasuryRecurring, ConsolidatedTreasury, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, AssetDepreciationPlan, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, PaymentTerm, MarkingType, ReminderLevel, PaymentPromise, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, DashboardWidget, FusionLog, CompactionLog, RGPDRequest, GridTemplate, PaymentTemplateCompta, AnalyticJournalCode, ReimputationLog, BankStatementTemplate, Bank, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check, DocumentCharge, DocumentTransformation } from '@/types'
+import { supabase } from '@/lib/supabase';
+import { getTenantId, ti, tud } from './core';
+import type { ManufacturingOrder, QualityCheck, PickList } from '@/types';
 
 // ============ Sprint 6: Manufacturing Orders ============
 export async function getManufacturingOrders(status?: string) {
@@ -77,5 +77,52 @@ export async function updatePickList(id: string, updates: Partial<PickList>) {
   const { data, error } = await tud(supabase.from('pick_lists').update(updates), 'pick_lists', tid).eq('id', id).select().single()
   if (error) throw error
   return data as PickList
+}
+
+// ============ PRD-09 : Sous-traitance ============
+
+export async function getStockAtSubcontractors() {
+  const { data, error } = await supabase.rpc('get_stock_at_subcontractors')
+  if (error) throw error
+  return data as any[]
+}
+
+// ============ IMP-01 : Reprise de données ============
+
+export async function importOpeningBalance(balanceData: any[]) {
+  const { data, error } = await supabase.rpc('import_opening_balance', {
+    p_balance_data: balanceData,
+  })
+  if (error) throw error
+  return data as any[]
+}
+
+export async function logDataImport(
+  importType: string,
+  fileName: string,
+  totalRows: number,
+  importedRows: number,
+  rejectedRows: number,
+  status: string,
+  errorDetails?: any
+) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase
+    .from('data_import_logs')
+    .insert(ti({
+      import_type: importType,
+      file_name: fileName,
+      total_rows: totalRows,
+      imported_rows: importedRows,
+      rejected_rows: rejectedRows,
+      status,
+      error_details: errorDetails,
+      started_at: new Date().toISOString(),
+      completed_at: status === 'completed' || status === 'partial' ? new Date().toISOString() : null,
+    }, 'data_import_logs', tid))
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }
 

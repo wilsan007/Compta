@@ -4,9 +4,11 @@ import {
   FileText, Download, Eye, CheckCircle, XCircle, Archive,
   Trash2, Search, Lock, Shield, Globe, ShieldAlert,
 } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useDocumentPermissions } from '@/hooks/useDocumentPermissions'
 import type { ModuleName, ModuleDocument, Confidentiality, DocumentStatus } from '@/types/documents'
+import { confirmSync } from '@/lib/confirm'
 
 interface DocumentListProps {
   module: ModuleName
@@ -56,6 +58,8 @@ function formatDate(iso: string | null): string {
 
 export function DocumentList({ module, entityType, entityId }: DocumentListProps) {
   const { t } = useTranslation(['documents', 'common'])
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const docs = useDocuments(module, { entityType, entityId })
   const perms = useDocumentPermissions(module)
   const [search, setSearch] = useState('')
@@ -87,8 +91,9 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       await docs.download(doc)
     } catch (err: any) {
       console.error('Download failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs])
+  }, [docs, toast, tCommon])
 
   const handlePreview = useCallback(async (doc: ModuleDocument) => {
     try {
@@ -97,16 +102,18 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       setPreviewName(doc.file_name)
     } catch (err: any) {
       console.error('Preview failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs])
+  }, [docs, tCommon, toast])
 
   const handleApprove = useCallback(async (id: string) => {
     try {
       await docs.approve(id)
     } catch (err: any) {
       console.error('Approve failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs])
+  }, [docs, tCommon, toast])
 
   const handleReject = useCallback(async () => {
     if (!rejectingId || !rejectReason) return
@@ -116,25 +123,28 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       setRejectReason('')
     } catch (err: any) {
       console.error('Reject failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs, rejectingId, rejectReason])
+  }, [docs, rejectingId, rejectReason, tCommon, toast])
 
   const handleArchive = useCallback(async (id: string) => {
     try {
       await docs.archive(id)
     } catch (err: any) {
       console.error('Archive failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs])
+  }, [docs, tCommon, toast])
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!window.confirm(t('documents:list.confirmDelete'))) return
+    if (!confirmSync(t('documents:list.confirmDelete'))) return
     try {
       await docs.remove(id)
     } catch (err: any) {
       console.error('Delete failed:', err.message)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [docs, t])
+  }, [docs, t, tCommon, toast])
 
   if (docs.loading) {
     return (

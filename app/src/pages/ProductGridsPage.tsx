@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getProducts, getProductGrids, createProductGrid, deleteProductGrid, getProductGridCombinations, generateAllCombinations } from '@/lib/queries'
+import { getProducts } from '@/lib/queries/stock'
+import { getProductGrids, createProductGrid, deleteProductGrid, getProductGridCombinations, generateAllCombinations } from '@/lib/queries/catalogAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2, X, Grid3x3, Sparkles } from 'lucide-react'
 import type { Product, ProductGrid, ProductGridCombination } from '@/types'
@@ -27,7 +28,7 @@ export function ProductGridsPage() {
         toast('error', tCommon('toast.error'), err.message)
       }
     })()
-  }, [])
+  }, [toast, tCommon])
 
   const loadGrids = useCallback(async (productId: string) => {
     if (!productId) { setGrids([]); setCombinations([]); return }
@@ -41,7 +42,7 @@ export function ProductGridsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { if (selectedProduct) loadGrids(selectedProduct) }, [selectedProduct, loadGrids])
 

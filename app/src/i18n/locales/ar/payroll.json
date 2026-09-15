@@ -211,7 +211,7 @@
     "quantity": "الكمية", "unitPrice": "سعر الوحدة", "amount": "المبلغ",
     "noElements": "لا عناصر متغيرة", "noElementsDescription": "لم يتم استيراد عناصر متغيرة لحملة الرواتب هذه",
     "imported": "تم الاستيراد بنجاح",
-    "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "transport": "نقل", "other": "أخرى" },
+    "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "transport": "نقل", "other": "أخرى", "advance_deduction": "خصم سلفة الراتب", "pay_recall": "استدراك الراتب", "expense_reimbursement": "تعويض المصاريف", "unpaid_leave_deduction": "خصم إجازة بدون أجر", "timesheet_hours": "ساعات العمل", "lateness_deduction": "خصم التأخير", "unpaid_absence": "غياب بدون أجر" },
     "validate": "التحقق من التحضير", "validated": "تم التحقق من التحضير",
     "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير"
   },

@@ -259,24 +259,26 @@ export function LandingPage() {
       const found = currencies.find(c => c.code === stored)
       if (found) setLocalCurrency(found)
     }
-    fetch('https://ipwho.is/')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.country_code) {
-          setDetectedCountry(data.country_code)
-          const currencyCode = countryCurrencyMap[data.country_code]
-          if (currencyCode) {
-            const found = currencies.find(c => c.code === currencyCode)
-            if (found) {
-              setLocalCurrency(found)
-              if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('detected_currency', found.code)
-              }
-            }
+    // OPS-02: Retrait d'ipwho.is (service externe non sécurisé).
+    // Utiliser l'API Intl du navigateur pour détecter la devise locale.
+    try {
+      const locale = typeof navigator !== 'undefined' ? (navigator.language || 'fr-FR') : 'fr-FR'
+      const region = locale.split('-')[1] || 'FR'
+      setDetectedCountry(region)
+      const currencyCode = countryCurrencyMap[region]
+      if (currencyCode) {
+        const found = currencies.find(c => c.code === currencyCode)
+        if (found) {
+          setLocalCurrency(found)
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('detected_currency', found.code)
           }
         }
-      })
-      .catch(() => {})
+      }
+    } catch (err) {
+      console.error("catch:", err)
+      // Fallback silencieux — la devise par défaut reste configurée
+    }
   }, [])
 
   return (
@@ -585,7 +587,7 @@ export function LandingPage() {
 
                     {sc.key === 'scenario6' && (
                       <div className="grid grid-cols-3 gap-1.5 h-full">
-                        {['TODO', 'DOING', 'DONE'].map((col, ci) => (
+                        {['TODO', 'DOING', 'DONE'].map((_, ci) => (
                           <div key={ci} className="space-y-1.5">
                             <div className="h-2.5 rounded-full" style={{ background: `${sc.color}${['15', '25', '30'][ci]}`, width: '80%' }} />
                             {[0, 1].map(ti => (

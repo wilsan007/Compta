@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries'
+import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries/accounting'
 import { Plus, Pencil, Trash2, X, Target } from 'lucide-react'
 import type { Budget, FiscalYear, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BudgetsPage() {
   const { toast } = useToast()
@@ -40,12 +41,12 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                 return total / 12
               })
             }
-          } catch {}
+          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
         }
       }
       setRealized(realizedMap)
-    } catch (err) {
-      console.error('Error loading budgets:', err)
+    } catch (err: any) { console.error('Error loading budgets:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -55,9 +56,9 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   function openEdit(b: Budget) { setEditing(b); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('budgets.deleteConfirm'))) return
+  if (!confirmSync(t('budgets.deleteConfirm'))) return
     try { await deleteBudget(id); await load() }
-    catch (err) { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
+    catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }
 
   const periodLabels = [

@@ -25,7 +25,7 @@ interface MyTasksViewProps {
   projectId?: string
 }
 
-export function MyTasksView({ projectId }: MyTasksViewProps) {
+export function MyTasksView(_props: MyTasksViewProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()

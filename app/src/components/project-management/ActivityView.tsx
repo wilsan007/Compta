@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Activity, Filter, ChevronDown, ChevronRight, ListTodo, ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { getActivityLog } from '@/lib/queries/projectManagementSprint1'
 import type { ActivityLogEntry, ActivityActionType } from '@/types/projectManagement'
 
@@ -17,6 +18,8 @@ interface TaskGroup {
 
 export function ActivityView({ projectId, taskId }: ActivityViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [entries, setEntries] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ActivityActionType | 'all'>('all')
@@ -27,15 +30,17 @@ export function ActivityView({ projectId, taskId }: ActivityViewProps) {
     try {
       const data = await getActivityLog(taskId, projectId, 200)
       setEntries(data)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [taskId, projectId])
+  }, [taskId, projectId, tCommon, toast])
 
   useEffect(() => {
-    loadActivity()
+    loadActivity().catch(err => console.error('loadActivity:', err))
   }, [loadActivity])
 
   const filteredEntries = useMemo(() => {
@@ -51,7 +56,7 @@ export function ActivityView({ projectId, taskId }: ActivityViewProps) {
       if (!groups.has(key)) {
         groups.set(key, {
           task_id: entry.task_id,
-          task_title: entry.task_title,
+          task_title: entry.task_title || null,
           entries: [],
         })
       }

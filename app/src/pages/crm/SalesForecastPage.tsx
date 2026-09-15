@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getForecasts, createForecast, getSalesRepresentatives } from '@/lib/queries'
+import { getForecasts, createForecast } from '@/lib/queries/crmAdvanced'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { Plus, X, TrendingUp } from 'lucide-react'
 import type { CrmForecast, SalesRepresentative } from '@/types'
@@ -28,7 +29,7 @@ export function SalesForecastPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

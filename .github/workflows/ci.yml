@@ -47,8 +47,21 @@ jobs:
       - name: Lint (oxlint)
         run: npx oxlint --max-warnings=0
 
-      - name: Type check (tsc --noEmit)
-        run: npx tsc --noEmit --pretty
+      - name: UX-03 : No window.confirm
+        run: |
+          if grep -rn "window\.confirm" src/ --include="*.tsx" --include="*.ts" | grep -v "confirm.tsx" | grep -v "useConfirm.tsx"; then
+            echo "ERROR: window.confirm is forbidden. Use confirmSync() from '@/lib/confirm' instead."
+            exit 1
+          fi
+
+      - name: Type check (tsc -b)
+        run: npx tsc -b --noEmit --pretty
+
+      - name: LOT6-04 : Dead code ceiling (knip)
+        run: node scripts/check-knip-ceiling.mjs
+
+      - name: LOT6-04 : Unused tables ceiling
+        run: node scripts/check-unused-tables.mjs
 
   # ─────────────────────────────────────────────
   # Job 2: i18n Key Parity Check
@@ -165,6 +178,8 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SEC-01: gitleaks needs full history
 
       - uses: actions/setup-node@v4
         with:
@@ -177,19 +192,109 @@ jobs:
 
       - name: npm audit (high + critical)
         run: npm audit --audit-level=high
-        continue-on-error: true
+        # OPS-01: Retirer continue-on-error — le CI doit échouer sur les vulnérabilités
 
-      - name: Check for hardcoded secrets
-        run: |
-          echo "Checking for potential secrets in source files..."
-          ! grep -rnE "(api[_-]?key|secret[_-]?key|password)\s*[:=]\s*['\"][^'\"]{16,}" src/ \
-            --include="*.ts" --include="*.tsx" \
-            --exclude-dir=node_modules --exclude-dir=__tests__ \
-            || (echo "WARNING: Potential hardcoded secrets found" && exit 1)
-        continue-on-error: true
+      - name: Gitleaks — scan for secrets in code and git history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # SEC-01: Remplace le grep manuel par gitleaks (détecte plus de patterns)
 
   # ─────────────────────────────────────────────
-  # Job 5: Build verification
+  # Job 5: DB Integration Tests (SOC-02)
+  # Teste les triggers, fonctions PL/pgSQL et politiques RLS en CI
+  # ─────────────────────────────────────────────
+  db-integration:
+    name: DB Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Charger le schéma de base
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Appliquer les migrations
+        run: node run-sql-migrations.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Installer plpgsql_check
+        run: |
+          docker exec postgres apt-get update -qq
+          docker exec postgres apt-get install -y -qq postgresql-16-plpgsql-check
+          psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Valider toutes les fonctions PL/pgSQL
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_plpgsql.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Contrôle de trigger atteignable
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_trigger_reachability.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Générer les types TypeScript depuis PostgreSQL
+        run: node scripts/generate-db-types.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Vérifier que les types sont à jour
+        run: |
+          if git diff --name-only src/types/database-generated.ts | grep -q .; then
+            echo "ERROR: Les types générés diffèrent. Exécutez localement: node scripts/generate-db-types.mjs"
+            git diff src/types/database-generated.ts
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests de triggers (SOC-01)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/102_trigger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests RLS (SOC-02)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/105_rls_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: LOT6-05 : Scénarios métier E2E (10 parcours)
+        run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+  # ─────────────────────────────────────────────
+  # Job 6: Build verification
   # ─────────────────────────────────────────────
   build:
     name: Production Build
@@ -226,7 +331,7 @@ jobs:
   ci-success:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [lint-typecheck, i18n-check, unit-tests, build]
+    needs: [lint-typecheck, i18n-check, unit-tests, db-integration, build]
     if: always()
     steps:
       - name: Check job results
@@ -234,8 +339,9 @@ jobs:
           echo "lint-typecheck: ${{ needs.lint-typecheck.result }}"
           echo "i18n-check: ${{ needs.i18n-check.result }}"
           echo "unit-tests: ${{ needs.unit-tests.result }}"
+          echo "db-integration: ${{ needs.db-integration.result }}"
           echo "build: ${{ needs.build.result }}"
-          if [[ "${{ needs.lint-typecheck.result }}" != "success" || "${{ needs.i18n-check.result }}" != "success" || "${{ needs.unit-tests.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
+          if [[ "${{ needs.lint-typecheck.result }}" != "success" || "${{ needs.i18n-check.result }}" != "success" || "${{ needs.unit-tests.result }}" != "success" || "${{ needs.db-integration.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
             echo "CI FAILED — one or more required jobs did not pass"
             exit 1
           fi

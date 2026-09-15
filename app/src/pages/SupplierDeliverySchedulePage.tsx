@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
-import { getSupplierDeliverySchedules, createSupplierDeliverySchedule, deleteSupplierDeliverySchedule, generatePurchaseFromSchedule, getSuppliers, getProducts } from '@/lib/queries'
+import { getSupplierDeliverySchedules, createSupplierDeliverySchedule, deleteSupplierDeliverySchedule, generatePurchaseFromSchedule } from '@/lib/queries/purchaseAdvanced'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Calendar, Plus, Search, Trash2, X, Zap } from 'lucide-react'
@@ -38,7 +40,7 @@ export function SupplierDeliverySchedulePage() {
       const [s, p] = await Promise.all([getSuppliers(), getProducts()])
       setSuppliers(s || [])
       setProducts(p || [])
-    } catch { }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
   }
 
   async function handleGenerate() {

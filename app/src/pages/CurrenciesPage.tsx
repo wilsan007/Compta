@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencies, createCurrency, updateCurrency, deleteCurrency } from '@/lib/queries'
+import { getCurrencies, createCurrency, updateCurrency, deleteCurrency } from '@/lib/queries/accounting'
 import { Plus, Trash2, X, Coins } from 'lucide-react'
 import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function CurrenciesPage() {
   const { t } = useTranslation('settings')
@@ -16,12 +17,12 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try { setCurrencies(await getCurrencies()) } catch (err) { console.error(err); toast('error', t('currencies.loadError'), t('currencies.loadError')) } finally { setLoading(false) }
-  }, [])
+  }, [t, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('currencies.deleteConfirm'))) return
+  if (!confirmSync(t('currencies.deleteConfirm'))) return
     try { await deleteCurrency(id); await loadData() } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) }
   }
 

@@ -37,7 +37,7 @@ export function TaskTableBody({
 
   const visibleTasks = sorted.filter((task) => {
     if (!task.parent_id) return true
-    let parentId = task.parent_id
+    let parentId: string | null | undefined = task.parent_id
     while (parentId) {
       if (collapsedIds.has(parentId)) return false
       const parent = sorted.find((t) => t.id === parentId)

@@ -43,7 +43,7 @@ export async function getTaskById(id: string): Promise<ProjectTask | null> {
 
 export async function createTask(task: TaskCreateInput): Promise<ProjectTask> {
   const tid = await getTenantId()
-  const payload = ti({ ...task }, 'project_tasks', tid)
+  const payload = ti({ ...task, tenant_id: tid }, 'project_tasks', tid)
   const { data, error } = await supabase
     .from('project_tasks')
     .insert(payload)
@@ -61,6 +61,7 @@ export async function updateTask(id: string, updates: TaskUpdateInput): Promise<
     tid
   )
     .eq('id', id)
+    .eq('tenant_id', tid)
     .select()
     .single()
   if (error) throw error
@@ -73,7 +74,7 @@ export async function deleteTask(id: string): Promise<void> {
     supabase.from('project_tasks').delete(),
     'project_tasks',
     tid
-  ).eq('id', id)
+  ).eq('id', id).eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -145,7 +146,7 @@ export async function addActionColumn(
 ): Promise<TaskAction> {
   const tid = await getTenantId()
   const payload = ti(
-    { task_id: taskId, title, weight_percentage: weightPercentage || 0, is_done: false },
+    { task_id: taskId, title, weight_percentage: weightPercentage || 0, is_done: false, tenant_id: tid },
     'task_actions',
     tid
   )
@@ -174,6 +175,7 @@ export async function addDetailedAction(
       is_done: false,
       due_date: dueDate,
       notes,
+      tenant_id: tid,
     },
     'task_actions',
     tid
@@ -214,6 +216,7 @@ export async function toggleAction(actionId: string, isDone: boolean): Promise<{
     tid
   )
     .eq('id', actionId)
+    .eq('tenant_id', tid)
     .select()
     .single()
   if (error) throw error
@@ -228,7 +231,7 @@ export async function deleteAction(actionId: string): Promise<void> {
     supabase.from('task_actions').delete(),
     'task_actions',
     tid
-  ).eq('id', actionId)
+  ).eq('id', actionId).eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -282,6 +285,7 @@ export async function uploadTaskDocument(
       file_path: filePath,
       file_size: file.size,
       mime_type: file.type,
+      tenant_id: tid,
     },
     'task_documents',
     tid
@@ -317,7 +321,7 @@ export async function addTaskComment(
 ): Promise<TaskComment> {
   const tid = await getTenantId()
   const payload = ti(
-    { task_id: taskId, content, comment_type: commentType || 'general' },
+    { task_id: taskId, content, comment_type: commentType || 'general', tenant_id: tid },
     'task_comments',
     tid
   )
@@ -357,6 +361,7 @@ export async function createTaskDependency(
       depends_on_task_id: dependsOnTaskId,
       dependency_type: dependencyType || 'finish-to-start',
       lag_days: lagDays || 0,
+      tenant_id: tid,
     },
     'project_task_dependencies',
     tid
@@ -376,7 +381,7 @@ export async function deleteTaskDependency(id: string): Promise<void> {
     supabase.from('project_task_dependencies').delete(),
     'project_task_dependencies',
     tid
-  ).eq('id', id)
+  ).eq('id', id).eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -401,7 +406,7 @@ export async function createProjectStage(
 ): Promise<ProjectStage> {
   const tid = await getTenantId()
   const payload = ti(
-    { name, sequence, fold: fold || false, case_default: false },
+    { name, sequence, fold: fold || false, case_default: false, tenant_id: tid },
     'project_stages',
     tid
   )
@@ -436,7 +441,7 @@ export async function createProjectMilestone(
 ): Promise<ProjectMilestone> {
   const tid = await getTenantId()
   const payload = ti(
-    { project_id: projectId, name, deadline, is_reached: false, is_reached_manually: false },
+    { project_id: projectId, name, deadline, is_reached: false, is_reached_manually: false, tenant_id: tid },
     'project_milestones',
     tid
   )
@@ -460,6 +465,7 @@ export async function updateProjectMilestone(
     tid
   )
     .eq('id', id)
+    .eq('tenant_id', tid)
     .select()
     .single()
   if (error) throw error
@@ -482,7 +488,7 @@ export async function getProjectTags(): Promise<ProjectTag[]> {
 
 export async function createProjectTag(name: string, color?: number): Promise<ProjectTag> {
   const tid = await getTenantId()
-  const payload = ti({ name, color: color || 0 }, 'project_tags', tid)
+  const payload = ti({ name, color: color || 0, tenant_id: tid }, 'project_tags', tid)
   const { data, error } = await supabase
     .from('project_tags')
     .insert(payload)
@@ -508,7 +514,7 @@ export async function getTaskAssignees(taskId: string): Promise<{ task_id: strin
 
 export async function assignTaskToEmployee(taskId: string, employeeId: string): Promise<void> {
   const tid = await getTenantId()
-  const payload = ti({ task_id: taskId, employee_id: employeeId }, 'project_task_assignees', tid)
+  const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
   const { error } = await supabase
     .from('project_task_assignees')
     .insert(payload)
@@ -541,18 +547,19 @@ export async function setTaskAssignee(taskId: string, employeeId: string | null,
 
   // 3. Insert new junction entry if an employee is assigned
   if (employeeId) {
-    const payload = ti({ task_id: taskId, employee_id: employeeId }, 'project_task_assignees', tid)
+    const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_assignees', tid)
     const { error: insError } = await supabase.from('project_task_assignees').insert(payload)
     if (insError) throw insError
 
     // 4. Notify the assigned employee
     try {
       // Fetch task info for the notification message
-      const { data: taskData } = await supabase
+      const { data: taskData, error } = await supabase
         .from('project_tasks')
         .select('title, project_id')
         .eq('id', taskId)
         .single()
+      if (error) throw error
       if (taskData) {
         const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'fr'
         const titleMsg: Record<string, string> = {
@@ -575,7 +582,8 @@ export async function setTaskAssignee(taskId: string, employeeId: string | null,
           `/projects/${taskData.project_id || ''}?task=${taskId}`
         )
       }
-    } catch {
+    } catch (err) {
+      console.error("catch:", err)
       // Notification failure should not block assignment
     }
   }
@@ -610,14 +618,14 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
   const { data, error } = await q
   if (error) throw error
   return (data || []).map((row: any) => ({
-    ...row,
-    employee_name: row.employees?.name || null,
+    ...(row || {}),
+    employee_name: row?.employees?.name || null,
   })) as ProjectMember[]
 }
 
 export async function addProjectMember(projectId: string, employeeId: string, role: ProjectMemberRole = 'team_member'): Promise<ProjectMember> {
   const tid = await getTenantId()
-  const payload = ti({ project_id: projectId, employee_id: employeeId, role }, 'project_members', tid)
+  const payload = ti({ project_id: projectId, employee_id: employeeId, role, tenant_id: tid }, 'project_members', tid)
   const { data, error } = await supabase
     .from('project_members')
     .insert(payload)
@@ -627,11 +635,12 @@ export async function addProjectMember(projectId: string, employeeId: string, ro
 
   // Notify the added member
   try {
-    const { data: projectData } = await supabase
+    const { data: projectData, error } = await supabase
       .from('projects')
       .select('name')
       .eq('id', projectId)
       .single()
+    if (error) throw error
     if (projectData) {
       const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'fr'
       const titleMsg: Record<string, string> = {
@@ -662,7 +671,8 @@ export async function addProjectMember(projectId: string, employeeId: string, ro
         `/projects/${projectId}`
       )
     }
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // Notification failure should not block member addition
   }
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { QuickAccessModal } from './QuickAccessModal'
 import { Button, Input, Select, EmptyState, Table, TableRow, TableCell } from '@/components/ui'
-import { getChartAccounts, createChartAccount } from '@/lib/queries'
+import { getChartAccounts, createChartAccount } from '@/lib/queries/accounting'
 import { useToast } from '@/lib/toast'
 import { useModuleAwareAccess } from './useModuleAwareAccess'
 import { BookOpen, Plus, ExternalLink, Search } from 'lucide-react'
@@ -41,15 +41,15 @@ export function QuickAccountAccess({ onClose, onSaved, forceInline }: QuickAccou
     setLoading(true)
     try {
       setAccounts(await getChartAccounts())
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       /* ignore */
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => {
-    if (strategy === 'inline') loadData()
+    if (strategy === 'inline') loadData().catch(err => console.error('loadData:', err))
   }, [strategy, loadData])
 
   async function handleSave(e: React.FormEvent) {

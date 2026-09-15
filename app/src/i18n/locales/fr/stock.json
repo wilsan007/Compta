@@ -101,6 +101,8 @@
     "adjustment": "Ajustement",
     "initialStock": "Stock initial",
     "quantity": "Quantité",
+    "unitCost": "Coût unitaire",
+    "type": "Type de mouvement",
     "notes": "Notes",
     "reference": "Référence",
     "noAdjustments": "Aucun ajustement",

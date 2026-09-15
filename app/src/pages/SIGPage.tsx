@@ -1,34 +1,39 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getSIGData, getFiscalYears } from '@/lib/queries'
+import { getSIGData, getFiscalYears } from '@/lib/queries/accounting'
+import { generateProfitLoss } from '@/lib/queries/businessFunctions'
 import { TrendingUp } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import type { FiscalYear } from '@/types'
 
 export function SIGPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency } = useLocale()
   const [data, setData] = useState<any[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
-    loadYears()
+    loadYears().catch(err => console.error('loadYears:', err))
   }, [])
 
   async function loadYears() {
     try {
       const fy = await getFiscalYears()
       setYears(fy || [])
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err: any) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
   useEffect(() => {
-    loadSIG()
+    loadSIG().catch(err => console.error('loadSIG:', err))
   }, [selectedYear])
 
   async function loadSIG() {
@@ -36,10 +41,24 @@ export function SIGPage() {
     try {
       const res = await getSIGData(selectedYear || undefined)
       setData(res)
-    } catch (err) {
-      console.error('Error loading SIG:', err)
+    } catch (err: any) { console.error('Error loading SIG:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleGenerate() {
+    if (!selectedYear) return
+    setGenerating(true)
+    try {
+      await generateProfitLoss(selectedYear)
+      toast('success', tCommon('common.success'), t('sig.generated'))
+      await loadSIG()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -105,6 +124,9 @@ export function SIGPage() {
             options={[{ value: '', label: t('sig.all') }, ...years.map((y) => ({ value: y.id, label: y.code }))]}
           />
         </div>
+        <Button onClick={handleGenerate} disabled={generating || !selectedYear}>
+          {generating ? tCommon('common.loading') : t('sig.generate')}
+        </Button>
       </div>
 
       {loading ? (

@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(process.env.ANALYZE ? [visualizer({ filename: 'dist/stats.html', template: 'treemap', gzipSize: true, brotliSize: false })] : []),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -34,6 +39,14 @@ export default defineConfig({
             if (id.includes('pdfjs')) return 'pdf'
             if (id.includes('xlsx')) return 'xlsx'
             if (id.includes('recharts') || id.includes('d3-')) return 'charts'
+            if (id.includes('date-fns')) return 'date-fns'
+            if (id.includes('lucide-react')) return 'icons'
+            if (id.includes('zustand')) return 'zustand'
+            if (id.includes('@radix-ui')) return 'radix'
+            if (id.includes('framer-motion')) return 'animation'
+            if (id.includes('clsx') || id.includes('tailwind-merge')) return 'utils'
+            if (id.includes('zod')) return 'validation'
+            if (id.includes('decimal.js') || id.includes('big.js')) return 'math'
           }
         },
       },

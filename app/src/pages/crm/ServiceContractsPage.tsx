@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getServiceContracts, createServiceContract, deleteServiceContract, getCustomers } from '@/lib/queries'
+import { formatDate } from '@/lib/utils'
+import { getServiceContracts, createServiceContract, deleteServiceContract } from '@/lib/queries/crmAdvanced'
+import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
 import { Plus, X, FileText, Trash2 } from 'lucide-react'
 import type { ServiceContract, Customer } from '@/types'
@@ -10,7 +11,6 @@ import type { ServiceContract, Customer } from '@/types'
 type ContractWithCustomer = ServiceContract & { customer: { name: string } | null }
 
 const CONTRACT_TYPES = ['support', 'maintenance', 'warranty', 'sla'] as const
-const STATUSES = ['active', 'expired', 'terminated', 'draft'] as const
 
 export function ServiceContractsPage() {
   const { t } = useTranslation('crm')
@@ -32,7 +32,7 @@ export function ServiceContractsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

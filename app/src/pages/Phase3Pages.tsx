@@ -25,7 +25,7 @@ export function MCFPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ description: '', account_code: '', amount: 0, movement_type: 'debit' as const, expected_date: '', source_type: 'manual' as const })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getFutureAccountingMovements() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getFutureAccountingMovements() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createFutureAccountingMovement(form as any); toast('success', tCommon('common.success'), t('mcf.created')); setShowForm(false); setForm({ description: '', account_code: '', amount: 0, movement_type: 'debit', expected_date: '', source_type: 'manual' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -57,7 +57,7 @@ export function TreasuryTransfersPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ number: '', from_account_id: '', to_account_id: '', amount: 0, transfer_date: '', value_date: '', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getTreasuryTransfers() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getTreasuryTransfers() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createTreasuryTransfer(form as any); toast('success', tCommon('common.success'), t('transfers.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -89,7 +89,7 @@ export function CreditLinesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', type: 'credit_line' as const, limit_amount: 0, used_amount: 0, interest_rate: 0, start_date: '', end_date: '', monthly_payment: 0, notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getCreditLines() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getCreditLines() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createCreditLine(form as any); toast('success', tCommon('common.success'), t('creditLines.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -120,7 +120,7 @@ export function InvestmentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', type: 'opcv' as const, institution: '', initial_amount: 0, current_value: 0, acquisition_date: '', maturity_date: '', interest_rate: 0, notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getInvestments() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getInvestments() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createInvestment(form as any); toast('success', tCommon('common.success'), t('investments.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -147,7 +147,7 @@ export function ValueDateTrackingPage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getValueDateTrackings() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getValueDateTrackings() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   return (
@@ -174,7 +174,7 @@ export function TreasuryRecurringPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ description: '', bank_account_id: '', amount: 0, type: 'outgoing' as const, frequency: 'monthly' as const, next_date: '', end_date: '', active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getTreasuryRecurring() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getTreasuryRecurring() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createTreasuryRecurring(form as any); toast('success', tCommon('common.success'), t('recurring.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -201,7 +201,7 @@ export function ConsolidatedTreasuryPage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getConsolidatedTreasury() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getConsolidatedTreasury() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) } }, [])
   useEffect(() => { loadData() }, [loadData])
 
   return (

@@ -4,7 +4,7 @@ import { Popover } from './Popover'
 import { Avatar } from './Avatar'
 import { AlertTriangle, UserPlus, Mail } from 'lucide-react'
 import { useWorkloadAlert } from '@/hooks/useWorkloadAlert'
-import { getEmployees } from '@/lib/queries'
+import { getEmployees } from '@/lib/queries/payroll'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickEmployeeAccess } from '@/components/cross-module/QuickEmployeeAccess'
 import { QuickUserAccess } from '@/components/cross-module/QuickUserAccess'
@@ -30,13 +30,13 @@ export function AssigneeSelect({ value, onCommit, disabled }: AssigneeSelectProp
   const [showQuickInvite, setShowQuickInvite] = useState(false)
 
   const loadEmployees = () => {
-    getEmployees()
+    void getEmployees()
       .then(setEmployees)
       .catch(() => {})
   }
 
   useEffect(() => {
-    loadEmployees()
+    void loadEmployees()
   }, [])
 
   const selectedEmployee = useMemo(

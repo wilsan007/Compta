@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
-import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries'
+import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries/partners'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
@@ -21,15 +21,15 @@ export function CustomersPage() {
   const [contactsTarget, setContactsTarget] = useState<Customer | null>(null)
 
   useEffect(() => {
-    loadCustomers()
+    loadCustomers().catch(err => console.error('loadCustomers:', err))
   }, [])
 
   async function loadCustomers() {
     try {
       const data = await getCustomers()
       setCustomers(data || [])
-    } catch (err) {
-      console.error('Error loading customers:', err)
+    } catch (err: any) { console.error('Error loading customers:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

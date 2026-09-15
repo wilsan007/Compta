@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { QuickAccessModal } from './QuickAccessModal'
 import { Button, EmptyState, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getProjects } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getProjects } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from './useModuleAwareAccess'
 import { FolderKanban, ExternalLink, Search } from 'lucide-react'
 import type { Project } from '@/types'
@@ -22,6 +23,7 @@ interface QuickProjectAccessProps {
 export function QuickProjectAccess({ onClose, onSaved, forceInline }: QuickProjectAccessProps) {
   const { t } = useTranslation('crossModule')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { getAccessStrategy } = useModuleAwareAccess()
 
   const strategy = forceInline ? 'inline' : getAccessStrategy('projectManagement')
@@ -33,15 +35,17 @@ export function QuickProjectAccess({ onClose, onSaved, forceInline }: QuickProje
     setLoading(true)
     try {
       setProjects(await getProjects())
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       /* ignore */
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => {
-    if (strategy === 'inline') loadData()
+    if (strategy === 'inline') loadData().catch(err => console.error('loadData:', err))
   }, [strategy, loadData])
 
   const filtered = projects.filter((p) =>

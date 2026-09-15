@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { getTerritories, createTerritory, deleteTerritory, getSalesRepresentatives } from '@/lib/queries'
+import { getTerritories, createTerritory, deleteTerritory } from '@/lib/queries/crmAdvanced'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { Plus, X, MapPin, Trash2 } from 'lucide-react'
 import type { CrmTerritory, SalesRepresentative } from '@/types'
@@ -26,7 +27,7 @@ export function TerritoriesPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { load() }, [load])
 

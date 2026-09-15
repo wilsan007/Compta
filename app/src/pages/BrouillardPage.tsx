@@ -2,10 +2,11 @@ import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries'
+import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries/accounting'
 import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight } from 'lucide-react'
 import type { JournalEntry } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BrouillardPage() {
   const { t } = useTranslation('accounting')
@@ -23,8 +24,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       const data = await getBrouillard()
       setEntries(data || [])
-    } catch (err) {
-      console.error('Error loading brouillard:', err)
+    } catch (err: any) { console.error('Error loading brouillard:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -49,7 +50,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('brouillard.deleteConfirm'))) return
+    if (!confirmSync(t('brouillard.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await load()

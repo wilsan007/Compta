@@ -2,12 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Breadcrumb, Input, Select } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import {
-  getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts,
-  getThirdPartyAccounts, getEntryTemplates, getTaxRates,
-  getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateVAT,
-  calculateEcheance,
-} from '@/lib/queries'
+import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts, getThirdPartyAccounts, getEntryTemplates, getTaxRates, getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateVAT, calculateEcheance } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, CheckCircle2, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
@@ -91,8 +86,7 @@ export function SaisieParPiecePage() {
       if (fys && fys.length > 0) {
         setSelectedYear(fys[0].id)
       }
-    } catch (err) {
-      console.error('Error loading ref data:', err)
+    } catch (err: any) { console.error('Error loading ref data:', err)
       toast('error', t('saisieParPiece.title'), t('saisieParPiece.loadError'))
     } finally {
       setLoading(false)
@@ -280,8 +274,7 @@ export function SaisieParPiecePage() {
       setDescription('')
       setInvoiceRef('')
       if (selectedJournal) getNextPieceNumber(selectedJournal).then(setPieceNumber)
-    } catch (err) {
-      console.error('Error saving entry:', err)
+    } catch (err: any) { console.error('Error saving entry:', err)
       toast('error', t('saisieParPiece.title'), t('saisieParPiece.saveError'))
     } finally {
       setSaving(false)
@@ -342,7 +335,7 @@ export function SaisieParPiecePage() {
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
-                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch {} finally { setRateLoading(false) }
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setRateLoading(false) }
               }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
                 <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
               </button>

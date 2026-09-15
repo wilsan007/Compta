@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getBankRules, createBankRule, updateBankRule, deleteBankRule } from '@/lib/queries'
+import { getBankRules, createBankRule, updateBankRule, deleteBankRule } from '@/lib/queries/banking'
 import { Plus, Trash2, X, Power, PowerOff } from 'lucide-react'
 import type { BankRule } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
+import { confirmSync } from '@/lib/confirm'
 
 export function BankRulesPage() {
   const { toast } = useToast()
@@ -19,12 +20,12 @@ const [rules, setRules] = useState<BankRule[]>([])
     setLoading(true)
     try {
       setRules(await getBankRules())
-    } catch (err) {
-      console.error('Failed to load rules:', err)
+    } catch (err: any) { console.error('Failed to load rules:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -38,7 +39,7 @@ const [rules, setRules] = useState<BankRule[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteBankRule(id)
       await loadData()

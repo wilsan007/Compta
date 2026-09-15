@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Input, Select, Badge, Card, Table, TableRow, TableCell, EmptyState, SkeletonTable } from '@/components/ui'
 import { X, Plus, Trash2, Edit2, Users, Building } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import {
-  getPartnerContacts, createPartnerContact, updatePartnerContact, deletePartnerContact,
-  getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount,
-} from '@/lib/queries'
+import { getPartnerContacts, createPartnerContact, updatePartnerContact, deletePartnerContact, getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount } from '@/lib/queries/partners'
 import type { PartnerContact, PartnerBankAccount } from '@/types'
 
 interface Props {
@@ -37,8 +34,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       ])
       setContacts(c || [])
       setBankAccounts(b || [])
-    } catch { } finally { setLoading(false) }
-  }, [partnerType, partnerId])
+    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+  }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

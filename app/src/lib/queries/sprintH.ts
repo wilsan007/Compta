@@ -427,7 +427,7 @@ export async function getAbsenceStats(groupBy: 'department' | 'type' | 'month') 
   return groups
 }
 
-export async function getTurnoverRate(period: string) {
+export async function getTurnoverRate(_period: string) {
   const tid = await getTenantId()
   let q = supabase.from('employees').select('*')
   if (tid) q = q.eq('tenant_id', tid)
@@ -439,7 +439,7 @@ export async function getTurnoverRate(period: string) {
   return { rate: total > 0 ? (inactive / total) * 100 : 0, active, inactive }
 }
 
-export async function getCostByCenter(period: string) {
+export async function getCostByCenter(_period: string) {
   const tid = await getTenantId()
   let q = supabase.from('employees').select('*').eq('status', 'active')
   if (tid) q = q.eq('tenant_id', tid)

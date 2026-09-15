@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Play, Square, Clock, Plus, Trash2, DollarSign } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { useTaskContext } from '@/contexts/TaskContext'
 import {
   getTimeEntries,
@@ -18,6 +19,8 @@ interface TaskTimerProps {
 
 export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { refetch } = useTaskContext()
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [running, setRunning] = useState(false)
@@ -35,15 +38,17 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
         setRunning(true)
         setElapsed(Math.floor((Date.now() - new Date(active.start_time).getTime()) / 1000))
       }
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [taskId])
+  }, [taskId, tCommon, toast])
 
   useEffect(() => {
-    loadEntries()
+    loadEntries().catch(err => console.error('loadEntries:', err))
   }, [loadEntries])
 
   useEffect(() => {
@@ -65,10 +70,12 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
       await startTimeTimer({ task_id: taskId })
       setRunning(true)
       setElapsed(0)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [taskId])
+  }, [taskId, tCommon, toast])
 
   const handleStop = useCallback(async () => {
     const active = entries.find((e) => !e.end_time)
@@ -79,10 +86,12 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
       if (timerRef.current) clearInterval(timerRef.current)
       await loadEntries()
       await refetch()
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
-  }, [entries, loadEntries, refetch])
+  }, [entries, loadEntries, refetch, tCommon, toast])
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -90,11 +99,13 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
         await deleteTimeEntry(id)
         await loadEntries()
         await refetch()
-      } catch {
+      } catch (err: any) {
+        console.error("catch:", err)
         // ignore
+        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
       }
     },
-    [loadEntries, refetch]
+    [loadEntries, refetch, tCommon, toast]
   )
 
   const formatDuration = (seconds: number) => {
@@ -202,6 +213,8 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
 
 function ManualEntryForm({ taskId, onSaved }: { taskId: string; onSaved: () => void }) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [hours, setHours] = useState('1')
   const [description, setDescription] = useState('')
   const [billable, setBillable] = useState(false)
@@ -223,8 +236,10 @@ function ManualEntryForm({ taskId, onSaved }: { taskId: string; onSaved: () => v
         is_billable: billable,
       })
       onSaved()
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSaving(false)
     }

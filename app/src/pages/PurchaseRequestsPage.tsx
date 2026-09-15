@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
-import { getPurchaseRequests, createPurchaseRequest, updatePurchaseRequestStatus, convertPurchaseRequestToOrder, deletePurchaseRequest } from '@/lib/queries'
+import { getPurchaseRequests, createPurchaseRequest, updatePurchaseRequestStatus, convertPurchaseRequestToOrder, deletePurchaseRequest } from '@/lib/queries/purchaseAdvanced'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ShoppingCart, Plus, Search, Trash2, X, Check, Ban, ArrowRightCircle } from 'lucide-react'
@@ -36,7 +36,7 @@ export function PurchaseRequestsPage() {
     try {
       await updatePurchaseRequestStatus(id, status, 'currentUser')
       toast('success', t('purchaseRequests.title'), t('purchaseRequests.statusChanged'))
-      loadRequests()
+      loadRequests().catch(err => console.error('loadRequests:', err))
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message)
     }
@@ -46,7 +46,7 @@ export function PurchaseRequestsPage() {
     try {
       await convertPurchaseRequestToOrder(id, '')
       toast('success', t('purchaseRequests.title'), t('purchaseRequests.converted'))
-      loadRequests()
+      loadRequests().catch(err => console.error('loadRequests:', err))
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message)
     }

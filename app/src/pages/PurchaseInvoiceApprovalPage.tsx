@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getPurchaseInvoices, updatePurchaseInvoiceApproval } from '@/lib/queries'
+import { getPurchaseInvoices, updatePurchaseInvoiceApproval } from '@/lib/queries/sales'
 import { useLocale } from '@/hooks/useLocale'
 import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 import type { PurchaseInvoice } from '@/types'
@@ -22,12 +22,12 @@ export function PurchaseInvoiceApprovalPage() {
       const data = await getPurchaseInvoices()
       const filtered = filter === 'all' ? data : data.filter((inv: any) => (inv.approval_status || 'pending') === filter)
       setInvoices(filtered as PurchaseInvoice[])
-    } catch (err) {
-      console.error('Failed to load purchase invoices:', err)
+    } catch (err: any) { console.error('Failed to load purchase invoices:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [filter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

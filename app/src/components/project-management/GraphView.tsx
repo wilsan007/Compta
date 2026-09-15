@@ -33,7 +33,7 @@ interface GraphViewProps {
   projectId?: string
 }
 
-export function GraphView({ projectId }: GraphViewProps) {
+export function GraphView(_props: GraphViewProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
   const { projects } = useProjectContext()

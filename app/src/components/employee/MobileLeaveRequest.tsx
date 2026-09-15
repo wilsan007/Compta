@@ -23,7 +23,8 @@ export function MobileLeaveRequest() {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
       if (!userEmail) throw new Error('Not authenticated')
-      const { data: emp } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error: empError } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      if (empError) throw empError
       if (!emp?.id) throw new Error('Employee not found')
       const tid = await getTenantId()
       const { error } = await supabase.from('leave_requests').insert({

@@ -542,5 +542,22 @@
     "profitability": "Profitability",
     "noActiveProjects": "No active projects",
     "noQuotes": "No quotes"
+  },
+  "nf525": {
+    "pageDescription": "NF525 event log and chain integrity verification",
+    "integrityCheck": "Integrity check",
+    "integrityCheckDescription": "Verifies that the NF525 hash chain has not been tampered with.",
+    "verifyIntegrity": "Verify integrity",
+    "integrityVerified": "Integrity verified",
+    "integrityFailed": "Integrity compromised",
+    "chainValid": "The NF525 chain is intact. No tampering detected.",
+    "chainCorrupted": "The NF525 chain has been tampered with. Investigation required.",
+    "allEvents": "All events",
+    "events": "events",
+    "noEvents": "No NF525 events",
+    "noEventsDescription": "NF525 logging events will appear here.",
+    "eventType": "Type",
+    "entity": "Entity",
+    "date": "Date"
   }
 }

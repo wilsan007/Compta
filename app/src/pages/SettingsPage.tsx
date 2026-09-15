@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getCompanySettings, getChartAccounts, getTenantUsers, getLegislationPacks, updateCompanySettings, type TenantUser } from '@/lib/queries'
+import { getCompanySettings, getChartAccounts, getLegislationPacks, updateCompanySettings } from '@/lib/queries/accounting'
+import { getTenantUsers } from '@/lib/queries/misc'
+import { type TenantUser } from '@/lib/queries'
 import { useLegislation } from '@/lib/legislation'
 import { Building2, Users, BookOpen, Link2, Save, Scale, LayoutGrid, CheckCircle2, Lock } from 'lucide-react'
 import type { CompanySettings, ChartAccount, LegislationPack } from '@/types'
@@ -25,6 +28,7 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const { t } = useTranslation('settings')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const { user } = useAuth()
   const [tab, setTab] = useState<'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'>(routeToTab[location.pathname] || 'company')
@@ -35,7 +39,7 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   useEffect(() => {
@@ -55,8 +59,7 @@ export function SettingsPage() {
       setAccounts(a || [])
       setUsers(u || [])
       setPacks(p || [])
-    } catch (err) {
-      console.error('Error loading settings:', err)
+    } catch (err: any) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -245,6 +248,8 @@ export function SettingsPage() {
 
 function LegislationTab({ company, packs, onSaved }: { company: CompanySettings | null; packs: LegislationPack[]; onSaved: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { pack, vatRates, loading, refresh } = useLegislation()
   const [selectedPack, setSelectedPack] = useState(company?.legislation_pack_code || pack?.code || '')
   const [saving, setSaving] = useState(false)
@@ -265,6 +270,7 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
       onSaved()
     } catch (err: any) {
       console.error('Failed to update legislation pack:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSaving(false)
     }
@@ -356,6 +362,7 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
 
 function ModulesTab() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { t: tAuth } = useTranslation('auth')
   const { user } = useAuth()
   const { modules: enabledModules, saveModules, refresh } = useTenantModules()
@@ -487,6 +494,8 @@ function ModulesTab() {
 
 function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onSaved: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
@@ -548,8 +557,7 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       } as any)
       setSaved(true)
       onSaved()
-    } catch (err) {
-      console.error('Failed to save company settings:', err)
+    } catch (err: any) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setSaving(false)
     }

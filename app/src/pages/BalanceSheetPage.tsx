@@ -1,26 +1,56 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell } from '@/components/ui'
-import { getBalanceSheet } from '@/lib/queries'
+import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Button, Select } from '@/components/ui'
+import { getBalanceSheet, getFiscalYears } from '@/lib/queries/accounting'
+import { generateBalanceSheet } from '@/lib/queries/businessFunctions'
 import { formatCurrency } from '@/lib/utils'
+import { useToast } from '@/lib/toast'
+import type { FiscalYear } from '@/types'
 
 export function BalanceSheetPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<{ assets: any[]; liabilities: any[]; equity: any[] } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [years, setYears] = useState<FiscalYear[]>([])
+  const [selectedYear, setSelectedYear] = useState('')
+  const [generating, setGenerating] = useState(false)
+
+  useEffect(() => {
+    getFiscalYears().then((fy) => {
+      setYears(fy || [])
+      const open = (fy || []).find((y) => y.status === 'open')
+      if (open) setSelectedYear(open.id)
+    }).catch(() => {})
+  }, [])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       setData(await getBalanceSheet())
-    } catch (err) {
-      console.error('Failed to load balance sheet:', err)
+    } catch (err: any) { console.error('Failed to load balance sheet:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
+
+  async function handleGenerate() {
+    if (!selectedYear) return
+    setGenerating(true)
+    try {
+      await generateBalanceSheet(selectedYear)
+      toast('success', tCommon('common.success'), t('balanceSheet.generated'))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const totalAssets = (data?.assets || []).reduce((s, a) => s + (a.debit - a.credit), 0)
   const totalLiabilities = (data?.liabilities || []).reduce((s, l) => s + (l.credit - l.debit), 0)
@@ -29,7 +59,18 @@ export function BalanceSheetPage() {
   return (
     <div>
       <Breadcrumb items={[{ label: t('balanceSheet.breadcrumb') }, { label: t('balanceSheet.title') }]} />
-      <PageHeader title={t('balanceSheet.title')} subtitle={t('balanceSheet.subtitle')} />
+      <PageHeader title={t('balanceSheet.title')} subtitle={t('balanceSheet.subtitle')} action={
+        <div className="flex items-center gap-2">
+          <Select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            options={years.map((y) => ({ value: y.id, label: y.code }))}
+          />
+          <Button onClick={handleGenerate} disabled={generating || !selectedYear}>
+            {generating ? tCommon('common.loading') : t('balanceSheet.generate')}
+          </Button>
+        </div>
+      } />
 
       {loading ? (
         <SkeletonTable rows={6} cols={3} />

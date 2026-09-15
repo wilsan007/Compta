@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Badge, Select } from '@/components/ui'
-import { getInvoices, getCustomers, getCompanySettings } from '@/lib/queries'
+import { getInvoices } from '@/lib/queries/sales'
+import { getCustomers } from '@/lib/queries/partners'
+import { getCompanySettings } from '@/lib/queries/accounting'
 import { generateFacturX, generateUBL, downloadXML } from '@/lib/facturX'
 import { useToast } from '@/lib/toast'
 import { FileCode, Download, FileText, CheckCircle2 } from 'lucide-react'
@@ -10,6 +12,7 @@ import type { Invoice, Customer, CompanySettings } from '@/types'
 
 export function EInvoicePage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -21,7 +24,7 @@ export function EInvoicePage() {
   const [preview, setPreview] = useState('')
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -34,8 +37,9 @@ export function EInvoicePage() {
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading data:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }

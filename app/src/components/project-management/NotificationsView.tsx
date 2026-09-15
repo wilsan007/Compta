@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Bell, CheckCheck, Circle } from 'lucide-react'
+import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '@/lib/queries/projectManagementSprint1'
 import type { ProjectNotification } from '@/types/projectManagement'
 
 export function NotificationsView() {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<ProjectNotification[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,23 +21,27 @@ export function NotificationsView() {
     try {
       const data = await getNotifications(user.id, showUnread)
       setNotifications(data)
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [showUnread, user?.id])
+  }, [showUnread, user?.id, toast, tCommon])
 
   useEffect(() => {
-    loadNotifications()
+    loadNotifications().catch(err => console.error('loadNotifications:', err))
   }, [loadNotifications])
 
   const handleMarkRead = async (id: string) => {
     try {
       await markNotificationRead(id)
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)))
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 
@@ -43,8 +50,10 @@ export function NotificationsView() {
     try {
       await markAllNotificationsRead(user.id)
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-    } catch {
+    } catch (err: any) {
+      console.error("catch:", err)
       // ignore
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     }
   }
 

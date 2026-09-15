@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Select, Badge, EmptyState } from '@/components/ui'
-import { getMarginAnalysis } from '@/lib/queries'
+import { getMarginAnalysis } from '@/lib/queries/pilotage'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
@@ -27,7 +27,7 @@ export function MarginAnalysisPage() {
     } finally {
       setLoading(false)
     }
-  }, [period, dimension])
+  }, [period, dimension, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

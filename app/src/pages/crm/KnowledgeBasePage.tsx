@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { getKbArticles, createKbArticle, updateKbArticle, deleteKbArticle, incrementKbViews, rateKbArticle } from '@/lib/queries'
+import { getKbArticles, createKbArticle, updateKbArticle, deleteKbArticle, incrementKbViews, rateKbArticle } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, X, BookOpen, Trash2, ThumbsUp, ThumbsDown, Search, Pencil } from 'lucide-react'
 import type { KnowledgeBaseArticle } from '@/types'
@@ -31,7 +31,7 @@ export function KnowledgeBasePage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { load() }, [load])
 

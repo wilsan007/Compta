@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
-import { getMyObjectives, getInterviewCampaigns } from '@/lib/queries'
+import { getMyObjectives, getInterviewCampaigns } from '@/lib/queries/sprintDE'
 import { formatDate } from '@/lib/utils'
+import { useToast } from '@/lib/toast'
 import { Target, Users } from 'lucide-react'
 
 export function EmployeeInterviewsPage() {
   const { t } = useTranslation('hr')
-  const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [objectives, setObjectives] = useState<any[]>([])
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,8 +23,9 @@ export function EmployeeInterviewsPage() {
       setCampaigns(camps || [])
     } catch (err: any) {
       console.error(err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

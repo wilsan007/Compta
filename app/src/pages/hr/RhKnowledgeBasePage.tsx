@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { getRhKnowledgeBase, createRhKnowledgeBaseArticle, updateRhKnowledgeBaseArticle, deleteRhKnowledgeBaseArticle, incrementArticleViews } from '@/lib/queries'
+import { getRhKnowledgeBase, createRhKnowledgeBaseArticle, updateRhKnowledgeBaseArticle, deleteRhKnowledgeBaseArticle, incrementArticleViews } from '@/lib/queries/dematRh'
 import type { RhKnowledgeBaseArticle } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Plus, Edit, Trash2, Eye } from 'lucide-react'
@@ -65,7 +65,7 @@ export function RhKnowledgeBasePage() {
       setShowForm(false)
       setEditId(null)
       setFormTitle(''); setFormContent(''); setFormTags('')
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -84,7 +84,7 @@ export function RhKnowledgeBasePage() {
   const handleView = async (article: RhKnowledgeBaseArticle) => {
     try {
       await incrementArticleViews(article.id)
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }
@@ -94,7 +94,7 @@ export function RhKnowledgeBasePage() {
     try {
       await deleteRhKnowledgeBaseArticle(id)
       toast('success', tCommon('common.deleted'))
-      loadData()
+      loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
     }

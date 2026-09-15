@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getFiscalYears, closeFiscalYear } from '@/lib/queries'
+import { getFiscalYears, closeFiscalYear } from '@/lib/queries/accounting'
 import { formatCurrency } from '@/lib/utils'
 import { Lock, AlertTriangle } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function FiscalYearClosurePage() {
   const { t } = useTranslation('accounting')
@@ -26,8 +27,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
       setYears(data || [])
       const openYears = (data || []).filter((y) => y.status === 'open')
       if (openYears.length > 0) setSelectedYear(openYears[0].id)
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err: any) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -42,12 +43,15 @@ const [years, setYears] = useState<FiscalYear[]>([])
       toast('warning', tCommon('common.warning'), t('fiscalYearClosure.targetMustDiffer'))
       return
     }
-    if (!window.confirm(t('fiscalYearClosure.confirmClose'))) return
+    if (!confirmSync(t('fiscalYearClosure.confirmClose'))) return
     setClosing(true)
     try {
       const result = await closeFiscalYear(selectedYear, targetYear)
       setClosureResult(result)
-      toast('success', t('fiscalYearClosure.closed'), t('fiscalYearClosure.openingLinesGenerated', { count: result?.openingLinesCount || 0 }))
+      toast('success', t('fiscalYearClosure.closed'), t('fiscalYearClosure.resultComputed', {
+        defaultValue: 'Résultat de l\'exercice : {{amount}}',
+        amount: formatCurrency(Number(result?.result) || 0),
+      }))
       await load()
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
@@ -112,52 +116,34 @@ const [years, setYears] = useState<FiscalYear[]>([])
               <div className="p-4 space-y-4">
                 <h3 className="text-sm font-semibold">{t('fiscalYearClosure.closeYear', { code: selectedYearObj.code })}</h3>
 
+                {/* ACC-05 : résultat de la clôture atomique (RPC close_fiscal_year) */}
                 {closureResult && (
                   <div className="p-4 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 space-y-3">
                     <h4 className="text-sm font-semibold text-[var(--color-success)]">{t('fiscalYearClosure.resultTitle')}</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.openingLines')}</p>
-                        <p className="font-mono font-bold">{closureResult.openingLinesCount || 0}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.closingLines')}</p>
-                        <p className="font-mono font-bold">{closureResult.closingLinesCount || 0}</p>
-                      </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.resultAmount')}</p>
-                        <p className={`font-mono font-bold ${(closureResult.resultAmount || 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                          {formatCurrency(closureResult.resultAmount || 0)}
+                        <p className={`font-mono font-bold ${(closureResult.result || 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                          {formatCurrency(Number(closureResult.result) || 0)}
                         </p>
                       </div>
-                    </div>
-                    {closureResult.openingEntries && closureResult.openingEntries.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-[var(--color-text-secondary)] mb-2">{t('fiscalYearClosure.openingEntriesPreview')}</p>
-                        <div className="overflow-x-auto">
-                          <table className="app-table min-w-[500px]">
-                            <thead>
-                              <tr className="border-b border-[var(--color-border)]">
-                                <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('chartAccounts.code')}</th>
-                                <th className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{tCommon('common.description')}</th>
-                                <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('entries.debit')}</th>
-                                <th className="text-right text-xs font-semibold text-[var(--color-text-secondary)] uppercase px-2 py-1">{t('entries.credit')}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--color-border)]">
-                              {closureResult.openingEntries.map((e: any, i: number) => (
-                                <tr key={i}>
-                                  <td className="font-mono text-xs px-2 py-1">{e.account_code}</td>
-                                  <td className="text-xs px-2 py-1">{e.description || '—'}</td>
-                                  <td className="font-mono text-xs text-right px-2 py-1">{Number(e.debit) > 0 ? formatCurrency(Number(e.debit)) : ''}</td>
-                                  <td className="font-mono text-xs text-right px-2 py-1">{Number(e.credit) > 0 ? formatCurrency(Number(e.credit)) : ''}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.resultAccount', { defaultValue: 'Compte de résultat' })}</p>
+                        <p className="font-mono font-bold">{closureResult.result_account || '—'}</p>
                       </div>
-                    )}
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.closeEntry', { defaultValue: 'Écriture de clôture' })}</p>
+                        <p className="font-mono text-xs">{closureResult.close_entry_id ? String(closureResult.close_entry_id).slice(0, 8) : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.carryForwardEntry', { defaultValue: 'Écriture d\'à-nouveaux' })}</p>
+                        <p className="font-mono text-xs">{closureResult.carry_forward_entry_id ? String(closureResult.carry_forward_entry_id).slice(0, 8) : '—'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('fiscalYearClosure.integrityHash', { defaultValue: 'Empreinte d\'intégrité' })}</p>
+                        <p className="font-mono text-xs break-all">{closureResult.hash || '—'}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30">

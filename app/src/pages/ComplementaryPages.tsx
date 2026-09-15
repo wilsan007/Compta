@@ -4,9 +4,10 @@ import { Plus, Trash2, Workflow as WorkflowIcon, Grid3x3, List, Clock, Check, X 
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries'
+import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries/stock'
 import { formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function WorkflowsPage() {
   const { toast } = useToast()
@@ -20,14 +21,14 @@ export function WorkflowsPage() {
 
   const loadData = useCallback(async () => {
     try { setWorkflows(await getWorkflows() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteWorkflow(id); await loadData() }
     catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
   }
@@ -158,9 +159,9 @@ export function EquivalencesPage() {
       const [eqs, prods] = await Promise.all([getProductEquivalences(), getProducts()])
       setEquivalences(eqs || [])
       setProducts(prods || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -244,9 +245,9 @@ export function OFDocumentAccessPage() {
 
   const loadData = useCallback(async () => {
     try { setAccessList(await getOFDocumentAccess() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

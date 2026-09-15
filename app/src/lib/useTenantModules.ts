@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTenantEnabledModules, updateTenantModules } from '@/lib/queries'
+import { getTenantEnabledModules, updateTenantModules } from '@/lib/queries/misc'
 
 const ALL_MODULES = [
   'home',
@@ -25,7 +25,8 @@ function readSessionCache(): string[] | null {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
     }
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // ignore
   }
   return null
@@ -34,7 +35,8 @@ function readSessionCache(): string[] | null {
 function writeSessionCache(modules: string[]) {
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(modules))
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // ignore
   }
 }
@@ -53,7 +55,10 @@ function broadcastModules(modules: string[]) {
 }
 
 export function useTenantModules() {
-  const [modules, setModules] = useState<string[]>(cachedModules || DEFAULT_MODULES)
+  // Fail closed: default to NO modules until the confirmed list is loaded.
+  // Returning ALL_MODULES during loading/error would let users bypass module
+  // access controls (ModuleGuard / useModuleAccess decide in the browser).
+  const [modules, setModules] = useState<string[]>(cachedModules || [])
   const [loading, setLoading] = useState(!cachedModules)
   let lastResetCount = resetCounter
 
@@ -69,9 +74,11 @@ export function useTenantModules() {
       const result = await cachePromise
       broadcastModules(result)
       return result
-    } catch {
-      broadcastModules(DEFAULT_MODULES)
-      return DEFAULT_MODULES
+    } catch (err) {
+      // Fail closed: no module access on error.
+      console.error('useTenantModules cache:', err)
+      broadcastModules([])
+      return []
     } finally {
       cachePromise = null
       setLoading(false)
@@ -129,7 +136,8 @@ export function invalidateModuleCache() {
   cachePromise = null
   try {
     sessionStorage.removeItem(STORAGE_KEY)
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // ignore
   }
 }
@@ -140,10 +148,12 @@ export function resetModuleCache() {
   resetCounter++
   try {
     sessionStorage.removeItem(STORAGE_KEY)
-  } catch {
+  } catch (err) {
+    console.error("catch:", err)
     // ignore
   }
-  subscribers.forEach((fn) => fn(DEFAULT_MODULES, resetCounter))
+  // Fail closed on reset: subscribers will re-fetch and confirm the real list.
+  subscribers.forEach((fn) => fn([], resetCounter))
 }
 
 export { ALL_MODULES, DEFAULT_MODULES }

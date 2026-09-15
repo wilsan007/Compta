@@ -3,16 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, ChevronDown, ChevronRight, Route, ArrowUpDown, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getRoutings, createRouting, deleteRouting,
-  getRoutingOperations, createRoutingOperation, deleteRoutingOperation, renumberAllOperations,
-  getProducts, getWorkCenters, getMachines, getToolings, getSuppliers,
-} from '@/lib/queries'
+import { getRoutings, createRouting, deleteRouting, getRoutingOperations, createRoutingOperation, deleteRoutingOperation, renumberAllOperations, getProducts, getWorkCenters, getMachines, getToolings } from '@/lib/queries/stock'
+import { getSuppliers } from '@/lib/queries/partners'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Product, WorkCenter, Machine, Tooling, Supplier } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function RoutingsPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [routings, setRoutings] = useState<any[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -40,9 +39,9 @@ export function RoutingsPage() {
       setMachines(macs || [])
       setToolings(tls || [])
       setSuppliers(sups || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -55,14 +54,14 @@ export function RoutingsPage() {
         try {
           const ops = await getRoutingOperations(id)
           setOperations((prev) => ({ ...prev, [id]: ops }))
-        } catch (err) { console.error('Error:', err) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('routings.confirmDelete'))) return
+    if (!confirmSync(t('routings.confirmDelete'))) return
     try { await deleteRouting(id); await loadData() }
     catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }

@@ -1,21 +1,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
-import { getStockQuantities } from '@/lib/queries'
+import { getStockQuantities } from '@/lib/queries/stock'
 import { AlertTriangle, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 
 export function ReorderPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [stock, setStock] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     try { setStock(await getStockQuantities()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

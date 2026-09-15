@@ -5,30 +5,8 @@ test.describe.configure({ mode: 'serial' })
 
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
 const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
-const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
 
-// Cache the auth session across tests
-let cachedSession: { access_token: string; refresh_token: string; expires_in: number } | null = null
-
-async function getAuthSession(apiContext: APIRequestContext) {
-  if (cachedSession) return cachedSession
-  const response = await apiContext.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Content-Type': 'application/json',
-    },
-    data: { email: TEST_EMAIL, password: TEST_PASSWORD },
-  })
-  const data = await response.json()
-  if (data.access_token) {
-    cachedSession = data
-    return data
-  }
-  throw new Error(`Auth failed: ${data.error_description || data.msg || 'Unknown'}`)
-}
-
-async function login(page: Page, request: APIRequestContext) {
+async function login(page: Page, _request: APIRequestContext) {
   // Try form-based login
   await page.goto('/login')
   await page.waitForTimeout(2000)
@@ -51,7 +29,7 @@ async function login(page: Page, request: APIRequestContext) {
 }
 
 // Helper: wait for page content to render (SPA might show loader first)
-async function waitForContent(page: Page, minLen = 50) {
+async function waitForContent(page: Page, _minLen = 50) {
   await page.waitForTimeout(2500)
   // Wait for #root to have content
   await page.locator('#root').waitFor({ state: 'attached', timeout: 10000 })

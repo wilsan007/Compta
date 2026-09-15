@@ -1,6 +1,6 @@
 // Sprint 1 queries: Time Tracking, Watchers, Activity Log, Templates, Notifications
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from '@/lib/queries'
+import { getTenantId, ti, tud } from '@/lib/queries/core'
 import { shouldSendEmail } from '@/types/projectManagement'
 import type {
   TimeEntry,
@@ -50,6 +50,7 @@ export async function startTimeTimer(input: TimeEntryCreateInput): Promise<TimeE
       start_time: new Date().toISOString(),
       end_time: null,
       duration_seconds: 0,
+      tenant_id: tid,
     },
     'project_time_entries',
     tid
@@ -62,11 +63,12 @@ export async function startTimeTimer(input: TimeEntryCreateInput): Promise<TimeE
 export async function stopTimeTimer(entryId: string): Promise<TimeEntry> {
   const tid = await getTenantId()
   const now = new Date()
-  const { data: entry } = await supabase
+  const { data: entry, error: entryError } = await supabase
     .from('project_time_entries')
     .select('start_time')
     .eq('id', entryId)
     .single()
+  if (entryError) throw entryError
   if (!entry) throw new Error('Time entry not found')
   const duration = Math.floor((now.getTime() - new Date(entry.start_time).getTime()) / 1000)
   const { data, error } = await tud(
@@ -77,6 +79,7 @@ export async function stopTimeTimer(entryId: string): Promise<TimeEntry> {
     tid
   )
     .eq('id', entryId)
+    .eq('tenant_id', tid)
     .select()
     .single()
   if (error) throw error
@@ -100,6 +103,7 @@ export async function addManualTimeEntry(input: TimeEntryCreateInput): Promise<T
       start_time: start.toISOString(),
       end_time: end.toISOString(),
       duration_seconds: duration,
+      tenant_id: tid,
     },
     'project_time_entries',
     tid
@@ -121,6 +125,7 @@ export async function updateTimeEntry(id: string, updates: Partial<TimeEntryCrea
     tid
   )
     .eq('id', id)
+    .eq('tenant_id', tid)
     .select()
     .single()
   if (error) throw error
@@ -129,12 +134,13 @@ export async function updateTimeEntry(id: string, updates: Partial<TimeEntryCrea
 
 export async function deleteTimeEntry(id: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: entry } = await supabase.from('project_time_entries').select('task_id').eq('id', id).single()
+  const { data: entry, error: entryError } = await supabase.from('project_time_entries').select('task_id').eq('id', id).single()
+  if (entryError) throw entryError
   const { error } = await tud(
     supabase.from('project_time_entries').delete(),
     'project_time_entries',
     tid
-  ).eq('id', id)
+  ).eq('id', id).eq('tenant_id', tid)
   if (error) throw error
   if (entry?.task_id) {
     await recalculateTaskTimeSpent(entry.task_id)
@@ -146,7 +152,7 @@ async function recalculateTaskTimeSpent(taskId: string): Promise<void> {
   let q = supabase.from('project_time_entries').select('duration_seconds').eq('task_id', taskId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
-  if (error) return
+  if (error) { console.error('recalculateTaskTimeSpent:', error); return }
   const totalSeconds = (data || []).reduce((sum: number, e: any) => sum + (e.duration_seconds || 0), 0)
   const totalHours = Math.round((totalSeconds / 3600) * 10) / 10
   await updateTaskEffortSpent(taskId, totalHours)
@@ -158,7 +164,7 @@ async function updateTaskEffortSpent(taskId: string, hours: number): Promise<voi
     supabase.from('project_tasks').update({ effort_spent_h: hours }),
     'project_tasks',
     tid
-  ).eq('id', taskId)
+  ).eq('id', taskId).eq('tenant_id', tid)
 }
 
 // ============ Watchers ============
@@ -187,7 +193,7 @@ export async function getTaskWatchers(taskId: string): Promise<TaskWatcher[]> {
 
 export async function addWatcher(taskId: string, employeeId: string): Promise<void> {
   const tid = await getTenantId()
-  const payload = ti({ task_id: taskId, employee_id: employeeId }, 'project_task_watchers', tid)
+  const payload = ti({ task_id: taskId, employee_id: employeeId, tenant_id: tid }, 'project_task_watchers', tid)
   const { error } = await supabase.from('project_task_watchers').insert(payload)
   if (error) throw error
 }
@@ -237,8 +243,8 @@ export async function getActivityLog(
   const { data, error } = await q
   if (error) throw error
   return (data || []).map((row: any) => ({
-    ...row,
-    task_title: row.task?.title ?? null,
+    ...(row || {}),
+    task_title: row?.task?.title ?? null,
   })) as ActivityLogEntry[]
 }
 
@@ -260,6 +266,7 @@ export async function logActivity(
       description,
       old_value: oldValue,
       new_value: newValue,
+      tenant_id: tid,
     },
     'project_activity_log',
     tid
@@ -281,7 +288,7 @@ export async function getTaskTemplates(): Promise<TaskTemplate[]> {
 
 export async function createTaskTemplate(input: TaskTemplateCreateInput): Promise<TaskTemplate> {
   const tid = await getTenantId()
-  const payload = ti(input, 'project_task_templates', tid)
+  const payload = ti({ ...input, tenant_id: tid }, 'project_task_templates', tid)
   const { data, error } = await supabase
     .from('project_task_templates')
     .insert(payload)
@@ -297,7 +304,7 @@ export async function deleteTaskTemplate(id: string): Promise<void> {
     supabase.from('project_task_templates').delete(),
     'project_task_templates',
     tid
-  ).eq('id', id)
+  ).eq('id', id).eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -335,6 +342,7 @@ export async function applyTaskTemplate(
       recurring_rule_type: 'weekly',
       linked_action_id: null,
       production_order_id: null,
+      tenant_id: tid,
     },
     'project_tasks',
     tid
@@ -390,6 +398,7 @@ export async function applyTaskTemplate(
           recurring_rule_type: 'weekly',
           linked_action_id: null,
           production_order_id: null,
+          tenant_id: tid,
         },
         'project_tasks',
         tid
@@ -423,7 +432,7 @@ export async function markNotificationRead(id: string): Promise<void> {
     supabase.from('project_notifications').update({ is_read: true }),
     'project_notifications',
     tid
-  ).eq('id', id)
+  ).eq('id', id).eq('tenant_id', tid)
   if (error) throw error
 }
 
@@ -459,6 +468,7 @@ export async function createNotification(
       project_id: projectId,
       action_url: actionUrl,
       is_read: false,
+      tenant_id: tid,
     },
     'project_notifications',
     tid
@@ -471,21 +481,23 @@ export async function createNotification(
     if (!shouldSendEmail(type)) return
 
     // Look up employee email
-    const { data: employee } = await supabase
+    const { data: employee, error } = await supabase
       .from('employees')
       .select('email, name')
       .eq('id', recipientId)
       .single()
+    if (error) throw error
     if (!employee?.email) return
 
     // Look up tenant name
     let tenantName = ''
     if (tid) {
-      const { data: tenant } = await supabase
+      const { data: tenant, error } = await supabase
         .from('tenants')
         .select('name')
         .eq('id', tid)
         .single()
+      if (error) throw error
       tenantName = tenant?.name || ''
     }
 

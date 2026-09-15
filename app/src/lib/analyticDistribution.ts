@@ -3,13 +3,14 @@ import { supabase } from './supabase'
 async function getTenantId(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('tenant_users')
     .select('tenant_id')
-    .eq('user_id', session.user.id)
+    .eq('auth_id', session.user.id)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
+  if (error) { console.error('getTenantId:', error); return null }
   return data?.tenant_id ?? null
 }
 
@@ -69,6 +70,7 @@ export async function saveDistributionLines(
     .from('analytic_distribution_lines')
     .delete()
     .eq('journal_line_id', journalLineId)
+    .eq('tenant_id', tid || '')
 
   const amounts = computeAmounts(dist, lineAmount)
   const rows = flattenDistribution(dist).map((f) => ({

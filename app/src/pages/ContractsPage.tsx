@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { getContracts, createContract, updateContract, deleteContract, getEmployees } from '@/lib/queries'
+import { getContracts, createContract, updateContract, deleteContract, getEmployees } from '@/lib/queries/payroll'
 import { FileSignature, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 const contractTypeKeys: Record<string, string> = { cdi: 'cdi', cdd: 'cdd', apprentissage: 'apprentissage', stage: 'stage', interim: 'interim', freelance: 'freelance' }
 
@@ -27,9 +28,9 @@ const [contracts, setContracts] = useState<any[]>([])
       const [cs, emps] = await Promise.all([getContracts(), getEmployees()])
       setContracts(cs || [])
       setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,7 +40,7 @@ const [contracts, setContracts] = useState<any[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteContract(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

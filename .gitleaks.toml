@@ -1,0 +1,32 @@
+# SEC-01: Gitleaks configuration for Onusuite
+# Detects secrets in code and git history
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase service role key"
+regex = '''sb_secret_[a-zA-Z0-9_-]{20,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "supabase-publishable-key"
+description = "Supabase publishable key (not secret, but should not be in git history)"
+regex = '''sb_publishable_[a-zA-Z0-9_-]{20,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "postgres-connection-string"
+description = "PostgreSQL connection string with password"
+regex = '''postgresql://[^:]+:[^@]+@[^:/]+:\d+/'''
+tags = ["database", "postgres"]
+
+[allowlist]
+description = "Allowed paths and patterns"
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+  '''coverage/''',
+  '''.env.example''',
+]

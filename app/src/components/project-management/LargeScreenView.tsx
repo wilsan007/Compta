@@ -23,7 +23,7 @@ interface LargeScreenViewProps {
   projectId?: string
 }
 
-export function LargeScreenView({ projectId }: LargeScreenViewProps) {
+export function LargeScreenView(_props: LargeScreenViewProps) {
   const { t } = useTranslation('taskManagement')
   const { tasks, loading } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()

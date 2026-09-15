@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { supabase, setTenantId, setUserName } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
-import { clearTenantCache } from '@/lib/queries'
-import type { TenantUser } from '@/lib/queries'
+import { clearTenantCache } from '@/lib/queries/core'
+import type { TenantUser } from '@/lib/queries/misc'
 
 interface AuthUser {
   id: string
@@ -84,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (prevTenantId && prevTenantId !== newTenantId) {
             resetModuleCache()
           }
-          setTenantId(newTenantId)
+          // SEC-03: await setTenantId() avant setUser() pour garantir
+          // que le tenant est actif côté serveur avant toute requête.
+          await setTenantId(newTenantId)
           setUserName(matchedTenant.name)
           setUser({
             id: matchedTenant.id,
@@ -104,7 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (validTenantUsers.length === 1) {
           // Only one tenant — auto-select it
           const tu = validTenantUsers[0]
-          setTenantId(tu.tenant_id)
+          // SEC-03: await setTenantId() avant setUser()
+          await setTenantId(tu.tenant_id)
           setUserName(tu.name)
           setUser({
             id: tu.id,
@@ -168,12 +171,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check if there's a pending invitation for this email
       const userEmail = session.user.email
       if (userEmail) {
-        const { data: pendingInvite } = await supabase
+        const { data: pendingInvite, error: inviteError } = await supabase
           .from('tenant_users')
           .select('id, tenant_id, status, tenants:tenant_id (name)')
           .eq('email', userEmail)
           .eq('status', 'pending')
           .maybeSingle()
+        if (inviteError) { console.error('checkPendingInvite:', inviteError); }
 
         if (pendingInvite) {
           // User has a pending invitation — redirect to accept page
@@ -220,9 +224,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadUser().finally(() => setLoading(false))
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, _session) => {
-      setLoading(true)
-      loadUser().finally(() => setLoading(false))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
+      // APP-02: Only set loading=true on events that change the user identity.
+      // TOKEN_REFRESHED and other events must NOT touch loading when a user
+      // is already loaded, otherwise pages unmount and lose form state.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        setLoading(true)
+        loadUser().finally(() => setLoading(false))
+      } else if (!user) {
+        // No user loaded yet — still need to load on initial session
+        setLoading(true)
+        loadUser().finally(() => setLoading(false))
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -239,7 +252,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Trop de tentatives. Réessayez dans 1 minute.' }
     }
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const signInPromise = supabase.auth.signInWithPassword({ email, password })
+      // Prevent unhandled rejection if timeout wins the race
+      signInPromise.catch(() => {})
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Connexion trop longue. Vérifiez votre réseau.')), 15000)
+      )
+      const { error } = await Promise.race([signInPromise, timeoutPromise]) as any
       if (error) {
         const updated = [...uniqueRecent, now]
         localStorage.setItem('_auth_attempts', JSON.stringify(updated))

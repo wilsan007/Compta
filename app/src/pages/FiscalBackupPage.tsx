@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getFiscalBackups, createFiscalBackup, deleteFiscalBackup } from '@/lib/queries'
+import { getFiscalBackups, createFiscalBackup, deleteFiscalBackup } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Archive, Download } from 'lucide-react'
 import type { FiscalBackup } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function FiscalBackupPage() {
   const { t } = useTranslation('accounting')
@@ -20,12 +21,12 @@ export function FiscalBackupPage() {
     try {
       const data = await getFiscalBackups()
       setBackups(data || [])
-    } catch (err) {
-      console.error('Failed to load fiscal backups:', err)
+    } catch (err: any) { console.error('Failed to load fiscal backups:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -47,7 +48,7 @@ export function FiscalBackupPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteFiscalBackup(id)
       toast('success', tCommon('common.success'), tCommon('toast.deleted'))
