@@ -2071,7 +2071,8 @@ export async function generateEtatRapprochement(
     let bq = supabase.from('bank_transactions').select('amount')
     if (tid) bq = bq.eq('tenant_id', tid)
     bq = bq.eq('bank_account_id', bankAccountId)
-    bq = bq.gte('transaction_date', periodStart).lte('transaction_date', periodEnd)
+    // LOT7-04 : `bank_transactions` porte `date`, pas `transaction_date` — 400/42703.
+    bq = bq.gte('date', periodStart).lte('date', periodEnd)
     const { data: txns, error: txnError } = await bq
     if (txnError) throw txnError
     bankBalance = (txns || []).reduce((s: number, t: any) => s + (Number(t.amount) || 0), 0)

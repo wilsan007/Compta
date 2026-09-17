@@ -274,14 +274,31 @@ export async function addTicketMessage(msg: Omit<ServiceTicketMessage, 'id' | 'c
 
 export async function checkSlaCompliance(ticketId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('service_tickets').select('*, service_contracts(sla_response_hours, sla_resolution_hours)').eq('id', ticketId)
+  // LOT7-04 : l'embed `service_contracts(...)` renvoyait 400/PGRST200 — `service_tickets`
+  // ne porte aucune colonne de contrat, il n'y a donc pas de relation à suivre. Le
+  // contrôle de SLA échouait systématiquement. Le rattachement passe par le CLIENT :
+  // on cherche le contrat actif du client du ticket.
+  let q = supabase.from('service_tickets').select('*').eq('id', ticketId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.maybeSingle()
   if (error) throw error
   if (!data) return null
 
   const ticket = data as any
-  const contract = ticket.service_contracts
+  let contract: { sla_response_hours?: number; sla_resolution_hours?: number } | null = null
+  if (ticket.customer_id) {
+    let cq = supabase
+      .from('service_contracts')
+      .select('sla_response_hours, sla_resolution_hours, start_date, end_date')
+      .eq('customer_id', ticket.customer_id)
+      .eq('status', 'active')
+      .order('start_date', { ascending: false })
+      .limit(1)
+    if (tid) cq = cq.eq('tenant_id', tid)
+    const { data: c, error: cErr } = await cq.maybeSingle()
+    if (cErr) throw cErr
+    contract = c
+  }
   if (!contract) return { hasContract: false, responseBreached: false, resolutionBreached: false }
 
   const now = new Date()

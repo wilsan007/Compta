@@ -1298,7 +1298,9 @@ export async function getEcheancier(typeFilter?: string) {
   if (!typeFilter || typeFilter === 'customer') {
     let ecQ = supabase
       .from('invoices')
-      .select('id, number, issue_date, due_date, total, customer_name, status')
+      // LOT7-04 : `issue_date` n'existe pas sur `invoices` (colonne `date`) — PostgREST
+      // renvoyait 400/42703 et l'échéancier client était vide. Vérifié sur PostgREST 16.3.
+      .select('id, number, date, due_date, total, customer_name, status')
       .neq('status', 'paid')
       .neq('status', 'cancelled')
       .order('due_date', { ascending: true })
@@ -1312,7 +1314,7 @@ export async function getEcheancier(typeFilter?: string) {
       const due = new Date(inv.due_date)
       const daysOverdue = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24))
       results.push({
-        type: 'customer', number: inv.number, date: inv.issue_date, due_date: inv.due_date,
+        type: 'customer', number: inv.number, date: inv.date, due_date: inv.due_date,
         amount: Number(inv.total) || 0, paid: 0, remaining,
         third_party_name: inv.customer_name || '—', days_overdue: daysOverdue > 0 ? daysOverdue : 0,
       })
@@ -1322,7 +1324,9 @@ export async function getEcheancier(typeFilter?: string) {
   if (!typeFilter || typeFilter === 'supplier') {
     let esQ = supabase
       .from('purchase_invoices')
-      .select('id, invoice_number, invoice_date, due_date, total, supplier_name, status')
+      // LOT7-04 : `purchase_invoices` porte `number` et `date`, pas `invoice_number` /
+      // `invoice_date` — même défaut, l'échéancier fournisseur était vide lui aussi.
+      .select('id, number, date, due_date, total, supplier_name, status')
       .neq('status', 'paid')
       .neq('status', 'cancelled')
       .order('due_date', { ascending: true })
@@ -1335,7 +1339,7 @@ export async function getEcheancier(typeFilter?: string) {
       const due = new Date(inv.due_date)
       const daysOverdue = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24))
       results.push({
-        type: 'supplier', number: inv.invoice_number, date: inv.invoice_date, due_date: inv.due_date,
+        type: 'supplier', number: inv.number, date: inv.date, due_date: inv.due_date,
         amount: Number(inv.total) || 0, paid: 0, remaining,
         third_party_name: inv.supplier_name || '—', days_overdue: daysOverdue > 0 ? daysOverdue : 0,
       })

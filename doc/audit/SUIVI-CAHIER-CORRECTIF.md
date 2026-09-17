@@ -20,7 +20,8 @@ Légende : **OK** terminé et prouvé · ⏳ en cours · ⬜ à faire · 👤 ac
 | D — Garde-fous LOT 6 au vert | 5 | 0 | 5 |
 | E — Dette LOT 7 | 8 | 4 | 4 |
 | F — Actions de votre part | 2 | 0 | 2 |
-| **Total** | **38** | **11** | **27** |
+| G — Requêtes refusées par PostgREST | 21 | 15 | 6 |
+| **Total** | **59** | **26** | **33** |
 
 ---
 
@@ -79,7 +80,7 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 | E1 | LOT7-01 | Supprimer les ~250 exports inutilisés | plafond knip seulement | ⬜ | | |
 | E2 | LOT7-02 | Décider du sort des 27 tables de la migration 127 | — | ⬜ | | |
 | E3 | LOT7-03 | Borner les requêtes | 293 `select('*')`, 31 `.limit/.range` | **OK** | 17/09 08h40 | Helper `fetchAllRows` (`src/lib/queries/core.ts`), 46 requêtes d'export/agrégat paginées dans 9 fichiers. 12 tests dédiés (`src/lib/__tests__/fetch-all-rows.test.ts`). Voir le détail ci-dessous. |
-| E4 | LOT7-04 | Réduire les `any` | 2 087 (1 991 au 12/09) | ⬜ | | |
+| E4 | LOT7-04 | Réduire les `any` | 2 717 mesurés le 17/09 | ⏳ | | **2 717 → 2 359** : générateur de types sans `any` (312 → 0, type `Json` + tableaux typés), 46 retours de `queries/*` typés via `Joined<>`. Reste le gros du travail dans les pages. Brancher `createClient<Database>` donnerait **1 468 erreurs**, dont ~917 nullabilités réelles (`string \| null`) : chantier à part, à décider. |
 | E5 | LOT7-05 | Un seul jeu de triggers d'équilibre | clos selon l'autre session | **OK** | 15/09 | `158:948` — contrôle d'équilibre unique, vérifié à l'exécution (voir B6) |
 | E6 | LOT7-06 | `_skip_cascade` posé mais jamais lu | toujours dans `85_…sql` | **OK** | 15/09 | `160_remove_skip_cascade.sql` réécrit `recalc_parent_progress_on_subtask_change` sans la colonne. La 85 la pose encore mais plus personne ne l'écrit. |
 | E7 | LOT7-07 | Accessibilité | 47 attributs `aria-` | ⬜ | | |
@@ -144,6 +145,65 @@ que par un rapatriement complet — la pagination corrige l'exactitude, pas le c
 
 ---
 
+## G — Requêtes refusées par PostgREST (trouvées le 17/09 par `npm run db:embeds`)
+
+> **Comment c'est sorti.** Un PostgREST 16.3 réel a été monté devant la base d'audit, et
+> `app/scripts/check-embeds.mjs` y a rejoué **les 1 479 colonnes et ressources jointes
+> nommées dans le code** (selects et filtres `.eq()`, `.order()`…). Ces défauts ne se
+> voient NI à la compilation — ce sont des chaînes de caractères — NI dans les 1 309 tests
+> unitaires, où Supabase est mocké. Chaque requête refusée signifie un écran vide ou une
+> erreur pour l'utilisateur.
+>
+> **19 défauts confirmés. 13 corrigés, 6 en attente d'arbitrage.**
+
+### Corrigés (commit `HEAD`)
+
+| # | Fichier | Défaut | Code | Effet pour l'utilisateur |
+|---|---|---|---|---|
+| G1 | `leavesAbsences.ts` `getPendingLeaveRequests` | embed `employees` ambigu **+** colonne `manager_id` inexistante | PGRST201 + 42703 | page d'approbation des congés vide |
+| G2 | `accounting.ts` `getEcheancier` | `invoices.issue_date` → `date` ; `purchase_invoices.invoice_number`/`invoice_date` → `number`/`date` | 42703 | échéancier client **et** fournisseur vides |
+| G3 | `stock.ts` `importForecastsFromInvoices` | filtre sur `invoices.issue_date` | 42703 | aucune prévision jamais importée |
+| G4 | `stock.ts` `getProductDocuments` | `invoices.issue_date` ; `manufacturing_orders.planned_date` → `start_date` | 42703 | historique documentaire de l'article vide |
+| G5 | `stock.ts` `traceLotDownstream` / `traceLotUpstream` | `stock_movements.lot_number` → `lot_id` | 42703 | traçabilité de lot cassée **dans les deux sens** |
+| G6 | `stock.ts` `getOFDocumentAccess` | `users.full_name` → `name` | 42703 | droits documentaires d'OF illisibles |
+| G7 | `stock.ts` `getProductEquivalences` | deux embeds `products` sans alias | 42712 | écran des équivalences en erreur |
+| G8 | `stock.ts` `getProductSubstitutes` | idem ; `name as sub_name` aliasait la colonne, pas la ressource | 42712 | écran des substituts en erreur |
+| G9 | `leavesAbsences.ts` `generateSepaFile` | `employees.iban` → `bank_iban` | 42703 | **fichier SEPA de virement des salaires jamais généré** |
+| G10 | `dematRh.ts` `controlBatchBeforeDiffusion` | `pay_slips.period` → `period_start`/`period_end` | 42703 | contrôle avant diffusion des bulletins en échec |
+| G11 | `payroll.ts`, `sprintDE.ts`, `sprintH.ts`, `leavesAbsences.ts` | 5 embeds `employees` ambigus (deux clés étrangères : `employee_id` + `approved_by`/`manager_id`) | PGRST201 | congés, notes de frais et statistiques d'absentéisme en erreur |
+| G12 | `misc.ts` | `bank_transactions.transaction_date` → `date` | 42703 | rapprochement sur période en erreur |
+| G13 | `projectManagement.ts` `getTaskAssignees` | filtre `tenant_id` sur une table qui n'en a pas | 42703 | affectations de tâches vides. **L'isolation est bien assurée** — par la RLS, via `project_tasks.tenant_id` |
+| G14 | `crmAdvanced.ts` `checkSlaCompliance` | embed `service_contracts` sans relation | PGRST200 | contrôle de SLA en échec ; le contrat est désormais cherché par `customer_id` |
+| G15 | `stock.ts` `getProductSupplierPrices` | embed `suppliers` sans relation | PGRST200 | onglet « Tarifs fournisseurs » vide |
+
+### 👤 En attente de votre arbitrage — la donnée n'existe pas dans le modèle
+
+Ces six requêtes nomment des colonnes ou des relations **absentes de la base**. Les
+corriger suppose une décision produit, puis une migration. Je ne les ai pas devinées.
+
+| # | Fichier | Demandé | Ce qui existe en base | Question |
+|---|---|---|---|---|
+| G16 | `socialDeclarations.ts:498` `calculateBdesIndicators` | `employees.gender` | aucune colonne de sexe | L'**indicateur d'égalité F/H et l'écart de rémunération sont impossibles à calculer**. Ajouter la colonne (avec les précautions RGPD qui s'imposent) ou retirer ces deux indicateurs de la BDES ? |
+| G17 | `socialDeclarations.ts:323 et 498` `calculateCice` | `employees.gross_salary` | `salary`, `base_salary` | Le CICE doit-il porter sur `salary` ou `base_salary` ? |
+| G18 | `catalogAdvanced.ts:265` | `products.min_stock_level`, `max_stock_level` | `safety_stock`, `min_order_qty` — pas de maximum | `safety_stock` tient-il lieu de minimum ? Faut-il ajouter un stock maximum ? |
+| G19 | `stock.ts:707` (MRP) | `purchase_order_lines.quantity_received` | `quantity` seule | **Le MRP ne peut pas déduire le reçu du commandé** : il surestime les en-cours d'achat. Ajouter la colonne et l'alimenter à la réception ? |
+| G20 | `accounting.ts:1993` `getBudgetTracking` | relation `budgets` → `chart_accounts` | `budgets.account_code` est du **texte libre**, sans clé étrangère | Poser une clé étrangère sur le code de compte, ou charger les libellés séparément ? |
+| G21 | `accounting.ts:2926` `getJournalAccessRights` | relation `journal_access_rights` → `tenant_users` | `user_id` sans clé étrangère vers `tenant_users` | Poser la clé étrangère, ou charger les courriels séparément ? |
+
+### Limites connues de l'outil
+
+`check-embeds.mjs` rattache chaque filtre à sa requête en suivant la variable
+(`q = supabase.from('x')` → `q.eq(…)`). Quand la requête est construite dans un callback,
+l'attribution peut être fausse : ces cas sont signalés à part, en avertissement, et non
+comptés comme des défauts. Deux subsistent aujourd'hui (`misc.ts:2015`, `sprintH.ts:167`),
+tous deux vérifiés à la main comme corrects.
+
+**À brancher en CI** : le job `db-integration` monte déjà PostgreSQL et rejoue les
+migrations. Y ajouter un conteneur PostgREST et `npm run db:embeds` empêcherait toute
+nouvelle colonne fantôme d'atteindre la production.
+
+---
+
 ## F — Actions de votre part
 
 | # | Action | État |
@@ -170,3 +230,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 15/09 19h30 | **A1 OK** (lint à 0). **B2 OK** (plpgsql_check à 0 erreur). Migrations 158+ écrites mais non commitées. |
 | 15/09 19h45 | **Session terminée (idle)**. Trois migrations supplémentaires (158-160) testées sur PostgreSQL 16 : schéma + 160 migrations rejouées sans erreur. **B1, B4, B5, B6, B7 OK** (17 tests triggers/17, 358 tables RLS sans fuite). 8 bugs graves trouvés et corrigés en 158-160 (politiques RLS, stock, paie, DSN). **184 fichiers modifiés, rien de commité.** Recommandation : commiter avant que d'autres stash écrasent le travail. |
 | 17/09 08h40 | **E3 (LOT7-03) OK** — helper `fetchAllRows`, 46 requêtes d'export et d'agrégat paginées dans 9 fichiers, tri total vérifié sur les 38 tables de la base réelle. 12 tests dédiés ; 1 302 tests au vert ; tsc, oxlint et build verts. Section C corrigée (les correctifs sont en 158, pas 159/160). **E5, E6, E8 passés à OK** après vérification dans le code : ils étaient déjà faits mais restés ⬜. |
+| 17/09 13h50 | **Bloc G ouvert.** Un PostgREST réel monté devant la base d'audit révèle **19 requêtes cassées** en production (colonnes fantômes, embeds ambigus, relations absentes) — invisibles à la compilation comme aux tests. **13 corrigées**, 6 en attente d'arbitrage produit. Outil `npm run db:embeds` livré. **LOT7-04 avancé** : 2 717 → 2 359 `any`. |

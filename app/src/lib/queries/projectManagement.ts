@@ -500,14 +500,15 @@ export async function createProjectTag(name: string, color?: number): Promise<Pr
 
 // ============ Task Assignees ============
 
+// LOT7-04 : `project_task_assignees` ne porte PAS de colonne `tenant_id` — le filtre
+// applicatif renvoyait 400/42703 et la liste des affectations restait vide.
+// L'isolation multi-société est bien assurée, mais par la RLS, qui remonte à
+// `project_tasks.tenant_id` (policies `tenant_select_` / `tenant_delete_…`).
 export async function getTaskAssignees(taskId: string): Promise<{ task_id: string; employee_id: string }[]> {
-  const tid = await getTenantId()
-  let q = supabase
+  const { data, error } = await supabase
     .from('project_task_assignees')
     .select('task_id, employee_id')
     .eq('task_id', taskId)
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
   if (error) throw error
   return data || []
 }

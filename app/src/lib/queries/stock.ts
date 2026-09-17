@@ -850,7 +850,9 @@ export async function deleteProductionForecast(id: string) {
 
 export async function importForecastsFromInvoices(period: string, startDate: string, endDate: string) {
   const tid = await getTenantId()
-  let q = supabase.from('invoices').select('*, invoice_lines(product_id, quantity)').eq('status', 'paid').gte('issue_date', startDate).lte('issue_date', endDate).order('id')
+  // LOT7-04 : `invoices` n'a pas de colonne `issue_date` (c'est `date`) — la requête
+  // partait en 400/42703 et aucune prévision n'était jamais importée.
+  let q = supabase.from('invoices').select('*, invoice_lines(product_id, quantity)').eq('status', 'paid').gte('date', startDate).lte('date', endDate).order('id')
   if (tid) q = q.eq('tenant_id', tid)
   // LOT7-03 : prévisions de production déduites de l'historique de ventes — sur une année
   // complète, la troncature à 1 000 factures sous-estimait massivement les quantités.
@@ -1038,7 +1040,13 @@ export async function getProductStock(productId: string) {
 
 export async function getProductSupplierPrices(productId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('price_list_lines').select('*, price_lists(name, type), suppliers(name)').eq('product_id', productId)
+  // LOT7-04 : l'embed `suppliers(name)` renvoyait 400/PGRST200 — aucune relation
+  // n'existe entre `price_list_lines` et `suppliers`, et le modèle ne rattache AUCUNE
+  // liste de prix à un fournisseur (ni `price_list_lines`, ni `price_lists` ne portent
+  // de `supplier_id`). Toute la requête échouait, donc l'onglet « Tarifs fournisseurs »
+  // de la fiche article restait vide. La colonne « Fournisseur » de cet écran ne peut
+  // pas être renseignée tant que le modèle n'aura pas ce lien (voir SUIVI, bloc G).
+  let q = supabase.from('price_list_lines').select('*, price_lists(name, type)').eq('product_id', productId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
@@ -1050,21 +1058,22 @@ export async function getProductDocuments(productId: string) {
   if (!tid) return []
   // LOT7-03 : historique documentaire d'un article — doit être exhaustif.
   const [invoices, purchaseOrders, manufacturingOrders, salesOrders] = await Promise.all([
-    fetchAllRows<any>(supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/invoice_lines' }),
+    // LOT7-04 : `invoices.issue_date` → `date`, `manufacturing_orders.planned_date` → `start_date`.
+    fetchAllRows<any>(supabase.from('invoice_lines').select('*, invoices(number, date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/invoice_lines' }),
     fetchAllRows<any>(supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/purchase_order_lines' }),
-    fetchAllRows<any>(supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/manufacturing_orders' }),
+    fetchAllRows<any>(supabase.from('manufacturing_orders').select('number, start_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/manufacturing_orders' }),
     fetchAllRows<any>(supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/sales_order_lines' }),
   ])
 
   const docs: any[] = []
   for (const line of invoices as any[]) {
-    if (line.invoices) docs.push({ type: 'Facture', number: line.invoices.number, date: line.invoices.issue_date, quantity: line.quantity, status: line.invoices.status })
+    if (line.invoices) docs.push({ type: 'Facture', number: line.invoices.number, date: line.invoices.date, quantity: line.quantity, status: line.invoices.status })
   }
   for (const line of purchaseOrders as any[]) {
     if (line.purchase_orders) docs.push({ type: 'Commande achat', number: line.purchase_orders.number, date: line.purchase_orders.order_date, quantity: line.quantity, status: line.purchase_orders.status })
   }
   for (const mo of manufacturingOrders as any[]) {
-    docs.push({ type: 'OF', number: mo.number, date: mo.planned_date, quantity: mo.quantity, status: mo.status })
+    docs.push({ type: 'OF', number: mo.number, date: mo.start_date, quantity: mo.quantity, status: mo.status })
   }
   for (const line of salesOrders as any[]) {
     if (line.sales_orders) docs.push({ type: 'Commande vente', number: line.sales_orders.number, date: line.sales_orders.order_date, quantity: line.quantity, status: line.sales_orders.status })
@@ -1086,7 +1095,10 @@ export async function getProductBOMs(productId: string) {
 // ============ Production Module: Complémentaires ============
 export async function getProductEquivalences(productId?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('product_equivalences').select('*, products!product_equivalences_product_id_fkey(name, sku), products!product_equivalences_equivalent_product_id_fkey(name, sku)')
+  // LOT7-04 : deux embeds vers `products` sans alias — PostgREST refusait la requête
+  // (400/42712, « table name specified more than once ») : l'écran des équivalences
+  // était toujours en erreur. Les alias `produit` / `equivalent` lèvent l'ambiguïté.
+  let q = supabase.from('product_equivalences').select('*, produit:products!product_equivalences_product_id_fkey(name, sku), equivalent:products!product_equivalences_equivalent_product_id_fkey(name, sku)')
   if (tid) q = q.eq('tenant_id', tid)
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
@@ -1142,7 +1154,8 @@ export async function deleteWorkflow(id: string) {
 
 export async function getOFDocumentAccess() {
   const tid = await getTenantId()
-  let q = supabase.from('of_document_access').select('*, users(email, full_name)').order('document_type')
+  // LOT7-04 : `users` porte `name`, pas `full_name` — 400/42703.
+  let q = supabase.from('of_document_access').select('*, users(email, name)').order('document_type')
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
@@ -1281,7 +1294,9 @@ export async function deleteWarehouseLocation(id: string) {
 // ============ Phase 2: Product Substitutes ============
 export async function getProductSubstitutes(productId?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('product_substitutes').select('*, products!product_substitutes_product_id_fkey(name, sku), products!product_substitutes_substitute_id_fkey(name as sub_name, sku as sub_sku)')
+  // LOT7-04 : même défaut (400/42712). Le `name as sub_name` visait à distinguer les
+  // deux embeds, mais PostgREST attend un alias sur la RESSOURCE, pas sur la colonne.
+  let q = supabase.from('product_substitutes').select('*, produit:products!product_substitutes_product_id_fkey(name, sku), substitut:products!product_substitutes_substitute_id_fkey(name, sku)')
   if (tid) q = q.eq('tenant_id', tid)
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
@@ -1322,7 +1337,9 @@ export async function traceLotDownstream(lotId: string) {
   const tid = await getTenantId()
   let q = supabase.from('stock_movements').select('*, products(name, sku)').order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
-  q = q.eq('lot_number', lotId)
+  // LOT7-04 : la colonne est `lot_id` (uuid), pas `lot_number` — 400/42703. La
+  // traçabilité de lot était cassée dans les deux sens (amont comme aval).
+  q = q.eq('lot_id', lotId)
   const { data, error } = await q
   if (error) throw error
   return { lotId, movements: data || [], direction: 'downstream' as const }
@@ -1332,7 +1349,7 @@ export async function traceLotUpstream(lotId: string) {
   const tid = await getTenantId()
   let q = supabase.from('stock_movements').select('*, products(name, sku)').order('created_at', { ascending: true })
   if (tid) q = q.eq('tenant_id', tid)
-  q = q.eq('lot_number', lotId)
+  q = q.eq('lot_id', lotId)
   const { data, error } = await q
   if (error) throw error
   return { lotId, movements: data || [], direction: 'upstream' as const }

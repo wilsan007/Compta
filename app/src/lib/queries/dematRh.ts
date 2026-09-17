@@ -118,7 +118,10 @@ export async function distributePaySlips(payRunId: string): Promise<DocumentDist
 
 export async function controlBatchBeforeDiffusion(payRunId: string): Promise<{ ok: boolean; issues: string[]; recipientCount: number }> {
   const tid = await getTenantId()
-  let q = supabase.from('pay_slips').select('id, employee_id, period, employees(name)').eq('pay_run_id', payRunId)
+  // LOT7-04 : `pay_slips` n'a pas de colonne `period` (mais `period_start` / `period_end`).
+  // PostgREST renvoyait 400/42703 : le contrôle avant diffusion des bulletins échouait
+  // systématiquement. Vérifié sur PostgREST 16.3.
+  let q = supabase.from('pay_slips').select('id, employee_id, period_start, period_end, employees(name)').eq('pay_run_id', payRunId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data: payslips, error } = await q
   if (error) throw error

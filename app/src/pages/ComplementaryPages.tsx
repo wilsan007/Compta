@@ -184,8 +184,8 @@ export function EquivalencesPage() {
           <Table headers={[t('equivalences.product'), t('equivalences.equivalentProduct'), t('equivalences.ratio'), tCommon('table.actions')]}>
             {equivalences.map((eq) => (
               <TableRow key={eq.id}>
-                <TableCell className="text-sm">{eq.products?.[0]?.name || '—'}</TableCell>
-                <TableCell className="text-sm">{eq.products?.[1]?.name || '—'}</TableCell>
+                <TableCell className="text-sm">{eq.produit?.name || '—'}</TableCell>
+                <TableCell className="text-sm">{eq.equivalent?.name || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(eq.conversion_ratio)}</TableCell>
                 <TableCell><button onClick={() => handleDelete(eq.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
               </TableRow>

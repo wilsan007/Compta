@@ -341,7 +341,8 @@ export async function deleteMyExpenseReport(id: string) {
 
 export async function getPendingExpenseReports(managerId?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('expense_reports').select('*, employees(first_name, last_name)').eq('status', 'submitted')
+  // LOT7-04 : embed ambigu (`employee_id` / `manager_id`) — 300/PGRST201.
+  let q = supabase.from('expense_reports').select('*, employees!expense_reports_employee_id_fkey(first_name, last_name)').eq('status', 'submitted')
   if (tid) q = q.eq('tenant_id', tid)
   if (managerId) q = q.eq('manager_id', managerId)
   const { data, error } = await q.order('submitted_at')

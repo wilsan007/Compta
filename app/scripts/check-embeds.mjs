@@ -51,8 +51,37 @@ function walk(dir) {
 // Opérateurs de filtre dont le 1er argument est un nom de colonne.
 const FILTERS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 'is', 'in', 'contains', 'order']
 
-/** Table du `.from('x')` le plus proche au-dessus de la ligne i. */
-function nearestTable(lines, i) {
+/**
+ * Table interrogée par la requête à laquelle appartient la ligne i.
+ *
+ * L'heuristique « le `.from()` le plus proche au-dessus » produit des faux positifs
+ * quand une sous-requête s'intercale :
+ *     const { data: fp } = await supabase.from('fiscal_periods')...
+ *     q = q.gte('line_date', fp.start_date)     // porte sur journal_lines, pas fiscal_periods
+ * On suit donc d'abord la variable (`q.gte(...)` → `q = supabase.from('journal_lines')`),
+ * et on ne retombe sur la proximité que pour les chaînes écrites d'un seul tenant.
+ */
+function tableForVariable(lines, i, varName) {
+  const assign = new RegExp(`(?:let |const |^\\s*)${varName}\\s*=\\s*supabase\\s*\\n?\\s*\\.from\\('([a-z_0-9]+)'\\)`)
+  for (let j = i; j >= 0; j--) {
+    const m = lines[j].match(assign)
+    if (m) return m[1]
+    // `let q = supabase` sur une ligne, `.from('x')` sur la suivante
+    if (new RegExp(`(?:let |const )${varName}\\s*=\\s*supabase\\s*$`).test(lines[j])) {
+      for (let k = j + 1; k < Math.min(lines.length, j + 4); k++) {
+        const m2 = lines[k].match(/^\s*\.from\('([a-z_0-9]+)'\)/)
+        if (m2) return m2[1]
+      }
+    }
+  }
+  return null
+}
+
+function nearestTable(lines, i, varName) {
+  if (varName) {
+    const byVar = tableForVariable(lines, i, varName)
+    if (byVar) return byVar
+  }
   for (let j = i; j >= Math.max(0, i - 12); j--) {
     const m = lines[j].match(/\.from\('([a-z_0-9]+)'\)/)
     if (m) return m[1]
@@ -75,14 +104,16 @@ function extractQueries(file) {
       if (!table) continue
       found.push({ file: relative(ROOT, file), line: i + 1, table, select: s[1].replace(/\s+/g, ' ').trim(), kind: 'select' })
     }
-    for (const f of lines[i].matchAll(/\.(\w+)\(\s*'([^']+)'/g)) {
-      if (!FILTERS.includes(f[1])) continue
-      const col = f[2]
+    for (const f of lines[i].matchAll(/(?:(\w+)\s*=\s*\1|(\w+))?\s*\.(\w+)\(\s*'([^']+)'/g)) {
+      const op = f[3]
+      if (!FILTERS.includes(op)) continue
+      const col = f[4]
       // une colonne d'une ressource jointe (`journal_entries.date`) est validée par son select
       if (col.includes('.') || col.includes(',') || !/^[a-z_0-9]+$/.test(col)) continue
-      const table = nearestTable(lines, i)
+      const varName = f[1] || f[2] || null
+      const table = nearestTable(lines, i, varName && varName !== 'supabase' ? varName : null)
       if (!table) continue
-      found.push({ file: relative(ROOT, file), line: i + 1, table, select: col, kind: `filtre .${f[1]}()` })
+      found.push({ file: relative(ROOT, file), line: i + 1, table, select: col, kind: `filtre .${op}()` })
     }
   }
   return found
@@ -99,7 +130,35 @@ const embeds = all.filter((e) => {
 
 console.log(`${embeds.length} requêtes distinctes extraites du code, vérification contre ${PGRST_URL}\n`)
 
+/**
+ * Colonnes réelles par table, lues dans les types générés (eux-mêmes produits depuis
+ * PostgreSQL). Sert à distinguer une VRAIE colonne fantôme d'une simple erreur
+ * d'attribution de table par l'analyse statique — quand la requête est construite
+ * dans un callback ou via une variable intermédiaire, la table devinée peut être
+ * fausse. Une colonne qui existe ailleurs dans le schéma est donc signalée en
+ * avertissement, pas en échec.
+ */
+function loadSchema() {
+  const src = readFileSync(join(ROOT, 'src/types/database-generated.ts'), 'utf8')
+  const byTable = new Map()
+  const all = new Set()
+  const tableRe = /^ {4}([a-z_0-9]+): \{$/gm
+  let m
+  while ((m = tableRe.exec(src))) {
+    const rowStart = src.indexOf('Row: {', m.index)
+    const rowEnd = src.indexOf('      }', rowStart)
+    const cols = new Set()
+    for (const c of src.slice(rowStart, rowEnd).matchAll(/^ {8}([a-z_0-9]+)\??:/gm)) {
+      cols.add(c[1]); all.add(c[1])
+    }
+    byTable.set(m[1], cols)
+  }
+  return { byTable, all }
+}
+const schema = loadSchema()
+
 const failures = []
+const uncertain = []
 for (const e of embeds) {
   const url = `${PGRST_URL}/${e.table}?select=${encodeURIComponent(e.select)}&limit=1`
   let res
@@ -113,7 +172,25 @@ for (const e of embeds) {
   if (res.ok) continue
   let body
   try { body = await res.json() } catch { body = { message: await res.text() } }
-  failures.push({ ...e, status: res.status, code: body.code ?? '?', message: body.message ?? '' })
+  const entry = { ...e, status: res.status, code: body.code ?? '?', message: body.message ?? '' }
+  // Un `select('...')` est rattaché à sa table de façon fiable (même expression, ou
+  // ressource jointe nommée dans le select) : il n'est jamais reclassé.
+  // Un FILTRE, lui, peut être mal rattaché quand la requête passe par une variable
+  // ou un callback. Si sa colonne existe ailleurs dans le schéma, on le signale en
+  // avertissement plutôt que de crier au défaut.
+  const ghost = /column [a-z_0-9]*\.?([a-z_0-9]+) does not exist/.exec(entry.message)
+  if (ghost && e.kind !== 'select' && !schema.byTable.get(e.table)?.has(ghost[1]) && schema.all.has(ghost[1])) {
+    uncertain.push({ ...entry, column: ghost[1] })
+  } else {
+    failures.push(entry)
+  }
+}
+
+if (uncertain.length > 0) {
+  console.log(`⚠️  ${uncertain.length} cas à attribution incertaine (la colonne existe sur une autre table —`)
+  console.log(`   requête construite via une variable ou un callback que l'analyse suit mal) :`)
+  for (const u of uncertain) console.log(`     ${u.file}:${u.line}  [${u.table}] ${u.kind} : ${u.select}`)
+  console.log()
 }
 
 if (failures.length === 0) {

@@ -363,7 +363,7 @@ export function ProductSubstitutesPage() {
       {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-2 gap-3"><Input placeholder={t('substitutes.productId')} value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} /><Input placeholder={t('substitutes.substituteId')} value={form.substitute_id} onChange={e => setForm({ ...form, substitute_id: e.target.value })} /><Input type="number" placeholder={t('substitutes.priority')} value={form.priority} onChange={e => setForm({ ...form, priority: parseInt(e.target.value) || 1 })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('substitutes.empty')} /> : (
         <Table headers={[t('substitutes.product'), t('substitutes.substitute'), t('substitutes.priority'), tCommon('table.actions')]}>
-          {items.map(s => (<TableRow key={s.id}><TableCell>{s.products?.name || '-'}</TableCell><TableCell>{s.products?.sub_name || '-'}</TableCell><TableCell>{s.priority}</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4" /></Button></TableCell></TableRow>))}
+          {items.map(s => (<TableRow key={s.id}><TableCell>{s.produit?.name || '-'}</TableCell><TableCell>{s.substitut?.name || '-'}</TableCell><TableCell>{s.priority}</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(s.id)}><Trash2 className="w-4 h-4" /></Button></TableCell></TableRow>))}
         </Table>
       )}
     </div>

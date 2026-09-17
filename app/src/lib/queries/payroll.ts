@@ -219,7 +219,9 @@ export async function transferPayrollToAccounting(entryId: string, entry: Payrol
 // ============ Sprint 7: Leave Requests ============
 export async function getLeaveRequests(status?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('leave_requests').select('*, employees(name, department)').order('start_date', { ascending: false })
+  // LOT7-04 : embed ambigu (`employee_id` / `approved_by`) — 300/PGRST201. La liste
+  // des demandes de congés ne s'affichait jamais.
+  let q = supabase.from('leave_requests').select('*, employees!leave_requests_employee_id_fkey(name, department)').order('start_date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (status) q = q.eq('status', status)
   const { data, error } = await q
@@ -604,7 +606,10 @@ export async function createEmployeeDocument(d: Omit<EmployeeDocument, 'id' | 'c
 // ============ Phase 4: Expense Reports ============
 export async function getExpenseReports() {
   const tid = await getTenantId()
-  let q = supabase.from('expense_reports').select('*, employees(first_name, last_name)').order('created_at', { ascending: false })
+  // LOT7-04 : `expense_reports` a deux clés étrangères vers `employees` (`employee_id`
+  // et `manager_id`) — embed ambigu, 300/PGRST201. La liste des notes de frais était
+  // donc toujours en erreur.
+  let q = supabase.from('expense_reports').select('*, employees!expense_reports_employee_id_fkey(first_name, last_name)').order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error

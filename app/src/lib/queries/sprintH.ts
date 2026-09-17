@@ -415,7 +415,9 @@ export async function getSalaryAnalysis(groupBy: 'department' | 'category' | 'ge
 
 export async function getAbsenceStats(groupBy: 'department' | 'type' | 'month') {
   const tid = await getTenantId()
-  let q = supabase.from('leave_requests').select('*, employees(department)').eq('status', 'approved').order('id')
+  // LOT7-04 : embed ambigu (`employee_id` / `approved_by`) — 300/PGRST201. Les
+  // statistiques d'absentéisme par service ne s'affichaient jamais.
+  let q = supabase.from('leave_requests').select('*, employees!leave_requests_employee_id_fkey(department)').eq('status', 'approved').order('id')
   if (tid) q = q.eq('tenant_id', tid)
   // LOT7-03 : statistiques d'absentéisme — comptage sur toutes les absences approuvées.
   const leaves = await fetchAllRows<any>(q, { label: 'getAbsenceStats/leave_requests' })

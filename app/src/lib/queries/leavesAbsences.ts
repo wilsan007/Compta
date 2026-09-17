@@ -453,7 +453,10 @@ export async function checkMinStaffRequired(department: string, startDate: strin
 
 export async function exportLeaveDataToPayroll(period: string): Promise<any[]> {
   const tid = await getTenantId()
-  let q = supabase.from('leave_requests').select('*, employees(name, department)')
+  // LOT7-04 : deux clés étrangères relient `leave_requests` à `employees`
+  // (`employee_id` et `approved_by`) : sans nommer la contrainte, PostgREST répond
+  // 300/PGRST201 et l'export des absences vers la paie échouait.
+  let q = supabase.from('leave_requests').select('*, employees!leave_requests_employee_id_fkey(name, department)')
     .eq('status', 'approved')
     .gte('start_date', `${period}-01`).lte('end_date', `${period}-31`)
     .order('id')
@@ -681,7 +684,9 @@ export function calculateGrossFromNet(
 // ============ SEPA ============
 export async function generateSepaFile(payRunId: string, executionDate: string): Promise<SepaPaymentOrder> {
   const tid = await getTenantId()
-  let q = supabase.from('pay_slips').select('*, employees(name, iban)').eq('pay_run_id', payRunId).eq('status', 'paid')
+  // LOT7-04 : la colonne s'appelle `bank_iban`, pas `iban` — 400/42703. La génération
+  // du fichier SEPA de virement des salaires échouait donc toujours.
+  let q = supabase.from('pay_slips').select('*, employees(name, bank_iban)').eq('pay_run_id', payRunId).eq('status', 'paid')
   if (tid) q = q.eq('tenant_id', tid)
   const { data: slips, error } = await q
   if (error) throw error
