@@ -1,4 +1,5 @@
 import { supabase, isTenantTable } from '@/lib/supabase'
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { createJournalEntry } from './accounting'
 import { createStockMovement } from './stock'
@@ -1455,7 +1456,7 @@ export async function getProspects() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (Prospect & { sales_representatives: Joined<'sales_representatives', 'name'> })[]
 }
 export async function createProspect(p: Omit<Prospect, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
@@ -1490,7 +1491,7 @@ export async function getDeliverySchedules() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (DeliverySchedule & { customers: Joined<'customers', 'name'>; products: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createDeliverySchedule(d: Omit<DeliverySchedule, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1540,7 +1541,7 @@ export async function getCreditLines() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (CreditLine & { bank_accounts: Joined<'bank_accounts', 'name'> })[]
 }
 export async function createCreditLine(c: Omit<CreditLine, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1596,7 +1597,7 @@ export async function getValueDateTrackings() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ValueDateTracking & { bank_accounts: Joined<'bank_accounts', 'name'> })[]
 }
 export async function createValueDateTracking(v: Omit<ValueDateTracking, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1642,7 +1643,7 @@ export async function getAssetRevaluations(assetId?: string) {
   if (assetId) q = q.eq('asset_id', assetId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (AssetRevaluation & { fixed_assets: Joined<'fixed_assets', 'name'> })[]
 }
 export async function createAssetRevaluation(r: Omit<AssetRevaluation, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1660,7 +1661,7 @@ export async function getAssetDocuments(assetId?: string) {
   if (assetId) q = q.eq('asset_id', assetId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (AssetDocument & { fixed_assets: Joined<'fixed_assets', 'name'> })[]
 }
 export async function createAssetDocument(d: Omit<AssetDocument, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1723,7 +1724,7 @@ export async function getAssetSplits() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (AssetSplit & { fixed_assets: Joined<'fixed_assets', 'name'> })[]
 }
 export async function createAssetSplit(s: Omit<AssetSplit, 'id' | 'created_at'>) {
   const tid = await getTenantId()

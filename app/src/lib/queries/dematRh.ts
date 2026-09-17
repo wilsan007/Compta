@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import type { Joined } from '@/types/dbRow'
 import { getTenantId, ti, tud } from './core'
 import { sanitizeFilename } from '@/lib/fileSecurity'
 import type { EmployeeDocument, DocumentDistributionLog, RhRequest, RhKnowledgeBaseArticle } from '@/types'
@@ -204,7 +205,7 @@ export async function getDocumentStats(): Promise<{ total: number; distributed: 
 }
 
 // ============ RH Requests ============
-export async function getRhRequests(status?: string, type?: string): Promise<(RhRequest & { employees?: { name: string } })[]> {
+export async function getRhRequests(status?: string, type?: string): Promise<(RhRequest & { employees: Joined<'employees', 'name'> })[]> {
   const tid = await getTenantId()
   let q = supabase.from('rh_requests').select('*, employees(name)').order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
@@ -212,7 +213,7 @@ export async function getRhRequests(status?: string, type?: string): Promise<(Rh
   if (type) q = q.eq('request_type', type)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (RhRequest & { employees: Joined<'employees', 'name'> })[]
 }
 
 export async function createRhRequest(data: Omit<RhRequest, 'id' | 'created_at'>): Promise<RhRequest> {

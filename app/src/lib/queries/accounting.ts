@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, ti, tud } from './core'
 import { getJournals } from './misc'
 import { getPaymentTermById } from './payroll'
@@ -1041,7 +1042,7 @@ export async function getUnletteredLines(accountTiers: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (JournalLine & { journal_entries: Joined<'journal_entries', 'number' | 'date' | 'journal_code' | 'description'> })[]
 }
 
 // --- Lettrage: get lettered lines for a third party ---
@@ -1057,7 +1058,7 @@ export async function getLetteredLines(accountTiers: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (JournalLine & { journal_entries: Joined<'journal_entries', 'number' | 'date' | 'journal_code' | 'description'> })[]
 }
 
 // --- Lettrage: apply lettrage code to multiple lines ---
@@ -1971,7 +1972,7 @@ export async function getAuditLog(entityType?: string, action?: string) {
     console.warn('audit_log query failed:', error.message)
     return []
   }
-  return data as any[]
+  return data as AuditLog[]
 }
 
 export async function createAuditLog(entry: Omit<AuditLog, 'id' | 'created_at'>) {
@@ -2500,7 +2501,7 @@ export async function getRecurringInvoiceTemplates() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (RecurringInvoiceTemplate & { customers: Joined<'customers', 'name'> })[]
 }
 export async function createRecurringInvoiceTemplate(t: Omit<RecurringInvoiceTemplate, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -2550,7 +2551,7 @@ export async function getTreasuryTransfers() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (TreasuryTransfer & { ba1: Joined<'bank_accounts', 'name'>; ba2: Joined<'bank_accounts', 'name'> })[]
 }
 export async function createTreasuryTransfer(t: Omit<TreasuryTransfer, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -2578,7 +2579,7 @@ export async function getTreasuryRecurring() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (TreasuryRecurring & { bank_accounts: Joined<'bank_accounts', 'name'> })[]
 }
 export async function createTreasuryRecurring(t: Omit<TreasuryRecurring, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -2612,7 +2613,7 @@ export async function getAssetDepreciationPlans(assetId?: string) {
   if (assetId) q = q.eq('asset_id', assetId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (AssetDepreciationPlan & { fixed_assets: Joined<'fixed_assets', 'name'> })[]
 }
 export async function createAssetDepreciationPlan(p: Omit<AssetDepreciationPlan, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
@@ -2922,7 +2923,7 @@ export async function getJournalAccessRights() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (JournalAccessRight & { tenant_users: Joined<'tenant_users', 'email'> })[]
 }
 export async function createJournalAccessRight(r: Omit<JournalAccessRight, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()

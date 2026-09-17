@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, ti, tud } from './core';
 import type { ManufacturingOrder, QualityCheck, PickList } from '@/types';
 
@@ -40,7 +41,7 @@ export async function getQualityChecks() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (QualityCheck & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createQualityCheck(qc: Omit<QualityCheck, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -63,7 +64,7 @@ export async function getPickLists() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (PickList & { warehouses: Joined<'warehouses', 'name'> })[]
 }
 export async function createPickList(p: Omit<PickList, 'id' | 'created_at'>) {
   const tid = await getTenantId()

@@ -17,6 +17,7 @@
     "test:full": "oxlint --max-warnings=0 && tsc -b --noEmit && vitest run --coverage && playwright test",
     "i18n:check": "node scripts/check-i18n.mjs",
     "db:types": "node scripts/generate-db-types.mjs",
+    "db:embeds": "node scripts/check-embeds.mjs",
     "verify": "bash scripts/verify.sh",
     "verify:fast": "bash scripts/verify.sh --skip-tests --skip-lint",
     "audit:silent": "node scripts/audit-silent-failures.mjs",

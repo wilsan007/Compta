@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
@@ -42,7 +43,7 @@ export async function getStockMovements(productId?: string, warehouseId?: string
   if (warehouseId) query = query.eq('warehouse_id', warehouseId)
   const { data, error } = await query
   if (error) throw error
-  return data as any[]
+  return data as (StockMovement & { products: Joined<'products', 'name' | 'sku'>; warehouses: Joined<'warehouses', 'name'> })[]
 }
 
 export async function createStockMovement(sm: Omit<StockMovement, 'id' | 'created_at'>) {
@@ -99,7 +100,7 @@ export async function getStockQuantities(warehouseId?: string) {
   if (warehouseId) q = q.eq('warehouse_id', warehouseId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (StockQuantity & { products: Joined<'products', 'name' | 'sku'>; warehouses: Joined<'warehouses', 'name'> })[]
 }
 
 export async function updateStockQuantity(id: string, updates: Partial<StockQuantity>) {
@@ -146,7 +147,7 @@ export async function getPriceListLines(priceListId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (PriceListLine & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 
 export async function createPriceListLine(pll: Omit<PriceListLine, 'id'>) {
@@ -215,7 +216,7 @@ export async function getRoutings() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (Routing & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 
 export async function createRouting(r: Omit<Routing, 'id' | 'created_at' | 'updated_at'>) {
@@ -244,7 +245,7 @@ export async function getRoutingOperations(routingId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (RoutingOperation & { work_centers: Joined<'work_centers', 'name'>; machines: Joined<'machines', 'name'>; toolings: Joined<'toolings', 'name'>; suppliers: Joined<'suppliers', 'name'> })[]
 }
 
 export async function createRoutingOperation(op: Omit<RoutingOperation, 'id' | 'created_at'>) {
@@ -310,7 +311,7 @@ export async function getMachines() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (Machine & { work_centers: Joined<'work_centers', 'name'> })[]
 }
 
 export async function createMachine(m: Omit<Machine, 'id' | 'created_at'>) {
@@ -341,7 +342,7 @@ export async function getToolings() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (Tooling & { machines: Joined<'machines', 'name'> })[]
 }
 
 export async function createTooling(t: Omit<Tooling, 'id' | 'created_at'>) {
@@ -831,7 +832,7 @@ export async function getProductionForecasts() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ProductionForecast & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 
 export async function createProductionForecast(f: Omit<ProductionForecast, 'id' | 'created_at'>) {
@@ -1032,7 +1033,7 @@ export async function getProductStock(productId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (StockQuantity & { warehouses: Joined<'warehouses', 'name'> })[]
 }
 
 export async function getProductSupplierPrices(productId: string) {
@@ -1090,6 +1091,10 @@ export async function getProductEquivalences(productId?: string) {
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
   if (error) throw error
+  // LOT7-04 : NON TYPÉ volontairement. Le select imbrique DEUX fois `products` avec des
+  // hints de clé étrangère différents mais sans alias : PostgREST ne peut pas rendre deux
+  // clés `products` distinctes dans le même objet. Le select est à revoir (ajouter des
+  // alias `produit:products!fk(...)`) avant de pouvoir typer le retour.
   return data as any[]
 }
 
@@ -1183,7 +1188,7 @@ export async function getProductVariants(productId?: string) {
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ProductVariant & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createProductVariant(v: Omit<ProductVariant, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1212,7 +1217,7 @@ export async function getProductSerialNumbers(productId?: string) {
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ProductSerialNumber & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createProductSerialNumber(s: Omit<ProductSerialNumber, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1258,7 +1263,7 @@ export async function getWarehouseLocations(warehouseId?: string) {
   if (warehouseId) q = q.eq('warehouse_id', warehouseId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (WarehouseLocation & { warehouses: Joined<'warehouses', 'name'> })[]
 }
 export async function createWarehouseLocation(l: Omit<WarehouseLocation, 'id' | 'created_at'>) {
   const tid = await getTenantId()

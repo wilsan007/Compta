@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { getTenantId, ti, tud } from './core'
+import type { Joined } from '@/types/dbRow'
 import type { WorkStoppage, IjssHistory, WorkHardshipRecord, CpfTransaction, MedicalExam, ExpenseCategory, ExpenseReportLine, InterviewCampaign, EmployeeObjective, EmployeeExitProcess, ExpenseReport, CpfAccount } from '@/types'
 
 // ============ Sprint D: Work Stoppages (Arrêts de travail) ============
@@ -12,7 +13,7 @@ export async function getWorkStoppages(employeeId?: string, status?: string) {
   if (status) q = q.eq('status', status)
   const { data, error } = await q.order('start_date', { ascending: false })
   if (error) throw error
-  return data as any[]
+  return data as (WorkStoppage & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function createWorkStoppage(data: Omit<WorkStoppage, 'id' | 'created_at' | 'updated_at'>) {
@@ -95,7 +96,7 @@ export async function getIjssHistoryByEmployee(employeeId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.order('period', { ascending: false })
   if (error) throw error
-  return data as any[]
+  return data as (IjssHistory & { work_stoppages: Joined<'work_stoppages', 'stoppage_type' | 'start_date' | 'end_date'> })[]
 }
 
 export async function integrateIjssInPayslip(ijssHistoryId: string, payslipId: string) {
@@ -114,7 +115,7 @@ export async function getWorkHardshipRecords(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (WorkHardshipRecord & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function createWorkHardshipRecord(data: Omit<WorkHardshipRecord, 'id' | 'created_at'>) {
@@ -195,7 +196,7 @@ export async function getMedicalExams(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q.order('scheduled_date', { ascending: false })
   if (error) throw error
-  return data as any[]
+  return data as (MedicalExam & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function createMedicalExam(data: Omit<MedicalExam, 'id' | 'created_at'>) {
@@ -219,7 +220,7 @@ export async function getUpcomingMedicalExams(months: number = 3) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.order('scheduled_date')
   if (error) throw error
-  return data as any[]
+  return data as (MedicalExam & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function getMedicalExamAlerts() {
@@ -229,7 +230,7 @@ export async function getMedicalExamAlerts() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (MedicalExam & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 // ============ Expense Categories ============
@@ -266,7 +267,7 @@ export async function getExpenseReportLines(reportId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.order('date')
   if (error) throw error
-  return data as any[]
+  return data as (ExpenseReportLine & { expense_categories: Joined<'expense_categories', 'label' | 'code'> })[]
 }
 
 export async function addExpenseReportLine(reportId: string, line: Omit<ExpenseReportLine, 'id' | 'created_at'>) {
@@ -345,7 +346,7 @@ export async function getPendingExpenseReports(managerId?: string) {
   if (managerId) q = q.eq('manager_id', managerId)
   const { data, error } = await q.order('submitted_at')
   if (error) throw error
-  return data as any[]
+  return data as (ExpenseReport & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function approveExpenseReport(id: string, managerId: string, comment: string) {
@@ -410,7 +411,7 @@ export async function getMyObjectives() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.order('created_at', { ascending: false })
   if (error) throw error
-  return data as any[]
+  return data as (EmployeeObjective & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function getObjectivesByEmployee(employeeId: string) {
@@ -428,7 +429,7 @@ export async function getObjectivesByCampaign(campaignId: string) {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (EmployeeObjective & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function createObjective(data: Omit<EmployeeObjective, 'id' | 'created_at' | 'updated_at'>) {
@@ -470,7 +471,7 @@ export async function getExitProcesses(status?: string) {
   if (status) q = q.eq('status', status)
   const { data, error } = await q.order('created_at', { ascending: false })
   if (error) throw error
-  return data as any[]
+  return data as (EmployeeExitProcess & { employees: Joined<'employees', 'first_name' | 'last_name'> })[]
 }
 
 export async function calculateFinalSettlement(exitProcessId: string) {

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type {
   LeaveBalance, PublicHoliday, LeaveRule, ApprovalWorkflow,
@@ -150,16 +151,41 @@ export async function cancelMyLeaveRequest(id: string): Promise<void> {
   }
 }
 
-export async function getPendingLeaveRequests(managerId?: string): Promise<any[]> {
-  const tid = await getTenantId()
-  let q = supabase.from('leave_requests').select('*, employees(name, department, manager_id)').eq('status', 'pending').order('start_date', { ascending: false })
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  if (managerId && data) {
-    return data.filter((r: any) => r.employees?.manager_id === managerId)
+// LOT7-04 : cette fonction échouait systématiquement, pour DEUX raisons cumulées,
+// toutes deux vérifiées sur un PostgREST 16.3 réel :
+//  1. `leave_requests` porte deux clés étrangères vers `employees` (`employee_id` et
+//     `approved_by`) : l'embed `employees(...)` est ambigu et PostgREST répond
+//     **HTTP 300 / PGRST201**. Il faut nommer la contrainte à utiliser.
+//  2. le select demandait `manager_id`, colonne qui n'existe pas sur `employees` —
+//     **HTTP 400 / 42703 « column employees_1.manager_id does not exist »**. Il
+//     n'existe aucun lien hiérarchique sur `employees` en base (seules `projects` et
+//     `expense_reports` ont un `manager_id`).
+// Conséquence : la page d'approbation des congés (`ManagerLeaveApprovalsPage`) ne
+// pouvait rien afficher. Son unique appel se fait sans `managerId`, donc le filtre
+// hiérarchique n'a de toute façon jamais été exercé.
+// Le paramètre est conservé pour ne pas casser la signature, mais il lève désormais
+// au lieu de rendre une liste vide : filtrer sur un champ inexistant renverrait
+// silencieusement « aucune demande à approuver ».
+export async function getPendingLeaveRequests(
+  managerId?: string
+): Promise<(LeaveRequest & { employees: Joined<'employees', 'name' | 'department'> })[]> {
+  if (managerId) {
+    throw new Error(
+      "getPendingLeaveRequests : filtrage par manager non disponible — `employees` ne porte aucun lien hiérarchique en base. Ajouter la colonne et une migration avant d'utiliser ce paramètre."
+    )
   }
-  return data as any[]
+  const tid = await getTenantId()
+  let q = supabase
+    .from('leave_requests')
+    .select('*, employees!leave_requests_employee_id_fkey(name, department)')
+    .eq('status', 'pending')
+    .order('start_date', { ascending: false })
+    .order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const data = await fetchAllRows<LeaveRequest & { employees: Joined<'employees', 'name' | 'department'> }>(
+    q, { label: 'getPendingLeaveRequests' }
+  )
+  return data
 }
 
 export async function approveLeaveRequest(id: string, _managerId: string, comment?: string): Promise<void> {

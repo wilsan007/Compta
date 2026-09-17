@@ -3,6 +3,18 @@
 // NE PAS ÉDITER MANUELLEMENT — utiliser scripts/generate-db-types.mjs
 // ============================================
 
+// LOT7-04 : les colonnes json/jsonb étaient typées `any`, ce qui désactivait
+// tout contrôle sur leur contenu ET sur tout ce qu'on en dérivait. `Json` décrit
+// la forme réelle d'une valeur JSON : le compilateur exige désormais un accès
+// explicite (cast ou garde de type) au lieu de laisser passer n'importe quoi.
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export interface Database {
   public: {
     Tables: {
@@ -31,6 +43,7 @@ export interface Database {
         entity_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     account_tags: {
       Row: {
@@ -60,6 +73,7 @@ export interface Database {
         country_code?: string
         created_at?: string
       }
+      Relationships: []
     }
     accounting_control_runs: {
       Row: {
@@ -73,7 +87,7 @@ export interface Database {
         total_checks: number
         errors_found: number
         warnings_found: number
-        details: any
+        details: Json
         created_at: string
       }
       Insert: {
@@ -87,7 +101,7 @@ export interface Database {
         total_checks?: number
         errors_found?: number
         warnings_found?: number
-        details?: any
+        details?: Json
         created_at?: string
       }
       Update: {
@@ -101,9 +115,10 @@ export interface Database {
         total_checks?: number
         errors_found?: number
         warnings_found?: number
-        details?: any
+        details?: Json
         created_at?: string
       }
+      Relationships: []
     }
     analytic_distribution_lines: {
       Row: {
@@ -136,6 +151,7 @@ export interface Database {
         amount?: number
         created_at?: string
       }
+      Relationships: []
     }
     analytic_journal_codes: {
       Row: {
@@ -171,6 +187,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     analytic_plans: {
       Row: {
@@ -206,6 +223,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     analytic_sections: {
       Row: {
@@ -244,6 +262,7 @@ export interface Database {
         tenant_id?: string
         plan_id?: string
       }
+      Relationships: []
     }
     api_call_logs: {
       Row: {
@@ -285,6 +304,7 @@ export interface Database {
         duration_ms?: number
         called_at?: string
       }
+      Relationships: []
     }
     api_keys: {
       Row: {
@@ -293,7 +313,7 @@ export interface Database {
         name: string
         key_hash: string
         key_prefix?: string
-        permissions?: any
+        permissions?: Json
         rate_limit_per_min?: number
         active?: boolean
         expires_at?: string
@@ -301,7 +321,7 @@ export interface Database {
         created_by?: string
         created_at: string
         revoked_at?: string
-        scope?: any
+        scope?: string[]
       }
       Insert: {
         id?: string
@@ -309,7 +329,7 @@ export interface Database {
         name: string
         key_hash: string
         key_prefix?: string
-        permissions?: any
+        permissions?: Json
         rate_limit_per_min?: number
         active?: boolean
         expires_at?: string
@@ -317,7 +337,7 @@ export interface Database {
         created_by?: string
         created_at?: string
         revoked_at?: string
-        scope?: any
+        scope?: string[]
       }
       Update: {
         id?: string
@@ -325,7 +345,7 @@ export interface Database {
         name?: string
         key_hash?: string
         key_prefix?: string
-        permissions?: any
+        permissions?: Json
         rate_limit_per_min?: number
         active?: boolean
         expires_at?: string
@@ -333,8 +353,9 @@ export interface Database {
         created_by?: string
         created_at?: string
         revoked_at?: string
-        scope?: any
+        scope?: string[]
       }
+      Relationships: []
     }
     approval_workflows: {
       Row: {
@@ -342,7 +363,7 @@ export interface Database {
         tenant_id: string
         name: string
         entity_type: string
-        steps?: any
+        steps?: Json
         active?: boolean
         created_at?: string
       }
@@ -351,7 +372,7 @@ export interface Database {
         tenant_id: string
         name: string
         entity_type: string
-        steps?: any
+        steps?: Json
         active?: boolean
         created_at?: string
       }
@@ -360,10 +381,11 @@ export interface Database {
         tenant_id?: string
         name?: string
         entity_type?: string
-        steps?: any
+        steps?: Json
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     asset_batch_disposal_lines: {
       Row: {
@@ -399,6 +421,7 @@ export interface Database {
         gain_loss?: number
         created_at?: string
       }
+      Relationships: []
     }
     asset_batch_disposals: {
       Row: {
@@ -440,6 +463,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     asset_depreciation_plans: {
       Row: {
@@ -493,6 +517,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     asset_depreciations: {
       Row: {
@@ -534,6 +559,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     asset_documents: {
       Row: {
@@ -566,6 +592,7 @@ export interface Database {
         description?: string
         created_at?: string
       }
+      Relationships: []
     }
     asset_families: {
       Row: {
@@ -610,6 +637,7 @@ export interface Database {
         description?: string
         created_at?: string
       }
+      Relationships: []
     }
     asset_free_fields: {
       Row: {
@@ -642,6 +670,7 @@ export interface Database {
         field_category?: string
         created_at?: string
       }
+      Relationships: []
     }
     asset_revaluations: {
       Row: {
@@ -680,6 +709,7 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     asset_split_components: {
       Row: {
@@ -709,6 +739,7 @@ export interface Database {
         allocated_percentage?: number
         created_at?: string
       }
+      Relationships: []
     }
     asset_splits: {
       Row: {
@@ -735,6 +766,7 @@ export interface Database {
         reason?: string
         created_at?: string
       }
+      Relationships: []
     }
     at_rates: {
       Row: {
@@ -770,6 +802,7 @@ export interface Database {
         risk_category?: string
         created_at?: string
       }
+      Relationships: []
     }
     audit_log: {
       Row: {
@@ -780,7 +813,7 @@ export interface Database {
         entity_id?: string
         entity_number?: string
         description?: string
-        metadata?: any
+        metadata?: Json
         ip_address?: string
         created_at?: string
         tenant_id: string
@@ -793,7 +826,7 @@ export interface Database {
         entity_id?: string
         entity_number?: string
         description?: string
-        metadata?: any
+        metadata?: Json
         ip_address?: string
         created_at?: string
         tenant_id: string
@@ -806,11 +839,12 @@ export interface Database {
         entity_id?: string
         entity_number?: string
         description?: string
-        metadata?: any
+        metadata?: Json
         ip_address?: string
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     auto_label_rules: {
       Row: {
@@ -855,6 +889,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     bank_accounts: {
       Row: {
@@ -914,6 +949,7 @@ export interface Database {
         calculated_balance?: number
         reconciliation_diff?: number
       }
+      Relationships: []
     }
     bank_connections: {
       Row: {
@@ -927,7 +963,7 @@ export interface Database {
         sync_frequency?: string
         next_sync_at?: string
         error_message?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Insert: {
@@ -941,7 +977,7 @@ export interface Database {
         sync_frequency?: string
         next_sync_at?: string
         error_message?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Update: {
@@ -955,9 +991,10 @@ export interface Database {
         sync_frequency?: string
         next_sync_at?: string
         error_message?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
+      Relationships: []
     }
     bank_reconciliation_rules: {
       Row: {
@@ -1002,6 +1039,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     bank_reconciliation_suggestions: {
       Row: {
@@ -1046,6 +1084,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     bank_rules: {
       Row: {
@@ -1090,6 +1129,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     bank_statement_imports: {
       Row: {
@@ -1128,6 +1168,7 @@ export interface Database {
         error_message?: string
         imported_at?: string
       }
+      Relationships: []
     }
     bank_statement_templates: {
       Row: {
@@ -1208,6 +1249,7 @@ export interface Database {
         last_validated_at?: string
         last_correction_notes?: string
       }
+      Relationships: []
     }
     bank_transactions: {
       Row: {
@@ -1297,6 +1339,7 @@ export interface Database {
         match_type?: string
         bank_account_id?: string
       }
+      Relationships: []
     }
     banks: {
       Row: {
@@ -1326,6 +1369,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     batch_entry_sessions: {
       Row: {
@@ -1373,6 +1417,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     bdes_indicators: {
       Row: {
@@ -1383,7 +1428,7 @@ export interface Database {
         indicator_name: string
         indicator_value?: number
         indicator_unit?: string
-        breakdown?: any
+        breakdown?: Json
         target_value?: number
         previous_year_value?: number
         notes?: string
@@ -1397,7 +1442,7 @@ export interface Database {
         indicator_name: string
         indicator_value?: number
         indicator_unit?: string
-        breakdown?: any
+        breakdown?: Json
         target_value?: number
         previous_year_value?: number
         notes?: string
@@ -1411,12 +1456,13 @@ export interface Database {
         indicator_name?: string
         indicator_value?: number
         indicator_unit?: string
-        breakdown?: any
+        breakdown?: Json
         target_value?: number
         previous_year_value?: number
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     bom_lines: {
       Row: {
@@ -1452,6 +1498,7 @@ export interface Database {
         scrap_rate?: number
         lot_id?: string
       }
+      Relationships: []
     }
     boms: {
       Row: {
@@ -1493,6 +1540,7 @@ export interface Database {
         routing_id?: string
         bom_type?: string
       }
+      Relationships: []
     }
     budget_commitments: {
       Row: {
@@ -1543,6 +1591,7 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     budgets: {
       Row: {
@@ -1608,6 +1657,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     business_alert_rules: {
       Row: {
@@ -1615,7 +1665,7 @@ export interface Database {
         tenant_id: string
         alert_type: string
         entity_type?: string
-        condition_config: any
+        condition_config: Json
         notification_channel?: string
         is_active?: boolean
         created_at?: string
@@ -1625,7 +1675,7 @@ export interface Database {
         tenant_id: string
         alert_type: string
         entity_type?: string
-        condition_config: any
+        condition_config: Json
         notification_channel?: string
         is_active?: boolean
         created_at?: string
@@ -1635,11 +1685,12 @@ export interface Database {
         tenant_id?: string
         alert_type?: string
         entity_type?: string
-        condition_config?: any
+        condition_config?: Json
         notification_channel?: string
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     business_connectors: {
       Row: {
@@ -1647,8 +1698,8 @@ export interface Database {
         tenant_id: string
         connector_type: string
         name: string
-        config: any
-        secret_refs?: any
+        config: Json
+        secret_refs?: Json
         is_active?: boolean
         last_sync_at?: string
         created_at?: string
@@ -1658,8 +1709,8 @@ export interface Database {
         tenant_id: string
         connector_type: string
         name: string
-        config: any
-        secret_refs?: any
+        config: Json
+        secret_refs?: Json
         is_active?: boolean
         last_sync_at?: string
         created_at?: string
@@ -1669,12 +1720,13 @@ export interface Database {
         tenant_id?: string
         connector_type?: string
         name?: string
-        config?: any
-        secret_refs?: any
+        config?: Json
+        secret_refs?: Json
         is_active?: boolean
         last_sync_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     career_history: {
       Row: {
@@ -1702,7 +1754,7 @@ export interface Database {
         previous_collective_agreement_id?: string
         new_collective_agreement_id?: string
         reason?: string
-        documents?: any
+        documents?: Json
       }
       Insert: {
         id?: string
@@ -1729,7 +1781,7 @@ export interface Database {
         previous_collective_agreement_id?: string
         new_collective_agreement_id?: string
         reason?: string
-        documents?: any
+        documents?: Json
       }
       Update: {
         id?: string
@@ -1756,8 +1808,9 @@ export interface Database {
         previous_collective_agreement_id?: string
         new_collective_agreement_id?: string
         reason?: string
-        documents?: any
+        documents?: Json
       }
+      Relationships: []
     }
     carry_forward_log: {
       Row: {
@@ -1799,6 +1852,7 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     cash_control_sessions: {
       Row: {
@@ -1815,7 +1869,7 @@ export interface Database {
         validated_by?: string
         validated_at?: string
         notes?: string
-        details: any
+        details: Json
         created_at: string
         updated_at: string
       }
@@ -1833,7 +1887,7 @@ export interface Database {
         validated_by?: string
         validated_at?: string
         notes?: string
-        details?: any
+        details?: Json
         created_at?: string
         updated_at?: string
       }
@@ -1851,10 +1905,11 @@ export interface Database {
         validated_by?: string
         validated_at?: string
         notes?: string
-        details?: any
+        details?: Json
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     chart_account_templates: {
       Row: {
@@ -1890,6 +1945,7 @@ export interface Database {
         sort_order?: number
         created_at?: string
       }
+      Relationships: []
     }
     chart_accounts: {
       Row: {
@@ -1976,6 +2032,7 @@ export interface Database {
         deprecated?: boolean
         account_type?: string
       }
+      Relationships: []
     }
     check_books: {
       Row: {
@@ -2017,6 +2074,7 @@ export interface Database {
         issued_count?: number
         created_at?: string
       }
+      Relationships: []
     }
     checks: {
       Row: {
@@ -2064,6 +2122,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     cice_config: {
       Row: {
@@ -2096,6 +2155,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     collection_reminders: {
       Row: {
@@ -2164,6 +2224,7 @@ export interface Database {
         dispute_id?: string
         promise_id?: string
       }
+      Relationships: []
     }
     collective_agreements: {
       Row: {
@@ -2173,7 +2234,7 @@ export interface Database {
         name: string
         application_date: string
         is_active?: boolean
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Insert: {
@@ -2183,7 +2244,7 @@ export interface Database {
         name: string
         application_date?: string
         is_active?: boolean
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Update: {
@@ -2193,9 +2254,10 @@ export interface Database {
         name?: string
         application_date?: string
         is_active?: boolean
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
+      Relationships: []
     }
     collective_classifications: {
       Row: {
@@ -2231,6 +2293,7 @@ export interface Database {
         minimum_monthly_salary?: number
         created_at?: string
       }
+      Relationships: []
     }
     compaction_logs: {
       Row: {
@@ -2242,7 +2305,7 @@ export interface Database {
         status: string
         compacted_by?: string
         compacted_at: string
-        details?: any
+        details?: Json
       }
       Insert: {
         id?: string
@@ -2253,7 +2316,7 @@ export interface Database {
         status?: string
         compacted_by?: string
         compacted_at?: string
-        details?: any
+        details?: Json
       }
       Update: {
         id?: string
@@ -2264,8 +2327,9 @@ export interface Database {
         status?: string
         compacted_by?: string
         compacted_at?: string
-        details?: any
+        details?: Json
       }
+      Relationships: []
     }
     company_settings: {
       Row: {
@@ -2379,6 +2443,7 @@ export interface Database {
         next_lettrage_seq?: number
         enforce_segregation?: boolean
       }
+      Relationships: []
     }
     consolidated_treasury: {
       Row: {
@@ -2388,7 +2453,7 @@ export interface Database {
         total_assets?: number
         total_liabilities?: number
         net_position?: number
-        details?: any
+        details?: Json
         created_at?: string
       }
       Insert: {
@@ -2398,7 +2463,7 @@ export interface Database {
         total_assets?: number
         total_liabilities?: number
         net_position?: number
-        details?: any
+        details?: Json
         created_at?: string
       }
       Update: {
@@ -2408,9 +2473,10 @@ export interface Database {
         total_assets?: number
         total_liabilities?: number
         net_position?: number
-        details?: any
+        details?: Json
         created_at?: string
       }
+      Relationships: []
     }
     contracts: {
       Row: {
@@ -2467,6 +2533,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     corporate_tax_grid_lines: {
       Row: {
@@ -2511,6 +2578,7 @@ export interface Database {
         sort_order?: number
         created_at?: string
       }
+      Relationships: []
     }
     corporate_tax_grids: {
       Row: {
@@ -2561,6 +2629,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     cpf_accounts: {
       Row: {
@@ -2569,7 +2638,7 @@ export interface Database {
         employee_id: string
         balance_hours?: number
         balance_amount?: number
-        history?: any
+        history?: Json
         created_at?: string
         updated_at?: string
         last_sync_date?: string
@@ -2580,7 +2649,7 @@ export interface Database {
         employee_id: string
         balance_hours?: number
         balance_amount?: number
-        history?: any
+        history?: Json
         created_at?: string
         updated_at?: string
         last_sync_date?: string
@@ -2591,11 +2660,12 @@ export interface Database {
         employee_id?: string
         balance_hours?: number
         balance_amount?: number
-        history?: any
+        history?: Json
         created_at?: string
         updated_at?: string
         last_sync_date?: string
       }
+      Relationships: []
     }
     cpf_transactions: {
       Row: {
@@ -2640,6 +2710,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     credit_lines: {
       Row: {
@@ -2690,6 +2761,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     credit_note_lines: {
       Row: {
@@ -2731,6 +2803,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     credit_notes: {
       Row: {
@@ -2796,6 +2869,7 @@ export interface Database {
         amount_total_currency?: number
         source_invoice_id?: string
       }
+      Relationships: []
     }
     crm_activities: {
       Row: {
@@ -2843,6 +2917,7 @@ export interface Database {
         assigned_to?: string
         created_at?: string
       }
+      Relationships: []
     }
     crm_campaign_recipients: {
       Row: {
@@ -2893,6 +2968,7 @@ export interface Database {
         responded?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     crm_campaigns: {
       Row: {
@@ -2907,7 +2983,7 @@ export interface Database {
         budget?: number
         actual_cost?: number
         target_audience?: string
-        segment_criteria?: any
+        segment_criteria?: Json
         sent_count?: number
         open_count?: number
         click_count?: number
@@ -2927,7 +3003,7 @@ export interface Database {
         budget?: number
         actual_cost?: number
         target_audience?: string
-        segment_criteria?: any
+        segment_criteria?: Json
         sent_count?: number
         open_count?: number
         click_count?: number
@@ -2947,7 +3023,7 @@ export interface Database {
         budget?: number
         actual_cost?: number
         target_audience?: string
-        segment_criteria?: any
+        segment_criteria?: Json
         sent_count?: number
         open_count?: number
         click_count?: number
@@ -2955,6 +3031,7 @@ export interface Database {
         conversion_count?: number
         created_at?: string
       }
+      Relationships: []
     }
     crm_forecasts: {
       Row: {
@@ -2996,6 +3073,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     crm_opportunities: {
       Row: {
@@ -3015,7 +3093,7 @@ export interface Database {
         sales_rep_id?: string
         source?: string
         lost_reason?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -3036,7 +3114,7 @@ export interface Database {
         sales_rep_id?: string
         source?: string
         lost_reason?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -3057,17 +3135,18 @@ export interface Database {
         sales_rep_id?: string
         source?: string
         lost_reason?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     crm_scoring_rules: {
       Row: {
         id: string
         tenant_id: string
         rule_name: string
-        criteria: any
+        criteria: Json
         points: number
         is_active?: boolean
         created_at?: string
@@ -3076,7 +3155,7 @@ export interface Database {
         id?: string
         tenant_id: string
         rule_name: string
-        criteria: any
+        criteria: Json
         points: number
         is_active?: boolean
         created_at?: string
@@ -3085,11 +3164,12 @@ export interface Database {
         id?: string
         tenant_id?: string
         rule_name?: string
-        criteria?: any
+        criteria?: Json
         points?: number
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     crm_sequence_steps: {
       Row: {
@@ -3122,6 +3202,7 @@ export interface Database {
         delay_days?: number
         created_at?: string
       }
+      Relationships: []
     }
     crm_sequences: {
       Row: {
@@ -3151,6 +3232,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     crm_territories: {
       Row: {
@@ -3160,7 +3242,7 @@ export interface Database {
         code?: string
         parent_id?: string
         sales_rep_id?: string
-        regions?: any
+        regions?: string[]
         active?: boolean
         created_at?: string
       }
@@ -3171,7 +3253,7 @@ export interface Database {
         code?: string
         parent_id?: string
         sales_rep_id?: string
-        regions?: any
+        regions?: string[]
         active?: boolean
         created_at?: string
       }
@@ -3182,10 +3264,11 @@ export interface Database {
         code?: string
         parent_id?: string
         sales_rep_id?: string
-        regions?: any
+        regions?: string[]
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     currencies: {
       Row: {
@@ -3233,6 +3316,7 @@ export interface Database {
         active?: boolean
         position?: string
       }
+      Relationships: []
     }
     currency_revaluations: {
       Row: {
@@ -3295,6 +3379,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     custom_field_definitions: {
       Row: {
@@ -3304,7 +3389,7 @@ export interface Database {
         field_name: string
         field_label: string
         field_type: string
-        field_options?: any
+        field_options?: Json
         is_required?: boolean
         is_active?: boolean
         created_at?: string
@@ -3316,7 +3401,7 @@ export interface Database {
         field_name: string
         field_label: string
         field_type: string
-        field_options?: any
+        field_options?: Json
         is_required?: boolean
         is_active?: boolean
         created_at?: string
@@ -3328,11 +3413,12 @@ export interface Database {
         field_name?: string
         field_label?: string
         field_type?: string
-        field_options?: any
+        field_options?: Json
         is_required?: boolean
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     custom_field_values: {
       Row: {
@@ -3341,7 +3427,7 @@ export interface Database {
         field_id: string
         entity_type: string
         entity_id: string
-        field_value?: any
+        field_value?: Json
         created_at?: string
       }
       Insert: {
@@ -3350,7 +3436,7 @@ export interface Database {
         field_id: string
         entity_type: string
         entity_id: string
-        field_value?: any
+        field_value?: Json
         created_at?: string
       }
       Update: {
@@ -3359,9 +3445,10 @@ export interface Database {
         field_id?: string
         entity_type?: string
         entity_id?: string
-        field_value?: any
+        field_value?: Json
         created_at?: string
       }
+      Relationships: []
     }
     custom_report_templates: {
       Row: {
@@ -3371,8 +3458,8 @@ export interface Database {
         description?: string
         report_type: string
         category: string
-        columns: any
-        filters: any
+        columns: Json
+        filters: Json
         group_by?: string
         sort_by?: string
         sort_order?: string
@@ -3394,8 +3481,8 @@ export interface Database {
         description?: string
         report_type: string
         category?: string
-        columns?: any
-        filters?: any
+        columns?: Json
+        filters?: Json
         group_by?: string
         sort_by?: string
         sort_order?: string
@@ -3417,8 +3504,8 @@ export interface Database {
         description?: string
         report_type?: string
         category?: string
-        columns?: any
-        filters?: any
+        columns?: Json
+        filters?: Json
         group_by?: string
         sort_by?: string
         sort_order?: string
@@ -3433,6 +3520,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     customer_contacts: {
       Row: {
@@ -3477,6 +3565,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     customer_payments: {
       Row: {
@@ -3539,6 +3628,7 @@ export interface Database {
         transferred_entry_id?: string
         invoice_number?: string
       }
+      Relationships: []
     }
     customers: {
       Row: {
@@ -3575,7 +3665,7 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         credit_used?: number
         credit_blocked?: boolean
         account_tiers?: string
@@ -3618,7 +3708,7 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         credit_used?: number
         credit_blocked?: boolean
         account_tiers?: string
@@ -3661,7 +3751,7 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         credit_used?: number
         credit_blocked?: boolean
         account_tiers?: string
@@ -3670,6 +3760,7 @@ export interface Database {
         credit_warning?: boolean
         import_batch_id?: string
       }
+      Relationships: []
     }
     dashboard_widgets: {
       Row: {
@@ -3678,7 +3769,7 @@ export interface Database {
         user_id: string
         widget_type: string
         title: string
-        config?: any
+        config?: Json
         position: number
         size: string
         visible?: boolean
@@ -3691,7 +3782,7 @@ export interface Database {
         user_id: string
         widget_type: string
         title: string
-        config?: any
+        config?: Json
         position?: number
         size?: string
         visible?: boolean
@@ -3704,13 +3795,14 @@ export interface Database {
         user_id?: string
         widget_type?: string
         title?: string
-        config?: any
+        config?: Json
         position?: number
         size?: string
         visible?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     data_import_logs: {
       Row: {
@@ -3722,7 +3814,7 @@ export interface Database {
         total_rows?: number
         imported_rows?: number
         rejected_rows?: number
-        error_details?: any
+        error_details?: Json
         status: string
         started_at?: string
         completed_at?: string
@@ -3737,7 +3829,7 @@ export interface Database {
         total_rows?: number
         imported_rows?: number
         rejected_rows?: number
-        error_details?: any
+        error_details?: Json
         status?: string
         started_at?: string
         completed_at?: string
@@ -3752,12 +3844,13 @@ export interface Database {
         total_rows?: number
         imported_rows?: number
         rejected_rows?: number
-        error_details?: any
+        error_details?: Json
         status?: string
         started_at?: string
         completed_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     deferred_printing_jobs: {
       Row: {
@@ -3765,7 +3858,7 @@ export interface Database {
         tenant_id: string
         job_name: string
         report_type: string
-        parameters: any
+        parameters: Json
         scheduled_date: string
         status: string
         output_format: string
@@ -3780,7 +3873,7 @@ export interface Database {
         tenant_id: string
         job_name: string
         report_type: string
-        parameters?: any
+        parameters?: Json
         scheduled_date: string
         status?: string
         output_format?: string
@@ -3795,7 +3888,7 @@ export interface Database {
         tenant_id?: string
         job_name?: string
         report_type?: string
-        parameters?: any
+        parameters?: Json
         scheduled_date?: string
         status?: string
         output_format?: string
@@ -3805,6 +3898,7 @@ export interface Database {
         error_message?: string
         created_at?: string
       }
+      Relationships: []
     }
     delivery_note_lines: {
       Row: {
@@ -3846,6 +3940,7 @@ export interface Database {
         lot_id?: string
         serial_id?: string
       }
+      Relationships: []
     }
     delivery_notes: {
       Row: {
@@ -3896,6 +3991,7 @@ export interface Database {
         fully_invoiced?: boolean
         invoice_status?: string
       }
+      Relationships: []
     }
     delivery_schedules: {
       Row: {
@@ -3934,6 +4030,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     disputes: {
       Row: {
@@ -3981,6 +4078,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     distribution_grill_lines: {
       Row: {
@@ -4007,6 +4105,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     distribution_grills: {
       Row: {
@@ -4042,6 +4141,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     document_attachments: {
       Row: {
@@ -4080,6 +4180,7 @@ export interface Database {
         uploaded_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     document_charges: {
       Row: {
@@ -4124,6 +4225,7 @@ export interface Database {
         supplier_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     document_distribution_logs: {
       Row: {
@@ -4165,6 +4267,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     document_number_sequences: {
       Row: {
@@ -4191,6 +4294,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     document_shares: {
       Row: {
@@ -4232,6 +4336,7 @@ export interface Database {
         viewed_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     document_templates: {
       Row: {
@@ -4242,7 +4347,7 @@ export interface Database {
         logo_url?: string
         primary_color?: string
         secondary_color?: string
-        template_config?: any
+        template_config?: Json
         is_default?: boolean
         created_at?: string
       }
@@ -4254,7 +4359,7 @@ export interface Database {
         logo_url?: string
         primary_color?: string
         secondary_color?: string
-        template_config?: any
+        template_config?: Json
         is_default?: boolean
         created_at?: string
       }
@@ -4266,10 +4371,11 @@ export interface Database {
         logo_url?: string
         primary_color?: string
         secondary_color?: string
-        template_config?: any
+        template_config?: Json
         is_default?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     document_transformations: {
       Row: {
@@ -4308,6 +4414,7 @@ export interface Database {
         transformed_at?: string
         notes?: string
       }
+      Relationships: []
     }
     dpae_records: {
       Row: {
@@ -4346,6 +4453,7 @@ export interface Database {
         response_code?: string
         created_at?: string
       }
+      Relationships: []
     }
     dsn_declarations: {
       Row: {
@@ -4387,6 +4495,7 @@ export interface Database {
         response_message?: string
         created_at?: string
       }
+      Relationships: []
     }
     e_invoicing_logs: {
       Row: {
@@ -4428,6 +4537,7 @@ export interface Database {
         delivered_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     electronic_signatures: {
       Row: {
@@ -4469,6 +4579,7 @@ export interface Database {
         signed_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     email_templates: {
       Row: {
@@ -4478,7 +4589,7 @@ export interface Database {
         subject: string
         body_html: string
         body_text?: string
-        variables: any
+        variables: Json
         locale: string
         active: boolean
         created_at: string
@@ -4491,7 +4602,7 @@ export interface Database {
         subject: string
         body_html: string
         body_text?: string
-        variables?: any
+        variables?: Json
         locale?: string
         active?: boolean
         created_at?: string
@@ -4504,12 +4615,13 @@ export interface Database {
         subject?: string
         body_html?: string
         body_text?: string
-        variables?: any
+        variables?: Json
         locale?: string
         active?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     employee_activity_logs: {
       Row: {
@@ -4518,7 +4630,7 @@ export interface Database {
         employee_id: string
         activity_type: string
         description?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Insert: {
@@ -4527,7 +4639,7 @@ export interface Database {
         employee_id: string
         activity_type: string
         description?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
       Update: {
@@ -4536,9 +4648,10 @@ export interface Database {
         employee_id?: string
         activity_type?: string
         description?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
       }
+      Relationships: []
     }
     employee_documents: {
       Row: {
@@ -4616,6 +4729,7 @@ export interface Database {
         archive_date?: string
         retention_years?: number
       }
+      Relationships: []
     }
     employee_exit_processes: {
       Row: {
@@ -4702,6 +4816,7 @@ export interface Database {
         created_at?: string
         completed_at?: string
       }
+      Relationships: []
     }
     employee_objectives: {
       Row: {
@@ -4752,6 +4867,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     employee_self_service: {
       Row: {
@@ -4787,6 +4903,7 @@ export interface Database {
         can_update_profile?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     employees: {
       Row: {
@@ -4824,8 +4941,8 @@ export interface Database {
         withholding_tax_rate?: number
         withholding_rate_source?: string
         weekly_hours?: number
-        default_start_time?: any
-        default_end_time?: any
+        default_start_time?: string
+        default_end_time?: string
         import_batch_id?: string
         first_name?: string
         last_name?: string
@@ -4870,8 +4987,8 @@ export interface Database {
         withholding_tax_rate?: number
         withholding_rate_source?: string
         weekly_hours?: number
-        default_start_time?: any
-        default_end_time?: any
+        default_start_time?: string
+        default_end_time?: string
         import_batch_id?: string
         first_name?: string
         last_name?: string
@@ -4916,8 +5033,8 @@ export interface Database {
         withholding_tax_rate?: number
         withholding_rate_source?: string
         weekly_hours?: number
-        default_start_time?: any
-        default_end_time?: any
+        default_start_time?: string
+        default_end_time?: string
         import_batch_id?: string
         first_name?: string
         last_name?: string
@@ -4927,6 +5044,7 @@ export interface Database {
         seniority_date?: string
         auth_user_id?: string
       }
+      Relationships: []
     }
     entry_templates: {
       Row: {
@@ -4934,7 +5052,7 @@ export interface Database {
         name: string
         journal_code?: string
         description?: string
-        template_lines?: any
+        template_lines?: Json
         is_default?: boolean
         active?: boolean
         created_at?: string
@@ -4947,7 +5065,7 @@ export interface Database {
         name: string
         journal_code?: string
         description?: string
-        template_lines?: any
+        template_lines?: Json
         is_default?: boolean
         active?: boolean
         created_at?: string
@@ -4960,7 +5078,7 @@ export interface Database {
         name?: string
         journal_code?: string
         description?: string
-        template_lines?: any
+        template_lines?: Json
         is_default?: boolean
         active?: boolean
         created_at?: string
@@ -4968,6 +5086,7 @@ export interface Database {
         counterpart_account?: string
         payment_terms?: string
       }
+      Relationships: []
     }
     etat_rapprochement: {
       Row: {
@@ -5015,6 +5134,7 @@ export interface Database {
         generated_at?: string
         generated_by?: string
       }
+      Relationships: []
     }
     exchange_gain_loss_entries: {
       Row: {
@@ -5059,6 +5179,7 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     exchange_rates: {
       Row: {
@@ -5091,6 +5212,7 @@ export interface Database {
         source?: string
         created_at?: string
       }
+      Relationships: []
     }
     expense_categories: {
       Row: {
@@ -5132,6 +5254,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     expense_report_lines: {
       Row: {
@@ -5149,7 +5272,7 @@ export interface Database {
         category_id?: string
         amount_ht?: number
         amount_ttc?: number
-        ocr_data?: any
+        ocr_data?: Json
         ocr_processed?: boolean
         ceiling_exceeded?: boolean
       }
@@ -5168,7 +5291,7 @@ export interface Database {
         category_id?: string
         amount_ht?: number
         amount_ttc?: number
-        ocr_data?: any
+        ocr_data?: Json
         ocr_processed?: boolean
         ceiling_exceeded?: boolean
       }
@@ -5187,10 +5310,11 @@ export interface Database {
         category_id?: string
         amount_ht?: number
         amount_ttc?: number
-        ocr_data?: any
+        ocr_data?: Json
         ocr_processed?: boolean
         ceiling_exceeded?: boolean
       }
+      Relationships: []
     }
     expense_reports: {
       Row: {
@@ -5247,6 +5371,7 @@ export interface Database {
         manager_comment?: string
         reimbursement_date?: string
       }
+      Relationships: []
     }
     extourne_log: {
       Row: {
@@ -5288,6 +5413,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     fec_attestations: {
       Row: {
@@ -5338,6 +5464,7 @@ export interface Database {
         generated_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     fiscal_backups: {
       Row: {
@@ -5373,6 +5500,7 @@ export interface Database {
         created_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     fiscal_periods: {
       Row: {
@@ -5408,6 +5536,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     fiscal_position_mappings: {
       Row: {
@@ -5440,6 +5569,7 @@ export interface Database {
         target_account_code?: string
         created_at?: string
       }
+      Relationships: []
     }
     fiscal_positions: {
       Row: {
@@ -5478,6 +5608,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     fiscal_years: {
       Row: {
@@ -5513,6 +5644,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     fixed_asset_components: {
       Row: {
@@ -5551,6 +5683,7 @@ export interface Database {
         start_date?: string
         created_at?: string
       }
+      Relationships: []
     }
     fixed_assets: {
       Row: {
@@ -5643,6 +5776,7 @@ export interface Database {
         partner_id?: string
         currency_code?: string
       }
+      Relationships: []
     }
     fusion_logs: {
       Row: {
@@ -5672,6 +5806,7 @@ export interface Database {
         fused_by?: string
         fused_at?: string
       }
+      Relationships: []
     }
     future_accounting_movements: {
       Row: {
@@ -5719,6 +5854,7 @@ export interface Database {
         incorporated_entry_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     goods_receipt_lines: {
       Row: {
@@ -5754,6 +5890,7 @@ export interface Database {
         lot_id?: string
         serial_id?: string
       }
+      Relationships: []
     }
     goods_receipts: {
       Row: {
@@ -5789,6 +5926,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     grid_templates: {
       Row: {
@@ -5798,7 +5936,7 @@ export interface Database {
         name: string
         description?: string
         journal_code?: string
-        columns_config: any
+        columns_config: Json
         default_account?: string
         is_active?: boolean
         created_at?: string
@@ -5811,7 +5949,7 @@ export interface Database {
         name: string
         description?: string
         journal_code?: string
-        columns_config?: any
+        columns_config?: Json
         default_account?: string
         is_active?: boolean
         created_at?: string
@@ -5824,12 +5962,13 @@ export interface Database {
         name?: string
         description?: string
         journal_code?: string
-        columns_config?: any
+        columns_config?: Json
         default_account?: string
         is_active?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     group_entities: {
       Row: {
@@ -5850,6 +5989,7 @@ export interface Database {
         parent_group_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     group_members: {
       Row: {
@@ -5879,6 +6019,7 @@ export interface Database {
         consolidation_method?: string
         created_at?: string
       }
+      Relationships: []
     }
     honorarium_records: {
       Row: {
@@ -5920,13 +6061,14 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     idempotency_records: {
       Row: {
         id: string
         tenant_id: string
         idempotency_key: string
-        response: any
+        response: Json
         status: number
         expires_at: string
         created_at?: string
@@ -5935,7 +6077,7 @@ export interface Database {
         id?: string
         tenant_id: string
         idempotency_key: string
-        response: any
+        response: Json
         status: number
         expires_at: string
         created_at?: string
@@ -5944,11 +6086,12 @@ export interface Database {
         id?: string
         tenant_id?: string
         idempotency_key?: string
-        response?: any
+        response?: Json
         status?: number
         expires_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     ifrs_adjustments: {
       Row: {
@@ -5999,6 +6142,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     ijss_history: {
       Row: {
@@ -6046,6 +6190,7 @@ export interface Database {
         payslip_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     import_batches: {
       Row: {
@@ -6057,7 +6202,7 @@ export interface Database {
         valid_rows?: number
         invalid_rows?: number
         status: string
-        error_report?: any
+        error_report?: Json
         created_by?: string
         created_at?: string
         validated_at?: string
@@ -6072,7 +6217,7 @@ export interface Database {
         valid_rows?: number
         invalid_rows?: number
         status?: string
-        error_report?: any
+        error_report?: Json
         created_by?: string
         created_at?: string
         validated_at?: string
@@ -6087,12 +6232,13 @@ export interface Database {
         valid_rows?: number
         invalid_rows?: number
         status?: string
-        error_report?: any
+        error_report?: Json
         created_by?: string
         created_at?: string
         validated_at?: string
         completed_at?: string
       }
+      Relationships: []
     }
     import_column_mappings: {
       Row: {
@@ -6100,7 +6246,7 @@ export interface Database {
         tenant_id: string
         name: string
         target_table: string
-        mapping: any
+        mapping: Json
         created_at?: string
         updated_at?: string
       }
@@ -6109,7 +6255,7 @@ export interface Database {
         tenant_id: string
         name: string
         target_table: string
-        mapping: any
+        mapping: Json
         created_at?: string
         updated_at?: string
       }
@@ -6118,10 +6264,11 @@ export interface Database {
         tenant_id?: string
         name?: string
         target_table?: string
-        mapping?: any
+        mapping?: Json
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     interview_campaigns: {
       Row: {
@@ -6133,7 +6280,7 @@ export interface Database {
         end_date?: string
         reminder_days?: number
         status?: string
-        form_template?: any
+        form_template?: Json
         created_at?: string
       }
       Insert: {
@@ -6145,7 +6292,7 @@ export interface Database {
         end_date?: string
         reminder_days?: number
         status?: string
-        form_template?: any
+        form_template?: Json
         created_at?: string
       }
       Update: {
@@ -6157,9 +6304,10 @@ export interface Database {
         end_date?: string
         reminder_days?: number
         status?: string
-        form_template?: any
+        form_template?: Json
         created_at?: string
       }
+      Relationships: []
     }
     interviews: {
       Row: {
@@ -6176,7 +6324,7 @@ export interface Database {
         status?: string
         created_at?: string
         campaign_id?: string
-        form_data?: any
+        form_data?: Json
         employee_feedback?: string
         employee_rating?: number
       }
@@ -6194,7 +6342,7 @@ export interface Database {
         status?: string
         created_at?: string
         campaign_id?: string
-        form_data?: any
+        form_data?: Json
         employee_feedback?: string
         employee_rating?: number
       }
@@ -6212,10 +6360,11 @@ export interface Database {
         status?: string
         created_at?: string
         campaign_id?: string
-        form_data?: any
+        form_data?: Json
         employee_feedback?: string
         employee_rating?: number
       }
+      Relationships: []
     }
     intra_group_transactions: {
       Row: {
@@ -6257,6 +6406,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     investments: {
       Row: {
@@ -6304,6 +6454,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     invoice_lines: {
       Row: {
@@ -6360,6 +6511,7 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
       }
+      Relationships: []
     }
     invoices: {
       Row: {
@@ -6473,6 +6625,7 @@ export interface Database {
         transferred_entry_id?: string
         project_id?: string
       }
+      Relationships: []
     }
     job_applications: {
       Row: {
@@ -6511,6 +6664,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     job_postings: {
       Row: {
@@ -6558,6 +6712,7 @@ export interface Database {
         closing_date?: string
         created_at?: string
       }
+      Relationships: []
     }
     journal_access_rights: {
       Row: {
@@ -6599,6 +6754,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     journal_entries: {
       Row: {
@@ -6682,6 +6838,7 @@ export interface Database {
         exchange_rate_date?: string
         created_by?: string
       }
+      Relationships: []
     }
     journal_lines: {
       Row: {
@@ -6714,8 +6871,8 @@ export interface Database {
         marking_code?: string
         marked_bap?: boolean
         marked_bap_date?: string
-        tax_tag_ids?: any
-        analytic_distribution?: any
+        tax_tag_ids?: string[]
+        analytic_distribution?: Json
         amount_residual?: number
         product_id?: string
         product_uom?: string
@@ -6752,8 +6909,8 @@ export interface Database {
         marking_code?: string
         marked_bap?: boolean
         marked_bap_date?: string
-        tax_tag_ids?: any
-        analytic_distribution?: any
+        tax_tag_ids?: string[]
+        analytic_distribution?: Json
         amount_residual?: number
         product_id?: string
         product_uom?: string
@@ -6790,14 +6947,15 @@ export interface Database {
         marking_code?: string
         marked_bap?: boolean
         marked_bap_date?: string
-        tax_tag_ids?: any
-        analytic_distribution?: any
+        tax_tag_ids?: string[]
+        analytic_distribution?: Json
         amount_residual?: number
         product_id?: string
         product_uom?: string
         lettrage_partial?: boolean
         lettrage_group_id?: string
       }
+      Relationships: []
     }
     journals: {
       Row: {
@@ -6866,6 +7024,7 @@ export interface Database {
         sequence?: number
         next_number?: number
       }
+      Relationships: []
     }
     justificatif_solde: {
       Row: {
@@ -6907,6 +7066,7 @@ export interface Database {
         generated_at?: string
         generated_by?: string
       }
+      Relationships: []
     }
     knowledge_base_articles: {
       Row: {
@@ -6915,7 +7075,7 @@ export interface Database {
         title: string
         category?: string
         content: string
-        tags?: any
+        tags?: string[]
         author?: string
         status?: string
         views?: number
@@ -6931,7 +7091,7 @@ export interface Database {
         title: string
         category?: string
         content: string
-        tags?: any
+        tags?: string[]
         author?: string
         status?: string
         views?: number
@@ -6947,7 +7107,7 @@ export interface Database {
         title?: string
         category?: string
         content?: string
-        tags?: any
+        tags?: string[]
         author?: string
         status?: string
         views?: number
@@ -6957,6 +7117,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     landed_cost_lines: {
       Row: {
@@ -6992,6 +7153,7 @@ export interface Database {
         new_unit_cost?: number
         created_at?: string
       }
+      Relationships: []
     }
     landed_costs: {
       Row: {
@@ -7024,6 +7186,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     leave_balances: {
       Row: {
@@ -7074,6 +7237,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     leave_provisions: {
       Row: {
@@ -7127,6 +7291,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     leave_requests: {
       Row: {
@@ -7171,6 +7336,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     leave_rules: {
       Row: {
@@ -7239,6 +7405,7 @@ export interface Database {
         lateness_deduction_rate?: number
         lateness_grace_period?: number
       }
+      Relationships: []
     }
     legal_declarations: {
       Row: {
@@ -7283,6 +7450,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     legal_watch: {
       Row: {
@@ -7324,6 +7492,7 @@ export interface Database {
         read?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     legislation_packs: {
       Row: {
@@ -7383,6 +7552,7 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     lettrage_differences: {
       Row: {
@@ -7430,6 +7600,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     lettrage_groups: {
       Row: {
@@ -7471,6 +7642,7 @@ export interface Database {
         created_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     machines: {
       Row: {
@@ -7509,6 +7681,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     maintenance_plans: {
       Row: {
@@ -7550,6 +7723,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     maintenance_records: {
       Row: {
@@ -7594,6 +7768,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     manufacturing_orders: {
       Row: {
@@ -7686,6 +7861,7 @@ export interface Database {
         qty_produced?: number
         qty_scrapped?: number
       }
+      Relationships: []
     }
     marking_types: {
       Row: {
@@ -7718,6 +7894,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     meal_voucher_config: {
       Row: {
@@ -7726,7 +7903,7 @@ export interface Database {
         voucher_value: number
         employer_share?: number
         employee_share?: number
-        eligible_days?: any
+        eligible_days?: string[]
         max_per_month?: number
         active?: boolean
         created_at?: string
@@ -7737,7 +7914,7 @@ export interface Database {
         voucher_value?: number
         employer_share?: number
         employee_share?: number
-        eligible_days?: any
+        eligible_days?: string[]
         max_per_month?: number
         active?: boolean
         created_at?: string
@@ -7748,11 +7925,12 @@ export interface Database {
         voucher_value?: number
         employer_share?: number
         employee_share?: number
-        eligible_days?: any
+        eligible_days?: string[]
         max_per_month?: number
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     medical_exams: {
       Row: {
@@ -7797,6 +7975,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     migration_templates: {
       Row: {
@@ -7805,8 +7984,8 @@ export interface Database {
         source_software: string
         source_version?: string
         target_table: string
-        column_mapping: any
-        transformation_rules?: any
+        column_mapping: Json
+        transformation_rules?: Json
         is_active?: boolean
         created_at?: string
       }
@@ -7816,8 +7995,8 @@ export interface Database {
         source_software: string
         source_version?: string
         target_table: string
-        column_mapping: any
-        transformation_rules?: any
+        column_mapping: Json
+        transformation_rules?: Json
         is_active?: boolean
         created_at?: string
       }
@@ -7827,11 +8006,12 @@ export interface Database {
         source_software?: string
         source_version?: string
         target_table?: string
-        column_mapping?: any
-        transformation_rules?: any
+        column_mapping?: Json
+        transformation_rules?: Json
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     mirror_servers: {
       Row: {
@@ -7844,9 +8024,9 @@ export interface Database {
         registered_at?: string
         last_heartbeat?: string
         status: string
-        config?: any
+        config?: Json
         install_status?: string
-        verification_data?: any
+        verification_data?: Json
         verified_at?: string
         install_token?: string
         install_platform?: string
@@ -7862,9 +8042,9 @@ export interface Database {
         registered_at?: string
         last_heartbeat?: string
         status?: string
-        config?: any
+        config?: Json
         install_status?: string
-        verification_data?: any
+        verification_data?: Json
         verified_at?: string
         install_token?: string
         install_platform?: string
@@ -7880,14 +8060,15 @@ export interface Database {
         registered_at?: string
         last_heartbeat?: string
         status?: string
-        config?: any
+        config?: Json
         install_status?: string
-        verification_data?: any
+        verification_data?: Json
         verified_at?: string
         install_token?: string
         install_platform?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     mirror_verification_details: {
       Row: {
@@ -7920,6 +8101,7 @@ export interface Database {
         verified_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     mo_consumptions: {
       Row: {
@@ -7955,6 +8137,7 @@ export interface Database {
         variance_quantity?: number
         created_at?: string
       }
+      Relationships: []
     }
     mo_operations: {
       Row: {
@@ -8008,6 +8191,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     module_document_access_log: {
       Row: {
@@ -8016,7 +8200,7 @@ export interface Database {
         document_id: string
         user_id: string
         action: string
-        ip_address?: any
+        ip_address?: string
         user_agent?: string
         created_at: string
       }
@@ -8026,7 +8210,7 @@ export interface Database {
         document_id: string
         user_id: string
         action: string
-        ip_address?: any
+        ip_address?: string
         user_agent?: string
         created_at?: string
       }
@@ -8036,10 +8220,11 @@ export interface Database {
         document_id?: string
         user_id?: string
         action?: string
-        ip_address?: any
+        ip_address?: string
         user_agent?: string
         created_at?: string
       }
+      Relationships: []
     }
     module_document_shares: {
       Row: {
@@ -8078,6 +8263,7 @@ export interface Database {
         download_count?: number
         created_at?: string
       }
+      Relationships: []
     }
     module_documents: {
       Row: {
@@ -8102,7 +8288,7 @@ export interface Database {
         expires_at?: string
         archived_at?: string
         uploaded_by: string
-        metadata?: any
+        metadata?: Json
         download_count?: number
         created_at: string
         updated_at: string
@@ -8129,7 +8315,7 @@ export interface Database {
         expires_at?: string
         archived_at?: string
         uploaded_by: string
-        metadata?: any
+        metadata?: Json
         download_count?: number
         created_at?: string
         updated_at?: string
@@ -8156,11 +8342,12 @@ export interface Database {
         expires_at?: string
         archived_at?: string
         uploaded_by?: string
-        metadata?: any
+        metadata?: Json
         download_count?: number
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     mrp_pending_docs: {
       Row: {
@@ -8193,6 +8380,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     mrp_proposals: {
       Row: {
@@ -8249,6 +8437,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     mrp_runs: {
       Row: {
@@ -8257,8 +8446,8 @@ export interface Database {
         run_number: string
         run_date?: string
         status?: string
-        parameters?: any
-        summary?: any
+        parameters?: Json
+        summary?: Json
         created_at?: string
       }
       Insert: {
@@ -8267,8 +8456,8 @@ export interface Database {
         run_number: string
         run_date?: string
         status?: string
-        parameters?: any
-        summary?: any
+        parameters?: Json
+        summary?: Json
         created_at?: string
       }
       Update: {
@@ -8277,10 +8466,11 @@ export interface Database {
         run_number?: string
         run_date?: string
         status?: string
-        parameters?: any
-        summary?: any
+        parameters?: Json
+        summary?: Json
         created_at?: string
       }
+      Relationships: []
     }
     nf525_event_log: {
       Row: {
@@ -8292,7 +8482,7 @@ export interface Database {
         event_date: string
         user_id?: string
         user_name?: string
-        event_data?: any
+        event_data?: Json
         previous_hash?: string
         current_hash?: string
         fiscal_year_code?: string
@@ -8309,7 +8499,7 @@ export interface Database {
         event_date?: string
         user_id?: string
         user_name?: string
-        event_data?: any
+        event_data?: Json
         previous_hash?: string
         current_hash?: string
         fiscal_year_code?: string
@@ -8326,7 +8516,7 @@ export interface Database {
         event_date?: string
         user_id?: string
         user_name?: string
-        event_data?: any
+        event_data?: Json
         previous_hash?: string
         current_hash?: string
         fiscal_year_code?: string
@@ -8334,6 +8524,7 @@ export interface Database {
         closed?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     nf525_period_closures: {
       Row: {
@@ -8363,6 +8554,7 @@ export interface Database {
         closed_by?: string
         closed_at?: string
       }
+      Relationships: []
     }
     notification_center: {
       Row: {
@@ -8376,7 +8568,7 @@ export interface Database {
         is_read?: boolean
         action_url?: string
         action_label?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
         read_at?: string
       }
@@ -8391,7 +8583,7 @@ export interface Database {
         is_read?: boolean
         action_url?: string
         action_label?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
         read_at?: string
       }
@@ -8406,10 +8598,11 @@ export interface Database {
         is_read?: boolean
         action_url?: string
         action_label?: string
-        metadata?: any
+        metadata?: Json
         created_at?: string
         read_at?: string
       }
+      Relationships: []
     }
     notification_email_queue: {
       Row: {
@@ -8451,6 +8644,7 @@ export interface Database {
         sent_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     notification_preferences: {
       Row: {
@@ -8458,7 +8652,7 @@ export interface Database {
         tenant_id: string
         employee_id: string
         email_enabled?: boolean
-        email_types?: any
+        email_types?: Json
         digest_mode?: string
         created_at?: string
         updated_at?: string
@@ -8468,7 +8662,7 @@ export interface Database {
         tenant_id: string
         employee_id: string
         email_enabled?: boolean
-        email_types?: any
+        email_types?: Json
         digest_mode?: string
         created_at?: string
         updated_at?: string
@@ -8478,11 +8672,12 @@ export interface Database {
         tenant_id?: string
         employee_id?: string
         email_enabled?: boolean
-        email_types?: any
+        email_types?: Json
         digest_mode?: string
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     notifications: {
       Row: {
@@ -8494,7 +8689,7 @@ export interface Database {
         title: string
         message: string
         link?: string
-        metadata: any
+        metadata: Json
         read_at?: string
         created_at: string
       }
@@ -8507,7 +8702,7 @@ export interface Database {
         title: string
         message: string
         link?: string
-        metadata?: any
+        metadata?: Json
         read_at?: string
         created_at?: string
       }
@@ -8520,10 +8715,11 @@ export interface Database {
         title?: string
         message?: string
         link?: string
-        metadata?: any
+        metadata?: Json
         read_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     of_consumptions: {
       Row: {
@@ -8565,6 +8761,7 @@ export interface Database {
         created_at?: string
         lot_id?: string
       }
+      Relationships: []
     }
     of_document_access: {
       Row: {
@@ -8597,6 +8794,7 @@ export interface Database {
         can_export?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     of_labels: {
       Row: {
@@ -8635,6 +8833,7 @@ export interface Database {
         is_declared?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     of_lots: {
       Row: {
@@ -8676,6 +8875,7 @@ export interface Database {
         expiry_type?: string
         created_at?: string
       }
+      Relationships: []
     }
     online_payments: {
       Row: {
@@ -8720,6 +8920,7 @@ export interface Database {
         paid_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     overtime_tiers: {
       Row: {
@@ -8749,6 +8950,7 @@ export interface Database {
         is_conventional?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     partner_bank_accounts: {
       Row: {
@@ -8799,6 +9001,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     partner_categories: {
       Row: {
@@ -8825,6 +9028,7 @@ export interface Database {
         parent_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     partner_category_mappings: {
       Row: {
@@ -8851,6 +9055,7 @@ export interface Database {
         partner_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     partner_contacts: {
       Row: {
@@ -8910,6 +9115,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     pas_rates: {
       Row: {
@@ -8942,6 +9148,7 @@ export interface Database {
         source?: string
         created_at?: string
       }
+      Relationships: []
     }
     pay_recalls: {
       Row: {
@@ -8977,6 +9184,7 @@ export interface Database {
         processed_pay_run_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     pay_runs: {
       Row: {
@@ -9021,6 +9229,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     pay_slip_clarified: {
       Row: {
@@ -9036,7 +9245,7 @@ export interface Database {
         net_before_tax?: number
         net_after_tax?: number
         total_deductions?: number
-        lines?: any
+        lines?: Json
         created_at?: string
         risk_group?: string
         exemption_amount?: number
@@ -9057,7 +9266,7 @@ export interface Database {
         net_before_tax?: number
         net_after_tax?: number
         total_deductions?: number
-        lines?: any
+        lines?: Json
         created_at?: string
         risk_group?: string
         exemption_amount?: number
@@ -9078,7 +9287,7 @@ export interface Database {
         net_before_tax?: number
         net_after_tax?: number
         total_deductions?: number
-        lines?: any
+        lines?: Json
         created_at?: string
         risk_group?: string
         exemption_amount?: number
@@ -9086,6 +9295,7 @@ export interface Database {
         net_imposable?: number
         net_paid?: number
       }
+      Relationships: []
     }
     pay_slips: {
       Row: {
@@ -9109,7 +9319,7 @@ export interface Database {
         payment_date?: string
         created_at?: string
         tenant_id: string
-        calc_inputs?: any
+        calc_inputs?: Json
         journal_entry_id?: string
         journal_posted?: boolean
       }
@@ -9134,7 +9344,7 @@ export interface Database {
         payment_date?: string
         created_at?: string
         tenant_id: string
-        calc_inputs?: any
+        calc_inputs?: Json
         journal_entry_id?: string
         journal_posted?: boolean
       }
@@ -9159,10 +9369,11 @@ export interface Database {
         payment_date?: string
         created_at?: string
         tenant_id?: string
-        calc_inputs?: any
+        calc_inputs?: Json
         journal_entry_id?: string
         journal_posted?: boolean
       }
+      Relationships: []
     }
     payment_orders: {
       Row: {
@@ -9231,6 +9442,7 @@ export interface Database {
         amount_currency?: number
         exchange_gain_loss?: number
       }
+      Relationships: []
     }
     payment_promises: {
       Row: {
@@ -9272,6 +9484,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     payment_templates_compta: {
       Row: {
@@ -9313,6 +9526,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     payment_terms: {
       Row: {
@@ -9363,6 +9577,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     payroll_accounting_entries: {
       Row: {
@@ -9407,6 +9622,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     payroll_archives: {
       Row: {
@@ -9442,6 +9658,7 @@ export interface Database {
         retention_until?: string
         created_at?: string
       }
+      Relationships: []
     }
     payroll_component_rates: {
       Row: {
@@ -9480,6 +9697,7 @@ export interface Database {
         end_date?: string
         created_at?: string
       }
+      Relationships: []
     }
     payroll_components: {
       Row: {
@@ -9533,6 +9751,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     payroll_cumulative: {
       Row: {
@@ -9598,6 +9817,7 @@ export interface Database {
         reduction_generale?: number
         overtime_exemption_used?: number
       }
+      Relationships: []
     }
     payroll_legal_parameters: {
       Row: {
@@ -9627,6 +9847,7 @@ export interface Database {
         valid_from?: string
         valid_to?: string
       }
+      Relationships: []
     }
     payroll_tax_grid_lines: {
       Row: {
@@ -9707,6 +9928,7 @@ export interface Database {
         csg_type?: string
         eligible_reduction_generale?: boolean
       }
+      Relationships: []
     }
     payroll_tax_grids: {
       Row: {
@@ -9757,6 +9979,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     payroll_templates: {
       Row: {
@@ -9764,7 +9987,7 @@ export interface Database {
         tenant_id: string
         name: string
         category?: string
-        component_ids?: any
+        component_ids?: Json
         description?: string
         active?: boolean
         created_at?: string
@@ -9774,7 +9997,7 @@ export interface Database {
         tenant_id: string
         name: string
         category?: string
-        component_ids?: any
+        component_ids?: Json
         description?: string
         active?: boolean
         created_at?: string
@@ -9784,11 +10007,12 @@ export interface Database {
         tenant_id?: string
         name?: string
         category?: string
-        component_ids?: any
+        component_ids?: Json
         description?: string
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     payroll_variable_elements: {
       Row: {
@@ -9839,6 +10063,7 @@ export interface Database {
         integrated?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     pick_list_lines: {
       Row: {
@@ -9880,6 +10105,7 @@ export interface Database {
         picked_quantity?: number
         pick_order?: number
       }
+      Relationships: []
     }
     pick_lists: {
       Row: {
@@ -9924,6 +10150,7 @@ export interface Database {
         wave_id?: string
         tour_id?: string
       }
+      Relationships: []
     }
     planning_slots: {
       Row: {
@@ -9974,6 +10201,7 @@ export interface Database {
         material_check_date?: string
         created_at?: string
       }
+      Relationships: []
     }
     pos_payment_methods: {
       Row: {
@@ -10009,6 +10237,7 @@ export interface Database {
         display_order?: number
         created_at?: string
       }
+      Relationships: []
     }
     pos_payments: {
       Row: {
@@ -10038,6 +10267,7 @@ export interface Database {
         transaction_reference?: string
         created_at?: string
       }
+      Relationships: []
     }
     pos_sessions: {
       Row: {
@@ -10085,6 +10315,7 @@ export interface Database {
         notes?: string
         session_number?: string
       }
+      Relationships: []
     }
     pos_terminals: {
       Row: {
@@ -10114,6 +10345,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     pos_ticket_lines: {
       Row: {
@@ -10152,6 +10384,7 @@ export interface Database {
         line_total?: number
         created_at?: string
       }
+      Relationships: []
     }
     pos_tickets: {
       Row: {
@@ -10235,6 +10468,7 @@ export interface Database {
         grand_total_lifetime?: number
         is_voided?: boolean
       }
+      Relationships: []
     }
     price_list_customers: {
       Row: {
@@ -10252,6 +10486,7 @@ export interface Database {
         customer_id?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     price_list_lines: {
       Row: {
@@ -10281,6 +10516,7 @@ export interface Database {
         discount_percent?: number
         tenant_id?: string
       }
+      Relationships: []
     }
     price_lists: {
       Row: {
@@ -10334,6 +10570,7 @@ export interface Database {
         base_price_list_id?: string
         discount_percent?: number
       }
+      Relationships: []
     }
     product_attributes: {
       Row: {
@@ -10341,7 +10578,7 @@ export interface Database {
         tenant_id: string
         name: string
         type: string
-        options?: any
+        options?: Json
         created_at?: string
       }
       Insert: {
@@ -10349,7 +10586,7 @@ export interface Database {
         tenant_id: string
         name: string
         type?: string
-        options?: any
+        options?: Json
         created_at?: string
       }
       Update: {
@@ -10357,9 +10594,10 @@ export interface Database {
         tenant_id?: string
         name?: string
         type?: string
-        options?: any
+        options?: Json
         created_at?: string
       }
+      Relationships: []
     }
     product_batches: {
       Row: {
@@ -10392,6 +10630,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     product_categories: {
       Row: {
@@ -10430,6 +10669,7 @@ export interface Database {
         updated_at?: string
         variation_account_code?: string
       }
+      Relationships: []
     }
     product_equivalences: {
       Row: {
@@ -10456,13 +10696,14 @@ export interface Database {
         conversion_ratio?: number
         created_at?: string
       }
+      Relationships: []
     }
     product_grid_combinations: {
       Row: {
         id: string
         tenant_id: string
         product_id: string
-        combination: any
+        combination: Json
         sku?: string
         barcode?: string
         price_override?: number
@@ -10474,7 +10715,7 @@ export interface Database {
         id?: string
         tenant_id: string
         product_id: string
-        combination: any
+        combination: Json
         sku?: string
         barcode?: string
         price_override?: number
@@ -10486,7 +10727,7 @@ export interface Database {
         id?: string
         tenant_id?: string
         product_id?: string
-        combination?: any
+        combination?: Json
         sku?: string
         barcode?: string
         price_override?: number
@@ -10494,6 +10735,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     product_grids: {
       Row: {
@@ -10502,7 +10744,7 @@ export interface Database {
         product_id: string
         name: string
         axis: string
-        values: any
+        values: Json
         active?: boolean
         created_at?: string
       }
@@ -10512,7 +10754,7 @@ export interface Database {
         product_id: string
         name: string
         axis: string
-        values?: any
+        values?: Json
         active?: boolean
         created_at?: string
       }
@@ -10522,10 +10764,11 @@ export interface Database {
         product_id?: string
         name?: string
         axis?: string
-        values?: any
+        values?: Json
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     product_links: {
       Row: {
@@ -10555,6 +10798,7 @@ export interface Database {
         quantity?: number
         created_at?: string
       }
+      Relationships: []
     }
     product_packagings: {
       Row: {
@@ -10593,6 +10837,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     product_serial_numbers: {
       Row: {
@@ -10625,6 +10870,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     product_substitutes: {
       Row: {
@@ -10651,6 +10897,7 @@ export interface Database {
         priority?: number
         created_at?: string
       }
+      Relationships: []
     }
     product_variants: {
       Row: {
@@ -10658,7 +10905,7 @@ export interface Database {
         tenant_id: string
         product_id: string
         sku: string
-        attributes?: any
+        attributes?: Json
         price_override?: number
         barcode?: string
         active?: boolean
@@ -10669,7 +10916,7 @@ export interface Database {
         tenant_id: string
         product_id: string
         sku: string
-        attributes?: any
+        attributes?: Json
         price_override?: number
         barcode?: string
         active?: boolean
@@ -10680,12 +10927,13 @@ export interface Database {
         tenant_id?: string
         product_id?: string
         sku?: string
-        attributes?: any
+        attributes?: Json
         price_override?: number
         barcode?: string
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     production_forecasts: {
       Row: {
@@ -10733,6 +10981,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     products: {
       Row: {
@@ -10870,6 +11119,7 @@ export interface Database {
         purchase_uom_id?: string
         sale_uom_id?: string
       }
+      Relationships: []
     }
     project_activity_log: {
       Row: {
@@ -10880,8 +11130,8 @@ export interface Database {
         user_id?: string
         user_name?: string
         action_type: string
-        old_value?: any
-        new_value?: any
+        old_value?: Json
+        new_value?: Json
         description?: string
         created_at?: string
       }
@@ -10893,8 +11143,8 @@ export interface Database {
         user_id?: string
         user_name?: string
         action_type: string
-        old_value?: any
-        new_value?: any
+        old_value?: Json
+        new_value?: Json
         description?: string
         created_at?: string
       }
@@ -10906,11 +11156,12 @@ export interface Database {
         user_id?: string
         user_name?: string
         action_type?: string
-        old_value?: any
-        new_value?: any
+        old_value?: Json
+        new_value?: Json
         description?: string
         created_at?: string
       }
+      Relationships: []
     }
     project_docs: {
       Row: {
@@ -10943,6 +11194,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     project_members: {
       Row: {
@@ -10972,6 +11224,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     project_milestones: {
       Row: {
@@ -11013,6 +11266,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     project_notifications: {
       Row: {
@@ -11054,6 +11308,7 @@ export interface Database {
         action_url?: string
         created_at?: string
       }
+      Relationships: []
     }
     project_stages: {
       Row: {
@@ -11101,6 +11356,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     project_tags: {
       Row: {
@@ -11124,6 +11380,7 @@ export interface Database {
         color?: number
         created_at?: string
       }
+      Relationships: []
     }
     project_task_assignees: {
       Row: {
@@ -11138,6 +11395,7 @@ export interface Database {
         task_id?: string
         employee_id?: string
       }
+      Relationships: []
     }
     project_task_dependencies: {
       Row: {
@@ -11167,6 +11425,7 @@ export interface Database {
         lag_days?: number
         created_at?: string
       }
+      Relationships: []
     }
     project_task_tags: {
       Row: {
@@ -11184,6 +11443,7 @@ export interface Database {
         tag_id?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     project_task_templates: {
       Row: {
@@ -11194,11 +11454,11 @@ export interface Database {
         default_status?: string
         default_priority?: string
         default_assignee_id?: string
-        default_tags?: any
+        default_tags?: string[]
         default_effort_estimate?: number
         default_budget?: number
-        checklist_template?: any
-        subtasks_template?: any
+        checklist_template?: Json
+        subtasks_template?: Json
         is_public?: boolean
         created_at?: string
         updated_at?: string
@@ -11211,11 +11471,11 @@ export interface Database {
         default_status?: string
         default_priority?: string
         default_assignee_id?: string
-        default_tags?: any
+        default_tags?: string[]
         default_effort_estimate?: number
         default_budget?: number
-        checklist_template?: any
-        subtasks_template?: any
+        checklist_template?: Json
+        subtasks_template?: Json
         is_public?: boolean
         created_at?: string
         updated_at?: string
@@ -11228,15 +11488,16 @@ export interface Database {
         default_status?: string
         default_priority?: string
         default_assignee_id?: string
-        default_tags?: any
+        default_tags?: string[]
         default_effort_estimate?: number
         default_budget?: number
-        checklist_template?: any
-        subtasks_template?: any
+        checklist_template?: Json
+        subtasks_template?: Json
         is_public?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     project_task_watchers: {
       Row: {
@@ -11260,6 +11521,7 @@ export interface Database {
         employee_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     project_tasks: {
       Row: {
@@ -11294,7 +11556,7 @@ export interface Database {
         subtask_count?: number
         subtask_done_count?: number
         subtask_effective_hours?: number
-        predecessor_ids?: any
+        predecessor_ids?: string[]
         early_start?: string
         early_finish?: string
         late_start?: string
@@ -11334,7 +11596,7 @@ export interface Database {
         subtask_count?: number
         subtask_done_count?: number
         subtask_effective_hours?: number
-        predecessor_ids?: any
+        predecessor_ids?: string[]
         early_start?: string
         early_finish?: string
         late_start?: string
@@ -11374,7 +11636,7 @@ export interface Database {
         subtask_count?: number
         subtask_done_count?: number
         subtask_effective_hours?: number
-        predecessor_ids?: any
+        predecessor_ids?: string[]
         early_start?: string
         early_finish?: string
         late_start?: string
@@ -11382,6 +11644,7 @@ export interface Database {
         total_slack?: number
         is_critical_path?: boolean
       }
+      Relationships: []
     }
     project_time_entries: {
       Row: {
@@ -11396,7 +11659,7 @@ export interface Database {
         description?: string
         is_billable?: boolean
         hourly_rate?: number
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -11412,7 +11675,7 @@ export interface Database {
         description?: string
         is_billable?: boolean
         hourly_rate?: number
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -11428,10 +11691,11 @@ export interface Database {
         description?: string
         is_billable?: boolean
         hourly_rate?: number
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     projects: {
       Row: {
@@ -11530,6 +11794,7 @@ export interface Database {
         baseline_end_date?: string
         baseline_budget?: number
       }
+      Relationships: []
     }
     promotions: {
       Row: {
@@ -11586,6 +11851,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     prospects: {
       Row: {
@@ -11645,6 +11911,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     public_holidays: {
       Row: {
@@ -11677,6 +11944,7 @@ export interface Database {
         is_working_day?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     purchase_credit_lines: {
       Row: {
@@ -11718,6 +11986,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     purchase_credit_notes: {
       Row: {
@@ -11780,6 +12049,7 @@ export interface Database {
         amount_tax_currency?: number
         amount_total_currency?: number
       }
+      Relationships: []
     }
     purchase_invoice_lines: {
       Row: {
@@ -11836,6 +12106,7 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
       }
+      Relationships: []
     }
     purchase_invoices: {
       Row: {
@@ -11869,7 +12140,7 @@ export interface Database {
         purchase_order_id?: string
         goods_receipt_id?: string
         match_status?: string
-        match_details?: any
+        match_details?: Json
       }
       Insert: {
         id?: string
@@ -11902,7 +12173,7 @@ export interface Database {
         purchase_order_id?: string
         goods_receipt_id?: string
         match_status?: string
-        match_details?: any
+        match_details?: Json
       }
       Update: {
         id?: string
@@ -11935,8 +12206,9 @@ export interface Database {
         purchase_order_id?: string
         goods_receipt_id?: string
         match_status?: string
-        match_details?: any
+        match_details?: Json
       }
+      Relationships: []
     }
     purchase_order_lines: {
       Row: {
@@ -11972,6 +12244,7 @@ export interface Database {
         line_total?: number
         tenant_id?: string
       }
+      Relationships: []
     }
     purchase_orders: {
       Row: {
@@ -12019,6 +12292,7 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     purchase_request_lines: {
       Row: {
@@ -12060,6 +12334,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     purchase_requests: {
       Row: {
@@ -12104,6 +12379,7 @@ export interface Database {
         approved_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     quality_checks: {
       Row: {
@@ -12142,6 +12418,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     quality_control_plans: {
       Row: {
@@ -12177,6 +12454,7 @@ export interface Database {
         sampling_rate?: number
         created_at?: string
       }
+      Relationships: []
     }
     quality_control_points: {
       Row: {
@@ -12215,6 +12493,7 @@ export interface Database {
         is_mandatory?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     quote_lines: {
       Row: {
@@ -12259,6 +12538,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     quotes: {
       Row: {
@@ -12318,6 +12598,7 @@ export interface Database {
         transformed_to_order_id?: string
         transformation_status?: string
       }
+      Relationships: []
     }
     recurring_entries: {
       Row: {
@@ -12333,7 +12614,7 @@ export interface Database {
         end_date?: string
         next_generation_date: string
         last_generation_date?: string
-        lines: any
+        lines: Json
         status: string
         total_debit: number
         total_credit: number
@@ -12353,7 +12634,7 @@ export interface Database {
         end_date?: string
         next_generation_date: string
         last_generation_date?: string
-        lines?: any
+        lines?: Json
         status?: string
         total_debit?: number
         total_credit?: number
@@ -12373,13 +12654,14 @@ export interface Database {
         end_date?: string
         next_generation_date?: string
         last_generation_date?: string
-        lines?: any
+        lines?: Json
         status?: string
         total_debit?: number
         total_credit?: number
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     recurring_invoice_templates: {
       Row: {
@@ -12389,7 +12671,7 @@ export interface Database {
         customer_id?: string
         frequency?: string
         next_date: string
-        lines?: any
+        lines?: Json
         active?: boolean
         created_at?: string
       }
@@ -12400,7 +12682,7 @@ export interface Database {
         customer_id?: string
         frequency?: string
         next_date?: string
-        lines?: any
+        lines?: Json
         active?: boolean
         created_at?: string
       }
@@ -12411,10 +12693,11 @@ export interface Database {
         customer_id?: string
         frequency?: string
         next_date?: string
-        lines?: any
+        lines?: Json
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     regularization_entries: {
       Row: {
@@ -12489,6 +12772,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     reimputation_logs: {
       Row: {
@@ -12533,6 +12817,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     reminder_levels: {
       Row: {
@@ -12571,6 +12856,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     reorder_rules: {
       Row: {
@@ -12609,6 +12895,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     report_definitions: {
       Row: {
@@ -12617,8 +12904,8 @@ export interface Database {
         name: string
         description?: string
         report_type: string
-        query_config: any
-        columns_config?: any
+        query_config: Json
+        columns_config?: Json
         is_shared?: boolean
         created_by?: string
         created_at?: string
@@ -12629,8 +12916,8 @@ export interface Database {
         name: string
         description?: string
         report_type: string
-        query_config: any
-        columns_config?: any
+        query_config: Json
+        columns_config?: Json
         is_shared?: boolean
         created_by?: string
         created_at?: string
@@ -12641,12 +12928,13 @@ export interface Database {
         name?: string
         description?: string
         report_type?: string
-        query_config?: any
-        columns_config?: any
+        query_config?: Json
+        columns_config?: Json
         is_shared?: boolean
         created_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     reporting_plans: {
       Row: {
@@ -12657,7 +12945,7 @@ export interface Database {
         schedule: string
         format: string
         recipients?: string
-        parameters?: any
+        parameters?: Json
         last_generated?: string
         active?: boolean
         created_at: string
@@ -12671,7 +12959,7 @@ export interface Database {
         schedule?: string
         format?: string
         recipients?: string
-        parameters?: any
+        parameters?: Json
         last_generated?: string
         active?: boolean
         created_at?: string
@@ -12685,12 +12973,13 @@ export interface Database {
         schedule?: string
         format?: string
         recipients?: string
-        parameters?: any
+        parameters?: Json
         last_generated?: string
         active?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     resource_capacities: {
       Row: {
@@ -12726,6 +13015,7 @@ export interface Database {
         allocated_hours?: number
         created_at?: string
       }
+      Relationships: []
     }
     revision_cycles: {
       Row: {
@@ -12767,6 +13057,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     rgpd_requests: {
       Row: {
@@ -12808,6 +13099,7 @@ export interface Database {
         processed_at?: string
         notes?: string
       }
+      Relationships: []
     }
     rh_dashboard_configs: {
       Row: {
@@ -12815,8 +13107,8 @@ export interface Database {
         tenant_id: string
         user_email: string
         dashboard_type: string
-        widgets?: any
-        filters?: any
+        widgets?: Json
+        filters?: Json
         created_at?: string
         updated_at?: string
       }
@@ -12825,8 +13117,8 @@ export interface Database {
         tenant_id: string
         user_email: string
         dashboard_type: string
-        widgets?: any
-        filters?: any
+        widgets?: Json
+        filters?: Json
         created_at?: string
         updated_at?: string
       }
@@ -12835,11 +13127,12 @@ export interface Database {
         tenant_id?: string
         user_email?: string
         dashboard_type?: string
-        widgets?: any
-        filters?: any
+        widgets?: Json
+        filters?: Json
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     rh_knowledge_base: {
       Row: {
@@ -12848,7 +13141,7 @@ export interface Database {
         title: string
         content: string
         category?: string
-        tags?: any
+        tags?: string[]
         author_id?: string
         published?: boolean
         views?: number
@@ -12861,7 +13154,7 @@ export interface Database {
         title: string
         content: string
         category?: string
-        tags?: any
+        tags?: string[]
         author_id?: string
         published?: boolean
         views?: number
@@ -12874,13 +13167,14 @@ export interface Database {
         title?: string
         content?: string
         category?: string
-        tags?: any
+        tags?: string[]
         author_id?: string
         published?: boolean
         views?: number
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     rh_reports: {
       Row: {
@@ -12888,9 +13182,9 @@ export interface Database {
         tenant_id: string
         name: string
         report_type: string
-        parameters?: any
+        parameters?: Json
         chart_type?: string
-        data?: any
+        data?: Json
         data_calculated_at?: string
         created_by?: string
         shared?: boolean
@@ -12901,9 +13195,9 @@ export interface Database {
         tenant_id: string
         name: string
         report_type: string
-        parameters?: any
+        parameters?: Json
         chart_type?: string
-        data?: any
+        data?: Json
         data_calculated_at?: string
         created_by?: string
         shared?: boolean
@@ -12914,14 +13208,15 @@ export interface Database {
         tenant_id?: string
         name?: string
         report_type?: string
-        parameters?: any
+        parameters?: Json
         chart_type?: string
-        data?: any
+        data?: Json
         data_calculated_at?: string
         created_by?: string
         shared?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     rh_requests: {
       Row: {
@@ -12963,6 +13258,7 @@ export interface Database {
         resolved_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     role_permissions: {
       Row: {
@@ -12986,6 +13282,7 @@ export interface Database {
         permission?: string
         created_at?: string
       }
+      Relationships: []
     }
     routing_operations: {
       Row: {
@@ -13042,6 +13339,7 @@ export interface Database {
         st_quantity?: number
         created_at?: string
       }
+      Relationships: []
     }
     routings: {
       Row: {
@@ -13080,6 +13378,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     salary_advances: {
       Row: {
@@ -13115,6 +13414,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     sales_order_lines: {
       Row: {
@@ -13153,6 +13453,7 @@ export interface Database {
         tenant_id?: string
         delivered_quantity?: number
       }
+      Relationships: []
     }
     sales_orders: {
       Row: {
@@ -13215,6 +13516,7 @@ export interface Database {
         delivery_status?: string
         credit_warning?: boolean
       }
+      Relationships: []
     }
     sales_representatives: {
       Row: {
@@ -13250,6 +13552,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     saved_filters: {
       Row: {
@@ -13258,7 +13561,7 @@ export interface Database {
         user_email: string
         page_name: string
         filter_name: string
-        filter_criteria: any
+        filter_criteria: Json
         is_default?: boolean
         created_at?: string
       }
@@ -13268,7 +13571,7 @@ export interface Database {
         user_email: string
         page_name: string
         filter_name: string
-        filter_criteria?: any
+        filter_criteria?: Json
         is_default?: boolean
         created_at?: string
       }
@@ -13278,10 +13581,11 @@ export interface Database {
         user_email?: string
         page_name?: string
         filter_name?: string
-        filter_criteria?: any
+        filter_criteria?: Json
         is_default?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     sepa_payment_orders: {
       Row: {
@@ -13335,6 +13639,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     service_contracts: {
       Row: {
@@ -13394,6 +13699,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     service_ticket_messages: {
       Row: {
@@ -13403,7 +13709,7 @@ export interface Database {
         author: string
         author_type: string
         message: string
-        attachments?: any
+        attachments?: Json
         is_internal?: boolean
         created_at?: string
       }
@@ -13414,7 +13720,7 @@ export interface Database {
         author: string
         author_type: string
         message: string
-        attachments?: any
+        attachments?: Json
         is_internal?: boolean
         created_at?: string
       }
@@ -13425,10 +13731,11 @@ export interface Database {
         author?: string
         author_type?: string
         message?: string
-        attachments?: any
+        attachments?: Json
         is_internal?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     service_tickets: {
       Row: {
@@ -13449,7 +13756,7 @@ export interface Database {
         closed_at?: string
         satisfaction_rating?: number
         satisfaction_comment?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -13471,7 +13778,7 @@ export interface Database {
         closed_at?: string
         satisfaction_rating?: number
         satisfaction_comment?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
@@ -13493,10 +13800,11 @@ export interface Database {
         closed_at?: string
         satisfaction_rating?: number
         satisfaction_comment?: string
-        tags?: any
+        tags?: string[]
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     sick_leaves: {
       Row: {
@@ -13544,6 +13852,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     signup_flows: {
       Row: {
@@ -13552,7 +13861,7 @@ export interface Database {
         company_name?: string
         country_code?: string
         current_step?: string
-        step_data?: any
+        step_data?: Json
         tenant_id?: string
         created_at?: string
         completed_at?: string
@@ -13563,7 +13872,7 @@ export interface Database {
         company_name?: string
         country_code?: string
         current_step?: string
-        step_data?: any
+        step_data?: Json
         tenant_id?: string
         created_at?: string
         completed_at?: string
@@ -13574,11 +13883,12 @@ export interface Database {
         company_name?: string
         country_code?: string
         current_step?: string
-        step_data?: any
+        step_data?: Json
         tenant_id?: string
         created_at?: string
         completed_at?: string
       }
+      Relationships: []
     }
     social_declarations: {
       Row: {
@@ -13598,10 +13908,10 @@ export interface Database {
         transmitted_at?: string
         response_code?: string
         response_message?: string
-        anomalies?: any
+        anomalies?: Json
         amount?: number
         employee_count?: number
-        details?: any
+        details?: Json
         notes?: string
         created_at?: string
       }
@@ -13622,10 +13932,10 @@ export interface Database {
         transmitted_at?: string
         response_code?: string
         response_message?: string
-        anomalies?: any
+        anomalies?: Json
         amount?: number
         employee_count?: number
-        details?: any
+        details?: Json
         notes?: string
         created_at?: string
       }
@@ -13646,13 +13956,14 @@ export interface Database {
         transmitted_at?: string
         response_code?: string
         response_message?: string
-        anomalies?: any
+        anomalies?: Json
         amount?: number
         employee_count?: number
-        details?: any
+        details?: Json
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     sql_migrations_tracker: {
       Row: {
@@ -13676,6 +13987,7 @@ export interface Database {
         status?: string
         error_message?: string
       }
+      Relationships: []
     }
     st_orders: {
       Row: {
@@ -13732,6 +14044,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     st_receipt_lines: {
       Row: {
@@ -13764,6 +14077,7 @@ export interface Database {
         line_type?: string
         created_at?: string
       }
+      Relationships: []
     }
     st_receipts: {
       Row: {
@@ -13805,6 +14119,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     st_shipment_lines: {
       Row: {
@@ -13834,6 +14149,7 @@ export interface Database {
         unit?: string
         created_at?: string
       }
+      Relationships: []
     }
     st_shipments: {
       Row: {
@@ -13869,6 +14185,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     staff_requirements: {
       Row: {
@@ -13876,7 +14193,7 @@ export interface Database {
         tenant_id: string
         department: string
         min_staff: number
-        days_of_week?: any
+        days_of_week?: string[]
         start_date?: string
         end_date?: string
         active?: boolean
@@ -13887,7 +14204,7 @@ export interface Database {
         tenant_id: string
         department: string
         min_staff?: number
-        days_of_week?: any
+        days_of_week?: string[]
         start_date?: string
         end_date?: string
         active?: boolean
@@ -13898,12 +14215,13 @@ export interface Database {
         tenant_id?: string
         department?: string
         min_staff?: number
-        days_of_week?: any
+        days_of_week?: string[]
         start_date?: string
         end_date?: string
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     standard_labels: {
       Row: {
@@ -13927,6 +14245,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     stat_fields: {
       Row: {
@@ -13962,6 +14281,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     stock_alerts: {
       Row: {
@@ -14003,6 +14323,7 @@ export interface Database {
         resolved_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     stock_count_cycles: {
       Row: {
@@ -14041,6 +14362,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     stock_movements: {
       Row: {
@@ -14103,6 +14425,7 @@ export interface Database {
         serial_id?: string
         location_id?: string
       }
+      Relationships: []
     }
     stock_quantities: {
       Row: {
@@ -14156,6 +14479,7 @@ export interface Database {
         incoming_quantity?: number
         quantity_available?: number
       }
+      Relationships: []
     }
     stock_reservations: {
       Row: {
@@ -14197,6 +14521,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     stock_transfer_lines: {
       Row: {
@@ -14226,6 +14551,7 @@ export interface Database {
         unit_cost?: number
         created_at?: string
       }
+      Relationships: []
     }
     stock_transfers: {
       Row: {
@@ -14267,6 +14593,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     stock_valuation_layers: {
       Row: {
@@ -14305,6 +14632,7 @@ export interface Database {
         value?: number
         created_at?: string
       }
+      Relationships: []
     }
     subscriptions: {
       Row: {
@@ -14355,6 +14683,7 @@ export interface Database {
         stripe_subscription_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     supplier_contacts: {
       Row: {
@@ -14399,6 +14728,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     supplier_delivery_schedules: {
       Row: {
@@ -14458,6 +14788,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     supplier_payments: {
       Row: {
@@ -14520,6 +14851,7 @@ export interface Database {
         transferred_entry_id?: string
         invoice_number?: string
       }
+      Relationships: []
     }
     supplier_price_list_lines: {
       Row: {
@@ -14558,6 +14890,7 @@ export interface Database {
         lead_time_days?: number
         created_at?: string
       }
+      Relationships: []
     }
     supplier_price_lists: {
       Row: {
@@ -14599,6 +14932,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     suppliers: {
       Row: {
@@ -14634,7 +14968,7 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
@@ -14672,7 +15006,7 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
@@ -14710,11 +15044,12 @@ export interface Database {
         currency_code?: string
         bank_account_id?: string
         price_list_id?: string
-        email_settings?: any
+        email_settings?: Json
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
       }
+      Relationships: []
     }
     task_action_attachments: {
       Row: {
@@ -14753,6 +15088,7 @@ export interface Database {
         uploader_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     task_actions: {
       Row: {
@@ -14788,6 +15124,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     task_comments: {
       Row: {
@@ -14817,6 +15154,7 @@ export interface Database {
         author_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     task_documents: {
       Row: {
@@ -14855,6 +15193,7 @@ export interface Database {
         uploader_id?: string
         created_at?: string
       }
+      Relationships: []
     }
     tax_cash_basis_entries: {
       Row: {
@@ -14893,6 +15232,7 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     tax_groups: {
       Row: {
@@ -14916,6 +15256,7 @@ export interface Database {
         country_code?: string
         created_at?: string
       }
+      Relationships: []
     }
     tax_payments: {
       Row: {
@@ -14972,6 +15313,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     tax_rates: {
       Row: {
@@ -15058,6 +15400,7 @@ export interface Database {
         analytic?: boolean
         fixed_amount?: number
       }
+      Relationships: []
     }
     tax_repartition_lines: {
       Row: {
@@ -15068,7 +15411,7 @@ export interface Database {
         repartition_type: string
         factor?: number
         account_code?: string
-        tag_ids?: any
+        tag_ids?: string[]
         created_at?: string
       }
       Insert: {
@@ -15079,7 +15422,7 @@ export interface Database {
         repartition_type: string
         factor?: number
         account_code?: string
-        tag_ids?: any
+        tag_ids?: string[]
         created_at?: string
       }
       Update: {
@@ -15090,9 +15433,10 @@ export interface Database {
         repartition_type?: string
         factor?: number
         account_code?: string
-        tag_ids?: any
+        tag_ids?: string[]
         created_at?: string
       }
+      Relationships: []
     }
     tenant_fiscal_settings: {
       Row: {
@@ -15131,6 +15475,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     tenant_onboarding_state: {
       Row: {
@@ -15187,6 +15532,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     tenant_roles: {
       Row: {
@@ -15216,6 +15562,7 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     tenant_users: {
       Row: {
@@ -15225,7 +15572,7 @@ export interface Database {
         email: string
         name: string
         role: string
-        permissions?: any
+        permissions?: Json
         status: string
         invited_by?: string
         invited_at?: string
@@ -15235,8 +15582,8 @@ export interface Database {
         updated_at?: string
         valid_from?: string
         valid_until?: string
-        module_roles?: any
-        guest_permissions?: any
+        module_roles?: Json
+        guest_permissions?: Json
         custom_role_id?: string
       }
       Insert: {
@@ -15246,7 +15593,7 @@ export interface Database {
         email: string
         name: string
         role?: string
-        permissions?: any
+        permissions?: Json
         status?: string
         invited_by?: string
         invited_at?: string
@@ -15256,8 +15603,8 @@ export interface Database {
         updated_at?: string
         valid_from?: string
         valid_until?: string
-        module_roles?: any
-        guest_permissions?: any
+        module_roles?: Json
+        guest_permissions?: Json
         custom_role_id?: string
       }
       Update: {
@@ -15267,7 +15614,7 @@ export interface Database {
         email?: string
         name?: string
         role?: string
-        permissions?: any
+        permissions?: Json
         status?: string
         invited_by?: string
         invited_at?: string
@@ -15277,10 +15624,11 @@ export interface Database {
         updated_at?: string
         valid_from?: string
         valid_until?: string
-        module_roles?: any
-        guest_permissions?: any
+        module_roles?: Json
+        guest_permissions?: Json
         custom_role_id?: string
       }
+      Relationships: []
     }
     tenants: {
       Row: {
@@ -15305,7 +15653,7 @@ export interface Database {
         updated_at?: string
         country_code?: string
         legislation_pack_code?: string
-        enabled_modules: any
+        enabled_modules: Json
       }
       Insert: {
         id?: string
@@ -15329,7 +15677,7 @@ export interface Database {
         updated_at?: string
         country_code?: string
         legislation_pack_code?: string
-        enabled_modules?: any
+        enabled_modules?: Json
       }
       Update: {
         id?: string
@@ -15353,8 +15701,9 @@ export interface Database {
         updated_at?: string
         country_code?: string
         legislation_pack_code?: string
-        enabled_modules?: any
+        enabled_modules?: Json
       }
+      Relationships: []
     }
     third_party_accounts: {
       Row: {
@@ -15417,6 +15766,7 @@ export interface Database {
         default_bank_account_id?: string
         credit_limit?: number
       }
+      Relationships: []
     }
     three_way_matches: {
       Row: {
@@ -15431,7 +15781,7 @@ export interface Database {
         total_invoiced?: number
         price_variance?: number
         quantity_variance?: number
-        line_results?: any
+        line_results?: Json
         checked_at?: string
         checked_by?: string
         notes?: string
@@ -15449,7 +15799,7 @@ export interface Database {
         total_invoiced?: number
         price_variance?: number
         quantity_variance?: number
-        line_results?: any
+        line_results?: Json
         checked_at?: string
         checked_by?: string
         notes?: string
@@ -15467,12 +15817,13 @@ export interface Database {
         total_invoiced?: number
         price_variance?: number
         quantity_variance?: number
-        line_results?: any
+        line_results?: Json
         checked_at?: string
         checked_by?: string
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     tier_ribs: {
       Row: {
@@ -15526,6 +15877,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     time_entries: {
       Row: {
@@ -15533,8 +15885,8 @@ export interface Database {
         tenant_id: string
         employee_id: string
         date: string
-        start_time?: any
-        end_time?: any
+        start_time?: string
+        end_time?: string
         break_minutes?: number
         total_minutes?: number
         activity_type?: string
@@ -15549,8 +15901,8 @@ export interface Database {
         tenant_id: string
         employee_id: string
         date: string
-        start_time?: any
-        end_time?: any
+        start_time?: string
+        end_time?: string
         break_minutes?: number
         total_minutes?: number
         activity_type?: string
@@ -15565,8 +15917,8 @@ export interface Database {
         tenant_id?: string
         employee_id?: string
         date?: string
-        start_time?: any
-        end_time?: any
+        start_time?: string
+        end_time?: string
         break_minutes?: number
         total_minutes?: number
         activity_type?: string
@@ -15576,6 +15928,7 @@ export interface Database {
         approved_by?: string
         created_at?: string
       }
+      Relationships: []
     }
     timesheets: {
       Row: {
@@ -15590,8 +15943,8 @@ export interface Database {
         tenant_id: string
         arrival_time?: string
         departure_time?: string
-        scheduled_start?: any
-        scheduled_end?: any
+        scheduled_start?: string
+        scheduled_end?: string
         late_minutes?: number
         late_justified?: boolean
         late_justification?: string
@@ -15615,8 +15968,8 @@ export interface Database {
         tenant_id: string
         arrival_time?: string
         departure_time?: string
-        scheduled_start?: any
-        scheduled_end?: any
+        scheduled_start?: string
+        scheduled_end?: string
         late_minutes?: number
         late_justified?: boolean
         late_justification?: string
@@ -15640,8 +15993,8 @@ export interface Database {
         tenant_id?: string
         arrival_time?: string
         departure_time?: string
-        scheduled_start?: any
-        scheduled_end?: any
+        scheduled_start?: string
+        scheduled_end?: string
         late_minutes?: number
         late_justified?: boolean
         late_justification?: string
@@ -15653,6 +16006,7 @@ export interface Database {
         approved_by?: string
         approved_at?: string
       }
+      Relationships: []
     }
     toolings: {
       Row: {
@@ -15694,6 +16048,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     tracking_warnings: {
       Row: {
@@ -15723,6 +16078,7 @@ export interface Database {
         message?: string
         created_at?: string
       }
+      Relationships: []
     }
     treasury_recurring: {
       Row: {
@@ -15764,6 +16120,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     treasury_transfers: {
       Row: {
@@ -15808,6 +16165,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     tvs_declarations: {
       Row: {
@@ -15858,6 +16216,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     uom_categories: {
       Row: {
@@ -15878,6 +16237,7 @@ export interface Database {
         name?: string
         created_at?: string
       }
+      Relationships: []
     }
     uoms: {
       Row: {
@@ -15913,6 +16273,7 @@ export interface Database {
         rounding?: number
         created_at?: string
       }
+      Relationships: []
     }
     user_totp: {
       Row: {
@@ -15920,7 +16281,7 @@ export interface Database {
         user_id: string
         tenant_id: string
         secret_enc: string
-        backup_codes: any
+        backup_codes: Json
         enabled: boolean
         enabled_at?: string
         created_at: string
@@ -15930,7 +16291,7 @@ export interface Database {
         user_id: string
         tenant_id: string
         secret_enc: string
-        backup_codes?: any
+        backup_codes?: Json
         enabled?: boolean
         enabled_at?: string
         created_at?: string
@@ -15940,11 +16301,12 @@ export interface Database {
         user_id?: string
         tenant_id?: string
         secret_enc?: string
-        backup_codes?: any
+        backup_codes?: Json
         enabled?: boolean
         enabled_at?: string
         created_at?: string
       }
+      Relationships: []
     }
     users: {
       Row: {
@@ -15983,6 +16345,7 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     v_tenant_id: {
       Row: {
@@ -15994,6 +16357,7 @@ export interface Database {
       Update: {
         id?: string
       }
+      Relationships: []
     }
     value_date_tracking: {
       Row: {
@@ -16032,6 +16396,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     vat_account_mapping: {
       Row: {
@@ -16064,6 +16429,7 @@ export interface Database {
         ca3_box?: string
         base_account?: string
       }
+      Relationships: []
     }
     vat_on_collections: {
       Row: {
@@ -16123,6 +16489,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     vat_returns: {
       Row: {
@@ -16203,6 +16570,7 @@ export interface Database {
         vat_deductible?: number
         vat_to_pay?: number
       }
+      Relationships: []
     }
     warehouse_locations: {
       Row: {
@@ -16253,6 +16621,7 @@ export interface Database {
         max_volume?: number
         max_pallets?: number
       }
+      Relationships: []
     }
     warehouse_users: {
       Row: {
@@ -16282,6 +16651,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     warehouses: {
       Row: {
@@ -16320,6 +16690,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
+      Relationships: []
     }
     webhook_delivery_logs: {
       Row: {
@@ -16361,6 +16732,7 @@ export interface Database {
         error_message?: string
         delivered_at?: string
       }
+      Relationships: []
     }
     webhook_delivery_queue: {
       Row: {
@@ -16368,7 +16740,7 @@ export interface Database {
         tenant_id: string
         endpoint_id: string
         event_name: string
-        payload: any
+        payload: Json
         signature?: string
         attempts?: number
         max_attempts?: number
@@ -16392,7 +16764,7 @@ export interface Database {
         tenant_id: string
         endpoint_id: string
         event_name: string
-        payload: any
+        payload: Json
         signature?: string
         attempts?: number
         max_attempts?: number
@@ -16416,7 +16788,7 @@ export interface Database {
         tenant_id?: string
         endpoint_id?: string
         event_name?: string
-        payload?: any
+        payload?: Json
         signature?: string
         attempts?: number
         max_attempts?: number
@@ -16435,6 +16807,7 @@ export interface Database {
         delivered_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     webhook_endpoints: {
       Row: {
@@ -16443,7 +16816,7 @@ export interface Database {
         name: string
         url: string
         secret?: string
-        active_events?: any
+        active_events?: Json
         active?: boolean
         created_at: string
         updated_at: string
@@ -16454,7 +16827,7 @@ export interface Database {
         name: string
         url: string
         secret?: string
-        active_events?: any
+        active_events?: Json
         active?: boolean
         created_at?: string
         updated_at?: string
@@ -16465,18 +16838,19 @@ export interface Database {
         name?: string
         url?: string
         secret?: string
-        active_events?: any
+        active_events?: Json
         active?: boolean
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     webhook_event_catalog: {
       Row: {
         id: string
         event_name: string
         description: string
-        payload_schema?: any
+        payload_schema?: Json
         category?: string
         is_active?: boolean
         created_at?: string
@@ -16485,7 +16859,7 @@ export interface Database {
         id?: string
         event_name: string
         description: string
-        payload_schema?: any
+        payload_schema?: Json
         category?: string
         is_active?: boolean
         created_at?: string
@@ -16494,11 +16868,12 @@ export interface Database {
         id?: string
         event_name?: string
         description?: string
-        payload_schema?: any
+        payload_schema?: Json
         category?: string
         is_active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     work_center_calendars: {
       Row: {
@@ -16531,6 +16906,7 @@ export interface Database {
         is_closed?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     work_centers: {
       Row: {
@@ -16563,6 +16939,7 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
+      Relationships: []
     }
     work_hardship: {
       Row: {
@@ -16601,6 +16978,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     work_hardship_records: {
       Row: {
@@ -16648,6 +17026,7 @@ export interface Database {
         notes?: string
         created_at?: string
       }
+      Relationships: []
     }
     work_stoppages: {
       Row: {
@@ -16746,6 +17125,7 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
+      Relationships: []
     }
     workflows: {
       Row: {
@@ -16781,7 +17161,12 @@ export interface Database {
         status?: string
         created_at?: string
       }
+      Relationships: []
     }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

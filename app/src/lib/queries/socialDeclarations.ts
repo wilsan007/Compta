@@ -1,4 +1,5 @@
 import { supabase } from '../supabase'
+import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type { SocialDeclaration, CiceConfig, PasRate, AtRate, BdesIndicator, HonorariumRecord } from '@/types'
 
@@ -411,14 +412,14 @@ export async function generatePasrau(year: number): Promise<SocialDeclaration> {
 }
 
 // ============ PAS & AT Rates ============
-export async function getPasRates(employeeId?: string): Promise<(PasRate & { employees?: { name: string } })[]> {
+export async function getPasRates(employeeId?: string): Promise<(PasRate & { employees: Joined<'employees', 'name'> })[]> {
   const tid = await getTenantId()
   let q = supabase.from('pas_rates').select('*, employees(name)').order('effective_date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (PasRate & { employees: Joined<'employees', 'name'> })[]
 }
 
 export async function importPasRates(file: File): Promise<void> {
@@ -445,14 +446,14 @@ export async function updatePasRate(id: string, updates: Partial<PasRate>): Prom
   return data as PasRate
 }
 
-export async function getAtRates(employeeId?: string): Promise<(AtRate & { employees?: { name: string } })[]> {
+export async function getAtRates(employeeId?: string): Promise<(AtRate & { employees: Joined<'employees', 'name'> })[]> {
   const tid = await getTenantId()
   let q = supabase.from('at_rates').select('*, employees(name)').order('effective_date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (AtRate & { employees: Joined<'employees', 'name'> })[]
 }
 
 export async function importAtRates(file: File): Promise<void> {
