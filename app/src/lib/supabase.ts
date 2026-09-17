@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { shouldSetDefaultRange } from './supabaseRange'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -12,9 +13,10 @@ if (!supabaseUrl || !supabaseKey) {
 let _tenantId: string | null | undefined = undefined
 let _userName: string | null = null
 
-// DAT-01 : Limite par défaut pour les requêtes non paginées
-// PostgREST respecte le header Range pour limiter les résultats
-// Les requêtes qui spécifient explicitement .range() ou .limit() ne sont pas affectées
+// DAT-01 : Limite par défaut pour les requêtes non paginées.
+// PostgREST respecte le header Range pour limiter les résultats. Cette limite s'ajoute
+// à `max_rows = 1000` de supabase/config.toml : les deux tronquent, sans erreur.
+// Une requête qui doit être exhaustive passe par `fetchAllRows` (queries/core.ts).
 const DEFAULT_PAGE_SIZE = 1000  // Limite sûre pour éviter les payloads énormes
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -33,9 +35,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
       // PostgREST utilise Range: 0-999 pour limiter à 1000 résultats
       // Les requêtes avec .range() ou .limit() explicites écrasent ce header
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      const isGetRequest = !init?.method || init.method === 'GET'
-      const hasExplicitRange = headers.has('Range') || headers.has('range')
-      if (isGetRequest && !hasExplicitRange && url.includes('/rest/v1/')) {
+      if (shouldSetDefaultRange(url, init?.method, headers)) {
         headers.set('Range', `0-${DEFAULT_PAGE_SIZE - 1}`)
         headers.set('Range-Unit', 'items')
       }
