@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, nextDocumentNumber, ti, tud } from './core'
+import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type {
   LeaveBalance, PublicHoliday, LeaveRule, ApprovalWorkflow,
   LeaveProvision, StaffRequirement, Employee, LeaveRequest,
@@ -430,10 +430,11 @@ export async function exportLeaveDataToPayroll(period: string): Promise<any[]> {
   let q = supabase.from('leave_requests').select('*, employees(name, department)')
     .eq('status', 'approved')
     .gte('start_date', `${period}-01`).lte('end_date', `${period}-31`)
+    .order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  return (data || []).map((lr: any) => ({
+  // LOT7-03 : alimentation de la paie. Une absence oubliée = un bulletin faux.
+  const data = await fetchAllRows<any>(q, { label: 'exportLeaveDataToPayroll/leave_requests' })
+  return data.map((lr: any) => ({
     employee_id: lr.employee_id,
     employee_name: lr.employees?.name,
     leave_type: lr.leave_type,
@@ -603,10 +604,10 @@ export async function importExpenseElements(payRunId: string, month: number, yea
   const period = `${year}-${String(month).padStart(2, '0')}`
   let q = supabase.from('expense_reports').select('*').eq('status', 'approved')
     .gte('created_at', `${period}-01`).lt('created_at', `${period}-31T23:59:59`)
+    .order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: expenses, error } = await q
-  if (error) throw error
-  if (!expenses) return
+  // LOT7-03 : import des notes de frais dans la paie — aucune ne doit être omise.
+  const expenses = await fetchAllRows<any>(q, { label: 'importExpenseElements/expense_reports' })
   for (const exp of expenses) {
     await supabase.from('payroll_variable_elements').insert(ti({
       employee_id: exp.employee_id, pay_run_id: payRunId, period,

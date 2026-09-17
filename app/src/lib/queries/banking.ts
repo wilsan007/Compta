@@ -1,16 +1,15 @@
 import { supabase } from '@/lib/supabase';
-import { getTenantId, ti, tud } from './core';
+import { fetchAllRows, getTenantId, ti, tud } from './core';
 import type { BankAccount, BankTransaction, BankRule, BankConnection, Bank } from '@/types';
 
 // ============ Bank Accounts ============
 export async function getBankAccounts() {
   const tid = await getTenantId()
-  let baQ = supabase.from('bank_accounts').select('*').order('name', { ascending: true })
+  let baQ = supabase.from('bank_accounts').select('*').order('name', { ascending: true }).order('id')
   if (tid) baQ = baQ.eq('tenant_id', tid)
-  const { data, error } = await baQ
-  if (error) throw error
-
-  const accounts = (data || []) as BankAccount[]
+  // LOT7-03 : la déduplication ci-dessous suppose de voir TOUS les comptes ; une liste
+  // tronquée à 1 000 lignes laisserait passer des doublons.
+  const accounts = await fetchAllRows<BankAccount>(baQ, { label: 'getBankAccounts' })
   const uniqueAccounts = new Map<string, BankAccount>()
 
   for (const account of accounts) {

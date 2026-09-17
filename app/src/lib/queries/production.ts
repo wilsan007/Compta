@@ -1,16 +1,15 @@
 import { supabase } from '@/lib/supabase';
-import { getTenantId, ti, tud } from './core';
+import { fetchAllRows, getTenantId, ti, tud } from './core';
 import type { ManufacturingOrder, QualityCheck, PickList } from '@/types';
 
 // ============ Sprint 6: Manufacturing Orders ============
 export async function getManufacturingOrders(status?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('manufacturing_orders').select('*, boms(name, code), products(name, sku), warehouses(name), routings(name, code)').order('created_at', { ascending: false })
+  let q = supabase.from('manufacturing_orders').select('*, boms(name, code), products(name, sku), warehouses(name), routings(name, code)').order('created_at', { ascending: false }).order('id')
   if (tid) q = q.eq('tenant_id', tid)
   if (status) q = q.eq('status', status)
-  const { data, error } = await q
-  if (error) throw error
-  return data as ManufacturingOrder[]
+  // LOT7-03 : autoScheduleMOs ordonnance à partir de cette liste — elle doit être complète.
+  return await fetchAllRows<ManufacturingOrder>(q, { label: 'getManufacturingOrders' })
 }
 
 export async function createManufacturingOrder(mo: Omit<ManufacturingOrder, 'id' | 'created_at'>) {

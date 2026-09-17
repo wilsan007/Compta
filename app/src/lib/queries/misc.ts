@@ -1,5 +1,5 @@
 import { supabase, isTenantTable } from '@/lib/supabase'
-import { getTenantId, nextDocumentNumber, ti, tud } from './core'
+import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { createJournalEntry } from './accounting'
 import { createStockMovement } from './stock'
 import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, FixedAsset, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
@@ -95,12 +95,14 @@ export async function calculateAllDepreciation() {
     .from('fixed_assets')
     .select('*')
     .eq('status', 'active')
+    .order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: assets, error } = await q
-  if (error) throw error
+  // LOT7-03 : dotation aux amortissements de fin d'exercice. Tronquée à 1 000, elle
+  // laissait des immobilisations sans dotation, sans aucun message.
+  const assets = await fetchAllRows<any>(q, { label: 'calculateAllDepreciation/fixed_assets' })
 
   const results: FixedAsset[] = []
-  for (const asset of assets || []) {
+  for (const asset of assets) {
     try {
       const updated = await calculateDepreciation(asset.id)
       results.push(updated)
@@ -2689,25 +2691,26 @@ export async function createAdvanceInvoice(customerId: string, amount: number, v
 // --- Stock helpers ---
 export async function checkStockAvailability(productId: string, requiredQty: number) {
   const tid = await getTenantId()
-  let q = supabase.from('stock_quantities').select('quantity').eq('product_id', productId)
+  let q = supabase.from('stock_quantities').select('quantity').eq('product_id', productId).order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  const available = (data || []).reduce((sum, s) => sum + Number(s.quantity || 0), 0)
+  // LOT7-03 : disponibilité = somme sur tous les dépôts et tous les lots.
+  const data = await fetchAllRows<any>(q, { label: 'checkStockAvailability/stock_quantities' })
+  const available = data.reduce((sum, s) => sum + Number(s.quantity || 0), 0)
   return { available, required: requiredQty, sufficient: available >= requiredQty }
 }
 
 export async function getStockForecast(productId: string) {
   const tid = await getTenantId()
-  let qS = supabase.from('stock_quantities').select('quantity').eq('product_id', productId)
+  let qS = supabase.from('stock_quantities').select('quantity').eq('product_id', productId).order('id')
   if (tid) qS = qS.eq('tenant_id', tid)
-  const { data: stock } = await qS
-  const current = (stock || []).reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0)
+  // LOT7-03 : prévision de stock — somme sur tous les dépôts et toutes les commandes.
+  const stock = await fetchAllRows<any>(qS, { label: 'getStockForecast/stock_quantities' })
+  const current = stock.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0)
 
-  let qP = supabase.from('sales_order_lines').select('quantity, delivered_quantity, sales_orders(status)').eq('product_id', productId)
+  let qP = supabase.from('sales_order_lines').select('quantity, delivered_quantity, sales_orders(status)').eq('product_id', productId).order('id')
   if (tid) qP = qP.eq('tenant_id', tid)
-  const { data: pending } = await qP
-  const pendingQty = (pending || []).filter((p: any) => p.sales_orders?.status === 'confirmed').reduce((sum: number, p: any) => sum + (Number(p.quantity) - Number(p.delivered_quantity || 0)), 0)
+  const pending = await fetchAllRows<any>(qP, { label: 'getStockForecast/sales_order_lines' })
+  const pendingQty = pending.filter((p: any) => p.sales_orders?.status === 'confirmed').reduce((sum: number, p: any) => sum + (Number(p.quantity) - Number(p.delivered_quantity || 0)), 0)
 
   return { current, pending: pendingQty, forecast: current - pendingQty }
 }

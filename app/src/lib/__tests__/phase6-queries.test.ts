@@ -12,7 +12,9 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     order: vi.fn(() => chain),
     single: vi.fn(() => Promise.resolve(resolvedValue)),
     limit: vi.fn(() => chain),
-    range: vi.fn(() => Promise.resolve(resolvedValue)),
+    // LOT7-03 : fetchAllRows pagine via .range() ; le mock doit renvoyer les mêmes
+    // données que `then`, y compris après un setMockData qui réassigne `then`.
+    range: vi.fn(() => new Promise((resolve) => chain.then(resolve))),
     in: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),

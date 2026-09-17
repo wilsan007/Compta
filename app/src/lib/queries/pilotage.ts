@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { fetchAllRows, getTenantId, ti, tud } from './core'
 import type { SavedFilter } from '@/types'
 
 // ============ Saved Filters ============
@@ -65,11 +65,10 @@ export async function getRevenueSimulation(period: 'month' | 'quarter' | 'year',
     .select('date, total')
     .eq('status', 'paid')
     .gte('date', startDate.toISOString().split('T')[0])
+    .order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-
-  const invoices = data || []
+  // LOT7-03 : la simulation part du CA réalisé — tronqué, elle projette sur une base fausse.
+  const invoices = await fetchAllRows<any>(q, { label: 'getRevenueSimulation/invoices' })
   const byMonth: Record<string, number> = {}
   for (const inv of invoices as any[]) {
     const d = new Date(inv.date).toISOString().slice(0, 7)
@@ -117,11 +116,10 @@ export async function getMarginAnalysis(
     `)
     .eq('invoice.status', 'paid')
     .gte('invoice.date', startDate.toISOString().split('T')[0])
+    .order('id')
   if (tid) q = q.eq('invoice.tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-
-  const lines = data || []
+  // LOT7-03 : analyse de marge par produit/client — agrégat sur toutes les lignes de facture.
+  const lines = await fetchAllRows<any>(q, { label: 'getMarginAnalysis/invoice_lines' })
   const groups: Record<string, { revenue: number; cost: number; margin: number; marginPercent: number }> = {}
 
   for (const line of lines as any[]) {

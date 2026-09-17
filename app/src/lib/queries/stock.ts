@@ -1,16 +1,15 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, nextDocumentNumber, ti, tud } from './core'
+import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
 
 // ============ Products ============
 export async function getProducts() {
   const tid = await getTenantId()
-  let q = supabase.from('products').select('*').order('name', { ascending: true })
+  let q = supabase.from('products').select('*').order('name', { ascending: true }).order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  return data as Product[]
+  // LOT7-03 : le MRP, les prévisions et les écrans catalogue partent tous de cette liste.
+  return await fetchAllRows<Product>(q, { label: 'getProducts' })
 }
 
 export async function createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
@@ -167,11 +166,10 @@ export async function deletePriceListLine(id: string) {
 // ============ Sprint 6: BOMs ============
 export async function getBOMs() {
   const tid = await getTenantId()
-  let q = supabase.from('boms').select('*').order('code')
+  let q = supabase.from('boms').select('*').order('code').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  return data as BOM[]
+  // LOT7-03 : nomenclatures — le MRP explose les besoins à partir de cette liste.
+  return await fetchAllRows<BOM>(q, { label: 'getBOMs' })
 }
 
 export async function createBOM(b: Omit<BOM, 'id' | 'created_at'>) {
@@ -695,14 +693,17 @@ export async function runMRPCalculation(): Promise<MRPRun> {
   })
 
   try {
+    // LOT7-03 : le calcul des besoins nets doit voir TOUTES les nomenclatures, TOUT le
+    // stock et TOUS les en-cours. Tronqué à 1 000 lignes, le MRP proposait des
+    // approvisionnements pour des besoins déjà couverts (et en oubliait d'autres).
     const [products, boms, bomLines, stockQtys, openMOs, openPOLines] = await Promise.all([
       getProducts(),
       getBOMs(),
-      supabase.from('bom_lines').select('*').eq('tenant_id', tid).then(r => r.data || []),
-      supabase.from('stock_quantities').select('*').eq('tenant_id', tid).then(r => r.data || []),
-      supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).then(r => r.data || []),
+      fetchAllRows<any>(supabase.from('bom_lines').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/bom_lines' }),
+      fetchAllRows<any>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
+      fetchAllRows<any>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
       // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
-      supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'sent', 'confirmed']).then(r => r.data || []),
+      fetchAllRows<any>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'sent', 'confirmed']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
     ])
 
     // Build stock map: product_id -> total quantity
@@ -848,13 +849,14 @@ export async function deleteProductionForecast(id: string) {
 
 export async function importForecastsFromInvoices(period: string, startDate: string, endDate: string) {
   const tid = await getTenantId()
-  let q = supabase.from('invoices').select('*, invoice_lines(product_id, quantity)').eq('status', 'paid').gte('issue_date', startDate).lte('issue_date', endDate)
+  let q = supabase.from('invoices').select('*, invoice_lines(product_id, quantity)').eq('status', 'paid').gte('issue_date', startDate).lte('issue_date', endDate).order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: invoices, error } = await q
-  if (error) throw error
+  // LOT7-03 : prévisions de production déduites de l'historique de ventes — sur une année
+  // complète, la troncature à 1 000 factures sous-estimait massivement les quantités.
+  const invoices = await fetchAllRows<any>(q, { label: 'importForecastsFromInvoices/invoices' })
 
   const productQtyMap: Record<string, number> = {}
-  for (const inv of invoices || []) {
+  for (const inv of invoices) {
     for (const line of (inv as any).invoice_lines || []) {
       if (line.product_id) {
         productQtyMap[line.product_id] = (productQtyMap[line.product_id] || 0) + Number(line.quantity || 0)
@@ -966,11 +968,13 @@ export async function checkMaterialAvailability(slotId: string) {
 export async function autoScheduleMOs() {
   const tid = await getTenantId()
   if (!tid) return { scheduled: 0, message: 'No tenant' }
+  // LOT7-03 : l'ordonnancement parcourt les OF, les gammes et leurs opérations ; une
+  // gamme absente de la page 1 faisait sauter l'OF (`if (!routing) continue`).
   const [mos, machines, routings, routingOps] = await Promise.all([
     getManufacturingOrders('planned'),
-    supabase.from('machines').select('*').eq('status', 'active').eq('tenant_id', tid).then(r => r.data || []),
-    supabase.from('routings').select('*').eq('tenant_id', tid).then(r => r.data || []),
-    supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).then(r => r.data || []),
+    fetchAllRows<any>(supabase.from('machines').select('*').eq('status', 'active').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/machines' }),
+    fetchAllRows<any>(supabase.from('routings').select('*').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/routings' }),
+    fetchAllRows<any>(supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).order('id'), { label: 'autoScheduleMOs/routing_operations' }),
   ])
 
   let scheduled = 0
@@ -1043,11 +1047,12 @@ export async function getProductSupplierPrices(productId: string) {
 export async function getProductDocuments(productId: string) {
   const tid = await getTenantId()
   if (!tid) return []
+  // LOT7-03 : historique documentaire d'un article — doit être exhaustif.
   const [invoices, purchaseOrders, manufacturingOrders, salesOrders] = await Promise.all([
-    supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
-    supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
-    supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
-    supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).then(r => r.data || []),
+    fetchAllRows<any>(supabase.from('invoice_lines').select('*, invoices(number, issue_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/invoice_lines' }),
+    fetchAllRows<any>(supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/purchase_order_lines' }),
+    fetchAllRows<any>(supabase.from('manufacturing_orders').select('number, planned_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/manufacturing_orders' }),
+    fetchAllRows<any>(supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/sales_order_lines' }),
   ])
 
   const docs: any[] = []

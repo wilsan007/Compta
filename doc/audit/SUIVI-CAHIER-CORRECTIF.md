@@ -1,7 +1,7 @@
 # Suivi du cahier des charges correctif
 
 > **Référence** [CAHIER-DES-CHARGES-CORRECTIF.md](CAHIER-DES-CHARGES-CORRECTIF.md)
-> **Branche** `commercial-hr-paie` — dernier commit au démarrage du suivi : `057c708`
+> **Branche** `commercial-hr-paie` — dernier commit au démarrage du suivi : `057c708` · dernier commit au 17/09 : `2d522c7`
 > **Session suivie** « Analyse état plateforme par module » (Claude Code, **TERMINÉE 15/09 19h45**)
 > **Démarrage du suivi** 15/09/2026, 19h15
 > **Règle** une action passe à **OK** seulement avec une preuve (commande exécutée, fichier, commit). Ce que l'autre session affirme sans l'avoir exécuté reste « à valider ».
@@ -18,9 +18,9 @@ Légende : **OK** terminé et prouvé · ⏳ en cours · ⬜ à faire · 👤 ac
 | B — Validation sur une vraie base PostgreSQL | 12 | 5 | 7 |
 | C — Front et bugs trouvés à l'exécution | 8 | 0 | 8 |
 | D — Garde-fous LOT 6 au vert | 5 | 0 | 5 |
-| E — Dette LOT 7 | 8 | 0 | 8 |
+| E — Dette LOT 7 | 8 | 4 | 4 |
 | F — Actions de votre part | 2 | 0 | 2 |
-| **Total** | **38** | **7** | **31** |
+| **Total** | **38** | **11** | **27** |
 
 ---
 
@@ -47,18 +47,20 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 | B7 | LOT1-01 | `validation_status='validated'` produit une écriture `VT` | **OK** | 15/09 19h45 | confirmé fonctionnel |
 | B8 à B12 | LOT4-03, 04, 05, 06, 07, 09, 11, 12 | Valeurs métier : stock, MRP, lettrage, rapprochement | ⏳ | | testés unitairement, à confirmer en scénarios complets |
 
-## C — Bugs découverts à l'exécution réelle (migrations 158-160, non commitées)
+## C — Bugs découverts à l'exécution réelle (migrations 158-160, commitées en `2d522c7`)
+
+> Correction du 17/09 : les numéros ci-dessous étaient inexacts. La 158 (`158_fix_plpgsql_check_errors.sql`, 1 382 l.) porte tous les correctifs de fonctions ; la 159 ne contient QUE les fuites RLS ; la 160 ne contient QUE la suppression de `_skip_cascade`. Ligne indiquée pour chaque correctif.
 
 | # | Sévérité | Bug | État | Mitigation |
 |---|---|---|:---:|---|
-| C1 | 🔴 | Coordonnées bancaires de tous les partenaires lisibles/modifiables par toutes les sociétés (politique `allow_all` recréée en 99) | **Corrigé en 159** | |
-| C2 | 🔴 | Création de société échoue (`create_tenant_for_current_user`) | **Corrigé en 160** | |
-| C3 | 🔴 | Récursion infinie à chaque création/modification d'utilisateur | **Corrigé en 160** | |
-| C4 | 🔴 | Tout mouvement de stock valorisé refusé (régression migration 101) | **Corrigé en 159** | |
-| C5 | 🟠 | Paiement client déduit deux fois du solde | **Corrigé en 159** | |
-| C6 | 🟠 | Fin d'ordre de fabrication déséquilibrée (641 vs 613) | **Corrigé en 159** | |
-| C7 | 🟠 | DSN/TVA/e-invoice marquées transmises sans l'être (maintenant erreur explicite) | **Corrigé en 160** | |
-| C8 | 👤 | Faire tourner la clé `sb_secret_…` restée en clair | ⬜ | remplacée par espace réservé en 157 |
+| C1 | 🔴 | Coordonnées bancaires de tous les partenaires lisibles/modifiables par toutes les sociétés (politique `allow_all` recréée en 99) | **Corrigé en 159** | `159_fix_rls_cross_tenant_leaks.sql:8` |
+| C2 | 🔴 | Création de société échoue (`create_tenant_for_current_user`) | **Corrigé en 158** | `158:346` |
+| C3 | 🔴 | Récursion infinie à chaque création/modification d'utilisateur | **Corrigé en 158** | `158:842` |
+| C4 | 🔴 | Tout mouvement de stock valorisé refusé (régression migration 101) | **Corrigé en 158** | `158:1200` |
+| C5 | 🟠 | Paiement client déduit deux fois du solde | **Corrigé en 158** | `158:865` |
+| C6 | 🟠 | Fin d'ordre de fabrication déséquilibrée (641 vs 613) | **Corrigé en 158** | `158:1053` |
+| C7 | 🟠 | DSN/TVA/e-invoice marquées transmises sans l'être (maintenant erreur explicite) | **Corrigé (edge functions, pas SQL)** | HTTP 503 dans `transmit-dsn`, `submit-vat-return`, `submit-e-invoice`, `request-signature` — commit `2d522c7` |
+| C8 | 👤 | Faire tourner la clé `sb_secret_…` restée en clair | ⬜ | remplacée par espace réservé en 157 ; **la rotation reste à faire côté Supabase** |
 
 ## D — Garde-fous LOT 6 (présents dans la CI, jamais passés au vert)
 
@@ -76,12 +78,71 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 |---|---|---|---|:---:|---|---|
 | E1 | LOT7-01 | Supprimer les ~250 exports inutilisés | plafond knip seulement | ⬜ | | |
 | E2 | LOT7-02 | Décider du sort des 27 tables de la migration 127 | — | ⬜ | | |
-| E3 | LOT7-03 | Borner les requêtes | 293 `select('*')`, 31 `.limit/.range` | ⬜ | | |
+| E3 | LOT7-03 | Borner les requêtes | 293 `select('*')`, 31 `.limit/.range` | **OK** | 17/09 08h40 | Helper `fetchAllRows` (`src/lib/queries/core.ts`), 46 requêtes d'export/agrégat paginées dans 9 fichiers. 12 tests dédiés (`src/lib/__tests__/fetch-all-rows.test.ts`). Voir le détail ci-dessous. |
 | E4 | LOT7-04 | Réduire les `any` | 2 087 (1 991 au 12/09) | ⬜ | | |
-| E5 | LOT7-05 | Un seul jeu de triggers d'équilibre | clos selon l'autre session | ⬜ | | à confirmer en B6 |
-| E6 | LOT7-06 | `_skip_cascade` posé mais jamais lu | toujours dans `85_…sql` | ⬜ | | |
+| E5 | LOT7-05 | Un seul jeu de triggers d'équilibre | clos selon l'autre session | **OK** | 15/09 | `158:948` — contrôle d'équilibre unique, vérifié à l'exécution (voir B6) |
+| E6 | LOT7-06 | `_skip_cascade` posé mais jamais lu | toujours dans `85_…sql` | **OK** | 15/09 | `160_remove_skip_cascade.sql` réécrit `recalc_parent_progress_on_subtask_change` sans la colonne. La 85 la pose encore mais plus personne ne l'écrit. |
 | E7 | LOT7-07 | Accessibilité | 47 attributs `aria-` | ⬜ | | |
-| E8 | LOT7-08 | Sortir du « mode simulation » | 4 fonctions : transmit-dsn, submit-vat-return, submit-e-invoice, request-signature | ⬜ | | |
+| E8 | LOT7-08 | Sortir du « mode simulation » | 4 fonctions : transmit-dsn, submit-vat-return, submit-e-invoice, request-signature | **OK** | 15/09 | les 4 renvoient un HTTP 503 explicite au lieu de simuler une transmission réussie. Le raccordement aux API réelles (Net-Entreprises, Chorus Pro) reste un chantier produit. |
+
+### E3 — LOT7-03 en détail (17/09)
+
+**Le défaut.** `app/supabase/config.toml:18` fixe `max_rows = 1000`. PostgREST rabote toute
+réponse à 1 000 lignes **sans erreur, sans avertissement, sans en-tête distinctif côté appelant**.
+Les `.limit(100000)` posés dans `accounting.ts` (« SOC-04 : limite explicite ») ne changeaient
+rien : PostgREST applique toujours le minimum des deux. Conséquence : au-delà de 1 000 lignes,
+les écrans affichaient des chiffres faux en se présentant comme complets.
+
+**Le correctif.** Un helper `fetchAllRows` dans `src/lib/queries/core.ts` boucle sur
+`.range(from, from+999)` jusqu'à une page incomplète. Il accepte un builder PostgREST
+(vérifié dans `node_modules/@supabase/postgrest-js/src/` : `range()` fait `searchParams.set`
+et retourne `this`, `then()` déclenche un fetch neuf à chaque `await` — le builder est donc
+ré-attendable) ou une fabrique `() => builder`. Plafond de sécurité à 200 000 lignes : au-delà,
+il lève, pour forcer le passage à une agrégation SQL plutôt que de saturer le navigateur.
+
+**Tri stable.** La pagination par OFFSET n'est correcte que sur un tri **total** : sans ordre
+déterministe, PostgreSQL peut renvoyer les lignes dans un ordre différent d'une page à l'autre
+et la pagination saute ou double des lignes. `.order('id')` a donc été ajouté en dernier critère
+partout. Vérifié sur la base réelle (`onusuite-audit-pg`) : les **38 tables** concernées ont
+une colonne `id uuid` couverte par un index unique mono-colonne — le tri est bien total.
+
+**Ce qui est paginé** (46 requêtes, 9 fichiers) :
+
+| Fichier | Fonctions |
+|---|---|
+| `accounting.ts` | `getFECData` (export légal), `getDashboardStats`, `getCashFlow`, `getJournalPeriodBalance`, `getAgedBalance`, `getEcheancier`, `getSIGData`, `getAnalyticBalance`, `getGrandLivreTiers`, `getGeneralLedgerFiltered`, `getTrialBalanceFiltered`, `getTreasuryDashboard`, `getTreasuryForecast`, `getBudgetTracking`, `checkBudgetAvailability`, `getFinancialDashboard`, `getFiscalBackups`, `getFECAttestations`, `runAccountingControl` |
+| `banking.ts` | `getBankAccounts` |
+| `catalogAdvanced.ts` | `getProductGridCombinations` (dont dépend `generateAllCombinations`), `getStockForecastDetailed` |
+| `crmAdvanced.ts` | `getSalesPipeline` |
+| `leavesAbsences.ts` | `exportLeaveDataToPayroll`, `importExpenseElements` |
+| `misc.ts` | `calculateAllDepreciation`, `checkStockAvailability`, `getStockForecast` |
+| `pilotage.ts` | `getRevenueSimulation`, `getMarginAnalysis` |
+| `production.ts` | `getManufacturingOrders` |
+| `socialDeclarations.ts` | `checkDsnAnomalies`, `calculateCice`, `calculateBdesIndicators` |
+| `sprintH.ts` | `getRhDashboardData` (8 tables), `getEffectifEvolution`, `getSalaryAnalysis`, `getAbsenceStats`, `getTurnoverRate`, `getCostByCenter` |
+| `stock.ts` | `getProducts`, `getBOMs`, `runMRPCalculation` (6 requêtes), `importForecastsFromInvoices`, `autoScheduleMOs`, `getProductDocuments` |
+
+**Conséquences métier les plus graves levées** : l'export FEC (art. A47 A-1 du LPF) pouvait
+partir amputé ; la balance générale tronquée ne s'équilibrait plus sans que rien ne l'indique ;
+`runAccountingControl` annonçait « aucune anomalie » sur des écritures qu'il n'avait jamais lues ;
+la dotation aux amortissements sautait des immobilisations ; le contrôle budgétaire laissait
+passer des dépassements ; le MRP recommandait des achats déjà couverts.
+
+**Changement de comportement assumé** : `getEcheancier` avalait ses erreurs
+(`if (!error && invoices)`) et rendait une liste vide en cas de panne. Il lève désormais —
+conforme au registre des échecs silencieux.
+
+**Preuves** : `npx tsc -b --noEmit` (0 erreur), `npx oxlint --max-warnings=0` (code 0),
+`npx vitest run` → **1 302 tests passés**, 38 ignorés, 0 échec (1 290 auparavant + 12 nouveaux),
+`npm run build` OK. Les mocks de 5 fichiers de test ont dû être corrigés : leur `range()`
+renvoyait une valeur figée à la création du mock, invisible tant que rien n'appelait `.range()`.
+
+**Reste ouvert sur LOT7-03** : les 293 `select('*')` ne sont pas réduits (transfert réseau,
+pas exactitude). Les fonctions paginées qui agrègent sur de gros volumes (`getTrialBalanceFiltered`,
+`runAccountingControl`, `getSIGData`) gagneraient à passer par un RPC SQL d'agrégation plutôt
+que par un rapatriement complet — la pagination corrige l'exactitude, pas le coût.
+
+---
 
 ## F — Actions de votre part
 
@@ -108,3 +169,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 15/09 19h15 | Démarrage du suivi. Session suivie en train de traiter l'option B du lint. Conteneur PostgreSQL d'audit lancé à 19h07. |
 | 15/09 19h30 | **A1 OK** (lint à 0). **B2 OK** (plpgsql_check à 0 erreur). Migrations 158+ écrites mais non commitées. |
 | 15/09 19h45 | **Session terminée (idle)**. Trois migrations supplémentaires (158-160) testées sur PostgreSQL 16 : schéma + 160 migrations rejouées sans erreur. **B1, B4, B5, B6, B7 OK** (17 tests triggers/17, 358 tables RLS sans fuite). 8 bugs graves trouvés et corrigés en 158-160 (politiques RLS, stock, paie, DSN). **184 fichiers modifiés, rien de commité.** Recommandation : commiter avant que d'autres stash écrasent le travail. |
+| 17/09 08h40 | **E3 (LOT7-03) OK** — helper `fetchAllRows`, 46 requêtes d'export et d'agrégat paginées dans 9 fichiers, tri total vérifié sur les 38 tables de la base réelle. 12 tests dédiés ; 1 302 tests au vert ; tsc, oxlint et build verts. Section C corrigée (les correctifs sont en 158, pas 159/160). **E5, E6, E8 passés à OK** après vérification dans le code : ils étaient déjà faits mais restés ⬜. |

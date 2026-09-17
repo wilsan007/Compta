@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { getTenantId, nextDocumentNumber, ti, tud } from './core'
+import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type { SocialDeclaration, CiceConfig, PasRate, AtRate, BdesIndicator, HonorariumRecord } from '@/types'
 
 // ============ Social Declarations (CRUD) ============
@@ -33,17 +33,17 @@ export async function updateSocialDeclaration(id: string, updates: Partial<Socia
 export async function checkDsnAnomalies(_period: string): Promise<any[]> {
   const tid = await getTenantId()
   const anomalies: any[] = []
-  let empQ = supabase.from('employees').select('id, name, social_security_number, hire_date, contract_type').eq('status', 'active')
+  let empQ = supabase.from('employees').select('id, name, social_security_number, hire_date, contract_type').eq('status', 'active').order('id')
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: employees } = await empQ
-  if (employees) {
-    for (const emp of employees) {
-      if (!emp.social_security_number) {
-        anomalies.push({ employee_id: emp.id, employee_name: emp.name, field: 'social_security_number', message: 'Numéro de sécurité sociale manquant' })
-      }
-      if (!emp.hire_date) {
-        anomalies.push({ employee_id: emp.id, employee_name: emp.name, field: 'hire_date', message: "Date d'embauche manquante" })
-      }
+  // LOT7-03 : contrôle DSN. Au-delà de 1 000 salariés, les anomalies des suivants
+  // n'étaient jamais remontées et la déclaration partait incomplète.
+  const employees = await fetchAllRows<any>(empQ, { label: 'checkDsnAnomalies/employees' })
+  for (const emp of employees) {
+    if (!emp.social_security_number) {
+      anomalies.push({ employee_id: emp.id, employee_name: emp.name, field: 'social_security_number', message: 'Numéro de sécurité sociale manquant' })
+    }
+    if (!emp.hire_date) {
+      anomalies.push({ employee_id: emp.id, employee_name: emp.name, field: 'hire_date', message: "Date d'embauche manquante" })
     }
   }
   return anomalies
@@ -319,11 +319,10 @@ export async function calculateCice(year: number): Promise<any[]> {
   const configs = await getCiceConfig(year)
   const config = configs.find(c => c.active)
   if (!config) throw new Error('No active CICE config for year ' + year)
-  let empQ = supabase.from('employees').select('id, name, gross_salary').eq('status', 'active')
+  let empQ = supabase.from('employees').select('id, name, gross_salary').eq('status', 'active').order('id')
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: employees, error } = await empQ
-  if (error) throw error
-  if (!employees) return []
+  // LOT7-03 : crédit d'impôt calculé salarié par salarié — aucun ne doit être omis.
+  const employees = await fetchAllRows<any>(empQ, { label: 'calculateCice/employees' })
   const results: any[] = []
   for (const emp of employees) {
     const salary = Number(emp.gross_salary) || 0
@@ -495,21 +494,21 @@ export async function getBdesIndicators(year: number, category?: string): Promis
 export async function calculateBdesIndicators(year: number): Promise<BdesIndicator[]> {
   const tid = await getTenantId()
   const indicators: Omit<BdesIndicator, 'id' | 'created_at'>[] = []
-  let empQ = supabase.from('employees').select('id, name, gender, hire_date, contract_type, gross_salary, department').eq('status', 'active')
+  let empQ = supabase.from('employees').select('id, name, gender, hire_date, contract_type, gross_salary, department').eq('status', 'active').order('id')
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: employees } = await empQ
-  if (employees) {
-    const total = employees.length
-    const male = employees.filter(e => e.gender === 'M').length
-    const female = employees.filter(e => e.gender === 'F').length
-    indicators.push({ tenant_id: tid, year, category: 'effectifs', indicator_name: 'Effectif total', indicator_value: total, indicator_unit: 'count', breakdown: { male, female }, target_value: null, previous_year_value: null, notes: null })
-    indicators.push({ tenant_id: tid, year, category: 'effectifs', indicator_name: 'Répartition F/H', indicator_value: female / (total || 1) * 100, indicator_unit: 'percent', breakdown: { male, female }, target_value: 50, previous_year_value: null, notes: null })
-    const totalSalary = employees.reduce((sum, e) => sum + (Number(e.gross_salary) || 0), 0)
-    indicators.push({ tenant_id: tid, year, category: 'remuneration', indicator_name: 'Masse salariale', indicator_value: totalSalary, indicator_unit: 'currency', breakdown: {}, target_value: null, previous_year_value: null, notes: null })
-    const maleAvgSalary = male > 0 ? employees.filter(e => e.gender === 'M').reduce((s, e) => s + (Number(e.gross_salary) || 0), 0) / male : 0
-    const femaleAvgSalary = female > 0 ? employees.filter(e => e.gender === 'F').reduce((s, e) => s + (Number(e.gross_salary) || 0), 0) / female : 0
-    indicators.push({ tenant_id: tid, year, category: 'egalite_f_h', indicator_name: 'Écart rémunération F/H', indicator_value: maleAvgSalary > 0 ? (maleAvgSalary - femaleAvgSalary) / maleAvgSalary * 100 : 0, indicator_unit: 'percent', breakdown: { male_avg: maleAvgSalary, female_avg: femaleAvgSalary }, target_value: 0, previous_year_value: null, notes: null })
-  }
+  // LOT7-03 : indicateurs BDES/égalité F-H — effectif, masse salariale et écart de
+  // rémunération sont des agrégats sur tout l'effectif.
+  const employees = await fetchAllRows<any>(empQ, { label: 'calculateBdesIndicators/employees' })
+  const total = employees.length
+  const male = employees.filter(e => e.gender === 'M').length
+  const female = employees.filter(e => e.gender === 'F').length
+  indicators.push({ tenant_id: tid, year, category: 'effectifs', indicator_name: 'Effectif total', indicator_value: total, indicator_unit: 'count', breakdown: { male, female }, target_value: null, previous_year_value: null, notes: null })
+  indicators.push({ tenant_id: tid, year, category: 'effectifs', indicator_name: 'Répartition F/H', indicator_value: female / (total || 1) * 100, indicator_unit: 'percent', breakdown: { male, female }, target_value: 50, previous_year_value: null, notes: null })
+  const totalSalary = employees.reduce((sum, e) => sum + (Number(e.gross_salary) || 0), 0)
+  indicators.push({ tenant_id: tid, year, category: 'remuneration', indicator_name: 'Masse salariale', indicator_value: totalSalary, indicator_unit: 'currency', breakdown: {}, target_value: null, previous_year_value: null, notes: null })
+  const maleAvgSalary = male > 0 ? employees.filter(e => e.gender === 'M').reduce((s, e) => s + (Number(e.gross_salary) || 0), 0) / male : 0
+  const femaleAvgSalary = female > 0 ? employees.filter(e => e.gender === 'F').reduce((s, e) => s + (Number(e.gross_salary) || 0), 0) / female : 0
+  indicators.push({ tenant_id: tid, year, category: 'egalite_f_h', indicator_name: 'Écart rémunération F/H', indicator_value: maleAvgSalary > 0 ? (maleAvgSalary - femaleAvgSalary) / maleAvgSalary * 100 : 0, indicator_unit: 'percent', breakdown: { male_avg: maleAvgSalary, female_avg: femaleAvgSalary }, target_value: 0, previous_year_value: null, notes: null })
   for (const ind of indicators) {
     await supabase.from('bdes_indicators').insert(ti(ind, 'bdes_indicators', tid))
   }

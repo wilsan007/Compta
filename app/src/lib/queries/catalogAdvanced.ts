@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { fetchAllRows, getTenantId, ti, tud } from './core'
 import type { ProductGrid, ProductGridCombination, ProductPackaging, ProductLink, Promotion, WarehouseUser, StockAlert, Product } from '@/types'
 
 // ============ Sprint D: Product Grids ============
@@ -30,11 +30,11 @@ export async function deleteProductGrid(id: string) {
 
 export async function getProductGridCombinations(productId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('product_grid_combinations').select('*').eq('product_id', productId).order('created_at', { ascending: false })
+  let q = supabase.from('product_grid_combinations').select('*').eq('product_id', productId).order('created_at', { ascending: false }).order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  return data as ProductGridCombination[]
+  // LOT7-03 : generateAllCombinations s'appuie sur cette liste pour ne pas recréer une
+  // déclinaison existante. Tronquée à 1 000, elle produisait des doublons de SKU.
+  return await fetchAllRows<ProductGridCombination>(q, { label: 'getProductGridCombinations' })
 }
 
 export async function createProductGridCombination(combo: Omit<ProductGridCombination, 'id' | 'created_at'>) {
@@ -310,13 +310,14 @@ export async function checkStockThresholds() {
 
 export async function getStockForecastDetailed(productId: string) {
   const tid = await getTenantId()
-  let qS = supabase.from('stock_quantities').select('quantity, reserved_quantity, incoming_quantity, warehouse_id').eq('product_id', productId)
+  let qS = supabase.from('stock_quantities').select('quantity, reserved_quantity, incoming_quantity, warehouse_id').eq('product_id', productId).order('id')
   if (tid) qS = qS.eq('tenant_id', tid)
-  const { data: stock } = await qS
+  // LOT7-03 : prévision de stock — somme sur tous les dépôts et toutes les commandes.
+  const stock = await fetchAllRows<any>(qS, { label: 'getStockForecastDetailed/stock_quantities' })
 
-  let qP = supabase.from('sales_order_lines').select('quantity, delivered_quantity, sales_orders(status)').eq('product_id', productId)
+  let qP = supabase.from('sales_order_lines').select('quantity, delivered_quantity, sales_orders(status)').eq('product_id', productId).order('id')
   if (tid) qP = qP.eq('tenant_id', tid)
-  const { data: pending } = await qP
+  const pending = await fetchAllRows<any>(qP, { label: 'getStockForecastDetailed/sales_order_lines' })
 
   const byWarehouse: Record<string, { current: number; reserved: number; incoming: number; outgoing: number; forecast: number }> = {}
   let totalCurrent = 0
@@ -324,7 +325,7 @@ export async function getStockForecastDetailed(productId: string) {
   let totalIncoming = 0
   let totalOutgoing = 0
 
-  for (const s of stock || []) {
+  for (const s of stock) {
     const wid = s.warehouse_id || 'default'
     const current = Number(s.quantity || 0)
     const reserved = Number(s.reserved_quantity || 0)
@@ -338,7 +339,7 @@ export async function getStockForecastDetailed(productId: string) {
     totalIncoming += incoming
   }
 
-  for (const p of pending || []) {
+  for (const p of pending) {
     if ((p as any).sales_orders?.status === 'confirmed') {
       const outgoing = Number((p as any).quantity || 0) - Number((p as any).delivered_quantity || 0)
       totalOutgoing += outgoing

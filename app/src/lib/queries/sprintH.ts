@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { fetchAllRows, getTenantId, ti, tud } from './core'
 import type { RhDashboardConfig, RhReport, EmployeeActivityLog } from '@/types'
 
 // ============ Employee Activity Logs ============
@@ -152,15 +152,22 @@ export async function getRhDashboardData() {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
+  // LOT7-03 : tableau de bord RH — effectif, masse salariale et compteurs CPF sont des
+  // agrégats. Au-delà de 1 000 salariés, tous les chiffres affichés étaient faux.
+  const page = (table: string, build: (q: any) => any = (q) => q) => {
+    let q = supabase.from(table).select('*').order('id')
+    if (tid) q = q.eq('tenant_id', tid)
+    return fetchAllRows<any>(build(q), { label: `getRhDashboardData/${table}` })
+  }
   const [employees, pendingLeaves, pendingExpenses, workStoppages, medicalExams, exitProcesses, hardshipRecords, cpfAccounts] = await Promise.all([
-    (() => { let q = supabase.from('employees').select('*'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('leave_requests').select('*').eq('status', 'pending'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('expense_reports').select('*').eq('status', 'submitted'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('work_stoppages').select('*').eq('status', 'current'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('medical_exams').select('*').is('completed_date', null); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('employee_exit_processes').select('*').eq('status', 'in_progress'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('work_hardship_records').select('*'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
-    (() => { let q = supabase.from('cpf_accounts').select('*'); if (tid) q = q.eq('tenant_id', tid); return q.then(r => r.data || []) })(),
+    page('employees'),
+    page('leave_requests', (q) => q.eq('status', 'pending')),
+    page('expense_reports', (q) => q.eq('status', 'submitted')),
+    page('work_stoppages', (q) => q.eq('status', 'current')),
+    page('medical_exams', (q) => q.is('completed_date', null)),
+    page('employee_exit_processes', (q) => q.eq('status', 'in_progress')),
+    page('work_hardship_records'),
+    page('cpf_accounts'),
   ])
 
   const activeEmployees = employees.filter((e: any) => e.status === 'active')
@@ -342,10 +349,10 @@ export async function calculateReportData(reportId: string) {
 
 export async function getEffectifEvolution(months: number = 12) {
   const tid = await getTenantId()
-  let q = supabase.from('employees').select('hire_date, status, updated_at')
+  let q = supabase.from('employees').select('hire_date, status, updated_at').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: emps } = await q
-  if (!emps) return []
+  // LOT7-03 : courbe d'évolution des effectifs sur 12 mois — agrégat sur tout le personnel.
+  const emps = await fetchAllRows<any>(q, { label: 'getEffectifEvolution/employees' })
 
   const result: { month: string; hires: number; exits: number; net: number }[] = []
   const now = new Date()
@@ -374,13 +381,13 @@ export async function getEffectifEvolution(months: number = 12) {
 
 export async function getSalaryAnalysis(groupBy: 'department' | 'category' | 'gender' | 'age_range') {
   const tid = await getTenantId()
-  let q = supabase.from('employees').select('*').eq('status', 'active')
+  let q = supabase.from('employees').select('*').eq('status', 'active').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: emps, error } = await q
-  if (error) throw error
+  // LOT7-03 : analyse des rémunérations par groupe — moyenne faussée si tronquée.
+  const emps = await fetchAllRows<any>(q, { label: 'getSalaryAnalysis/employees' })
 
   const groups: Record<string, { count: number; total: number; average: number }> = {}
-  for (const emp of emps || []) {
+  for (const emp of emps) {
     let key = 'N/A'
     if (groupBy === 'department') key = emp.department || 'N/A'
     else if (groupBy === 'category') key = emp.category || 'N/A'
@@ -408,13 +415,13 @@ export async function getSalaryAnalysis(groupBy: 'department' | 'category' | 'ge
 
 export async function getAbsenceStats(groupBy: 'department' | 'type' | 'month') {
   const tid = await getTenantId()
-  let q = supabase.from('leave_requests').select('*, employees(department)').eq('status', 'approved')
+  let q = supabase.from('leave_requests').select('*, employees(department)').eq('status', 'approved').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: leaves, error } = await q
-  if (error) throw error
+  // LOT7-03 : statistiques d'absentéisme — comptage sur toutes les absences approuvées.
+  const leaves = await fetchAllRows<any>(q, { label: 'getAbsenceStats/leave_requests' })
 
   const groups: Record<string, number> = {}
-  for (const leave of leaves || []) {
+  for (const leave of leaves) {
     let key = 'N/A'
     if (groupBy === 'department') key = (leave as any).employees?.department || 'N/A'
     else if (groupBy === 'type') key = leave.leave_type || 'N/A'
@@ -429,10 +436,10 @@ export async function getAbsenceStats(groupBy: 'department' | 'type' | 'month') 
 
 export async function getTurnoverRate(_period: string) {
   const tid = await getTenantId()
-  let q = supabase.from('employees').select('*')
+  let q = supabase.from('employees').select('*').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: emps } = await q
-  if (!emps) return { rate: 0, active: 0, inactive: 0 }
+  // LOT7-03 : taux de rotation = ratio sur l'effectif complet.
+  const emps = await fetchAllRows<any>(q, { label: 'getTurnoverRate/employees' })
   const active = emps.filter(e => e.status === 'active').length
   const inactive = emps.filter(e => e.status === 'inactive').length
   const total = active + inactive
@@ -441,12 +448,12 @@ export async function getTurnoverRate(_period: string) {
 
 export async function getCostByCenter(_period: string) {
   const tid = await getTenantId()
-  let q = supabase.from('employees').select('*').eq('status', 'active')
+  let q = supabase.from('employees').select('*').eq('status', 'active').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: emps, error } = await q
-  if (error) throw error
+  // LOT7-03 : coût par centre — somme des salaires de tout l'effectif actif.
+  const emps = await fetchAllRows<any>(q, { label: 'getCostByCenter/employees' })
   const groups: Record<string, number> = {}
-  for (const emp of emps || []) {
+  for (const emp of emps) {
     const center = emp.department || 'N/A'
     groups[center] = (groups[center] || 0) + Number(emp.salary || 0)
   }

@@ -42,6 +42,8 @@ function chainWith(data: any, error: any = null): any {
   c.single = vi.fn(() => Promise.resolve({ data, error }))
   c.maybeSingle = vi.fn(() => Promise.resolve({ data, error }))
   c.then = vi.fn((resolve: any) => Promise.resolve({ data, error }).then(resolve))
+  // LOT7-03 : fetchAllRows lit via .range() — il doit voir la même réponse que `then`.
+  c.range = vi.fn(() => Promise.resolve({ data, error }))
   return c
 }
 

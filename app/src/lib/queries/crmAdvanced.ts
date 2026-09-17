@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { fetchAllRows, getTenantId, ti, tud } from './core'
 import type { CrmOpportunity, CrmActivity, CrmCampaign, CrmTerritory, CrmForecast, ServiceTicket, ServiceTicketMessage, ServiceContract, KnowledgeBaseArticle } from '@/types'
 
 // ============ Sprint F: CRM Opportunities ============
@@ -190,16 +190,16 @@ export async function deleteForecast(id: string) {
 
 export async function getSalesPipeline() {
   const tid = await getTenantId()
-  let q = supabase.from('crm_opportunities').select('stage, expected_amount, probability')
+  let q = supabase.from('crm_opportunities').select('stage, expected_amount, probability').order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
+  // LOT7-03 : le pipeline commercial agrège toutes les opportunités par étape.
+  const data = await fetchAllRows<any>(q, { label: 'getSalesPipeline/crm_opportunities' })
 
   const stages = ['new', 'qualified', 'proposition', 'negotiation', 'won', 'lost']
   const pipeline: Record<string, { count: number; total: number; weighted: number }> = {}
   for (const s of stages) pipeline[s] = { count: 0, total: 0, weighted: 0 }
 
-  for (const opp of data || []) {
+  for (const opp of data) {
     const stage = (opp as any).stage as string
     if (pipeline[stage]) {
       pipeline[stage].count++
