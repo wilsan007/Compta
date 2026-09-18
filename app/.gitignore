@@ -24,6 +24,10 @@ dist-ssr
 *.sw?
 .gstack/
 
+# Playwright
+test-results
+playwright-report
+
 # Security: Never commit credentials, secrets, or env files
 .env
 .env.*
