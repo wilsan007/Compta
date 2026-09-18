@@ -350,10 +350,8 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
               <h3 className="text-sm font-semibold truncate">{previewName}</h3>
               <button
                 onClick={() => { setPreviewUrl(null); setPreviewName('') }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <XCircle className="h-5 w-5" />
-              </button>
+                className="text-muted-foreground hover:text-foreground" aria-label={tCommon('actions.cancel')} title={tCommon('actions.cancel')}>
+                <XCircle className="h-5 w-5" aria-hidden="true" /></button>
             </div>
             <iframe src={previewUrl} className="flex-1 w-full rounded-md border border-border" title={previewName} />
           </div>

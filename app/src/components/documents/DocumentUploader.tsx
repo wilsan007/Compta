@@ -25,6 +25,7 @@ export function DocumentUploader({
   onUploaded,
 }: DocumentUploaderProps) {
   const { t } = useTranslation(['documents', 'common'])
+  const { t: tCommon } = useTranslation('common')
   const { upload, canUpload } = useDocuments(module)
   const [isDragging, setIsDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -136,10 +137,8 @@ export function DocumentUploader({
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); handleCancel() }}
-              className="ml-2 text-muted-foreground hover:text-destructive"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              className="ml-2 text-muted-foreground hover:text-destructive" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+              <X className="h-4 w-4" aria-hidden="true" /></button>
           </div>
         ) : (
           <div className="space-y-1">

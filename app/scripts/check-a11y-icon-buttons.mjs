@@ -28,14 +28,56 @@ function walk(dir) {
   return out
 }
 
-// <Button …><Icone … /></Button> : un bouton dont le seul enfant est une icône.
-const ICON_ONLY = /<(Button|button)\b([^>]*)>\s*(?:<[A-Z][A-Za-z0-9]*\s[^>]*\/>|<[A-Z][A-Za-z0-9]*\/>)\s*<\/\1>/g
+/**
+ * Trouve la fin de la balise ouvrante à partir de l'indice du `<`.
+ * Une expression régulière ne suffit pas : un attribut JSX contient souvent un `>`
+ * (`onClick={() => …}`, une chaîne, une comparaison). Il faut suivre les accolades et
+ * les guillemets. La première version de ce contrôle s'y est laissé prendre dans les
+ * deux sens : elle ratait les boutons écrits sur plusieurs lignes, puis, une fois le
+ * motif élargi, elle signalait des boutons qui portent une icône ET du texte.
+ */
+function endOfOpenTag(src, i) {
+  let depth = 0
+  let quote = null
+  for (let k = i; k < src.length; k++) {
+    const c = src[k]
+    if (quote) {
+      if (c === quote && src[k - 1] !== '\\') quote = null
+      continue
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; continue }
+    if (c === '{') { depth++; continue }
+    if (c === '}') { depth--; continue }
+    if (depth === 0 && c === '>') return k
+  }
+  return -1
+}
+
+/** Le contenu d'un bouton se réduit-il à une seule balise auto-fermante ? */
+function isIconOnly(inner) {
+  const trimmed = inner.trim()
+  if (!trimmed.startsWith('<') || !trimmed.endsWith('/>')) return false
+  // une seule balise : pas d'autre `<` après la première
+  if (trimmed.slice(1).includes('<')) return false
+  // une icône commence par une majuscule (composant), pas une balise HTML
+  return /^<[A-Z]/.test(trimmed)
+}
 
 const offenders = []
 for (const file of walk(SRC)) {
   const src = readFileSync(file, 'utf8')
-  for (const m of src.matchAll(ICON_ONLY)) {
-    const attrs = m[2]
+  for (const m of src.matchAll(/<(Button|button)(?=[\s>])/g)) {
+    const tag = m[1]
+    const openEnd = endOfOpenTag(src, m.index)
+    if (openEnd === -1) continue
+    if (src[openEnd - 1] === '/') continue // balise auto-fermante : pas d'enfant
+    const attrs = src.slice(m.index + tag.length + 1, openEnd)
+    const close = src.indexOf(`</${tag}>`, openEnd)
+    if (close === -1) continue
+    const inner = src.slice(openEnd + 1, close)
+    // un bouton imbriqué dans le contenu : on laisse l'itération suivante le traiter
+    if (inner.includes(`<${tag}`)) continue
+    if (!isIconOnly(inner)) continue
     if (/\baria-label\b|\bariaLabel\b|\btitle=/.test(attrs)) continue
     offenders.push({ file: relative(ROOT, file), line: src.slice(0, m.index).split('\n').length })
   }

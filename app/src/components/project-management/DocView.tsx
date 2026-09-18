@@ -212,10 +212,8 @@ export function DocView({ projectId }: DocViewProps) {
                       e.stopPropagation()
                       handleDelete(doc.id)
                     }}
-                    className="opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-500 transition-all flex-shrink-0 ml-2"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    className="opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-500 transition-all flex-shrink-0 ml-2" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                 </div>
                 <span className="text-[10px] text-[var(--color-text-secondary)]">
                   {new Date(doc.updated_at).toLocaleDateString()}

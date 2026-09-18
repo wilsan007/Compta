@@ -134,9 +134,9 @@ export function RhKnowledgeBasePage() {
                 <TableCell><Badge variant={article.published ? 'success' : 'warning'}>{article.published ? t('knowledgeBase.published') : t('knowledgeBase.draft')}</Badge></TableCell>
                 <TableCell className="text-xs">{new Date(article.updated_at).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  <Button size="sm" variant="ghost" onClick={() => handleView(article)}><Eye className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleEdit(article)}><Edit className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(article.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleView(article)} ariaLabel={tCommon('actions.view')}><Eye className="w-4 h-4" aria-hidden="true" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleEdit(article)} ariaLabel={tCommon('actions.edit')}><Edit className="w-4 h-4" aria-hidden="true" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleDelete(article.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
                 </TableCell>
               </TableRow>
             ))}

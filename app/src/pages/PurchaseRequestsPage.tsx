@@ -235,7 +235,7 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
                 <input className="input col-span-6" placeholder={t('purchaseRequests.description')} value={line.description} onChange={e => { const l = [...lines]; l[idx].description = e.target.value; setLines(l) }} />
                 <input className="input col-span-2" type="number" placeholder={t('purchaseRequests.quantity')} value={line.quantity} onChange={e => { const l = [...lines]; l[idx].quantity = Number(e.target.value); setLines(l) }} />
                 <input className="input col-span-3" type="number" placeholder={t('purchaseRequests.estimatedPrice')} value={line.estimated_price} onChange={e => { const l = [...lines]; l[idx].estimated_price = Number(e.target.value); setLines(l) }} />
-                <button type="button" onClick={() => removeLine(idx)} className="col-span-1 p-2 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]"><X className="w-4 h-4" /></button>
+                <button type="button" onClick={() => removeLine(idx)} className="col-span-1 p-2 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
               </div>
             ))}
           </div>

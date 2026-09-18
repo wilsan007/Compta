@@ -77,8 +77,8 @@ export function MobileApproval() {
       <div className="flex items-center justify-between mb-4">
         <Badge variant="warning">{items.length} {t('approvals.pending')}</Badge>
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))}><ChevronLeft className="w-4 h-4" /></Button>
-          <Button size="sm" variant="ghost" onClick={() => setCurrentIdx(Math.min(items.length - 1, currentIdx + 1))}><ChevronRight className="w-4 h-4" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} ariaLabel={tCommon('actions.previous')}><ChevronLeft className="w-4 h-4" aria-hidden="true" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => setCurrentIdx(Math.min(items.length - 1, currentIdx + 1))} ariaLabel={tCommon('actions.next')}><ChevronRight className="w-4 h-4" aria-hidden="true" /></Button>
         </div>
       </div>
 

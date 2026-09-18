@@ -136,9 +136,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(v.total_sales))}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(v.total_purchases))}</TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

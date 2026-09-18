@@ -78,9 +78,8 @@ export function DistributionGrillsPage() {
                     <Badge variant={grill.active ? 'success' : 'neutral'}>{grill.active ? t('grills.yes') : t('grills.no')}</Badge>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(grill.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(grill.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               )
@@ -180,9 +179,8 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
                   </TableCell>
                   <TableCell>
                     {lines.length > 1 && (
-                      <button onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="p-1 text-[var(--color-danger)]">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="p-1 text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     )}
                   </TableCell>
                 </TableRow>

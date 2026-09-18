@@ -95,7 +95,7 @@ export function BatchEntryPage() {
               <TableCell>{formatCurrency(s.total_debit)}</TableCell>
               <TableCell>{formatCurrency(s.total_credit)}</TableCell>
               <TableCell><Badge variant={s.status === 'validated' ? 'success' : 'warning'}>{t(`batchEntry.status.${s.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(s.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(s.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -172,7 +172,7 @@ export function AutoLabelRulesPage() {
               <TableCell className="font-mono text-xs">{r.label_pattern}</TableCell>
               <TableCell>{r.priority}</TableCell>
               <TableCell>{r.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -348,7 +348,7 @@ export function LettrageDifferencesPage() {
               <TableCell className={d.difference > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatCurrency(d.difference)}</TableCell>
               <TableCell>{d.difference_account || '-'}</TableCell>
               <TableCell><Badge variant={d.status === 'resolved' ? 'success' : 'warning'}>{t(`lettrageDiff.status.${d.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(d.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(d.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -404,7 +404,7 @@ export function AccountingControlsPage() {
         </Table>
       )}
       {selectedRun && (
-        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)}><X className="w-4 h-4" /></Button>}>
+        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>}>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {selectedRun.details.map((d: any, i: number) => (
               <div key={i} className={`p-3 rounded border ${d.type === 'unbalanced' || d.type === 'duplicate_piece' || d.type === 'missing_account' ? 'border-red-300 bg-red-50' : 'border-orange-300 bg-orange-50'}`}>
@@ -500,8 +500,8 @@ export function CashControlPage() {
               <TableCell className={s.difference < 0 ? 'text-red-600 font-semibold' : s.difference > 0 ? 'text-green-600 font-semibold' : ''}>{formatCurrency(s.difference)}</TableCell>
               <TableCell><Badge variant={s.status === 'validated' ? 'success' : 'warning'}>{t(`cashControl.status.${s.status}`)}</Badge></TableCell>
               <TableCell><div className="flex gap-1">
-                {s.status === 'open' && <Button variant="secondary" size="sm" onClick={() => handleValidate(s.id)}><CheckCircle className="w-3 h-3" /></Button>}
-                <Button variant="danger" size="sm" onClick={() => handleDelete(s.id)}><Trash2 className="w-3 h-3" /></Button>
+                {s.status === 'open' && <Button variant="secondary" size="sm" onClick={() => handleValidate(s.id)} ariaLabel={tCommon('actions.validate')}><CheckCircle className="w-3 h-3" aria-hidden="true" /></Button>}
+                <Button variant="danger" size="sm" onClick={() => handleDelete(s.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -597,8 +597,8 @@ export function FECAttestationPage() {
               <TableCell>{formatCurrency(a.total_debit)}</TableCell>
               <TableCell>{formatCurrency(a.total_credit)}</TableCell>
               <TableCell><div className="flex gap-1">
-                <Button variant="secondary" size="sm" onClick={() => handleDownload(a)}><Download className="w-3 h-3" /></Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(a.id)}><Trash2 className="w-3 h-3" /></Button>
+                <Button variant="secondary" size="sm" onClick={() => handleDownload(a)} ariaLabel={tCommon('actions.download')}><Download className="w-3 h-3" aria-hidden="true" /></Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(a.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -680,7 +680,7 @@ export function TierRIBsPage() {
               <TableCell className="font-mono text-xs">{r.bic || '-'}</TableCell>
               <TableCell>{r.bank_name || '-'}</TableCell>
               <TableCell>{r.is_default ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -753,7 +753,7 @@ export function IFRSAdjustmentsPage() {
               <TableCell>{formatCurrency(i.amount)}</TableCell>
               <TableCell>{i.ifrs_standard || '-'}</TableCell>
               <TableCell><Badge variant={i.status === 'posted' ? 'success' : 'warning'}>{t(`ifrsAdjustments.status.${i.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(i.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(i.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -845,8 +845,8 @@ export function TaxPaymentsPage() {
               <TableCell><Badge variant={p.status === 'confirmed' ? 'success' : 'warning'}>{t(`taxPayment.status.${p.status}`)}</Badge></TableCell>
               <TableCell className="font-mono text-xs">{p.confirmation_number || '-'}</TableCell>
               <TableCell><div className="flex gap-1">
-                {p.status === 'draft' && <Button variant="secondary" size="sm" onClick={() => handleConfirm(p.id)}><CheckCircle className="w-3 h-3" /></Button>}
-                <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)}><Trash2 className="w-3 h-3" /></Button>
+                {p.status === 'draft' && <Button variant="secondary" size="sm" onClick={() => handleConfirm(p.id)} ariaLabel={tCommon('actions.validate')}><CheckCircle className="w-3 h-3" aria-hidden="true" /></Button>}
+                <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -928,7 +928,7 @@ export function CustomReportTemplatesPage() {
               <TableCell>{t(`customReport.orientations.${r.page_orientation}`)}</TableCell>
               <TableCell>{r.page_size}</TableCell>
               <TableCell>{r.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -998,7 +998,7 @@ export function DeferredPrintingPage() {
               <TableCell><Badge>{j.output_format.toUpperCase()}</Badge></TableCell>
               <TableCell><Badge variant={j.status === 'completed' ? 'success' : j.status === 'error' ? 'danger' : 'warning'}>{t(`deferredPrint.status.${j.status}`)}</Badge></TableCell>
               <TableCell>{j.generated_at ? formatDate(j.generated_at) : '-'}</TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(j.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(j.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -1076,7 +1076,7 @@ export function JournalAccessRightsPage() {
               <TableCell>{r.can_edit ? '✓' : '✗'}</TableCell>
               <TableCell>{r.can_delete ? '✓' : '✗'}</TableCell>
               <TableCell>{r.can_close ? '✓' : '✗'}</TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -1150,7 +1150,7 @@ export function VATOnCollectionsPage() {
               <TableCell>{formatCurrency(v.vat_collected)}</TableCell>
               <TableCell>{formatCurrency(v.vat_uncollected)}</TableCell>
               <TableCell><Badge variant={v.status === 'filed' ? 'success' : 'warning'}>{t(`vatCollection.status.${v.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(v.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(v.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>

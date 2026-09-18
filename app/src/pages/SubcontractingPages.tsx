@@ -73,7 +73,7 @@ export function SubcontractingOrdersPage() {
                   </select>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -182,7 +182,7 @@ export function SubcontractingShipmentsPage() {
                 <TableCell className="text-xs">{formatDate(s.shipment_date)}</TableCell>
                 <TableCell className="text-sm">{s.warehouses?.name || '—'}</TableCell>
                 <TableCell><Badge variant={shipStatusVariants[s.status] || 'neutral'}>{t(`subcontracting.shipStatusLabels.${s.status}`, { defaultValue: s.status })}</Badge></TableCell>
-                <TableCell><button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -235,7 +235,7 @@ export function SubcontractingReceiptsPage() {
                 <TableCell className="font-mono text-xs">{Number(r.quantity_received)}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(r.quantity_returned)}</TableCell>
                 <TableCell><Badge variant={receiptStatusVariants[r.status] || 'neutral'}>{t(`subcontracting.receiptStatusLabels.${r.status}`, { defaultValue: r.status })}</Badge></TableCell>
-                <TableCell><button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>

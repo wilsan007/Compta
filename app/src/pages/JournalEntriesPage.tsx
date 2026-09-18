@@ -123,9 +123,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -312,9 +311,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-2 py-2">
                       {lines.length > 2 && (
-                        <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                          <X className="w-4 h-4" />
-                        </button>
+                        <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+                          <X className="w-4 h-4" aria-hidden="true" /></button>
                       )}
                     </td>
                   </tr>

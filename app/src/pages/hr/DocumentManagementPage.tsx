@@ -140,7 +140,7 @@ export function DocumentManagementPage() {
                       <TableCell>{doc.e_signed ? <PenTool className="w-4 h-4 text-blue-600" /> : '-'}</TableCell>
                       <TableCell className="text-xs">{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('common.deleted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('common.deleted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}

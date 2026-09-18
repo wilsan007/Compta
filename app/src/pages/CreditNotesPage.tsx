@@ -283,7 +283,7 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
                     </td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>
                     <td className="px-3 py-2">
-                      {lines.length > 1 && <button type="button" onClick={() => removeLine(idx)} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1"><X className="w-3 h-3" /></button>}
+                      {lines.length > 1 && <button type="button" onClick={() => removeLine(idx)} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3 h-3" aria-hidden="true" /></button>}
                     </td>
                   </tr>
                 ))}

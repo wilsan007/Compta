@@ -127,6 +127,7 @@ const METHOD_COLORS: Record<string, string> = {
 
 export function ApiDocsPage() {
   const { t } = useTranslation()
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [tryEndpoint, setTryEndpoint] = useState<Endpoint | null>(null)
@@ -200,7 +201,7 @@ export function ApiDocsPage() {
             <div className="bg-[var(--color-neutral-900)] text-[var(--color-neutral-50)] p-4 rounded-lg font-mono text-xs overflow-x-auto">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[var(--color-neutral-400)]"># Exemple d'authentification</span>
-                <button onClick={() => copyToClipboard('curl -H "X-API-Key: your_key_here" https://...')} className="text-[var(--color-neutral-400)] hover:text-white"><Copy className="w-3 h-3" /></button>
+                <button onClick={() => copyToClipboard('curl -H "X-API-Key: your_key_here" https://...')} className="text-[var(--color-neutral-400)] hover:text-white" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
               </div>
               <pre>curl -X GET "https://your-project.supabase.co/functions/v1/public-api/v1/invoices" \
   -H "X-API-Key: your_api_key_here"</pre>
@@ -286,7 +287,7 @@ export function ApiDocsPage() {
                       <div>
                         <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)] mb-2">Corps de la requête</h4>
                         <div className="bg-[var(--color-neutral-900)] text-[var(--color-neutral-50)] p-3 rounded-lg font-mono text-xs overflow-x-auto">
-                          <button onClick={() => copyToClipboard(ep.bodyExample!)} className="float-right text-[var(--color-neutral-400)] hover:text-white"><Copy className="w-3 h-3" /></button>
+                          <button onClick={() => copyToClipboard(ep.bodyExample!)} className="float-right text-[var(--color-neutral-400)] hover:text-white" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
                           <pre>{ep.bodyExample}</pre>
                         </div>
                       </div>
@@ -294,14 +295,14 @@ export function ApiDocsPage() {
                     <div>
                       <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)] mb-2">Réponse</h4>
                       <div className="bg-[var(--color-neutral-900)] text-[var(--color-neutral-50)] p-3 rounded-lg font-mono text-xs overflow-x-auto">
-                        <button onClick={() => copyToClipboard(ep.responseExample)} className="float-right text-[var(--color-neutral-400)] hover:text-white"><Copy className="w-3 h-3" /></button>
+                        <button onClick={() => copyToClipboard(ep.responseExample)} className="float-right text-[var(--color-neutral-400)] hover:text-white" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
                         <pre>{ep.responseExample}</pre>
                       </div>
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)] mb-2">cURL</h4>
                       <div className="bg-[var(--color-neutral-900)] text-[var(--color-neutral-50)] p-3 rounded-lg font-mono text-xs overflow-x-auto">
-                        <button onClick={() => copyToClipboard(generateCurl(ep))} className="float-right text-[var(--color-neutral-400)] hover:text-white"><Copy className="w-3 h-3" /></button>
+                        <button onClick={() => copyToClipboard(generateCurl(ep))} className="float-right text-[var(--color-neutral-400)] hover:text-white" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
                         <pre>{generateCurl(ep)}</pre>
                       </div>
                     </div>
@@ -344,7 +345,7 @@ if (req.headers['x-webhook-signature'] !== expected) {
                   <span className="text-sm text-[var(--color-text-secondary)]">{we.description}</span>
                 </div>
                 <div className="bg-[var(--color-neutral-900)] text-[var(--color-neutral-50)] p-2 rounded font-mono text-xs overflow-x-auto">
-                  <button onClick={() => copyToClipboard(we.payload)} className="float-right text-[var(--color-neutral-400)] hover:text-white"><Copy className="w-3 h-3" /></button>
+                  <button onClick={() => copyToClipboard(we.payload)} className="float-right text-[var(--color-neutral-400)] hover:text-white" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
                   <pre>{we.payload}</pre>
                 </div>
               </div>

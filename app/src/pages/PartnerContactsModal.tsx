@@ -132,8 +132,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                       <TableCell>{c.is_default ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteContact(c.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteContact(c.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -183,8 +183,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                       <TableCell>{b.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="secondary" size="sm" onClick={() => { setEditingBank(b); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteBank(b.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="secondary" size="sm" onClick={() => { setEditingBank(b); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteBank(b.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>

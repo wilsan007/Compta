@@ -332,11 +332,11 @@ export function Customer360Page() {
                     <TableCell>{c.is_default ? <Badge variant="success">{tCommon('common.yes')}</Badge> : '—'}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowContactForm(true) }}><Edit2 className="w-3 h-3" /></Button>
+                        <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowContactForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
                         <Button variant="danger" size="sm" onClick={async () => {
                           try { await deleteCustomerContact(c.id); toast('success', t('customer360.title'), tCommon('toast.deleted')); loadData() }
                           catch (e: any) { toast('error', tCommon('toast.error'), e.message) }
-                        }}><Trash2 className="w-3 h-3" /></Button>
+                        }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>

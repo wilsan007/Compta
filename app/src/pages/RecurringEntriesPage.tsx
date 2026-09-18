@@ -322,9 +322,8 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
                   </TableCell>
                   <TableCell>
                     {lines.length > 1 && (
-                      <button onClick={() => removeLine(idx)} className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => removeLine(idx)} className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     )}
                   </TableCell>
                 </TableRow>

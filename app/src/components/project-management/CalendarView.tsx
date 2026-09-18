@@ -28,6 +28,7 @@ interface CalendarViewProps {
 
 export function CalendarView(_props: CalendarViewProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
   const { tasks, loading } = useTaskContext()
   const { projects, projectColorMap } = useProjectContext()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -176,7 +177,7 @@ export function CalendarView(_props: CalendarViewProps) {
           <div className="card shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-lg font-semibold text-[var(--color-text)]">{selectedTask.title}</h3>
-              <button onClick={() => setSelectedTask(null)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"><X className="w-4 h-4" /></button>
+              <button onClick={() => setSelectedTask(null)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
             </div>
             <div className="space-y-3">
               {selectedTask.project_id && (

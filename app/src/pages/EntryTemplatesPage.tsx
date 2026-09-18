@@ -112,12 +112,10 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
                 <TableCell>{tpl.active ? <Badge variant="success">{tCommon('common.active')}</Badge> : <Badge variant="neutral">{tCommon('common.inactive')}</Badge>}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -360,9 +358,8 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
                       </div>
                     )}
                     <div className="col-span-3 flex items-end justify-end">
-                      <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </div>
                 </div>

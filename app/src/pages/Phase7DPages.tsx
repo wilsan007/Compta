@@ -102,8 +102,8 @@ export function GridTemplatesPage() {
               <TableCell className="font-mono text-xs">{item.default_account || '-'}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>
@@ -212,8 +212,8 @@ export function PaymentTemplatesComptaPage() {
               <TableCell className="font-mono text-xs">{item.day_count}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>
@@ -301,7 +301,7 @@ export function StandardLabelsPage() {
               <TableCell>{item.label}</TableCell>
               <TableCell><Badge variant="neutral">{t(`standardLabels.categories.${item.category}`, { defaultValue: item.category })}</Badge></TableCell>
               <TableCell>
-                <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
               </TableCell>
             </TableRow>
           ))}
@@ -401,8 +401,8 @@ export function AnalyticJournalCodesPage() {
               <TableCell><Badge variant="primary">{item.type}</Badge></TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>

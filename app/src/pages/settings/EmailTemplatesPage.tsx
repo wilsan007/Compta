@@ -37,6 +37,7 @@ const TEMPLATE_KEYS = [
 
 export function EmailTemplatesPage() {
   const { t } = useTranslation()
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -169,8 +170,8 @@ export function EmailTemplatesPage() {
               <TableCell><button onClick={() => handleToggle(tpl)}>{tpl.active ? <Badge variant="success">Actif</Badge> : <Badge variant="neutral">Inactif</Badge>}</button></TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"><Edit className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>

@@ -75,8 +75,8 @@ export function PartnerCategoriesPage() {
                   <TableCell className="text-xs">{parent?.name || '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="secondary" size="sm" onClick={() => { setEditing(c); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(c)}><Trash2 className="w-3 h-3" /></Button>
+                      <Button variant="secondary" size="sm" onClick={() => { setEditing(c); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(c)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>

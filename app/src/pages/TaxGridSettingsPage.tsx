@@ -147,10 +147,8 @@ export function TaxGridSettingsPage() {
                         {!isPlatform && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteGrid(grid.id, false) }}
-                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] p-1" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                            <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         )}
                       </div>
                     </div>

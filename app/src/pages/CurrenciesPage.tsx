@@ -9,6 +9,7 @@ import { confirmSync } from '@/lib/confirm'
 
 export function CurrenciesPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [currencies, setCurrencies] = useState<Currency[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +70,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
                   <Badge variant={(c as any).active !== false ? 'success' : 'neutral'}>{(c as any).active !== false ? t('currencies.yes') : t('currencies.no')}</Badge>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

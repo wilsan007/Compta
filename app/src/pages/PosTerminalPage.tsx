@@ -267,7 +267,7 @@ export function PosTerminalPage() {
           <div className="flex gap-2">
             <Select value={selectedTerminal.id} onChange={e => navigate(`/pos/terminal/${e.target.value}`)}
               options={terminals.map(t => ({ value: t.id, label: t.name }))} />
-            <Button variant="secondary" onClick={() => setShowNewTerminal(true)}><Plus className="w-4 h-4" /></Button>
+            <Button variant="secondary" onClick={() => setShowNewTerminal(true)} ariaLabel={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></Button>
           </div>
         }
       />
@@ -327,11 +327,11 @@ export function PosTerminalPage() {
                         <p className="text-xs text-[var(--color-text-secondary)]">{formatCurrency(line.unit_price)} × {line.quantity}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => updateQty(line.product_id, -1)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><Minus className="w-4 h-4" /></button>
+                        <button onClick={() => updateQty(line.product_id, -1)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.remove')} title={tCommon('actions.remove')}><Minus className="w-4 h-4" aria-hidden="true" /></button>
                         <span className="text-sm font-medium w-8 text-center">{line.quantity}</span>
-                        <button onClick={() => updateQty(line.product_id, 1)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><Plus className="w-4 h-4" /></button>
+                        <button onClick={() => updateQty(line.product_id, 1)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.add')} title={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></button>
                         <span className="text-sm font-medium w-20 text-right">{formatCurrency(line.line_total)}</span>
-                        <button onClick={() => removeFromCart(line.product_id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => removeFromCart(line.product_id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                       </div>
                     </div>
                   ))}

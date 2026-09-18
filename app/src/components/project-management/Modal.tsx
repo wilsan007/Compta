@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useId } from 'react'
+import { useFocusTrap } from '@/lib/hooks/accessibility'
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,19 +15,16 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, footer, maxWidth = '36rem', className }: ModalProps) {
+  const titleId = useId()
   const { t: tCommon } = useTranslation('common')
+  // LOT7-07 : Échap et le blocage du défilement étaient déjà là ; manquaient le piège
+  // de focus (Tab sortait derrière la boîte) et la restitution du focus à la fermeture.
+  const dialogRef = useFocusTrap(open, onClose)
   useEffect(() => {
     if (!open) return
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = ''
-    }
-  }, [open, onClose])
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   if (!open) return null
 
@@ -36,13 +34,18 @@ export function Modal({ open, onClose, title, children, footer, maxWidth = '36re
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
         className={cn('card shadow-2xl rounded-lg w-full overflow-hidden', className)}
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
             <button
               onClick={onClose}
               aria-label={tCommon('actions.close')}

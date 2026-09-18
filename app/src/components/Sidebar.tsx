@@ -457,10 +457,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+                  <X className="w-3.5 h-3.5" aria-hidden="true" /></button>
               )}
             </div>
           </div>
@@ -530,10 +528,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                             </NavLink>
                             <button
                               onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-all"
-                            >
-                              <PinOff className="w-3 h-3" />
-                            </button>
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-all" aria-label={tCommon('actions.unpin')} title={tCommon('actions.unpin')}>
+                              <PinOff className="w-3 h-3" aria-hidden="true" /></button>
                           </div>
                         )
                       })}
@@ -588,10 +584,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                           {hasItems && (
                             <button
                               onClick={() => handleModuleClick(mod)}
-                              className="p-1.5 mr-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)] transition-colors flex-shrink-0"
-                            >
-                              <ChevronRight className={cn('w-3.5 h-3.5 chevron-rotate', isExpanded && 'expanded')} />
-                            </button>
+                              className="p-1.5 mr-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)] transition-colors flex-shrink-0" aria-label={tCommon('actions.next')} title={tCommon('actions.next')}>
+                              <ChevronRight className={cn('w-3.5 h-3.5 chevron-rotate', isExpanded && 'expanded')} aria-hidden="true" /></button>
                           )}
                         </div>
                       </div>
@@ -690,10 +684,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                               isPinned
                                                 ? 'opacity-100 text-[var(--color-primary)]'
                                                 : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
-                                            )}
-                                          >
-                                            <Pin className="w-3 h-3" />
-                                          </button>
+                                            )} aria-label={tCommon('actions.pin')} title={tCommon('actions.pin')}>
+                                            <Pin className="w-3 h-3" aria-hidden="true" /></button>
                                         </div>
                                       )
                                     })}
@@ -739,10 +731,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                       isPinned
                                         ? 'opacity-100 text-[var(--color-primary)]'
                                         : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
-                                    )}
-                                  >
-                                    <Pin className="w-3 h-3" />
-                                  </button>
+                                    )} aria-label={tCommon('actions.pin')} title={tCommon('actions.pin')}>
+                                    <Pin className="w-3 h-3" aria-hidden="true" /></button>
                                 </div>
                               )
                             })
@@ -868,10 +858,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+              <X className="w-3.5 h-3.5" aria-hidden="true" /></button>
           )}
         </div>
       </div>
@@ -942,10 +930,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                         </NavLink>
                         <button
                           onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-all"
-                        >
-                          <PinOff className="w-3 h-3" />
-                        </button>
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] transition-all" aria-label={tCommon('actions.unpin')} title={tCommon('actions.unpin')}>
+                          <PinOff className="w-3 h-3" aria-hidden="true" /></button>
                       </div>
                     )
                   })}
@@ -1000,10 +986,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                       {hasItems && (
                         <button
                           onClick={() => handleModuleClick(mod)}
-                          className="p-1.5 mr-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)] transition-colors flex-shrink-0"
-                        >
-                          <ChevronRight className={cn('w-3.5 h-3.5 chevron-rotate', isExpanded && 'expanded')} />
-                        </button>
+                          className="p-1.5 mr-1 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-200)] transition-colors flex-shrink-0" aria-label={tCommon('actions.next')} title={tCommon('actions.next')}>
+                          <ChevronRight className={cn('w-3.5 h-3.5 chevron-rotate', isExpanded && 'expanded')} aria-hidden="true" /></button>
                       )}
                     </div>
                   </div>
@@ -1102,10 +1086,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                           isPinned
                                             ? 'opacity-100 text-[var(--color-primary)]'
                                             : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
-                                        )}
-                                      >
-                                        <Pin className="w-3 h-3" />
-                                      </button>
+                                        )} aria-label={tCommon('actions.pin')} title={tCommon('actions.pin')}>
+                                        <Pin className="w-3 h-3" aria-hidden="true" /></button>
                                     </div>
                                   )
                                 })}
@@ -1151,10 +1133,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                   isPinned
                                     ? 'opacity-100 text-[var(--color-primary)]'
                                     : 'opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
-                                )}
-                              >
-                                <Pin className="w-3 h-3" />
-                              </button>
+                                )} aria-label={tCommon('actions.pin')} title={tCommon('actions.pin')}>
+                                <Pin className="w-3 h-3" aria-hidden="true" /></button>
                             </div>
                           )
                         })

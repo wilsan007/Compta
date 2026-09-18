@@ -187,7 +187,7 @@ export function PayrollPreparationPage() {
                         <TableCell className="text-xs">{e.description || '—'}</TableCell>
                         <TableCell className="font-mono text-xs">{formatCurrency(Number(e.amount))}</TableCell>
                         <TableCell>
-                          <button onClick={() => handleDeleteElement(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteElement(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         </TableCell>
                       </TableRow>
                     ))}

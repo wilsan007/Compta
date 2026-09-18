@@ -76,9 +76,8 @@ export function TerritoriesPage() {
               <TableCell className="text-xs">{(terr.regions || []).join(', ') || '-'}</TableCell>
               <TableCell><Badge variant={terr.active ? 'success' : 'neutral'}>{terr.active ? tCommon('status.active') : tCommon('status.inactive')}</Badge></TableCell>
               <TableCell>
-                <button onClick={() => handleDelete(terr.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <button onClick={() => handleDelete(terr.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                  <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
               </TableCell>
             </TableRow>
           ))}

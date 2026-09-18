@@ -87,9 +87,8 @@ export function CPFPage() {
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(a.balance_amount) || 0)}</TableCell>
                 <TableCell className="text-xs">{a.updated_at ? formatDate(a.updated_at) : '—'}</TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

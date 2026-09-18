@@ -489,10 +489,8 @@ export function SaisieParPiecePage() {
                         {lines.length > 2 && (
                           <button
                             onClick={() => removeLine(idx)}
-                            className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                         )}
                       </div>
                     </td>

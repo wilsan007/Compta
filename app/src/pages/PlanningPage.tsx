@@ -116,7 +116,7 @@ export function PlanningPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         <button onClick={() => handleMaterialCheck(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('planning.checkMaterials')}><Clock className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDelete(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                       </div>
                     </TableCell>
                   </TableRow>

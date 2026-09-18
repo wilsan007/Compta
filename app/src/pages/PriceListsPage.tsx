@@ -88,9 +88,8 @@ const [lists, setLists] = useState<PriceList[]>([])
                       <button onClick={() => setShowLineForm(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={tCommon('actions.add')}>
                         <Plus className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={() => handleDelete(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -107,9 +106,8 @@ const [lists, setLists] = useState<PriceList[]>([])
                             <TableCell className="font-mono text-xs">{Number(line.min_quantity)}</TableCell>
                             <TableCell className="font-mono text-xs">{Number(line.discount_percent)}%</TableCell>
                             <TableCell>
-                              <button onClick={() => handleDeleteLine(line.id, l.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <button onClick={() => handleDeleteLine(line.id, l.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -103,8 +103,8 @@ const [boms, setBOMs] = useState<BOM[]>([])
                   <TableCell><span className={`text-xs px-2 py-0.5 rounded ${b.active ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]'}`}>{b.active ? getStatusLabel('active') : getStatusLabel('inactive')}</span></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={() => setShowLineForm(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"><Plus className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setShowLineForm(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.add')} title={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></button>
+                      <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -128,7 +128,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
                             <TableCell className="font-mono text-xs">{Number(line.quantity)}</TableCell>
                             <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(line.unit_cost))}</TableCell>
                             <TableCell className="font-mono text-xs font-semibold text-right">{formatCurrency(Number(line.quantity) * Number(line.unit_cost))}</TableCell>
-                            <TableCell><button onClick={() => handleDeleteLine(line.id, b.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                            <TableCell><button onClick={() => handleDeleteLine(line.id, b.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                           </TableRow>
                         ))}
                       </Table>

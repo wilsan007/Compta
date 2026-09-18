@@ -73,9 +73,8 @@ export function BankReconciliationRulesPage() {
                   <Badge variant={rule.active ? 'success' : 'neutral'}>{rule.active ? t('bankRecon.active') : t('bankRecon.inactive')}</Badge>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(rule.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(rule.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

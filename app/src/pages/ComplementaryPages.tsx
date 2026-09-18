@@ -45,8 +45,8 @@ export function WorkflowsPage() {
         action={
           <div className="flex gap-2">
             <div className="flex border border-[var(--color-border)] rounded-lg overflow-hidden">
-              <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm ${viewMode === 'list' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`}><List className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`}><Grid3x3 className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm ${viewMode === 'list' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`} aria-label={tCommon('actions.listView')} title={tCommon('actions.listView')}><List className="w-4 h-4" aria-hidden="true" /></button>
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`} aria-label={tCommon('actions.gridView')} title={tCommon('actions.gridView')}><Grid3x3 className="w-4 h-4" aria-hidden="true" /></button>
             </div>
             <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('workflows.new')}</Button>
           </div>
@@ -70,7 +70,7 @@ export function WorkflowsPage() {
                   </button>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(wf.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(wf.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -187,7 +187,7 @@ export function EquivalencesPage() {
                 <TableCell className="text-sm">{eq.produit?.name || '—'}</TableCell>
                 <TableCell className="text-sm">{eq.equivalent?.name || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(eq.conversion_ratio)}</TableCell>
-                <TableCell><button onClick={() => handleDelete(eq.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(eq.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -280,7 +280,7 @@ export function OFDocumentAccessPage() {
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_view', acc.can_view)}>{acc.can_view ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_print', acc.can_print)}>{acc.can_print ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_export', acc.can_export)}>{acc.can_export ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
-                <TableCell><button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>

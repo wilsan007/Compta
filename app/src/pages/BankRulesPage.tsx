@@ -87,9 +87,8 @@ const [rules, setRules] = useState<BankRule[]>([])
                     <button onClick={() => handleToggle(r.id, r.active)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]" title={r.active ? tCommon('actions.disable') : tCommon('actions.enable')}>
                       {r.active ? <PowerOff className="w-4 h-4 text-[var(--color-danger)]" /> : <Power className="w-4 h-4 text-[var(--color-success)]" />}
                     </button>
-                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

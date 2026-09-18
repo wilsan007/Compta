@@ -922,9 +922,8 @@ function SaisieForm({
                           </button>
                         )}
                         {lines.length > 2 && (
-                          <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+                            <X className="w-3.5 h-3.5" aria-hidden="true" /></button>
                         )}
                       </div>
                     </td>

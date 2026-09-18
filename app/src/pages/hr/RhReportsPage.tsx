@@ -159,8 +159,8 @@ export function RhReportsPage() {
                 <TableCell className="text-xs">{formatDate(r.created_at)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleCalculate(r.id)}><Play className="w-3 h-3" /></Button>
-                    <Button size="sm" variant="danger" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleCalculate(r.id)} ariaLabel={tCommon('actions.start')}><Play className="w-3 h-3" aria-hidden="true" /></Button>
+                    <Button size="sm" variant="danger" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

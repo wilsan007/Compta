@@ -136,9 +136,8 @@ export function ProductGridsPage() {
                       <Badge variant={g.active ? 'success' : 'neutral'}>{g.active ? tCommon('status.active') : tCommon('status.inactive')}</Badge>
                     </TableCell>
                     <TableCell>
-                      <button onClick={() => handleDeleteGrid(g.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={() => handleDeleteGrid(g.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </TableCell>
                   </TableRow>
                 ))}

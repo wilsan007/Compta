@@ -90,7 +90,7 @@ export function MachinesPage() {
                   <TableCell className="font-mono text-xs">{Number(m.capacity_per_hour)}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(m.status)}>{getStatusLabel(m.status)}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -101,7 +101,7 @@ export function MachinesPage() {
         <Card>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold">{t('machines.workCenters')}</h3>
-            <button onClick={() => setShowWcForm(true)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"><Plus className="w-4 h-4" /></button>
+            <button onClick={() => setShowWcForm(true)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.add')} title={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           {workCenters.length === 0 ? (
             <p className="text-xs text-[var(--color-text-secondary)]">{t('machines.noWorkCenters')}</p>
@@ -113,7 +113,7 @@ export function MachinesPage() {
                   <TableCell className="text-sm">{wc.name}</TableCell>
                   <TableCell className="font-mono text-xs">{Number(wc.capacity_hours_per_day)}h</TableCell>
                   <TableCell className="font-mono text-xs">{Number(wc.cost_per_hour)}</TableCell>
-                  <TableCell><button onClick={() => handleDeleteWc(wc.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                  <TableCell><button onClick={() => handleDeleteWc(wc.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                 </TableRow>
               ))}
             </Table>

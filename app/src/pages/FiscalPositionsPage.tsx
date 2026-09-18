@@ -205,7 +205,7 @@ export function FiscalPositionsPage() {
                 <h3 className="text-lg font-semibold">{selectedPosition.name}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">{selectedPosition.country_code || '—'}</p>
               </div>
-              <Button variant="secondary" onClick={() => { setSelectedPosition(null); setActiveTab('general') }}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={() => { setSelectedPosition(null); setActiveTab('general') }} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
 
             <div className="flex gap-1 mb-4 border-b border-[var(--color-border)]">
@@ -265,7 +265,7 @@ export function FiscalPositionsPage() {
                           <TableCell className="font-mono text-xs">{m.source_account_code || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{m.target_account_code || '—'}</TableCell>
                           <TableCell>
-                            <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                           </TableCell>
                         </TableRow>
                       )
@@ -310,9 +310,9 @@ export function FiscalPositionsPage() {
                 <TableCell><Badge variant={fp.active ? 'success' : 'neutral'}>{fp.active ? tCommon('common.yes') : tCommon('common.no')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => loadMappings(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><ArrowRight className="w-4 h-4" /></button>
-                    <button onClick={() => startEdit(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(fp.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => loadMappings(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.next')} title={tCommon('actions.next')}><ArrowRight className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => startEdit(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(fp.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

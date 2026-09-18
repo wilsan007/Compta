@@ -106,7 +106,7 @@ export function TrainingPage() {
         <Card className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">{editing ? t('training.edit') : t('training.new')}</h3>
-            <button onClick={() => setShowForm(false)}><X className="w-4 h-4" /></button>
+            <button onClick={() => setShowForm(false)} aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select label={t('training.employee')} value={form.employee_id || ''} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} options={[
@@ -152,8 +152,8 @@ export function TrainingPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></button>
+                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>

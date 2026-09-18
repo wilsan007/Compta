@@ -161,7 +161,7 @@ export function AccountTagsPage() {
                 <h3 className="text-lg font-semibold">{selectedTag.name}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">{selectedTag.applicability}</p>
               </div>
-              <Button variant="secondary" onClick={() => { setSelectedTag(null); setActiveTab('list') }}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={() => { setSelectedTag(null); setActiveTab('list') }} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
 
             <div className="flex gap-1 mb-4 border-b border-[var(--color-border)]">
@@ -209,7 +209,7 @@ export function AccountTagsPage() {
                         <TableCell className="text-xs">{m.entity_type}</TableCell>
                         <TableCell className="font-mono text-xs">{m.entity_id}</TableCell>
                         <TableCell>
-                          <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -271,9 +271,9 @@ export function AccountTagsPage() {
                 <TableCell className="text-xs">{tag.country_code || '—'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => loadMappings(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Link2 className="w-4 h-4" /></button>
-                    <button onClick={() => startEdit(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(tag.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => loadMappings(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.link')} title={tCommon('actions.link')}><Link2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => startEdit(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(tag.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

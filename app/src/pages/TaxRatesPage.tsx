@@ -396,8 +396,8 @@ export function TaxRatesPage() {
                     <TableCell className="text-xs">{rate.mode === 'debits' ? t('taxRates.modeDebits') : t('taxRates.modeEncaissements')}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <button onClick={() => startEdit(rate)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(rate.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => startEdit(rate)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={() => handleDelete(rate.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -470,7 +470,7 @@ export function TaxRatesPage() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">{t('taxRates.groupCreate')}</h3>
-                  <Button variant="secondary" onClick={() => setShowGroupForm(false)}><X className="w-4 h-4" /></Button>
+                  <Button variant="secondary" onClick={() => setShowGroupForm(false)} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('taxRates.groupName')} value={groupForm.name} onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })} />
@@ -493,7 +493,7 @@ export function TaxRatesPage() {
                     <TableCell className="font-medium">{g.name}</TableCell>
                     <TableCell className="text-xs">{g.country_code || '—'}</TableCell>
                     <TableCell>
-                      <button onClick={() => handleDeleteGroup(g.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteGroup(g.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -562,7 +562,7 @@ export function TaxRatesPage() {
                         <TableCell className="font-mono text-xs">{line.account_code || '—'}</TableCell>
                         <TableCell className="text-xs">{line.tag_ids?.join(', ') || '—'}</TableCell>
                         <TableCell>
-                          <button onClick={() => handleDeleteRepartition(line.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteRepartition(line.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -69,9 +69,8 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
                   <TableCell>{p.journal_entry_id || p.journal_posted ? <Badge variant="success">OK</Badge> : <Badge variant="neutral">—</Badge>}</TableCell>
                   <TableCell>{p.bank_transaction_id ? <Badge variant="success">OK</Badge> : <Badge variant="neutral">—</Badge>}</TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               )

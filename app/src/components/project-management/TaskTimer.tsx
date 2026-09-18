@@ -198,10 +198,8 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
               {entry.end_time && (
                 <button
                   onClick={() => handleDelete(entry.id)}
-                  className="text-red-400 hover:text-red-600 transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                  className="text-red-400 hover:text-red-600 transition-colors" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                  <Trash2 className="w-3 h-3" aria-hidden="true" /></button>
               )}
             </div>
           ))}

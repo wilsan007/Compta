@@ -10,6 +10,7 @@ import { confirmSync } from '@/lib/confirm'
 
 export function TwoFactorPage() {
   const { t } = useTranslation()
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [enabled, setEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -143,7 +144,7 @@ export function TwoFactorPage() {
                   {backupCodes.map((c, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span>{c}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(c); toast('success', 'Copié', '') }} className="text-xs"><Copy className="w-3 h-3" /></button>
+                      <button onClick={() => { navigator.clipboard.writeText(c); toast('success', 'Copié', '') }} className="text-xs" aria-label={tCommon('actions.copy')} title={tCommon('actions.copy')}><Copy className="w-3 h-3" aria-hidden="true" /></button>
                     </div>
                   ))}
                 </div>
@@ -175,7 +176,7 @@ export function TwoFactorPage() {
                   <label className="text-sm font-medium">Ou saisissez manuellement la clé :</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input value={secret} readOnly className="font-mono text-xs" />
-                    <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(secret); toast('success', 'Copié', '') }}><Copy className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(secret); toast('success', 'Copié', '') }} ariaLabel={tCommon('actions.copy')}><Copy className="w-4 h-4" aria-hidden="true" /></Button>
                   </div>
                 </div>
                 <div>

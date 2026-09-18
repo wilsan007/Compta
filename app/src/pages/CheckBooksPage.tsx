@@ -77,7 +77,7 @@ export function CheckBooksPage() {
                   <TableCell>{book.next_check_number}</TableCell>
                   <TableCell>{statusBadge(book.status)}</TableCell>
                   <TableCell>{book.issued_count}</TableCell>
-                  <TableCell><button onClick={() => setDeleteBookTarget(book)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button></TableCell>
+                  <TableCell><button onClick={() => setDeleteBookTarget(book)} className="p-1 text-red-500 hover:bg-red-50 rounded" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
                 </TableRow>
               ))}
             </Table>
@@ -111,7 +111,7 @@ export function CheckBooksPage() {
                         <button onClick={async () => { await updateCheck(chk.id, { status: 'cancelled' }); toast('success', t('checkBooks.title'), t('checkBooks.checkCancelled')); loadData() }} className="p-1 text-orange-600 hover:bg-orange-50 rounded" title={t('checkBooks.checks.markCancelled')}><Ban className="w-4 h-4" /></button>
                       )}
                       <button onClick={() => setPrintCheck(chk)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title={t('checkBooks.print.print')}><Printer className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteCheckTarget(chk)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteCheckTarget(chk)} className="p-1 text-red-500 hover:bg-red-50 rounded" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>

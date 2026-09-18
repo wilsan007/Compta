@@ -152,7 +152,7 @@ export function RoutingsPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       <button onClick={() => setShowOpForm(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('routings.addOperation')}><Plus className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -179,7 +179,7 @@ export function RoutingsPage() {
                             <TableCell className="font-mono text-xs">{op.run_time_min}</TableCell>
                             <TableCell>{op.is_subcontracted ? <Badge variant="warning">{t('routings.st')}</Badge> : '—'}</TableCell>
                             <TableCell>
-                              <button onClick={() => handleDeleteOp(op.id, r.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteOp(op.id, r.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                             </TableCell>
                           </TableRow>
                         ))}

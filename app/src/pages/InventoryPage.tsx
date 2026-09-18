@@ -104,7 +104,7 @@ const [movements, setMovements] = useState<any[]>([])
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Calculator className="w-4 h-4" /> {t('inventory.valuationResult')} — {t(`inventory.methods.${valuationMethod}`)}
             </h3>
-            <button onClick={() => setShowValuation(false)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
+            <button onClick={() => setShowValuation(false)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           {valuationLoading ? (
             <SkeletonTable rows={4} cols={5} />

@@ -107,7 +107,7 @@ export function ToolingsPage() {
                   </TableCell>
                   <TableCell><Badge variant={getStatusVariant(t.status)}>{getStatusLabel(t.status)}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(t.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               )

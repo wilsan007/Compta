@@ -75,9 +75,8 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                   <TableCell className="font-mono text-[var(--color-success)] text-right">{formatCurrency(Number(cn.total))}</TableCell>
                   <TableCell><Badge variant={cn.status === 'applied' ? 'success' : 'warning'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
                 {expanded.has(cn.id) && cn.purchase_credit_lines?.map((line) => (
@@ -195,7 +194,7 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
                     <td className="px-3 py-2"><input type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
                     <td className="px-3 py-2"><input type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>
-                    <td className="px-3 py-2">{lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1"><X className="w-3 h-3" /></button>}</td>
+                    <td className="px-3 py-2">{lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3 h-3" aria-hidden="true" /></button>}</td>
                   </tr>
                 ))}
               </tbody>

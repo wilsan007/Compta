@@ -74,7 +74,7 @@ export function ForecastsPage() {
                   {Number(f.reliability_rate) > 0 ? (
                     <div className="flex items-center gap-2">
                       <Badge variant={getReliabilityVariant(Number(f.reliability_rate))}>{Number(f.reliability_rate)}%</Badge>
-                      <button onClick={() => handleReliability(f.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><Calculator className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleReliability(f.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.calculate')} title={tCommon('actions.calculate')}><Calculator className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     </div>
                   ) : (
                     <button onClick={() => handleReliability(f.id)} className="text-xs text-[var(--color-primary)] hover:underline">{t('forecasts.calculate')}</button>
@@ -82,7 +82,7 @@ export function ForecastsPage() {
                 </TableCell>
                 <TableCell><Badge variant="neutral">{t(`forecasts.sources.${f.source}`) || f.source}</Badge></TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

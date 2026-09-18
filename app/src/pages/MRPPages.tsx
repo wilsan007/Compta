@@ -126,7 +126,7 @@ export function MRPPage() {
             <Card>
               <div className="flex items-center justify-between px-4 pt-4 mb-3">
                 <h3 className="text-sm font-semibold">{t('mrp.proposals')} — {selectedRun.run_number}</h3>
-                <button onClick={() => handleDeleteRun(selectedRun.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDeleteRun(selectedRun.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
               </div>
               {proposals.length === 0 ? (
                 <EmptyState icon={<ShoppingCart className="w-8 h-8" />} title={t('mrp.noProposals')} description={t('mrp.noProposalsDescription')} />
@@ -148,11 +148,11 @@ export function MRPPage() {
                           <div className="flex gap-1">
                             {p.status === 'pending' && (
                               <>
-                                <button onClick={() => handleApprove(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]"><Check className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => handleReject(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><X className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleApprove(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={tCommon('actions.confirm')} title={tCommon('actions.confirm')}><Check className="w-3.5 h-3.5" aria-hidden="true" /></button>
+                                <button onClick={() => handleReject(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3.5 h-3.5" aria-hidden="true" /></button>
                               </>
                             )}
-                            <button onClick={() => handleDeleteProposal(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteProposal(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -212,7 +212,7 @@ export function MRPPendingDocsPage() {
                 <TableCell className="font-mono text-xs">{Number(d.quantity)}</TableCell>
                 <TableCell><Badge variant={docStatusVariants[d.status] || 'neutral'}>{d.status}</Badge></TableCell>
                 <TableCell className="text-xs">{formatDate(d.created_at)}</TableCell>
-                <TableCell><button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>

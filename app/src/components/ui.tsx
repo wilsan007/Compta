@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useRef, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { useFocusTrap, useLockBodyScroll } from '@/lib/hooks/accessibility'
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Loader2, X, Search, Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -340,20 +341,16 @@ export function SortableTable<T extends Record<string, any>>({
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label={t('actions.previous')} title={t('actions.previous')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden="true" /></button>
             <span className="text-xs text-[var(--color-text-secondary)] px-2">
               {currentPage + 1} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage >= totalPages - 1}
-              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label={t('actions.next')} title={t('actions.next')}>
+              <ChevronRight className="w-4 h-4" aria-hidden="true" /></button>
           </div>
         </div>
       )}
@@ -863,6 +860,10 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
   const titleId = useId()
   const { t } = useTranslation('common')
+  // LOT7-07 : au clavier, la boîte n'était pas une boîte — Tab sortait derrière elle,
+  // Échap ne fermait pas, et à la fermeture le focus repartait du haut de la page.
+  const dialogRef = useFocusTrap(open, onClose)
+  useLockBodyScroll(open)
   if (!open) return null
   const sizeClass = {
     sm: 'max-w-md',
@@ -874,9 +875,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
         className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} max-h-[90vh] overflow-y-auto`}
       >
         {title && (

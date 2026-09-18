@@ -135,9 +135,8 @@ export function NotificationCenter() {
                   <Check className="w-3 h-3" /> Tout marquer lu
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
-                <X className="w-4 h-4" />
-              </button>
+              <button onClick={() => setOpen(false)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+                <X className="w-4 h-4" aria-hidden="true" /></button>
             </div>
           </div>
 

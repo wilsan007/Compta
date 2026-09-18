@@ -83,7 +83,7 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 | E4 | LOT7-04 | Réduire les `any` | 2 717 mesurés le 17/09 | ⏳ | | **2 717 → 2 359** : générateur de types sans `any` (312 → 0, type `Json` + tableaux typés), 46 retours de `queries/*` typés via `Joined<>`. Reste le gros du travail dans les pages. Brancher `createClient<Database>` donnerait **1 468 erreurs**, dont ~917 nullabilités réelles (`string \| null`) : chantier à part, à décider. |
 | E5 | LOT7-05 | Un seul jeu de triggers d'équilibre | clos selon l'autre session | **OK** | 15/09 | `158:948` — contrôle d'équilibre unique, vérifié à l'exécution (voir B6) |
 | E6 | LOT7-06 | `_skip_cascade` posé mais jamais lu | toujours dans `85_…sql` | **OK** | 15/09 | `160_remove_skip_cascade.sql` réécrit `recalc_parent_progress_on_subtask_change` sans la colonne. La 85 la pose encore mais plus personne ne l'écrit. |
-| E7 | LOT7-07 | Accessibilité | 51 attributs `aria-` | **OK** | 18/09 11h00 | **51 → 317**. Voir le détail ci-dessous. |
+| E7 | LOT7-07 | Accessibilité | 51 attributs `aria-` | **OK** | 18/09 12h40 | **51 → 724**. Voir le détail ci-dessous. |
 | E8 | LOT7-08 | Sortir du « mode simulation » | 4 fonctions : transmit-dsn, submit-vat-return, submit-e-invoice, request-signature | **OK** | 15/09 | les 4 renvoient un HTTP 503 explicite au lieu de simuler une transmission réussie. Le raccordement aux API réelles (Net-Entreprises, Chorus Pro) reste un chantier produit. |
 
 ### E3 — LOT7-03 en détail (17/09)
@@ -203,18 +203,41 @@ l'information, sans faire lire « étoile » à chaque champ.
 `actions.generate`). Les icônes passent en `aria-hidden` : le nom est porté par le bouton,
 il ne doit pas être lu deux fois.
 
-**Résultat : 51 → 317 attributs ARIA.** Mais le chiffre compte moins que la vérification :
-**7 tests** (`src/components/__tests__/ui-a11y.test.tsx`) interrogent les composants comme le
-ferait un lecteur d'écran — `getByLabelText`, `getByRole('dialog')`, `toHaveAccessibleName` —
+**Un garde-fou faux a d'abord donné un faux résultat.** La première version de
+`check-a11y-icon-buttons.mjs` cherchait les boutons avec une expression régulière limitée à
+une ligne : elle en voyait 127 sur 378, et annonçait « tous corrigés » alors que les deux
+tiers restaient muets. Élargir le motif a produit l'erreur inverse — 251 signalements, dont
+des boutons portant une icône **et** du texte, parce qu'un attribut JSX contient souvent un
+`>` (`onClick={() => …}`) qui trompe la lecture de la balise. Le contrôle repose désormais sur
+un petit analyseur qui suit les accolades et les guillemets : **227 vrais boutons muets**,
+tous libellés, zéro faux positif vérifié à la main.
+
+**Navigation au clavier.** `useFocusTrap` existait dans `lib/hooks/accessibility.tsx` mais
+n'était branché nulle part — et présentait quatre défauts qui l'auraient rendu inopérant : le
+focus n'était jamais rendu à l'élément d'origine ; la liste des éléments focalisables était
+figée au montage ; les éléments `disabled` y étaient inclus ; et Échap émettait un
+`CustomEvent` que personne n'écoutait. Réparé et branché sur les deux `Modal`.
+
+Un cinquième défaut n'est apparu qu'au test : le filtre de visibilité utilisait
+`offsetParent !== null`, qui vaut `null` pour **tout élément en `position: fixed`** — ce que
+sont les boîtes de dialogue. Le piège se serait retrouvé sans aucun élément, donc inerte en
+production. Seul un test exerçant réellement le clavier pouvait le montrer.
+
+**Les messages n'étaient annoncés à personne.** La zone de toasts n'avait ni `aria-live` ni
+`role` : un « Erreur lors de la suppression » passait totalement inaperçu d'un lecteur
+d'écran. Elle porte désormais `role="alert"` + `aria-live="assertive"` pour les erreurs,
+`role="status"` + `aria-live="polite"` sinon.
+
+**Résultat : 51 → 724 attributs ARIA.** Mais le chiffre compte moins que la vérification :
+**16 tests** (`src/components/__tests__/ui-a11y.test.tsx`) exercent les composants comme le
+ferait un lecteur d'écran ou un utilisateur au clavier — `getByLabelText`,
+`getByRole('dialog')`, `toHaveAccessibleName`, Tab, Shift+Tab, Échap, restitution du focus —
 et non la simple présence d'un attribut.
 
-**Garde-fou** : `npm run a11y:icon-buttons` échoue si un bouton icône sans libellé réapparaît.
-Branché dans le job `lint-typecheck` de la CI.
+**Garde-fou** : `npm run a11y:icon-buttons`, branché dans le job `lint-typecheck`.
 
-**Reste à faire sur l'accessibilité** : navigation au clavier dans la `Modal` (piège de focus,
-fermeture par Échap, restitution du focus à la fermeture), contraste des couleurs, et
-`SortableTable` (`aria-sort` sur les en-têtes triables). Ces points demandent des essais
-manuels au clavier, pas seulement une analyse statique.
+**Reste à faire** : contraste des couleurs et `aria-sort` sur les en-têtes de `SortableTable`.
+Le contraste demande un examen visuel, pas une analyse statique.
 
 ---
 
@@ -328,3 +351,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 18/09 10h50 | **`ci.yml` était invalide en YAML depuis `057c708`** (4 noms d'étapes avec un `:` non protégé) : GitHub rejetait le workflow, **aucun job de CI n'a jamais tourné** — cela explique A3 et D1 à D5. Corrigé. **Contrôle PostgREST branché** dans `db-integration` avec liste de tolérance nommée (`.embeds-allowlist.json`, G16-G21). |
 | 18/09 11h00 | **E7 (LOT7-07) OK** — les `<label>` de `ui.tsx` n'étaient liés à aucun champ : tous les formulaires étaient muets pour un lecteur d'écran. Corrigé via `useId()`, plus `role="dialog"` sur la Modal et 127 boutons icône libellés. 51 → 317 attributs ARIA, 7 tests qui interrogent les composants comme un lecteur d'écran, garde-fou `a11y:icon-buttons` en CI. |
 | 18/09 11h10 | **E1 (LOT7-01) avancé** — `src/types/database.ts` (doublon périmé de 5 490 l.) et 4 dépendances supprimés ; `tailwindcss` identifié comme faux positif de knip (le retirer aurait cassé tous les styles) ; nullabilité du générateur corrigée (`T \| null` au lieu de `?`) ; `silentFailureGuard` enfin branché. Plafond knip **71 → 68**. Les 31 fichiers restants sont des fonctionnalités non branchées : **décision produit attendue**, rien n'a été supprimé. |
+| 18/09 12h40 | **LOT7-07 complété.** Le garde-fou de la veille était faux : il ne voyait que les boutons mono-ligne (127 sur 378). Réécrit avec un analyseur qui suit les accolades JSX → **227 boutons muets**, tous libellés. `useFocusTrap` réparé (5 défauts, dont un `offsetParent` qui l'aurait rendu inerte sur toute boîte `position: fixed`) et branché. Toasts enfin annoncés (`role="alert"`/`"status"`). **51 → 724 attributs ARIA**, 16 tests clavier et lecteur d'écran. Plafond knip 68 → 67. |

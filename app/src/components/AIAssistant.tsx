@@ -151,10 +151,8 @@ export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => v
             <button
               onClick={() => send(input)}
               disabled={!input.trim()}
-              className="p-2 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 hover:bg-[var(--color-primary-dark)] transition-colors"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+              className="p-2 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 hover:bg-[var(--color-primary-dark)] transition-colors" aria-label={tCommon('actions.send')} title={tCommon('actions.send')}>
+              <Send className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] mt-2 text-center">
             L'IA peut faire des erreurs. Vérifiez les informations importantes.

@@ -66,9 +66,8 @@ export function ExpenseCategoriesPage() {
                 <TableCell className="font-mono text-xs text-right">{r.max_amount || '—'}</TableCell>
                 <TableCell>{r.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge variant="neutral">{tCommon('common.no')}</Badge>}</TableCell>
                 <TableCell>
-                  <button onClick={() => { setEditRecord(r); setShowForm(true) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-info)]">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => { setEditRecord(r); setShowForm(true) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-info)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                    <Edit2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

@@ -66,6 +66,7 @@ const EVENT_TYPES = [
 
 export function ApiWebhooksPage() {
   const { t } = useTranslation()
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [tab, setTab] = useState<'api-keys' | 'webhooks' | 'logs'>('api-keys')
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
@@ -248,7 +249,7 @@ export function ApiWebhooksPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       {k.active && <button onClick={() => handleRevokeKey(k.id)} title="Révoquer" className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]"><X className="w-4 h-4" /></button>}
-                      <button onClick={() => handleDeleteKey(k.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteKey(k.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -276,7 +277,7 @@ export function ApiWebhooksPage() {
                     <button onClick={() => handleToggleWebhook(w)}>{w.active ? <Badge variant="success">Actif</Badge> : <Badge variant="neutral">Inactif</Badge>}</button>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDeleteWebhook(w.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteWebhook(w.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -327,7 +328,7 @@ export function ApiWebhooksPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Input value={createdKey} readOnly className="font-mono text-xs" />
-                <Button onClick={() => copyToClipboard(createdKey)}><Copy className="w-4 h-4" /></Button>
+                <Button onClick={() => copyToClipboard(createdKey)} ariaLabel={tCommon('actions.copy')}><Copy className="w-4 h-4" aria-hidden="true" /></Button>
               </div>
               <Button onClick={() => setShowKeyModal(false)} className="w-full">Fermer</Button>
             </div>
