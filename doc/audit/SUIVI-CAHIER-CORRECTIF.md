@@ -31,7 +31,7 @@ Légende : **OK** terminé et prouvé · ⏳ en cours · ⬜ à faire · 👤 ac
 |---|---|---|:---:|---|---|
 | A1 | LOT0-02 | Lint à 0 avertissement (87 restants, option B : corriger les ~8 cas réels et marquer les chargements au montage) | **OK** | 15/09 19h30 | `npx oxlint --max-warnings=0` → code 0 (commande de la CI, `ci.yml:48`) |
 | A2 | — | Commiter + pousser (≈ 184 fichiers modifiés, 3 migrations 158-160 non commitées) | ⬜ | | |
-| A3 | LOT0-02 | Les 5 jobs de la CI passent au vert (nécessite un push) | ⬜ | | |
+| A3 | LOT0-02 | Les 5 jobs de la CI passent au vert (nécessite un push) | ⬜ | | **Cause trouvée le 18/09** : `ci.yml` était **invalide en YAML** depuis `057c708` — 4 noms d'étapes contenaient un `:` non protégé (`- name: UX-03 : No window.confirm`). GitHub rejetait le workflow entier : aucun job n'a jamais pu tourner, ce qui explique A3 et D1 à D5. Corrigé, `yaml.safe_load` passe. |
 
 ## B — Validation sur une vraie base
 
@@ -198,9 +198,17 @@ l'attribution peut être fausse : ces cas sont signalés à part, en avertisseme
 comptés comme des défauts. Deux subsistent aujourd'hui (`misc.ts:2015`, `sprintH.ts:167`),
 tous deux vérifiés à la main comme corrects.
 
-**À brancher en CI** : le job `db-integration` monte déjà PostgreSQL et rejoue les
-migrations. Y ajouter un conteneur PostgREST et `npm run db:embeds` empêcherait toute
-nouvelle colonne fantôme d'atteindre la production.
+**Branché en CI le 18/09** : le job `db-integration` lance désormais un conteneur
+`postgrest/postgrest:v16.3` après les migrations et exécute `check-embeds.mjs`.
+
+Les 6 défauts en attente d'arbitrage sont inscrits dans `app/.embeds-allowlist.json`,
+chacun avec sa référence (G16 à G21) et la question posée — comme le fait déjà
+`.knip-ceiling.json`. Toute AUTRE requête refusée fait échouer la CI : aucune nouvelle
+colonne fantôme ne peut plus atteindre la production. La liste nomme chaque défaut
+plutôt que d'en compter le nombre, pour qu'un nouveau défaut ne puisse pas passer en
+prenant la place d'un corrigé ; et une entrée qui n'est plus refusée est signalée pour
+être retirée. Vérifié dans les deux sens : code 0 sur l'état actuel, code 1 dès qu'une
+colonne inexistante est introduite.
 
 ---
 
@@ -231,3 +239,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 15/09 19h45 | **Session terminée (idle)**. Trois migrations supplémentaires (158-160) testées sur PostgreSQL 16 : schéma + 160 migrations rejouées sans erreur. **B1, B4, B5, B6, B7 OK** (17 tests triggers/17, 358 tables RLS sans fuite). 8 bugs graves trouvés et corrigés en 158-160 (politiques RLS, stock, paie, DSN). **184 fichiers modifiés, rien de commité.** Recommandation : commiter avant que d'autres stash écrasent le travail. |
 | 17/09 08h40 | **E3 (LOT7-03) OK** — helper `fetchAllRows`, 46 requêtes d'export et d'agrégat paginées dans 9 fichiers, tri total vérifié sur les 38 tables de la base réelle. 12 tests dédiés ; 1 302 tests au vert ; tsc, oxlint et build verts. Section C corrigée (les correctifs sont en 158, pas 159/160). **E5, E6, E8 passés à OK** après vérification dans le code : ils étaient déjà faits mais restés ⬜. |
 | 17/09 13h50 | **Bloc G ouvert.** Un PostgREST réel monté devant la base d'audit révèle **19 requêtes cassées** en production (colonnes fantômes, embeds ambigus, relations absentes) — invisibles à la compilation comme aux tests. **13 corrigées**, 6 en attente d'arbitrage produit. Outil `npm run db:embeds` livré. **LOT7-04 avancé** : 2 717 → 2 359 `any`. |
+| 18/09 10h50 | **`ci.yml` était invalide en YAML depuis `057c708`** (4 noms d'étapes avec un `:` non protégé) : GitHub rejetait le workflow, **aucun job de CI n'a jamais tourné** — cela explique A3 et D1 à D5. Corrigé. **Contrôle PostgREST branché** dans `db-integration` avec liste de tolérance nommée (`.embeds-allowlist.json`, G16-G21). |

@@ -47,7 +47,7 @@ jobs:
       - name: Lint (oxlint)
         run: npx oxlint --max-warnings=0
 
-      - name: UX-03 : No window.confirm
+      - name: 'UX-03 : No window.confirm'
         run: |
           if grep -rn "window\.confirm" src/ --include="*.tsx" --include="*.ts" | grep -v "confirm.tsx" | grep -v "useConfirm.tsx"; then
             echo "ERROR: window.confirm is forbidden. Use confirmSync() from '@/lib/confirm' instead."
@@ -57,10 +57,10 @@ jobs:
       - name: Type check (tsc -b)
         run: npx tsc -b --noEmit --pretty
 
-      - name: LOT6-04 : Dead code ceiling (knip)
+      - name: 'LOT6-04 : Dead code ceiling (knip)'
         run: node scripts/check-knip-ceiling.mjs
 
-      - name: LOT6-04 : Unused tables ceiling
+      - name: 'LOT6-04 : Unused tables ceiling'
         run: node scripts/check-unused-tables.mjs
 
   # ─────────────────────────────────────────────
@@ -282,6 +282,30 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      - name: LOT7-04 — Vérifier les colonnes et jointures contre PostgREST
+        run: |
+          # Les selects Supabase sont des chaînes de caractères : ni tsc ni les tests
+          # unitaires (où Supabase est mocké) ne voient une colonne inexistante ou un
+          # embed ambigu. Seul un vrai PostgREST les refuse — 19 requêtes cassées ont
+          # été trouvées ainsi le 17/09/2026.
+          # `--network host` : le service PostgreSQL du job est publié sur localhost.
+          docker run -d --name pgrst --network host \
+            -e PGRST_DB_URI="postgres://postgres:postgres@localhost:5432/test_compta" \
+            -e PGRST_DB_SCHEMAS=public \
+            -e PGRST_DB_ANON_ROLE=postgres \
+            -e PGRST_DB_MAX_ROWS=1000 \
+            -e PGRST_SERVER_PORT=3333 \
+            postgrest/postgrest:v16.3
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null "http://localhost:3333/employees?limit=1" && break
+            sleep 2
+          done
+          curl -sf -o /dev/null "http://localhost:3333/employees?limit=1" || {
+            echo "PostgREST n'a pas démarré :"; docker logs pgrst; exit 1; }
+          node scripts/check-embeds.mjs
+        env:
+          PGRST_URL: http://localhost:3333
+
       - name: Tests de triggers (SOC-01)
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/102_trigger_tests.sql
         env:
@@ -292,7 +316,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      - name: LOT6-05 : Scénarios métier E2E (10 parcours)
+      - name: 'LOT6-05 : Scénarios métier E2E (10 parcours)'
         run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta

@@ -1,0 +1,42 @@
+{
+  "_comment": "LOT7-04 — requêtes que PostgREST refuse et qui sont TOLÉRÉES pour l'instant, parce que les corriger suppose une décision produit puis une migration (voir doc/audit/SUIVI-CAHIER-CORRECTIF.md, bloc G). Toute AUTRE requête refusée fait échouer la CI. Une entrée qui n'est plus refusée doit être retirée d'ici : le script le signale.",
+  "_frozenAt": "2026-09-18",
+  "allowed": [
+    {
+      "table": "products",
+      "column": "min_stock_level",
+      "ref": "G18",
+      "reason": "products n'a ni min_stock_level ni max_stock_level ; il existe safety_stock et min_order_qty, mais aucun maximum. Décision attendue : safety_stock tient-il lieu de minimum, et faut-il ajouter un maximum ?"
+    },
+    {
+      "table": "employees",
+      "column": "gross_salary",
+      "ref": "G17",
+      "reason": "employees porte salary et base_salary. Décision attendue : sur laquelle des deux le CICE doit-il porter ?"
+    },
+    {
+      "table": "employees",
+      "column": "gender",
+      "ref": "G16",
+      "reason": "aucune colonne de sexe en base : l'indicateur d'égalité F/H et l'écart de rémunération de la BDES sont incalculables. Décision attendue : ajouter la colonne (avec les précautions RGPD) ou retirer ces indicateurs."
+    },
+    {
+      "table": "purchase_order_lines",
+      "column": "quantity_received",
+      "ref": "G19",
+      "reason": "seule quantity existe : le MRP ne peut pas déduire le reçu du commandé et surestime les en-cours d'achat. Décision attendue : ajouter la colonne et l'alimenter à la réception."
+    },
+    {
+      "table": "budgets",
+      "relation": "chart_accounts",
+      "ref": "G20",
+      "reason": "budgets.account_code est du texte libre, sans clé étrangère vers chart_accounts. Décision attendue : poser la clé étrangère ou charger les libellés séparément."
+    },
+    {
+      "table": "journal_access_rights",
+      "relation": "tenant_users",
+      "ref": "G21",
+      "reason": "user_id n'a pas de clé étrangère vers tenant_users. Décision attendue : poser la clé étrangère ou charger les courriels séparément."
+    }
+  ]
+}

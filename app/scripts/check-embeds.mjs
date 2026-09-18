@@ -24,7 +24,7 @@
  * Sort en code 1 dès qu'un embed est refusé, pour pouvoir être branché en CI à la
  * suite du job `db-integration`.
  */
-import { readFileSync, readdirSync, statSync } from 'fs'
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
 import { join, relative } from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
@@ -193,13 +193,53 @@ if (uncertain.length > 0) {
   console.log()
 }
 
-if (failures.length === 0) {
-  console.log(`✅ Les ${embeds.length} requêtes sont acceptées par PostgREST.`)
+// ── Liste de tolérance ────────────────────────────────────────────────────────
+// Certains refus viennent de données absentes du modèle : les corriger suppose une
+// décision produit puis une migration. Ils sont listés dans `.embeds-allowlist.json`
+// avec la question posée. Tout AUTRE refus fait échouer la CI — c'est le but : aucune
+// nouvelle colonne fantôme ne doit atteindre la production. Une entrée tolérée qui
+// n'est plus refusée est signalée, pour être retirée de la liste.
+function loadAllowlist() {
+  const f = join(ROOT, '.embeds-allowlist.json')
+  if (!existsSync(f)) return []
+  return JSON.parse(readFileSync(f, 'utf8')).allowed ?? []
+}
+const allowlist = loadAllowlist()
+
+function matchesAllowed(failure, a) {
+  if (failure.table !== a.table) return false
+  if (a.column) return new RegExp(`\\b${a.column}\\b`).test(failure.message)
+  if (a.relation) return failure.message.includes(`'${a.relation}'`)
+  return false
+}
+
+const unexpected = failures.filter((f) => !allowlist.some((a) => matchesAllowed(f, a)))
+const tolerated = failures.filter((f) => allowlist.some((a) => matchesAllowed(f, a)))
+const staleEntries = allowlist.filter((a) => !failures.some((f) => matchesAllowed(f, a)))
+
+if (tolerated.length > 0) {
+  console.log(`ℹ️  ${tolerated.length} refus tolérés (voir .embeds-allowlist.json et le bloc G du suivi) :`)
+  for (const t of tolerated) {
+    const a = allowlist.find((x) => matchesAllowed(t, x))
+    console.log(`     [${a.ref}] ${t.file}:${t.line} — ${t.message}`)
+  }
+  console.log()
+}
+
+if (staleEntries.length > 0) {
+  console.log(`🎉 ${staleEntries.length} entrée(s) de la liste de tolérance ne sont plus refusées :`)
+  for (const a of staleEntries) console.log(`     [${a.ref}] ${a.table}.${a.column ?? a.relation} — à retirer de .embeds-allowlist.json`)
+  console.log()
+}
+
+if (unexpected.length === 0) {
+  console.log(`✅ Les ${embeds.length - tolerated.length} requêtes vérifiées sont acceptées par PostgREST`
+    + (tolerated.length ? ` (${tolerated.length} refus tolérés).` : '.'))
   process.exit(0)
 }
 
 const byCode = new Map()
-for (const f of failures) {
+for (const f of unexpected) {
   if (!byCode.has(f.code)) byCode.set(f.code, [])
   byCode.get(f.code).push(f)
 }
@@ -212,5 +252,6 @@ for (const [code, items] of [...byCode].sort((a, b) => b[1].length - a[1].length
   }
   console.log()
 }
-console.error(`❌ ${failures.length} requête(s) sur ${embeds.length} sont refusées par PostgREST.`)
+console.error(`❌ ${unexpected.length} requête(s) sur ${embeds.length} sont refusées par PostgREST et ne figurent pas dans .embeds-allowlist.json.`)
+console.error(`   Corriger la requête, ou — si la donnée manque au modèle — ajouter l'entrée à la liste avec la décision à prendre.`)
 process.exit(1)
