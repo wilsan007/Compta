@@ -60,6 +60,9 @@ jobs:
       - name: 'LOT7-07 : Boutons icône avec libellé accessible'
         run: node scripts/check-a11y-icon-buttons.mjs
 
+      - name: 'LOT7-07 : Contraste des couleurs (WCAG AA)'
+        run: node scripts/check-contrast.mjs
+
       - name: 'LOT6-04 : Dead code ceiling (knip)'
         run: node scripts/check-knip-ceiling.mjs
 

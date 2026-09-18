@@ -21,7 +21,8 @@ Légende : **OK** terminé et prouvé · ⏳ en cours · ⬜ à faire · 👤 ac
 | E — Dette LOT 7 | 8 | 5 | 3 |
 | F — Actions de votre part | 2 | 0 | 2 |
 | G — Requêtes refusées par PostgREST | 21 | 15 | 6 |
-| **Total** | **59** | **27** | **32** |
+| H — Contraste des couleurs | 10 | 7 | 3 |
+| **Total** | **69** | **34** | **35** |
 
 ---
 
@@ -236,8 +237,12 @@ et non la simple présence d'un attribut.
 
 **Garde-fou** : `npm run a11y:icon-buttons`, branché dans le job `lint-typecheck`.
 
-**Reste à faire** : contraste des couleurs et `aria-sort` sur les en-têtes de `SortableTable`.
-Le contraste demande un examen visuel, pas une analyse statique.
+**Tri des tableaux** : l'en-tête était un `<th>` cliquable — le tri était donc **inaccessible
+au clavier** (pas de focus, pas d'activation par Entrée ou Espace) et son sens n'était annoncé
+à aucun lecteur d'écran. C'est désormais un vrai `<button>`, le `<th>` porte `aria-sort` et
+`scope="col"`. 7 tests.
+
+**Contraste** : traité au bloc H — mesuré, pas estimé à l'œil.
 
 ---
 
@@ -282,6 +287,57 @@ notables :
 | `lib/hooks/accessibility.tsx` | aides à l'accessibilité | Non utilisé — alors que le LOT7-07 vient d'en réimplémenter une partie dans `ui.tsx`. |
 
 Rien de tout cela n'a été supprimé. Dites-moi lesquels brancher et lesquels abandonner.
+
+---
+
+## H — Contraste des couleurs (WCAG AA) — mesuré le 18/09
+
+Le cahier annonçait « contraste : à vérifier visuellement ». Ce n'est pas vérifiable à
+l'œil de façon reproductible : `app/scripts/check-contrast.mjs` (`npm run a11y:contrast`)
+calcule les rapports WCAG 2.1 des couleurs de texte **réellement employées dans le code**,
+sur le fond réellement appliqué, dans les deux thèmes.
+
+**Écrire ce contrôle juste a demandé trois corrections** — chacune produisait des chiffres
+faux, dans un sens ou dans l'autre :
+
+| Biais | Effet |
+|---|---|
+| ne mesurer que contre les fonds de page | un `text-neutral-50` sur `bg-neutral-900` (bloc de code) ressortait à 1:1 alors qu'il est parfaitement lisible |
+| prendre `hover:bg-…` pour le fond permanent | mesure contre un fond qui n'existe qu'au survol |
+| prendre `bg-[var(--color-success)]/10` pour la couleur pleine | une couleur mesurée contre elle-même : 1:1, absurde |
+| apparier les classes de tout un `className` | dans `ok ? 'bg-A text-blanc' : 'text-B'`, A était apparié à B — deux branches qui ne coexistent jamais |
+| découper les littéraux sur les apostrophes | les apostrophes du français (« l'utilisateur ») fusionnaient des littéraux voisins |
+
+**Le défaut principal : le thème sombre ne redéfinissait AUCUNE couleur sémantique.** Il
+héritait de valeurs pensées pour un fond blanc, d'où des contrastes de 2,68:1 (primary,
+416 usages), 3,27:1 (success) et 3,28:1 (danger) sur fond sombre — très en dessous du seuil.
+
+### Corrigé
+
+Même tonalité, même saturation, seule la luminosité change : l'écart visuel est
+imperceptible, sauf mention contraire.
+
+| Thème | Variable | Avant | Après | Contraste | Usages |
+|---|---|---|---|---|---|
+| sombre | `--color-primary` | `#0066cc` | `#1f8fff` | 2,68 → 4,56:1 | 416 |
+| sombre | `--color-danger` | `#de350b` | `#f55c36` | 3,28 → 4,59:1 | 554 |
+| sombre | `--color-success` | `#00875a` | `#00a66e` | 3,27 → 4,74:1 | 288 |
+| sombre | `--color-neutral-400` | `#6b6d85` | `#8b8da2` | 2,95 → 4,56:1 | 12 |
+| clair | `--color-danger` | `#de350b` | `#d4330b` | 4,17 → 4,50:1 | 277 |
+| clair | `--color-success` | `#00875a` | `#007d53` | 4,17 → 4,74:1 | 144 |
+| clair | `--color-neutral-400` | `#97a0af` | `#667184` | 2,42 → 4,52:1 | 12 |
+
+### 👤 Décision attendue
+
+| # | Cas | Enjeu |
+|---|---|---|
+| H1 | `--color-warning` `#ff9500` en thème clair : **2,02:1**, 65 usages | Un orange vif ne peut PAS atteindre 4,5:1 sur blanc : la correction la plus proche est `#a35f00`, qui vire au brun. C'est le **seul changement visible** de tout le lot — je ne l'ai donc pas appliqué. Trois options : accepter le brun pour le texte d'alerte ; garder l'orange mais le réserver aux icônes et pastilles (décoratives, seuil 3:1) en passant le texte au brun ; ou assumer l'écart. |
+| H2 | Texte coloré sur fond de la même teinte à 5–10 % (pastilles d'état) : 3,99 à 4,29:1, 18 usages | Juste sous le seuil. Se corrige en éclaircissant le **fond**, pas le texte — sinon on dégrade le texte sur fond de page, qui est désormais juste. |
+| H3 | `--color-text-secondary` sur `--color-neutral-100/200` : 4,06 à 4,50:1, 20 usages | Gris sur gris clair. Même remarque : agir sur le fond. |
+
+Ces 11 écarts sont inscrits dans `app/.contrast-allowlist.json` avec leur référence ; tout
+AUTRE écart sous 4,5:1 fait échouer la CI. `npm run a11y:contrast -- --suggest` calcule la
+correction la plus proche pour chaque couleur fautive.
 
 ---
 
@@ -352,3 +408,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 18/09 11h00 | **E7 (LOT7-07) OK** — les `<label>` de `ui.tsx` n'étaient liés à aucun champ : tous les formulaires étaient muets pour un lecteur d'écran. Corrigé via `useId()`, plus `role="dialog"` sur la Modal et 127 boutons icône libellés. 51 → 317 attributs ARIA, 7 tests qui interrogent les composants comme un lecteur d'écran, garde-fou `a11y:icon-buttons` en CI. |
 | 18/09 11h10 | **E1 (LOT7-01) avancé** — `src/types/database.ts` (doublon périmé de 5 490 l.) et 4 dépendances supprimés ; `tailwindcss` identifié comme faux positif de knip (le retirer aurait cassé tous les styles) ; nullabilité du générateur corrigée (`T \| null` au lieu de `?`) ; `silentFailureGuard` enfin branché. Plafond knip **71 → 68**. Les 31 fichiers restants sont des fonctionnalités non branchées : **décision produit attendue**, rien n'a été supprimé. |
 | 18/09 12h40 | **LOT7-07 complété.** Le garde-fou de la veille était faux : il ne voyait que les boutons mono-ligne (127 sur 378). Réécrit avec un analyseur qui suit les accolades JSX → **227 boutons muets**, tous libellés. `useFocusTrap` réparé (5 défauts, dont un `offsetParent` qui l'aurait rendu inerte sur toute boîte `position: fixed`) et branché. Toasts enfin annoncés (`role="alert"`/`"status"`). **51 → 724 attributs ARIA**, 16 tests clavier et lecteur d'écran. Plafond knip 68 → 67. |
+| 18/09 13h30 | **Bloc H — contraste mesuré.** Le thème sombre ne redéfinissait aucune couleur sémantique : `primary` était à **2,68:1** sur 416 usages. 7 variables corrigées (écart visuel imperceptible), 3 cas laissés à votre décision dont l'orange d'alerte, seul changement visible. Outil `npm run a11y:contrast` branché en CI. Tri des tableaux rendu accessible au clavier (`aria-sort`, `scope`, vrai `<button>`). 1 332 tests. |

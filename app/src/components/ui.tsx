@@ -216,8 +216,10 @@ export function Table({ headers, children }: TableProps) {
       <table className="app-table">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
+            {/* LOT7-07 : `scope="col"` rattache chaque cellule à son en-tête — sans lui,
+                un lecteur d'écran lit les valeurs sans dire de quelle colonne elles viennent. */}
             {headers.map((h, i) => (
-              <th key={i} className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3">
+              <th key={i} scope="col" className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3">
                 {h}
               </th>
             ))}
@@ -294,27 +296,44 @@ export function SortableTable<T extends Record<string, any>>({
           <thead>
             <tr className="border-b border-[var(--color-border)]">
               {headers.map((h, i) => (
+                /* LOT7-07 : l'en-tête était un <th> cliquable — donc le tri était
+                   INACCESSIBLE au clavier (pas de focus, pas d'activation par Entrée
+                   ou Espace) et le sens du tri n'était annoncé à aucun lecteur
+                   d'écran. `aria-sort` porte l'état, et un vrai <button> rend la
+                   colonne activable au clavier. Les chevrons sont décoratifs. */
                 <th
                   key={i}
+                  scope="col"
+                  aria-sort={
+                    h.sortable
+                      ? sortKey === h.key
+                        ? sortDir === 'asc' ? 'ascending' : 'descending'
+                        : 'none'
+                      : undefined
+                  }
                   className={cn(
                     'text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3 select-none',
-                    h.sortable && 'cursor-pointer hover:text-[var(--color-text)] transition-colors',
                     h.className,
                   )}
-                  onClick={() => h.sortable && handleSort(h.key)}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {h.label}
-                    {h.sortable && (
-                      <span className="flex-shrink-0">
+                  {h.sortable ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSort(h.key)}
+                      className="inline-flex items-center gap-1 uppercase tracking-wider font-semibold cursor-pointer hover:text-[var(--color-text)] transition-colors"
+                    >
+                      {h.label}
+                      <span className="flex-shrink-0" aria-hidden="true">
                         {sortKey === h.key ? (
                           sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                         ) : (
                           <ChevronsUpDown className="w-3 h-3 opacity-40" />
                         )}
                       </span>
-                    )}
-                  </span>
+                    </button>
+                  ) : (
+                    h.label
+                  )}
                 </th>
               ))}
             </tr>

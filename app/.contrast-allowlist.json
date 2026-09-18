@@ -1,0 +1,76 @@
+{
+  "_comment": "LOT7-07 — écarts de contraste TOLÉRÉS pour l'instant, chacun avec la décision attendue (voir doc/audit/SUIVI-CAHIER-CORRECTIF.md, bloc H). Tout AUTRE écart sous 4,5:1 fait échouer la CI. `node scripts/check-contrast.mjs --suggest` propose la correction la plus proche.",
+  "_frozenAt": "2026-09-18",
+  "allowed": [
+    {
+      "theme": "light",
+      "fg": "--color-warning",
+      "bg": "--color-surface",
+      "ref": "H1",
+      "reason": "2,20:1 — un orange vif (#ff9500) ne peut PAS atteindre 4,5:1 sur blanc sans virer au brun (#a35f00). 65 usages. Décision attendue : accepter le brun pour les alertes, réserver l'orange aux pastilles et icônes (décoratives, seuil 3:1), ou assumer l'écart."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-warning",
+      "bg": "--color-background",
+      "ref": "H1",
+      "reason": "2,02:1 — même couleur, sur le fond de page. Même décision."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-warning",
+      "bg": "--color-warning",
+      "ref": "H2",
+      "reason": "2,12:1 — texte orange sur un fond orange à 5 %. Se corrige en éclaircissant le fond, pas le texte. 1 usage."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-text-secondary",
+      "bg": "--color-neutral-100",
+      "ref": "H3",
+      "reason": "4,50:1 au centième près — exactement au seuil, donc accepté. 17 usages."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-text-secondary",
+      "bg": "--color-neutral-200",
+      "ref": "H3",
+      "reason": "4,06:1 — texte gris sur gris clair, 3 usages. À revoir avec le fond plutôt qu'avec la couleur du texte, qui est déjà juste ailleurs."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-neutral-400",
+      "bg": "--color-neutral-100",
+      "ref": "H3",
+      "reason": "4,18:1 — 1 usage, dans un bloc de code. À revoir avec le fond."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-danger",
+      "bg": "--color-danger",
+      "ref": "H2",
+      "reason": "4,24:1 — texte rouge sur fond rouge à 10 % (pastille d'erreur). Se corrige en éclaircissant le fond. 4 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-success",
+      "bg": "--color-success",
+      "ref": "H2",
+      "reason": "4,17:1 — pastille verte en thème sombre. Même remarque : éclaircir le fond. 8 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-danger",
+      "bg": "--color-danger",
+      "ref": "H2",
+      "reason": "4,10:1 — pastille rouge en thème sombre. 4 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-primary",
+      "bg": "--color-primary",
+      "ref": "H2",
+      "reason": "3,99:1 et 4,29:1 selon l'opacité — pastille bleue en thème sombre. 3 usages."
+    }
+  ]
+}

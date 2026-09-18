@@ -19,6 +19,7 @@
     "db:types": "node scripts/generate-db-types.mjs",
     "db:embeds": "node scripts/check-embeds.mjs",
     "a11y:icon-buttons": "node scripts/check-a11y-icon-buttons.mjs",
+    "a11y:contrast": "node scripts/check-contrast.mjs",
     "verify": "bash scripts/verify.sh",
     "verify:fast": "bash scripts/verify.sh --skip-tests --skip-lint",
     "audit:silent": "node scripts/audit-silent-failures.mjs",

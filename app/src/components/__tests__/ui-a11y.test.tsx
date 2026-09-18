@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { useState } from 'react'
-import { Input, Select, Textarea, Modal, Button } from '@/components/ui'
+import { Input, Select, Textarea, Modal, Button, SortableTable, TableRow, TableCell } from '@/components/ui'
 
 // `src/test/setup.ts` remplace globalement `@/lib/toast` par un mock : on restaure le
 // vrai module ici, puisque c'est précisément son rendu que ces tests vérifient.
@@ -156,5 +156,71 @@ describe('Toasts — régions live', () => {
     const region = screen.getByRole('alert')
     expect(region).toHaveTextContent('Erreur de suppression')
     expect(region).toHaveAttribute('aria-live', 'assertive')
+  })
+})
+
+// ============================================================
+// LOT7-07 — tri des tableaux : clavier et annonce de l'état
+// ============================================================
+describe('SortableTable — tri accessible', () => {
+  const headers = [
+    { label: 'Numéro', key: 'num', sortable: true },
+    { label: 'Client', key: 'client', sortable: true },
+    { label: 'Actions' },
+  ]
+  const data = [{ num: 'B', client: 'Zoé' }, { num: 'A', client: 'Ana' }]
+  const renderRow = (r: { num: string; client: string }) => (
+    <TableRow key={r.num}><TableCell>{r.num}</TableCell><TableCell>{r.client}</TableCell><TableCell>—</TableCell></TableRow>
+  )
+
+  function setup() {
+    return render(<SortableTable headers={headers} data={data} renderRow={renderRow} />)
+  }
+
+  it('annonce chaque colonne triable comme non triée au départ', () => {
+    setup()
+    expect(screen.getByRole('columnheader', { name: /Numéro/ })).toHaveAttribute('aria-sort', 'none')
+  })
+
+  it('ne met pas aria-sort sur une colonne non triable', () => {
+    setup()
+    expect(screen.getByRole('columnheader', { name: 'Actions' })).not.toHaveAttribute('aria-sort')
+  })
+
+  it('rend chaque en-tête triable activable au clavier', () => {
+    setup()
+    // un <button> est focalisable et activable par Entrée/Espace, contrairement à un <th>
+    expect(screen.getByRole('button', { name: /Numéro/ })).toBeInTheDocument()
+  })
+
+  it('annonce le sens du tri, et l\'inverse au second clic', () => {
+    setup()
+    const bouton = screen.getByRole('button', { name: /Numéro/ })
+    fireEvent.click(bouton)
+    expect(screen.getByRole('columnheader', { name: /Numéro/ })).toHaveAttribute('aria-sort', 'ascending')
+    fireEvent.click(bouton)
+    expect(screen.getByRole('columnheader', { name: /Numéro/ })).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  it('remet la colonne précédente à « none » quand on trie sur une autre', () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: /Numéro/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Client/ }))
+    expect(screen.getByRole('columnheader', { name: /Numéro/ })).toHaveAttribute('aria-sort', 'none')
+    expect(screen.getByRole('columnheader', { name: /Client/ })).toHaveAttribute('aria-sort', 'ascending')
+  })
+
+  it('trie réellement les données', () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: /Numéro/ }))
+    const lignes = screen.getAllByRole('row').slice(1) // hors en-tête
+    expect(lignes[0]).toHaveTextContent('A')
+  })
+
+  it('rattache les cellules à leur en-tête (scope="col")', () => {
+    setup()
+    for (const th of screen.getAllByRole('columnheader')) {
+      expect(th).toHaveAttribute('scope', 'col')
+    }
   })
 })
