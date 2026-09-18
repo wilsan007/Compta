@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +14,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, footer, maxWidth = '36rem', className }: ModalProps) {
+  const { t: tCommon } = useTranslation('common')
   useEffect(() => {
     if (!open) return
     function handleEscape(e: KeyboardEvent) {
@@ -43,9 +45,11 @@ export function Modal({ open, onClose, title, children, footer, maxWidth = '36re
             <h2 className="text-lg font-semibold text-[var(--color-text)]">{title}</h2>
             <button
               onClick={onClose}
+              aria-label={tCommon('actions.close')}
+              title={tCommon('actions.close')}
               className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         )}

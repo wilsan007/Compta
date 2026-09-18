@@ -150,8 +150,8 @@ export function AnalyticDistributionEditor({
             <Layers className="w-5 h-5 text-[var(--color-primary)]" />
             <h2 className="text-lg font-bold">{t('analyticDistribution.title')}</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 

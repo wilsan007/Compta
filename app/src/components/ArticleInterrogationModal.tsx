@@ -71,7 +71,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleRefresh}><RefreshCw className="w-3.5 h-3.5" /> Actualiser</Button>
-            <button onClick={onClose} className="p-2 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="p-2 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
           </div>
         </div>
 

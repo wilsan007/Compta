@@ -282,6 +282,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   onSaved: () => void
 }) {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [activeTab, setActiveTab] = useState('fiche')
   const { toast } = useToast()
   const [code, setCode] = useState(account?.code || '')
@@ -389,7 +390,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{account ? t('thirdParty.edit') : t('thirdParty.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="flex border-b border-[var(--color-border)] px-6 overflow-x-auto">

@@ -240,9 +240,8 @@ export function ChatView({ projectId }: ChatViewProps) {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
-                className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-              >
-                <Send className="w-4 h-4" />
+                className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0" aria-label={tCommon('actions.send')} title={tCommon('actions.send')}>
+                <Send className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           )}

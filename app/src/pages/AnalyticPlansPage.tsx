@@ -139,7 +139,7 @@ function PlanForm({ plan, onClose, onSaved }: { plan: AnalyticPlan | null; onClo
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{plan ? t('analyticPlans.edit') : t('analyticPlans.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4">
           <Input label={t('analyticPlans.code')} value={code} onChange={(e) => setCode(e.target.value)} required />

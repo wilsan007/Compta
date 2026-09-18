@@ -102,9 +102,8 @@ export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
             <button
               onClick={handleSend}
               disabled={sending || !content.trim()}
-              className="px-3 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:opacity-90 disabled:opacity-50"
-            >
-              <Send className="w-4 h-4" />
+              className="px-3 py-2 rounded-lg bg-[var(--color-primary)] text-white hover:opacity-90 disabled:opacity-50" aria-label={tCommon('actions.send')} title={tCommon('actions.send')}>
+              <Send className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>

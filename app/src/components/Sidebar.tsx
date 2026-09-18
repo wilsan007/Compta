@@ -194,6 +194,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useTranslation('nav')
+  const { t: tCommon } = useTranslation('common')
   const { modules: enabledModules } = useTenantModules()
   const { user, availableTenants, switchTenant } = useAuth()
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
@@ -845,6 +846,8 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
         </div>
         <button
           onClick={onCloseMobile}
+          aria-label={tCommon('actions.close')}
+          title={tCommon('actions.close')}
           className="lg:hidden p-1.5 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] transition-colors"
         >
           <X className="w-5 h-5" />

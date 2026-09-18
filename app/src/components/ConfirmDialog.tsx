@@ -28,8 +28,8 @@ export function ConfirmDialog({
       <div className="card shadow-2xl max-w-md w-full animate-scale-in">
         <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
           <h3 className="text-base font-semibold text-[var(--color-text)]">{title}</h3>
-          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
-            <X className="w-4 h-4" />
+          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={t('actions.close')} title={t('actions.close')}>
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <div className="px-6 py-4">

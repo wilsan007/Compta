@@ -57,6 +57,9 @@ jobs:
       - name: Type check (tsc -b)
         run: npx tsc -b --noEmit --pretty
 
+      - name: 'LOT7-07 : Boutons icône avec libellé accessible'
+        run: node scripts/check-a11y-icon-buttons.mjs
+
       - name: 'LOT6-04 : Dead code ceiling (knip)'
         run: node scripts/check-knip-ceiling.mjs
 

@@ -22,6 +22,7 @@ export function RecurringTaskModal({
   onSave,
 }: RecurringTaskModalProps) {
   const { t } = useTranslation('taskManagement')
+  const { t: tCommon } = useTranslation('common')
   const [enabled, setEnabled] = useState(currentRecurring)
   const [interval, setInterval] = useState(currentInterval || 1)
   const [ruleType, setRuleType] = useState<RecurringRuleType>(currentRuleType || 'weekly')
@@ -75,8 +76,8 @@ export function RecurringTaskModal({
             <Repeat className="w-5 h-5 text-[var(--color-primary)]" />
             {t('recurring.title')}
           </h2>
-          <button onClick={onClose} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 

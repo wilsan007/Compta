@@ -1,5 +1,5 @@
 /* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -96,9 +96,14 @@ interface ButtonProps {
   disabled?: boolean
   loading?: boolean
   className?: string
+  /**
+   * LOT7-07 : obligatoire dès que le bouton n'affiche qu'une icône. Sans lui, un
+   * lecteur d'écran annonce « bouton » sans dire ce qu'il fait. Sert aussi d'infobulle.
+   */
+  ariaLabel?: string
 }
 
-export function Button({ variant = 'primary', size = 'md', children, onClick, type = 'button', disabled, loading, className }: ButtonProps) {
+export function Button({ variant = 'primary', size = 'md', children, onClick, type = 'button', disabled, loading, className, ariaLabel }: ButtonProps) {
   const variantMap = {
     primary: 'btn-primary',
     secondary: 'btn-secondary',
@@ -115,9 +120,12 @@ export function Button({ variant = 'primary', size = 'md', children, onClick, ty
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      aria-busy={loading || undefined}
       className={cn('btn', variantMap[variant], sizeMap[size], (disabled || loading) && 'opacity-50 cursor-not-allowed', 'inline-flex items-center gap-2', className)}
     >
-      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+      {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
       {children}
     </button>
   )
@@ -137,15 +145,22 @@ interface InputProps {
   readOnly?: boolean
 }
 
+// LOT7-07 : le <label> n'était lié à aucun champ (ni htmlFor, ni id). Un lecteur
+// d'écran annonçait donc « champ de saisie » sans dire lequel — sur TOUS les
+// formulaires de l'application. `useId()` produit un identifiant stable côté serveur
+// comme côté client. L'astérisque de champ requis est masqué aux lecteurs d'écran :
+// `aria-required` porte déjà l'information, sans faire lire « étoile ».
 export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, disabled, readOnly }: InputProps) {
+  const id = useId()
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
         </label>
       )}
       <input
+        id={id}
         type={type}
         step={step}
         value={value}
@@ -155,6 +170,7 @@ export function Input({ label, type = 'text', value, defaultValue, onChange, pla
         disabled={disabled}
         readOnly={readOnly}
         required={required}
+        aria-required={required || undefined}
         className="input"
       />
     </div>
@@ -171,14 +187,15 @@ interface SelectProps {
 }
 
 export function Select({ label, value, onChange, options, required, className }: SelectProps) {
+  const id = useId()
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
         </label>
       )}
-      <select value={value} onChange={onChange} required={required} className="input cursor-pointer">
+      <select id={id} value={value} onChange={onChange} required={required} aria-required={required || undefined} className="input cursor-pointer">
         {options.map((opt, i) => (
           <option key={`${opt.value}-${i}`} value={opt.value}>{opt.label}</option>
         ))}
@@ -651,8 +668,8 @@ export function ConfirmDialog({
       <div className="card shadow-2xl max-w-md w-full animate-scale-in">
         <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
           <h3 className="text-base font-semibold text-[var(--color-text)]">{title}</h3>
-          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
-            <X className="w-4 h-4" />
+          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={t('actions.close')} title={t('actions.close')}>
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <div className="px-6 py-4">
@@ -681,6 +698,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({ label, value, onChange, options, placeholder, required, className }: ComboboxProps) {
+  const labelId = useId()
   const { t } = useTranslation('common')
   const ph = placeholder || t('common.searchPlaceholder')
   const [open, setOpen] = useState(false)
@@ -706,19 +724,27 @@ export function Combobox({ label, value, onChange, options, placeholder, require
 
   return (
     <div className={className} ref={ref}>
+      {/* LOT7-07 : ce n'est pas un <select>, mais un bouton qui ouvre une liste.
+          `aria-labelledby` rattache le libellé, et `role="combobox"` + `aria-expanded`
+          annoncent qu'il s'agit d'une liste déroulante et si elle est ouverte. */}
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
-        </label>
+        <span id={labelId} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
+        </span>
       )}
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-labelledby={label ? labelId : undefined}
+          aria-required={required || undefined}
           className="input w-full text-left flex items-center justify-between"
         >
           <span className={cn(!selected && 'text-[var(--color-text-secondary)]')}>{selected?.label || ph}</span>
-          <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" aria-hidden="true" />
         </button>
         {open && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 max-h-[260px] overflow-hidden flex flex-col">
@@ -830,7 +856,13 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
+// LOT7-07 : la boîte de dialogue n'était qu'un <div>. Sans `role="dialog"` ni
+// `aria-modal`, un lecteur d'écran continue de lire la page derrière ; sans
+// `aria-labelledby`, il n'annonce pas de quoi il s'agit à l'ouverture. Le bouton de
+// fermeture n'affichait qu'une croix, sans libellé.
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+  const titleId = useId()
+  const { t } = useTranslation('common')
   if (!open) return null
   const sizeClass = {
     sm: 'max-w-md',
@@ -840,13 +872,23 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   }[size]
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} max-h-[90vh] overflow-y-auto`}>
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} max-h-[90vh] overflow-y-auto`}
+      >
         {title && (
           <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-            <h2 className="font-semibold">{title}</h2>
-            <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">
-              <X className="w-4 h-4" />
+            <h2 id={titleId} className="font-semibold">{title}</h2>
+            <button
+              onClick={onClose}
+              aria-label={t('actions.close')}
+              title={t('actions.close')}
+              className="p-1 rounded hover:bg-[var(--color-neutral-100)]"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -871,15 +913,19 @@ interface TextareaProps {
 }
 
 export function Textarea({ value, defaultValue, onChange, rows = 4, placeholder, className, label, required }: TextareaProps) {
+  const id = useId()
   return (
     <div className={className}>
-      {label && <label className="text-sm font-medium">{label}{required && <span className="text-[var(--color-danger)]"> *</span>}</label>}
+      {label && <label htmlFor={id} className="text-sm font-medium">{label}{required && <span className="text-[var(--color-danger)]" aria-hidden="true"> *</span>}</label>}
       <textarea
+        id={id}
         value={value}
         defaultValue={defaultValue}
         onChange={onChange}
         rows={rows}
         placeholder={placeholder}
+        required={required}
+        aria-required={required || undefined}
         className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y"
       />
     </div>

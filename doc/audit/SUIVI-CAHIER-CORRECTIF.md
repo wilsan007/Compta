@@ -18,10 +18,10 @@ Légende : **OK** terminé et prouvé · ⏳ en cours · ⬜ à faire · 👤 ac
 | B — Validation sur une vraie base PostgreSQL | 12 | 5 | 7 |
 | C — Front et bugs trouvés à l'exécution | 8 | 0 | 8 |
 | D — Garde-fous LOT 6 au vert | 5 | 0 | 5 |
-| E — Dette LOT 7 | 8 | 4 | 4 |
+| E — Dette LOT 7 | 8 | 5 | 3 |
 | F — Actions de votre part | 2 | 0 | 2 |
 | G — Requêtes refusées par PostgREST | 21 | 15 | 6 |
-| **Total** | **59** | **26** | **33** |
+| **Total** | **59** | **27** | **32** |
 
 ---
 
@@ -83,7 +83,7 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 | E4 | LOT7-04 | Réduire les `any` | 2 717 mesurés le 17/09 | ⏳ | | **2 717 → 2 359** : générateur de types sans `any` (312 → 0, type `Json` + tableaux typés), 46 retours de `queries/*` typés via `Joined<>`. Reste le gros du travail dans les pages. Brancher `createClient<Database>` donnerait **1 468 erreurs**, dont ~917 nullabilités réelles (`string \| null`) : chantier à part, à décider. |
 | E5 | LOT7-05 | Un seul jeu de triggers d'équilibre | clos selon l'autre session | **OK** | 15/09 | `158:948` — contrôle d'équilibre unique, vérifié à l'exécution (voir B6) |
 | E6 | LOT7-06 | `_skip_cascade` posé mais jamais lu | toujours dans `85_…sql` | **OK** | 15/09 | `160_remove_skip_cascade.sql` réécrit `recalc_parent_progress_on_subtask_change` sans la colonne. La 85 la pose encore mais plus personne ne l'écrit. |
-| E7 | LOT7-07 | Accessibilité | 47 attributs `aria-` | ⬜ | | |
+| E7 | LOT7-07 | Accessibilité | 51 attributs `aria-` | **OK** | 18/09 11h00 | **51 → 317**. Voir le détail ci-dessous. |
 | E8 | LOT7-08 | Sortir du « mode simulation » | 4 fonctions : transmit-dsn, submit-vat-return, submit-e-invoice, request-signature | **OK** | 15/09 | les 4 renvoient un HTTP 503 explicite au lieu de simuler une transmission réussie. Le raccordement aux API réelles (Net-Entreprises, Chorus Pro) reste un chantier produit. |
 
 ### E3 — LOT7-03 en détail (17/09)
@@ -176,6 +176,48 @@ que par un rapatriement complet — la pagination corrige l'exactitude, pas le c
 | G14 | `crmAdvanced.ts` `checkSlaCompliance` | embed `service_contracts` sans relation | PGRST200 | contrôle de SLA en échec ; le contrat est désormais cherché par `customer_id` |
 | G15 | `stock.ts` `getProductSupplierPrices` | embed `suppliers` sans relation | PGRST200 | onglet « Tarifs fournisseurs » vide |
 
+### E7 — LOT7-07 en détail (18/09)
+
+**Le vrai défaut n'était pas le nombre d'attributs, mais leur absence là où ils comptent.**
+Dans `src/components/ui.tsx`, les `<label>` de `Input`, `Select` et `Textarea` n'étaient liés
+à aucun champ — ni `htmlFor`, ni `id`. Un lecteur d'écran annonçait donc « champ de saisie »
+sans dire lequel, **sur tous les formulaires de l'application**. Corrigé avec `useId()`, qui
+donne un identifiant stable et distinct même à deux champs de même libellé.
+
+Autres correctifs dans les composants de base, d'où tout l'écran bénéficie :
+
+| Composant | Défaut | Correctif |
+|---|---|---|
+| `Input`, `Select`, `Textarea` | label non lié au champ | `htmlFor`/`id` via `useId()`, plus `aria-required` |
+| `Combobox` | bouton sans nom, état d'ouverture muet | `role="combobox"`, `aria-expanded`, `aria-labelledby` |
+| `Modal` | simple `<div>` : le lecteur continue de lire la page derrière | `role="dialog"`, `aria-modal`, `aria-labelledby` |
+| `Modal` (fermeture) | bouton croix sans libellé | `aria-label` traduit (`actions.close`) |
+| `Button` | aucun moyen de nommer un bouton icône | nouvelle prop `ariaLabel`, qui pose aussi `title` |
+
+L'astérisque des champs requis est passé en `aria-hidden` : `aria-required` porte déjà
+l'information, sans faire lire « étoile » à chaque champ.
+
+**127 boutons n'affichant qu'une icône étaient muets**, dans 107 fichiers — 122 d'entre eux
+étant le même bouton « fermer ». Tous libellés à partir des clés déjà présentes dans
+`common.json` (`actions.close`, `actions.send`, `actions.download`, `actions.more`,
+`actions.generate`). Les icônes passent en `aria-hidden` : le nom est porté par le bouton,
+il ne doit pas être lu deux fois.
+
+**Résultat : 51 → 317 attributs ARIA.** Mais le chiffre compte moins que la vérification :
+**7 tests** (`src/components/__tests__/ui-a11y.test.tsx`) interrogent les composants comme le
+ferait un lecteur d'écran — `getByLabelText`, `getByRole('dialog')`, `toHaveAccessibleName` —
+et non la simple présence d'un attribut.
+
+**Garde-fou** : `npm run a11y:icon-buttons` échoue si un bouton icône sans libellé réapparaît.
+Branché dans le job `lint-typecheck` de la CI.
+
+**Reste à faire sur l'accessibilité** : navigation au clavier dans la `Modal` (piège de focus,
+fermeture par Échap, restitution du focus à la fermeture), contraste des couleurs, et
+`SortableTable` (`aria-sort` sur les en-têtes triables). Ces points demandent des essais
+manuels au clavier, pas seulement une analyse statique.
+
+---
+
 ### 👤 En attente de votre arbitrage — la donnée n'existe pas dans le modèle
 
 Ces six requêtes nomment des colonnes ou des relations **absentes de la base**. Les
@@ -240,3 +282,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 17/09 08h40 | **E3 (LOT7-03) OK** — helper `fetchAllRows`, 46 requêtes d'export et d'agrégat paginées dans 9 fichiers, tri total vérifié sur les 38 tables de la base réelle. 12 tests dédiés ; 1 302 tests au vert ; tsc, oxlint et build verts. Section C corrigée (les correctifs sont en 158, pas 159/160). **E5, E6, E8 passés à OK** après vérification dans le code : ils étaient déjà faits mais restés ⬜. |
 | 17/09 13h50 | **Bloc G ouvert.** Un PostgREST réel monté devant la base d'audit révèle **19 requêtes cassées** en production (colonnes fantômes, embeds ambigus, relations absentes) — invisibles à la compilation comme aux tests. **13 corrigées**, 6 en attente d'arbitrage produit. Outil `npm run db:embeds` livré. **LOT7-04 avancé** : 2 717 → 2 359 `any`. |
 | 18/09 10h50 | **`ci.yml` était invalide en YAML depuis `057c708`** (4 noms d'étapes avec un `:` non protégé) : GitHub rejetait le workflow, **aucun job de CI n'a jamais tourné** — cela explique A3 et D1 à D5. Corrigé. **Contrôle PostgREST branché** dans `db-integration` avec liste de tolérance nommée (`.embeds-allowlist.json`, G16-G21). |
+| 18/09 11h00 | **E7 (LOT7-07) OK** — les `<label>` de `ui.tsx` n'étaient liés à aucun champ : tous les formulaires étaient muets pour un lecteur d'écran. Corrigé via `useId()`, plus `role="dialog"` sur la Modal et 127 boutons icône libellés. 51 → 317 attributs ARIA, 7 tests qui interrogent les composants comme un lecteur d'écran, garde-fou `a11y:icon-buttons` en CI. |

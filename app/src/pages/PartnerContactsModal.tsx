@@ -67,7 +67,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
             <Users className="w-5 h-5" />
             {t('partnerContacts.title')} — {partnerName}
           </h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
 
         <div className="flex border-b border-[var(--color-border)] px-6">

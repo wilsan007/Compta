@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, ArrowRight, ArrowLeft, Check, Rocket, Building2, Users, Banknote, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +77,7 @@ const steps: StepData[] = [
 ]
 
 export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t: tCommon } = useTranslation('common')
   const [step, setStep] = useState(0)
   if (!open) return null
 
@@ -87,7 +89,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
       <div className="card shadow-2xl animate-scale-in overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         {/* Header */}
         <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-[var(--color-primary)] to-purple-600 text-white">
-          <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white">
+          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="absolute top-4 right-4 text-white/80 hover:text-white">
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">

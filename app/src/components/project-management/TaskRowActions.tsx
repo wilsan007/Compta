@@ -14,8 +14,8 @@ export function TaskRowActions({ onEdit, onDuplicate, onDelete }: TaskRowActions
   return (
     <DropdownMenu
       trigger={
-        <button className="p-1 rounded hover:bg-[var(--color-neutral-100)] opacity-0 group-hover:opacity-100 transition-opacity">
-          <MoreVertical className="w-4 h-4 text-[var(--color-text-secondary)]" />
+        <button className="p-1 rounded hover:bg-[var(--color-neutral-100)] opacity-0 group-hover:opacity-100 transition-opacity" aria-label={t('actions.more')} title={t('actions.more')}>
+          <MoreVertical className="w-4 h-4 text-[var(--color-text-secondary)]" aria-hidden="true" />
         </button>
       }
       items={[

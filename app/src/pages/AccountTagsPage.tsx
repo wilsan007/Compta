@@ -226,7 +226,7 @@ export function AccountTagsPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('accountTags.edit') : t('accountTags.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input label={t('accountTags.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

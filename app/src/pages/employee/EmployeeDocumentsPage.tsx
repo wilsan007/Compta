@@ -83,7 +83,7 @@ export function EmployeeDocumentsPage() {
                 <TableCell>{doc.acknowledged ? <CheckCircle className="w-4 h-4 text-green-600" /> : '-'}</TableCell>
                 <TableCell>{doc.e_signed ? <PenTool className="w-4 h-4 text-blue-600" /> : '-'}</TableCell>
                 <TableCell>
-                  <Button size="sm" variant="ghost"><Download className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" ariaLabel={tCommon('actions.download')}><Download className="w-4 h-4" aria-hidden="true" /></Button>
                   {doc.requires_acknowledgment && !doc.acknowledged && (
                     <Button size="sm" variant="secondary" onClick={() => handleAcknowledge(doc.id)}>{t('documents.acknowledge')}</Button>
                   )}

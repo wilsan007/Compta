@@ -365,8 +365,8 @@ export function SaisieParPiecePage() {
                 options={[{ value: '', label: t('saisie.none') }, ...templates.filter((t) => !t.journal_code || t.journal_code === selectedJournal).map((t) => ({ value: t.id, label: t.name }))]}
               />
             </div>
-            <Button variant="secondary" onClick={applyTemplate} disabled={!selectedTemplate}>
-              <Wand2 className="w-4 h-4" />
+            <Button variant="secondary" onClick={applyTemplate} disabled={!selectedTemplate} ariaLabel={tCommon('actions.generate')}>
+              <Wand2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, X, Send, TrendingUp, AlertCircle, Receipt, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +25,7 @@ const initialMessages: Message[] = [
 ]
 
 export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t: tCommon } = useTranslation('common')
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -85,7 +87,7 @@ export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => v
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]">
+          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]">
             <X className="w-5 h-5" />
           </button>
         </div>
