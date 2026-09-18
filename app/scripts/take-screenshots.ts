@@ -1,4 +1,6 @@
-import { chromium } from 'playwright';
+// LOT7-01 : `playwright` n'est pas déclaré dans package.json — l'import ne marchait
+// que par dépendance transitive de `@playwright/test`, qui ré-exporte `chromium`.
+import { chromium } from '@playwright/test';
 
 const BASE = 'http://localhost:5173';
 const OUT = '/Users/awalehosman/Desktop/Projet Saas/compta/app/public/screenshots';

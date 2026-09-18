@@ -11,10 +11,19 @@
     "run-sql-migrations.mjs",
     "public/sw.js"
   ],
-  "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts", "scripts/**/*.{mjs,cjs,ts}"],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "e2e/**/*.ts",
+    "scripts/**/*.{mjs,cjs,ts}"
+  ],
   "ignore": [
     "src/types/database-generated.ts",
     "src/vite-env.d.ts"
   ],
-  "ignoreBinaries": ["ts-node"]
+  "ignoreBinaries": [
+    "ts-node"
+  ],
+  "ignoreDependencies": [
+    "tailwindcss"
+  ]
 }

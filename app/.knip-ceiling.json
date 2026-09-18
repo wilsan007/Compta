@@ -1,9 +1,9 @@
 {
-  "files": 32,
-  "dependencies": 1,
-  "devDependencies": 1,
+  "files": 31,
+  "dependencies": 0,
+  "devDependencies": 0,
   "exports": 24,
   "types": 13,
-  "total": 71,
-  "frozenAt": "2026-09-14"
+  "total": 68,
+  "frozenAt": "2026-09-18"
 }

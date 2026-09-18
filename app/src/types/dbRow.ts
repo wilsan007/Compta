@@ -11,11 +11,13 @@
 // se propager silencieusement dans l'interface.
 import type { Database } from './database-generated'
 
-export type Tables = Database['public']['Tables']
-export type TableName = keyof Tables
+// Internes : n'exporter que ce qui sert, pour ne pas gonfler la dette d'exports morts
+// que surveille `check-knip-ceiling.mjs`.
+type Tables = Database['public']['Tables']
+type TableName = keyof Tables
 
 /** Ligne complète d'une table, telle que PostgREST la renvoie. */
-export type Row<T extends TableName> = Tables[T]['Row']
+type Row<T extends TableName> = Tables[T]['Row']
 
 /**
  * Colonnes d'une ressource jointe (`select('*, employees(first_name, last_name)')`).
@@ -24,5 +26,5 @@ export type Row<T extends TableName> = Tables[T]['Row']
  */
 export type Joined<T extends TableName, K extends keyof Row<T>> = Pick<Row<T>, K> | null
 
-/** Idem pour une relation « plusieurs » : PostgREST renvoie un tableau, jamais null. */
-export type JoinedMany<T extends TableName, K extends keyof Row<T>> = Pick<Row<T>, K>[]
+// Une relation « plusieurs » (PostgREST renvoie alors un tableau, jamais null) se
+// décrirait par `Pick<Row<T>, K>[]` — à ajouter le jour où un tel embed sera typé.

@@ -79,8 +79,13 @@ export interface Database {
     for (const [tableName, columns] of Object.entries(tables)) {
       tsContent += `    ${tableName}: {\n      Row: {\n`
       for (const col of columns) {
-        const optional = col.nullable ? '?' : ''
-        tsContent += `        ${tsKey(col.name)}${optional}: ${col.type}\n`
+        // LOT7-04 : une colonne nullable se lit `T | null`, PAS `col?: T`. PostgREST
+        // renvoie toujours la propriété — avec la valeur null quand la colonne est
+        // vide, jamais absente. La marquer optionnelle laissait croire qu'il suffisait
+        // de tester sa présence, et masquait les `null` que le code doit traiter.
+        // (`Insert` et `Update` gardent `?` : là, une colonne PEUT être omise.)
+        const type = col.nullable ? `${col.type} | null` : col.type
+        tsContent += `        ${tsKey(col.name)}: ${type}\n`
       }
       tsContent += `      }\n      Insert: {\n`
       for (const col of columns) {

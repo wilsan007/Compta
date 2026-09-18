@@ -77,7 +77,7 @@ Le conteneur Docker `onusuite-audit-pg` (base `test_compta`) tourne depuis 19h07
 
 | # | Réf | Action | Mesure au 15/09 | État | Date OK | Preuve |
 |---|---|---|---|:---:|---|---|
-| E1 | LOT7-01 | Supprimer les ~250 exports inutilisés | plafond knip seulement | ⬜ | | |
+| E1 | LOT7-01 | Supprimer les ~250 exports inutilisés | plafond knip seulement | ⏳ | 18/09 | Plafond **71 → 68**. Voir ci-dessous : l'objectif « supprimer » est le mauvais objectif pour l'essentiel de ces objets. |
 | E2 | LOT7-02 | Décider du sort des 27 tables de la migration 127 | — | ⬜ | | |
 | E3 | LOT7-03 | Borner les requêtes | 293 `select('*')`, 31 `.limit/.range` | **OK** | 17/09 08h40 | Helper `fetchAllRows` (`src/lib/queries/core.ts`), 46 requêtes d'export/agrégat paginées dans 9 fichiers. 12 tests dédiés (`src/lib/__tests__/fetch-all-rows.test.ts`). Voir le détail ci-dessous. |
 | E4 | LOT7-04 | Réduire les `any` | 2 717 mesurés le 17/09 | ⏳ | | **2 717 → 2 359** : générateur de types sans `any` (312 → 0, type `Json` + tableaux typés), 46 retours de `queries/*` typés via `Joined<>`. Reste le gros du travail dans les pages. Brancher `createClient<Database>` donnerait **1 468 erreurs**, dont ~917 nullabilités réelles (`string \| null`) : chantier à part, à décider. |
@@ -218,6 +218,50 @@ manuels au clavier, pas seulement une analyse statique.
 
 ---
 
+### E1 — LOT7-01 : pourquoi « supprimer » est le mauvais objectif (18/09)
+
+Le cahier demandait de supprimer les exports inutilisés. En les regardant un par un, la
+plupart ne sont pas du déchet : ce sont des **fonctionnalités écrites et jamais branchées**
+— le motif déjà relevé par l'audit du 12/09. Les supprimer détruirait du travail ; la vraie
+question est « brancher ou supprimer ? », et c'est une décision produit.
+
+**Fait, sans risque :**
+
+| Action | Détail |
+|---|---|
+| `src/types/database.ts` supprimé | 5 490 lignes. Doublon **périmé** de `database-generated.ts` (294 tables contre 369), produit par un `scripts/gen-types.mjs` qui n'existe plus, et importé nulle part. |
+| 4 dépendances retirées | `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `@vitest/mocker` — aucun usage dans `src/`. |
+| `tailwindcss` conservé | **Faux positif de knip** : il est chargé par `@import "tailwindcss"` dans `src/index.css`, que knip n'analyse pas. Le retirer aurait cassé tous les styles. Ajouté à `ignoreDependencies`. |
+| `playwright` non déclaré | `scripts/take-screenshots.ts` l'importait par dépendance transitive. L'import passe par `@playwright/test`, qui ré-exporte `chromium`. |
+| Nullabilité des types corrigée | Le générateur écrivait `col?: T` pour une colonne nullable. PostgREST renvoie **toujours** la propriété, avec `null` — jamais absente. C'est désormais `col: T \| null` dans `Row` (`Insert`/`Update` gardent `?`, où une colonne peut réellement être omise). |
+
+**Branché plutôt que supprimé :** `silentFailureGuard.ts` avait été écrit pour ce projet,
+avec son mode d'emploi dans son en-tête, et n'avait jamais été appelé — les rejets de promesse
+et les erreurs globales passaient donc inaperçus. `installGlobalRejectionHandler()` est
+maintenant appelé dans `main.tsx`. Il reste inerte tant que `VITE_SILENT_FAILURE_GUARD=true`
+n'est pas posé, donc sans effet sur la production aujourd'hui.
+
+**Plafond knip : 71 → 68** (31 fichiers, 0 dépendance, 24 exports, 13 types).
+
+### 👤 Décisions attendues — brancher ou supprimer ?
+
+Les 31 fichiers et 24 exports restants sont des fonctionnalités complètes sans écran. Les plus
+notables :
+
+| Objet | Ce que c'est | Enjeu |
+|---|---|---|
+| `queries/admin.ts` : `hasPermission`, `getRolePermissions`, `setRolePermission` | contrôle des droits par rôle | **Aucun écran ne l'appelle** : l'interface ne masque ni n'interdit rien selon le rôle. La sécurité repose entièrement sur la RLS — ce qui est la bonne défense de fond, mais l'utilisateur voit des actions qu'il ne peut pas effectuer. |
+| `lib/bankParsers.ts` : `parseCfonb120`, `parseBankStatement` | import bancaire CFONB/CAMT | Déjà signalé au volet 2 : les formats ne sont que des libellés d'un `<Select>`. Le code existe. |
+| `queries/projectManagementSprint1.ts` | 16 fonctions : suivi du temps, observateurs, modèles de tâches | Un sprint entier livré sans écran. |
+| `lib/currencyRates.ts` : `convertAmount`, `fetchRatesFromECB` | conversion multi-devises | Écrit, non branché. |
+| `components/employee/Mobile*.tsx` | 3 écrans mobiles salarié | Non routés. |
+| `components/documents/*`, `queries/documents.ts` | gestion documentaire | Non routée. |
+| `lib/hooks/accessibility.tsx` | aides à l'accessibilité | Non utilisé — alors que le LOT7-07 vient d'en réimplémenter une partie dans `ui.tsx`. |
+
+Rien de tout cela n'a été supprimé. Dites-moi lesquels brancher et lesquels abandonner.
+
+---
+
 ### 👤 En attente de votre arbitrage — la donnée n'existe pas dans le modèle
 
 Ces six requêtes nomment des colonnes ou des relations **absentes de la base**. Les
@@ -283,3 +327,4 @@ Au sens du cahier, ces points ne sont définitivement clos qu'après le bloc B (
 | 17/09 13h50 | **Bloc G ouvert.** Un PostgREST réel monté devant la base d'audit révèle **19 requêtes cassées** en production (colonnes fantômes, embeds ambigus, relations absentes) — invisibles à la compilation comme aux tests. **13 corrigées**, 6 en attente d'arbitrage produit. Outil `npm run db:embeds` livré. **LOT7-04 avancé** : 2 717 → 2 359 `any`. |
 | 18/09 10h50 | **`ci.yml` était invalide en YAML depuis `057c708`** (4 noms d'étapes avec un `:` non protégé) : GitHub rejetait le workflow, **aucun job de CI n'a jamais tourné** — cela explique A3 et D1 à D5. Corrigé. **Contrôle PostgREST branché** dans `db-integration` avec liste de tolérance nommée (`.embeds-allowlist.json`, G16-G21). |
 | 18/09 11h00 | **E7 (LOT7-07) OK** — les `<label>` de `ui.tsx` n'étaient liés à aucun champ : tous les formulaires étaient muets pour un lecteur d'écran. Corrigé via `useId()`, plus `role="dialog"` sur la Modal et 127 boutons icône libellés. 51 → 317 attributs ARIA, 7 tests qui interrogent les composants comme un lecteur d'écran, garde-fou `a11y:icon-buttons` en CI. |
+| 18/09 11h10 | **E1 (LOT7-01) avancé** — `src/types/database.ts` (doublon périmé de 5 490 l.) et 4 dépendances supprimés ; `tailwindcss` identifié comme faux positif de knip (le retirer aurait cassé tous les styles) ; nullabilité du générateur corrigée (`T \| null` au lieu de `?`) ; `silentFailureGuard` enfin branché. Plafond knip **71 → 68**. Les 31 fichiers restants sont des fonctionnalités non branchées : **décision produit attendue**, rien n'a été supprimé. |
