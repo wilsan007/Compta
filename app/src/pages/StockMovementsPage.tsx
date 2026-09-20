@@ -7,7 +7,7 @@ import type { Warehouse } from '@/types'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
 
-const typeColors: Record<string, string> = { in: 'text-[var(--color-success)]', out: 'text-[var(--color-danger)]', transfer: 'text-[var(--color-primary)]', adjustment: 'text-[var(--color-warning)]', initial: 'text-[var(--color-text-secondary)]' }
+const typeColors: Record<string, string> = { in: 'text-[var(--color-success)]', out: 'text-[var(--color-danger)]', transfer: 'text-[var(--color-primary)]', adjustment: 'text-[var(--color-warning-text)]', initial: 'text-[var(--color-text-secondary)]' }
 
 export function StockMovementsPage() {
   const { t } = useTranslation('stock')

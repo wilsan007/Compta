@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, ty
 import { supabase, setTenantId, setUserName } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
 import { clearTenantCache } from '@/lib/queries/core'
-import type { TenantUser } from '@/lib/queries/misc'
+import { hasPermission, type TenantUser } from '@/lib/queries/misc'
 
 interface AuthUser {
   id: string
@@ -329,30 +329,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(user.role)
   }, [user])
 
+  // LOT7-01 : cette matrice existait en TROIS exemplaires — ici, dans
+  // `queries/misc.ts` (`hasPermission`) et, sous une autre forme, dans la RPC
+  // `has_permission`. Les deux copies TypeScript avaient déjà divergé : la liste
+  // des tables commerciales du rôle `manager` comptait 14 entrées ici contre 34
+  // dans misc.ts, si bien qu'un même utilisateur obtenait deux réponses
+  // différentes selon l'appelant. `canPerform` délègue désormais à l'unique
+  // implémentation.
   const canPerform = useCallback((table: string, action: 'select' | 'insert' | 'update' | 'delete') => {
-    if (!user) return false
-    if (user.role === 'admin') return true
-    if (user.role === 'accountant') {
-      if (action === 'select' || action === 'insert' || action === 'update') return true
-      if (action === 'delete' && ['journal_entries', 'journal_lines', 'invoice_lines', 'quote_lines', 'credit_note_lines'].includes(table)) return true
-      return false
-    }
-    if (user.role === 'manager') {
-      if (action === 'select') return true
-      if (action === 'insert' || action === 'update') {
-        const commercialTables = ['invoices', 'invoice_lines', 'quotes', 'quote_lines', 'credit_notes', 'credit_note_lines', 'customers', 'products', 'delivery_notes', 'delivery_note_lines', 'sales_orders', 'sales_order_lines', 'purchase_orders', 'purchase_order_lines']
-        return commercialTables.includes(table)
-      }
-      return false
-    }
-    if (user.role === 'viewer') return action === 'select'
-    if (user.role === 'auditor') return action === 'select'
-    if (user.role === 'custom') {
-      const perms = user.permissions[table]
-      if (!perms) return false
-      return perms.includes(action)
-    }
-    return false
+    return hasPermission(user, table, action)
   }, [user])
 
   return (

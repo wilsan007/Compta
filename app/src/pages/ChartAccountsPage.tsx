@@ -397,7 +397,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
         </button>
         <button
           onClick={() => setShowDeprecated(!showDeprecated)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${showDeprecated ? 'border-[var(--color-warning)] text-[var(--color-warning)] bg-[var(--color-warning)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${showDeprecated ? 'border-[var(--color-warning)] text-[var(--color-warning-text)] bg-[var(--color-warning)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
         >
           <AlertCircle className="w-4 h-4" />
           {showDeprecated ? t('chartAccounts.hideDeprecated') : t('chartAccounts.showDeprecated')}

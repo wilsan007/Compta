@@ -12,10 +12,12 @@ import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import type { Invoice, Customer, CompanySettings } from '@/types'
+import { usePermission } from '@/hooks/usePermission'
 
 export function InvoicesPage() {
   const { t: tf } = useTranslation('features')
   const { t } = useTranslation('sales')
+  const { canCreate } = usePermission('invoices')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -187,7 +189,7 @@ export function InvoicesPage() {
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
             <Button variant="secondary" onClick={() => setShowAdvanceForm(true)}><DollarSign className="w-4 h-4" /> {t('invoices.advanceInvoice')}</Button>
-            <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.new')}</Button>
+            {canCreate && <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.new')}</Button>}
           </div>
         }
       />
@@ -266,7 +268,7 @@ export function InvoicesPage() {
                   </TableCell>
                   <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                   <TableCell className="font-medium text-right">{formatCurrency(Number(inv.total) || 0)}</TableCell>
-                  <TableCell className={Number(inv.amount_due) > 0 ? 'text-[var(--color-warning)] font-medium text-right' : 'text-right'}>
+                  <TableCell className={Number(inv.amount_due) > 0 ? 'text-[var(--color-warning-text)] font-medium text-right' : 'text-right'}>
                     {formatCurrency(Number(inv.amount_due) || 0)}
                   </TableCell>
                   <TableCell>{inv.journal_entry_id || inv.journal_posted ? <Badge variant="success">Comptabilisé</Badge> : <Badge variant="neutral">Non comptabilisé</Badge>}</TableCell>
@@ -314,7 +316,7 @@ export function InvoicesPage() {
             icon={<FileText className="w-8 h-8" />}
             title={t('invoices.noInvoices')}
             description={t('invoices.noInvoicesDescription')}
-            action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.createFirst')}</Button>}
+            action={canCreate ? <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.createFirst')}</Button> : undefined}
           />
         )}
       </Card>
@@ -438,7 +440,7 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: (
           )}
           <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.paidAmount')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
         </div>
       </div>
     </div>

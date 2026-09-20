@@ -62,7 +62,7 @@ export function StockQuantitiesPage() {
                 <TableCell className="font-mono text-xs">{q.products?.sku || '—'}</TableCell>
                 <TableCell className="text-xs">{q.warehouses?.name || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(q.quantity)}</TableCell>
-                <TableCell className="font-mono text-xs text-[var(--color-warning)]">{Number(q.reserved_quantity)}</TableCell>
+                <TableCell className="font-mono text-xs text-[var(--color-warning-text)]">{Number(q.reserved_quantity)}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(q.unit_cost))}</TableCell>
                 <TableCell className="font-mono text-xs font-semibold text-right">{formatCurrency(Number(q.quantity) * Number(q.unit_cost))}</TableCell>
                 <TableCell className={`font-mono text-xs ${Number(q.quantity) <= Number(q.reorder_point) && q.reorder_point > 0 ? 'text-[var(--color-danger)] font-bold' : ''}`}>

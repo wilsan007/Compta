@@ -196,7 +196,7 @@ const { toast } = useToast()
             <Input label={t('automation.totalAmount')} type="number" value={total} readOnly />
           </div>
           {result.total > 0 && Math.abs(result.total - total) > 0.01 && (
-            <p className="text-xs text-[var(--color-warning)]">{t('automation.totalMismatch', { total: result.total })}</p>
+            <p className="text-xs text-[var(--color-warning-text)]">{t('automation.totalMismatch', { total: result.total })}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

@@ -132,7 +132,7 @@ export function Customer360Page() {
         </Card>
         <Card className="p-4">
           <p className="text-xs text-[var(--color-text-secondary)]">{t('customer360.creditUsed')}</p>
-          <p className="text-lg font-semibold mt-1 text-[var(--color-warning)]">{formatCurrency(credit.used)}</p>
+          <p className="text-lg font-semibold mt-1 text-[var(--color-warning-text)]">{formatCurrency(credit.used)}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-[var(--color-text-secondary)]">{t('customer360.creditAvailable')}</p>

@@ -8,6 +8,7 @@ import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { usePermission } from '@/hooks/usePermission'
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -17,6 +18,7 @@ const statusBadge: Record<string, 'warning' | 'success'> = {
 export function JournalEntriesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('accounting')
+  const { canCreate, canDelete } = usePermission('journal_entries')
   const { t: tCommon } = useTranslation('common')
 const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
@@ -83,7 +85,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       <PageHeader
         title={t('entries.title')}
         subtitle={t('entries.subtitleCount', { count: entries.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button> : undefined}
       />
 
       {loading ? (
@@ -93,7 +95,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
           icon={<BookOpen className="w-8 h-8" />}
           title={t('entries.noEntries')}
           description={t('entries.noEntriesDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
+          action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button> : undefined}
         />
       ) : (
         <Card>
@@ -123,8 +125,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
-                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                      {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                     </div>
                   </TableCell>
                 </TableRow>

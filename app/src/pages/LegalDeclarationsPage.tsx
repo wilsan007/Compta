@@ -50,7 +50,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('declarations.new')}</Button>} />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('declarations.statuses.pending')}</p><p className="text-2xl font-bold text-[var(--color-warning)]">{pendingCount}</p></div></Card>
+        <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('declarations.statuses.pending')}</p><p className="text-2xl font-bold text-[var(--color-warning-text)]">{pendingCount}</p></div></Card>
         <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('declarations.statuses.late')}</p><p className="text-2xl font-bold text-[var(--color-danger)]">{lateCount}</p></div></Card>
         <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('declarations.statuses.submitted')}</p><p className="text-2xl font-bold text-[var(--color-success)]">{declarations.filter((d) => d.status === 'submitted').length}</p></div></Card>
       </div>

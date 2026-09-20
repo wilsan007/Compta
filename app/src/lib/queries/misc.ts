@@ -1340,8 +1340,18 @@ export async function acceptInvitation(
   return { success: true, tenantName, otherPendingInvites }
 }
 
+/**
+ * Seule implémentation de la matrice de droits par rôle. `canPerform` du contexte
+ * d'authentification y délègue ; ne pas en recréer une copie.
+ *
+ * Ce contrôle est un confort d'interface, PAS une protection : il ne s'exécute que
+ * dans le navigateur. Sur 2 296 politiques RLS, 7 seulement regardent le rôle
+ * (project_members, notification_email_queue) — l'appel PostgREST correspondant
+ * aboutit donc quel que soit le rôle. Toute règle qui doit vraiment être opposable
+ * appartient à une politique ou à un trigger.
+ */
 export function hasPermission(
-  user: TenantUser | null,
+  user: Pick<TenantUser, 'role' | 'permissions'> | null,
   table: string,
   action: 'select' | 'insert' | 'update' | 'delete'
 ): boolean {

@@ -8,10 +8,12 @@ import type { Product, StockMovement } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 export function ProductsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('stock')
+  const { canCreate, canDelete } = usePermission('products')
   const { t: tCommon } = useTranslation('common')
 const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<StockMovement[]>([])
@@ -58,7 +60,7 @@ const [products, setProducts] = useState<Product[]>([])
         action={
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowMovementForm(true)}><ArrowUpDown className="w-4 h-4" /> {t('products.stockMovement')}</Button>
-            <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('products.new')}</Button>
+            {canCreate && <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('products.new')}</Button>}
           </div>
         }
       />
@@ -86,7 +88,7 @@ const [products, setProducts] = useState<Product[]>([])
           icon={<Package className="w-8 h-8" />}
           title={t('products.noProducts')}
           description={t('products.noProductsDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('products.new')}</Button>}
+          action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('products.new')}</Button> : undefined}
         />
       ) : (
         <Card>
@@ -106,8 +108,8 @@ const [products, setProducts] = useState<Product[]>([])
                   ) : '—'}
                 </TableCell>
                 <TableCell>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
-                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                  {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                 </TableCell>
               </TableRow>
             ))}

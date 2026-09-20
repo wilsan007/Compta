@@ -30,7 +30,7 @@ export function ManufacturingOrderDetailPage() {
   const [labelCount, setLabelCount] = useState(1)
   const [labelQty, setLabelQty] = useState(0)
   const [allowDeferred, setAllowDeferred] = useState(false)
-  const [productionCost, setProductionCost] = useState<number | null>(null)
+  const [productionCost, setProductionCost] = useState<any>(null)
   const [costLoading, setCostLoading] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -102,9 +102,9 @@ export function ManufacturingOrderDetailPage() {
     setCostLoading(true)
     try {
       const res = await calculateProductionCost(id)
-      const cost = (res as any)?.total_cost ?? res
-      setProductionCost(typeof cost === 'number' ? cost : Number(cost))
-      toast('success', t('manufacturing.detail.info.cost'), `${cost} €`)
+      setProductionCost(res)
+      const total = (res as any)?.total_cost ?? res
+      toast('success', t('manufacturing.detail.info.cost'), `${total} €`)
     } catch (err: any) { toast('error', t('common.error'), err.message) }
     finally { setCostLoading(false) }
   }
@@ -178,10 +178,36 @@ export function ManufacturingOrderDetailPage() {
             <div className="flex items-center justify-between p-4">
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{t('manufacturing.detail.info.cost')}</p>
-                <p className="text-sm font-medium">{productionCost != null ? `${productionCost} €` : '—'}</p>
+                <p className="text-sm font-medium">{productionCost != null ? `${productionCost.total_cost ?? productionCost} €` : '—'}</p>
               </div>
-              <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : 'Calculer le coût'}</Button>
+              <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : t('manufacturing.detail.info.calculateCost', { defaultValue: 'Calculer le coût' })}</Button>
             </div>
+            {productionCost && typeof productionCost === 'object' && productionCost.total_cost != null && (
+              <div className="border-t border-[var(--color-border)] px-4 py-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.materialCost', { defaultValue: 'Coût matières' })}</p>
+                    <p className="font-mono font-medium">{Number(productionCost.material_cost || 0).toFixed(2)} €</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.laborCost', { defaultValue: 'Coût main-d\'œuvre' })}</p>
+                    <p className="font-mono font-medium">{Number(productionCost.labor_cost || 0).toFixed(2)} €</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.overheadCost', { defaultValue: 'Frais généraux' })}</p>
+                    <p className="font-mono font-medium">{Number(productionCost.overhead_cost || 0).toFixed(2)} €</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.unitCost', { defaultValue: 'Coût unitaire' })}</p>
+                    <p className="font-mono font-medium">{Number(productionCost.unit_cost || 0).toFixed(2)} €</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+                  <span className="text-sm text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.totalCost', { defaultValue: 'Coût total' })} ({Number(productionCost.quantity || mo.quantity || 0)} unités)</span>
+                  <span className="font-bold font-mono text-base">{Number(productionCost.total_cost || 0).toFixed(2)} €</span>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       )}
@@ -212,7 +238,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         {!lbl.is_declared && <button onClick={() => handleDeclareLabel(lbl.id)} className="text-xs px-2 py-1 rounded bg-[var(--color-success)] text-white hover:opacity-80">{t('manufacturing.detail.labels.declare')}</button>}
-                        <button onClick={() => handleDeleteLabel(lbl.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDeleteLabel(lbl.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -242,7 +268,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell className="text-xs">{lot.production_date || '—'}</TableCell>
                     <TableCell className="text-xs">{lot.custom_expiry_date || lot.expiry_date || '—'}</TableCell>
                     <TableCell>{lot.expiry_type ? <Badge variant="neutral">{lot.expiry_type}</Badge> : '—'}</TableCell>
-                    <TableCell><button onClick={() => handleDeleteLot(lot.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                    <TableCell><button onClick={() => handleDeleteLot(lot.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                   </TableRow>
                 ))}
               </Table>
@@ -281,7 +307,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell className="text-xs">{cons.consumption_date}</TableCell>
                     <TableCell>{cons.is_deferred ? <Badge variant="warning">{t('manufacturing.detail.consumptions.deferred')}</Badge> : '—'}</TableCell>
                     <TableCell className="text-xs">{cons.notes || '—'}</TableCell>
-                    <TableCell><button onClick={() => handleDeleteCons(cons.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                    <TableCell><button onClick={() => handleDeleteCons(cons.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                   </TableRow>
                 ))}
               </Table>
@@ -403,7 +429,7 @@ function ConsumptionFormModal({ moId, products, isDeferred, onClose, onSaved }: 
           <Input label={t('manufacturing.detail.consumptions.quantity')} type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
           <Input label={t('manufacturing.detail.consumptions.unit')} value={unit} onChange={(e) => setUnit(e.target.value)} />
           <Input label={t('manufacturing.detail.consumptions.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          {isDeferred && <p className="text-xs text-[var(--color-warning)]">{t('manufacturing.detail.consumptions.deferredHint')}</p>}
+          {isDeferred && <p className="text-xs text-[var(--color-warning-text)]">{t('manufacturing.detail.consumptions.deferredHint')}</p>}
           <div className="flex gap-2 justify-end pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button type="submit">{t('common.add')}</Button>

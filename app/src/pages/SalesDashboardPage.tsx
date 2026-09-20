@@ -69,7 +69,7 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
           <div className="grid grid-cols-4 gap-4 mb-6">
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalInvoices')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalInvoiced)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.paidInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('creditNotes.title')}</p><p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalCreditNotes)}</p></div></Card>
           </div>
 

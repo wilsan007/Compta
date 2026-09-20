@@ -339,7 +339,7 @@ export function SageImportPage() {
       {result && isMae && (result as MaeParseResult).fileType === 'ini' && (
         <Card className="mb-4">
           <div className="p-4 space-y-3">
-            <div className="flex items-center gap-2 text-[var(--color-warning)]">
+            <div className="flex items-center gap-2 text-[var(--color-warning-text)]">
               <AlertTriangle className="w-5 h-5" />
               <h3 className="text-sm font-semibold">{t('sageImport.maeDetected')}</h3>
             </div>
@@ -416,7 +416,7 @@ export function SageImportPage() {
           {result.errors.length > 0 && (
             <Card>
               <div className="p-4">
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-warning)]">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-warning-text)]">
                   <AlertTriangle className="w-4 h-4" /> {t('sageImport.parseErrors', { count: result.errors.length })}
                 </h3>
                 <div className="max-h-40 overflow-y-auto text-sm">

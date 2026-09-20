@@ -107,7 +107,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalBilled')}</span><span className="font-mono font-bold">{formatCurrency(totalSales)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.collected')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.pending')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.pending')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.invoices')}</span><span className="font-bold">{invoices.length}</span></div>
           </div>
         )
@@ -116,7 +116,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalPurchases')}</span><span className="font-mono font-bold">{formatCurrency(totalPurchases)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.paid')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_paid), 0))}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.toPay')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.toPay')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.purchaseInvoices')}</span><span className="font-bold">{purchaseInvoices.length}</span></div>
           </div>
         )
@@ -162,7 +162,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalEmployees')}</span><span className="font-bold">{employees.length}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.active')}</span><span className="font-bold text-[var(--color-success)]">{activeEmployees.length}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.onLeave')}</span><span className="font-bold text-[var(--color-warning)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.onLeave')}</span><span className="font-bold text-[var(--color-warning-text)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.payroll')}</span><span className="font-mono font-bold">{formatCurrency(activeEmployees.reduce((s, e) => s + Number(e.salary), 0))}</span></div>
           </div>
         )

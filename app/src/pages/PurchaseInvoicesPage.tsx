@@ -12,10 +12,12 @@ import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAc
 import { QuickSupplierAccess } from '@/components/cross-module/QuickSupplierAccess'
 import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
 import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 export function PurchaseInvoicesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('purchases')
+  const { canCreate } = usePermission('purchase_invoices')
   const { t: tCommon } = useTranslation('common')
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -119,7 +121,7 @@ export function PurchaseInvoicesPage() {
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
-            <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.new')}</Button>
+            {canCreate && <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.new')}</Button>}
           </div>
         }
       />
@@ -191,7 +193,7 @@ export function PurchaseInvoicesPage() {
             icon={<Package className="w-8 h-8" />}
             title={t('purchaseInvoices.noInvoices')}
             description={t('purchaseInvoices.noInvoicesDescription')}
-            action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.recordPurchase')}</Button>}
+            action={canCreate ? <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('purchaseInvoices.recordPurchase')}</Button> : undefined}
           />
         )}
       </Card>

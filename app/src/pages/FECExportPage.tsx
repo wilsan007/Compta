@@ -197,7 +197,7 @@ export function FECExportPage() {
           {validation && validation.warnings.length > 0 && (
             <Card>
               <div className="p-4">
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-warning)]">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--color-warning-text)]">
                   <AlertTriangle className="w-4 h-4" /> {t('fec.warnings')} ({validation.warnings.length})
                 </h3>
                 <div className="max-h-40 overflow-y-auto text-sm">

@@ -119,7 +119,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         <Card>
           <div className="p-4">
             <p className="text-sm text-[var(--color-text-secondary)]">{t('reconciliation.unreconciledAmount')}</p>
-            <p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(Math.abs(totalUnreconciled))}</p>
+            <p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(Math.abs(totalUnreconciled))}</p>
           </div>
         </Card>
         <Card>

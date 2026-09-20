@@ -49,7 +49,7 @@ export function ReorderPage() {
                   <TableCell className="text-xs">{q.warehouses?.name || '—'}</TableCell>
                   <TableCell className="font-mono text-xs text-[var(--color-danger)]">{Number(q.quantity)}</TableCell>
                   <TableCell className="font-mono text-xs">{Number(q.reorder_point)}</TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-[var(--color-warning)]">{toOrder}</TableCell>
+                  <TableCell className="font-mono text-xs font-bold text-[var(--color-warning-text)]">{toOrder}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(toOrder * Number(q.unit_cost))}</TableCell>
                 </TableRow>
               )

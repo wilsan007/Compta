@@ -8,10 +8,12 @@ import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 export function EmployeesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
+  const { canCreate, canDelete } = usePermission('employees')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { getStatusLabel } = useStatusLabels()
@@ -46,7 +48,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
       <PageHeader
         title={t('employees.title')}
         subtitle={t('employees.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button> : undefined}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -66,7 +68,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
       {loading ? (
         <SkeletonTable rows={5} cols={6} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Users className="w-8 h-8" />} title={t('employees.noEmployees')} description={t('employees.noEmployeesDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button>} />
+        <EmptyState icon={<Users className="w-8 h-8" />} title={t('employees.noEmployees')} description={t('employees.noEmployeesDescription')} action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button> : undefined} />
       ) : (
         <Card>
           <Table headers={[t('employees.fullName'), t('employees.employeeNumber'), t('employees.position'), t('employees.department'), t('employees.contractType'), t('employees.salary'), t('employees.hireDate'), t('employees.status'), tCommon('table.actions')]}>
@@ -85,7 +87,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
                   </select>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                  {canDelete && <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                 </TableCell>
               </TableRow>
             ))}
@@ -113,6 +115,9 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [employeeNumber, setEmployeeNumber] = useState('')
   const [ssNumber, setSsNumber] = useState('')
   const [birthDate, setBirthDate] = useState('')
+  // G16 : sexe, collecté uniquement pour la DSN et les indicateurs d'égalité de la BDES.
+  // Facultatif — '' est enregistré en NULL.
+  const [gender, setGender] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -128,6 +133,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         employee_number: employeeNumber || null,
         social_security_number: ssNumber || null,
         birth_date: birthDate || null,
+        gender: gender || null,
         address: address || null,
         city: city || null,
         postal_code: postalCode || null,
@@ -163,8 +169,13 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             <Input label={t('employees.salary')} type="number" step="0.01" value={salary} onChange={(e) => setSalary(Number(e.target.value))} />
             <Input label={t('employees.hireDate')} type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Input label={t('employees.birthDate')} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+            <Select label={t('employees.gender')} value={gender} onChange={(e) => setGender(e.target.value)} options={[
+              { value: '', label: t('employees.genders.notSpecified') as string },
+              { value: 'F', label: t('employees.genders.F') as string },
+              { value: 'M', label: t('employees.genders.M') as string },
+            ]} />
             <Select label={t('employees.contractType')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
               { value: 'cdi', label: t('employees.contractTypes.cdi') as string },
               { value: 'cdd', label: t('employees.contractTypes.cdd') as string },

@@ -7,10 +7,12 @@ import { useToast } from '@/lib/toast'
 import { Package, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Supplier } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
+import { usePermission } from '@/hooks/usePermission'
 
 export function SuppliersPage() {
   const { toast } = useToast()
   const { t } = useTranslation('purchases')
+  const { canCreate, canDelete } = usePermission('suppliers')
   const { t: tCommon } = useTranslation('common')
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,7 +79,7 @@ export function SuppliersPage() {
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
-            <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('suppliers.new')}</Button>
+            {canCreate && <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('suppliers.new')}</Button>}
           </div>
         }
       />
@@ -130,9 +132,9 @@ export function SuppliersPage() {
                     <button onClick={() => handleEdit(s)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.edit')}>
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]" title={tCommon('actions.delete')}>
+                    {canDelete && <button onClick={() => setDeleteTarget(s)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]" title={tCommon('actions.delete')}>
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -143,7 +145,7 @@ export function SuppliersPage() {
             icon={<Package className="w-8 h-8" />}
             title={t('suppliers.noSuppliers')}
             description={t('suppliers.noSuppliersDescription')}
-            action={<Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('suppliers.add')}</Button>}
+            action={canCreate ? <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('suppliers.add')}</Button> : undefined}
           />
         )}
       </Card>

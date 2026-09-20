@@ -90,7 +90,7 @@ export function AgedBalancePage() {
             </div>
             <div className="card p-3">
               <p className="text-xs text-[var(--color-text-secondary)]">{t('agedBalance.61-90')}</p>
-              <p className="text-lg font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totals.b61_90)}</p>
+              <p className="text-lg font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totals.b61_90)}</p>
             </div>
             <div className="card p-3">
               <p className="text-xs text-[var(--color-text-secondary)]">{t('agedBalance.90+')}</p>

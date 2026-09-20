@@ -112,7 +112,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs ${o.delivery_status === 'delivered' ? 'text-[var(--color-success)]' : o.delivery_status === 'partial' ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-secondary)]'}`}>
+                    <span className={`text-xs ${o.delivery_status === 'delivered' ? 'text-[var(--color-success)]' : o.delivery_status === 'partial' ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                       {o.delivery_status === 'delivered' ? t('orders.deliveryDelivered') : o.delivery_status === 'partial' ? t('orders.deliveryPartial') : t('orders.deliveryPending')}
                     </span>
                   </TableCell>

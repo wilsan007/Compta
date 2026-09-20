@@ -13,12 +13,14 @@ import { useLegislation } from '@/lib/legislation'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
 import { getProductStock } from '@/lib/queries/stock'
 import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 const statusKeys: string[] = ['draft', 'sent', 'accepted', 'rejected', 'expired']
 
 export function QuotesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('sales')
+  const { canCreate, canDelete } = usePermission('quotes')
   const { t: tCommon } = useTranslation('common')
 const [quotes, setQuotes] = useState<Quote[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -111,7 +113,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       <PageHeader
         title={t('quotes.title')}
         subtitle={t('quotes.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button> : undefined}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -129,7 +131,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
           icon={<FileText className="w-8 h-8" />}
           title={t('quotes.noQuotes')}
           description={t('quotes.noQuotesDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button>}
+          action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button> : undefined}
         />
       ) : (
         <Card>
@@ -159,7 +161,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs ${quote.transformation_status === 'transformed' ? 'text-[var(--color-success)]' : quote.transformation_status === 'partial' ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-secondary)]'}`}>
+                    <span className={`text-xs ${quote.transformation_status === 'transformed' ? 'text-[var(--color-success)]' : quote.transformation_status === 'partial' ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                       {quote.transformation_status === 'transformed' ? t('quotes.transformationTransformed') : quote.transformation_status === 'partial' ? t('quotes.transformationPartial') : t('quotes.transformationPending')}
                     </span>
                   </TableCell>
@@ -175,9 +177,9 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                           <FileSignature className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
+                      {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>}
                     </div>
                   </TableCell>
                 </TableRow>

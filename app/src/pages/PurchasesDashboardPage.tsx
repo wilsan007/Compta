@@ -47,7 +47,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
           <div className="grid grid-cols-4 gap-4 mb-6">
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalBills')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalBills)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.paid')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.toPay')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.toPay')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.suppliersCount')}</p><p className="text-2xl font-bold">{suppliers.length}</p></div></Card>
           </div>
 

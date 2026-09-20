@@ -65,7 +65,7 @@ const [timesheets, setTimesheets] = useState<any[]>([])
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('timesheets.totalHours')}</p><p className="text-2xl font-bold font-mono">{totalHours.toFixed(1)}h</p></div></Card>
-        <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{tCommon('status.pending')}</p><p className="text-2xl font-bold text-[var(--color-warning)]">{timesheets.filter((t: any) => t.status === 'pending').length}</p></div></Card>
+        <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{tCommon('status.pending')}</p><p className="text-2xl font-bold text-[var(--color-warning-text)]">{timesheets.filter((t: any) => t.status === 'pending').length}</p></div></Card>
       </div>
 
       <div className="mb-4 flex items-center gap-3">

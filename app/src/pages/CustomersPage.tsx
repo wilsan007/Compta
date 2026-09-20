@@ -7,10 +7,12 @@ import { useToast } from '@/lib/toast'
 import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Customer } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
+import { usePermission } from '@/hooks/usePermission'
 
 export function CustomersPage() {
   const { toast } = useToast()
   const { t } = useTranslation('sales')
+  const { canCreate, canDelete } = usePermission('customers')
   const { t: tCommon } = useTranslation('common')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,7 +79,7 @@ export function CustomersPage() {
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
-            <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('customers.new')}</Button>
+            {canCreate && <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('customers.new')}</Button>}
           </div>
         }
       />
@@ -118,7 +120,7 @@ export function CustomersPage() {
                     </a>
                   ) : '—'}
                 </TableCell>
-                <TableCell className={Number(c.balance) > 0 ? 'font-medium text-[var(--color-warning)] text-right' : 'text-right'}>
+                <TableCell className={Number(c.balance) > 0 ? 'font-medium text-[var(--color-warning-text)] text-right' : 'text-right'}>
                   {formatCurrency(Number(c.balance) || 0)}
                 </TableCell>
                 <TableCell>{c.created_at ? formatDate(c.created_at) : '—'}</TableCell>
@@ -130,9 +132,9 @@ export function CustomersPage() {
                     <button onClick={() => handleEdit(c)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.edit')}>
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setDeleteTarget(c)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]" title={tCommon('actions.delete')}>
+                    {canDelete && <button onClick={() => setDeleteTarget(c)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[rgba(222,53,11,0.1)]" title={tCommon('actions.delete')}>
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </button>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -143,7 +145,7 @@ export function CustomersPage() {
             icon={<Users className="w-8 h-8" />}
             title={t('customers.noCustomers')}
             description={t('customers.noCustomersDescription')}
-            action={<Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('customers.createFirst')}</Button>}
+            action={canCreate ? <Button variant="primary" onClick={handleNew}><Plus className="w-4 h-4" /> {t('customers.createFirst')}</Button> : undefined}
           />
         )}
       </Card>

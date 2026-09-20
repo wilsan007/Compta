@@ -110,7 +110,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs ${n.invoice_status === 'invoiced' ? 'text-[var(--color-success)]' : n.invoice_status === 'partial' ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-secondary)]'}`}>
+                    <span className={`text-xs ${n.invoice_status === 'invoiced' ? 'text-[var(--color-success)]' : n.invoice_status === 'partial' ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-secondary)]'}`}>
                       {n.invoice_status === 'invoiced' ? t('deliveryNotes.invoiceInvoiced') : n.invoice_status === 'partial' ? t('deliveryNotes.invoicePartial') : t('deliveryNotes.invoicePending')}
                     </span>
                   </TableCell>
