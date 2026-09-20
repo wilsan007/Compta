@@ -15,12 +15,6 @@
       "reason": "employees porte salary et base_salary. Décision attendue : sur laquelle des deux le CICE doit-il porter ?"
     },
     {
-      "table": "employees",
-      "column": "gender",
-      "ref": "G16",
-      "reason": "aucune colonne de sexe en base : l'indicateur d'égalité F/H et l'écart de rémunération de la BDES sont incalculables. Décision attendue : ajouter la colonne (avec les précautions RGPD) ou retirer ces indicateurs."
-    },
-    {
       "table": "purchase_order_lines",
       "column": "quantity_received",
       "ref": "G19",

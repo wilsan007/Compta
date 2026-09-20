@@ -1659,75 +1659,6 @@ export interface Database {
       }
       Relationships: []
     }
-    business_alert_rules: {
-      Row: {
-        id: string
-        tenant_id: string
-        alert_type: string
-        entity_type: string | null
-        condition_config: Json
-        notification_channel: string | null
-        is_active: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        alert_type: string
-        entity_type?: string
-        condition_config: Json
-        notification_channel?: string
-        is_active?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        alert_type?: string
-        entity_type?: string
-        condition_config?: Json
-        notification_channel?: string
-        is_active?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
-    business_connectors: {
-      Row: {
-        id: string
-        tenant_id: string
-        connector_type: string
-        name: string
-        config: Json
-        secret_refs: Json | null
-        is_active: boolean | null
-        last_sync_at: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        connector_type: string
-        name: string
-        config: Json
-        secret_refs?: Json
-        is_active?: boolean
-        last_sync_at?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        connector_type?: string
-        name?: string
-        config?: Json
-        secret_refs?: Json
-        is_active?: boolean
-        last_sync_at?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
     career_history: {
       Row: {
         id: string
@@ -3141,99 +3072,6 @@ export interface Database {
       }
       Relationships: []
     }
-    crm_scoring_rules: {
-      Row: {
-        id: string
-        tenant_id: string
-        rule_name: string
-        criteria: Json
-        points: number
-        is_active: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        rule_name: string
-        criteria: Json
-        points: number
-        is_active?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        rule_name?: string
-        criteria?: Json
-        points?: number
-        is_active?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
-    crm_sequence_steps: {
-      Row: {
-        id: string
-        tenant_id: string
-        sequence_id: string
-        step_order: number
-        action_type: string
-        action_template: string | null
-        delay_days: number | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        sequence_id: string
-        step_order: number
-        action_type: string
-        action_template?: string
-        delay_days?: number
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        sequence_id?: string
-        step_order?: number
-        action_type?: string
-        action_template?: string
-        delay_days?: number
-        created_at?: string
-      }
-      Relationships: []
-    }
-    crm_sequences: {
-      Row: {
-        id: string
-        tenant_id: string
-        name: string
-        trigger_type: string
-        trigger_days: number | null
-        is_active: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        name: string
-        trigger_type: string
-        trigger_days?: number
-        is_active?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        name?: string
-        trigger_type?: string
-        trigger_days?: number
-        is_active?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
     crm_territories: {
       Row: {
         id: string
@@ -3378,75 +3216,6 @@ export interface Database {
         entry_id?: string
         created_at?: string
         updated_at?: string
-      }
-      Relationships: []
-    }
-    custom_field_definitions: {
-      Row: {
-        id: string
-        tenant_id: string
-        entity_type: string
-        field_name: string
-        field_label: string
-        field_type: string
-        field_options: Json | null
-        is_required: boolean | null
-        is_active: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        entity_type: string
-        field_name: string
-        field_label: string
-        field_type: string
-        field_options?: Json
-        is_required?: boolean
-        is_active?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        entity_type?: string
-        field_name?: string
-        field_label?: string
-        field_type?: string
-        field_options?: Json
-        is_required?: boolean
-        is_active?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
-    custom_field_values: {
-      Row: {
-        id: string
-        tenant_id: string
-        field_id: string
-        entity_type: string
-        entity_id: string
-        field_value: Json | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        field_id: string
-        entity_type: string
-        entity_id: string
-        field_value?: Json
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        field_id?: string
-        entity_type?: string
-        entity_id?: string
-        field_value?: Json
-        created_at?: string
       }
       Relationships: []
     }
@@ -4143,45 +3912,6 @@ export interface Database {
       }
       Relationships: []
     }
-    document_attachments: {
-      Row: {
-        id: string
-        tenant_id: string
-        entity_type: string
-        entity_id: string
-        file_name: string
-        file_path: string
-        file_size: number | null
-        mime_type: string | null
-        uploaded_by: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        entity_type: string
-        entity_id: string
-        file_name: string
-        file_path: string
-        file_size?: number
-        mime_type?: string
-        uploaded_by?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        entity_type?: string
-        entity_id?: string
-        file_name?: string
-        file_path?: string
-        file_size?: number
-        mime_type?: string
-        uploaded_by?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
     document_charges: {
       Row: {
         id: string
@@ -4493,48 +4223,6 @@ export interface Database {
         transmitted_at?: string
         response_code?: string
         response_message?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
-    e_invoicing_logs: {
-      Row: {
-        id: string
-        tenant_id: string
-        invoice_id: string | null
-        platform: string
-        status: string
-        ubl_xml: string | null
-        external_id: string | null
-        error_message: string | null
-        sent_at: string | null
-        delivered_at: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        invoice_id?: string
-        platform: string
-        status: string
-        ubl_xml?: string
-        external_id?: string
-        error_message?: string
-        sent_at?: string
-        delivered_at?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        invoice_id?: string
-        platform?: string
-        status?: string
-        ubl_xml?: string
-        external_id?: string
-        error_message?: string
-        sent_at?: string
-        delivered_at?: string
         created_at?: string
       }
       Relationships: []
@@ -4869,42 +4557,6 @@ export interface Database {
       }
       Relationships: []
     }
-    employee_self_service: {
-      Row: {
-        id: string
-        tenant_id: string
-        employee_id: string
-        auth_id: string | null
-        can_view_payslips: boolean | null
-        can_request_leave: boolean | null
-        can_view_schedule: boolean | null
-        can_update_profile: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        employee_id: string
-        auth_id?: string
-        can_view_payslips?: boolean
-        can_request_leave?: boolean
-        can_view_schedule?: boolean
-        can_update_profile?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        employee_id?: string
-        auth_id?: string
-        can_view_payslips?: boolean
-        can_request_leave?: boolean
-        can_view_schedule?: boolean
-        can_update_profile?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
     employees: {
       Row: {
         id: string
@@ -4951,6 +4603,7 @@ export interface Database {
         classification_id: string | null
         seniority_date: string | null
         auth_user_id: string | null
+        gender: string | null
       }
       Insert: {
         id?: string
@@ -4997,6 +4650,7 @@ export interface Database {
         classification_id?: string
         seniority_date?: string
         auth_user_id?: string
+        gender?: string
       }
       Update: {
         id?: string
@@ -5043,6 +4697,7 @@ export interface Database {
         classification_id?: string
         seniority_date?: string
         auth_user_id?: string
+        gender?: string
       }
       Relationships: []
     }
@@ -5970,57 +5625,6 @@ export interface Database {
       }
       Relationships: []
     }
-    group_entities: {
-      Row: {
-        id: string
-        group_name: string
-        parent_group_id: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        group_name: string
-        parent_group_id?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        group_name?: string
-        parent_group_id?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
-    group_members: {
-      Row: {
-        id: string
-        group_id: string
-        tenant_id: string
-        member_type: string
-        ownership_pct: number | null
-        consolidation_method: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        group_id: string
-        tenant_id: string
-        member_type: string
-        ownership_pct?: number
-        consolidation_method?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        group_id?: string
-        tenant_id?: string
-        member_type?: string
-        ownership_pct?: number
-        consolidation_method?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
     honorarium_records: {
       Row: {
         id: string
@@ -6366,48 +5970,6 @@ export interface Database {
       }
       Relationships: []
     }
-    intra_group_transactions: {
-      Row: {
-        id: string
-        tenant_id: string
-        group_id: string
-        from_tenant_id: string
-        to_tenant_id: string
-        transaction_type: string
-        amount: number
-        reference: string | null
-        transaction_date: string
-        status: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        group_id: string
-        from_tenant_id: string
-        to_tenant_id: string
-        transaction_type: string
-        amount: number
-        reference?: string
-        transaction_date: string
-        status?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        group_id?: string
-        from_tenant_id?: string
-        to_tenant_id?: string
-        transaction_type?: string
-        amount?: number
-        reference?: string
-        transaction_date?: string
-        status?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
     investments: {
       Row: {
         id: string
@@ -6624,93 +6186,6 @@ export interface Database {
         parent_invoice_id?: string
         transferred_entry_id?: string
         project_id?: string
-      }
-      Relationships: []
-    }
-    job_applications: {
-      Row: {
-        id: string
-        tenant_id: string
-        posting_id: string
-        candidate_name: string
-        candidate_email: string | null
-        candidate_phone: string | null
-        resume_url: string | null
-        cover_letter: string | null
-        status: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        posting_id: string
-        candidate_name: string
-        candidate_email?: string
-        candidate_phone?: string
-        resume_url?: string
-        cover_letter?: string
-        status?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        posting_id?: string
-        candidate_name?: string
-        candidate_email?: string
-        candidate_phone?: string
-        resume_url?: string
-        cover_letter?: string
-        status?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
-    job_postings: {
-      Row: {
-        id: string
-        tenant_id: string
-        title: string
-        department: string | null
-        description: string | null
-        requirements: string | null
-        salary_range_min: number | null
-        salary_range_max: number | null
-        contract_type: string | null
-        status: string | null
-        published_at: string | null
-        closing_date: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        title: string
-        department?: string
-        description?: string
-        requirements?: string
-        salary_range_min?: number
-        salary_range_max?: number
-        contract_type?: string
-        status?: string
-        published_at?: string
-        closing_date?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        title?: string
-        department?: string
-        description?: string
-        requirements?: string
-        salary_range_min?: number
-        salary_range_max?: number
-        contract_type?: string
-        status?: string
-        published_at?: string
-        closing_date?: string
-        created_at?: string
       }
       Relationships: []
     }
@@ -7977,42 +7452,6 @@ export interface Database {
       }
       Relationships: []
     }
-    migration_templates: {
-      Row: {
-        id: string
-        tenant_id: string | null
-        source_software: string
-        source_version: string | null
-        target_table: string
-        column_mapping: Json
-        transformation_rules: Json | null
-        is_active: boolean | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id?: string
-        source_software: string
-        source_version?: string
-        target_table: string
-        column_mapping: Json
-        transformation_rules?: Json
-        is_active?: boolean
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        source_software?: string
-        source_version?: string
-        target_table?: string
-        column_mapping?: Json
-        transformation_rules?: Json
-        is_active?: boolean
-        created_at?: string
-      }
-      Relationships: []
-    }
     mirror_servers: {
       Row: {
         id: string
@@ -8553,54 +7992,6 @@ export interface Database {
         closing_hash?: string
         closed_by?: string
         closed_at?: string
-      }
-      Relationships: []
-    }
-    notification_center: {
-      Row: {
-        id: string
-        tenant_id: string
-        user_id: string | null
-        category: string
-        title: string
-        message: string | null
-        severity: string | null
-        is_read: boolean | null
-        action_url: string | null
-        action_label: string | null
-        metadata: Json | null
-        created_at: string | null
-        read_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        user_id?: string
-        category: string
-        title: string
-        message?: string
-        severity?: string
-        is_read?: boolean
-        action_url?: string
-        action_label?: string
-        metadata?: Json
-        created_at?: string
-        read_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        user_id?: string
-        category?: string
-        title?: string
-        message?: string
-        severity?: string
-        is_read?: boolean
-        action_url?: string
-        action_label?: string
-        metadata?: Json
-        created_at?: string
-        read_at?: string
       }
       Relationships: []
     }
@@ -12897,45 +12288,6 @@ export interface Database {
       }
       Relationships: []
     }
-    report_definitions: {
-      Row: {
-        id: string
-        tenant_id: string
-        name: string
-        description: string | null
-        report_type: string
-        query_config: Json
-        columns_config: Json | null
-        is_shared: boolean | null
-        created_by: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        name: string
-        description?: string
-        report_type: string
-        query_config: Json
-        columns_config?: Json
-        is_shared?: boolean
-        created_by?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        name?: string
-        description?: string
-        report_type?: string
-        query_config?: Json
-        columns_config?: Json
-        is_shared?: boolean
-        created_by?: string
-        created_at?: string
-      }
-      Relationships: []
-    }
     reporting_plans: {
       Row: {
         id: string
@@ -12978,42 +12330,6 @@ export interface Database {
         active?: boolean
         created_at?: string
         updated_at?: string
-      }
-      Relationships: []
-    }
-    resource_capacities: {
-      Row: {
-        id: string
-        tenant_id: string
-        resource_type: string
-        resource_id: string
-        period_start: string
-        period_end: string
-        available_hours: number
-        allocated_hours: number | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        resource_type: string
-        resource_id: string
-        period_start: string
-        period_end: string
-        available_hours: number
-        allocated_hours?: number
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        resource_type?: string
-        resource_id?: string
-        period_start?: string
-        period_end?: string
-        available_hours?: number
-        allocated_hours?: number
-        created_at?: string
       }
       Relationships: []
     }
@@ -13854,42 +13170,6 @@ export interface Database {
       }
       Relationships: []
     }
-    signup_flows: {
-      Row: {
-        id: string
-        email: string
-        company_name: string | null
-        country_code: string | null
-        current_step: string | null
-        step_data: Json | null
-        tenant_id: string | null
-        created_at: string | null
-        completed_at: string | null
-      }
-      Insert: {
-        id?: string
-        email: string
-        company_name?: string
-        country_code?: string
-        current_step?: string
-        step_data?: Json
-        tenant_id?: string
-        created_at?: string
-        completed_at?: string
-      }
-      Update: {
-        id?: string
-        email?: string
-        company_name?: string
-        country_code?: string
-        current_step?: string
-        step_data?: Json
-        tenant_id?: string
-        created_at?: string
-        completed_at?: string
-      }
-      Relationships: []
-    }
     social_declarations: {
       Row: {
         id: string
@@ -14607,6 +13887,7 @@ export interface Database {
         unit_cost: number
         value: number
         created_at: string | null
+        seq: number
       }
       Insert: {
         id?: string
@@ -14619,6 +13900,7 @@ export interface Database {
         unit_cost: number
         value: number
         created_at?: string
+        seq?: number
       }
       Update: {
         id?: string
@@ -14631,57 +13913,7 @@ export interface Database {
         unit_cost?: number
         value?: number
         created_at?: string
-      }
-      Relationships: []
-    }
-    subscriptions: {
-      Row: {
-        id: string
-        tenant_id: string
-        plan_code: string
-        plan_name: string | null
-        price_monthly: number | null
-        price_yearly: number | null
-        billing_cycle: string | null
-        status: string | null
-        trial_ends_at: string | null
-        current_period_start: string | null
-        current_period_end: string | null
-        stripe_customer_id: string | null
-        stripe_subscription_id: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        plan_code: string
-        plan_name?: string
-        price_monthly?: number
-        price_yearly?: number
-        billing_cycle?: string
-        status?: string
-        trial_ends_at?: string
-        current_period_start?: string
-        current_period_end?: string
-        stripe_customer_id?: string
-        stripe_subscription_id?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        plan_code?: string
-        plan_name?: string
-        price_monthly?: number
-        price_yearly?: number
-        billing_cycle?: string
-        status?: string
-        trial_ends_at?: string
-        current_period_start?: string
-        current_period_end?: string
-        stripe_customer_id?: string
-        stripe_subscription_id?: string
-        created_at?: string
+        seq?: number
       }
       Relationships: []
     }
@@ -15435,45 +14667,6 @@ export interface Database {
         account_code?: string
         tag_ids?: string[]
         created_at?: string
-      }
-      Relationships: []
-    }
-    tenant_fiscal_settings: {
-      Row: {
-        id: string
-        tenant_id: string
-        fiscal_regime: string | null
-        vat_regime: string | null
-        depreciation_method: string | null
-        closing_month: number | null
-        opening_month: number | null
-        is_autonomous_vat: boolean | null
-        created_at: string | null
-        updated_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        fiscal_regime?: string
-        vat_regime?: string
-        depreciation_method?: string
-        closing_month?: number
-        opening_month?: number
-        is_autonomous_vat?: boolean
-        created_at?: string
-        updated_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        fiscal_regime?: string
-        vat_regime?: string
-        depreciation_method?: string
-        closing_month?: number
-        opening_month?: number
-        is_autonomous_vat?: boolean
-        created_at?: string
-        updated_at?: string
       }
       Relationships: []
     }

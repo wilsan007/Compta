@@ -85,7 +85,13 @@
     "noEmployees": "Aucun employé",
     "noEmployeesDescription": "Vous n'avez pas encore créé d'employé",
     "createFirst": "Créer mon premier employé",
-    "searchPlaceholder": "Rechercher par nom, email, poste..."
+    "searchPlaceholder": "Rechercher par nom, email, poste...",
+    "gender": "Sexe (déclarations sociales)",
+    "genders": {
+      "notSpecified": "Non renseigné",
+      "F": "Féminin",
+      "M": "Masculin"
+    }
   },
   "payRuns": {
     "title": "Campagnes de paie",

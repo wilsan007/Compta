@@ -898,6 +898,8 @@ export interface Employee {
   employee_number?: string | null
   social_security_number?: string | null
   birth_date?: string | null
+  /** G16 : 'F' | 'M' | null. DSN et indicateurs d'égalité de la BDES uniquement. */
+  gender?: 'F' | 'M' | null
   address?: string | null
   city?: string | null
   postal_code?: string | null

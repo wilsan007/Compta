@@ -205,7 +205,14 @@
         "expiryDate": "Date péremption",
         "expiryType": "Type péremption",
         "additionalText": "Texte complémentaire",
-        "notes": "Notes"
+        "notes": "Notes",
+        "cost": "Coût de production",
+        "calculateCost": "Calculer le coût",
+        "materialCost": "Coût matières",
+        "laborCost": "Coût main-d'œuvre",
+        "overheadCost": "Frais généraux",
+        "unitCost": "Coût unitaire",
+        "totalCost": "Coût total"
       },
       "labels": {
         "count": "Nombre d'étiquettes",

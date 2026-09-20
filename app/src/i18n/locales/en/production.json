@@ -205,7 +205,14 @@
         "expiryDate": "Expiry date",
         "expiryType": "Expiry type",
         "additionalText": "Additional text",
-        "notes": "Notes"
+        "notes": "Notes",
+        "cost": "Production cost",
+        "calculateCost": "Calculate cost",
+        "materialCost": "Material cost",
+        "laborCost": "Labor cost",
+        "overheadCost": "Overhead cost",
+        "unitCost": "Unit cost",
+        "totalCost": "Total cost"
       },
       "labels": {
         "count": "Number of labels",
