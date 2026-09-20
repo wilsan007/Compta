@@ -359,6 +359,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      - name: Lettrage bout en bout (B10)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/175_lettrage_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Coût de revient et production bout en bout (B9)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/177_manufacturing_cost_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: 'LOT6-05 : Scénarios métier E2E (10 parcours)'
         run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
         env:
