@@ -58,3 +58,13 @@ yarn.lock.bak
 
 # CodeGraph local index
 .codegraph/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Claude Code (worktrees locaux, 266 Mo)
+.claude/

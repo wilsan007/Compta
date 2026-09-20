@@ -109,6 +109,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: 'LOT5-05 : Garde SSRF webhook (bypass IP encodés)'
+        run: npx vitest run src/lib/__tests__/ssrfGuard.test.ts
+
       - name: Run unit tests with coverage
         run: npx vitest run --coverage
 
@@ -153,6 +156,14 @@ jobs:
         run: npx playwright test --reporter=html
         env:
           CI: 'true'
+          # Sans ces secrets, les tests authentifiés s'abstiennent explicitement
+          # (E2E_CREDENTIALS_CONFIGURED dans e2e/helpers.ts) au lieu de passer
+          # au vert contre l'écran de connexion. À renseigner dans
+          # Settings > Secrets > Actions pour que la suite prouve quelque chose.
+          SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.E2E_SUPABASE_KEY }}
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 
       - name: Upload Playwright report
         if: always()
@@ -319,6 +330,26 @@ jobs:
 
       - name: Tests RLS (SOC-02)
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/105_rls_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'Tests de permissions (has_permission)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/166_permission_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests de rapprochement des règlements (B3)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/170_payment_reconciliation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOT5-05 : Bypass SSRF sur is_allowed_webhook_url'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/168_ssrf_bypass_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Valorisation du stock bout en bout (B8)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/173_stock_valuation_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
