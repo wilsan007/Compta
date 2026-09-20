@@ -205,7 +205,14 @@
         "expiryDate": "تاريخ الصلاحية",
         "expiryType": "نوع الصلاحية",
         "additionalText": "نص إضافي",
-        "notes": "ملاحظات"
+        "notes": "ملاحظات",
+        "cost": "تكلفة الإنتاج",
+        "calculateCost": "حساب التكلفة",
+        "materialCost": "تكلفة المواد",
+        "laborCost": "تكلفة العمالة",
+        "overheadCost": "التكاليف غير المباشرة",
+        "unitCost": "تكلفة الوحدة",
+        "totalCost": "التكلفة الإجمالية"
       },
       "labels": {
         "count": "عدد الملصقات",

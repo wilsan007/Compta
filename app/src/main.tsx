@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './i18n'
-import { initRtl } from './i18n'
+import { initRtl, i18nReady } from './i18n'
 import { initSentry } from './lib/sentry'
 import { installGlobalRejectionHandler } from './lib/silentFailureGuard'
 import App from './App.tsx'
@@ -24,8 +24,17 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// i18n s'initialise avec `resources: {}` et charge la langue détectée de façon
+// asynchrone. Sans cette attente, le premier rendu se fait sans traductions et
+// l'écran de chargement de ProtectedRoute affichait la clé brute
+// « common.loading » à l'utilisateur. Trouvé par les tests e2e le 18/09/2026.
+const render = () =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+
+// En cas d'échec du chargement des traductions, on rend quand même : une
+// interface en clés brutes reste préférable à une page blanche.
+i18nReady.then(render).catch(render)
