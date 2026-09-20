@@ -39,10 +39,10 @@ export function EditableSelectCell({
     blocked: 'bg-[rgba(222,53,11,0.12)] text-[var(--color-danger)]',
     done: 'bg-[rgba(0,135,90,0.12)] text-[var(--color-success)]',
     canceled: 'bg-[var(--color-neutral-200)] text-[var(--color-text-tertiary)]',
-    changes_requested: 'bg-[rgba(255,149,0,0.12)] text-[var(--color-warning)]',
+    changes_requested: 'bg-[rgba(255,149,0,0.12)] text-[var(--color-warning-text)]',
     approved: 'bg-[rgba(0,135,90,0.12)] text-[var(--color-success)]',
     low: 'bg-[var(--color-neutral-200)] text-[var(--color-text-secondary)]',
-    medium: 'bg-[rgba(255,149,0,0.12)] text-[var(--color-warning)]',
+    medium: 'bg-[rgba(255,149,0,0.12)] text-[var(--color-warning-text)]',
     high: 'bg-[rgba(222,53,11,0.12)] text-[var(--color-danger)]',
     urgent: 'bg-[rgba(222,53,11,0.2)] text-[var(--color-danger)] font-bold',
   }

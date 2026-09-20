@@ -98,6 +98,32 @@ function walk(dir) {
  *
  * Rend une Map `"texte|fond|alpha"` → nombre d'usages.
  */
+/** Composants importés de `lucide-react` dans ce fichier : ce sont des icônes. */
+function lucideIcons(src) {
+  const set = new Set()
+  for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'lucide-react'/g)) {
+    for (const n of m[1].split(',')) {
+      const name = n.trim().split(' as ').pop().trim()
+      if (name) set.add(name)
+    }
+  }
+  return set
+}
+
+/** Neutralise les `text-[var(…)]` portés par une balise d'icône, en gardant les autres. */
+function maskIconColors(line, icons) {
+  if (icons.size === 0) return line
+  let out = ''
+  let pos = 0
+  for (const m of line.matchAll(/text-\[var\(--color-[a-z0-9-]+\)\]/g)) {
+    const head = line.lastIndexOf('<', m.index)
+    const tag = head === -1 ? null : (/^<([A-Za-z][A-Za-z0-9.]*)/.exec(line.slice(head, m.index)) ?? [])[1]
+    out += line.slice(pos, m.index) + (icons.has(tag) ? 'text-icone-decorative' : m[0])
+    pos = m.index + m[0].length
+  }
+  return out + line.slice(pos)
+}
+
 const TEXT_RE = /(?<![\w:-])text-\[var\((--color-[a-z0-9-]+)\)\]/g
 const BG_RE = /(?<![\w:-])bg-\[var\((--color-[a-z0-9-]+)\)\](?:\/(\d{1,3}))?/g
 
@@ -108,7 +134,16 @@ function usedPairs() {
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
   for (const f of walk(join(ROOT, 'src'))) {
-    for (const line of readFileSync(f, 'utf8').split('\n')) {
+    const src = readFileSync(f, 'utf8')
+    const icons = lucideIcons(src)
+    for (let line of src.split('\n')) {
+      if (!line.includes('text-[var(')) continue
+      // Une couleur posée sur une icône lucide n'est PAS une couleur de texte : depuis
+      // le LOT7-07 ces icônes sont `aria-hidden` et doublées d'un libellé, donc
+      // décoratives — aucun seuil de contraste ne s'y applique. Les compter comme du
+      // texte faisait ressortir --color-warning à 2,02:1 alors que le texte, lui, est
+      // passé à --color-warning-text. On les masque avant tout appariement.
+      line = maskIconColors(line, icons)
       if (!line.includes('text-[var(')) continue
       // Découpage sur les quotes, ligne par ligne. Un appariement plus large se laisse
       // piéger par les apostrophes du français (« l'utilisateur ») qui traversent les
@@ -167,8 +202,15 @@ for (const [theme, vars] of Object.entries(themes)) {
     rows.push(entry)
     if (ratio >= MIN) continue
     const waived = allowed.find((a) => a.theme === theme && a.fg === fgVar && a.bg === bgVar)
-    if (waived) tolerated.push({ ...entry, reason: waived.reason })
-    else failures.push(entry)
+    // `maxUses` empêche une tolérance de couvrir plus large que ce qui a été examiné :
+    // la dispense vaut pour les N occurrences vérifiées une par une, pas pour la couleur.
+    if (waived && waived.maxUses != null && uses > waived.maxUses) {
+      failures.push({ ...entry, over: waived.maxUses })
+    } else if (waived) {
+      tolerated.push({ ...entry, reason: waived.reason })
+    } else {
+      failures.push(entry)
+    }
   }
 }
 
@@ -191,7 +233,8 @@ if (failures.length === 0) {
 }
 console.error(`❌ ${failures.length} combinaison(s) sous le seuil AA de ${MIN}:1 :`)
 for (const f of failures) {
-  console.error(`   ${f.ratio}:1  thème ${f.theme} — ${f.fgVar} (${f.fgHex}) sur ${f.bgVar} (${f.bgHex}), ${f.uses} usages`)
+  const plafond = f.over != null ? ` — dispense limitée à ${f.over} usages vérifiés, ${f.uses} trouvés` : ''
+  console.error(`   ${f.ratio}:1  thème ${f.theme} — ${f.fgVar} (${f.fgHex}) sur ${f.bgVar} (${f.bgHex}), ${f.uses} usages${plafond}`)
 }
 // ---------- proposition de correction ----------
 // `--suggest` calcule, pour chaque couleur fautive, la teinte la PLUS PROCHE qui atteint

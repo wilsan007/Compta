@@ -11,6 +11,11 @@
   --color-success-light: #36b37e;
   --color-warning: #ff9500;
   --color-warning-light: #ffc94d;
+  /* LOT7-07 / H1 : un orange vif ne peut PAS atteindre 4,5:1 sur fond clair
+     (#ff9500 = 2,02:1). Plutôt que de brunir l'orange partout, le jeton ci-dessous
+     ne sert qu'au TEXTE ; --color-warning reste la couleur de marque pour les fonds,
+     les bordures et les icônes, qui sont décoratives (aria-hidden) et sans seuil. */
+  --color-warning-text: #a35f00;
   /* LOT7-07 : idem, 4,17:1 → 4,50:1. */
   --color-danger: #d4330b;
   --color-danger-light: #ff5c3a;
@@ -382,6 +387,8 @@
   --color-primary: #1f8fff;
   --color-success: #00a66e;
   --color-danger: #f55c36;
+  /* Sur fond sombre l'orange atteint 7,9:1 : le texte garde la couleur de marque. */
+  --color-warning-text: #ff9500;
   --mod-blue-bg: rgba(61, 139, 255, 0.12);
   --mod-indigo-bg: rgba(99, 102, 241, 0.12);
   --mod-emerald-bg: rgba(52, 211, 153, 0.12);

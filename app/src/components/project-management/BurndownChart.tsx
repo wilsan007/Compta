@@ -89,7 +89,7 @@ export function BurndownChart(_props: BurndownChartProps) {
         </Card>
         <Card className="p-4">
           <div className="text-xs text-[var(--color-text-secondary)]">{t('burndown.remaining')}</div>
-          <div className="text-2xl font-bold text-[var(--color-warning)]">{remainingTasks}</div>
+          <div className="text-2xl font-bold text-[var(--color-warning-text)]">{remainingTasks}</div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-[var(--color-text-secondary)]">{t('burndown.status')}</div>

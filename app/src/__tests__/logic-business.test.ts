@@ -10,6 +10,7 @@ import { calculateVAT } from '@/lib/queries/accounting';
 import { calculateTax, calculateGroupTax, calculateMultipleTaxes, calculatePriceWithTax, extractTaxFromIncludedPrice, calculateCorporateTax } from '@/lib/taxCalculator';
 import { validateDistribution, distributeEvenly, computeAmounts, flattenDistribution } from '@/lib/analyticDistribution';
 import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll';
+import { isAllowedWebhookUrl } from '@/lib/security/ssrfGuard';
 import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PayrollTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
 
 // ============ MOCK DATA ============
@@ -1509,18 +1510,7 @@ describe('2l. Module Commercial — Fulfillment & Robustness', () => {
 // ============ LOT5-05 : SSRF Filtering ============
 
 describe('LOT5-05 : Filtrage SSRF des URLs de webhook', () => {
-  // Replique la fonction isAllowedWebhookUrl du frontend
-  function isAllowedWebhookUrl(raw: string): boolean {
-    let u: URL
-    try { u = new URL(raw) } catch { return false }
-    if (u.protocol !== 'https:') return false
-    const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
-    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return false
-    if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return false
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false
-    if (h === '::1' || h.startsWith('fd') || h.startsWith('fe80:')) return false
-    return true
-  }
+  // Source unique : @/lib/security/ssrfGuard (voir ssrfGuard.test.ts pour les bypass).
 
   it('Accepte une URL HTTPS valide', () => {
     expect(isAllowedWebhookUrl('https://example.com/webhook')).toBe(true)
