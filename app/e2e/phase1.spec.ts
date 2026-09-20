@@ -1,5 +1,5 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test'
-import { loginViaUI, TEST_EMAIL, TEST_PASSWORD, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
+import { loginViaUI, assertAuthenticated, TEST_EMAIL, TEST_PASSWORD, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 // Run tests serially to avoid auth session conflicts
 test.describe.configure({ mode: 'serial' })
@@ -25,7 +25,9 @@ async function waitForContent(page: Page, minLen = 1) {
   await expect
     .poll(async () => (await root.textContent())?.trim().length ?? 0, { timeout: 30000 })
     .toBeGreaterThanOrEqual(minLen)
-  // Contrôlé en dernier : la redirection vers /onboarding a eu le temps de se produire
+  // Contrôlés en dernier : la redirection vers /onboarding et la restauration
+  // de session ont eu le temps de se produire.
+  await assertAuthenticated(page)
   await assertWorkspaceReady(page)
 }
 

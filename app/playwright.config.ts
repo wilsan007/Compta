@@ -36,6 +36,12 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5174',
+    // `main.tsx` enregistre un service worker (`public/sw.js`) qui met en cache
+    // la coquille de l'application. Un test peut alors recevoir une page servie
+    // depuis le cache d'un test précédent. Les tests ne portent pas sur le mode
+    // hors ligne : on l'empêche de s'enregistrer, pour que chaque test parte
+    // d'un état propre.
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-import { loginViaUI, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
+import { loginViaUI, assertAuthenticated, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 test.describe.configure({ mode: 'serial' })
 test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
@@ -23,6 +23,11 @@ async function waitForContent(page: Page) {
     .waitFor({ state: 'visible', timeout: 30000 })
     .catch(() => {})
   await page.waitForTimeout(500)
+  // L'écran de connexion possède lui aussi un h1 : attendre « un titre » ne
+  // prouve pas qu'on est sur la bonne page. La restauration de session est
+  // asynchrone, `assertAuthenticated` lui laisse le temps d'aboutir et échoue
+  // si elle n'aboutit pas. Sans cela, la CI lisait l'écran de connexion.
+  await assertAuthenticated(page)
   // Dismiss Vite overlay if present
   const overlay = page.locator('.vite-overlay, [class*="fixed inset-0"]')
   if (await overlay.count() > 0) {

@@ -1,5 +1,5 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test'
-import { loginViaUI, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
+import { loginViaUI, assertAuthenticated, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 test.describe.configure({ mode: 'serial' })
 test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
@@ -110,6 +110,7 @@ test('Phase 6 — All 15 routes are accessible from sidebar navigation', async (
   //    mode strict, `isVisible()` levait avant toute vérification ;
   //  - l'assertion était enfermée dans un `if` — sidebar absente, test vert ;
   //  - elle attendait « Comptabilité » alors que l'interface tourne en anglais.
+  await assertAuthenticated(page)
   const sidebar = page.locator('aside').first()
   await expect(sidebar).toBeVisible({ timeout: 30000 })
   await expect(sidebar).toContainText(/Comptabilité|Accounting/, { timeout: 30000 })
