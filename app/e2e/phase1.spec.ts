@@ -14,12 +14,17 @@ async function login(page: Page, _request?: APIRequestContext) {
 }
 
 // Helper: wait for page content to render (SPA might show loader first)
-async function waitForContent(page: Page, _minLen = 50) {
-  await page.waitForTimeout(2500)
-  // Wait for #root to have content
-  await page.locator('#root').waitFor({ state: 'attached', timeout: 10000 })
+// Attendait 2,5 s au chronomètre puis vérifiait seulement que #root existait et
+// était visible — jamais qu'il contenait quelque chose. Le paramètre `minLen`
+// était là depuis le début, inutilisé. Sur une route qui interroge Supabase,
+// `textContent()` revenait vide.
+async function waitForContent(page: Page, minLen = 1) {
   const root = page.locator('#root')
+  await root.waitFor({ state: 'attached', timeout: 10000 })
   await expect(root).toBeVisible({ timeout: 10000 })
+  await expect
+    .poll(async () => (await root.textContent())?.trim().length ?? 0, { timeout: 30000 })
+    .toBeGreaterThanOrEqual(minLen)
   // Contrôlé en dernier : la redirection vers /onboarding a eu le temps de se produire
   await assertWorkspaceReady(page)
 }
@@ -108,7 +113,9 @@ test.describe('Phase 1 — Complex interaction scenarios', () => {
     ]
     for (const route of routes) {
       await page.goto(route)
-      await page.waitForTimeout(1000)
+      // Une seconde fixe ne suffit pas dès que la page interroge Supabase :
+      // #root était encore vide. On attend le contenu, pas le chronomètre.
+      await waitForContent(page)
       const root = page.locator('#root')
       await expect(root).toBeVisible({ timeout: 10000 })
       const text = await root.textContent()

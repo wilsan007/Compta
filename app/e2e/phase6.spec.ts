@@ -54,18 +54,17 @@ for (const route of phase6Routes) {
 test('Phase 6 — Batch Entry page shows new session button', async ({ page, request }) => {
   await login(page, request)
   await page.goto('/accounting/batch-entry')
-  await page.waitForTimeout(3000)
-  // Look for any button element
-  const buttons = page.locator('button')
-  await expect(buttons.first()).toBeVisible()
+  // `locator('button').first()` tombait sur un bouton masqué du DOM (menu replié).
+  // On vise un bouton réellement visible, et on lui laisse le temps d'arriver.
+  const button = page.locator('button:visible').first()
+  await expect(button).toBeVisible({ timeout: 30000 })
 })
 
 test('Phase 6 — Accounting Controls page shows run control button', async ({ page, request }) => {
   await login(page, request)
   await page.goto('/accounting/controls')
-  await page.waitForTimeout(3000)
-  const buttons = page.locator('button')
-  await expect(buttons.first()).toBeVisible()
+  const button = page.locator('button:visible').first()
+  await expect(button).toBeVisible({ timeout: 30000 })
 })
 
 test('Phase 6 — Cash Control page loads form', async ({ page, request }) => {
@@ -104,13 +103,14 @@ test('Phase 6 — All 15 routes are accessible from sidebar navigation', async (
   await login(page, request)
   // Navigate to accounting home
   await page.goto('/accounting/home')
-  await page.waitForTimeout(2000)
 
-  // Verify the accounting module is visible in sidebar
-  const sidebar = page.locator('nav, [class*="sidebar"]')
-  if (await sidebar.isVisible()) {
-    const sidebarText = await sidebar.textContent()
-    // At least some accounting nav items should be visible
-    expect(sidebarText).toContain('Comptabilité')
-  }
+  // Trois défauts dans ce test :
+  //  - `locator('nav, [class*="sidebar"]')` visait 4 éléments (l'aside, le
+  //    champ de filtre, la nav latérale et le fil d'Ariane) : violation du
+  //    mode strict, `isVisible()` levait avant toute vérification ;
+  //  - l'assertion était enfermée dans un `if` — sidebar absente, test vert ;
+  //  - elle attendait « Comptabilité » alors que l'interface tourne en anglais.
+  const sidebar = page.locator('aside').first()
+  await expect(sidebar).toBeVisible({ timeout: 30000 })
+  await expect(sidebar).toContainText(/Comptabilité|Accounting/, { timeout: 30000 })
 })
