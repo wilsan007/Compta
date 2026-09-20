@@ -8,18 +8,11 @@ import { getTenantId } from '@/lib/queries/core'
 import { Key, Webhook, Plus, Trash2, Copy, RefreshCw,  X, AlertTriangle, Activity } from 'lucide-react'
 import { confirmSync } from '@/lib/confirm'
 
-// LOT5-05 : Validation SSRF côté client — doit correspondre à is_allowed_webhook_url (SQL) et isAllowedWebhookUrl (Edge Function)
-function isAllowedWebhookUrl(raw: string): boolean {
-  let u: URL
-  try { u = new URL(raw) } catch (e) { console.error('isAllowedWebhookUrl: invalid URL:', e); return false }
-  if (u.protocol !== 'https:') return false
-  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return false
-  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return false
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false
-  if (h === '::1' || h.startsWith('fd') || h.startsWith('fe80:')) return false
-  return true
-}
+// LOT5-05 (durci) : Validation SSRF côté client — source unique dans @/lib/security/ssrfGuard,
+// alignée avec is_allowed_webhook_url (SQL, migration 167) et la garde de la Edge Function.
+// NB : la protection contre le DNS rebinding et les redirections se fait à l'exécution
+// dans la Edge Function outgoing-webhooks ; ici c'est une validation UX immédiate.
+import { isAllowedWebhookUrl } from '@/lib/security/ssrfGuard'
 
 interface ApiKey {
   id: string
