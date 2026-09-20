@@ -1,31 +1,16 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test'
+import { loginViaUI, TEST_EMAIL, TEST_PASSWORD, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 // Run tests serially to avoid auth session conflicts
 test.describe.configure({ mode: 'serial' })
 
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
-const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
 
-async function login(page: Page, _request: APIRequestContext) {
-  // Try form-based login
-  await page.goto('/login')
-  await page.waitForTimeout(2000)
-
-  const emailInput = page.locator('input[type="email"]')
-  await emailInput.waitFor({ state: 'visible', timeout: 15000 })
-  const passwordInput = page.locator('input[type="password"]')
-  const submitBtn = page.locator('button[type="submit"]')
-
-  await emailInput.fill(TEST_EMAIL)
-  await passwordInput.fill(TEST_PASSWORD)
-  await submitBtn.click()
-
-  // Wait for either navigation or error — the app may redirect back to /login
-  // due to a race condition between getSession and onAuthStateChange
-  await page.waitForTimeout(5000)
-
-  // If we ended up on / or another page, great. If back on /login, that's OK
-  // for testing purposes — we still test that pages don't crash.
+// Trois implémentations de connexion coexistaient, toutes basées sur un
+// `waitForTimeout(5000)` fixe : trop court dès que le premier rendu ralentit, et
+// le test partait alors sur /login. Une seule implémentation désormais, qui
+// attend la navigation réelle (`loginViaUI` dans helpers.ts).
+async function login(page: Page, _request?: APIRequestContext) {
+  await loginViaUI(page)
 }
 
 // Helper: wait for page content to render (SPA might show loader first)
@@ -35,6 +20,8 @@ async function waitForContent(page: Page, _minLen = 50) {
   await page.locator('#root').waitFor({ state: 'attached', timeout: 10000 })
   const root = page.locator('#root')
   await expect(root).toBeVisible({ timeout: 10000 })
+  // Contrôlé en dernier : la redirection vers /onboarding a eu le temps de se produire
+  await assertWorkspaceReady(page)
 }
 
 const PHASE1_ROUTES = [
@@ -63,8 +50,15 @@ test.describe('Phase 1 — Auth & Navigation', () => {
     await expect(page.locator('button[type="submit"]')).toBeVisible()
   })
 
-  test('Login form submits without crash', async ({ page, request }) => {
-    await login(page, request)
+  test('Login form submits without crash', async ({ page }) => {
+    // Volontairement sans login() : ce test porte sur la robustesse du
+    // formulaire, pas sur l'authentification — il doit tourner sans identifiants.
+    await page.goto('/login')
+    await page.locator('input[type="email"]').waitFor({ state: 'visible', timeout: 15000 })
+    await page.locator('input[type="email"]').fill(TEST_EMAIL)
+    await page.locator('input[type="password"]').fill(TEST_PASSWORD)
+    await page.locator('button[type="submit"]').click()
+    await page.waitForTimeout(5000)
     // Whether login succeeds or redirects back, the page should not crash
     const root = page.locator('#root')
     await expect(root).toBeVisible({ timeout: 10000 })
@@ -74,6 +68,7 @@ test.describe('Phase 1 — Auth & Navigation', () => {
 })
 
 test.describe('Phase 1 — All routes accessible after login', () => {
+  test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
   test.beforeEach(async ({ page, request }) => {
     await login(page, request)
   })
@@ -96,6 +91,7 @@ test.describe('Phase 1 — All routes accessible after login', () => {
 })
 
 test.describe('Phase 1 — Complex interaction scenarios', () => {
+  test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
   test.beforeEach(async ({ page, request }) => {
     await login(page, request)
   })
@@ -201,6 +197,7 @@ test.describe('Phase 1 — Complex interaction scenarios', () => {
 })
 
 test.describe('Phase 1 — Language switching', () => {
+  test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
   test('Switch language to English and back', async ({ page, request }) => {
     await login(page, request)
     await page.goto('/')
@@ -222,6 +219,7 @@ test.describe('Phase 1 — Language switching', () => {
 })
 
 test.describe('Phase 1 — Error resilience', () => {
+  test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
   test.beforeEach(async ({ page, request }) => {
     await login(page, request)
   })

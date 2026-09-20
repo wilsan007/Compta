@@ -1,24 +1,28 @@
 import { test, expect, Page } from '@playwright/test'
+import { loginViaUI, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 test.describe.configure({ mode: 'serial' })
+test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
 
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
-const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
 
+// Trois implémentations de connexion coexistaient, toutes basées sur un
+// `waitForTimeout(5000)` fixe : trop court dès que le premier rendu ralentit, et
+// le test partait alors sur /login. Une seule implémentation désormais, qui
+// attend la navigation réelle (`loginViaUI` dans helpers.ts).
 async function login(page: Page) {
-  await page.goto('/login')
-  await page.waitForTimeout(2000)
-  const emailInput = page.locator('input[type="email"]')
-  await emailInput.waitFor({ state: 'visible', timeout: 15000 })
-  await emailInput.fill(TEST_EMAIL)
-  await page.locator('input[type="password"]').fill(TEST_PASSWORD)
-  await page.locator('button[type="submit"]').click()
-  await page.waitForTimeout(5000)
+  await loginViaUI(page)
 }
 
 async function waitForContent(page: Page) {
-  await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(2000)
+  await page.waitForLoadState('domcontentloaded')
+  // Attendre la fin du chargement plutôt qu'un délai fixe : 2 s ne suffisaient
+  // pas pour les écrans qui interrogent Supabase, et le test lisait « Loading… ».
+  await page
+    .locator('h1, h2, table, [role="table"]')
+    .first()
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .catch(() => {})
+  await page.waitForTimeout(500)
   // Dismiss Vite overlay if present
   const overlay = page.locator('.vite-overlay, [class*="fixed inset-0"]')
   if (await overlay.count() > 0) {
@@ -27,6 +31,7 @@ async function waitForContent(page: Page) {
       if (o) (o as HTMLElement).style.display = 'none'
     })
   }
+  await assertWorkspaceReady(page)
 }
 
 test.describe('Accounting Data Display', () => {

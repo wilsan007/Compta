@@ -1,7 +1,14 @@
 import { test, expect } from '@playwright/test'
-import { navigateWithAuth } from './helpers'
+// Routes corrigées le 18/09 : sept d'entre elles n'existaient pas dans App.tsx
+// (l'application renvoie sur /). Le fichier ne pouvait pas s'en apercevoir :
+// il n'avait jamais réussi à s'authentifier.
+import { navigateWithAuth, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON } from './helpers'
 
 test.describe.configure({ mode: 'serial' })
+
+// Sans identifiants ces parcours échouaient sur « Auth failed: Unknown »,
+// alors que le reste de la suite s'abstenait : on s'abstient partout.
+test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
 
 // ============================================================
 // Parcours 1 : Devis → Commande → Livraison → Facture → Règlement
@@ -33,8 +40,8 @@ test('P2: Purchase → Receipt → Invoice → Payment', async ({ page, request 
   await expect(page).toHaveURL(/purchases\/orders/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 
-  await navigateWithAuth(page, request, '/purchases/receipts')
-  await expect(page).toHaveURL(/receipts/)
+  await navigateWithAuth(page, request, '/purchases/goods-receipts')
+  await expect(page).toHaveURL(/goods-receipts/)
 
   await navigateWithAuth(page, request, '/purchases/invoices')
   await expect(page).toHaveURL(/invoices/)
@@ -47,12 +54,12 @@ test('P2: Purchase → Receipt → Invoice → Payment', async ({ page, request 
 // Parcours 3 : Saisie d'écriture → Validation → Balance
 // ============================================================
 test('P3: Journal Entry → Validation → Trial Balance', async ({ page, request }) => {
-  await navigateWithAuth(page, request, '/accounting/journal-entry')
+  await navigateWithAuth(page, request, '/accounting/treatment/journal-entry')
   await expect(page).toHaveURL(/journal-entry/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 
-  await navigateWithAuth(page, request, '/accounting/entries')
-  await expect(page).toHaveURL(/entries/)
+  await navigateWithAuth(page, request, '/accounting/journal-entries')
+  await expect(page).toHaveURL(/journal-entries/)
 
   await navigateWithAuth(page, request, '/accounting/trial-balance')
   await expect(page).toHaveURL(/trial-balance/)
@@ -62,15 +69,15 @@ test('P3: Journal Entry → Validation → Trial Balance', async ({ page, reques
 // Parcours 4 : Bulletin de paie → Écriture → DSN
 // ============================================================
 test('P4: Pay Slip → Journal Entry → DSN', async ({ page, request }) => {
-  await navigateWithAuth(page, request, '/hr/payroll')
-  await expect(page).toHaveURL(/payroll/)
+  await navigateWithAuth(page, request, '/hr/pay-runs')
+  await expect(page).toHaveURL(/pay-runs/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 
   await navigateWithAuth(page, request, '/hr/pay-slips')
   await expect(page).toHaveURL(/pay-slips/)
 
-  await navigateWithAuth(page, request, '/accounting/entries')
-  await expect(page).toHaveURL(/entries/)
+  await navigateWithAuth(page, request, '/accounting/journal-entries')
+  await expect(page).toHaveURL(/journal-entries/)
 })
 
 // ============================================================
@@ -104,8 +111,8 @@ test('P6: Stock Receipt → Movement → Valuation', async ({ page, request }) =
 // Parcours 7 : OF → Consommation → Production → Clôture
 // ============================================================
 test('P7: Manufacturing Order → Consumption → Production → Close', async ({ page, request }) => {
-  await navigateWithAuth(page, request, '/production/orders')
-  await expect(page).toHaveURL(/orders/)
+  await navigateWithAuth(page, request, '/production/manufacturing')
+  await expect(page).toHaveURL(/manufacturing/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 
   await navigateWithAuth(page, request, '/production/planning')
@@ -120,7 +127,7 @@ test('P8: Bank Reconciliation → Entry → Lettrage', async ({ page, request })
   await expect(page).toHaveURL(/reconciliation/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 
-  await navigateWithAuth(page, request, '/accounting/lettrage')
+  await navigateWithAuth(page, request, '/accounting/treatment/lettrage')
   await expect(page).toHaveURL(/lettrage/)
 })
 
@@ -128,8 +135,8 @@ test('P8: Bank Reconciliation → Entry → Lettrage', async ({ page, request })
 // Parcours 9 : Projet → Tâches → Saisie temps → Facturation
 // ============================================================
 test('P9: Project → Tasks → Time Entry → Invoicing', async ({ page, request }) => {
-  await navigateWithAuth(page, request, '/projects')
-  await expect(page).toHaveURL(/projects/)
+  await navigateWithAuth(page, request, '/project-management')
+  await expect(page).toHaveURL(/project-management/)
   await page.waitForSelector('h1, h2', { timeout: 10000 })
 })
 
@@ -144,6 +151,6 @@ test('P10: Onboarding → Settings → First Entry', async ({ page, request }) =
   await navigateWithAuth(page, request, '/settings')
   await expect(page).toHaveURL(/settings/)
 
-  await navigateWithAuth(page, request, '/accounting/journal-entry')
+  await navigateWithAuth(page, request, '/accounting/treatment/journal-entry')
   await expect(page).toHaveURL(/journal-entry/)
 })
