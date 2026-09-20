@@ -47,6 +47,10 @@ const PHASE1_ROUTES = [
 ]
 
 test.describe('Phase 1 — Auth & Navigation', () => {
+  // Même sans identifiants, ces tests supposent une application qui démarre :
+  // `src/lib/supabase.ts` lève à l'import si VITE_SUPABASE_* manquent, et la
+  // page de connexion est alors vide. La CI l'a montré au premier passage.
+  test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
   test('Login page renders correctly', async ({ page }) => {
     await page.goto('/login')
     await page.waitForTimeout(2000)

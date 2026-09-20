@@ -162,6 +162,12 @@ jobs:
           # Settings > Secrets > Actions pour que la suite prouve quelque chose.
           SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.E2E_SUPABASE_KEY }}
+          # `src/lib/supabase.ts` lève à l'import si ces deux variables
+          # manquent : sans elles le serveur de développement sert une
+          # application qui ne démarre pas, et même la page de connexion est
+          # vide. Trouvé au premier passage réel de la CI.
+          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_KEY }}
           E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
           E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 

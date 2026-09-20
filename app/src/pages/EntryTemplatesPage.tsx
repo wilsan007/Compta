@@ -5,6 +5,7 @@ import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntr
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
 import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function EntryTemplatesPage() {
   const { t } = useTranslation('accounting')
@@ -59,7 +60,7 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('templates.deleteConfirm'))) return
+    if (!confirmSync(t('templates.deleteConfirm'))) return
     try {
       await deleteEntryTemplate(id)
       toast('success', tCommon('common.success'), t('templates.deleteSuccess'))

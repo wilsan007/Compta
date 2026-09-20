@@ -22,11 +22,53 @@ description = "PostgreSQL connection string with password"
 regex = '''postgresql://[^:]+:[^@]+@[^:/]+:\d+/'''
 tags = ["database", "postgres"]
 
+# ------------------------------------------------------------
+# Dispenses — première exécution réelle du job security-audit, 20/09/2026.
+#
+# Le job n'avait jamais tourné (ci.yml invalide depuis 057c708). Au premier
+# passage : 35 signalements, aucun secret réel. Les règles maison ci-dessus
+# étaient écrites de façon à se déclencher à coup sûr.
+#
+# Chaque dispense est motivée. La règle qui compte — supabase-service-role-key
+# — reste stricte et sans exception.
+# ------------------------------------------------------------
 [allowlist]
-description = "Allowed paths and patterns"
+description = "Chemins et motifs dispensés, avec justification"
 paths = [
   '''node_modules/''',
   '''dist/''',
   '''coverage/''',
   '''.env.example''',
+
+  # Artefacts Playwright : générés, désormais ignorés par git (ce3cac2), mais
+  # présents dans l'historique que gitleaks scanne.
+  '''app/test-results/''',
+
+  # Documentation : exemples d'appels curl avec en-tête d'authentification
+  # fictif, destinés à être lus.
+  '''app/src/pages/settings/ApiDocsPage.tsx''',
+  '''.windsurf/skills/''',
+  '''doc/audit/PLAN-PERFECTION-9.5.md''',
+
+  # Valeur factice d'un mock vitest (`mockResolvedValue`) : aucun appel réseau,
+  # la clé n'a jamais existé.
+  '''app/src/__tests__/phase5-enterprise-features.test.ts''',
+]
+
+regexes = [
+  # Clé publiable Supabase (sb_publishable_…). Elle est publique par
+  # conception : elle part dans le bundle du navigateur, tout visiteur du site
+  # l'a déjà. Sa présence dans l'historique n'est pas une fuite, et la retirer
+  # supposerait de réécrire l'historique d'un dépôt public — coût réel,
+  # bénéfice nul. La règle reste en place pour la repérer ; elle ne fait plus
+  # échouer la CI.
+  '''sb_publishable_[a-zA-Z0-9_-]{20,}''',
+
+  # Conteneur PostgreSQL éphémère des jobs CI et des scripts de test :
+  # identifiants postgres/postgres sur localhost, détruits à la fin du job.
+  # Une vraie chaîne de connexion distante déclenche toujours la règle.
+  '''postgresql://postgres:postgres@(localhost|127\.0\.0\.1):\d+/''',
+
+  # Clé d'exemple d'un test unitaire.
+  '''sk_test_[a-zA-Z0-9]+''',
 ]

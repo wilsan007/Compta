@@ -4,6 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2 } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
 import {
   getPayrollComponents, createPayrollComponent, deletePayrollComponent,
   getPayrollTemplates, createPayrollTemplate, deletePayrollTemplate,
@@ -31,7 +32,7 @@ export function PayrollComponentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPayrollComponent(form as any); toast('success', tCommon('common.success'), t('components.created')); setShowForm(false); setForm({ code: '', name: '', type: 'gross', calculation_type: 'fixed', default_value: 0, rate_employer: 0, rate_employee: 0, display_order: 100, active: true }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleDelete(id: string) { if (!window.confirm(tCommon('form.confirmDelete'))) return; try { await deletePayrollComponent(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deletePayrollComponent(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
 
   return (
     <div>
@@ -61,7 +62,7 @@ export function PayrollTemplatesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPayrollTemplate(form as any); toast('success', tCommon('common.success'), t('templates.created')); setShowForm(false); setForm({ name: '', category: 'standard', description: '', active: true }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleDelete(id: string) { if (!window.confirm(tCommon('form.confirmDelete'))) return; try { await deletePayrollTemplate(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deletePayrollTemplate(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
 
   return (
     <div>
