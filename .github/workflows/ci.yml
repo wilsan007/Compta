@@ -2,7 +2,7 @@ name: CI - Tests & Quality
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, commercial-hr-paie]
   pull_request:
     branches: [main, master, develop]
   schedule:
