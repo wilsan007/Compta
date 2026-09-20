@@ -26,6 +26,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  // Playwright applique 30 s par test par défaut. Les attentes de cette suite
+  // vont jusqu'à 30 s à elles seules — sur un runner GitHub qui interroge
+  // Supabase à distance, le budget était épuisé avant même que l'assertion soit
+  // évaluée, et les pages lentes échouaient sur un #root encore vide.
+  // Constaté au premier passage réel de la CI le 20/09/2026.
+  timeout: process.env.CI ? 120_000 : 60_000,
+  expect: { timeout: process.env.CI ? 20_000 : 10_000 },
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5174',
