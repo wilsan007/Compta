@@ -1261,7 +1261,11 @@
     "totalAssets": "Total Assets",
     "totalLiabilitiesEquity": "Total Liabilities + Equity",
     "generate": "Generate balance sheet",
-    "generated": "Balance sheet generated successfully"
+    "generated": "Balance sheet generated successfully",
+    "unclassified": "Unclassified accounts",
+    "unclassifiedHint": "Accounts missing from the chart of accounts: add them to the chart so they appear under assets or liabilities.",
+    "unbalanced": "Unbalanced balance sheet: assets ({{assets}}) differ from liabilities and equity ({{liabilities}}), gap {{gap}}. Check unclassified accounts and the year's entries.",
+    "balanced": "Balance sheet balanced"
   },
   "cashFlow": {
     "title": "Cash flow",

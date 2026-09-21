@@ -11,7 +11,7 @@ export function BalanceSheetPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [data, setData] = useState<{ assets: any[]; liabilities: any[]; equity: any[] } | null>(null)
+  const [data, setData] = useState<{ assets: any[]; liabilities: any[]; equity: any[]; unclassified: any[]; gap: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
@@ -20,21 +20,32 @@ export function BalanceSheetPage() {
   useEffect(() => {
     getFiscalYears().then((fy) => {
       setYears(fy || [])
-      const open = (fy || []).find((y) => y.status === 'open')
-      if (open) setSelectedYear(open.id)
-    }).catch(() => {})
-  }, [])
+      // Exercice ouvert qui couvre la date du jour, sinon le premier ouvert, sinon le plus récent
+      const today = new Date().toISOString().slice(0, 10)
+      const list = fy || []
+      const pick = list.find((y) => y.status === 'open' && y.start_date <= today && today <= y.end_date)
+        ?? list.find((y) => y.status === 'open')
+        ?? list[0]
+      if (pick) setSelectedYear(pick.id)
+      else setLoading(false)
+    }).catch((err: any) => {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      setLoading(false)
+    })
+  }, [toast, tCommon])
 
+  // AUD-D08 : le bilan affiché est celui de l'exercice sélectionné (auparavant toujours le plus récent)
   const loadData = useCallback(async () => {
+    if (!selectedYear) return
     setLoading(true)
     try {
-      setData(await getBalanceSheet())
+      setData(await getBalanceSheet({ fiscalYearId: selectedYear }))
     } catch (err: any) { console.error('Failed to load balance sheet:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [toast, tCommon])
+  }, [selectedYear, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -71,6 +82,16 @@ export function BalanceSheetPage() {
           </Button>
         </div>
       } />
+
+      {!loading && data && data.gap !== 0 && (
+        <div role="alert" className="mb-4 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger)]/10 px-4 py-3 text-sm text-[var(--color-danger)]">
+          {t('balanceSheet.unbalanced', {
+            assets: formatCurrency(totalAssets),
+            liabilities: formatCurrency(totalLiabilities + totalEquity),
+            gap: formatCurrency(data.gap),
+          })}
+        </div>
+      )}
 
       {loading ? (
         <SkeletonTable rows={6} cols={3} />
@@ -119,6 +140,23 @@ export function BalanceSheetPage() {
               </Table>
             </Card>
           </div>
+          {(data?.unclassified || []).length > 0 && (
+            <div className="col-span-2">
+              <h3 className="text-sm font-semibold mb-1">{t('balanceSheet.unclassified')}</h3>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-3">{t('balanceSheet.unclassifiedHint')}</p>
+              <Card>
+                <Table headers={[t('balanceSheet.code'), t('balanceSheet.account'), t('balanceSheet.amount')]}>
+                  {(data?.unclassified || []).map((u) => (
+                    <TableRow key={u.code}>
+                      <TableCell className="font-mono text-xs">{u.code}</TableCell>
+                      <TableCell className="text-sm">{u.name}</TableCell>
+                      <TableCell className="font-mono text-right">{formatCurrency(u.debit - u.credit)}</TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              </Card>
+            </div>
+          )}
         </div>
       )}
     </div>

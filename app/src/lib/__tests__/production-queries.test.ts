@@ -645,19 +645,22 @@ describe('FEC Data', () => {
 describe('SIG Data', () => {
   beforeEach(() => resetMock())
 
-  it('getSIGData returns class 6/7 account balances', async () => {
-    setMockData([{ account_code: '701000', account_general: '701000', debit: 0, credit: 5000 }])
-    const { getSIGData } = await import('@/lib/queries')
-    const result = await getSIGData()
-    expect(result).toBeDefined()
-    expect(Array.isArray(result)).toBe(true)
-  })
-
-  it('getSIGData filters by fiscalYearId', async () => {
-    setMockData([{ account_code: '601000', account_general: '601000', debit: 3000, credit: 0 }])
+  // AUD-D09 : agrégation serveur (get_income_statement), plus de lignes lues dans le navigateur
+  it('getSIGData lit le compte de résultat serveur de l\'exercice demandé', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [{ account_code: '706000', account_name: 'Prestations', account_type: 'income', debit: 0, credit: 5000, balance: -5000 }],
+      error: null,
+    } as any)
     const { getSIGData } = await import('@/lib/queries')
     const result = await getSIGData('fy-1')
-    expect(result).toBeDefined()
+    expect(supabase.rpc).toHaveBeenCalledWith('get_income_statement', { p_fiscal_year_id: 'fy-1', p_date_from: null, p_date_to: null })
+    expect(result).toEqual([{ code: '706000', name: 'Prestations', debit: 0, credit: 5000, solde: -5000 }])
+  })
+
+  it('getSIGData remonte l\'erreur du serveur au lieu de rendre un SIG vide', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'boom' } } as any)
+    const { getSIGData } = await import('@/lib/queries')
+    await expect(getSIGData('fy-1')).rejects.toMatchObject({ message: 'boom' })
   })
 })
 
@@ -986,7 +989,7 @@ describe('generateExtourne', () => {
 describe('generateCarryForward', () => {
   beforeEach(() => resetMock())
 
-  // Réponses successives : log de report existant, périodes de l'exercice, écritures
+  // Réponses successives : log de report existant, écritures validées de l'exercice
   function queueResponses(...responses: any[]) {
     for (const data of responses) {
       mockChain.then.mockImplementationOnce((resolve: any) => Promise.resolve({ data, error: null }).then(resolve))
@@ -994,7 +997,7 @@ describe('generateCarryForward', () => {
   }
 
   it('generates carry forward entries between fiscal years', async () => {
-    queueResponses([], [{ id: 'fp-1' }], [
+    queueResponses([], [
       { id: 'je-1', status: 'posted', journal_lines: [
         { account_general: '512000', debit: 1000, credit: 0 },
         { account_general: '401000', account_tiers: 'F001', debit: 0, credit: 600 },

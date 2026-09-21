@@ -1261,7 +1261,11 @@
     "totalAssets": "Total Actif",
     "totalLiabilitiesEquity": "Total Passif + Capitaux",
     "generate": "Générer le bilan",
-    "generated": "Bilan généré avec succès"
+    "generated": "Bilan généré avec succès",
+    "unclassified": "Comptes non classés",
+    "unclassifiedHint": "Comptes absents du plan comptable : à rattacher au plan pour qu'ils apparaissent à l'actif ou au passif.",
+    "unbalanced": "Bilan déséquilibré : l'actif ({{assets}}) diffère du passif et des capitaux propres ({{liabilities}}), écart {{gap}}. Vérifiez les comptes non classés et les écritures de l'exercice.",
+    "balanced": "Bilan équilibré"
   },
   "cashFlow": {
     "title": "Flux de trésorerie",

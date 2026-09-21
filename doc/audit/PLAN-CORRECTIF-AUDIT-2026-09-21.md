@@ -376,6 +376,37 @@ Les vagues V3 et V4 peuvent avancer en parallèle si deux personnes travaillent 
 
 **Non vérifié** : l'affichage réel dans le navigateur. L'application pointe sur le projet cloud, où 183–186 ne sont pas déployées, et la connexion demande vos identifiants.
 
+### Vague V2 — 21/09/2026 (lot C commité en `766608f`, lot D dans le commit suivant)
+
+Protocole suivi : chaque nouveau scénario a été vu rouge sur le code d'avant son correctif, puis vert sans modification.
+
+| Action | État | Preuve |
+|---|:---:|---|
+| `AUD-C01` à `C09`, `C11` | **OK** | `sql/187_accounting_kernel_strict.sql`. Nouveaux scénarios A08 (compte fermé ou de regroupement), A09 (facture exonérée), C05 (période), C06 (numérotation), tous vus rouges. 178 : **23/23 verts**. Les écritures automatiques imputaient des comptes absents du plan semé (4457000, 4456000, 641/645/431/421, 713550, 665…) ; les comptes de TVA du paramétrage (445661…, 445711…) n'étaient pas au plan : toute facture à TVA aurait été refusée par le contrôle de compte. |
+| `AUD-D01` à `D06`, `D08` | **OK** | `sql/189_closing_and_statements.sql` : `close_fiscal_year` réécrite ; bilan, balance et compte de résultat sur une règle de périmètre commune (un exercice reporté par ses à-nouveaux n'est plus relu). Nouveaux scénarios D08 (états après clôture), D09 (ordre des clôtures, exercice suivant retrouvé) et R08 (compte hors plan au bilan), vus rouges. 179 : **17/17 verts**. `BalanceSheetPage` : le sélecteur d'exercice pilote enfin les données, les comptes non classés s'affichent et un bandeau signale un écart. |
+| `AUD-D07` | **OK** | Surcharge `close_fiscal_year(uuid)` supprimée ; compte de résultat hors journal `CL`. |
+| `AUD-D09` | **OK** | `getSIGData` passe par `get_income_statement`. Chiffre d'affaires du tableau de bord : comptes 70 HT de l'exercice en cours, et non plus le TTC des factures payées. |
+| Test de propriété | **OK** | `sql/189_accounting_property_tests.sql`, branché en CI. 3 exercices, **100 000 écritures** : 7 invariants verts ; clôtures en 0,9 s (seuil 30 s) ; 53 s au total. Sur le code d'avant la 189, 5 invariants sur 7 échouent. |
+| Performance de la validation | **OK** | Trouvé par le test de propriété sur base neuve : **100 000 validations en 18 min**. Cause : `log_nf525_event` cherchait le dernier maillon de la chaîne NF525 sans index sur `(tenant_id, id)`, donc le coût de chaque validation croissait avec l'historique de la société. Le défaut existe aussi en production. Index ajouté dans la 189 : 30 000 validations passent de 50,6 s à 6,8 s, et 100 000 prennent 25 s. |
+
+**Écarts assumés par rapport au plan** :
+- une ligne 0/0 n'est pas enregistrée (au lieu d'être refusée) ; une ligne ramenée à 0/0 bloque la validation ;
+- le numéro définitif est une colonne à part, `posting_number` (`OD-2025-000001`) ; `number` reste le numéro de saisie ;
+- `post_journal_entry` range en `OD` une écriture sans journal ;
+- `allocate_result` n'est pas réécrite (décision n° 3 en attente) ;
+- `generate_depreciation_entry`, `generate_residual_entry` et `post_deferred_charge` restent cassées comme avant (en-tête créé directement en « posted », comptes fictifs `6_____`). Elles sont désormais refusées dès l'en-tête. Elles relèvent du lot G.
+
+**Tests retouchés, et pourquoi** : P02 était un **faux vert** (sans écriture, l'`UPDATE` ne touchait rien et le test concluait « ok ») ; il exige maintenant une écriture validée. S03 vérifie les comptes de repli réels (445710/445660). Les sociétés de test reçoivent plan, journaux et exercice (`_mk_tenant`, `ci/ledger_fixture.sql`), comme une société réelle depuis la 183. Deux tests unitaires décrivaient l'ancien `getFECData` ; deux tests SIG ne vérifiaient rien et ont été remplacés.
+
+**Rejeu complet sur base neuve (jusqu'à 189)** :
+- migrations sans erreur ; `plpgsql_check` 0 erreur ;
+- suites 102, 105, 166, 168, 170, 173, 175, 177 vertes ; 178, 179 et 182 entièrement vertes ; 180 et 181 conformes au registre ;
+- registre : **22 → 5 défauts** (E04, E06, E08, P01, P02 — lots E et F) ;
+- PostgREST : 1 475 requêtes acceptées ;
+- oxlint 0, tsc 0, **1 375 tests unitaires**, parité i18n, build.
+
+**Non vérifié** : l'affichage dans le navigateur, pour la même raison qu'en V1.
+
 ---
 
 ## 7. Recette finale

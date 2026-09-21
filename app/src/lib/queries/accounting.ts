@@ -168,12 +168,18 @@ export async function getJournalEntries() {
 }
 
 // SOC-04 : Résout l'exercice courant pour les RPC d'agrégation
+// Exercice qui couvre la date du jour ; à défaut, le plus récent déjà commencé, puis le plus récent.
 async function getCurrentFiscalYearId(): Promise<string | null> {
   const tid = await getTenantId()
-  let q = supabase.from('fiscal_years').select('id').order('start_date', { ascending: false }).limit(1)
+  let q = supabase.from('fiscal_years').select('id, start_date, end_date').order('start_date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   const { data } = await q
-  return (data && data.length > 0) ? (data[0] as any).id : null
+  const years = (data || []) as Array<{ id: string; start_date: string; end_date: string }>
+  const today = new Date().toISOString().slice(0, 10)
+  const current = years.find((y) => y.start_date <= today && today <= y.end_date)
+    ?? years.find((y) => y.start_date <= today)
+    ?? years[0]
+  return current ? current.id : null
 }
 
 export async function createJournalEntry(entry: Omit<JournalEntry, 'id' | 'created_at' | 'updated_at'> & { lines: Omit<JournalLine, 'id' | 'created_at'>[] }) {
@@ -381,7 +387,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     fetchAllRows<any>(supabase.from('suppliers').select('balance').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/suppliers' }),
   ])
 
-  const totalRevenue = invoices.filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total), 0)
+  // AUD-D09 : chiffre d'affaires = ventes HT comptabilisées de l'exercice en cours (comptes 70),
+  // et non plus le TTC des seules factures payées.
+  let totalRevenue = 0
+  const fyId = await getCurrentFiscalYearId()
+  if (fyId) {
+    const { data: is, error: isErr } = await supabase.rpc('get_income_statement', {
+      p_fiscal_year_id: fyId, p_date_from: null, p_date_to: null,
+    })
+    if (isErr) throw isErr
+    totalRevenue = ((is || []) as any[])
+      .filter((r) => String(r.account_code).startsWith('70'))
+      .reduce((sum, r) => sum + (Number(r.credit) || 0) - (Number(r.debit) || 0), 0)
+  }
   const outstandingInvoice = invoices.filter((i: any) => i.status === 'sent' || i.status === 'overdue' || i.status === 'viewed').reduce((sum: number, i: any) => sum + Number(i.amount_due), 0)
   const outstandingBills = purchaseInvoices.filter((i: any) => i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'draft').reduce((sum: number, i: any) => sum + Number(i.amount_due), 0)
   const bankBalance = bankAccounts.reduce((sum: number, a: any) => sum + Number(a.balance), 0)
@@ -555,9 +573,11 @@ export async function getRecentActivity(): Promise<Array<{
 
 
 // ============ Balance Sheet ============
-export async function getBalanceSheet(opts?: { dateTo?: string }) {
-  // SOC-04 : Agrégation côté serveur — le RPC renvoie déjà account_type
-  const fiscalYearId = await getCurrentFiscalYearId()
+export async function getBalanceSheet(opts?: { dateTo?: string; fiscalYearId?: string }) {
+  // SOC-04 : Agrégation côté serveur — le RPC renvoie déjà account_type.
+  // AUD-D08 : aucun compte n'est écarté (hors plan → « unclassified ») et une ligne
+  // RESULTAT porte le résultat tant que l'exercice n'est pas clôturé.
+  const fiscalYearId = opts?.fiscalYearId || await getCurrentFiscalYearId()
   const { data, error } = await supabase.rpc('get_balance_sheet', {
     p_fiscal_year_id: fiscalYearId,
     p_date_to: opts?.dateTo ?? null,
@@ -567,16 +587,20 @@ export async function getBalanceSheet(opts?: { dateTo?: string }) {
   const all = (data || []).map((row: any) => ({
     code: row.account_code,
     name: row.account_name,
-    type: row.account_type || 'unknown',
+    type: row.account_type || 'unclassified',
     debit: Number(row.debit) || 0,
     credit: Number(row.credit) || 0,
     balance: Number(row.balance) || 0,
   }))
+  const placed = new Set(['asset', 'liability', 'equity'])
 
   return {
     assets: all.filter((a: any) => a.type === 'asset'),
     liabilities: all.filter((a: any) => a.type === 'liability'),
     equity: all.filter((a: any) => a.type === 'equity'),
+    unclassified: all.filter((a: any) => !placed.has(a.type)),
+    // Σ des soldes de toutes les lignes : nul quand actif = passif + capitaux + résultat
+    gap: Math.round(all.reduce((s: number, a: any) => s + a.balance, 0) * 100) / 100,
   }
 }
 
@@ -1428,14 +1452,15 @@ export async function getGrandLivreTiers(accountTiers: string, dateFrom?: string
 // `date` pour le rendre total — sinon la pagination saute ou double des écritures.
 export async function getFECData(fiscalYearId: string) {
   const tid = await getTenantId()
-  let fpQ = supabase.from('fiscal_periods').select('id').eq('fiscal_year_id', fiscalYearId).order('id')
-  if (tid) fpQ = fpQ.eq('tenant_id', tid)
-  const periods = await fetchAllRows<{ id: string }>(fpQ, { label: 'getFECData/fiscal_periods' })
-
-  const periodIds = periods.map((p) => p.id)
-  if (periodIds.length === 0) return []
-
-  let feQ = supabase.from('journal_entries').select('*, journal_lines(*)').in('fiscal_period_id', periodIds).order('date', { ascending: true }).order('id')
+  // AUD-C08/C11 : écritures validées de l'exercice (fiscal_year_id est renseigné par le
+  // serveur, avec ou sans découpage en périodes), dans l'ordre de leur numéro définitif.
+  let feQ = supabase.from('journal_entries').select('*, journal_lines(*)')
+    .eq('fiscal_year_id', fiscalYearId)
+    .eq('status', 'posted')
+    .order('date', { ascending: true })
+    .order('journal_code', { ascending: true })
+    .order('posting_seq', { ascending: true })
+    .order('id')
   if (tid) feQ = feQ.eq('tenant_id', tid)
   const entries = await fetchAllRows<JournalEntry>(feQ, { label: 'getFECData/journal_entries' })
 
@@ -1443,48 +1468,25 @@ export async function getFECData(fiscalYearId: string) {
 }
 
 // --- SIG: balances for class 6/7 accounts ---
+// AUD-D09 : agrégation serveur par les dates de l'exercice, écritures validées seulement,
+// hors écritures de clôture (journal CL). L'ancien filtre sur fiscal_period_id rendait
+// un SIG vide dès qu'il existait des périodes, et tout l'historique (brouillards compris) sinon.
 export async function getSIGData(fiscalYearId?: string) {
-  const tid = await getTenantId()
-  let query = supabase
-    .from('journal_lines')
-    .select('account_code, account_general, debit, credit, journal_entries!inner(fiscal_period_id)')
-    .order('id')
-  if (tid) query = query.eq('tenant_id', tid)
-
-  if (fiscalYearId) {
-    const periods = await fetchAllRows<{ id: string }>(
-      supabase.from('fiscal_periods').select('id').eq('fiscal_year_id', fiscalYearId).order('id'),
-      { label: 'getSIGData/fiscal_periods' }
-    )
-    if (periods.length > 0) {
-      query = query.in('journal_entries.fiscal_period_id', periods.map((p) => p.id))
-    }
-  }
-
-  // LOT7-03 : les soldes intermédiaires de gestion agrègent les classes 6 et 7 sur tout
-  // l'exercice — une troncature à 1 000 lignes fausse le compte de résultat.
-  const data = await fetchAllRows<any>(query, { label: 'getSIGData/journal_lines' })
-
-  const accountBalances: Record<string, { debit: number; credit: number }> = {}
-
-  for (const line of data) {
-    const code = line.account_general || line.account_code || ''
-    if (!code.match(/^[67]/)) continue
-    if (!accountBalances[code]) accountBalances[code] = { debit: 0, credit: 0 }
-    accountBalances[code].debit += Number(line.debit) || 0
-    accountBalances[code].credit += Number(line.credit) || 0
-  }
-
-  let caQ2 = supabase.from('chart_accounts').select('code, name').or('code.like.6%,code.like.7%').order('id')
-  if (tid) caQ2 = caQ2.eq('tenant_id', tid)
-  const accounts = await fetchAllRows<any>(caQ2, { label: 'getSIGData/chart_accounts' })
-
-  const accountMap = new Map(accounts.map((a) => [a.code, a.name]))
-
-  return Object.entries(accountBalances).map(([code, bal]) => ({
-    code, name: accountMap.get(code) || '—',
-    debit: bal.debit, credit: bal.credit, solde: bal.debit - bal.credit,
-  })).sort((a, b) => a.code.localeCompare(b.code))
+  const fyId = fiscalYearId || await getCurrentFiscalYearId()
+  if (!fyId) return []
+  const { data, error } = await supabase.rpc('get_income_statement', {
+    p_fiscal_year_id: fyId,
+    p_date_from: null,
+    p_date_to: null,
+  })
+  if (error) throw error
+  return ((data || []) as any[]).map((row) => ({
+    code: row.account_code as string,
+    name: (row.account_name as string) || '—',
+    debit: Number(row.debit) || 0,
+    credit: Number(row.credit) || 0,
+    solde: Number(row.balance) || 0,
+  }))
 }
 
 // --- Analytic Balance: journal_lines by analytic_section_id ---
@@ -3072,11 +3074,10 @@ export async function generateExtourne(originalEntryId: string, reason: string) 
     date: new Date().toISOString().slice(0, 10),
     description: `Extourne: ${original.description}`,
     reference: original.reference || '',
-    status: 'posted',
+    // AUD-C02 : une écriture naît en brouillard ; elle est validée après ses lignes
+    status: 'draft',
     journal_code: original.journal_code,
     piece_number: `EXT-${original.piece_number || original.number}`,
-    total_debit: original.total_credit,
-    total_credit: original.total_debit,
   }).select().single()
   if (e2) throw e2
 
@@ -3097,6 +3098,8 @@ export async function generateExtourne(originalEntryId: string, reason: string) 
     const { error: e3 } = await supabase.from('journal_lines').insert(reversedLines)
     if (e3) throw e3
   }
+  const { error: ePost } = await supabase.from('journal_entries').update({ status: 'posted' }).eq('id', newEntry.id)
+  if (ePost) throw ePost
 
   await createExtourneLog({
     original_entry_id: originalEntryId,
@@ -3176,23 +3179,30 @@ export async function generateCarryForward(sourceFiscalYearId: string, targetFis
   const { data: anNumber, error: eNum } = await supabase.rpc('get_next_document_number', { p_prefix: 'AN' })
   if (eNum) throw eNum
 
+  // Les à-nouveaux sont datés du premier jour de l'exercice cible (et non du jour de saisie)
+  let tfyQ = supabase.from('fiscal_years').select('start_date').eq('id', targetFiscalYearId)
+  if (tid) tfyQ = tfyQ.eq('tenant_id', tid)
+  const { data: targetFy, error: eFy } = await tfyQ.single()
+  if (eFy) throw eFy
+
+  // AUD-C02 : brouillard, lignes, puis validation
   const { data: newEntry, error } = await supabase.from('journal_entries').insert({
     tenant_id: tid,
     number: anNumber,
-    date: new Date().toISOString().slice(0, 10),
+    date: (targetFy as any).start_date,
     description: 'Reports à-nouveaux',
     reference: 'AN',
-    status: 'posted',
+    status: 'draft',
     journal_code: 'AN',
     piece_number: 'AN-OUV',
-    total_debit: totalDebit,
-    total_credit: totalCredit,
   }).select().single()
   if (error) throw error
 
   const linesWithEntry = anLines.map(l => ({ ...l, journal_id: newEntry.id }))
   const { error: e2 } = await supabase.from('journal_lines').insert(linesWithEntry)
   if (e2) throw e2
+  const { error: ePost } = await supabase.from('journal_entries').update({ status: 'posted' }).eq('id', newEntry.id)
+  if (ePost) throw ePost
 
   await createCarryForwardLog({
     source_fiscal_year_id: sourceFiscalYearId,

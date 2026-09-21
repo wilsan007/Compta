@@ -109,6 +109,24 @@ BEGIN
       COALESCE(r->>'error', r->>'success'), is_rev, is_exp, bs_all, bs_512, bs_res, tb_d, tb_c, tb_512));
 END $$;
 
+-- D09 — clôture refusée proprement sans exercice suivant, ou si l'antérieur est ouvert
+DO $$
+DECLARE t uuid := _mk_tenant('D09', false); fy1 uuid; fy2 uuid; r1 jsonb; r2 jsonb; st1 text; st2 text;
+BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy1;
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy2;
+  PERFORM _as_user();
+  PERFORM _entry(t, 'CAP', DATE '2025-01-02', '[{"a":"512000","d":100},{"a":"101000","c":100}]');
+  r1 := close_fiscal_year(fy2, NULL, true);   -- 2025 encore ouvert, et pas de 2027
+  r2 := close_fiscal_year(fy1, NULL, true);   -- l'exercice suivant est retrouvé par sa date
+  SELECT status INTO st1 FROM fiscal_years WHERE id = fy1;
+  SELECT status INTO st2 FROM fiscal_years WHERE id = fy2;
+  PERFORM _rec('D09', 'clôture de 2026 refusée (2025 ouvert) ; 2025 clôturé vers 2026 retrouvé par sa date',
+    NOT COALESCE((r1->>'success')::boolean, true) AND COALESCE(r1->>'error', '') ~ 'antérieur'
+      AND COALESCE((r2->>'success')::boolean, false) AND st1 = 'closed' AND st2 = 'open',
+    format('2026 : %s | 2025 : %s | statuts %s/%s', COALESCE(r1->>'error', r1->>'success'), COALESCE(r2->>'error', r2->>'success'), st1, st2));
+END $$;
+
 -- R01 à R04 — états financiers d'un exercice ouvert
 DO $$
 DECLARE t uuid := _mk_tenant('R01', false); fy uuid; c uuid; inv uuid;
@@ -171,6 +189,29 @@ BEGIN
   SELECT COALESCE(sum(credit - debit) FILTER (WHERE account_code ~ '^7'), 0) INTO is_rev FROM get_income_statement(fy, NULL, NULL);
   PERFORM _rec('R07', 'une écriture en brouillard n''entre pas dans le compte de résultat', is_rev = 1000,
     'produits après brouillard de 5 000 = ' || is_rev);
+END $$;
+
+-- R08 — un compte absent du plan (donnée historique antérieure à la 187) n'est pas
+-- écarté du bilan : il sort en « unclassified » et le bilan reste équilibré (AUD-D08 a)
+DO $$
+DECLARE t uuid := _mk_tenant('R08'); fy uuid; e uuid; n int; bs_all numeric; typ text;
+BEGIN
+  SELECT id INTO fy FROM fiscal_years WHERE tenant_id = t;
+  -- Écriture historique, antérieure à la 187 : posée triggers neutralisés (mode
+  -- réplication), comme une reprise de données. Ne dépend d'aucun trigger nommé :
+  -- les contrôles ajoutés depuis (à la saisie ou à la validation) n'y changent rien.
+  PERFORM set_config('session_replication_role', 'replica', true);
+  INSERT INTO journal_entries (tenant_id, number, date, journal_code, status, description, total_debit, total_credit)
+  VALUES (t, 'HIST', DATE '2026-02-01', 'OD', 'posted', 'reprise historique', 300, 300) RETURNING id INTO e;
+  INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description) VALUES
+    (t, e, '512000', '512000', 300, 0, 'HIST'), (t, e, 'ZZ9999', 'ZZ9999', 0, 300, 'HIST');
+  PERFORM set_config('session_replication_role', 'origin', true);
+  PERFORM _as_user();
+  SELECT count(*) FILTER (WHERE account_code = 'ZZ9999'), COALESCE(sum(balance), 0),
+         max(account_type) FILTER (WHERE account_code = 'ZZ9999')
+    INTO n, bs_all, typ FROM get_balance_sheet(fy, NULL);
+  PERFORM _rec('R08', 'compte hors plan présent au bilan (non classé), bilan équilibré',
+    n = 1 AND typ = 'unclassified' AND bs_all = 0, format('ZZ9999 lignes=%s type=%s Σ=%s', n, COALESCE(typ, '∅'), bs_all));
 END $$;
 
 SELECT _audit_assert('179');

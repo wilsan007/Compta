@@ -485,6 +485,11 @@ export interface JournalEntry {
   journal_lines?: JournalLine[]
   journal_code?: string | null
   fiscal_period_id?: string | null
+  /** AUD-C08 — renseigné par le serveur depuis la date */
+  fiscal_year_id?: string | null
+  /** AUD-C11 — numéro définitif attribué à la validation (EcritureNum du FEC) */
+  posting_number?: string | null
+  posting_seq?: number | null
   piece_number?: string | null
   invoice_ref?: string | null
   entry_template_id?: string | null

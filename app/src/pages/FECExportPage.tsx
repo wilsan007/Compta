@@ -28,7 +28,8 @@ function generateFECText(entries: any[]): string {
       const row = [
         escapeFECField(je.journal_code),
         escapeFECField('Journal'),
-        escapeFECField(je.number),
+        // AUD-C11 : EcritureNum = numéro définitif, continu par journal et par exercice
+        escapeFECField(je.posting_number || je.number),
         escapeFECField(je.date?.replace(/-/g, '')),
         escapeFECField(line.account_general || line.account_code),
         escapeFECField(line.account_name || ''),
@@ -41,7 +42,7 @@ function generateFECText(entries: any[]): string {
         escapeFECField(Number(line.credit).toFixed(2)),
         escapeFECField(line.lettrage_code || ''),
         escapeFECField(''),
-        escapeFECField(je.date?.replace(/-/g, '')),
+        escapeFECField((je.validated_at || je.date)?.slice(0, 10).replace(/-/g, '')),
         '',
         '',
       ]

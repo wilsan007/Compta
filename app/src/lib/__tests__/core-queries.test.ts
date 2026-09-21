@@ -549,6 +549,36 @@ describe('Balance Sheet', () => {
   })
 })
 
+describe('Balance Sheet — AUD-D08', () => {
+  beforeEach(() => resetMock())
+
+  it('interroge l\'exercice demandé, isole les comptes non classés et mesure l\'écart', async () => {
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [
+        { account_code: '512000', account_name: 'Banque', account_type: 'asset', debit: 300, credit: 0, balance: 300 },
+        { account_code: 'ZZ9999', account_name: 'ZZ9999', account_type: 'unclassified', debit: 0, credit: 300, balance: -300 },
+      ],
+      error: null,
+    }))
+    const { getBalanceSheet } = await import('@/lib/queries')
+    const result = await getBalanceSheet({ fiscalYearId: 'fy-9' })
+    expect((supabase as any).rpc).toHaveBeenCalledWith('get_balance_sheet', { p_fiscal_year_id: 'fy-9', p_date_to: null })
+    expect(result.assets.map((a: any) => a.code)).toEqual(['512000'])
+    expect(result.unclassified.map((a: any) => a.code)).toEqual(['ZZ9999'])
+    expect(result.gap).toBe(0)
+  })
+
+  it('signale un bilan déséquilibré par un écart non nul', async () => {
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [{ account_code: '512000', account_name: 'Banque', account_type: 'asset', debit: 300, credit: 0, balance: 300 }],
+      error: null,
+    }))
+    const { getBalanceSheet } = await import('@/lib/queries')
+    const result = await getBalanceSheet({ fiscalYearId: 'fy-9' })
+    expect(result.gap).toBe(300)
+  })
+})
+
 // ============ Reporting: Cash Flow ============
 
 describe('Cash Flow', () => {

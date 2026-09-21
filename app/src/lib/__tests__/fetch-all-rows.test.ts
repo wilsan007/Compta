@@ -148,15 +148,12 @@ describe('getFECData', () => {
     ])
   })
 
-  it('pagine aussi les périodes fiscales', async () => {
-    mockState.pages['fiscal_periods'] = [[{ id: 'p1' }, { id: 'p2' }]]
-    mockState.pages['journal_entries'] = [[]]
-    await getFECData('fy-1')
-    expect(mockState.calls.some((c) => c.table === 'fiscal_periods' && c.from === 0)).toBe(true)
-  })
-
-  it('rend un tableau vide si aucune période', async () => {
+  // AUD-C08 : l'export lit fiscal_year_id (renseigné par le serveur), plus les périodes :
+  // un exercice sans découpage en périodes s'exportait vide.
+  it('exporte un exercice sans périodes, sans interroger fiscal_periods', async () => {
     mockState.pages['fiscal_periods'] = [[]]
-    expect(await getFECData('fy-1')).toEqual([])
+    mockState.pages['journal_entries'] = [rows(3, 0)]
+    expect(await getFECData('fy-1')).toHaveLength(3)
+    expect(mockState.calls.some((c) => c.table === 'fiscal_periods')).toBe(false)
   })
 })
