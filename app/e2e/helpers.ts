@@ -100,6 +100,21 @@ export async function setAuthCookies(page: Page, session: AuthSession) {
 export async function loginViaUI(page: Page) {
   await page.goto('/login')
   const passwordField = page.locator('input[type="password"]')
+
+  // `count()` était interrogé immédiatement après `goto`. Sur un serveur Vite
+  // fraîchement démarré — le cas en CI, où `reuseExistingServer` est faux —
+  // l'application React n'est pas encore montée : le champ n'existe pas, et la
+  // fonction en concluait « déjà connecté » pour sortir **sans se connecter**.
+  // Tout ce qui suivait se jouait alors sur /login. En local, avec un serveur
+  // déjà chaud, le formulaire est là en quelques millisecondes et le défaut ne
+  // se voyait jamais.
+  // On attend donc que l'application soit montée : soit elle sert le
+  // formulaire, soit elle nous a déjà redirigés parce que la session existe.
+  await Promise.race([
+    passwordField.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {}),
+    page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 }).catch(() => {}),
+  ])
+
   // Déjà connecté : l'application ne sert pas le formulaire
   if (await passwordField.count() === 0) return
 
