@@ -20,7 +20,12 @@ const isLocal = databaseUrl
   ? /localhost|127\.0\.0\.1/.test(databaseUrl)
   : /localhost|127\.0\.0\.1/.test(process.env.PGHOST || '');
 
-const sslConfig = isLocal ? false : { rejectUnauthorized: false };
+// Base distante : certificat toujours vérifié. Le CA Supabase n'est pas dans le magasin
+// système — le fournir via PGSSLROOTCERT (ex. prod-ca-2021.crt, Database → Settings → SSL).
+const caPath = process.env.PGSSLROOTCERT;
+const sslConfig = isLocal
+  ? false
+  : { rejectUnauthorized: true, ...(caPath ? { ca: fs.readFileSync(caPath, 'utf8') } : {}) };
 
 const client = new pg.Client(
   databaseUrl
