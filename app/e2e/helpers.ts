@@ -109,6 +109,25 @@ export async function loginViaUI(page: Page) {
   await page.locator('button[type="submit"]').click()
   await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 20000 })
   await assertAuthenticated(page)
+
+  // Chaque navigation des tests passe par `page.goto`, donc par un rechargement
+  // complet : l'application relit alors la session dans `localStorage`, où
+  // supabase-js la range sous `sb-<ref>-auth-token`. Tant que cette écriture
+  // n'a pas eu lieu, le rechargement repart déconnecté et l'application renvoie
+  // sur /login. En local l'écart est imperceptible ; sur un runner GitHub il
+  // suffisait à faire échouer la suite. On attend donc la persistance réelle,
+  // pas seulement la redirection à l'écran.
+  await page.waitForFunction(
+    () => {
+      try {
+        return Object.keys(window.localStorage).some((k) => /^sb-.+-auth-token$/.test(k))
+      } catch {
+        return false
+      }
+    },
+    undefined,
+    { timeout: 20000 },
+  )
 }
 
 export async function navigateWithAuth(page: Page, _apiContext: APIRequestContext, path: string) {
