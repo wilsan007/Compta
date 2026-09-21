@@ -17,6 +17,8 @@
 -- 108 de stock fantôme au compte 310000.
 -- ============================================================
 
+\ir ci/ledger_fixture.sql
+
 DO $$
 DECLARE
   v_tenant_id uuid := uuid_generate_v4();
@@ -35,6 +37,7 @@ BEGIN
   VALUES (v_tenant_id, v_auth_id, 'test@manufacturing.com', 'Test Admin', 'admin', 'active', NOW());
   INSERT INTO company_settings (tenant_id, name, currency, country, fiscal_year_start, overhead_rate, created_at)
   VALUES (v_tenant_id, 'Test Company', 'EUR', 'France', '2026-01-01', 0.2, NOW()) ON CONFLICT DO NOTHING;
+  PERFORM _ledger_fixture(v_tenant_id);  -- plan, journaux, exercice (187)
   PERFORM set_config('app.active_tenant_id', v_tenant_id::text, true);
 
   IF current_tenant_id() IS DISTINCT FROM v_tenant_id THEN

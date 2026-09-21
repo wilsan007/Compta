@@ -6243,7 +6243,7 @@ export interface Database {
         total_credit: number | null
         created_at: string | null
         updated_at: string | null
-        journal_code: string | null
+        journal_code: string
         fiscal_period_id: string | null
         piece_number: string | null
         invoice_ref: string | null
@@ -6258,6 +6258,9 @@ export interface Database {
         exchange_rate: number | null
         exchange_rate_date: string | null
         created_by: string | null
+        fiscal_year_id: string | null
+        posting_seq: number | null
+        posting_number: string | null
       }
       Insert: {
         id?: string
@@ -6270,7 +6273,7 @@ export interface Database {
         total_credit?: number
         created_at?: string
         updated_at?: string
-        journal_code?: string
+        journal_code: string
         fiscal_period_id?: string
         piece_number?: string
         invoice_ref?: string
@@ -6285,6 +6288,9 @@ export interface Database {
         exchange_rate?: number
         exchange_rate_date?: string
         created_by?: string
+        fiscal_year_id?: string
+        posting_seq?: number
+        posting_number?: string
       }
       Update: {
         id?: string
@@ -6312,6 +6318,9 @@ export interface Database {
         exchange_rate?: number
         exchange_rate_date?: string
         created_by?: string
+        fiscal_year_id?: string
+        posting_seq?: number
+        posting_number?: string
       }
       Relationships: []
     }
@@ -6321,8 +6330,8 @@ export interface Database {
         journal_id: string | null
         account_code: string
         account_name: string | null
-        debit: number | null
-        credit: number | null
+        debit: number
+        credit: number
         description: string | null
         line_order: number | null
         created_at: string | null
@@ -6429,6 +6438,27 @@ export interface Database {
         product_uom?: string
         lettrage_partial?: boolean
         lettrage_group_id?: string
+      }
+      Relationships: []
+    }
+    journal_posting_sequences: {
+      Row: {
+        tenant_id: string
+        journal_code: string
+        fiscal_year_id: string
+        last_seq: number
+      }
+      Insert: {
+        tenant_id: string
+        journal_code: string
+        fiscal_year_id: string
+        last_seq?: number
+      }
+      Update: {
+        tenant_id?: string
+        journal_code?: string
+        fiscal_year_id?: string
+        last_seq?: number
       }
       Relationships: []
     }

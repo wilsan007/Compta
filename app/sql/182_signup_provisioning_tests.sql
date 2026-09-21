@@ -33,10 +33,11 @@ BEGIN
     format('comptes=%s journaux=%s exercices ouverts=%s paramètres=%s', nca, COALESCE(jn, '∅'), nfy, ncs));
 
   -- Comptes que les écritures automatiques imputent : facture (411000, 707000, TVA collectée
-  -- FR20 selon vat_account_mapping, repli 4457000), achat (401000, 607000, TVA déductible
-  -- FR20, repli 4456000), règlement (512000), clôture (120000, 129000).
+  -- FR20 selon vat_account_mapping, repli 445710 — 4457000 avant la 187), achat (401000,
+  -- 607000, TVA déductible FR20, repli 445660 — 4456000 avant la 187), règlement (512000),
+  -- clôture (120000, 129000).
   SELECT string_agg(code, ', ' ORDER BY code) INTO missing
-  FROM (VALUES ('411000'), ('707000'), ('401000'), ('607000'), ('512000'), ('120000'), ('129000'), ('4457000'), ('4456000'),
+  FROM (VALUES ('411000'), ('707000'), ('401000'), ('607000'), ('512000'), ('120000'), ('129000'), ('445710'), ('445660'),
                ((SELECT account_code FROM vat_account_mapping WHERE vat_code = 'FR20' AND direction = 'collected'
                  AND tenant_id = '00000000-0000-0000-0000-000000000000')),
                ((SELECT account_code FROM vat_account_mapping WHERE vat_code = 'FR20' AND direction = 'deductible'
@@ -110,8 +111,9 @@ END $$;
 
 -- S08 — le contrôle de fin d'inscription nomme ce qui manque
 DO $$
-DECLARE t uuid := _mk_tenant('S08'); msg text;
+DECLARE t uuid := _mk_tenant('S08', false); msg text;
 BEGIN
+  DELETE FROM chart_accounts WHERE tenant_id = t;
   DELETE FROM journals WHERE tenant_id = t;
   DELETE FROM company_settings WHERE tenant_id = t;
   BEGIN

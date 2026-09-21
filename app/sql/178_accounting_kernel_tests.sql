@@ -93,6 +93,40 @@ DO $$ DECLARE t uuid := _mk_tenant('A07'); e uuid; BEGIN
   EXCEPTION WHEN OTHERS THEN PERFORM _rec('A07d', 'lignes d''une écriture validée non supprimables', true, SQLERRM); END;
 END $$;
 
+-- A08 — seuls les comptes imputables du plan : ni déprécié, ni compte de regroupement
+DO $$ DECLARE t uuid := _mk_tenant('A08'); parent uuid; ok_dep boolean := false; ok_par boolean := false; d1 text; d2 text; BEGIN
+  UPDATE chart_accounts SET deprecated = true WHERE tenant_id = t AND code = '706000';
+  SELECT id INTO parent FROM chart_accounts WHERE tenant_id = t AND code = '411000';
+  INSERT INTO chart_accounts (tenant_id, code, name, type, parent_id) VALUES (t, '411990', 'Clients — sous-compte d''audit', 'asset', parent);
+  PERFORM _as_user();
+  BEGIN
+    PERFORM _entry(t, 'A08a', DATE '2026-03-01', '[{"a":"512000","d":100},{"a":"706000","c":100}]');
+    d1 := 'compte déprécié 706000 accepté';
+  EXCEPTION WHEN OTHERS THEN ok_dep := true; d1 := SQLERRM; END;
+  BEGIN
+    PERFORM _entry(t, 'A08b', DATE '2026-03-01', '[{"a":"411000","d":100},{"a":"707000","c":100}]');
+    d2 := 'compte de regroupement 411000 accepté';
+  EXCEPTION WHEN OTHERS THEN ok_par := true; d2 := SQLERRM; END;
+  PERFORM _rec('A08', 'compte déprécié et compte de regroupement refusés', ok_dep AND ok_par, d1 || ' | ' || d2);
+END $$;
+
+-- A09 — une facture exonérée se comptabilise sans ligne 0/0 (AUD-C03)
+DO $$ DECLARE t uuid := _mk_tenant('A09'); c uuid; inv uuid; n0 int; n int; st text; BEGIN
+  PERFORM _as_user();
+  INSERT INTO customers (tenant_id, name) VALUES (t, 'Client export') RETURNING id INTO c;
+  INSERT INTO invoices (tenant_id, number, customer_id, customer_name, date, due_date, status, subtotal, vat_total, total, amount_paid, amount_due)
+  VALUES (t, 'F-EXO', c, 'Client export', '2026-03-01', '2026-03-31', 'draft', 1000, 0, 1000, 0, 1000) RETURNING id INTO inv;
+  INSERT INTO invoice_lines (tenant_id, invoice_id, description, quantity, unit_price, vat_rate, total, vat_code, vat_amount)
+  VALUES (t, inv, 'Export', 1, 1000, 0, 1000, 'EXO', 0);
+  BEGIN
+    UPDATE invoices SET validation_status = 'validated' WHERE id = inv;
+  EXCEPTION WHEN OTHERS THEN st := SQLERRM; END;
+  SELECT count(*), count(*) FILTER (WHERE jl.debit = 0 AND jl.credit = 0) INTO n, n0
+  FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id WHERE je.tenant_id = t;
+  PERFORM _rec('A09', 'facture exonérée : écriture sans ligne 0/0', st IS NULL AND n = 2 AND n0 = 0,
+    format('lignes=%s dont 0/0=%s erreur=%s', n, n0, COALESCE(st, 'aucune')));
+END $$;
+
 -- B01 — pas de saisie dans une période close
 DO $$ DECLARE t uuid := _mk_tenant('B01'); fy uuid; BEGIN
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy;
@@ -116,7 +150,7 @@ DO $$ DECLARE t uuid := _mk_tenant('B02'); BEGIN
 END $$;
 
 -- B03 — la date d'une écriture appartient à un exercice
-DO $$ DECLARE t uuid := _mk_tenant('B03'); BEGIN
+DO $$ DECLARE t uuid := _mk_tenant('B03', false); BEGIN
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open');
   PERFORM _as_user();
   BEGIN
@@ -182,6 +216,44 @@ DO $$ DECLARE t uuid := _mk_tenant('C04'); r jsonb; BEGIN
     NOT COALESCE((r->>'success')::boolean, true)
       AND NOT EXISTS (SELECT 1 FROM journal_entries WHERE tenant_id = t AND status = 'posted'),
     r::text);
+END $$;
+
+-- C05 — l'écriture est rattachée à sa période (AUD-C08)
+DO $$ DECLARE t uuid := _mk_tenant('C05', false); fy uuid; p uuid; r jsonb; got uuid; BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy;
+  INSERT INTO fiscal_periods (tenant_id, fiscal_year_id, period_number, period_label, start_date, end_date, status)
+    VALUES (t, fy, 2, '2026-02', '2026-02-01', '2026-02-28', 'open');
+  INSERT INTO fiscal_periods (tenant_id, fiscal_year_id, period_number, period_label, start_date, end_date, status)
+    VALUES (t, fy, 3, '2026-03', '2026-03-01', '2026-03-31', 'open') RETURNING id INTO p;
+  PERFORM _as_user();
+  r := post_journal_entry('{"date":"2026-03-15","journal_code":"OD","description":"c5","status":"posted"}',
+        '[{"account_code":"512000","debit":10},{"account_code":"706000","credit":10}]');
+  SELECT fiscal_period_id INTO got FROM journal_entries WHERE id = (r->>'entry_id')::uuid;
+  PERFORM _rec('C05', 'écriture rattachée à sa période (mars)', got IS NOT DISTINCT FROM p AND got IS NOT NULL,
+    format('période=%s attendue=%s retour=%s', COALESCE(got::text, '∅'), p, r));
+END $$;
+
+-- C06 — numéro définitif attribué à la validation, continu par journal et par exercice (AUD-C11)
+DO $$ DECLARE t uuid := _mk_tenant('C06', false); e1 uuid; e2 uuid; e3 uuid; e4 uuid; got text; BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open');
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open');
+  PERFORM _as_user();
+  BEGIN
+    e1 := _entry(t, 'N1', DATE '2025-03-01', '[{"a":"512000","d":10},{"a":"706000","c":10}]', false);
+    e2 := _entry(t, 'N2', DATE '2025-03-02', '[{"a":"512000","d":10},{"a":"706000","c":9}]', false);
+    e3 := _entry(t, 'N3', DATE '2025-03-03', '[{"a":"512000","d":10},{"a":"706000","c":10}]', false);
+    e4 := _entry(t, 'N4', DATE '2026-01-05', '[{"a":"512000","d":10},{"a":"706000","c":10}]', false);
+    UPDATE journal_entries SET status = 'posted' WHERE id = e1;
+    BEGIN UPDATE journal_entries SET status = 'posted' WHERE id = e2; EXCEPTION WHEN OTHERS THEN NULL; END;
+    UPDATE journal_entries SET status = 'posted' WHERE id = e3;
+    UPDATE journal_entries SET status = 'posted' WHERE id = e4;
+    EXECUTE format($q$SELECT string_agg(number || '=' || COALESCE(posting_number, '∅'), ' ' ORDER BY number)
+                       FROM journal_entries WHERE tenant_id = %L$q$, t) INTO got;
+    PERFORM _rec('C06', 'numéros définitifs 1, 2 sans trou malgré un échec ; remise à 1 sur le nouvel exercice',
+      got = 'N1=OD-2025-000001 N2=∅ N3=OD-2025-000002 N4=OD-2026-000001', got);
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM _rec('C06', 'numéros définitifs 1, 2 sans trou malgré un échec ; remise à 1 sur le nouvel exercice', false, SQLERRM);
+  END;
 END $$;
 
 -- F01 — isolation : le tenant B ne lit rien du tenant A

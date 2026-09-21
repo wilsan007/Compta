@@ -39,7 +39,11 @@ $$;
 
 -- Société de test isolée, contexte posé comme PostgREST le ferait.
 -- S'exécute en superutilisateur (écrit dans auth.users) : appeler AVANT _as_user().
-CREATE OR REPLACE FUNCTION _mk_tenant(p_name text) RETURNS uuid LANGUAGE plpgsql AS $$
+-- Comme une société réelle depuis la 183, elle reçoit le plan comptable standard ;
+-- p_fy crée l'exercice 2026 (sans périodes). Un scénario qui pose ses propres
+-- exercices passe p_fy = false.
+DROP FUNCTION IF EXISTS _mk_tenant(text);
+CREATE OR REPLACE FUNCTION _mk_tenant(p_name text, p_fy boolean DEFAULT true) RETURNS uuid LANGUAGE plpgsql AS $$
 DECLARE t uuid := uuid_generate_v4(); a uuid := uuid_generate_v4();
 BEGIN
   INSERT INTO auth.users (id, email) VALUES (a, lower(p_name) || '-' || a || '@audit.test');
@@ -57,6 +61,10 @@ BEGIN
     (t, 'AC', 'Achats', 'purchase', 'active', 1),
     (t, 'BQ', 'Banque', 'bank', 'active', 1)
   ON CONFLICT DO NOTHING;
+  PERFORM seed_standard_chart_unchecked(t);
+  IF p_fy THEN
+    INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open');
+  END IF;
   PERFORM set_config('app.active_tenant_id', t::text, false);
   IF current_tenant_id() IS DISTINCT FROM t THEN
     RAISE EXCEPTION 'Contexte tenant non établi — le test ne prouverait rien';

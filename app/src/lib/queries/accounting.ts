@@ -1973,10 +1973,10 @@ export async function transferGescomToAccounting(items: Array<{ type: 'sales' | 
   const results: Array<{ success: boolean; number: string; error?: string }> = []
   for (const item of items) {
     try {
-      let journalCode = 'VTE'
+      let journalCode = 'VT'
       let accountDebit = '411000'
       let accountCredit = '707000'
-      if (item.type === 'purchase') { journalCode = 'ACH'; accountDebit = '607000'; accountCredit = '401000' }
+      if (item.type === 'purchase') { journalCode = 'AC'; accountDebit = '607000'; accountCredit = '401000' }
       else if (item.type === 'customer_payment') { journalCode = 'BQ'; accountDebit = '512000'; accountCredit = '411000' }
       else if (item.type === 'supplier_payment') { journalCode = 'BQ'; accountDebit = '401000'; accountCredit = '512000' }
 

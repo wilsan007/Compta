@@ -28,7 +28,11 @@ DO $$ DECLARE t uuid := _mk_tenant('P01'); r jsonb; r2 jsonb; e uuid; BEGIN
   e := (r2->>'entry_id')::uuid;
   BEGIN
     UPDATE journal_entries SET status = 'posted' WHERE id = e;
-    PERFORM _rec('P02', 'écriture de paie équilibrée (cotisations salariales comprises)', true, 'ok');
+    -- Probant seulement si l'écriture existe et est validée : sans écriture,
+    -- l'UPDATE ne touche aucune ligne et ne lève rien.
+    PERFORM _rec('P02', 'écriture de paie équilibrée (cotisations salariales comprises)',
+      e IS NOT NULL AND (SELECT status FROM journal_entries WHERE id = e) = 'posted',
+      COALESCE(r2->>'error', 'statut=' || COALESCE((SELECT status FROM journal_entries WHERE id = e), '∅')));
   EXCEPTION WHEN OTHERS THEN
     PERFORM _rec('P02', 'écriture de paie équilibrée (cotisations salariales comprises)', false,
       SQLERRM || ' | journal_code=' || COALESCE((SELECT journal_code FROM journal_entries WHERE id = e), 'NULL'));

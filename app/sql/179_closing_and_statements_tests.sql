@@ -12,7 +12,7 @@ DELETE FROM _audit_results WHERE file = '179';
 
 -- D01 à D05 — clôture d'un exercice découpé en périodes, bénéfice 400
 DO $$
-DECLARE t uuid := _mk_tenant('D01'); fy uuid; fy2 uuid; r jsonb; an_d numeric; an_c numeric; an_120 numeric; s67 numeric; st text;
+DECLARE t uuid := _mk_tenant('D01', false); fy uuid; fy2 uuid; r jsonb; an_d numeric; an_c numeric; an_120 numeric; s67 numeric; st text;
 BEGIN
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy;
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy2;
@@ -50,7 +50,7 @@ END $$;
 
 -- D06 — deux clôtures successives, sans double comptage
 DO $$
-DECLARE t uuid := _mk_tenant('D06'); fy uuid; fy2 uuid; fy3 uuid; r1 jsonb; r2 jsonb; an_512 numeric;
+DECLARE t uuid := _mk_tenant('D06', false); fy uuid; fy2 uuid; fy3 uuid; r1 jsonb; r2 jsonb; an_512 numeric;
 BEGIN
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2024', '2024-01-01', '2024-12-31', 'open') RETURNING id INTO fy;
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy2;
@@ -69,7 +69,7 @@ END $$;
 
 -- D07 — clôture d'un exercice sans périodes, bénéfice 400
 DO $$
-DECLARE t uuid := _mk_tenant('D07'); fy uuid; fy2 uuid; r jsonb;
+DECLARE t uuid := _mk_tenant('D07', false); fy uuid; fy2 uuid; r jsonb;
 BEGIN
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy;
   INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy2;
@@ -82,9 +82,36 @@ BEGIN
     COALESCE((r->>'success')::boolean, false) AND COALESCE((r->>'result')::numeric, -1) = 400, r::text);
 END $$;
 
+-- D08 — états d'un exercice clos et de l'exercice suivant, sans double comptage
+DO $$
+DECLARE t uuid := _mk_tenant('D08', false); fy uuid; fy2 uuid; r jsonb;
+  is_rev numeric; is_exp numeric; bs_all numeric; bs_512 numeric; bs_res numeric; tb_d numeric; tb_c numeric; tb_512 numeric;
+BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy;
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy2;
+  PERFORM _as_user();
+  PERFORM _entry(t, 'CAP', DATE '2025-01-02', '[{"a":"512000","d":10000},{"a":"101000","c":10000}]');
+  PERFORM _entry(t, 'VTE', DATE '2025-05-10', '[{"a":"411000","d":1000,"t":"C001"},{"a":"706000","c":1000}]', true, 'VT');
+  PERFORM _entry(t, 'ACH', DATE '2025-06-10', '[{"a":"601000","d":600},{"a":"401000","c":600,"t":"F001"}]', true, 'AC');
+  r := close_fiscal_year(fy, fy2, true);
+
+  SELECT COALESCE(sum(credit - debit) FILTER (WHERE account_code ~ '^7'), 0), COALESCE(sum(debit - credit) FILTER (WHERE account_code ~ '^6'), 0)
+    INTO is_rev, is_exp FROM get_income_statement(fy, NULL, NULL);
+  SELECT COALESCE(sum(balance), 0), COALESCE(sum(balance) FILTER (WHERE account_code = '512000'), 0),
+         COALESCE(sum(balance) FILTER (WHERE account_code IN ('120000', '129000')), 0)
+    INTO bs_all, bs_512, bs_res FROM get_balance_sheet(fy2, NULL);
+  SELECT sum(closing_debit), sum(closing_credit), COALESCE(sum(closing_debit) FILTER (WHERE account_code = '512000'), 0)
+    INTO tb_d, tb_c, tb_512 FROM get_trial_balance(fy2, NULL, NULL, NULL);
+  PERFORM _rec('D08', 'exercice clos : compte de résultat intact ; N+1 : bilan et balance sans double comptage',
+    COALESCE((r->>'success')::boolean, false) AND is_rev = 1000 AND is_exp = 600
+      AND bs_all = 0 AND bs_512 = 10000 AND bs_res = -400 AND tb_d = tb_c AND tb_512 = 10000,
+    format('clôture=%s | CR 2025 : produits=%s charges=%s | bilan 2026 : Σ=%s 512=%s résultat=%s | balance 2026 : D=%s C=%s 512=%s',
+      COALESCE(r->>'error', r->>'success'), is_rev, is_exp, bs_all, bs_512, bs_res, tb_d, tb_c, tb_512));
+END $$;
+
 -- R01 à R04 — états financiers d'un exercice ouvert
 DO $$
-DECLARE t uuid := _mk_tenant('R01'); fy uuid; c uuid; inv uuid;
+DECLARE t uuid := _mk_tenant('R01', false); fy uuid; c uuid; inv uuid;
   tb_d numeric; tb_c numeric; tb_n int; is_rev numeric; is_exp numeric;
   bs_a numeric; bs_all numeric; bs_codes text;
 BEGIN
@@ -94,7 +121,8 @@ BEGIN
   INSERT INTO chart_accounts (tenant_id, code, name, type) VALUES
     (t, '101000', 'Capital', 'equity'), (t, '512000', 'Banque', 'asset'), (t, '411000', 'Clients', 'asset'),
     (t, '401000', 'Fournisseurs', 'liability'), (t, '445710', 'TVA collectée', 'liability'),
-    (t, '601000', 'Achats', 'expense'), (t, '706000', 'Prestations', 'income'), (t, '707000', 'Ventes', 'income');
+    (t, '601000', 'Achats', 'expense'), (t, '706000', 'Prestations', 'income'), (t, '707000', 'Ventes', 'income')
+  ON CONFLICT (tenant_id, code) DO NOTHING;
   PERFORM _entry(t, 'CAP', DATE '2026-01-02', '[{"a":"512000","d":10000},{"a":"101000","c":10000}]');
   PERFORM _entry(t, 'ACH', DATE '2026-02-10', '[{"a":"601000","d":600},{"a":"401000","c":600}]', true, 'AC');
   -- vente par la vraie chaîne : facture validée → trigger comptable

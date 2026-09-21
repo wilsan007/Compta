@@ -5,6 +5,8 @@
 -- d'interaction et de contraintes complexes.
 -- ============================================================
 
+\ir ci/ledger_fixture.sql
+
 DO $$
 DECLARE
   v_tenant_id uuid := uuid_generate_v4();
@@ -54,6 +56,7 @@ BEGIN
   INSERT INTO company_settings (tenant_id, name, currency, country, fiscal_year_start, created_at)
   VALUES (v_tenant_id, 'Test Company', 'EUR', 'France', '2026-01-01', NOW())
   ON CONFLICT DO NOTHING;
+  PERFORM _ledger_fixture(v_tenant_id);  -- plan, journaux, exercice (187)
 
   -- Configurer le contexte tenant (app.active_tenant_id est utilisé par current_tenant_id)
   PERFORM set_config('app.active_tenant_id', v_tenant_id::text, true);
@@ -152,10 +155,10 @@ BEGIN
   RETURNING id INTO v_entry_id;
 
   INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description, line_order)
-  VALUES (v_tenant_id, v_entry_id, '641000', '641', 100.00, 0, 'Débit test', 1);
+  VALUES (v_tenant_id, v_entry_id, '641000', '641000', 100.00, 0, 'Débit test', 1);
 
   INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description, line_order)
-  VALUES (v_tenant_id, v_entry_id, '421000', '421', 0, 100.00, 'Crédit test', 2);
+  VALUES (v_tenant_id, v_entry_id, '421000', '421000', 0, 100.00, 'Crédit test', 2);
 
   UPDATE journal_entries SET status = 'posted' WHERE id = v_entry_id;
 
@@ -194,7 +197,7 @@ BEGIN
     RETURNING id INTO v_unbalanced_id;
 
     INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description, line_order)
-    VALUES (v_tenant_id, v_unbalanced_id, '641000', '641', 50.00, 0, 'Débit seul', 1);
+    VALUES (v_tenant_id, v_unbalanced_id, '641000', '641000', 50.00, 0, 'Débit seul', 1);
 
     BEGIN
       UPDATE journal_entries SET status = 'posted' WHERE id = v_unbalanced_id;
