@@ -369,6 +369,34 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # AUD-A01/A03 — scénarios de l'audit du 21/09 (doc/audit/PLAN-CORRECTIF-AUDIT-2026-09-21.md).
+      # Les défauts encore ouverts sont listés dans sql/ci/expected_failures.sql : un échec
+      # hors registre casse la CI, et un défaut corrigé encore inscrit la casse aussi.
+      - name: 'AUD : noyau de saisie comptable (178)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/178_accounting_kernel_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : clôture et états financiers (179)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/179_closing_and_statements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : ventes vers comptabilité (180)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/180_sales_to_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : paie vers comptabilité (181)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/181_payroll_to_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : inscription et mise en service (182)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/182_signup_provisioning_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: 'LOT6-05 : Scénarios métier E2E (10 parcours)'
         run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
         env:

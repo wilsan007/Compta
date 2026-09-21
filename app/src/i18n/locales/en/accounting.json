@@ -1301,7 +1301,8 @@
     "legendExpenses": "Expenses",
     "legendProfit": "Profit",
     "generateAnnex": "Generate accounting annex",
-    "annexGenerated": "Accounting annex generated successfully"
+    "annexGenerated": "Accounting annex generated successfully",
+    "noData": "No posted entries for this fiscal year."
   },
   "reports": {
     "paymentDelay": {

@@ -839,99 +839,51 @@ export interface TenantUser {
   valid_until: string | null
 }
 
-export async function createTenantForUser(data: {
+type CreateTenantData = {
   name: string
-  legal_name?: string
-  siren?: string
-  vat_number?: string
-  address?: string
-  city?: string
-  postal_code?: string
-  country?: string
-  currency?: string
-  email?: string
-  phone?: string
-  legislation_pack_code?: string
+  legal_name?: string | null
+  siren?: string | null
+  siret?: string | null
+  vat_number?: string | null
+  address?: string | null
+  city?: string | null
+  postal_code?: string | null
+  country?: string | null
+  currency?: string | null
+  email?: string | null
+  phone?: string | null
+  legislation_pack_code?: string | null
   enabled_modules?: string[]
-}): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
+  plan?: string | null
+  trial_ends_at?: string | null
+}
+
+// AUD-B02 : la création d'une société passe par la RPC atomique
+// create_tenant_for_current_user — société, administrateur, fiche salarié, plan
+// comptable, journaux, exercice et paramètres dans une seule transaction.
+// L'ancien enchaînement d'insertions côté client était refusé par la RLS de
+// `tenants`, et l'échec de bootstrap_tenant n'était que journalisé.
+async function createTenantViaRpc(payload: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Non connecté' }
 
-  const authId = session.user.id
-  const userEmail = session.user.email || data.email || ''
-  // Use the user's actual name from auth metadata, NOT the company name
-  const userDisplayName = (session.user.user_metadata?.name as string) || session.user.user_metadata?.full_name || userEmail
-
-  const { data: tenant, error: tenantErr } = await supabase
-    .from('tenants')
-    .insert({
-      name: data.name,
-      legal_name: data.legal_name || data.name,
-      siren: data.siren || null,
-      vat_number: data.vat_number || null,
-      address: data.address || null,
-      city: data.city || null,
-      postal_code: data.postal_code || null,
-      country: data.country || 'France',
-      currency: data.currency || 'EUR',
-      email: data.email || userEmail,
-      phone: data.phone || null,
-      legislation_pack_code: data.legislation_pack_code || null,
-      country_code: data.legislation_pack_code || null,
-      enabled_modules: data.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system'],
-      status: 'active',
-      plan: 'trial',
-      trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    })
-    .select()
-    .single()
-
-  if (tenantErr) return { success: false, error: tenantErr.message }
-
-  const { error: tuErr } = await supabase
-    .from('tenant_users')
-    .insert({
-      tenant_id: tenant.id,
-      auth_id: authId,
-      email: userEmail,
-      name: userDisplayName,
-      role: 'admin',
-      permissions: {},
-      status: 'active',
-      accepted_at: new Date().toISOString(),
-    })
-
-  if (tuErr) {
-    await supabase.from('tenants').delete().eq('id', tenant.id)
-    return { success: false, error: tuErr.message }
+  const { data, error } = await supabase.rpc('create_tenant_for_current_user', { p_data: payload })
+  if (error) return { success: false, error: error.message }
+  const res = data as { success?: boolean; error?: string; tenant_id?: string; tenant?: Tenant } | null
+  if (!res || res.success !== true) {
+    return { success: false, error: res?.error || 'Création de la société impossible' }
   }
+  return { success: true, tenant: res.tenant }
+}
 
-  // Also create an employee record for the tenant admin
-  const { error: empErr } = await supabase
-    .from('employees')
-    .insert({
-      tenant_id: tenant.id,
-      name: userDisplayName,
-      email: userEmail,
-      position: 'Admin',
-      department: 'Direction',
-      hire_date: new Date().toISOString().split('T')[0],
-      status: 'active',
-    })
-  if (empErr) {
-    console.error('Failed to create employee record for admin:', empErr.message)
-    // Non-fatal: tenant is still created
-  }
-
-  // Seed reference data (chart of accounts, journals, currencies, fiscal year,
-  // company settings) so the app is immediately usable. Non-fatal: if it fails,
-  // the tenant still exists and the user can import/create data manually.
-  const { error: bootstrapErr } = await supabase.rpc('bootstrap_tenant', { p_tenant_id: tenant.id })
-  if (bootstrapErr) {
-    console.error('bootstrap_tenant failed:', bootstrapErr.message)
-  }
-
-  return { success: true, tenant: tenant as Tenant }
+export async function createTenantForUser(data: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
+  return createTenantViaRpc({
+    ...data,
+    legal_name: data.legal_name || data.name,
+    country: data.country || 'France',
+    currency: data.currency || 'EUR',
+    enabled_modules: data.enabled_modules || ['home', 'accounting', 'commercial', 'treasury', 'stock', 'production', 'hr', 'dashboards', 'reporting', 'system'],
+  })
 }
 
 export async function createSiteForCurrentTenant(data: {
@@ -941,79 +893,24 @@ export async function createSiteForCurrentTenant(data: {
   const current = await getCurrentTenant()
   if (!current) return { success: false, error: 'Aucun tenant actif' }
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return { success: false, error: 'Non connecté' }
-
-  const authId = session.user.id
-  const userEmail = session.user.email || current.email || ''
-  const userDisplayName = (session.user.user_metadata?.name as string) || session.user.user_metadata?.full_name || userEmail
-
-  const { data: tenant, error: tenantErr } = await supabase
-    .from('tenants')
-    .insert({
-      name: data.siteName,
-      legal_name: current.legal_name || data.siteName,
-      siren: current.siren,
-      siret: null,
-      vat_number: current.vat_number,
-      address: data.address,
-      city: current.city,
-      postal_code: current.postal_code,
-      country: current.country,
-      currency: current.currency,
-      email: current.email,
-      phone: current.phone,
-      legislation_pack_code: current.legislation_pack_code || null,
-      country_code: current.legislation_pack_code || null,
-      enabled_modules: current.enabled_modules,
-      status: 'active',
-      plan: current.plan,
-      trial_ends_at: current.trial_ends_at,
-    })
-    .select()
-    .single()
-
-  if (tenantErr) return { success: false, error: tenantErr.message }
-
-  const { error: tuErr } = await supabase
-    .from('tenant_users')
-    .insert({
-      tenant_id: tenant.id,
-      auth_id: authId,
-      email: userEmail,
-      name: userDisplayName,
-      role: 'admin',
-      permissions: {},
-      status: 'active',
-      accepted_at: new Date().toISOString(),
-    })
-
-  if (tuErr) {
-    await supabase.from('tenants').delete().eq('id', tenant.id)
-    return { success: false, error: tuErr.message }
-  }
-
-  const { error: empErr } = await supabase
-    .from('employees')
-    .insert({
-      tenant_id: tenant.id,
-      name: userDisplayName,
-      email: userEmail,
-      position: 'Admin',
-      department: 'Direction',
-      hire_date: new Date().toISOString().split('T')[0],
-      status: 'active',
-    })
-  if (empErr) {
-    console.error('Failed to create employee record for site admin:', empErr.message)
-  }
-
-  const { error: bootstrapErr } = await supabase.rpc('bootstrap_tenant', { p_tenant_id: tenant.id })
-  if (bootstrapErr) {
-    console.error('bootstrap_tenant failed:', bootstrapErr.message)
-  }
-
-  return { success: true, tenant: tenant as Tenant }
+  return createTenantViaRpc({
+    name: data.siteName,
+    legal_name: current.legal_name || data.siteName,
+    siren: current.siren,
+    siret: null,
+    vat_number: current.vat_number,
+    address: data.address,
+    city: current.city,
+    postal_code: current.postal_code,
+    country: current.country,
+    currency: current.currency,
+    email: current.email,
+    phone: current.phone,
+    legislation_pack_code: current.legislation_pack_code || undefined,
+    enabled_modules: current.enabled_modules,
+    plan: current.plan,
+    trial_ends_at: current.trial_ends_at,
+  })
 }
 
 export async function getCurrentTenant(): Promise<Tenant | null> {

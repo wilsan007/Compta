@@ -1301,7 +1301,8 @@
     "legendExpenses": "المصاريف",
     "legendProfit": "الربح",
     "generateAnnex": "إنشاء الملحق المحاسبي",
-    "annexGenerated": "تم إنشاء الملحق المحاسبي بنجاح"
+    "annexGenerated": "تم إنشاء الملحق المحاسبي بنجاح",
+    "noData": "لا توجد قيود مُرحَّلة في هذه السنة المالية."
   },
   "reports": {
     "paymentDelay": {

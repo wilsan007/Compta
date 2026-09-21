@@ -1301,7 +1301,8 @@
     "legendExpenses": "Dépenses",
     "legendProfit": "Profit",
     "generateAnnex": "Générer l'annexe comptable",
-    "annexGenerated": "Annexe comptable générée avec succès"
+    "annexGenerated": "Annexe comptable générée avec succès",
+    "noData": "Aucune écriture validée sur cet exercice."
   },
   "reports": {
     "paymentDelay": {

@@ -824,31 +824,62 @@ describe('createTenant', () => {
     expect(result.success).toBe(false)
   })
 
-  it('creates tenant and tenant_users entry', async () => {
-    // DB-01: createTenantForUser utilise maintenant un RPC atomique
+  it('crée la société par la RPC atomique, sans insertion directe (AUD-B02)', async () => {
+    const tablesTouched: string[] = []
     _fromOverride = (table: string) => {
-      const c = chainWith({ id: 't1', name: 'Test Co' })
-      if (table === 'tenants') {
-        c.select = vi.fn(() => c)
-        c.eq = vi.fn(() => c)
-        c.single = vi.fn(() => Promise.resolve({ data: { id: 't1', name: 'Test Co' }, error: null }))
-      }
-      return c
+      tablesTouched.push(table)
+      return chainWith(null)
     }
-
-    // Mock the RPC to return success with tenant_id
     const supabaseMock = await import('@/lib/supabase')
-    ;(supabaseMock.supabase as any).rpc = vi.fn((fn: string) => {
+    const rpc = vi.fn((fn: string) => {
       if (fn === 'create_tenant_for_current_user') {
-        return Promise.resolve({ data: { success: true, tenant_id: 't1' }, error: null })
+        return Promise.resolve({ data: { success: true, tenant_id: 't1', tenant: { id: 't1', name: 'Test Co' } }, error: null })
       }
-      return Promise.resolve({ data: null, error: null })
+      return Promise.resolve({ data: null, error: { message: `RPC inattendue : ${fn}` } })
     })
+    ;(supabaseMock.supabase as any).rpc = rpc
 
     const queries = await import('@/lib/queries')
-    expect(queries.createTenantForUser).toBeDefined()
     const result = await queries.createTenantForUser({ name: 'Test Co' })
+
+    expect(result).toEqual({ success: true, tenant: { id: 't1', name: 'Test Co' } })
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith('create_tenant_for_current_user', {
+      p_data: expect.objectContaining({ name: 'Test Co', legal_name: 'Test Co', country: 'France', currency: 'EUR' }),
+    })
+    // L'ancien enchaînement (tenants → tenant_users → employees → bootstrap_tenant) est refusé par la RLS
+    expect(tablesTouched).not.toContain('tenants')
+    expect(tablesTouched).not.toContain('tenant_users')
+  })
+
+  it('remonte l\'échec de mise en service au lieu de le masquer (AUD-B02)', async () => {
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: { success: false, error: 'Société incomplète après mise en service : plan comptable' },
+      error: null,
+    }))
+    const queries = await import('@/lib/queries')
+    const result = await queries.createTenantForUser({ name: 'Test Co' })
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('plan comptable')
+  })
+
+  it('crée un site par la même RPC, avec les données de la société courante', async () => {
+    let call = 0
+    _fromOverride = () => {
+      call++
+      const c = chainWith([{ tenant_id: 'cur', tenants: { id: 'cur', name: 'Mère', currency: 'DJF', country: 'Djibouti', enabled_modules: null } }])
+      return c
+    }
+    const supabaseMock = await import('@/lib/supabase')
+    const rpc = vi.fn(() => Promise.resolve({ data: { success: true, tenant_id: 's1', tenant: { id: 's1' } }, error: null }))
+    ;(supabaseMock.supabase as any).rpc = rpc
+    const queries = await import('@/lib/queries')
+    const result = await queries.createSiteForCurrentTenant({ siteName: 'Site Nord', address: '1 rue' })
+    expect(call).toBeGreaterThan(0)
     expect(result.success).toBe(true)
-    expect(result.tenant).toBeDefined()
+    expect(rpc).toHaveBeenCalledWith('create_tenant_for_current_user', {
+      p_data: expect.objectContaining({ name: 'Site Nord', address: '1 rue', currency: 'DJF', country: 'Djibouti' }),
+    })
   })
 })

@@ -283,6 +283,60 @@ export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: strin
 }
 
 
+// ============ Income statement ============
+// AUD-D07 : compte de résultat calculé par le serveur sur les écritures validées
+// de l'exercice (classes 6 et 7). Remplace les chiffres écrits en dur de ReportsPage.
+export interface IncomeStatementRow {
+  account_code: string
+  account_name: string
+  account_type: 'income' | 'expense'
+  debit: number
+  credit: number
+  /** Montant en valeur positive : produit net pour la classe 7, charge nette pour la classe 6 */
+  amount: number
+}
+
+export async function getIncomeStatement(fiscalYearId: string, opts?: { dateFrom?: string; dateTo?: string }): Promise<IncomeStatementRow[]> {
+  const { data, error } = await supabase.rpc('get_income_statement', {
+    p_fiscal_year_id: fiscalYearId,
+    p_date_from: opts?.dateFrom ?? null,
+    p_date_to: opts?.dateTo ?? null,
+  })
+  if (error) throw error
+  return ((data || []) as any[]).map((row) => {
+    const debit = Number(row.debit) || 0
+    const credit = Number(row.credit) || 0
+    const type: 'income' | 'expense' = row.account_type === 'income' ? 'income' : 'expense'
+    return {
+      account_code: row.account_code,
+      account_name: row.account_name,
+      account_type: type,
+      debit,
+      credit,
+      amount: type === 'income' ? credit - debit : debit - credit,
+    }
+  })
+}
+
+export interface IncomeStatementMonth {
+  month: string
+  revenue: number
+  expense: number
+  result: number
+}
+
+export async function getIncomeStatementMonthly(fiscalYearId: string): Promise<IncomeStatementMonth[]> {
+  const { data, error } = await supabase.rpc('get_income_statement_monthly', { p_fiscal_year_id: fiscalYearId })
+  if (error) throw error
+  return ((data || []) as any[]).map((row) => ({
+    month: String(row.month),
+    revenue: Number(row.revenue) || 0,
+    expense: Number(row.expense) || 0,
+    result: Number(row.result) || 0,
+  }))
+}
+
+
 // ============ VAT Returns ============
 export async function getVatReturns() {
   const tid = await getTenantId()
