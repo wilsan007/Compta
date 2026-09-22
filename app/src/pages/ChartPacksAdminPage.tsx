@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, EmptyState, Breadcrumb } from '@/components/ui'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { useToast } from '@/lib/toast'
+import { confirmDialog } from '@/lib/confirm'
 import { Upload, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { getLegislationPacks } from '@/lib/queries/accounting'
 import {
@@ -70,7 +71,12 @@ export function ChartPacksAdminPage() {
   }
 
   async function handlePublish() {
-    if (!window.confirm(t('chartPacks.publishConfirm', { pack: packCode }))) return
+    const ok = await confirmDialog({
+      title: t('chartPacks.title'),
+      message: t('chartPacks.publishConfirm', { pack: packCode }),
+      variant: 'primary',
+    })
+    if (!ok) return
     setBusy(true)
     try {
       const res = await publishChartPack(packCode)
