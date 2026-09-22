@@ -636,5 +636,32 @@
       "turnover": "Chiffre d'affaires",
       "property_value": "Valeur foncière"
     }
+  },
+  "chartPacks": {
+    "breadcrumb": "Paramètres",
+    "title": "Plans comptables par pays",
+    "subtitle": "Téléverser puis publier le plan comptable d'un pays. La publication bascule automatiquement les sociétés du pays au plan provisoire et sans écriture validée.",
+    "statusTitle": "État des plans",
+    "accounts": "{{count}} comptes",
+    "statusPublished": "Publié",
+    "statusDraft": "Brouillon",
+    "uploadTitle": "Téléverser un plan",
+    "pack": "Pays / pack",
+    "format": "Fichier CSV, séparateur « ; » ou « , ». En-tête obligatoire : code;libellé;type (colonnes facultatives : parent;tva). Type : actif, passif, capitaux propres, produit ou charge.",
+    "chooseFile": "Choisir un fichier CSV",
+    "rowsRead": "{{count}} comptes lus dans le fichier",
+    "upload": "Téléverser (brouillon)",
+    "publish": "Publier",
+    "publishConfirm": "Publier le plan {{pack}} ? Il deviendra définitif et les sociétés du pays au plan provisoire, sans écriture validée, y seront basculées.",
+    "uploaded": "{{count}} comptes enregistrés en brouillon",
+    "published": "Plan publié",
+    "alreadyPublished": "Ce plan est publié : il ne peut plus être remplacé.",
+    "lineErrors": "Fichier refusé, rien n'a été enregistré :",
+    "lineError": "Ligne {{line}} ({{code}}) : {{error}}",
+    "missingRequired": "Publication impossible tant que le plan ne contient pas les comptes imputés par les écritures automatiques : {{codes}}",
+    "switched": "Sociétés basculées sur ce plan : {{count}}",
+    "notSwitched": "Sociétés non basculées (écritures déjà validées, transposition manuelle) : {{count}}",
+    "forbiddenTitle": "Accès réservé",
+    "forbidden": "Cette page est réservée aux administrateurs de la plateforme."
   }
 }

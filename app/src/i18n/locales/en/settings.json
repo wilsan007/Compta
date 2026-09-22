@@ -636,5 +636,32 @@
       "turnover": "Turnover",
       "property_value": "Property Value"
     }
+  },
+  "chartPacks": {
+    "breadcrumb": "Settings",
+    "title": "Charts of accounts by country",
+    "subtitle": "Upload then publish a country's chart of accounts. Publishing automatically switches the country's companies that are on the provisional chart and have no posted entry.",
+    "statusTitle": "Chart status",
+    "accounts": "{{count}} accounts",
+    "statusPublished": "Published",
+    "statusDraft": "Draft",
+    "uploadTitle": "Upload a chart",
+    "pack": "Country / pack",
+    "format": "CSV file, separator \";\" or \",\". Required header: code;libellé;type (optional columns: parent;tva). Type: actif, passif, capitaux propres, produit or charge (or asset, liability, equity, income, expense).",
+    "chooseFile": "Choose a CSV file",
+    "rowsRead": "{{count}} accounts read from the file",
+    "upload": "Upload (draft)",
+    "publish": "Publish",
+    "publishConfirm": "Publish chart {{pack}}? It becomes final and the country's companies on the provisional chart, with no posted entry, will be switched to it.",
+    "uploaded": "{{count}} accounts saved as draft",
+    "published": "Chart published",
+    "alreadyPublished": "This chart is published: it can no longer be replaced.",
+    "lineErrors": "File rejected, nothing was saved:",
+    "lineError": "Line {{line}} ({{code}}): {{error}}",
+    "missingRequired": "Cannot publish until the chart contains the accounts used by automatic entries: {{codes}}",
+    "switched": "Companies switched to this chart: {{count}}",
+    "notSwitched": "Companies not switched (entries already posted, manual transposition): {{count}}",
+    "forbiddenTitle": "Restricted access",
+    "forbidden": "This page is reserved for platform administrators."
   }
 }

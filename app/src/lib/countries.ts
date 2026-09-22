@@ -200,6 +200,7 @@ export const COUNTRIES = [
 
 export const COUNTRY_CODE_MAP: Record<string, string> = {
   'France': 'FR',
+  'Djibouti': 'DJ',
   'Belgique': 'BE',
   'Suisse': 'CH',
   'Maroc': 'MA',
@@ -254,6 +255,7 @@ export const COUNTRY_CODE_MAP: Record<string, string> = {
 
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
   'France': 'EUR',
+  'Djibouti': 'DJF',
   'Belgique': 'EUR',
   'Suisse': 'CHF',
   'Luxembourg': 'EUR',

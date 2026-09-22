@@ -397,6 +397,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Plan comptable par pays (201) : France = PCG, Djibouti = PCG provisoire puis plan DJ
+      # publié (bascule automatique), autres pays refusés. Transaction annulée en fin de fichier.
+      - name: 'Plan comptable par pays (202)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/202_chart_by_country_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: 'AUD : achats et trésorerie vers comptabilité (192)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/192_purchases_treasury_tests.sql
         env:

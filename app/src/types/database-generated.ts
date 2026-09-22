@@ -1971,6 +1971,102 @@ export interface Database {
       }
       Relationships: []
     }
+    chart_pack_status: {
+      Row: {
+        pack_code: string
+        status: string
+        account_count: number
+        uploaded_by: string | null
+        uploaded_at: string | null
+        published_by: string | null
+        published_at: string | null
+        source: string
+      }
+      Insert: {
+        pack_code: string
+        status?: string
+        account_count?: number
+        uploaded_by?: string
+        uploaded_at?: string
+        published_by?: string
+        published_at?: string
+        source?: string
+      }
+      Update: {
+        pack_code?: string
+        status?: string
+        account_count?: number
+        uploaded_by?: string
+        uploaded_at?: string
+        published_by?: string
+        published_at?: string
+        source?: string
+      }
+      Relationships: []
+    }
+    chart_pack_switch_log: {
+      Row: {
+        id: string
+        tenant_id: string
+        from_pack: string | null
+        to_pack: string
+        switched: boolean
+        detail: Json
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        from_pack?: string
+        to_pack: string
+        switched: boolean
+        detail?: Json
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        from_pack?: string
+        to_pack?: string
+        switched?: boolean
+        detail?: Json
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chart_provisional_fallbacks: {
+      Row: {
+        country_code: string
+        fallback_pack: string
+      }
+      Insert: {
+        country_code: string
+        fallback_pack: string
+      }
+      Update: {
+        country_code?: string
+        fallback_pack?: string
+      }
+      Relationships: []
+    }
+    chart_required_accounts: {
+      Row: {
+        code: string
+        source: string
+        reason: string
+      }
+      Insert: {
+        code: string
+        source: string
+        reason: string
+      }
+      Update: {
+        code?: string
+        source?: string
+        reason?: string
+      }
+      Relationships: []
+    }
     check_books: {
       Row: {
         id: string
@@ -9672,6 +9768,21 @@ export interface Database {
       }
       Relationships: []
     }
+    platform_admins: {
+      Row: {
+        auth_id: string
+        created_at: string
+      }
+      Insert: {
+        auth_id: string
+        created_at?: string
+      }
+      Update: {
+        auth_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     pos_payment_methods: {
       Row: {
         id: string
@@ -14946,6 +15057,8 @@ export interface Database {
         country_code: string | null
         legislation_pack_code: string | null
         enabled_modules: Json
+        chart_pack_code: string | null
+        chart_provisional: boolean
       }
       Insert: {
         id?: string
@@ -14970,6 +15083,8 @@ export interface Database {
         country_code?: string
         legislation_pack_code?: string
         enabled_modules?: Json
+        chart_pack_code?: string
+        chart_provisional?: boolean
       }
       Update: {
         id?: string
@@ -14994,6 +15109,8 @@ export interface Database {
         country_code?: string
         legislation_pack_code?: string
         enabled_modules?: Json
+        chart_pack_code?: string
+        chart_provisional?: boolean
       }
       Relationships: []
     }

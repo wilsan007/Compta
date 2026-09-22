@@ -4,7 +4,8 @@ import { ChevronDown, Search, Check } from 'lucide-react'
 interface SearchableSelectProps {
   value: string
   onChange: (value: string) => void
-  options: { value: string; label: string }[]
+  /** disabled : option visible mais non sélectionnable ; hint : mention affichée à droite */
+  options: { value: string; label: string; disabled?: boolean; hint?: string }[]
   placeholder?: string
   searchPlaceholder?: string
   className?: string
@@ -82,8 +83,9 @@ export function SearchableSelect({
                   if (e.key === 'Enter') {
                     e.preventDefault()
                     e.stopPropagation()
-                    if (filtered.length > 0) {
-                      onChange(filtered[0].value)
+                    const first = filtered.find((o) => !o.disabled)
+                    if (first) {
+                      onChange(first.value)
                     }
                     setOpen(false)
                     setQuery('')
@@ -108,16 +110,22 @@ export function SearchableSelect({
               <button
                 key={o.value}
                 type="button"
+                disabled={o.disabled}
+                aria-disabled={o.disabled || undefined}
                 onClick={() => {
+                  if (o.disabled) return
                   onChange(o.value)
                   setOpen(false)
                   setQuery('')
                 }}
-                className={`w-full text-left px-3 py-2 text-sm text-[var(--color-text)] hover:bg-[var(--color-neutral-50)] flex items-center justify-between ${
-                  o.value === value ? 'bg-[rgba(0,108,255,0.05)] font-medium' : ''
-                }`}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2 ${
+                  o.disabled
+                    ? 'text-[var(--color-text-secondary)] cursor-not-allowed opacity-60'
+                    : 'text-[var(--color-text)] hover:bg-[var(--color-neutral-50)]'
+                } ${o.value === value ? 'bg-[rgba(0,108,255,0.05)] font-medium' : ''}`}
               >
                 <span>{o.label}</span>
+                {o.hint && <span className="text-xs text-[var(--color-text-secondary)] shrink-0">{o.hint}</span>}
                 {o.value === value && <Check className="w-4 h-4 text-[var(--color-primary)]" />}
               </button>
             ))}

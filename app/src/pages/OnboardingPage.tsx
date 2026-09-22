@@ -9,6 +9,7 @@ import type { LegislationPack, TaxRate } from '@/types'
 import { Building2, AlertCircle, CheckCircle2, MapPin, FileText, Phone, Scale, LayoutGrid } from 'lucide-react'
 import { COUNTRIES, CURRENCIES, getCurrencyForCountry, getCountryCode } from '@/lib/countries'
 import { SearchableSelect } from '@/components/SearchableSelect'
+import { getAvailableSignupCountries, type SignupCountry } from '@/lib/queries/chartPacks'
 
 export function OnboardingPage() {
   const { t } = useTranslation('auth')
@@ -21,9 +22,20 @@ export function OnboardingPage() {
   const [selectedPack, setSelectedPack] = useState<LegislationPack | null>(null)
   const [packTaxRates, setPackTaxRates] = useState<TaxRate[]>([])
 
+  // Pays ouverts à l'inscription : ceux qui ont un plan comptable publié (ou provisoire)
+  // null : liste indisponible (serveur antérieur à la migration 201) — le serveur reste juge
+  const [signupCountries, setSignupCountries] = useState<SignupCountry[] | null>([])
+
   useEffect(() => {
     getLegislationPacks().then(setLegislationPacks).catch(() => {})
+    getAvailableSignupCountries().then(setSignupCountries)
   }, [])
+
+  const availableCodes = new Set((signupCountries ?? []).map((c) => c.country_code))
+  const signupCountryOf = (country: string) => (signupCountries ?? []).find(
+    (c) => c.country_code === getCountryCode(country) || c.country_name.toLowerCase() === country.toLowerCase(),
+  )
+  const isCountryAvailable = (country: string) => signupCountries === null || !!signupCountryOf(country)
 
   // When a legislation pack is selected, auto-fill currency/country and fetch VAT rates
   useEffect(() => {
@@ -128,7 +140,9 @@ export function OnboardingPage() {
       enabled_modules: ['home', ...selectedModules, 'system'],
     })
     if (!success || createError) {
-      setError(createError || t('onboarding.createError'))
+      setError(createError === 'PAYS_NON_DISPONIBLE'
+        ? t('onboarding.countryUnavailable')
+        : createError || t('onboarding.createError'))
       setLoading(false)
       return
     }
@@ -150,6 +164,10 @@ export function OnboardingPage() {
     }
     if (step === 1 && !form.country) {
       setError(t('onboarding.countryRequired'))
+      return
+    }
+    if (step === 1 && !isCountryAvailable(form.country)) {
+      setError(t('onboarding.countryUnavailable'))
       return
     }
     if (step === 4 && selectedModules.length === 0) {
@@ -299,11 +317,19 @@ export function OnboardingPage() {
                   <SearchableSelect
                     value={form.country}
                     onChange={(v) => update('country', v)}
-                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                    options={[
+                      ...COUNTRIES.filter(isCountryAvailable).map((c) => ({ value: c, label: c })),
+                      ...COUNTRIES.filter((c) => !isCountryAvailable(c)).map((c) => ({
+                        value: c, label: c, disabled: true, hint: t('onboarding.countryComingSoon'),
+                      })),
+                    ]}
                     searchPlaceholder={t('onboarding.searchCountry')}
                     placeholder={t('onboarding.selectCountry')}
                     className="w-full"
                   />
+                  {signupCountryOf(form.country)?.provisional && (
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.chartProvisional')}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -327,7 +353,7 @@ export function OnboardingPage() {
                     if (pack) setSelectedPack(pack)
                     update('legislation_pack_code', code)
                   }}
-                  options={legislationPacks.map((p) => ({
+                  options={legislationPacks.filter((p) => signupCountries === null || availableCodes.has(p.country_code)).map((p) => ({
                     value: p.code,
                     label: `${p.country_name} — ${p.accounting_standard} (${p.currency})`,
                   }))}

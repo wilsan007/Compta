@@ -636,5 +636,32 @@
       "turnover": "رقم الأعمال",
       "property_value": "قيمة العقار"
     }
+  },
+  "chartPacks": {
+    "breadcrumb": "الإعدادات",
+    "title": "أدلة الحسابات حسب البلد",
+    "subtitle": "رفع ثم نشر دليل حسابات بلد ما. يؤدي النشر إلى نقل شركات البلد التي تعمل بالدليل المؤقت ولا تملك قيودًا مرحّلة تلقائيًا.",
+    "statusTitle": "حالة الأدلة",
+    "accounts": "{{count}} حسابًا",
+    "statusPublished": "منشور",
+    "statusDraft": "مسودة",
+    "uploadTitle": "رفع دليل",
+    "pack": "البلد / الحزمة",
+    "format": "ملف CSV، الفاصل \";\" أو \",\". العنوان إلزامي: code;libellé;type (أعمدة اختيارية: parent;tva). النوع: actif أو passif أو capitaux propres أو produit أو charge.",
+    "chooseFile": "اختر ملف CSV",
+    "rowsRead": "تمت قراءة {{count}} حسابًا من الملف",
+    "upload": "رفع (مسودة)",
+    "publish": "نشر",
+    "publishConfirm": "نشر الدليل {{pack}}؟ سيصبح نهائيًا وستُنقل إليه شركات البلد التي تعمل بالدليل المؤقت دون قيود مرحّلة.",
+    "uploaded": "تم حفظ {{count}} حسابًا كمسودة",
+    "published": "تم نشر الدليل",
+    "alreadyPublished": "هذا الدليل منشور: لم يعد بالإمكان استبداله.",
+    "lineErrors": "رُفض الملف، ولم يُحفظ أي شيء:",
+    "lineError": "السطر {{line}} ({{code}}): {{error}}",
+    "missingRequired": "لا يمكن النشر قبل أن يتضمن الدليل الحسابات المستخدمة في القيود التلقائية: {{codes}}",
+    "switched": "الشركات المنقولة إلى هذا الدليل: {{count}}",
+    "notSwitched": "الشركات غير المنقولة (قيود مرحّلة، نقل يدوي): {{count}}",
+    "forbiddenTitle": "وصول مقيّد",
+    "forbidden": "هذه الصفحة مخصصة لمسؤولي المنصة."
   }
 }

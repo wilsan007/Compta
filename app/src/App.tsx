@@ -30,6 +30,7 @@ const PurchaseInvoicesPage = lazy(() => import('@/pages/PurchaseInvoicesPage').t
 const BankAccountsPage = lazy(() => import('@/pages/BankAccountsPage').then(m => ({ default: m.BankAccountsPage })))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const ChartPacksAdminPage = lazy(() => import('@/pages/ChartPacksAdminPage').then(m => ({ default: m.ChartPacksAdminPage })))
 const AccountingDashboardPage = lazy(() => import('@/pages/AccountingDashboardPage').then(m => ({ default: m.AccountingDashboardPage })))
 const JournalEntriesPage = lazy(() => import('@/pages/JournalEntriesPage').then(m => ({ default: m.JournalEntriesPage })))
 const GeneralLedgerPage = lazy(() => import('@/pages/GeneralLedgerPage').then(m => ({ default: m.GeneralLedgerPage })))
@@ -532,6 +533,8 @@ function App() {
           <Route path="/settings/data" element={<SubGroupHubPage moduleId="system" sectionIndex={1} />} />
           <Route path="/settings/company" element={<AdminRoute><SettingsPage /></AdminRoute>} />
           <Route path="/settings/chart-accounts" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+          {/* Plans comptables par pays : réservé aux administrateurs de la plateforme (contrôle dans la page) */}
+          <Route path="/settings/chart-packs" element={<ChartPacksAdminPage />} />
           <Route path="/settings/users" element={<AdminRoute><SettingsPage /></AdminRoute>} />
           <Route path="/settings/integrations" element={<AdminRoute><SettingsPage /></AdminRoute>} />
           <Route path="/settings/modules" element={<AdminRoute><SettingsPage /></AdminRoute>} />
