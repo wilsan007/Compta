@@ -5,6 +5,11 @@
 > **Branche** : `commercial-hr-paie`, HEAD `11e2b7f`. **Production** : schéma à la migration **188**.
 > **Sources** : [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) (§ 6, journal des vagues), [suivi](SUIVI-CAHIER-CORRECTIF.md), [cahier de localisation](../localisation/CAHIER-DES-CHARGES-LOCALISATION.md), [plan de perfection](PLAN-PERFECTION-9.5.md), mesures relevées dans le dépôt le 22/09.
 
+> **Avancement du 22/09 (après-midi)** — phase 0, étapes P0-01 à P0-05 :
+> - P0-01 ✅ lot I (i18n) et 197 (TVA) intégrés ; P0-02/03 ✅ V3 commitée seule (`0dd4e1a`), instantané rejoué seul (181 migrations) ; P0-04 ✅ 200-202 (`af5b5cb`), puis `2dc9bb8` (plafonds knip et tables non lues, dépassés depuis 187), `d980c5a` (lot I), `f948fe9` (197), `3a4f30b` (UX-03 : `window.confirm` de l'écran de plans) ;
+> - P0-05 ⏳ poussé ; premier run : tout vert sauf UX-03 (corrigé en `3a4f30b`) et la 189, qui dépasse 15 min en CI : le correctif de performance des états est dans la copie de travail de la session V2 (« lancer v2 »), à commiter ;
+> - P0-06 à P0-09 👤 : la répétition sur copie de prod demande votre accord pour lire les conteneurs `prod_rehearsal` / `onusuite_prod_backup_20260921` ; déploiement et vérification à l'écran restent à planifier avec vous.
+
 Légende : 🔴 bloquant · 🟠 résultat faux ou trompeur · 🟡 confort ou robustesse · 👤 action ou décision de votre part · ⏳ en cours dans une autre session
 
 ---
