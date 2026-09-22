@@ -18,7 +18,7 @@
 > - **R-08 ✅** fenêtre de règlement partagée (date, montant, mode, compte bancaire) pour « Marquer payée » dans les ventes et les achats, au lieu du virement implicite en 512000/BQ — tests d'écran des deux pages mis à jour ; décision **D-10** à confirmer formellement ;
 > - **P0-05 ⏳** performance de la 189 : cause trouvée et mesurée. Les états financiers (bilan, balance, compte de résultat, tendance) sont réécrits — écritures du périmètre figées, lignes lues par `journal_id` — et ils sont **SECURITY DEFINER** (comme le bilan) : 0,8 s pour la balance et 0,1 s pour le compte de résultat à 100 000 écritures. Le dépassement de 15 min venait des **contrôles du fichier de test** : sous RLS, avec des statistiques pas encore rafraîchies après le chargement, le planificateur estime « 1 ligne » pour la société et part en boucle imbriquée (**39 s** pour un seul contrôle à 20 000 écritures, contre 99 ms avec des statistiques à jour). Le fichier fait désormais `ANALYZE` après son chargement et fige les écritures avant de lire les lignes. **Mesure du 22/09 au soir sur base neuve : 100 000 écritures en 2 min 20 (validation 1 min, clôtures 3,2 s et 2,4 s), 7 scénarios verts** — contre plus de 15 min avant.
 >
-> Chaîne complète rejouée sur base neuve le 22/09 au soir : **186 migrations, 0 erreur** ; 20 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n et **1 405 tests** unitaires au vert.
+> Chaîne complète rejouée sur base neuve le 22/09 au soir : **187 migrations, 0 erreur** ; 22 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n, knip (66/67), build Vite et **1 407 tests** unitaires au vert.
 
 Légende : 🔴 bloquant · 🟠 résultat faux ou trompeur · 🟡 confort ou robustesse · 👤 action ou décision de votre part · ⏳ en cours dans une autre session
 
@@ -345,7 +345,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **À faire** : dépend de D-6 ; au minimum, `has_permission('payroll.post')` sur la paie et `has_permission('journal_entry.post')` sur les RPC qui valident des écritures.
 - **Effort** : 0,5 j (au minimum) ; voir H08 pour la généralisation.
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours).
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 22/09 au soir : R-01, R-02, R-03, R-04, R-08** (≈ 5,5 j). Reste : R-05, R-06, R-07, R-09, R-10, R-11 à R-14, R-17.
 
 ---
 
