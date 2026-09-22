@@ -5396,6 +5396,9 @@ export interface Database {
         closed_by: string | null
         created_at: string | null
         tenant_id: string
+        closing_result: number | null
+        result_allocated_at: string | null
+        result_allocation_entry_id: string | null
       }
       Insert: {
         id?: string
@@ -5407,6 +5410,9 @@ export interface Database {
         closed_by?: string
         created_at?: string
         tenant_id: string
+        closing_result?: number
+        result_allocated_at?: string
+        result_allocation_entry_id?: string
       }
       Update: {
         id?: string
@@ -5418,6 +5424,9 @@ export interface Database {
         closed_by?: string
         created_at?: string
         tenant_id?: string
+        closing_result?: number
+        result_allocated_at?: string
+        result_allocation_entry_id?: string
       }
       Relationships: []
     }
@@ -6156,6 +6165,7 @@ export interface Database {
         sales_order_line_id: string | null
         vat_code: string | null
         vat_amount: number | null
+        advance_invoice_id: string | null
       }
       Insert: {
         id?: string
@@ -6174,6 +6184,7 @@ export interface Database {
         sales_order_line_id?: string
         vat_code?: string
         vat_amount?: number
+        advance_invoice_id?: string
       }
       Update: {
         id?: string
@@ -6192,6 +6203,7 @@ export interface Database {
         sales_order_line_id?: string
         vat_code?: string
         vat_amount?: number
+        advance_invoice_id?: string
       }
       Relationships: []
     }
