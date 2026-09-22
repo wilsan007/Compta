@@ -220,7 +220,8 @@
     "currency": "Currency",
     "exchangeRate": "Exchange rate",
     "refreshRate": "Refresh rate",
-    "amountCurrency": "Amount in currency"
+    "amountCurrency": "Amount in currency",
+    "recordFor": "Record payment for supplier invoice {{number}}"
   },
   "suppliers": {
     "title": "Suppliers",

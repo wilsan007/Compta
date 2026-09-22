@@ -220,7 +220,8 @@
     "currency": "العملة",
     "exchangeRate": "سعر الصرف",
     "refreshRate": "تحديث السعر",
-    "amountCurrency": "المبلغ بالعملة"
+    "amountCurrency": "المبلغ بالعملة",
+    "recordFor": "تسجيل دفعة لفاتورة المورد {{number}}"
   },
   "suppliers": {
     "title": "الموردون",

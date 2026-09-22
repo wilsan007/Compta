@@ -269,7 +269,12 @@
     "currency": "العملة",
     "exchangeRate": "سعر الصرف",
     "refreshRate": "تحديث السعر",
-    "amountCurrency": "المبلغ بالعملة"
+    "amountCurrency": "المبلغ بالعملة",
+    "recordFor": "تسجيل دفعة للفاتورة {{number}}",
+    "record": "تسجيل الدفعة",
+    "defaultBankAccount": "الحساب الافتراضي (512000)",
+    "defaultBankAccountHint": "بدون اختيار حساب بنكي، تُقيَّد الدفعة في الحساب 512000، دفتر BQ.",
+    "overpaidNotice": "فائض قدره {{amount}}: سيُقيَّد كدفعة مقدمة من العميل (4191)."
   },
   "customers": {
     "title": "العملاء",

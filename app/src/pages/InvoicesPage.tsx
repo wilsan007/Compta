@@ -11,6 +11,7 @@ import { generateFacturX, downloadXML } from '@/lib/facturX'
 import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
+import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
 import type { Invoice, Customer, CompanySettings } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
 import { nextDocumentNumber } from '@/lib/queries/core'
@@ -31,6 +32,7 @@ export function InvoicesPage() {
   const [showForm, setShowForm] = useState(false)
   const [viewing, setViewing] = useState<Invoice | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [paying, setPaying] = useState<Invoice | null>(null)
   const [showAdvanceForm, setShowAdvanceForm] = useState(false)
   const [typeFilter, setTypeFilter] = useState('')
 
@@ -88,32 +90,24 @@ export function InvoicesPage() {
     }
   }
 
-  async function handleMarkPaid(id: string) {
-    setActionLoading(id)
+  // R-08 (décision D-10) : date, montant, mode et compte bancaire sont demandés ;
+  // le payé reste le résultat du règlement enregistré, jamais une saisie sur la facture.
+  async function handleRecordPayment(inv: Invoice, values: PaymentValues) {
+    setActionLoading(inv.id)
     try {
-      const inv = invoices.find(i => i.id === id)
-      if (!inv) return
-      // Do NOT mutate invoice status directly. Instead record a customer_payment
-      // so the balance agée, treasury and accounting stay consistent. A DB
-      // trigger is expected to flip the invoice status / payment_state once the
-      // payment covers the outstanding amount.
-      const amount = Number(inv.amount_due ?? inv.total ?? 0)
-      if (amount <= 0) {
-        toast('warning', t('invoices.title'), tCommon('toast.updateError'))
-        return
-      }
       await createCustomerPayment({
         // un numéro par règlement : une facture peut en recevoir plusieurs
         number: await nextDocumentNumber('REG'),
         customer_id: inv.customer_id,
         invoice_id: inv.id,
-        payment_date: new Date().toISOString().split('T')[0],
-        amount,
-        method: 'other',
-        bank_account_id: null,
-        reference: inv.number || null,
+        payment_date: values.payment_date,
+        amount: values.amount,
+        method: values.method,
+        bank_account_id: values.bank_account_id,
+        reference: values.reference ?? inv.number ?? null,
         status: 'recorded',
       })
+      setPaying(null)
       toast('success', t('invoices.title'), tCommon('toast.updated'))
       await loadInvoices()
     } catch (err: any) {
@@ -297,7 +291,7 @@ export function InvoicesPage() {
                         </button>
                       )}
                       {inv.validation_status === 'validated' && inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                        <button onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('invoices.markAsPaid')}>
+                        <button onClick={() => setPaying(inv)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('invoices.markAsPaid')}>
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
@@ -340,6 +334,17 @@ export function InvoicesPage() {
 
       {viewing && (
         <InvoiceDetailModal invoice={viewing} onClose={() => setViewing(null)} />
+      )}
+
+      {paying && (
+        <PaymentDialog
+          title={t('payments.recordFor', { number: paying.number })}
+          defaultAmount={Number(paying.amount_due ?? paying.total ?? 0)}
+          maxAmount={Number(paying.amount_due ?? paying.total ?? 0)}
+          defaultReference={paying.number}
+          onSubmit={(values) => handleRecordPayment(paying, values)}
+          onClose={() => setPaying(null)}
+        />
       )}
     </div>
   )

@@ -15,6 +15,7 @@
 > - **R-02 ✅** affectation du résultat obligatoire avant la clôture suivante (écran, garde dans `close_fiscal_year`, 19 scénarios de la 179, 3 tests d'écran) ;
 > - **R-03 ✅** factures d'acompte en 4191 et déduction sur la facture finale (210, 12 scénarios) ;
 > - **R-04 ✅** paiement de la paie (migration **212**) : `post_payroll_payment` verse le net (D 421 par salarié, auxiliaire, **lettré**), les organismes (431), l'impôt (447) et les acomptes (425), par périmètre idempotent ; le lot ne passe à « payé » que quand tout est versé. Deux défauts de plus corrigés : statut `processing` refusé par `pay_runs` et statut `processed` inexistant écrit par l'intégration des acomptes — 9 scénarios (`sql/212_payroll_payment_tests.sql`, 9 rouges avant), 2 tests d'écran ;
+> - **R-08 ✅** fenêtre de règlement partagée (date, montant, mode, compte bancaire) pour « Marquer payée » dans les ventes et les achats, au lieu du virement implicite en 512000/BQ — tests d'écran des deux pages mis à jour ; décision **D-10** à confirmer formellement ;
 > - **P0-05 ⏳** performance de la 189 : cause trouvée et mesurée. Les états financiers (bilan, balance, compte de résultat, tendance) sont réécrits — écritures du périmètre figées, lignes lues par `journal_id` — et ils sont **SECURITY DEFINER** (comme le bilan) : 0,8 s pour la balance et 0,1 s pour le compte de résultat à 100 000 écritures. Le dépassement de 15 min venait des **contrôles du fichier de test** : sous RLS, avec des statistiques pas encore rafraîchies après le chargement, le planificateur estime « 1 ligne » pour la société et part en boucle imbriquée (**39 s** pour un seul contrôle à 20 000 écritures, contre 99 ms avec des statistiques à jour). Le fichier fait désormais `ANALYZE` après son chargement et fige les écritures avant de lire les lignes. **Mesure du 22/09 au soir sur base neuve : 100 000 écritures en 2 min 20 (validation 1 min, clôtures 3,2 s et 2,4 s), 7 scénarios verts** — contre plus de 15 min avant.
 >
 > Chaîne complète rejouée sur base neuve le 22/09 au soir : **186 migrations, 0 erreur** ; 20 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n et **1 405 tests** unitaires au vert.
@@ -240,7 +241,7 @@ Après déploiement : créer une société de test par l'inscription réelle, co
 | D-7 | Contraste H2 / H3 (18 + 20 usages juste sous 4,5:1) | éclaircir les **fonds** des pastilles et des zones grises | I05 |
 | D-8 | Trop-payé fournisseur en 4091 : j'ai appliqué la décision n° 1 par symétrie | confirmer ou préférer le refus | déjà en place |
 | D-9 | Factures d'acompte (R-03) | ✅ **tranchée le 22/09** : acompte en 4191 et imputation sur la facture finale (norme) | R-03, fait |
-| D-10 | « Marquer payée » sans choix de banque (R-08) | ouvrir une petite fenêtre (date, mode, compte bancaire), ou garder le raccourci en 512000/BQ | R-08 |
+| D-10 | « Marquer payée » sans choix de banque (R-08) | ✅ **implémentée le 22/09** : fenêtre de règlement (date, montant, mode, compte bancaire) — reste à confirmer formellement | R-08, fait |
 | D-11 | Localisation (cahier LOC) | périmètre secteur public (couche `DJ-EP` seule, ou aussi `DJ-ADM` : 8 à 10 semaines) ; arabe dès la v1 ; groupes multi-pays hors v1 | phase 5 |
 | D-12 | Numérotation existante en prod (P0-06) | reprendre la séquence après le plus grand numéro existant, ou repartir à 1 par exercice | P0-07 |
 
@@ -293,10 +294,12 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 - **À faire** : distinguer explicitement `kind = 'book' | 'statement'` ; `calculated_balance` = solde comptable 512x (ou supprimé) ; `statement_balance` = solde de clôture lu dans le relevé (le lecteur le fournit : `closingBalance`) ; scénario G12 (import + saisie de la même opération → solde juste).
 - **Effort** : 1,5 j.
 
-#### R-08 🟡 « Marquer payée » sans choix du mode ni du compte bancaire
+#### R-08 ✅ « Marquer payée » sans choix du mode ni du compte bancaire
 - **Constat** : les deux boutons enregistrent un règlement « virement » sans compte bancaire, donc en 512000/BQ.
-- **À faire** (selon D-10) : fenêtre de règlement (date, montant, mode, compte bancaire) partagée entre ventes et achats ; tests d'écran.
-- **Effort** : 0,75 j.
+- **Fait** : fenêtre de règlement partagée (`src/components/PaymentDialog.tsx`) — date, montant, mode (virement, chèque, carte, espèces, prélèvement, autre), compte bancaire (512000 par défaut, signalé) et référence, avec mention de l'excédent porté en avance client (4191) ; ventes et achats branchés dessus, le numéro de règlement restant attribué par le serveur ; clés fr/en/ar.
+- **Preuve** : tests d'écran `SalesDocumentForms.test.tsx` et `PurchaseDocumentForms.test.tsx` (flux complet : ouverture de la fenêtre puis enregistrement).
+- **Reste à confirmer** : décision **D-10** — la fenêtre est l'option implémentée ; l'autre option était de garder le raccourci en 512000/BQ.
+- **Effort** : 0,75 j (fait).
 
 #### R-09 🟠 Écran de rapprochement bancaire non branché sur l'état de la 196
 - **Constat** : `get_bank_reconciliation_state` est réécrite et testée (G04), mais **aucun écran ne l'appelle**. `is_balanced` est vrai par construction dès que les pointages sont cohérents ; l'information utile est la liste des écarts.

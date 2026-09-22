@@ -220,7 +220,8 @@
     "currency": "Devise",
     "exchangeRate": "Taux de change",
     "refreshRate": "Actualiser le taux",
-    "amountCurrency": "Montant en devise"
+    "amountCurrency": "Montant en devise",
+    "recordFor": "Régler la facture fournisseur {{number}}"
   },
   "suppliers": {
     "title": "Fournisseurs",

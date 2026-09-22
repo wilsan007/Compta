@@ -269,7 +269,12 @@
     "currency": "Devise",
     "exchangeRate": "Taux de change",
     "refreshRate": "Actualiser le taux",
-    "amountCurrency": "Montant en devise"
+    "amountCurrency": "Montant en devise",
+    "recordFor": "Régler la facture {{number}}",
+    "record": "Enregistrer le règlement",
+    "defaultBankAccount": "Compte par défaut (512000)",
+    "defaultBankAccountHint": "Sans compte bancaire choisi, le règlement est imputé au compte 512000, journal BQ.",
+    "overpaidNotice": "Excédent de {{amount}} : il sera comptabilisé en avance client (4191)."
   },
   "customers": {
     "title": "Clients",

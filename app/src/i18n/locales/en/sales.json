@@ -269,7 +269,12 @@
     "currency": "Currency",
     "exchangeRate": "Exchange rate",
     "refreshRate": "Refresh rate",
-    "amountCurrency": "Amount in currency"
+    "amountCurrency": "Amount in currency",
+    "recordFor": "Record payment for invoice {{number}}",
+    "record": "Record payment",
+    "defaultBankAccount": "Default account (512000)",
+    "defaultBankAccountHint": "With no bank account selected, the payment is posted to account 512000, journal BQ.",
+    "overpaidNotice": "Overpayment of {{amount}}: it will be posted as a customer advance (4191)."
   },
   "customers": {
     "title": "Customers",

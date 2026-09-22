@@ -15,6 +15,7 @@ import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControl
 import { confirmSync } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
 import { useLegislation } from '@/lib/legislation'
+import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
 
 export function PurchaseInvoicesPage() {
   const { toast } = useToast()
@@ -30,6 +31,7 @@ export function PurchaseInvoicesPage() {
   const [showForm, setShowForm] = useState(false)
   const [viewing, setViewing] = useState<PurchaseInvoice | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [paying, setPaying] = useState<PurchaseInvoice | null>(null)
 
   useEffect(() => {
     loadInvoices().catch(err => console.error('loadInvoices:', err))
@@ -50,26 +52,22 @@ export function PurchaseInvoicesPage() {
     }
   }
 
-  async function handleMarkPaid(id: string) {
-    setActionLoading(id)
+  // R-08 (décision D-10) : le décaissement demande date, montant, mode et compte bancaire
+  async function handleRecordPayment(inv: PurchaseInvoice, values: PaymentValues) {
+    setActionLoading(inv.id)
     try {
-      const inv = invoices.find(i => i.id === id)
-      if (!inv) return
-      // Le payé résulte d'un décaissement (écriture 401/512, lettrage) : il ne se
-      // saisit pas directement sur la facture
-      const amount = Number(inv.amount_due ?? inv.total ?? 0)
-      if (amount <= 0) return
       await createSupplierPayment({
         number: await nextDocumentNumber('DEC'),
         supplier_id: inv.supplier_id,
         purchase_invoice_id: inv.id,
-        payment_date: new Date().toISOString().split('T')[0],
-        amount,
-        method: 'transfer',
-        bank_account_id: null,
-        reference: inv.supplier_reference || inv.number || null,
+        payment_date: values.payment_date,
+        amount: values.amount,
+        method: values.method,
+        bank_account_id: values.bank_account_id,
+        reference: values.reference ?? inv.supplier_reference ?? inv.number ?? null,
         status: 'recorded',
       })
+      setPaying(null)
       toast('success', t('purchaseInvoices.markedPaid'))
       await loadInvoices()
     } catch (err: any) {
@@ -191,7 +189,7 @@ export function PurchaseInvoicesPage() {
                         <Eye className="w-4 h-4" />
                       </button>
                       {inv.approval_status === 'approved' && inv.status !== 'paid' && inv.status !== 'cancelled' && (
-                        <button onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('purchaseInvoices.markPaid')}>
+                        <button onClick={() => setPaying(inv)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('purchaseInvoices.markPaid')}>
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
@@ -221,6 +219,18 @@ export function PurchaseInvoicesPage() {
       {viewing && (
         <PurchaseInvoiceDetailModal invoice={viewing} onClose={() => setViewing(null)} />
       )}
+
+      {paying && (
+        <PaymentDialog
+          title={t('payments.recordFor', { number: paying.supplier_reference || paying.number })}
+          defaultAmount={Number(paying.amount_due ?? paying.total ?? 0)}
+          maxAmount={Number(paying.amount_due ?? paying.total ?? 0)}
+          defaultReference={paying.supplier_reference || paying.number}
+          onSubmit={(values) => handleRecordPayment(paying, values)}
+          onClose={() => setPaying(null)}
+        />
+      )}
+
     </div>
   )
 }
