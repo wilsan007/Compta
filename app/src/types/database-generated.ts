@@ -15817,6 +15817,8 @@ export interface Database {
         account_code: string
         ca3_box: string | null
         base_account: string | null
+        reverse_charge: boolean
+        account_name: string | null
       }
       Insert: {
         id?: string
@@ -15827,6 +15829,8 @@ export interface Database {
         account_code: string
         ca3_box?: string
         base_account?: string
+        reverse_charge?: boolean
+        account_name?: string
       }
       Update: {
         id?: string
@@ -15837,6 +15841,8 @@ export interface Database {
         account_code?: string
         ca3_box?: string
         base_account?: string
+        reverse_charge?: boolean
+        account_name?: string
       }
       Relationships: []
     }

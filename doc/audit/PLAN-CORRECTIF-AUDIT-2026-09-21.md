@@ -446,7 +446,28 @@ Après relecture : 180 (**22**), 192 (**15**) verts ; PostgREST **1 489** requê
 
 **Non vérifié** : l'affichage dans le navigateur ; les e2e (lot J) ; le rejeu sur une copie de prod, pourtant nécessaire avant déploiement puisque la prod est à 188 (reprises de la 190 : comptes et journaux créés pour les comptes bancaires existants).
 
-**Restes identifiés** : `vat_account_mapping` envoie `FR20` et `AUTOLIQ` vers les mêmes comptes (445711/445661), à séparer pour la déclaration de TVA ; `toast.loadError` et d'autres clés manquent dans plusieurs écrans (lot I) ; le paiement des salaires (D 421 / C 512) n'est pas généré.
+**Restes identifiés** : ~~`vat_account_mapping` envoie `FR20` et `AUTOLIQ` vers les mêmes comptes (445711/445661)~~ corrigé le 22/09, voir ci-dessous ; `toast.loadError` et d'autres clés manquent dans plusieurs écrans (lot I) ; le paiement des salaires (D 421 / C 512) n'est pas généré.
+
+### TVA autoliquidée — 22/09/2026 (migration 197, non commitée à la rédaction de ce journal)
+
+**Comment la déclaration était calculée.** Trois chemins, tous faux pour l'autoliquidation :
+- `calculate_vat_ca3` (bouton « Calculer la CA3 » et `generate_vat_return`, qui **enregistre** la déclaration) additionnait `vat_total` des factures aux statuts `paid`/`sent` et des factures fournisseur `paid`/`received`. Or une facture validée reste `draft` (c'est `validation_status` qui passe à `validated`) et `received` est refusé depuis la 192 : **la déclaration valait 0**. Elle ignorait le grand livre.
+- `get_vat_summary_by_code` (synthèse de l'écran TVA) groupait par `journal_lines.vat_code`, mais tirait le sens de la racine du compte (4457/4456 ; 4452 donnait `unknown`) et **doublait les montants** d'un code surchargé par la société (jointure sur la ligne globale et la ligne société).
+- L'écran lisait `collected_vat` / `deductible_vat`, clés que la fonction ne renvoie pas : le message affichait toujours 0.
+
+**Défaut prouvé** (`sql/197_vat_reverse_charge_tests.sql`, 7 scénarios, tous vus rouges avant la 197) : FR20, AUTOLIQ et UE partageaient 445711 ; FR20 et AUTOLIQ partageaient 445661 ; UE n'avait pas de compte déductible ; le plan semé intitulait « TVA collectée AUTOLIQ » le compte de la TVA à 20 % ; un achat autoliquidé de 300 HT créditait le fournisseur de 360 et ne constatait pas la TVA due ; le solde de « FR20 déductible » valait 160 (100 + 60 d'autoliquidation) ; une vente autoliquidée facturait 200 de TVA.
+
+| Action | État | Preuve |
+|---|:---:|---|
+| Comptes propres | **OK** | AUTOLIQ → 445790 (due) / 445668 (déductible) ; UE → 445200 (TVA due intracommunautaire) / 445667. Colonnes `reverse_charge` et `account_name` dans `vat_account_mapping` ; `seed_vat_accounts` sème le libellé du paramétrage (« TVA collectée 20 % », etc.). V01, V02. |
+| Autoliquidation à l'achat | **OK** | Lignes à TVA facturée 0 ; écriture D 6 HT, D 445668, C 445790, C 401 HT (taux de la ligne, ou du code si la ligne est à 0 %) ; avoir fournisseur symétrique. V03, V06. |
+| Autoliquidation à la vente | **OK** | Le vendeur ne facture pas de TVA (lignes à 0). V07. |
+| Déclaration | **OK** | `calculate_vat_ca3` lit les mouvements des comptes 4452/4456/4457 des écritures validées de la période, hors AN, CL et écritures de liquidation (4455x, 44567) ; renvoie en plus `reverse_charge_due`, `reverse_charge_deductible` et le détail par compte. `get_vat_summary_by_code` : sens tiré du paramétrage, montant signé (un avoir vient en déduction), plus de double compte. V04, V05. `VatReturnsPage` lit les bonnes clés. |
+| Reprise | **OK** | Libellés semés renommés (un libellé retouché par la société est conservé) ; comptes créés dans les plans existants ; pièces en brouillon recalculées ; les écritures **validées** antérieures ne sont pas modifiées : la vue `vat_reverse_charge_legacy_lines` les liste avec le compte attendu (à régulariser par OD). Vu sur une base portant les données de l'ancien code : 14 libellés « … AUTOLIQ » renommés, 6 lignes listées. |
+
+**Rejeu sur base neuve (jusqu'à 202, avec 197)** : 184 migrations sans erreur ; `plpgsql_check` et contrôle d'atteignabilité des triggers OK ; suites 102, 105, 166, 168, 170, 173, 175, 177 vertes ; 178 (23), 180 (22), 181 (7), 182 (8), 192 (15, dont G10 : les nouveaux comptes sont au plan semé), 197 (7), 202 (13) entièrement vertes ; **rejoué le 22/09 sur la branche à jour (lot D final, V3, 200-202, lot I)** : 184 migrations, 179 (17, R08 compris) verte, PostgREST 1 489 requêtes acceptées ; types régénérés ; oxlint 0, `tsc -b` 0, 1 400 tests unitaires.
+
+**Hors de ce correctif** : Les codes TVA de la saisie manuelle (`JournalSaisiePage`, `SaisieParPiecePage`) sont des taux (`'20'`) et non des codes (`FR20`) : ils ne trouvent aucun paramétrage. Les cases CA3 (`ca3_box`) du paramétrage restent à revoir. Avant déploiement, lister `vat_reverse_charge_legacy_lines` sur une copie de prod.
 
 
 ### Lot I, `AUD-I06` — clés i18n utilisées — 21/09/2026

@@ -420,6 +420,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # TVA autoliquidée (AUTOLIQ, UE) sur des comptes propres, déclaration par le grand livre
+      - name: 'AUD : TVA autoliquidée séparée (197)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/197_vat_reverse_charge_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Lot D — 3 exercices, 100 000 écritures aléatoires (graine fixe) : balance, compte de
       # résultat, bilan, à-nouveaux après deux clôtures, numérotation continue, clôture < 30 s.
       # ≈ 70 s sur PostgreSQL 16 local.

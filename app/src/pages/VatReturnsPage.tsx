@@ -27,7 +27,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
     setCalculatingCa3(true)
     try {
       const result = await calculateVatCa3(periodStart, periodEnd)
-      toast('success', tCommon('common.success'), `TVA collectée: ${formatCurrency(result.collectedVat ?? result.collected_vat ?? 0)} | Déductible: ${formatCurrency(result.deductibleVat ?? result.deductible_vat ?? 0)} | À payer: ${formatCurrency(result.vatToPay ?? result.vat_to_pay ?? result.net_vat ?? 0)}`)
+      toast('success', tCommon('common.success'), `TVA collectée: ${formatCurrency(result.vat_collected ?? 0)} | Déductible: ${formatCurrency(result.vat_deductible ?? 0)} | À payer: ${formatCurrency(result.vat_to_pay ?? 0)}`)
     } catch (err: any) {
       toast('error', t('vat.error'), err.message || tCommon('common.error'))
     } finally {
