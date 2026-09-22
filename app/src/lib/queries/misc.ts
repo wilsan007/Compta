@@ -31,6 +31,28 @@ export async function generatePayrollJournal(payRunId: string) {
   return data as { success: boolean; entry_id: string; already_posted: boolean }
 }
 
+// R-04 : paiement de la paie (nets, organismes, impôt retenu, acomptes)
+export async function payPayrollRun(
+  payRunId: string,
+  bankAccountId: string | null,
+  date: string,
+  scope: 'net' | 'social' | 'tax' | 'advances' | 'all' = 'all',
+) {
+  const { data, error } = await supabase.rpc('post_payroll_payment', {
+    p_pay_run_id: payRunId,
+    p_bank_account_id: bankAccountId,
+    p_date: date,
+    p_scope: scope,
+  })
+  if (error) throw error
+  return data as {
+    success: boolean
+    entries: { scope: string; entry_id: string; amount: number }[]
+    already_paid: { scope: string; entry_id: string }[]
+    remaining: { scope: string; amount: number }[]
+  }
+}
+
 // Calculate and update depreciation for a fixed asset
 export async function calculateDepreciation(assetId: string) {
   const tid = await getTenantId()

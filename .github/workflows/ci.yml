@@ -439,6 +439,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-04 — paiement de la paie : D 421 par salarié (lettré) / C banque,
+      # D 431 et D 447 / C banque, acomptes 425, idempotence et statut du lot.
+      - name: 'AUD : paiement de la paie (212)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/212_payroll_payment_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Lot D — 3 exercices, 100 000 écritures aléatoires (graine fixe) : balance, compte de
       # résultat, bilan, à-nouveaux après deux clôtures, numérotation continue, clôture < 30 s.
       # ≈ 70 s sur PostgreSQL 16 local.

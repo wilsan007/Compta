@@ -935,7 +935,8 @@ export interface PayRun {
   period_start: string
   period_end: string
   pay_date: string
-  status: 'draft' | 'approved' | 'paid'
+  // R-04 : statuts réellement utilisés (contrainte élargie par la 212)
+  status: 'draft' | 'processing' | 'approved' | 'closed' | 'paid' | 'cancelled'
   gross_total: number
   tax_total: number
   net_total: number

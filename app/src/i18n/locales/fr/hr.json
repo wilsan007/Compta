@@ -120,11 +120,24 @@
     "noPayRunsDescription": "Aucune campagne de paie enregistrée",
     "createFirst": "Créer ma première campagne",
     "searchPlaceholder": "Rechercher par numéro, période...",
+    "pay": "Payer la paie",
+    "paying": "Paiement en cours...",
+    "payConfirm": "Enregistrer le versement des salaires, cotisations et impôt retenu ?",
+    "payDone": "Paiement enregistré",
+    "payNothing": "Aucun montant à verser pour cette campagne",
+    "payPartial": "Versement partiel enregistré",
     "statuses": {
       "draft": "Brouillon",
+      "processing": "En préparation",
       "approved": "Approuvé",
-      "paid": "Payé"
-    }
+      "closed": "Clôturé",
+      "paid": "Payé",
+      "cancelled": "Annulé"
+    },
+    "payTitle": "Paiement de la paie {{number}}",
+    "paySubtitle": "Salaires nets, organismes sociaux, impôt retenu et acomptes : une écriture de trésorerie par nature.",
+    "paid": "Paie payée : {{count}} écriture(s) de trésorerie",
+    "alreadyPaid": "Déjà payé : rien à ajouter"
   },
   "paySlips": {
     "title": "Bulletins de paie",

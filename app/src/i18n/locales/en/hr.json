@@ -201,11 +201,25 @@
     "noPayRunsDescription": "No pay run recorded",
     "createFirst": "Create my first pay run",
     "searchPlaceholder": "Search by number, period...",
+    "pay": "Pay payroll",
+    "paying": "Payment in progress...",
+    "payConfirm": "Record the payment of net pay, contributions and withheld tax?",
+    "payDone": "Payment recorded",
+    "payNothing": "Nothing to pay for this pay run",
+    "payPartial": "Partial payment recorded",
     "statuses": {
       "draft": "Draft",
+      "processing": "Processing",
       "approved": "Approved",
-      "paid": "Paid"
-    }
+      "closed": "Closed",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "pay": "Pay payroll",
+    "payTitle": "Payroll payment {{number}}",
+    "paySubtitle": "Net salaries, social bodies, withheld tax and advances: one treasury entry per kind.",
+    "paid": "Payroll paid: {{count}} treasury entry(ies)",
+    "alreadyPaid": "Already paid: nothing to add"
   },
   "paySlips": {
     "title": "Payslips",

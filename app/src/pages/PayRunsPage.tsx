@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees } from '@/lib/queries/payroll'
-import { generatePayrollJournal } from '@/lib/queries/misc'
+import { generatePayrollJournal, payPayrollRun } from '@/lib/queries/misc'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Calendar, Plus, Trash2, X, FileText } from 'lucide-react'
+import { Calendar, Plus, Trash2, X, FileText, Banknote } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
@@ -18,6 +18,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  // R-04 : identifiant du lot en cours de versement (bouton désactivé pendant l'appel)
+  const [paying, setPaying] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -49,6 +51,27 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
     }
   }
 
+  async function handlePay(id: string) {
+    if (!confirmSync(t('payRuns.payConfirm'))) return
+    setPaying(id)
+    try {
+      const res = await payPayrollRun(id, null, new Date().toISOString().split('T')[0], 'all')
+      const reste = (res.remaining || []).length
+      if ((res.entries || []).length === 0 && reste === 0) {
+        toast('info', t('payRuns.pay'), t('payRuns.payNothing'))
+      } else if (reste > 0) {
+        toast('warning', t('payRuns.pay'), t('payRuns.payPartial'))
+      } else {
+        toast('success', t('payRuns.pay'), t('payRuns.payDone'))
+      }
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setPaying(null)
+    }
+  }
+
   const activeEmployees = employees.filter(e => e.status === 'active')
 
   return (
@@ -77,12 +100,17 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
                 <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(pr.net_total))}</TableCell>
                 <TableCell>
                   <select value={pr.status} onChange={(e) => handleStatusChange(pr.id, e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                    {['draft', 'approved', 'paid'].map((k) => <option key={k} value={k}>{t(`payRuns.statuses.${k}`)}</option>)}
+                    {['draft', 'processing', 'approved', 'paid'].map((k) => <option key={k} value={k}>{t(`payRuns.statuses.${k}`)}</option>)}
                   </select>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <button onClick={() => handleGenerateJournal(pr.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payrollAccounting.generate')}><FileText className="w-4 h-4" /></button>
+                    {pr.status !== 'paid' && pr.status !== 'cancelled' && pr.status !== 'draft' && (
+                      <button onClick={() => handlePay(pr.id)} disabled={paying === pr.id} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)] disabled:opacity-50" title={paying === pr.id ? t('payRuns.paying') : t('payRuns.pay')} aria-label={t('payRuns.pay')}>
+                        <Banknote className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    )}
                     <button onClick={() => handleDelete(pr.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
