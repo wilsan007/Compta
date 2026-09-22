@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getTenantId, ti, tud } from './core';
-import type { Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, InvoiceLine, SalesOrder, DeliveryNote } from '@/types';
+import type { Invoice, Quote, QuoteLine, CreditNote, CreditNoteLine, PurchaseCreditNote, PurchaseCreditNoteLine, PurchaseInvoice, PurchaseInvoiceLine, InvoiceLine, SalesOrder, DeliveryNote } from '@/types';
 
 // ============ VTE-01 : Résolution de prix par grille tarifaire ============
 
@@ -103,7 +103,9 @@ export async function getInvoices() {
   return data as Invoice[]
 }
 
-export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at'> & { lines: Omit<InvoiceLine, 'id' | 'created_at'>[] }) {
+// AUD-E03/E04 : le serveur recalcule lignes et totaux ; la facture naît en brouillon
+// avec un numéro provisoire, remplacé par FAC-<exercice>-n à la validation.
+export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines: Omit<InvoiceLine, 'id' | 'created_at' | 'invoice_id'>[] }) {
   const tid = await getTenantId()
   const { lines, ...invoiceData } = invoice
   // LOT4-11 : Utiliser la RPC atomique create_invoice_atomic
@@ -177,50 +179,12 @@ export async function deleteQuote(id: string) {
 }
 
 export async function convertQuoteToInvoice(quoteId: string) {
-  const tid = await getTenantId()
-  let qQ = supabase
-    .from('quotes')
-    .select('*, quote_lines(*)')
-    .eq('id', quoteId)
-  if (tid) qQ = qQ.eq('tenant_id', tid)
-  const { data: quote, error: qErr } = await qQ.single()
-  if (qErr) throw qErr
-
-  const invNumber = 'FAC-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0')
-  const { data: inv, error: invErr } = await supabase.from('invoices').insert(ti({
-    number: invNumber,
-    customer_id: quote.customer_id,
-    customer_name: quote.customer_name,
-    date: new Date().toISOString().split('T')[0],
-    due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-    status: 'draft',
-    subtotal: quote.subtotal,
-    vat_total: quote.vat_total,
-    total: quote.total,
-    amount_paid: 0,
-    amount_due: quote.total,
-    notes: 'Converti depuis devis ' + quote.number,
-  }, 'invoices', tid)).select().single()
-  if (invErr) throw invErr
-
-  if (quote.quote_lines && quote.quote_lines.length > 0) {
-    const { error: lErr } = await supabase
-      .from('invoice_lines')
-      .insert(quote.quote_lines.map((l: any, i: number) => ti({
-        invoice_id: inv.id,
-        product_id: l.product_id,
-        description: l.description,
-        quantity: l.quantity,
-        unit_price: l.unit_price,
-        vat_rate: l.vat_rate,
-        total: l.total,
-        vat_total: l.vat_total,
-        line_order: i,
-      }, 'invoice_lines', tid)))
-    if (lErr) throw lErr
-  }
-
-  await tud(supabase.from('quotes').update({ status: 'accepted' }), 'quotes', tid).eq('id', quoteId)
+  // AUD-E05 : conversion atomique côté serveur (lignes, TVA et totaux recalculés) ;
+  // la facture naît en brouillon, son numéro est attribué à la validation (AUD-E04)
+  const { data, error } = await supabase.rpc('convert_quote_to_invoice', { p_quote_id: quoteId })
+  if (error) throw error
+  const { data: inv, error: invError } = await supabase.from('invoices').select('*').eq('id', (data as any).invoice_id).single()
+  if (invError) throw invError
   return inv as Invoice
 }
 
@@ -279,9 +243,23 @@ export async function getPurchaseInvoices() {
   return data as PurchaseInvoice[]
 }
 
-export async function createPurchaseInvoice(invoice: Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at'>) {
+// AUD-G02 : numéro interne attribué par le serveur à l'approbation ; en-tête et
+// lignes créés ensemble (RPC atomique), montants recalculés par le serveur
+export async function createPurchaseInvoice(invoice: Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines?: Omit<PurchaseInvoiceLine, 'id' | 'created_at' | 'purchase_invoice_id'>[] }) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('purchase_invoices').insert(ti(invoice, 'purchase_invoices', tid)).select().single()
+  const { lines, ...header } = invoice
+  if (lines && lines.length > 0) {
+    const { data: result, error: rpcError } = await supabase.rpc('create_purchase_invoice_atomic', {
+      p_invoice: { ...header, tenant_id: tid },
+      p_lines: lines.map((l, i) => ({ ...l, line_order: i })),
+    })
+    if (rpcError) throw rpcError
+    if (result && result.success === false) throw new Error(result.error || 'Erreur création facture fournisseur')
+    const { data, error } = await supabase.from('purchase_invoices').select('*').eq('id', result.purchase_invoice_id).single()
+    if (error) throw error
+    return data as PurchaseInvoice
+  }
+  const { data, error } = await supabase.from('purchase_invoices').insert(ti(header, 'purchase_invoices', tid)).select().single()
   if (error) throw error
   return data as PurchaseInvoice
 }
@@ -318,7 +296,14 @@ export async function getPurchaseCreditNotes() {
   return data as PurchaseCreditNote[]
 }
 
-export async function createPurchaseCreditNote(pcn: Omit<PurchaseCreditNote, 'id' | 'created_at'> & { lines: Omit<PurchaseCreditNoteLine, 'id' | 'created_at'>[] }) {
+export async function updatePurchaseCreditNote(id: string, updates: Partial<PurchaseCreditNote>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('purchase_credit_notes').update(updates), 'purchase_credit_notes', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as PurchaseCreditNote
+}
+
+export async function createPurchaseCreditNote(pcn: Omit<PurchaseCreditNote, 'id' | 'created_at' | 'number'> & { number?: string; lines: Omit<PurchaseCreditNoteLine, 'id' | 'created_at'>[] }) {
   const tid = await getTenantId()
   const { lines, ...pcnData } = pcn
   const { data, error } = await supabase.from('purchase_credit_notes').insert(ti(pcnData, 'purchase_credit_notes', tid)).select().single()

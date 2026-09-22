@@ -1540,7 +1540,10 @@
       "processing": "Processing",
       "completed": "Completed",
       "failed": "Failed"
-    }
+    },
+    "autoDetect": "Automatic detection",
+    "nothingRead": "No transaction could be read from this file.",
+    "importSummary": "{{imported}} transaction(s) imported, {{duplicates}} already present skipped."
   },
   "ediTva": {
     "title": "VAT e-filing (EDI-TVA)",

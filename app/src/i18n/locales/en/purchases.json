@@ -102,8 +102,10 @@
     "total": "Total",
     "statuses": {
       "applied": "Applied",
-      "draft": "Draft"
-    }
+      "draft": "Draft",
+      "validated": "Validated"
+    },
+    "supplierReference": "Supplier credit note no. (optional)"
   },
   "orders": {
     "title": "Purchase orders",
@@ -419,5 +421,43 @@
     "searchPlaceholder": "Search by supplier, product...",
     "noSchedules": "No schedules",
     "noSchedulesDescription": "You haven't created any schedule"
+  },
+  "purchaseInvoices": {
+    "title": "Purchase invoices",
+    "invoices": "Invoices",
+    "invoice": "Invoice",
+    "new": "New supplier invoice",
+    "recordPurchase": "Record a purchase",
+    "number": "Internal no.",
+    "supplier": "Supplier",
+    "dueDate": "Due date",
+    "total": "Total incl. tax",
+    "toPay": "Amount due",
+    "remainingToPay": "Amount due",
+    "paid": "Paid",
+    "markPaid": "Mark as paid",
+    "markedPaid": "Invoice marked as paid",
+    "created": "Invoice recorded",
+    "createdMsg": "Invoice {{number}} saved as draft",
+    "noInvoices": "No purchase invoices",
+    "noInvoicesDescription": "Record your first supplier invoice.",
+    "searchPlaceholder": "Search invoices…",
+    "selectSupplier": "Select a supplier",
+    "selectSupplierPlaceholder": "Choose a supplier",
+    "invalidAmount": "Invalid amount",
+    "totalAmount": "Total amount",
+    "budgetAccount": "Budget account",
+    "fiscalYear": "Fiscal year",
+    "budgetChecking": "Checking budget…",
+    "budgetTotal": "Budget",
+    "realized": "Actual",
+    "committed": "Committed",
+    "available": "Available",
+    "overshoot": "Overshoot",
+    "budgetExceedWarning": "This purchase of {{amount}} exceeds the budget by {{overshoot}}. Continue?",
+    "supplierReference": "Supplier invoice no.",
+    "supplierReferenceRequired": "Enter the supplier's invoice number.",
+    "numberAssigned": "The internal number (ACH-year-no.) is assigned on approval.",
+    "atLeastOneLine": "Add at least one line with a description and an amount."
   }
 }

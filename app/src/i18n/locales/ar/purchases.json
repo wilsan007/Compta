@@ -102,8 +102,10 @@
     "total": "المجموع",
     "statuses": {
       "applied": "مطبق",
-      "draft": "مسودة"
-    }
+      "draft": "مسودة",
+      "validated": "مُعتمد"
+    },
+    "supplierReference": "رقم إشعار المورد الدائن (اختياري)"
   },
   "orders": {
     "title": "أوامر الشراء",
@@ -419,5 +421,43 @@
     "searchPlaceholder": "البحث بالمورد، المنتج...",
     "noSchedules": "لا توجد جداول تسليم",
     "noSchedulesDescription": "لم تقم بإنشاء أي جدول تسليم"
+  },
+  "purchaseInvoices": {
+    "title": "فواتير الشراء",
+    "invoices": "الفواتير",
+    "invoice": "فاتورة",
+    "new": "فاتورة مورد جديدة",
+    "recordPurchase": "تسجيل عملية شراء",
+    "number": "الرقم الداخلي",
+    "supplier": "المورد",
+    "dueDate": "تاريخ الاستحقاق",
+    "total": "الإجمالي شامل الضريبة",
+    "toPay": "المبلغ المستحق",
+    "remainingToPay": "المبلغ المستحق",
+    "paid": "مدفوعة",
+    "markPaid": "تعليم كمدفوعة",
+    "markedPaid": "تم تعليم الفاتورة كمدفوعة",
+    "created": "تم تسجيل الفاتورة",
+    "createdMsg": "تم حفظ الفاتورة {{number}} كمسودة",
+    "noInvoices": "لا توجد فواتير شراء",
+    "noInvoicesDescription": "سجّل أول فاتورة مورد.",
+    "searchPlaceholder": "ابحث عن فاتورة…",
+    "selectSupplier": "اختر موردًا",
+    "selectSupplierPlaceholder": "اختيار مورد",
+    "invalidAmount": "مبلغ غير صالح",
+    "totalAmount": "المبلغ الإجمالي",
+    "budgetAccount": "حساب الميزانية",
+    "fiscalYear": "السنة المالية",
+    "budgetChecking": "جارٍ التحقق من الميزانية…",
+    "budgetTotal": "الميزانية",
+    "realized": "المُنجز",
+    "committed": "المُلتزم به",
+    "available": "المتاح",
+    "overshoot": "التجاوز",
+    "budgetExceedWarning": "هذه المشتريات بقيمة {{amount}} تتجاوز الميزانية بمقدار {{overshoot}}. هل تريد المتابعة؟",
+    "supplierReference": "رقم فاتورة المورد",
+    "supplierReferenceRequired": "أدخل رقم فاتورة المورد.",
+    "numberAssigned": "يُسنَد الرقم الداخلي (ACH-السنة-الرقم) عند الاعتماد.",
+    "atLeastOneLine": "أضف سطرًا واحدًا على الأقل يتضمن وصفًا ومبلغًا."
   }
 }

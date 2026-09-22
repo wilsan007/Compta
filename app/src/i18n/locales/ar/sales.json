@@ -82,7 +82,10 @@
     "invoiceTypeAdvance": "عربون",
     "invoiceTypeBalance": "رصيد",
     "invoiceTypeProforma": "مبدئية",
-    "filterByType": "تصفية حسب النوع"
+    "filterByType": "تصفية حسب النوع",
+    "numberAssigned": "يُسنَد رقم الفاتورة (FAC-السنة-الرقم) عند الاعتماد، بالترتيب الزمني.",
+    "atLeastOneLine": "أضف سطرًا واحدًا على الأقل يتضمن وصفًا ومبلغًا.",
+    "draftCreated": "تم حفظ المسودة. سيُسنَد الرقم النهائي عند الاعتماد."
   },
   "quotes": {
     "title": "عروض الأسعار",
@@ -112,7 +115,8 @@
     "transformationStatus": "حالة التحويل",
     "transformationPending": "في الانتظار",
     "transformationTransformed": "تم التحويل",
-    "transformationPartial": "جزئي"
+    "transformationPartial": "جزئي",
+    "numberAssigned": "يُسنَد رقم عرض السعر تلقائيًا عند الحفظ."
   },
   "creditNotes": {
     "title": "إشعارات الدائن",
@@ -133,7 +137,8 @@
     "createFirst": "إنشاء أول إشعار دائن",
     "searchPlaceholder": "البحث برقم، عميل...",
     "sourceInvoice": "الفاتورة المصدر",
-    "viewSourceInvoice": "عرض الفاتورة المصدر"
+    "viewSourceInvoice": "عرض الفاتورة المصدر",
+    "numberAssigned": "يُسنَد رقم الإشعار الدائن (AV-السنة-الرقم) عند الاعتماد، الذي يُسجّل القيد أيضًا."
   },
   "recurring": {
     "title": "الفواتير المتكررة",

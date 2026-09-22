@@ -407,6 +407,48 @@ Protocole suivi : chaque nouveau scénario a été vu rouge sur le code d'avant 
 
 **Non vérifié** : l'affichage dans le navigateur, pour la même raison qu'en V1.
 
+### Vague V3 — 21/09/2026 (non commitée à la rédaction de ce journal)
+
+Décisions prises : n° 1, trop-perçu client **en avance client 4191**, appliqué symétriquement aux fournisseurs (4091) ; n° 2, numérotation **par exercice** (`FAC-2026-000001`, `AV-…`, `DEV-…`, `ACH-…`, `AVF-…`). Protocole : chaque scénario a été vu rouge sur le code d'avant son correctif, puis vert. Deux scénarios de V1 ont dû être retouchés, voir plus bas.
+
+| Action | État | Preuve |
+|---|:---:|---|
+| `AUD-E02` | **OK** | `InvoicesPage` : formulaire de lignes, sans numéro saisi ; `SalesDocumentForms.test.tsx`, 4 tests vus rouges sur l'ancien écran. **Trouvé** : Devis et Avoirs envoyaient leurs lignes sous `quote_lines` / `credit_note_lines`, clé ignorée : aucune ligne enregistrée. |
+| `AUD-E03`, `E06` | **OK** | `sql/190_sales_to_ledger.sql` : montants de ligne et totaux d'en-tête calculés par le serveur ; facture validée figée (lignes, montants, suppression). E10, E11. **E11 prouvait qu'on pouvait ramener une facture validée à 1 €.** |
+| `AUD-E04`, `E11` | **OK** | Numéro provisoire en brouillon, définitif à la validation, par exercice ; une validation refusée ne consomme pas de numéro. E12, E13 (1 000 validations → 000001 à 001000), E20. `Math.random` retiré des 6 écrans et de `sales.ts`. |
+| `AUD-E05` | **OK** | RPC `convert_quote_to_invoice` ; E04, E14. |
+| `AUD-E07` | **OK** | Avoirs : statut `validated`, écriture VT inverse, rattachement obligatoire, facture imputée et lettrée. E06, E15, E16 (E16 était un faux vert : témoin ajouté). |
+| `AUD-E08`, `E09`, `E10` | **OK** | Excédent en 419100 ; compte et journal propres à chaque compte bancaire (512000/BQ, puis 5121nn/BQn, créés à la volée) ; lettrage automatique au solde. E08, E17, E18, E19. |
+| `AUD-F02`, `F01` | **OK** | `sql/191_payroll_to_ledger.sql` : `post_payroll_journal` / `payroll_post_run`, écriture construite rubrique par rubrique depuis les bulletins, journal PAIE, idempotente, bulletin incohérent refusé ; le passage à « payé » appelle la même fonction. P01 à P07 (P01/P02 réécrits sur la RPC, comme annoncé dans l'en-tête du fichier). |
+| `AUD-F03` | **OK** | Table `payroll_account_mapping` (défauts PCG, surcharge par société). P03. |
+| `AUD-F04` | **OK** | G17 : CICE et BDES lisent le brut sur les bulletins de l'année (ce n'était pas la DSN). |
+| `AUD-G01`, `G02` | **OK** | `sql/192_purchases_treasury.sql`, nouvelle suite `sql/192_purchases_treasury_tests.sql` (branchée en CI) : A01 à A08. Référence fournisseur (`supplier_reference`) distincte du numéro interne `ACH-…`. **Trouvé** : l'écran « Nouvelle facture fournisseur » envoyait `status: 'received'`, refusé par la base (**création impossible**) ; l'écran des avoirs fournisseur n'avait aucune action de validation ; un décaissement échouait dès que le solde calculé du compte bancaire devenait négatif (contrainte posée à tort par la 82). `PurchaseDocumentForms.test.tsx`, 3 tests vus rouges. Les 31 libellés de l'écran factures d'achat manquaient dans les trois langues (clés brutes affichées). |
+| `AUD-G03` | **OK** | `importBankStatement` : l'écran d'import lit le relevé (CAMT.053, MT940, CFONB 120), écarte les doublons et enregistre les opérations. Avant, il n'enregistrait que le nom du fichier, en « pending ». `bank-statement-import.test.ts`. OFX : aucun lecteur n'existe. |
+| `AUD-G04` | **OK** | `sql/196_bank_reconciliation.sql` : pointage automatique relevé ↔ écriture 512x, état de rapprochement réécrit (il lisait l'IBAN comme compte comptable et additionnait les débits). G04. |
+| `AUD-G05` | **OK** | `sql/193_stock_adjustment_variation.sql` : un inventaire devient une entrée ou une sortie de la différence. Avant : aucune écriture, dépôt inchangé (fiche article 7, dépôt 10). G05. |
+| `AUD-G06` à `G08` | **OK** | `sql/195_purchase_order_line_received.sql` (colonne calculée `quantity_received`) ; G18, G20, G21 corrigés dans les requêtes. **Liste blanche PostgREST vide.** **Trouvé** : une réception partielle faisait échouer la commande (statut `partial` refusé) ; le MRP filtrait un statut `sent` inexistant. G06. |
+| `AUD-G09` | **OK** | `sql/194_pos_session_stock.sql` : la clôture de caisse décrémentait le stock deux fois, et dans tous les dépôts. G09 (écriture, stock, chaîne NF525). |
+| `AUD-G10` | **OK** | G10 : les 46 comptes des écritures automatiques sont au plan semé ; contrôle vu rouge en retirant 419100. |
+
+**Tests de V1/V2 retouchés, et pourquoi** : E04 comparait la chaîne `'D=1200 C=1200'`, devenue `1200.00` avec le passage en `numeric(18,2)` de la 187 : il ne pouvait plus passer. Il compare désormais des nombres. `102_trigger_tests.sql` : les TESTS 2 et 3 inséraient des factures directement « validées », sans ligne ni écriture, ce que la 190 interdit : elles passent maintenant par brouillon, ligne et validation. TEST 13 retrouve l'écriture par le numéro légal.
+
+**Rejeu complet sur base neuve (jusqu'à 196, avec 189 et 200)** : `plpgsql_check` 0 erreur ; suites 102, 105, 166, 168, 170, 173, 175, 177 vertes ; 178 (23), 179 (17), 180 (20), 181 (7), 182 (8), 192 (13) **entièrement vertes** ; **registre vide** ; PostgREST **1 486 requêtes acceptées, aucune tolérance** ; types régénérés ; oxlint 0, `tsc -b` 0, **1 388 tests unitaires**, parité i18n, build.
+
+**Relecture critique de V3 (même jour)**, défauts trouvés dans ce que V3 avait laissé en place, chacun vu rouge puis vert :
+- E21 : un brouillon pouvait être « envoyé » (numéro provisoire, sans écriture). Le serveur refuse désormais, et « Envoyer » valide d'abord la facture ; les boutons Avoir et Factur-X n'apparaissent que sur une facture validée.
+- E22 / A09 : le payé d'une facture se saisissait à la main. Le bouton « Marquer payée » des achats écrivait `status = 'paid'` sans décaissement ni écriture. Le payé ne résulte plus que des règlements et avoirs (drapeau `app.settlement_in_progress` posé par les fonctions de règlement). Les deux boutons « Marquer payée » enregistrent un vrai règlement, avec son propre numéro (`REG-…`, `DEC-…`), et seulement sur une facture validée ou approuvée.
+- G11 : `auto_reconcile_by_score` ajoutait le montant d'une ligne bancaire au payé de la facture, sans règlement ni écriture, y compris pour les lignes reflétant un règlement déjà saisi. Réécrit dans la 196 : sur une ligne de relevé au crédit reconnue avec certitude, il enregistre un vrai règlement client.
+- Le badge « Comptabilisé » des deux listes de factures lisait des colonnes inexistantes et affichait toujours « Non comptabilisé ».
+- `applyPurchaseCreditToInvoice` recalculait le payé côté front ; il délègue au serveur.
+
+Après relecture : 180 (**22**), 192 (**15**) verts ; PostgREST **1 489** requêtes acceptées ; **1 400 tests unitaires** ; typecheck, lint, i18n, build verts. Le scénario R08 de 179, cassé un temps par la 201 (session prod), a été corrigé par la session V2 : 179 est de nouveau à 17/17 avec 201.
+
+**Non vérifié** : l'affichage dans le navigateur ; les e2e (lot J) ; le rejeu sur une copie de prod, pourtant nécessaire avant déploiement puisque la prod est à 188 (reprises de la 190 : comptes et journaux créés pour les comptes bancaires existants).
+
+**Restes identifiés** : `vat_account_mapping` envoie `FR20` et `AUTOLIQ` vers les mêmes comptes (445711/445661), à séparer pour la déclaration de TVA ; `toast.loadError` et d'autres clés manquent dans plusieurs écrans (lot I) ; le paiement des salaires (D 421 / C 512) n'est pas généré.
+
+---
+
 ---
 
 ## 7. Recette finale

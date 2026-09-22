@@ -82,7 +82,10 @@
     "invoiceTypeAdvance": "Acompte",
     "invoiceTypeBalance": "Solde",
     "invoiceTypeProforma": "Proforma",
-    "filterByType": "Filtrer par type"
+    "filterByType": "Filtrer par type",
+    "numberAssigned": "Le numéro de facture (FAC-exercice-n°) est attribué à la validation, dans l'ordre chronologique.",
+    "atLeastOneLine": "Ajoutez au moins une ligne avec une désignation et un montant.",
+    "draftCreated": "Brouillon enregistré. Le numéro définitif sera attribué à la validation."
   },
   "quotes": {
     "title": "Devis",
@@ -112,7 +115,8 @@
     "transformationStatus": "Statut transformation",
     "transformationPending": "En attente",
     "transformationTransformed": "Transformé",
-    "transformationPartial": "Partiel"
+    "transformationPartial": "Partiel",
+    "numberAssigned": "Le numéro de devis est attribué automatiquement à l'enregistrement."
   },
   "creditNotes": {
     "title": "Avoirs",
@@ -133,7 +137,8 @@
     "createFirst": "Créer mon premier avoir",
     "searchPlaceholder": "Rechercher par numéro, client...",
     "sourceInvoice": "Facture source",
-    "viewSourceInvoice": "Voir la facture source"
+    "viewSourceInvoice": "Voir la facture source",
+    "numberAssigned": "Le numéro d'avoir (AV-exercice-n°) est attribué à la validation, qui passe aussi l'écriture."
   },
   "recurring": {
     "title": "Factures récurrentes",

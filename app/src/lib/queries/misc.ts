@@ -1,7 +1,6 @@
 import { supabase, isTenantTable } from '@/lib/supabase'
 import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
-import { createJournalEntry } from './accounting'
 import { createStockMovement } from './stock'
 import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, FixedAsset, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
 
@@ -24,36 +23,12 @@ export async function getJournalsReport(startDate?: string, endDate?: string) {
 // ============ Interconnections ============
 
 // Generate journal entries from a pay run
+// AUD-F02 : l'écriture de paie est construite par le serveur depuis les rubriques
+// des bulletins (journal PAIE, idempotente, comptes par rubrique — AUD-F03)
 export async function generatePayrollJournal(payRunId: string) {
-  const tid = await getTenantId()
-  let prQ = supabase.from('pay_runs').select('*').eq('id', payRunId)
-  if (tid) prQ = prQ.eq('tenant_id', tid)
-  const { data: payRun, error: prError } = await prQ.single()
-  if (prError) throw prError
-
-  const jeNumber = 'JE-PAY-' + payRun.number
-  let jeChkQ = supabase.from('journal_entries').select('id').eq('number', jeNumber)
-  if (tid) jeChkQ = jeChkQ.eq('tenant_id', tid)
-  const { data: existing } = await jeChkQ.maybeSingle()
-  if (existing) throw new Error('Écriture de journal déjà générée pour ce bulletin')
-
-  const lines = [
-    { account_code: '641000', account_name: 'Rémunérations du personnel', description: 'Salaires bruts ' + payRun.number, debit: Number(payRun.gross_total), credit: 0, line_order: 0 },
-    { account_code: '645000', account_name: 'Charges sociales', description: 'Charges sociales ' + payRun.number, debit: Number(payRun.tax_total), credit: 0, line_order: 1 },
-    { account_code: '421000', account_name: 'Personnel - Rémunérations dues', description: 'Net à payer ' + payRun.number, debit: 0, credit: Number(payRun.net_total), line_order: 2 },
-    { account_code: '431000', account_name: 'Sécurité sociale - Charges', description: 'Charges sociales à payer ' + payRun.number, debit: 0, credit: Number(payRun.tax_total), line_order: 3 },
-  ]
-
-  return createJournalEntry({
-    number: jeNumber,
-    date: payRun.pay_date,
-    description: 'Écriture de paie ' + payRun.number,
-    journal_type: 'purchase',
-    status: 'posted',
-    total_debit: Number(payRun.gross_total) + Number(payRun.tax_total),
-    total_credit: Number(payRun.net_total) + Number(payRun.tax_total),
-    lines,
-  } as any)
+  const { data, error } = await supabase.rpc('post_payroll_journal', { p_pay_run_id: payRunId })
+  if (error) throw error
+  return data as { success: boolean; entry_id: string; already_posted: boolean }
 }
 
 // Calculate and update depreciation for a fixed asset
@@ -136,37 +111,23 @@ export async function createInvoiceStockMovement(productId: string, type: 'in' |
   return sm
 }
 
-// Apply purchase credit note to purchase invoice (update amounts)
+// Impute un avoir fournisseur sur une facture : la validation de l'avoir passe
+// l'écriture et recalcule le reste dû de la facture côté serveur (192) — le payé
+// ne se modifie jamais directement
 export async function applyPurchaseCreditToInvoice(creditNoteId: string, invoiceId: string) {
   const tid = await getTenantId()
-  let cnQ = supabase.from('purchase_credit_notes').select('*').eq('id', creditNoteId)
-  if (tid) cnQ = cnQ.eq('tenant_id', tid)
-  const { data: cn, error: cnError } = await cnQ.single()
-  if (cnError) throw cnError
-
-  let invQ = supabase.from('purchase_invoices').select('*').eq('id', invoiceId)
-  if (tid) invQ = invQ.eq('tenant_id', tid)
-  const { data: inv, error: invError } = await invQ.single()
-  if (invError) throw invError
-
-  const creditAmount = Number(cn.total)
-  const newAmountPaid = Number(inv.amount_paid) + creditAmount
-  const newAmountDue = Math.max(Number(inv.amount_due) - creditAmount, 0)
-  const newStatus = newAmountDue <= 0 ? 'paid' : inv.status
-
-  const { error: invUpdateError } = await tud(supabase
-    .from('purchase_invoices')
-    .update({ amount_paid: newAmountPaid, amount_due: newAmountDue, status: newStatus }), 'purchase_invoices', tid)
-    .eq('id', invoiceId)
-  if (invUpdateError) throw invUpdateError
-
-  const { error: cnUpdateError } = await tud(supabase
+  const { data, error } = await tud(supabase
     .from('purchase_credit_notes')
-    .update({ status: 'applied', purchase_invoice_id: invoiceId }), 'purchase_credit_notes', tid)
+    .update({ purchase_invoice_id: invoiceId, status: 'validated' }), 'purchase_credit_notes', tid)
     .eq('id', creditNoteId)
-  if (cnUpdateError) throw cnUpdateError
-
-  return { invoice: { id: invoiceId, amount_due: newAmountDue, status: newStatus }, creditNote: { id: creditNoteId, status: 'applied' } }
+    .select('id, status')
+    .single()
+  if (error) throw error
+  let invQ = supabase.from('purchase_invoices').select('id, amount_due, status').eq('id', invoiceId)
+  if (tid) invQ = invQ.eq('tenant_id', tid)
+  const { data: invoice, error: invError } = await invQ.single()
+  if (invError) throw invError
+  return { invoice, creditNote: data }
 }
 
 
@@ -2508,13 +2469,13 @@ export async function transformDeliveryNoteToInvoice(dnId: string, lines: { deli
   const { data: dn, error: dErr } = await supabase.from('delivery_notes').select('*, delivery_note_lines(*)').eq('id', dnId).single()
   if (dErr) throw dErr
 
-  const invNumber = await nextDocumentNumber('FAC')
+  // AUD-E04 : numéro provisoire posé par le serveur, définitif à la validation
   let subtotal = 0
   let vatTotal = 0
 
   const { data: inv, error: iErr } = await supabase
     .from('invoices')
-    .insert({ tenant_id: tid, number: invNumber, customer_id: dn.customer_id, customer_name: null, date: new Date().toISOString().split('T')[0], due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], status: 'draft', subtotal: 0, vat_total: 0, total: 0, amount_paid: 0, amount_due: 0, notes: '', recurring: false, recurring_frequency: null, delivery_note_id: dnId, invoice_type: 'standard' })
+    .insert({ tenant_id: tid, customer_id: dn.customer_id, customer_name: null, date: new Date().toISOString().split('T')[0], due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], status: 'draft', subtotal: 0, vat_total: 0, total: 0, amount_paid: 0, amount_due: 0, notes: '', recurring: false, recurring_frequency: null, delivery_note_id: dnId, invoice_type: 'standard' })
     .select()
     .single()
   if (iErr) throw iErr
@@ -2553,10 +2514,10 @@ export async function transformInvoiceToCreditNote(invoiceId: string, reason: st
   const { data: inv, error: iErr } = await supabase.from('invoices').select('*, invoice_lines(*)').eq('id', invoiceId).single()
   if (iErr) throw iErr
 
-  const cnNumber = await nextDocumentNumber('AV')
+  // AUD-E04 : numéro provisoire posé par le serveur, définitif à la validation
   const { data: cn, error: cErr } = await supabase
     .from('credit_notes')
-    .insert({ tenant_id: tid, number: cnNumber, customer_id: inv.customer_id, customer_name: inv.customer_name, date: new Date().toISOString().split('T')[0], status: 'draft', subtotal: Number(inv.subtotal), vat_total: Number(inv.vat_total), total: Number(inv.total), reason, invoice_id: invoiceId, source_invoice_id: invoiceId })
+    .insert({ tenant_id: tid, customer_id: inv.customer_id, customer_name: inv.customer_name, date: new Date().toISOString().split('T')[0], status: 'draft', subtotal: Number(inv.subtotal), vat_total: Number(inv.vat_total), total: Number(inv.total), reason, invoice_id: invoiceId, source_invoice_id: invoiceId })
     .select()
     .single()
   if (cErr) throw cErr
@@ -2564,7 +2525,7 @@ export async function transformInvoiceToCreditNote(invoiceId: string, reason: st
   for (const line of inv.invoice_lines || []) {
     const { error: lErr } = await supabase
       .from('credit_note_lines')
-      .insert({ tenant_id: tid, credit_note_id: cn.id, description: line.description, quantity: Number(line.quantity), unit_price: Number(line.unit_price), vat_rate: Number(line.vat_rate), total: Number(line.total), vat_total: Number(line.vat_total) })
+      .insert({ tenant_id: tid, credit_note_id: cn.id, product_id: line.product_id, vat_code: line.vat_code, description: line.description, quantity: Number(line.quantity), unit_price: Number(line.unit_price), vat_rate: Number(line.vat_rate), total: Number(line.total), vat_total: Number(line.vat_total) })
     if (lErr) throw lErr
   }
 
@@ -2580,11 +2541,11 @@ export async function createAdvanceInvoice(customerId: string, amount: number, v
 
   const vatAmount = amount * (vatRate / 100)
   const total = amount + vatAmount
-  const invNumber = await nextDocumentNumber('AC')
+  // AUD-E04 : numéro provisoire posé par le serveur, définitif à la validation
 
   const { data: inv, error: iErr } = await supabase
     .from('invoices')
-    .insert({ tenant_id: tid, number: invNumber, customer_id: customerId, customer_name: cust?.name || null, date: new Date().toISOString().split('T')[0], due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], status: 'draft', subtotal: amount, vat_total: vatAmount, total, amount_paid: 0, amount_due: total, notes: '', recurring: false, recurring_frequency: null, is_advance_invoice: true, advance_amount: amount, invoice_type: 'advance' })
+    .insert({ tenant_id: tid, customer_id: customerId, customer_name: cust?.name || null, date: new Date().toISOString().split('T')[0], due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], status: 'draft', subtotal: amount, vat_total: vatAmount, total, amount_paid: 0, amount_due: total, notes: '', recurring: false, recurring_frequency: null, is_advance_invoice: true, advance_amount: amount, invoice_type: 'advance' })
     .select()
     .single()
   if (iErr) throw iErr

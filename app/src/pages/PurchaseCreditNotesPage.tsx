@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, updatePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
@@ -47,6 +47,11 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
     try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
+  // AUD-G01 : la validation passe l'écriture d'avoir (journal AC) et impute la facture d'origine
+  async function handleValidate(id: string) {
+    try { await updatePurchaseCreditNote(id, { status: 'validated' }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+  }
+
   return (
     <div>
       <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('creditNotes.title') }]} />
@@ -73,10 +78,16 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                   <TableCell>{formatDate(cn.date)}</TableCell>
                   <TableCell>{cn.supplier_name || 'N/A'}</TableCell>
                   <TableCell className="font-mono text-[var(--color-success)] text-right">{formatCurrency(Number(cn.total))}</TableCell>
-                  <TableCell><Badge variant={cn.status === 'applied' ? 'success' : 'warning'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
+                  <TableCell><Badge variant={cn.status === 'draft' ? 'warning' : 'success'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
-                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                    {cn.status === 'draft' && (
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); handleValidate(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={tCommon('actions.validate')} title={tCommon('actions.validate')}>
+                          <CheckCircle className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                          <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
                 {expanded.has(cn.id) && cn.purchase_credit_lines?.map((line) => (
@@ -106,7 +117,8 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
 function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { suppliers: Supplier[]; invoices: PurchaseInvoice[]; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
-  const [number, setNumber] = useState('AVF-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
+  // AUD-G02 : numéro interne AVF-<exercice>-n attribué par le serveur à la validation
+  const [supplierRef, setSupplierRef] = useState('')
   const { toast } = useToast()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [supplierId, setSupplierId] = useState('')
@@ -140,10 +152,10 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
     setSaving(true)
     try {
       await createPurchaseCreditNote({
-        number, date, supplier_id: supplierId || null, supplier_name: supplier?.name || null,
+        supplier_reference: supplierRef.trim() || null, date, supplier_id: supplierId || null, supplier_name: supplier?.name || null,
         status: 'draft', subtotal, vat_total: vatTotal, total,
         reason: reason || null, purchase_invoice_id: invoiceId || null,
-        purchase_credit_lines: lines.filter(l => l.description).map(l => ({
+        lines: lines.filter(l => l.description).map(l => ({
           description: l.description, quantity: l.quantity, unit_price: l.unit_price,
           vat_rate: l.vat_rate, total: l.total, vat_total: l.vat_total,
         })),
@@ -161,7 +173,7 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('creditNotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('creditNotes.supplierReference')} value={supplierRef} onChange={(e) => setSupplierRef(e.target.value)} />
             <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">

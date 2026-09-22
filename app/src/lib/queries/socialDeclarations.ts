@@ -315,18 +315,31 @@ export async function updateCiceConfig(id: string, updates: Partial<CiceConfig>)
   return data as CiceConfig
 }
 
+// AUD-F04 : le brut d'un salarié se lit sur ses bulletins de l'année (employees
+// n'a pas de colonne gross_salary — la requête était refusée par PostgREST, G17)
+async function annualGrossByEmployee(tid: string | null, year: number): Promise<Map<string, number>> {
+  let q = supabase.from('pay_slips').select('employee_id, total_gross')
+    .gte('period_start', `${year}-01-01`).lte('period_start', `${year}-12-31`).order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const slips = await fetchAllRows<{ employee_id: string; total_gross: number | null }>(q, { label: 'annualGrossByEmployee/pay_slips' })
+  const gross = new Map<string, number>()
+  for (const s of slips) gross.set(s.employee_id, (gross.get(s.employee_id) || 0) + (Number(s.total_gross) || 0))
+  return gross
+}
+
 export async function calculateCice(year: number): Promise<any[]> {
   const tid = await getTenantId()
   const configs = await getCiceConfig(year)
   const config = configs.find(c => c.active)
   if (!config) throw new Error('No active CICE config for year ' + year)
-  let empQ = supabase.from('employees').select('id, name, gross_salary').eq('status', 'active').order('id')
+  let empQ = supabase.from('employees').select('id, name').eq('status', 'active').order('id')
   if (tid) empQ = empQ.eq('tenant_id', tid)
   // LOT7-03 : crédit d'impôt calculé salarié par salarié — aucun ne doit être omis.
   const employees = await fetchAllRows<any>(empQ, { label: 'calculateCice/employees' })
+  const gross = await annualGrossByEmployee(tid, year)
   const results: any[] = []
   for (const emp of employees) {
-    const salary = Number(emp.gross_salary) || 0
+    const salary = gross.get(emp.id) || 0
     const eligible = salary <= (config.eligible_salary_cap || 999999)
     if (eligible) {
       results.push({
@@ -495,11 +508,13 @@ export async function getBdesIndicators(year: number, category?: string): Promis
 export async function calculateBdesIndicators(year: number): Promise<BdesIndicator[]> {
   const tid = await getTenantId()
   const indicators: Omit<BdesIndicator, 'id' | 'created_at'>[] = []
-  let empQ = supabase.from('employees').select('id, name, gender, hire_date, contract_type, gross_salary, department').eq('status', 'active').order('id')
+  let empQ = supabase.from('employees').select('id, name, gender, hire_date, contract_type, department').eq('status', 'active').order('id')
   if (tid) empQ = empQ.eq('tenant_id', tid)
   // LOT7-03 : indicateurs BDES/égalité F-H — effectif, masse salariale et écart de
   // rémunération sont des agrégats sur tout l'effectif.
-  const employees = await fetchAllRows<any>(empQ, { label: 'calculateBdesIndicators/employees' })
+  const gross = await annualGrossByEmployee(tid, year)
+  const employees = (await fetchAllRows<any>(empQ, { label: 'calculateBdesIndicators/employees' }))
+    .map(e => ({ ...e, gross_salary: gross.get(e.id) || 0 }))
   const total = employees.length
   const male = employees.filter(e => e.gender === 'M').length
   const female = employees.filter(e => e.gender === 'F').length

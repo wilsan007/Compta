@@ -13,6 +13,8 @@ import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAc
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import type { Invoice, Customer, CompanySettings } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
+import { nextDocumentNumber } from '@/lib/queries/core'
+import { useLegislation } from '@/lib/legislation'
 
 export function InvoicesPage() {
   const { t: tf } = useTranslation('features')
@@ -57,6 +59,12 @@ export function InvoicesPage() {
   async function handleSend(id: string) {
     setActionLoading(id)
     try {
+      // Un brouillon ne part pas chez le client : la validation attribue le numéro
+      // définitif et passe l'écriture, puis la facture est envoyée
+      const inv = invoices.find(i => i.id === id)
+      if (inv && inv.validation_status !== 'validated') {
+        await updateInvoice(id, { validation_status: 'validated' as any })
+      }
       await updateInvoice(id, { status: 'sent' })
       toast('success', t('invoices.title'), tCommon('toast.sent'))
       await loadInvoices()
@@ -95,7 +103,8 @@ export function InvoicesPage() {
         return
       }
       await createCustomerPayment({
-        number: `PAY-${inv.number || id}`,
+        // un numéro par règlement : une facture peut en recevoir plusieurs
+        number: await nextDocumentNumber('REG'),
         customer_id: inv.customer_id,
         invoice_id: inv.id,
         payment_date: new Date().toISOString().split('T')[0],
@@ -247,7 +256,7 @@ export function InvoicesPage() {
               { label: t('invoices.status'), key: 'status', sortable: true },
               { label: t('invoices.total'), key: 'total', sortable: true, className: 'text-right' },
               { label: t('invoices.balance'), key: 'amount_due', sortable: true, className: 'text-right' },
-              { label: 'Compta', key: 'journal_entry_id', sortable: false },
+              { label: 'Compta', key: 'transferred_entry_id', sortable: false },
               { label: tCommon('table.actions') },
             ]}
             data={filtered as any}
@@ -271,7 +280,7 @@ export function InvoicesPage() {
                   <TableCell className={Number(inv.amount_due) > 0 ? 'text-[var(--color-warning-text)] font-medium text-right' : 'text-right'}>
                     {formatCurrency(Number(inv.amount_due) || 0)}
                   </TableCell>
-                  <TableCell>{inv.journal_entry_id || inv.journal_posted ? <Badge variant="success">Comptabilisé</Badge> : <Badge variant="neutral">Non comptabilisé</Badge>}</TableCell>
+                  <TableCell>{inv.transferred_entry_id ? <Badge variant="success">Comptabilisé</Badge> : <Badge variant="neutral">Non comptabilisé</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setViewing(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.view')}>
@@ -287,12 +296,12 @@ export function InvoicesPage() {
                           {actionLoading === inv.id ? <CheckCircle className="w-4 h-4 animate-pulse" /> : <FileCode className="w-4 h-4" />}
                         </button>
                       )}
-                      {inv.status !== 'paid' && inv.status !== 'cancelled' && (
+                      {inv.validation_status === 'validated' && inv.status !== 'paid' && inv.status !== 'cancelled' && (
                         <button onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={t('invoices.markAsPaid')}>
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
-                      {inv.status !== 'draft' && inv.status !== 'cancelled' && inv.invoice_type !== 'advance' && (
+                      {inv.validation_status === 'validated' && inv.status !== 'cancelled' && inv.invoice_type !== 'advance' && (
                         <button onClick={() => handleCreateCreditNote(inv)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[rgba(204,0,0,0.1)]" title={t('invoices.createCreditNote')}>
                           <Receipt className="w-4 h-4" />
                         </button>
@@ -300,7 +309,7 @@ export function InvoicesPage() {
                       <button onClick={() => handleDownload(inv)} className="p-1.5 rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]" title={tCommon('actions.download')}>
                         <Download className="w-4 h-4" />
                       </button>
-                      {inv.status !== 'draft' && inv.status !== 'cancelled' && (
+                      {inv.validation_status === 'validated' && inv.status !== 'cancelled' && (
                         <button onClick={() => handleEInvoice(inv)} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[rgba(0,102,204,0.1)]" title={tf('eInvoice.buttonTitle')}>
                           <FileCode className="w-4 h-4" />
                         </button>
@@ -351,30 +360,58 @@ function InvoiceForm({ customers, onClose, onSaved }: {
   const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
-  const [number, setNumber] = useState('FAC-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 9999)).padStart(3, '0'))
+  const { defaultVatRate } = useLegislation()
+  const emptyLine = () => ({ description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
+  const [lines, setLines] = useState<{ description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
   const [saving, setSaving] = useState(false)
+
+  // Aperçu : le serveur fait foi (arrondi au centime par ligne, comme lui)
+  const round2 = (n: number) => Math.round(n * 100) / 100
+  const lineHt = (l: { quantity: number; unit_price: number }) => round2(Number(l.quantity) * Number(l.unit_price))
+  const lineVat = (l: { quantity: number; unit_price: number; vat_rate: number }) => round2(lineHt(l) * Number(l.vat_rate) / 100)
+  const filledLines = lines.filter(l => l.description.trim() && lineHt(l) > 0)
+  const subtotal = filledLines.reduce((sum, l) => sum + lineHt(l), 0)
+  const vatTotal = filledLines.reduce((sum, l) => sum + lineVat(l), 0)
+  const total = round2(subtotal + vatTotal)
+
+  function updateLine(idx: number, field: 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
+    setLines(prev => prev.map((l, i) => (i === idx ? { ...l, [field]: value } : l)))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!customerId) { toast('warning', t('invoices.customer'), tCommon('form.requiredField')); return }
+    if (filledLines.length === 0) { toast('warning', t('invoices.title'), t('invoices.atLeastOneLine')); return }
     setSaving(true)
     try {
       const customer = customers.find(c => c.id === customerId)
       await createInvoice({
-        number,
         customer_id: customerId,
         customer_name: customer?.name || '',
         date,
         due_date: dueDate || date,
         status: 'draft',
-        subtotal: 0,
-        vat_total: 0,
-        total: 0,
+        subtotal,
+        vat_total: vatTotal,
+        total,
         amount_paid: 0,
-        amount_due: 0,
-        lines: [],
-      } as any)
-      toast('success', t('invoices.title'), `${t('invoices.number')} ${number} ${tCommon('toast.created').toLowerCase()}`)
+        amount_due: total,
+        notes: '',
+        recurring: false,
+        recurring_frequency: null,
+        lines: filledLines.map((l, i) => ({
+          product_id: null,
+          description: l.description.trim(),
+          quantity: Number(l.quantity),
+          unit_price: Number(l.unit_price),
+          vat_rate: Number(l.vat_rate),
+          total: lineHt(l),
+          vat_total: lineVat(l),
+          vat_amount: lineVat(l),
+          line_order: i,
+        })),
+      })
+      toast('success', t('invoices.title'), t('invoices.draftCreated'))
       onSaved()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
@@ -383,25 +420,67 @@ function InvoiceForm({ customers, onClose, onSaved }: {
     }
   }
 
+  const cellInput = 'text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]'
+
   return (
     <>
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('invoices.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Input label={t('invoices.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('invoices.numberAssigned')}</p>
           <Combobox label={t('invoices.customer')} required value={customerId} onChange={(v) => setCustomerId(v)} placeholder={tCommon('form.selectOption')} options={customers.map(c => ({ value: c.id, label: c.name }))} />
           {commercialStrategy === 'inline' && (
             <button type="button" onClick={() => setShowQuickAddCustomer(true)} className="text-xs text-[var(--color-primary)] flex items-center gap-1 hover:underline">
               <UserPlus className="w-3.5 h-3.5" /> {tCross('customer.add')}
             </button>
           )}
-          <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label={t('invoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          <p className="text-xs text-[var(--color-text-secondary)]">{t('invoices.notes')}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input label={t('invoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+
+          <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
+            <table className="app-table min-w-[640px]">
+              <thead className="bg-[var(--color-neutral-50)]">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.total')}</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((line, idx) => (
+                  <tr key={idx} className="border-t border-[var(--color-border)]">
+                    <td className="px-3 py-2"><input aria-label={t('invoices.description')} value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className={cellInput} placeholder={t('invoices.description')} /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.quantity')} type="number" step="0.01" min={0} value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.unitPrice')} type="number" step="0.01" min={0} value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.vatRate')} type="number" step="0.01" min={0} value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
+                    <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(lineHt(line) + lineVat(line))}</td>
+                    <td className="px-3 py-2">
+                      {lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><X className="w-3 h-3" aria-hidden="true" /></button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button type="button" onClick={() => setLines(prev => [...prev, emptyLine()])} className="w-full py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-neutral-50)] border-t border-[var(--color-border)]">
+              + {t('invoices.addLine')}
+            </button>
+          </div>
+
+          <div className="flex justify-end gap-6 text-sm">
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.subtotal')}: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.vatAmount')}: </span><span className="font-mono font-semibold">{formatCurrency(vatTotal)}</span></div>
+            <div><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}: </span><span className="font-mono font-bold text-base">{formatCurrency(total)}</span></div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" loading={saving}>{tCommon('actions.create')}</Button>

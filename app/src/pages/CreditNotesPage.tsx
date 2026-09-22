@@ -12,6 +12,7 @@ import { confirmSync } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   draft: 'warning',
+  validated: 'primary',
   applied: 'success',
 }
 
@@ -63,7 +64,8 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
 
   async function handleApply(id: string) {
     try {
-      await updateCreditNote(id, { status: 'applied' })
+      // AUD-E07 : la validation passe l'écriture d'avoir et impute la facture d'origine
+      await updateCreditNote(id, { status: 'validated' })
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
@@ -112,9 +114,11 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {cn.status === 'draft' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -158,7 +162,6 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
-  const [number, setNumber] = useState('AV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
@@ -203,8 +206,8 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
     const customer = customers.find(c => c.id === customerId)
     setSaving(true)
     try {
+      // AUD-E04 : numéro AV-<exercice>-n attribué par le serveur à la validation
       await createCreditNote({
-        number,
         date,
         customer_id: customerId || null,
         customer_name: customer?.name || null,
@@ -214,7 +217,7 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
         total,
         reason: reason || null,
         invoice_id: invoiceId || null,
-        credit_note_lines: lines.filter(l => l.description).map(l => ({
+        lines: lines.filter(l => l.description).map(l => ({
           description: l.description,
           quantity: l.quantity,
           unit_price: l.unit_price,
@@ -239,10 +242,8 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t('creditNotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
-            <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('creditNotes.numberAssigned')}</p>
+          <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           <div className="grid grid-cols-2 gap-4">
             <Select label={t('creditNotes.customer')} required value={customerId} onChange={(e) => { setCustomerId(e.target.value); setInvoiceId('') }} options={[
               { value: '', label: tCommon('form.selectOption') },

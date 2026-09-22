@@ -87,9 +87,13 @@ BEGIN
     uuid_generate_v4(), v_tenant_id, 'FAC-TEST-001', v_customer_id,
     CURRENT_DATE, CURRENT_DATE + 30, 'sent',
     100.00, 20.00, 120.00, 0, 120.00, 'not_paid',
-    false, 'standard', 'validated', NOW(), NOW()
+    false, 'standard', 'draft', NOW(), NOW()
   )
   RETURNING id INTO v_invoice_id;
+  -- AUD-E03/E04 (190) : une facture naît en brouillon, avec ses lignes, puis est validée
+  INSERT INTO invoice_lines (tenant_id, invoice_id, description, quantity, unit_price, vat_rate)
+  VALUES (v_tenant_id, v_invoice_id, 'Prestation', 1, 100.00, 20);
+  UPDATE invoices SET validation_status = 'validated' WHERE id = v_invoice_id;
 
   INSERT INTO customer_payments (
     id, tenant_id, number, customer_id, invoice_id, payment_date,
@@ -121,9 +125,13 @@ BEGIN
     uuid_generate_v4(), v_tenant_id, 'FAC-TEST-002', v_customer_id,
     CURRENT_DATE, CURRENT_DATE + 30, 'sent',
     200.00, 40.00, 240.00, 0, 240.00, 'not_paid',
-    false, 'standard', 'validated', NOW(), NOW()
+    false, 'standard', 'draft', NOW(), NOW()
   )
   RETURNING id INTO v_invoice_id;
+  -- AUD-E03/E04 (190) : une facture naît en brouillon, avec ses lignes, puis est validée
+  INSERT INTO invoice_lines (tenant_id, invoice_id, description, quantity, unit_price, vat_rate)
+  VALUES (v_tenant_id, v_invoice_id, 'Prestation', 1, 200.00, 20);
+  UPDATE invoices SET validation_status = 'validated' WHERE id = v_invoice_id;
 
   INSERT INTO customer_payments (
     id, tenant_id, number, customer_id, invoice_id, payment_date,
@@ -461,24 +469,25 @@ BEGIN
          (v_tenant_id, v_inv_id, 'Ligne 5,5 %', 1, 50, 5.5, 50, 2.75, 'TVA5', 2.75, 2);
 
   UPDATE invoices SET validation_status = 'validated' WHERE id = v_inv_id;
+  -- AUD-E04 (190) : la validation remplace le numéro saisi par le numéro légal FAC-<exercice>-n
 
   SELECT status INTO v_status FROM journal_entries
-  WHERE tenant_id = v_tenant_id AND invoice_ref = 'TEST-SOC01-INV' AND journal_code = 'VT';
+  WHERE tenant_id = v_tenant_id AND invoice_ref = (SELECT number FROM invoices WHERE id = v_inv_id) AND journal_code = 'VT';
   ASSERT v_status = 'posted', format('FAIL TEST 13: écriture VT attendue en posted (obtenu : %s)', coalesce(v_status, 'aucune écriture'));
 
   SELECT count(*) INTO v_count FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = 'TEST-SOC01-INV';
+  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = (SELECT number FROM invoices WHERE id = v_inv_id);
   ASSERT v_count >= 3, format('FAIL TEST 13: au moins 3 lignes attendues (obtenu : %s)', v_count);
   RAISE NOTICE '✅ TEST 13: facture validée → écriture VT posted (% lignes)', v_count;
 
   SELECT count(*) INTO v_count FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = 'TEST-SOC01-INV'
+  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = (SELECT number FROM invoices WHERE id = v_inv_id)
     AND jl.account_general LIKE '411%' AND jl.account_tiers IS NOT NULL AND jl.third_party_id = v_customer_id;
   ASSERT v_count = 1, 'FAIL TEST 15: ligne 411 sans compte auxiliaire ni tiers (migration 108 écrasée ?)';
   RAISE NOTICE '✅ TEST 15: compte auxiliaire client renseigné';
 
   SELECT count(*) INTO v_count FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = 'TEST-SOC01-INV' AND jl.account_general LIKE '4457%';
+  WHERE je.tenant_id = v_tenant_id AND je.invoice_ref = (SELECT number FROM invoices WHERE id = v_inv_id) AND jl.account_general LIKE '4457%';
   ASSERT v_count = 2, format('FAIL TEST 16: 2 lignes de TVA attendues, une par taux (obtenu : %s)', v_count);
   RAISE NOTICE '✅ TEST 16: TVA ventilée par taux';
 

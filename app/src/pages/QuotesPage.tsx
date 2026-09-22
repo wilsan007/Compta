@@ -228,7 +228,6 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
-  const [number, setNumber] = useState('DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
@@ -280,8 +279,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
     const customer = customers.find(c => c.id === customerId)
     setSaving(true)
     try {
+      // AUD-E04 : numéro DEV-<exercice>-n attribué par le serveur
       await createQuote({
-        number,
         date,
         expiry_date: expiryDate,
         customer_id: customerId || null,
@@ -291,7 +290,7 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
         vat_total: vatTotal,
         total,
         notes,
-        quote_lines: lines.filter(l => l.description).map(l => ({
+        lines: lines.filter(l => l.description).map(l => ({
           product_id: l.productId || null,
           description: l.description,
           quantity: l.quantity,
@@ -317,8 +316,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <Input label={t('quotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('quotes.numberAssigned')}</p>
+          <div className="grid grid-cols-2 gap-4">
             <Input label={t('quotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
             <Input label={t('quotes.validUntil')} type="date" required value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
           </div>

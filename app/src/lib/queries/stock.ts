@@ -704,7 +704,7 @@ export async function runMRPCalculation(): Promise<MRPRun> {
       fetchAllRows<any>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
       fetchAllRows<any>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
       // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
-      fetchAllRows<any>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'sent', 'confirmed']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
+      fetchAllRows<any>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'confirmed', 'partial']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
     ])
 
     // Build stock map: product_id -> total quantity

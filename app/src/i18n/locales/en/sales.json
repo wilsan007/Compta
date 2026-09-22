@@ -82,7 +82,10 @@
     "invoiceTypeAdvance": "Advance",
     "invoiceTypeBalance": "Balance",
     "invoiceTypeProforma": "Proforma",
-    "filterByType": "Filter by type"
+    "filterByType": "Filter by type",
+    "numberAssigned": "The invoice number (FAC-year-no.) is assigned on validation, in chronological order.",
+    "atLeastOneLine": "Add at least one line with a description and an amount.",
+    "draftCreated": "Draft saved. The final number will be assigned on validation."
   },
   "quotes": {
     "title": "Quotes",
@@ -112,7 +115,8 @@
     "transformationStatus": "Transformation status",
     "transformationPending": "Pending",
     "transformationTransformed": "Transformed",
-    "transformationPartial": "Partial"
+    "transformationPartial": "Partial",
+    "numberAssigned": "The quote number is assigned automatically when saved."
   },
   "creditNotes": {
     "title": "Credit notes",
@@ -133,7 +137,8 @@
     "createFirst": "Create my first credit note",
     "searchPlaceholder": "Search by number, customer...",
     "sourceInvoice": "Source invoice",
-    "viewSourceInvoice": "View source invoice"
+    "viewSourceInvoice": "View source invoice",
+    "numberAssigned": "The credit note number (AV-year-no.) is assigned on validation, which also posts the entry."
   },
   "recurring": {
     "title": "Recurring invoices",

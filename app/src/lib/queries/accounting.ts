@@ -2046,11 +2046,21 @@ export async function createAuditLog(entry: Omit<AuditLog, 'id' | 'created_at'>)
 // ============ Sprint 8: Budget Tracking ============
 export async function getBudgetTracking(fiscalYearId?: string) {
   const tid = await getTenantId()
-  let q = supabase.from('budgets').select('*, chart_accounts(code, name), fiscal_years(code)').order('name').order('id')
+  // AUD-G08 (G20) : budgets.account_code est un code libre, sans clé étrangère vers
+  // chart_accounts — le libellé du compte est chargé à part.
+  let q = supabase.from('budgets').select('*, fiscal_years(code)').order('name').order('id')
   if (tid) q = q.eq('tenant_id', tid)
   if (fiscalYearId) q = q.eq('fiscal_year_id', fiscalYearId)
   // LOT7-03 : suivi budgétaire — le réalisé est une somme sur toutes les lignes du compte.
   const budgets = await fetchAllRows<any>(q, { label: 'getBudgetTracking/budgets' })
+  const codes = [...new Set(budgets.map((b: any) => b.account_code).filter(Boolean))]
+  if (codes.length > 0) {
+    let aq = supabase.from('chart_accounts').select('code, name').in('code', codes).order('code')
+    if (tid) aq = aq.eq('tenant_id', tid)
+    const accounts = await fetchAllRows<{ code: string; name: string }>(aq, { label: 'getBudgetTracking/chart_accounts' })
+    const byCode = new Map(accounts.map(a => [a.code, a]))
+    for (const b of budgets) b.chart_accounts = byCode.get(b.account_code) ?? null
+  }
 
   const results: any[] = []
   for (const b of budgets) {
@@ -2979,11 +2989,23 @@ export async function deleteDeferredPrintingJob(id: string) {
 // --- Journal Access Rights ---
 export async function getJournalAccessRights() {
   const tid = await getTenantId()
-  let q = supabase.from('journal_access_rights').select('*, tenant_users(email)').order('journal_code', { ascending: true })
+  // AUD-G08 (G21) : user_id n'a pas de clé étrangère vers tenant_users — les
+  // courriels sont chargés à part (user_id = identifiant d'authentification ou de membre)
+  let q = supabase.from('journal_access_rights').select('*').order('journal_code', { ascending: true })
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as (JournalAccessRight & { tenant_users: Joined<'tenant_users', 'email'> })[]
+  let uq = supabase.from('tenant_users').select('id, auth_id, email').order('id')
+  if (tid) uq = uq.eq('tenant_id', tid)
+  const { data: users, error: uErr } = await uq
+  if (uErr) throw uErr
+  const emailOf = new Map<string, string>()
+  for (const u of users || []) {
+    if (u.auth_id) emailOf.set(u.auth_id, u.email)
+    emailOf.set(u.id, u.email)
+  }
+  return (data || []).map(r => ({ ...r, tenant_users: emailOf.has(r.user_id) ? { email: emailOf.get(r.user_id)! } : null })) as
+    (JournalAccessRight & { tenant_users: Joined<'tenant_users', 'email'> })[]
 }
 export async function createJournalAccessRight(r: Omit<JournalAccessRight, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()

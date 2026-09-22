@@ -1540,7 +1540,10 @@
       "processing": "قيد المعالجة",
       "completed": "مكتمل",
       "failed": "فشل"
-    }
+    },
+    "autoDetect": "اكتشاف تلقائي",
+    "nothingRead": "تعذّرت قراءة أي عملية من هذا الملف.",
+    "importSummary": "تم استيراد {{imported}} عملية، وتجاهل {{duplicates}} موجودة مسبقًا."
   },
   "ediTva": {
     "title": "التصريح الإلكتروني للضريبة (EDI-TVA)",

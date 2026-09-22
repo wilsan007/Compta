@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows, getTenantId, ti, tud } from './core';
 import type { BankAccount, BankTransaction, BankRule, BankConnection, Bank } from '@/types';
+import { parseBankStatement, detectBankStatementFormat, type BankStatementFormat } from '@/lib/bankParsers';
 
 // ============ Bank Accounts ============
 export async function getBankAccounts() {
@@ -249,3 +250,70 @@ export async function syncBankConnection(connectionId: string): Promise<{ synced
   return { synced: 0, error: null }
 }
 
+
+
+// ============ Import de relevé (AUD-G03) ============
+export interface BankStatementImportSummary {
+  format: BankStatementFormat
+  parsed: number
+  imported: number
+  duplicates: number
+  warnings: string[]
+}
+
+/**
+ * Lit un relevé normé (CAMT.053, MT940, CFONB 120), écarte les opérations déjà
+ * importées sur ce compte (même date, montant signé et référence) et enregistre
+ * les autres comme lignes de relevé (source « import »). Le serveur les pointe
+ * contre les écritures du compte de trésorerie (migration 196).
+ */
+export async function importBankStatement(bankAccountId: string, filename: string, content: string, format?: BankStatementFormat): Promise<BankStatementImportSummary> {
+  const tid = await getTenantId()
+  const detected = format && format !== 'unknown' ? format : detectBankStatementFormat(content)
+  const result = parseBankStatement(content, detected)
+  const signed = (t: { type: string; amount: number }) => (t.type === 'debit' ? -Math.abs(t.amount) : Math.abs(t.amount))
+
+  let q = supabase.from('bank_transactions').select('date, amount, type, reference')
+    .eq('source', 'import').or(`bank_account_id.eq.${bankAccountId},account_id.eq.${bankAccountId}`).order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const existing = await fetchAllRows<{ date: string; amount: number; type: string; reference: string | null }>(q, { label: 'importBankStatement/bank_transactions' })
+  const known = new Set(existing.map(e => `${e.date}|${signed(e).toFixed(2)}|${e.reference || ''}`))
+
+  const fresh = result.transactions.filter(t => {
+    const key = `${t.date}|${signed(t).toFixed(2)}|${t.reference || ''}`
+    if (known.has(key)) return false
+    known.add(key) // une même opération répétée dans le fichier n'est importée qu'une fois
+    return true
+  })
+
+  if (fresh.length > 0) {
+    const { error } = await supabase.from('bank_transactions').insert(fresh.map(t => ti({
+      account_id: bankAccountId,
+      bank_account_id: bankAccountId,
+      date: t.date,
+      description: t.description,
+      reference: t.reference || null,
+      type: signed(t) < 0 ? 'debit' : 'credit',
+      amount: Math.abs(t.amount),
+      source: 'import',
+      reconciled: false,
+      matched: false,
+    }, 'bank_transactions', tid)))
+    if (error) throw error
+  }
+
+  const failed = result.transactions.length === 0
+  const { error: logError } = await supabase.from('bank_statement_imports').insert({
+    tenant_id: tid,
+    bank_account_id: bankAccountId,
+    filename,
+    format: detected,
+    file_size: content.length,
+    status: failed ? 'failed' : 'completed',
+    imported_count: fresh.length,
+    error_message: result.warnings.length > 0 ? result.warnings.join(' | ') : null,
+  })
+  if (logError) throw logError
+
+  return { format: detected, parsed: result.transactions.length, imported: fresh.length, duplicates: result.transactions.length - fresh.length, warnings: result.warnings }
+}

@@ -910,6 +910,8 @@ export interface Database {
         statement_balance_date: string | null
         calculated_balance: number | null
         reconciliation_diff: number | null
+        account_code: string | null
+        journal_code: string | null
       }
       Insert: {
         id?: string
@@ -929,6 +931,8 @@ export interface Database {
         statement_balance_date?: string
         calculated_balance?: number
         reconciliation_diff?: number
+        account_code?: string
+        journal_code?: string
       }
       Update: {
         id?: string
@@ -948,6 +952,8 @@ export interface Database {
         statement_balance_date?: string
         calculated_balance?: number
         reconciliation_diff?: number
+        account_code?: string
+        journal_code?: string
       }
       Relationships: []
     }
@@ -2707,6 +2713,9 @@ export interface Database {
         line_order: number | null
         created_at: string | null
         tenant_id: string
+        product_id: string | null
+        vat_code: string | null
+        vat_amount: number
       }
       Insert: {
         id?: string
@@ -2720,6 +2729,9 @@ export interface Database {
         line_order?: number
         created_at?: string
         tenant_id: string
+        product_id?: string
+        vat_code?: string
+        vat_amount?: number
       }
       Update: {
         id?: string
@@ -2733,6 +2745,9 @@ export interface Database {
         line_order?: number
         created_at?: string
         tenant_id?: string
+        product_id?: string
+        vat_code?: string
+        vat_amount?: number
       }
       Relationships: []
     }
@@ -2757,6 +2772,8 @@ export interface Database {
         amount_tax_currency: number | null
         amount_total_currency: number | null
         source_invoice_id: string | null
+        transferred_entry_id: string | null
+        validated_at: string | null
       }
       Insert: {
         id?: string
@@ -2778,6 +2795,8 @@ export interface Database {
         amount_tax_currency?: number
         amount_total_currency?: number
         source_invoice_id?: string
+        transferred_entry_id?: string
+        validated_at?: string
       }
       Update: {
         id?: string
@@ -2799,6 +2818,8 @@ export interface Database {
         amount_tax_currency?: number
         amount_total_currency?: number
         source_invoice_id?: string
+        transferred_entry_id?: string
+        validated_at?: string
       }
       Relationships: []
     }
@@ -4007,6 +4028,7 @@ export interface Database {
         next_number: number
         created_at: string | null
         updated_at: string | null
+        fiscal_year_id: string | null
       }
       Insert: {
         id?: string
@@ -4015,6 +4037,7 @@ export interface Database {
         next_number?: number
         created_at?: string
         updated_at?: string
+        fiscal_year_id?: string
       }
       Update: {
         id?: string
@@ -4023,6 +4046,7 @@ export interface Database {
         next_number?: number
         created_at?: string
         updated_at?: string
+        fiscal_year_id?: string
       }
       Relationships: []
     }
@@ -9000,6 +9024,30 @@ export interface Database {
       }
       Relationships: []
     }
+    payroll_account_mapping: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        role: string
+        account_code: string
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        role: string
+        account_code: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        role?: string
+        account_code?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     payroll_accounting_entries: {
       Row: {
         id: string
@@ -11380,6 +11428,9 @@ export interface Database {
         line_order: number | null
         created_at: string | null
         tenant_id: string
+        product_id: string | null
+        vat_code: string | null
+        vat_amount: number
       }
       Insert: {
         id?: string
@@ -11393,6 +11444,9 @@ export interface Database {
         line_order?: number
         created_at?: string
         tenant_id: string
+        product_id?: string
+        vat_code?: string
+        vat_amount?: number
       }
       Update: {
         id?: string
@@ -11406,6 +11460,9 @@ export interface Database {
         line_order?: number
         created_at?: string
         tenant_id?: string
+        product_id?: string
+        vat_code?: string
+        vat_amount?: number
       }
       Relationships: []
     }
@@ -11429,6 +11486,9 @@ export interface Database {
         amount_untaxed_currency: number | null
         amount_tax_currency: number | null
         amount_total_currency: number | null
+        transferred_entry_id: string | null
+        supplier_reference: string | null
+        validated_at: string | null
       }
       Insert: {
         id?: string
@@ -11449,6 +11509,9 @@ export interface Database {
         amount_untaxed_currency?: number
         amount_tax_currency?: number
         amount_total_currency?: number
+        transferred_entry_id?: string
+        supplier_reference?: string
+        validated_at?: string
       }
       Update: {
         id?: string
@@ -11469,6 +11532,9 @@ export interface Database {
         amount_untaxed_currency?: number
         amount_tax_currency?: number
         amount_total_currency?: number
+        transferred_entry_id?: string
+        supplier_reference?: string
+        validated_at?: string
       }
       Relationships: []
     }
@@ -11562,6 +11628,7 @@ export interface Database {
         goods_receipt_id: string | null
         match_status: string | null
         match_details: Json | null
+        supplier_reference: string | null
       }
       Insert: {
         id?: string
@@ -11595,6 +11662,7 @@ export interface Database {
         goods_receipt_id?: string
         match_status?: string
         match_details?: Json
+        supplier_reference?: string
       }
       Update: {
         id?: string
@@ -11628,6 +11696,7 @@ export interface Database {
         goods_receipt_id?: string
         match_status?: string
         match_details?: Json
+        supplier_reference?: string
       }
       Relationships: []
     }

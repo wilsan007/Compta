@@ -262,7 +262,10 @@ export async function checkStockThresholds() {
   const { data: stock, error } = await qS
   if (error) throw error
 
-  let qP = supabase.from('products').select('id, name, sku, min_stock_level, max_stock_level')
+  // AUD-G07 (G18) : products n'a ni min_stock_level ni max_stock_level ; le seuil
+  // bas est le stock de sécurité (à défaut, le point de commande). Aucun seuil haut
+  // n'existe : l'alerte de surstock n'est pas calculable.
+  let qP = supabase.from('products').select('id, name, sku, safety_stock, reorder_level')
   if (tid) qP = qP.eq('tenant_id', tid)
   const { data: products } = await qP
 
@@ -273,8 +276,8 @@ export async function checkStockThresholds() {
     const product = productMap.get(s.product_id)
     if (!product) continue
     const qty = Number(s.quantity || 0) - Number(s.reserved_quantity || 0)
-    const minLevel = Number(product.min_stock_level || 0)
-    const maxLevel = Number(product.max_stock_level || 0)
+    const minLevel = Number(product.safety_stock || product.reorder_level || 0)
+    const maxLevel = 0
 
     let alertType: string | null = null
     if (qty <= 0) alertType = 'out_of_stock'

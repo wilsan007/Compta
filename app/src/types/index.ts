@@ -2,7 +2,7 @@
 
 export type InvoiceStatus = 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled'
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired'
-export type CreditStatus = 'draft' | 'applied'
+export type CreditStatus = 'draft' | 'validated' | 'applied'
 export type AccountType = 'chequing' | 'savings' | 'credit_card' | 'cash' | 'loan' | 'other'
 export type ReportPeriod = 'month' | 'quarter' | 'year' | 'custom'
 
@@ -176,6 +176,8 @@ export interface InvoiceLine {
   created_at: string
   delivery_note_line_id?: string | null
   sales_order_line_id?: string | null
+  vat_code?: string | null
+  vat_amount?: number
 }
 
 export interface Invoice {
@@ -212,6 +214,8 @@ export interface Invoice {
   invoice_type?: 'standard' | 'advance' | 'balance' | 'proforma'
   parent_invoice_id?: string | null
   validation_status?: 'draft' | 'pending' | 'validated' | 'rejected' | null
+  /** Écriture de vente passée à la validation */
+  transferred_entry_id?: string | null
 }
 
 export interface QuoteLine {
@@ -294,11 +298,16 @@ export interface PurchaseInvoiceLine {
   vat_total: number
   line_order: number
   created_at: string
+  vat_code?: string | null
+  vat_amount?: number
 }
 
 export interface PurchaseInvoice {
   id: string
   number: string
+  supplier_reference?: string | null
+  approval_status?: 'pending' | 'approved' | 'rejected'
+  transferred_entry_id?: string | null
   supplier_id: string | null
   supplier_name: string | null
   date: string
@@ -799,7 +808,8 @@ export interface PurchaseCreditNote {
   supplier_id: string | null
   supplier_name: string | null
   date: string
-  status: 'draft' | 'applied'
+  status: 'draft' | 'validated' | 'applied'
+  supplier_reference?: string | null
   subtotal: number
   vat_total: number
   total: number

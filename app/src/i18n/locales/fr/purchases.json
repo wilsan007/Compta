@@ -102,8 +102,10 @@
     "total": "Total",
     "statuses": {
       "applied": "Appliqué",
-      "draft": "Brouillon"
-    }
+      "draft": "Brouillon",
+      "validated": "Validé"
+    },
+    "supplierReference": "N° d'avoir du fournisseur (facultatif)"
   },
   "orders": {
     "title": "Commandes fournisseurs",
@@ -419,5 +421,43 @@
     "searchPlaceholder": "Rechercher par fournisseur, produit...",
     "noSchedules": "Aucun cadencier",
     "noSchedulesDescription": "Vous n'avez créé aucun cadencier"
+  },
+  "purchaseInvoices": {
+    "title": "Factures d'achat",
+    "invoices": "Factures",
+    "invoice": "Facture",
+    "new": "Nouvelle facture fournisseur",
+    "recordPurchase": "Enregistrer un achat",
+    "number": "N° interne",
+    "supplier": "Fournisseur",
+    "dueDate": "Échéance",
+    "total": "Total TTC",
+    "toPay": "Reste à payer",
+    "remainingToPay": "Reste à payer",
+    "paid": "Payé",
+    "markPaid": "Marquer payée",
+    "markedPaid": "Facture marquée payée",
+    "created": "Facture enregistrée",
+    "createdMsg": "Facture {{number}} enregistrée en brouillon",
+    "noInvoices": "Aucune facture d'achat",
+    "noInvoicesDescription": "Enregistrez votre première facture fournisseur.",
+    "searchPlaceholder": "Rechercher une facture…",
+    "selectSupplier": "Sélectionnez un fournisseur",
+    "selectSupplierPlaceholder": "Choisir un fournisseur",
+    "invalidAmount": "Montant invalide",
+    "totalAmount": "Montant total",
+    "budgetAccount": "Compte budgétaire",
+    "fiscalYear": "Exercice",
+    "budgetChecking": "Contrôle budgétaire…",
+    "budgetTotal": "Budget",
+    "realized": "Réalisé",
+    "committed": "Engagé",
+    "available": "Disponible",
+    "overshoot": "Dépassement",
+    "budgetExceedWarning": "Cet achat de {{amount}} dépasse le budget de {{overshoot}}. Continuer ?",
+    "supplierReference": "N° de facture du fournisseur",
+    "supplierReferenceRequired": "Saisissez le numéro de la facture du fournisseur.",
+    "numberAssigned": "Le numéro interne (ACH-exercice-n°) est attribué à l'approbation.",
+    "atLeastOneLine": "Ajoutez au moins une ligne avec une désignation et un montant."
   }
 }

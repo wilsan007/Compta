@@ -1540,7 +1540,10 @@
       "processing": "Traitement",
       "completed": "Terminé",
       "failed": "Échec"
-    }
+    },
+    "autoDetect": "Détection automatique",
+    "nothingRead": "Aucune opération lue dans ce fichier.",
+    "importSummary": "{{imported}} opération(s) importée(s), {{duplicates}} déjà présente(s) écartée(s)."
   },
   "ediTva": {
     "title": "Télé-déclaration TVA (EDI-TVA)",

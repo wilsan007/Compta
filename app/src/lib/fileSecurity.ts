@@ -160,6 +160,13 @@ export const FILE_PROFILES = {
     ],
     checkMagicBytes: true,
   },
+  /** Relevés bancaires normés : CAMT.053 (XML), MT940, CFONB 120 (texte) — AUD-G03 */
+  bankStatement: {
+    maxSize: 10 * 1024 * 1024, // 10 MB
+    allowedExtensions: ['.xml', '.txt', '.sta', '.940', '.mt940', '.cfonb', '.dat'],
+    allowedMimeTypes: ['text/plain', 'text/xml', 'application/xml', 'application/octet-stream'],
+    checkMagicBytes: false, // formats texte, sans signature
+  },
   /** PDF bank statements */
   pdf: {
     maxSize: 5 * 1024 * 1024, // 5 MB
