@@ -29,7 +29,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
       const openYears = (data || []).filter((y) => y.status === 'open')
       if (openYears.length > 0) setSelectedYear(openYears[0].id)
     } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -98,7 +98,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
                     <TableCell className="text-sm">{y.code}</TableCell>
                     <TableCell>
                       <Badge variant={y.status === 'open' ? 'success' : 'danger'}>
-                        {y.status === 'open' ? tCommon('common.open') : tCommon('common.closed')}
+                        {y.status === 'open' ? tCommon('status.open') : tCommon('status.closed')}
                       </Badge>
                     </TableCell>
                     <TableCell>

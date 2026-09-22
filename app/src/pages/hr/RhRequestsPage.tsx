@@ -98,7 +98,7 @@ export function RhRequestsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('requests.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('requests.title') }]} />
       <PageHeader title={t('requests.title')} subtitle={t('requests.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

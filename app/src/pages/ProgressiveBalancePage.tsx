@@ -32,7 +32,7 @@ export function ProgressiveBalancePage() {
       }
     } catch (err: any) {
       console.error('Failed to load progressive balance:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

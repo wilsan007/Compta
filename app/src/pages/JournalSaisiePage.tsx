@@ -86,7 +86,7 @@ const [journals, setJournals] = useState<Journal[]>([])
         setSelectedYear(fy[0].id)
       }
     } catch (err: any) { console.error('Error loading saisie data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -107,7 +107,7 @@ const [journals, setJournals] = useState<Journal[]>([])
       setSelectedPeriod(openPeriod?.id || p?.[0]?.id || '')
       await loadEntries(p || [])
     } catch (err: any) { console.error('Error loading periods:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -118,7 +118,7 @@ const [journals, setJournals] = useState<Journal[]>([])
       const all = await getEntriesForPeriods(ps.map((p) => p.id))
       setEntries(all || [])
     } catch (err: any) { console.error('Error loading entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -450,7 +450,7 @@ function SaisieForm({
       setTaxRates(txs || [])
       setPieceNumber(tmpls ? '' : '')
     } catch (err: any) { console.error('Error loading form data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -725,7 +725,7 @@ function SaisieForm({
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
-                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setRateLoading(false) }
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setRateLoading(false) }
               }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
                 <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
               </button>

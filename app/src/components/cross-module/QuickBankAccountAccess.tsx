@@ -42,7 +42,7 @@ export function QuickBankAccountAccess({ onClose, onSaved, forceInline }: QuickB
     setLoading(true)
     try {
       setAccounts(await getBankAccounts())
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

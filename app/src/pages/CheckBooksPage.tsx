@@ -28,7 +28,7 @@ export function CheckBooksPage() {
       const [books, chks] = await Promise.all([getCheckBooks(), getChecks()])
       setCheckBooks(books || [])
       setChecks(chks || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])

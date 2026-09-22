@@ -6,7 +6,7 @@ export function LoadingState() {
   return (
     <div className="flex items-center justify-center py-12">
       <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
-      <span className="ml-2 text-sm text-[var(--color-text-secondary)]">{t('loading')}</span>
+      <span className="ml-2 text-sm text-[var(--color-text-secondary)]">{t('common.loading')}</span>
     </div>
   )
 }
@@ -22,7 +22,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
           onClick={onRetry}
           className="px-4 py-2 text-sm rounded-lg bg-[var(--color-primary)] text-white hover:opacity-90"
         >
-          {t('retry')}
+          {t('actions.retry')}
         </button>
       )}
     </div>

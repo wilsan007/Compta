@@ -35,7 +35,7 @@ export function AccountingDashboardPage() {
       setTrialBalance(tb || [])
     } catch (err: any) {
       console.error('Error loading accounting dashboard:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

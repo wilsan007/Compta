@@ -154,7 +154,17 @@
     "noPriceLists": "لا توجد قائمة أسعار",
     "noPriceListsDescription": "لم تقم بإنشاء قائمة أسعار بعد",
     "createFirst": "إنشاء أول قائمة أسعار",
-    "searchPlaceholder": "البحث بالاسم، منتج..."
+    "searchPlaceholder": "البحث بالاسم، منتج...",
+    "addProduct": "إضافة منتج",
+    "code": "الرمز",
+    "discount": "الخصم (%)",
+    "minQty": "الحد الأدنى للكمية",
+    "noLines": "لا توجد أسطر",
+    "purchase": "شراء",
+    "sales": "بيع",
+    "type": "النوع",
+    "unitPrice": "سعر الوحدة",
+    "validity": "الصلاحية"
   },
   "transfer": {
     "title": "تحويل محاسبي",
@@ -255,7 +265,10 @@
       "in": "إدخال",
       "out": "إخراج",
       "adjustment": "تسوية"
-    }
+    },
+    "product": "المنتج",
+    "quantity": "الكمية",
+    "recentMovements": "الحركات الأخيرة"
   },
   "locations": {
     "title": "مواقع المستودعات",
@@ -285,7 +298,13 @@
       "pending": "في الانتظار",
       "passed": "مطابق",
       "failed": "غير مطابق"
-    }
+    },
+    "deliveryNote": "إذن التسليم",
+    "goodsReceipt": "الاستلام",
+    "manual": "يدوي",
+    "production": "الإنتاج",
+    "referenceId": "معرّف المرجع",
+    "referenceType": "نوع المرجع"
   },
   "picking": {
     "title": "قوائم الانتقاء",
@@ -466,5 +485,28 @@
     "active": "نشط",
     "noUsers": "لا يوجد مستخدمون معينون",
     "noUsersDescription": "عين أول مستخدم"
-  }
+  },
+  "actions": "الإجراءات",
+  "created_at": "تاريخ الإنشاء",
+  "customer": "العميل",
+  "date": "التاريخ",
+  "direction": "الاتجاه",
+  "downstream": "المصب",
+  "lot_id": "رقم الدفعة",
+  "lot_id_placeholder": "أدخل رقم الدفعة",
+  "mo_number": "رقم أمر التصنيع",
+  "movement_type": "نوع الحركة",
+  "no_reservations": "لا توجد حجوزات",
+  "no_results": "لا توجد نتائج",
+  "product": "المنتج",
+  "quantity": "الكمية",
+  "reference": "المرجع",
+  "release": "تحرير",
+  "reservations": "الحجوزات",
+  "search": "بحث",
+  "search_lot_to_trace": "ابحث عن دفعة لتتبعها",
+  "status": "الحالة",
+  "traceability": "تتبع الدفعات",
+  "upstream": "المنبع",
+  "warehouse": "المستودع"
 }

@@ -326,7 +326,8 @@
     "stockReservations": "Stock reservations",
     "lotTraceability": "Lot traceability",
     "taxGrids": "Tax grids",
-    "onboarding": "Onboarding"
+    "onboarding": "Onboarding",
+    "pos": "Point of sale"
   },
   "layout": {
     "reduce": "Collapse",

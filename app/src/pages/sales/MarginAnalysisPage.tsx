@@ -33,7 +33,7 @@ export function MarginAnalysisPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.sales') }, { label: t('margins.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.sales') }, { label: t('margins.title') }]} />
       <PageHeader title={t('margins.title')} subtitle={t('margins.subtitle')} />
 
       <Card className="mb-6">

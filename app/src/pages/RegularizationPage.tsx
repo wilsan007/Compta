@@ -37,7 +37,7 @@ export function RegularizationPage() {
       const data = await getRegularizationEntries(filterType || undefined)
       setEntries(data || [])
     } catch (err: any) { console.error('Failed to load regularization entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -116,7 +116,7 @@ export function RegularizationPage() {
     t('regularization.amount'),
     t('regularization.remainingAmount'),
     t('regularization.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (

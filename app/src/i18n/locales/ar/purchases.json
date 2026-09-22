@@ -182,7 +182,8 @@
       "received": "مستلم",
       "partial": "جزئي",
       "cancelled": "ملغى"
-    }
+    },
+    "purchaseOrder": "أمر الشراء"
   },
   "payments": {
     "title": "مدفوعات الموردين",

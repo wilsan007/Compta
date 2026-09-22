@@ -33,7 +33,7 @@ export function RevenueSimulationPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.sales') }, { label: t('simulation.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.sales') }, { label: t('simulation.title') }]} />
       <PageHeader title={t('simulation.title')} subtitle={t('simulation.subtitle')} />
 
       <Card className="mb-6">

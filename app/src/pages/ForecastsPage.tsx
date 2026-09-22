@@ -23,7 +23,7 @@ export function ForecastsPage() {
       const [f, p] = await Promise.all([getProductionForecasts(), getProducts()])
       setForecasts(f || [])
       setProducts(p || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

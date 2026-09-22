@@ -110,7 +110,7 @@ export function PromotionsPage() {
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('promotions.createFirst')}</Button>}
         />
       ) : (
-        <Table headers={[t('promotions.name'), t('promotions.type'), t('promotions.value'), t('promotions.startDate'), t('promotions.endDate'), tCommon('table.status'), tCommon('table.actions')]}>
+        <Table headers={[t('promotions.name'), t('promotions.type'), t('promotions.value'), t('promotions.startDate'), t('promotions.endDate'), tCommon('common.status'), tCommon('table.actions')]}>
           {filtered.map((p) => {
             const status = getPromoStatus(p)
             return (
@@ -222,11 +222,11 @@ function PromotionForm({ products, customers, onClose, onSaved }: {
             <Input label={t('promotions.endDate')} type="date" required value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
           <Select label={t('promotions.product')} value={productId} onChange={(e) => setProductId(e.target.value)} options={[
-            { value: '', label: tCommon('select.all') },
+            { value: '', label: tCommon('common.all') },
             ...products.map(p => ({ value: p.id, label: p.name })),
           ]} />
           <Select label={t('promotions.customer')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
-            { value: '', label: tCommon('select.all') },
+            { value: '', label: tCommon('common.all') },
             ...customers.map(c => ({ value: c.id, label: c.name })),
           ]} />
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">

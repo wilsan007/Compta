@@ -154,7 +154,17 @@
     "noPriceLists": "No price list",
     "noPriceListsDescription": "You haven't created a price list yet",
     "createFirst": "Create my first price list",
-    "searchPlaceholder": "Search by name, product..."
+    "searchPlaceholder": "Search by name, product...",
+    "addProduct": "Add product",
+    "code": "Code",
+    "discount": "Discount (%)",
+    "minQty": "Min. qty",
+    "noLines": "No lines",
+    "purchase": "Purchase",
+    "sales": "Sales",
+    "type": "Type",
+    "unitPrice": "Unit price",
+    "validity": "Validity"
   },
   "transfer": {
     "title": "Accounting transfer",
@@ -255,7 +265,10 @@
       "in": "In",
       "out": "Out",
       "adjustment": "Adjustment"
-    }
+    },
+    "product": "Product",
+    "quantity": "Quantity",
+    "recentMovements": "Recent movements"
   },
   "locations": {
     "title": "Warehouse locations",
@@ -285,7 +298,13 @@
       "pending": "Pending",
       "passed": "Passed",
       "failed": "Failed"
-    }
+    },
+    "deliveryNote": "Delivery note",
+    "goodsReceipt": "Goods receipt",
+    "manual": "Manual",
+    "production": "Production",
+    "referenceId": "Reference ID",
+    "referenceType": "Reference type"
   },
   "picking": {
     "title": "Pick lists",
@@ -466,5 +485,28 @@
     "active": "Active",
     "noUsers": "No users assigned",
     "noUsersDescription": "Assign your first user"
-  }
+  },
+  "actions": "Actions",
+  "created_at": "Created on",
+  "customer": "Customer",
+  "date": "Date",
+  "direction": "Direction",
+  "downstream": "Downstream",
+  "lot_id": "Lot no.",
+  "lot_id_placeholder": "Enter a lot number",
+  "mo_number": "MO no.",
+  "movement_type": "Movement type",
+  "no_reservations": "No reservations",
+  "no_results": "No results",
+  "product": "Product",
+  "quantity": "Quantity",
+  "reference": "Reference",
+  "release": "Release",
+  "reservations": "Reservations",
+  "search": "Search",
+  "search_lot_to_trace": "Search for a lot to trace",
+  "status": "Status",
+  "traceability": "Lot traceability",
+  "upstream": "Upstream",
+  "warehouse": "Warehouse"
 }

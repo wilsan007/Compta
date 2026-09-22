@@ -63,7 +63,7 @@ export function PaymentGenerationPage() {
       setBanks(ba || [])
       setPaymentTerms(pt || [])
     } catch (err: any) { console.error('Error loading reference data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -82,7 +82,7 @@ export function PaymentGenerationPage() {
         setInvoices(data || [])
       }
     } catch (err: any) { console.error('Error loading invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

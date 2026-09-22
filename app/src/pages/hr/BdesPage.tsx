@@ -75,7 +75,7 @@ export function BdesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('bdes.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('bdes.title') }]} />
       <PageHeader title={t('bdes.title')} subtitle={t('bdes.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

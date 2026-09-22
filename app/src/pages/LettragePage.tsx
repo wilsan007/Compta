@@ -31,7 +31,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       const tp = await getThirdPartyAccounts()
       setThirdParties(tp || [])
     } catch (err: any) { console.error('Error loading third parties:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -54,7 +54,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       setUnlettered(ul || [])
       setLettered(l || [])
     } catch (err: any) { console.error('Error loading lines:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoadingLines(false)
     }

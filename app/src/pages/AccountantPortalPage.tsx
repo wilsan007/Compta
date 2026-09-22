@@ -40,7 +40,7 @@ export function AccountantPortalPage() {
       setEntries((ent || []).slice(0, 5))
     } catch (err: any) {
       console.error('Error loading accountant portal:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

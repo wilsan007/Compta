@@ -65,7 +65,7 @@ export function EmployeeDocumentsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('employeeDocuments.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('employeeDocuments.title') }]} />
       <PageHeader
         title={t('employeeDocuments.title')}
         subtitle={t('employeeDocuments.subtitle')}

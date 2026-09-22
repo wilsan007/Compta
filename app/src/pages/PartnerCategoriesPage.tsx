@@ -21,7 +21,7 @@ export function PartnerCategoriesPage() {
     try {
       const data = await getPartnerCategories()
       setCategories(data || [])
-    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])

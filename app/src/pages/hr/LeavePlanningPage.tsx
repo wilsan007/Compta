@@ -34,7 +34,7 @@ export function LeavePlanningPage() {
       setEmployees(emps || [])
       setRules(rls || [])
       setHolidays(hols || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, toast, tCommon])
 
@@ -62,7 +62,7 @@ export function LeavePlanningPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leavePlanning.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leavePlanning.title') }]} />
       <PageHeader title={t('leavePlanning.title')} subtitle={t('leavePlanning.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

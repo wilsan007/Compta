@@ -49,7 +49,7 @@ export function MultiCompanyPage() {
         setActiveEntity(comp.id)
       }
     } catch (err: any) { console.error('Error loading company data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -27,7 +27,7 @@ export function TaskActionColumns({ taskId, className, onTaskProgressUpdate }: T
       } catch (err: any) {
         console.error("catch:", err)
         // ignore
-        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -44,7 +44,7 @@ export function TaskActionColumns({ taskId, className, onTaskProgressUpdate }: T
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

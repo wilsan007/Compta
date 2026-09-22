@@ -50,7 +50,7 @@ export function InvoicesPage() {
       setCustomers(cust || [])
       setCompany(comp)
     } catch (err: any) { console.error('Error loading invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

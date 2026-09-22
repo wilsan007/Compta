@@ -181,7 +181,7 @@ function TicketForm({ customers, onClose, onSaved }: { customers: Customer[]; on
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select label={t('tickets.customer')} required value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...customers.map(c => ({ value: c.id, label: c.name })),
           ]} />
           <Input label={t('tickets.subject')} required value={subject} onChange={(e) => setSubject(e.target.value)} />

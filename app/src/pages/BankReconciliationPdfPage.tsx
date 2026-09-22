@@ -41,7 +41,7 @@ export function BankReconciliationPdfPage() {
       const accs = await getBankAccounts()
       setAccounts(accs || [])
     } catch (err: any) { console.error('Failed to load bank accounts:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -51,7 +51,7 @@ export function BankReconciliationPdfPage() {
       const bankList = await getBanks(countryCode || undefined)
       setBanks(bankList || [])
     } catch (err: any) { console.error('Failed to load banks:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -60,7 +60,7 @@ export function BankReconciliationPdfPage() {
       const learned = await getLearnedTemplates()
       setLearnedTemplates(learned)
     } catch (err: any) { console.error('Failed to load learned templates:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

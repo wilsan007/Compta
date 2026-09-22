@@ -77,7 +77,7 @@ export function FECExportPage() {
       setCompany(comp)
     } catch (err: any) {
       console.error('Error loading fiscal years:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -91,7 +91,7 @@ export function FECExportPage() {
       setValidation(validateFECData(data || []))
     } catch (err: any) {
       console.error('Error loading FEC data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

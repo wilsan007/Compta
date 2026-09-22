@@ -40,7 +40,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       setFiscalYears(fy || [])
       if (fy && fy.length > 0) setSelectedYear(fy[0].id)
     } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -59,7 +59,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       setPeriods(data.periods)
       setEntries(data.entries as ClosureEntry[])
     } catch (err: any) { console.error('Error loading closure matrix:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoadingMatrix(false)
     }

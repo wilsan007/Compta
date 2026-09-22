@@ -51,7 +51,7 @@ export function CareerHistoryPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('careerHistory.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('careerHistory.title') }]} />
       <PageHeader
         title={t('careerHistory.title')}
         subtitle={t('careerHistory.subtitle')}

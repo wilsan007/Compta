@@ -43,7 +43,7 @@ export function TrainingPage() {
       setTrainings([])
     } catch (err: any) {
       console.error('Error loading training data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -97,7 +97,7 @@ export function TrainingPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('training.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('training.title') }]} />
       <PageHeader title={t('training.title')} subtitle={t('training.subtitle')} action={
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> {t('training.new')}</Button>
       } />

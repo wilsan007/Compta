@@ -43,7 +43,7 @@ export function CPFPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('cpf.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('cpf.title') }]} />
       <PageHeader
         title={t('cpf.title')}
         subtitle={t('cpf.subtitle')}

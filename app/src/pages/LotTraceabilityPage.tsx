@@ -25,13 +25,13 @@ export function LotTraceabilityPage() {
         ? await traceLotDownstream(lotId.trim())
         : await traceLotUpstream(lotId.trim())
       setResults(data?.movements || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [lotId, direction, tCommon, toast])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('stock'), path: '/stock' }, { label: t('traceability') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock'), path: '/stock' }, { label: t('traceability') }]} />
       <PageHeader title={t('traceability')} />
 
       <Card className="mb-4">

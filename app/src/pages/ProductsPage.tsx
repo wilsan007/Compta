@@ -30,7 +30,7 @@ const [products, setProducts] = useState<Product[]>([])
       setProducts(p)
       setMovements(m)
     } catch (err: any) { console.error('Failed to load products:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -135,7 +135,7 @@ const [products, setProducts] = useState<Product[]>([])
 function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { defaultVatRate } = useLegislation()
   const [sku, setSku] = useState('')
@@ -222,7 +222,7 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 function StockMovementForm({ products, onClose, onSaved }: { products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [type, setType] = useState('in')
   const [quantity, setQuantity] = useState(0)
@@ -266,7 +266,7 @@ function StockMovementForm({ products, onClose, onSaved }: { products: Product[]
             { value: 'adjustment', label: t('products.movementTypes.adjustment') },
           ]} />
           <Input label={t('products.quantity')} type="number" step="0.01" required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
-          <Input label={tCommon('common.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={tCommon('common.optional')} />
+          <Input label={tCommon('common.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={tCommon('form.optional')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving || !productId}>{saving ? tCommon('actions.saving') : tCommon('actions.validate')}</Button>
@@ -278,7 +278,7 @@ function StockMovementForm({ products, onClose, onSaved }: { products: Product[]
 }
 
 function ProductDetailModal({ product, movements, onClose }: { product: Product; movements: StockMovement[]; onClose: () => void }) {
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">

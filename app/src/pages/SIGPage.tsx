@@ -29,7 +29,7 @@ export function SIGPage() {
       const fy = await getFiscalYears()
       setYears(fy || [])
     } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -44,7 +44,7 @@ export function SIGPage() {
       const res = await getSIGData(selectedYear || undefined)
       setData(res)
     } catch (err: any) { console.error('Error loading SIG:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

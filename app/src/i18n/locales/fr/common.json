@@ -421,7 +421,8 @@
     "saved": "Enregistré avec succès",
     "display": "Afficher",
     "refresh": "Rafraîchir",
-    "selectEmployee": "Veuillez sélectionner un employé"
+    "selectEmployee": "Veuillez sélectionner un employé",
+    "fillRequired": "Veuillez remplir tous les champs obligatoires"
   },
   "dashboard": {
     "title": "Tableau de bord",

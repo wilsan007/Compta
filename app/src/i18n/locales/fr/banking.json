@@ -60,7 +60,9 @@
     "searchPlaceholder": "Rechercher par nom, IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "compte(s)",
+    "connectedAccounts": "Comptes connectés"
   },
   "transactions": {
     "title": "Transactions bancaires",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "Rapprochement bancaire",
     "subtitle": "Réconciliez vos transactions bancaires",
-    "selectAccount": "Sélectionner un compte",
+    "selectAccount": "Veuillez sélectionner un compte",
     "allAccounts": "Tous les comptes",
     "bankBalance": "Solde bancaire",
     "accountingBalance": "Solde comptable",
@@ -125,7 +127,7 @@
     "reconcileBtn": "Réconcilier",
     "smartMatch": "Rapprochement intelligent",
     "smartResult": "{{matched}} rapprochements trouvés",
-    "selectAccount": "Veuillez sélectionner un compte"
+    "autoMatchResult": "{{matched}} rapprochée(s), {{unmatched}} non rapprochée(s)"
   },
   "rules": {
     "title": "Règles bancaires",
@@ -154,8 +156,25 @@
       "startsWith": "Commence par",
       "endsWith": "Se termine par",
       "greaterThan": "Supérieur à",
-      "lessThan": "Inférieur à"
-    }
+      "lessThan": "Inférieur à",
+      "greater_than": "Supérieur à",
+      "less_than": "Inférieur à",
+      "starts_with": "Commence par"
+    },
+    "accountCode": "Compte comptable",
+    "accountCodePlaceholder": "Ex. : 626100",
+    "category": "Catégorie",
+    "categoryPlaceholder": "Ex. : frais bancaires",
+    "condition": "Condition",
+    "field": "Champ",
+    "fields": {
+      "amount": "Montant",
+      "description": "Libellé",
+      "reference": "Référence"
+    },
+    "operator": "Opérateur",
+    "value": "Valeur",
+    "vatRate": "Taux de TVA (%)"
   },
   "pdfReconciliation": {
     "title": "Rapprochement par PDF",

@@ -24,7 +24,7 @@ export function JournalsReportPage() {
       setEntries(await getJournalsReport(startDate || undefined, endDate || undefined))
     } catch (err: any) {
       console.error('Failed to load journals report:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

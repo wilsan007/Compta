@@ -46,7 +46,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
       } else if (activeTab === 'boms') {
         setBomsData(await getProductBOMs(productId))
       }
-    } catch (err: any) { console.error('Error loading article data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error loading article data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [productId, activeTab, toast, tCommon])
 

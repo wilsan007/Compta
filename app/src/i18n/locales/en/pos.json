@@ -70,7 +70,10 @@
     "noSessionsDescription": "No POS sessions recorded",
     "filterTerminal": "Filter by terminal",
     "allTerminals": "All terminals",
-    "noTickets": "No tickets"
+    "noTickets": "No tickets",
+    "close": "Close",
+    "closeTitle": "Close session",
+    "confirmClose": "Confirm closing"
   },
   "stats": {
     "title": "POS statistics",
@@ -88,5 +91,19 @@
     "thisWeek": "This week",
     "thisMonth": "This month",
     "noData": "No data available"
-  }
+  },
+  "account_code": "Account code",
+  "add_method": "Add payment method",
+  "name": "Name",
+  "no_payment_methods": "No payment methods",
+  "opens_drawer": "Opens cash drawer",
+  "order": "Order",
+  "payment_methods": "Payment methods",
+  "type": "Type",
+  "type_card": "Card",
+  "type_cash": "Cash",
+  "type_check": "Cheque",
+  "type_other": "Other",
+  "type_transfer": "Bank transfer",
+  "type_voucher": "Voucher"
 }

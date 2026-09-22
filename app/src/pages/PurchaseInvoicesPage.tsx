@@ -44,7 +44,7 @@ export function PurchaseInvoicesPage() {
       setAccounts(accs || [])
       setYears(fys || [])
     } catch (err: any) { console.error('Error loading purchase invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -281,7 +281,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
       try {
         const result = await checkBudgetAvailability(accountCode, totalNum, fiscalYearId || undefined)
         setBudgetCheck(result)
-      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
       finally { setChecking(false) }
     }, 300)
     return () => clearTimeout(t)

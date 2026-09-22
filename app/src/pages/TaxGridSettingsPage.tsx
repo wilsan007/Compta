@@ -57,7 +57,7 @@ export function TaxGridSettingsPage() {
         setCorporateGrids((prev) => prev.filter((g) => g.id !== id))
       }
       if (selectedGridId === id) setSelectedGridId(null)
-    } catch (err: any) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

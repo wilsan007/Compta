@@ -23,7 +23,7 @@ export function PurchaseInvoiceApprovalPage() {
       const filtered = filter === 'all' ? data : data.filter((inv: any) => (inv.approval_status || 'pending') === filter)
       setInvoices(filtered as PurchaseInvoice[])
     } catch (err: any) { console.error('Failed to load purchase invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -59,7 +59,7 @@ export function PurchaseInvoiceApprovalPage() {
     t('invoices.total'),
     t('approval.status'),
     t('approval.approvedAt'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   const filterButtons = [

@@ -41,7 +41,7 @@ export function SupplierDeliverySchedulePage() {
       const [s, p] = await Promise.all([getSuppliers(), getProducts()])
       setSuppliers(s || [])
       setProducts(p || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleGenerate() {

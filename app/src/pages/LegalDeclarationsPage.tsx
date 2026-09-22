@@ -23,7 +23,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
 
   const loadData = useCallback(async () => {
     try { setDeclarations(await getLegalDeclarations(statusFilter || undefined)) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -45,7 +45,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('declarations.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('declarations.title') }]} />
       <PageHeader title={t('declarations.title')} subtitle={t('declarations.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('declarations.new')}</Button>} />
 

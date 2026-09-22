@@ -48,7 +48,7 @@ export function SharedDocumentPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="w-full max-w-md">
-          <EmptyState icon={<FileText className="w-8 h-8" />} title={tCommon('noData')} />
+          <EmptyState icon={<FileText className="w-8 h-8" />} title={tCommon('common.noData')} />
         </Card>
       </div>
     )

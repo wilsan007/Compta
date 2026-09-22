@@ -30,7 +30,7 @@ export function DocumentCharges({ documentType, documentId }: Props) {
       setCharges(ch || [])
       setSuppliers(sup || [])
     } catch (err: any) { console.error('Failed to load charges:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

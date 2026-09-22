@@ -46,7 +46,7 @@ export function QuickEmployeeAccess({ onClose, onSaved, forceInline }: QuickEmpl
     setLoading(true)
     try {
       setEmployees(await getEmployees())
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

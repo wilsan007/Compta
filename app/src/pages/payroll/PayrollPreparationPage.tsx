@@ -35,7 +35,7 @@ export function PayrollPreparationPage() {
       setPayRuns(runs || [])
       setEmployees(emps || [])
       setComponents(comps || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -46,7 +46,7 @@ export function PayrollPreparationPage() {
     try {
       const els = await getVariableElements(selectedPayRun)
       setVariableElements(els || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }, [selectedPayRun, tCommon, toast])
 
   useEffect(() => { loadVariableElements() }, [loadVariableElements])
@@ -92,7 +92,7 @@ export function PayrollPreparationPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('preparation.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('preparation.title') }]} />
       <PageHeader title={t('preparation.title')} subtitle={t('preparation.subtitle')} />
 
       <div className="flex items-center gap-1 mb-6 overflow-x-auto">

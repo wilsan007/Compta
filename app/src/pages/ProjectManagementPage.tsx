@@ -44,7 +44,7 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
 
   return (
     <div className="flex flex-col h-full">
-      <Breadcrumb items={[{ label: tNav('projectManagement') }, { label: t('title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.projectManagement') }, { label: t('title') }]} />
 
       {/* Top toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface)] gap-3">

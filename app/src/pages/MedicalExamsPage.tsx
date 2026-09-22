@@ -54,7 +54,7 @@ export function MedicalExamsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('medical.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('medical.title') }]} />
       <PageHeader
         title={t('medical.title')}
         subtitle={t('medical.subtitle')}

@@ -49,7 +49,7 @@ export function WorkHardshipPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('workHardship.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('workHardship.title') }]} />
       <PageHeader
         title={t('workHardship.title')}
         subtitle={t('workHardship.subtitle')}

@@ -31,7 +31,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       const [ords, custs] = await Promise.all([getSalesOrders(statusFilter || undefined), getCustomers()])
       setOrders(ords || [])
       setCustomers(custs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 

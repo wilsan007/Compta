@@ -21,7 +21,7 @@ export function DistributionGrillsPage() {
       const data = await getDistributionGrills()
       setGrills(data || [])
     } catch (err: any) { console.error('Failed to load distribution grills:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -40,7 +40,7 @@ export function DistributionGrillsPage() {
     }
   }
 
-  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.journal'), t('grills.lines'), t('grills.total'), t('grills.active'), tCommon('common.table.actions')]
+  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.journal'), t('grills.lines'), t('grills.total'), t('grills.active'), tCommon('table.actions')]
 
   return (
     <div>

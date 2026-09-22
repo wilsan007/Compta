@@ -34,7 +34,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
       setBOMs(bs || [])
       setProducts(prods || [])
       setRoutings(rts || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -49,7 +49,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
         try {
           const lns = await getBOMLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)

@@ -31,7 +31,7 @@ export function PurchaseOrdersPage() {
       setSuppliers(sups || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -52,7 +52,7 @@ export function PurchaseOrdersPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('orders.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('orders.title') }]} />
       <PageHeader title={t('orders.title')} subtitle={`${orders.length} ${t('orders.title').toLowerCase()} — ${formatCurrency(totalAmount)}`}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('orders.new')}</Button>} />
 
@@ -131,7 +131,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
       try {
         const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
         setBudgetCheck(result)
-      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
       finally { setChecking(false) }
     }, 300)
     return () => clearTimeout(t)

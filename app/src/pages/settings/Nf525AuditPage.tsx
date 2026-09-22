@@ -56,7 +56,7 @@ export function Nf525AuditPage() {
       if (error) throw error
       setEvents((data || []) as Nf525Event[])
     } catch (err: any) {
-      toast('error', t('error'), err.message)
+      toast('error', t('common.error'), err.message)
     } finally {
       setLoading(false)
     }
@@ -87,7 +87,7 @@ export function Nf525AuditPage() {
     } catch (err: any) {
       setIntegrityStatus('corrupted')
       setIntegrityMessage(err.message)
-      toast('error', t('error'), err.message)
+      toast('error', t('common.error'), err.message)
     }
   }
 
@@ -97,7 +97,7 @@ export function Nf525AuditPage() {
   }
 
   async function handleClosePeriod() {
-    if (!periodEnd) { toast('warning', t('error'), 'Veuillez saisir la date de fin de période'); return }
+    if (!periodEnd) { toast('warning', t('common.error'), 'Veuillez saisir la date de fin de période'); return }
     setClosingPeriod(true)
     try {
       const result = await closeNf525Period(periodEnd)
@@ -105,12 +105,12 @@ export function Nf525AuditPage() {
       setPeriodEnd('')
       await loadEvents()
     } catch (err: any) {
-      toast('error', t('error'), err.message)
+      toast('error', t('common.error'), err.message)
     } finally { setClosingPeriod(false) }
   }
 
   async function handleDownloadAttestation() {
-    if (!attestationStart || !attestationEnd) { toast('warning', t('error'), 'Veuillez saisir la plage de dates'); return }
+    if (!attestationStart || !attestationEnd) { toast('warning', t('common.error'), 'Veuillez saisir la plage de dates'); return }
     setDownloadingAttestation(true)
     try {
       const result = await getNf525Attestation(attestationStart, attestationEnd)
@@ -124,13 +124,13 @@ export function Nf525AuditPage() {
       URL.revokeObjectURL(url)
       toast('success', 'Attestation générée', 'Téléchargement de l\'attestation NF525')
     } catch (err: any) {
-      toast('error', t('error'), err.message)
+      toast('error', t('common.error'), err.message)
     } finally { setDownloadingAttestation(false) }
   }
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: t('settings'), href: '/settings' }, { label: 'NF525 Anti-fraude' }]} />
+      <Breadcrumb items={[{ label: t('common.settings'), href: '/settings' }, { label: 'NF525 Anti-fraude' }]} />
       <PageHeader
         title="NF525 Anti-fraude"
         description={t('nf525.pageDescription') || 'Journal d\'événements NF525 et vérification de l\'intégrité de la chaîne'}
@@ -222,7 +222,7 @@ export function Nf525AuditPage() {
             </Select>
             <Button variant="outline" onClick={loadEvents} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-              {t('refresh') || 'Actualiser'}
+              {t('actions.refresh') || 'Actualiser'}
             </Button>
           </div>
           <Badge variant="info">

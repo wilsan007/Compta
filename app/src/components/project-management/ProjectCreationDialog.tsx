@@ -89,7 +89,7 @@ export function ProjectCreationDialog({ open, onClose, onCreated }: ProjectCreat
       maxWidth="32rem"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>{tCommon('cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('common.cancel')}</Button>
           <Button onClick={handleConfirm} disabled={!name.trim() || saving}>
             {saving ? t('doc.saving') : t('actions.save')}
           </Button>

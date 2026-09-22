@@ -24,7 +24,7 @@ export function CurrencyRevaluationPage() {
       const data = await getCurrencyRevaluations()
       setEntries(data || [])
     } catch (err: any) { console.error('Failed to load currency revaluations:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +64,7 @@ export function CurrencyRevaluationPage() {
     t('revaluation.gainLoss'),
     t('revaluation.type'),
     t('revaluation.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (

@@ -326,7 +326,8 @@
     "stockReservations": "Réservations stock",
     "lotTraceability": "Traçabilité lots",
     "taxGrids": "Barèmes fiscaux",
-    "onboarding": "Onboarding"
+    "onboarding": "Onboarding",
+    "pos": "Point de vente"
   },
   "layout": {
     "reduce": "Reduire",

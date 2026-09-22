@@ -30,7 +30,7 @@ export function OnboardingDashboardPage() {
       const [s, c] = await Promise.all([getOnboardingState(), isOnboardingComplete()])
       setState(s)
       setComplete(c)
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }, [toast, tCommon])
 
   loadData().catch(err => console.error('loadData:', err))
@@ -40,7 +40,7 @@ export function OnboardingDashboardPage() {
       const current = state?.[step] || false
       await updateOnboardingStep(step, !current)
       await loadData()
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   const completedCount = STEPS.filter(s => state?.[s.key]).length
@@ -48,7 +48,7 @@ export function OnboardingDashboardPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('settings'), path: '/settings' }, { label: 'Onboarding' }]} />
+      <Breadcrumb items={[{ label: tNav('items.settings'), path: '/settings' }, { label: 'Onboarding' }]} />
       <PageHeader title="Assistant de paramétrage" />
 
       <Card className="mb-4">

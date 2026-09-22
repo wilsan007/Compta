@@ -46,7 +46,7 @@ export function EmployeeDocumentsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('documents.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('documents.title') }]} />
       <PageHeader title={t('documents.title')} subtitle={t('documents.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

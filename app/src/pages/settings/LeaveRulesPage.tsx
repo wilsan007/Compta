@@ -18,7 +18,7 @@ export function LeaveRulesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaveRules.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaveRules.title') }]} />
       <PageHeader title={t('leaveRules.title')} subtitle={t('leaveRules.subtitle')} />
 
       <div className="flex gap-2 mb-4 border-b border-[var(--color-border)]">
@@ -64,7 +64,7 @@ function RulesTab() {
     try {
       const data = await getLeaveRules()
       setRules(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -201,7 +201,7 @@ function HolidaysTab() {
     try {
       const data = await getPublicHolidays(year)
       setHolidays(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, tCommon, toast])
 
@@ -303,7 +303,7 @@ function WorkflowsTab() {
     try {
       const data = await getApprovalWorkflows()
       setWorkflows(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -394,7 +394,7 @@ function StaffTab() {
     try {
       const data = await getStaffRequirements()
       setReqs(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

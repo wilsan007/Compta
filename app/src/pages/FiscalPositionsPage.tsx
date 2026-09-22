@@ -107,7 +107,7 @@ export function FiscalPositionsPage() {
       toast('success', t('fiscalPositions.title'), t('fiscalPositions.deleteSuccess'))
       await load()
     } catch (err: any) { console.error('Error deleting fiscal position:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -117,7 +117,7 @@ export function FiscalPositionsPage() {
     try {
       setMappings(await getFiscalPositionMappings(fp.id))
     } catch (err: any) { console.error('Error loading mappings:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -135,7 +135,7 @@ export function FiscalPositionsPage() {
       setMappingForm({ source_tax_id: '', target_tax_id: '', source_account_code: '', target_account_code: '' })
       setMappings(await getFiscalPositionMappings(selectedPosition.id))
     } catch (err: any) { console.error('Error creating mapping:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -146,7 +146,7 @@ export function FiscalPositionsPage() {
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingDeleteSuccess'))
       if (selectedPosition) setMappings(await getFiscalPositionMappings(selectedPosition.id))
     } catch (err: any) { console.error('Error deleting mapping:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

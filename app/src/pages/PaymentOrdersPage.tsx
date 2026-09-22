@@ -28,7 +28,7 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
       const data = await getPaymentOrders(statusFilter || undefined)
       setOrders(data || [])
     } catch (err: any) { console.error('Error loading payment orders:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -155,7 +155,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       const [ba, tp] = await Promise.all([getBankAccounts(), getThirdPartyAccounts()])
       setBankAccounts(ba || [])
       setTiers(tp || [])
-    } catch (err: any) { console.error('Error loading ref:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error loading ref:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleSubmit(e: React.FormEvent) {

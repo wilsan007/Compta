@@ -39,7 +39,7 @@ export function BudgetTrackingPage() {
       setYears(fy || [])
     } catch (err: any) {
       console.error('Error loading budget tracking:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

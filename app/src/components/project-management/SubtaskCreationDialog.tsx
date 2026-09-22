@@ -29,7 +29,7 @@ export function SubtaskCreationDialog({ open, onClose, onConfirm, parentTitle }:
       title={t('subtask.title')}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>{tCommon('cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('common.cancel')}</Button>
           <Button onClick={handleConfirm} disabled={!title.trim()}>{t('subtask.create')}</Button>
         </>
       }

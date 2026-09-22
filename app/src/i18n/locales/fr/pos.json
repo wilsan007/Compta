@@ -70,7 +70,10 @@
     "noSessionsDescription": "Aucune session de caisse enregistrée",
     "filterTerminal": "Filtrer par caisse",
     "allTerminals": "Toutes les caisses",
-    "noTickets": "Aucun ticket"
+    "noTickets": "Aucun ticket",
+    "close": "Clôturer",
+    "closeTitle": "Clôturer la session",
+    "confirmClose": "Confirmer la clôture"
   },
   "stats": {
     "title": "Statistiques de caisse",
@@ -88,5 +91,19 @@
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois",
     "noData": "Aucune donnée disponible"
-  }
+  },
+  "account_code": "Compte comptable",
+  "add_method": "Ajouter un moyen de paiement",
+  "name": "Nom",
+  "no_payment_methods": "Aucun moyen de paiement",
+  "opens_drawer": "Ouvre le tiroir-caisse",
+  "order": "Ordre",
+  "payment_methods": "Moyens de paiement",
+  "type": "Type",
+  "type_card": "Carte bancaire",
+  "type_cash": "Espèces",
+  "type_check": "Chèque",
+  "type_other": "Autre",
+  "type_transfer": "Virement",
+  "type_voucher": "Bon d'achat"
 }

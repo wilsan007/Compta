@@ -19,7 +19,7 @@ const [data, setData] = useState<any>(null)
 
   const loadData = useCallback(async () => {
     try { setData(await getGescomTransferData()) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -69,7 +69,7 @@ const [data, setData] = useState<any>(null)
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('transfer.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('transfer.title') }]} />
       <PageHeader title={t('transfer.gescomTitle')} subtitle={t('transfer.pendingDocs', { count: data?.pendingCount || 0 })}
         action={<div className="flex gap-2"><Button variant="secondary" onClick={selectAllPending}>{t('transfer.selectAll')}</Button><Button onClick={handleTransfer} disabled={selected.size === 0 || transferring}><ArrowRightLeft className="w-4 h-4" /> {transferring ? '...' : `${t('transfer.transfer')} (${selected.size})`}</Button></div>} />
 

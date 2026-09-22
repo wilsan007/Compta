@@ -28,7 +28,7 @@ const [slips, setSlips] = useState<any[]>([])
       setSlips(sl || [])
       setPayRuns(pr || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [runFilter, tCommon, toast])
 
@@ -83,7 +83,7 @@ const [slips, setSlips] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('paySlips.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('paySlips.title') }]} />
       <PageHeader title={t('paySlips.title')} subtitle={t('paySlips.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

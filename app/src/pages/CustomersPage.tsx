@@ -32,7 +32,7 @@ export function CustomersPage() {
       const data = await getCustomers()
       setCustomers(data || [])
     } catch (err: any) { console.error('Error loading customers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

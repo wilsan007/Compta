@@ -23,7 +23,7 @@ export function EdiTvaPage() {
       const data = await getVatReturns()
       setReturns(data || [])
     } catch (err: any) { console.error('Failed to load VAT returns:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ export function EdiTvaPage() {
     }
   }
 
-  const tableHeaders = [t('ediTva.period'), t('ediTva.amount'), t('ediTva.ediId'), t('ediTva.status'), t('ediTva.submittedAt'), tCommon('common.table.actions')]
+  const tableHeaders = [t('ediTva.period'), t('ediTva.amount'), t('ediTva.ediId'), t('ediTva.status'), t('ediTva.submittedAt'), tCommon('table.actions')]
 
   return (
     <div>

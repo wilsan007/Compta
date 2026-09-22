@@ -29,7 +29,7 @@ export function SubcontractingOrdersPage() {
       setSuppliers(sups || [])
       setProducts(prods || [])
       setMOs(moList || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -151,7 +151,7 @@ export function SubcontractingShipmentsPage() {
 
   const loadData = useCallback(async () => {
     try { setShipments(await getSTShipments() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -203,7 +203,7 @@ export function SubcontractingReceiptsPage() {
 
   const loadData = useCallback(async () => {
     try { setReceipts(await getSTReceipts() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -256,7 +256,7 @@ export function SubcontractingSupervisorPage() {
 
   const loadData = useCallback(async () => {
     try { setData(await getSTSupervisorData() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 

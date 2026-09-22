@@ -45,7 +45,7 @@ export function DataExportPage() {
       setMirrorStatus(status)
     } catch (err: any) {
       console.error('Error loading mirror status:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setMirrorLoading(false)
     }
@@ -59,7 +59,7 @@ export function DataExportPage() {
 
   async function handleInstallMirror(platform: 'mac' | 'windows') {
     if (!user?.tenantId) {
-      toast('error', t('dataExport.loadError'), t('dataExport.noTenant'))
+      toast('error', t('common:toast.error'), t('dataExport.noTenant'))
       return
     }
     setInstalling(true)
@@ -69,7 +69,7 @@ export function DataExportPage() {
         install_platform: platform,
       })
       if (!result.success) {
-        toast('error', t('dataExport.loadError'), result.error || t('dataExport.loadError'))
+        toast('error', t('common:toast.error'), result.error || t('common:toast.error'))
         return
       }
 
@@ -77,7 +77,7 @@ export function DataExportPage() {
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
       if (!supabaseUrl || !supabaseKey) {
-        toast('error', t('dataExport.loadError'), t('dataExport.missingConfig'))
+        toast('error', t('common:toast.error'), t('dataExport.missingConfig'))
         return
       }
 
@@ -97,7 +97,7 @@ export function DataExportPage() {
       toast('success', t('dataExport.installerDownloaded'), t('dataExport.executeOnServer', { filename, platform: platform === 'mac' ? 'Mac' : 'Windows' }))
       await loadMirrorStatus()
     } catch (err: any) {
-      toast('error', t('dataExport.loadError'), err.message || t('dataExport.loadError'))
+      toast('error', t('common:toast.error'), err.message || t('common:toast.error'))
     } finally {
       setInstalling(false)
     }
@@ -119,7 +119,7 @@ export function DataExportPage() {
       setTotalRows(totalRows)
       toast('success', t('dataExport.exportDone'), t('dataExport.rowsRetrieved', { rows: totalRows, tables: tables.filter(t => t.rowCount > 0).length }))
     } catch (err: any) {
-      toast('error', t('dataExport.exportError'), err.message || t('dataExport.loadError'))
+      toast('error', t('dataExport.exportError'), err.message || t('common:toast.error'))
     } finally {
       setLoading(false)
     }

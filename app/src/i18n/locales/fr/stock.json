@@ -154,7 +154,17 @@
     "noPriceLists": "Aucune liste de prix",
     "noPriceListsDescription": "Vous n'avez pas encore créé de liste de prix",
     "createFirst": "Créer ma première liste de prix",
-    "searchPlaceholder": "Rechercher par nom, produit..."
+    "searchPlaceholder": "Rechercher par nom, produit...",
+    "addProduct": "Ajouter un produit",
+    "code": "Code",
+    "discount": "Remise (%)",
+    "minQty": "Qté minimale",
+    "noLines": "Aucune ligne",
+    "purchase": "Achat",
+    "sales": "Vente",
+    "type": "Type",
+    "unitPrice": "Prix unitaire",
+    "validity": "Validité"
   },
   "transfer": {
     "title": "Transfert comptable",
@@ -255,7 +265,10 @@
       "in": "Entrée",
       "out": "Sortie",
       "adjustment": "Ajustement"
-    }
+    },
+    "product": "Produit",
+    "quantity": "Quantité",
+    "recentMovements": "Mouvements récents"
   },
   "locations": {
     "title": "Emplacements de stock",
@@ -285,7 +298,13 @@
       "pending": "En attente",
       "passed": "Conforme",
       "failed": "Non conforme"
-    }
+    },
+    "deliveryNote": "Bon de livraison",
+    "goodsReceipt": "Réception",
+    "manual": "Manuel",
+    "production": "Production",
+    "referenceId": "ID de référence",
+    "referenceType": "Type de référence"
   },
   "picking": {
     "title": "Bons de préparation",
@@ -466,5 +485,28 @@
     "active": "Actif",
     "noUsers": "Aucun utilisateur affecté",
     "noUsersDescription": "Affectez votre premier utilisateur"
-  }
+  },
+  "actions": "Actions",
+  "created_at": "Créée le",
+  "customer": "Client",
+  "date": "Date",
+  "direction": "Sens",
+  "downstream": "Aval",
+  "lot_id": "N° de lot",
+  "lot_id_placeholder": "Saisir un numéro de lot",
+  "mo_number": "N° d'OF",
+  "movement_type": "Type de mouvement",
+  "no_reservations": "Aucune réservation",
+  "no_results": "Aucun résultat",
+  "product": "Produit",
+  "quantity": "Quantité",
+  "reference": "Référence",
+  "release": "Libérer",
+  "reservations": "Réservations",
+  "search": "Rechercher",
+  "search_lot_to_trace": "Recherchez un lot à tracer",
+  "status": "Statut",
+  "traceability": "Traçabilité des lots",
+  "upstream": "Amont",
+  "warehouse": "Dépôt"
 }

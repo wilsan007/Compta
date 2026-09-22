@@ -24,7 +24,7 @@ export function ToolingsPage() {
       const [tls, macs] = await Promise.all([getToolings(), getMachines()])
       setToolings(tls || [])
       setMachines(macs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

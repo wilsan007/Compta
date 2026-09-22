@@ -156,7 +156,7 @@ export function SocialDeclarationsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('socialDecl.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('socialDecl.title') }]} />
       <PageHeader title={t('socialDecl.title')} subtitle={t('socialDecl.subtitle')} />
 
       <div className="flex flex-wrap gap-2 mb-4">

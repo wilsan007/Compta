@@ -43,7 +43,7 @@ export function BudgetCommitmentsPage() {
       setYears(fys || [])
       setSuppliers(sups || [])
     } catch (err: any) { console.error('Error loading commitments:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

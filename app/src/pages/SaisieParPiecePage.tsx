@@ -336,7 +336,7 @@ export function SaisieParPiecePage() {
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
-                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setRateLoading(false) }
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setRateLoading(false) }
               }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
                 <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
               </button>

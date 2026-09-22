@@ -20,7 +20,7 @@ export function ManagerLeaveApprovalsPage() {
     try {
       const data = await getPendingLeaveRequests()
       setRequests(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -29,17 +29,17 @@ export function ManagerLeaveApprovalsPage() {
   async function handleApprove(id: string) {
     try {
       await approveLeaveRequest(id, 'manager', comment || undefined)
-      toast('success', tCommon('common.success'), t('leaveRequests.approved'))
+      toast('success', tCommon('common.success'), t('leaveApprovals.approved'))
       setComment(''); setActiveId(null)
       await loadData()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
 
   async function handleReject(id: string) {
-    if (!comment) { toast('error', tCommon('common.error'), t('leaveRequests.commentRequired')); return }
+    if (!comment) { toast('error', tCommon('common.error'), t('leaveApprovals.commentRequired')); return }
     try {
       await rejectLeaveRequest(id, 'manager', comment)
-      toast('success', tCommon('common.success'), t('leaveRequests.rejected'))
+      toast('success', tCommon('common.success'), t('leaveApprovals.rejected'))
       setComment(''); setActiveId(null)
       await loadData()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
@@ -47,7 +47,7 @@ export function ManagerLeaveApprovalsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaveApprovals.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaveApprovals.title') }]} />
       <PageHeader title={t('leaveApprovals.title')} subtitle={t('leaveApprovals.subtitle')} />
 
       {loading ? <SkeletonTable rows={4} cols={7} /> : requests.length === 0 ? (

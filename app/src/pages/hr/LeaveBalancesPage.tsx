@@ -33,7 +33,7 @@ export function LeaveBalancesPage() {
         const provs = await getLeaveProvisions(period || undefined)
         setProvisions(provs || [])
       }
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, tab, period, toast, tCommon])
 
@@ -97,7 +97,7 @@ export function LeaveBalancesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaveBalances.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaveBalances.title') }]} />
       <PageHeader title={t('leaveBalances.title')} subtitle={t('leaveBalances.subtitle')} />
 
       <div className="flex gap-2 mb-4 border-b border-[var(--color-border)]">

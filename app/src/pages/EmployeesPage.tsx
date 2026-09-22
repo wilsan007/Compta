@@ -44,7 +44,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('employees.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('employees.title') }]} />
       <PageHeader
         title={t('employees.title')}
         subtitle={t('employees.subtitle')}

@@ -22,7 +22,7 @@ export function StockQuantitiesPage() {
       const [stk, whs] = await Promise.all([getStockQuantities(whFilter || undefined), getWarehouses()])
       setStock(stk || [])
       setWarehouses(whs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [whFilter, tCommon, toast])
 
@@ -34,7 +34,7 @@ export function StockQuantitiesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('quantities.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('quantities.title') }]} />
       <PageHeader title={t('quantities.title')} subtitle={`${stock.length} ligne(s) — ${totalQty} unités`} />
 
       <div className="grid grid-cols-3 gap-4 mb-6">

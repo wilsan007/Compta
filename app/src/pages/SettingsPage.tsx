@@ -60,7 +60,7 @@ export function SettingsPage() {
       setAccounts(a || [])
       setUsers(u || [])
       setPacks(p || [])
-    } catch (err: any) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -191,7 +191,7 @@ export function SettingsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.status === 'active' ? 'success' : u.status === 'pending' ? 'warning' : 'danger'}>
-                          {u.status === 'active' ? tCommon('common.active') : u.status === 'pending' ? tCommon('common.pending') : tCommon('common.inactive')}
+                          {u.status === 'active' ? tCommon('common.active') : u.status === 'pending' ? tCommon('status.pending') : tCommon('common.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-[var(--color-text-secondary)]">
@@ -271,7 +271,7 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
       onSaved()
     } catch (err: any) {
       console.error('Failed to update legislation pack:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }
@@ -558,7 +558,7 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       } as any)
       setSaved(true)
       onSaved()
-    } catch (err: any) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }

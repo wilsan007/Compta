@@ -136,7 +136,7 @@ export function TaxRatesPage() {
   async function loadGroups() {
     try {
       setGroups(await getTaxGroups())
-    } catch (err: any) { console.error('Error loading tax groups:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error loading tax groups:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleCreateGroup() {
@@ -157,14 +157,14 @@ export function TaxRatesPage() {
       await deleteTaxGroup(id)
       toast('success', t('taxRates.groupsTitle'), t('taxRates.groupDeleteSuccess'))
       await loadGroups()
-    } catch (err: any) { console.error('Error deleting tax group:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error deleting tax group:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function loadRepartition(taxId: string) {
     setSelectedTaxForRepartition(taxId)
     try {
       setRepartitionLines(await getTaxRepartitionLines(taxId))
-    } catch (err: any) { console.error('Error loading repartition lines:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error loading repartition lines:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleCreateRepartition() {
@@ -181,7 +181,7 @@ export function TaxRatesPage() {
       toast('success', t('taxRates.repartitionTitle'), t('taxRates.repartitionCreateSuccess'))
       setRepartitionForm({ document_type: 'invoice', repartition_type: 'base', factor: 100, account_code: '', tag_ids: '' })
       await loadRepartition(selectedTaxForRepartition)
-    } catch (err: any) { console.error('Error creating repartition line:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error creating repartition line:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleDeleteRepartition(id: string) {
@@ -190,7 +190,7 @@ export function TaxRatesPage() {
       await deleteTaxRepartitionLine(id)
       toast('success', t('taxRates.repartitionTitle'), t('taxRates.repartitionDeleteSuccess'))
       if (selectedTaxForRepartition) await loadRepartition(selectedTaxForRepartition)
-    } catch (err: any) { console.error('Error deleting repartition line:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error deleting repartition line:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleDelete(id: string) {

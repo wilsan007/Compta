@@ -50,7 +50,7 @@ export function AnalyticDistributionEditor({
         const existing = await getDistributionLines(journalLineId)
         setDist(existing)
       }
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       // ignore
     } finally {
       setLoading(false)

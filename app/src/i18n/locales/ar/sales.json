@@ -85,7 +85,8 @@
     "filterByType": "تصفية حسب النوع",
     "numberAssigned": "يُسنَد رقم الفاتورة (FAC-السنة-الرقم) عند الاعتماد، بالترتيب الزمني.",
     "atLeastOneLine": "أضف سطرًا واحدًا على الأقل يتضمن وصفًا ومبلغًا.",
-    "draftCreated": "تم حفظ المسودة. سيُسنَد الرقم النهائي عند الاعتماد."
+    "draftCreated": "تم حفظ المسودة. سيُسنَد الرقم النهائي عند الاعتماد.",
+    "advanceAmount": "مبلغ الدفعة المسبقة"
   },
   "quotes": {
     "title": "عروض الأسعار",
@@ -227,7 +228,8 @@
     "invoiceStatus": "حالة الفوترة",
     "invoicePending": "في الانتظار",
     "invoicePartial": "جزئي",
-    "invoiceInvoiced": "تم الفوترة"
+    "invoiceInvoiced": "تم الفوترة",
+    "salesOrder": "طلبية العميل"
   },
   "payments": {
     "title": "مدفوعات العملاء",
@@ -591,5 +593,16 @@
   },
   "calculate_penalties": "احسب غرامات التأخير",
   "penalties_result": "{{count}} فواتير - غرامات: {{amount}}",
-  "no_overdue_invoices": "لا توجد فواتير متأخرة"
+  "no_overdue_invoices": "لا توجد فواتير متأخرة",
+  "blocked": "محظور",
+  "credit_control": "مراقبة ائتمان العملاء",
+  "credit_limit": "سقف الائتمان",
+  "credit_used": "الائتمان المستخدم",
+  "customer": "العميل",
+  "exposure": "المستحقات القائمة",
+  "no_customers": "لا يوجد عملاء",
+  "ok": "سليم",
+  "over_limit": "تجاوز السقف",
+  "status": "الحالة",
+  "warning": "تنبيه"
 }

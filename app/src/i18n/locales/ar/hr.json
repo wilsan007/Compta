@@ -227,7 +227,9 @@
       "approved": "معتمد",
       "paid": "مدفوع",
       "cancelled": "ملغى"
-    }
+    },
+    "calculate": "حساب قسيمة الأجر",
+    "calculated": "تم حساب قسيمة الأجر"
   },
   "payrollAccounting": {
     "title": "قيود الرواتب",
@@ -268,7 +270,10 @@
     "createFirst": "إنشاء أول جدول وقت",
     "searchPlaceholder": "البحث بموظف، تاريخ...",
     "weeklyView": "عرض أسبوعي",
-    "monthlyView": "عرض شهري"
+    "monthlyView": "عرض شهري",
+    "descriptionPlaceholder": "العمل المنجز",
+    "entries": "إدخال(ات)",
+    "projectOptional": "المشروع (اختياري)"
   },
   "leaveRequests": {
     "title": "طلبات الإجازة",
@@ -562,7 +567,9 @@
       "dates": "التواريخ",
       "budget": "الميزانية",
       "progress": "التقدم"
-    }
+    },
+    "roleUpdated": "تم تحديث الدور",
+    "roleUpdatedMsg": "الدور الجديد: {{role}}"
   },
   "leaveRules": {
     "title": "قواعد العطل",
@@ -884,7 +891,8 @@
     "noRecords": "لا notes de frais",
     "noRecordsDescription": "لم يتم تسجيل أي note de frais",
     "noLines": "لا توجد سطور",
-    "noLinesDescription": "لم يتم تسجيل أي سطر مصاريف"
+    "noLinesDescription": "لم يتم تسجيل أي سطر مصاريف",
+    "employee": "الموظف"
   },
   "interviews": {
     "title": "مقابلاتي",
@@ -982,7 +990,9 @@
       "pending": "في الانتظار",
       "paid": "مدفوع",
       "accounted": "محاسب"
-    }
+    },
+    "field": "الحقل",
+    "message": "الرسالة"
   },
   "bdes": {
     "title": "BDES",
@@ -1127,6 +1137,7 @@
       "droit": "قانون العمل",
       "procedure": "إجراءات",
       "other": "أخرى"
-    }
+    },
+    "status": "الحالة"
   }
 }

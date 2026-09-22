@@ -91,7 +91,7 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
       maxWidth="32rem"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>{tCommon('cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('common.cancel')}</Button>
           <Button onClick={handleConfirm} disabled={!title.trim()}>{t('actions.save')}</Button>
         </>
       }

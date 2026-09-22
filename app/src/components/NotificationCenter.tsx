@@ -52,7 +52,7 @@ export function NotificationCenter() {
     } catch (err: any) {
       console.error("catch:", err)
       // Table may not exist — silently ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -63,7 +63,7 @@ export function NotificationCenter() {
       await supabase.rpc('mark_notification_read', { p_notification_id: id })
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function markAllRead() {
@@ -71,7 +71,7 @@ export function NotificationCenter() {
       await supabase.rpc('mark_all_notifications_read')
       setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })))
       setUnreadCount(0)
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   useEffect(() => {

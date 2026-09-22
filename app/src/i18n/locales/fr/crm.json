@@ -90,7 +90,8 @@
     "conversionRate": "Taux de conversion",
     "sentCount": "Envois",
     "noCampaigns": "Aucune campagne",
-    "noCampaignsDescription": "Créez votre première campagne"
+    "noCampaignsDescription": "Créez votre première campagne",
+    "description": "Description"
   },
   "territories": {
     "title": "Secteurs",

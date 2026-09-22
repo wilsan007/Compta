@@ -16,7 +16,7 @@ export function ReorderPage() {
 
   const loadData = useCallback(async () => {
     try { setStock(await getStockQuantities()) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -27,7 +27,7 @@ export function ReorderPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('reorder.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('reorder.title') }]} />
       <PageHeader title={t('reorder.title')} subtitle={`${reorderItems.length} ${t('reorder.product').toLowerCase()}(s)`} />
 
       <div className="grid grid-cols-2 gap-4 mb-6">

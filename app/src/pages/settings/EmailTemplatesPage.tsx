@@ -150,7 +150,7 @@ export function EmailTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: t('nav.settings'), href: '/settings' }, { label: 'Templates Email' }]} />
+      <Breadcrumb items={[{ label: t('nav:items.settings'), href: '/settings' }, { label: 'Templates Email' }]} />
       <PageHeader title="Templates Email" description="Personnalisez les emails envoyés par l'application" />
 
       <div className="flex justify-end">

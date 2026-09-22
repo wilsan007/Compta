@@ -42,7 +42,7 @@ export function EmployeeExitPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('exit.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('exit.title') }]} />
       <PageHeader
         title={t('exit.title')}
         subtitle={t('exit.subtitle')}

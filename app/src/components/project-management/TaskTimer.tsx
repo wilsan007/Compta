@@ -41,7 +41,7 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -73,7 +73,7 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [taskId, tCommon, toast])
 
@@ -89,7 +89,7 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [entries, loadEntries, refetch, tCommon, toast])
 
@@ -102,7 +102,7 @@ export function TaskTimer({ taskId, taskTitle }: TaskTimerProps) {
       } catch (err: any) {
         console.error("catch:", err)
         // ignore
-        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+        toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       }
     },
     [loadEntries, refetch, tCommon, toast]
@@ -237,7 +237,7 @@ function ManualEntryForm({ taskId, onSaved }: { taskId: string; onSaved: () => v
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }

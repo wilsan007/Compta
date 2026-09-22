@@ -91,7 +91,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       await docs.download(doc)
     } catch (err: any) {
       console.error('Download failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, toast, tCommon])
 
@@ -102,7 +102,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       setPreviewName(doc.file_name)
     } catch (err: any) {
       console.error('Preview failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, tCommon, toast])
 
@@ -111,7 +111,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       await docs.approve(id)
     } catch (err: any) {
       console.error('Approve failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, tCommon, toast])
 
@@ -123,7 +123,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       setRejectReason('')
     } catch (err: any) {
       console.error('Reject failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, rejectingId, rejectReason, tCommon, toast])
 
@@ -132,7 +132,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       await docs.archive(id)
     } catch (err: any) {
       console.error('Archive failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, tCommon, toast])
 
@@ -142,7 +142,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
       await docs.remove(id)
     } catch (err: any) {
       console.error('Delete failed:', err.message)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [docs, t, tCommon, toast])
 
@@ -328,7 +328,7 @@ export function DocumentList({ module, entityType, entityId }: DocumentListProps
                 onClick={() => setRejectingId(null)}
                 className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
               >
-                {t('common:cancel')}
+                {t('common:common.cancel')}
               </button>
               <button
                 onClick={handleReject}

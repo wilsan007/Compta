@@ -46,7 +46,7 @@ export function CorporateTaxCalcPage() {
       setUsingGrid(false)
     } catch (err: any) {
       console.error('Error loading corporate tax data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

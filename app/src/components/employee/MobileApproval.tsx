@@ -101,10 +101,10 @@ export function MobileApproval() {
 
       <div className="flex gap-2 sticky bottom-4">
         <Button variant="danger" className="flex-1" onClick={() => setShowRejectModal(true)} disabled={loading}>
-          <X className="w-4 h-4" /> {t('approvals.reject')}
+          <X className="w-4 h-4" /> {t('common:actions.reject')}
         </Button>
         <Button className="flex-1" onClick={() => handleApprove(current)} disabled={loading}>
-          <Check className="w-4 h-4" /> {t('approvals.approve')}
+          <Check className="w-4 h-4" /> {t('common:actions.approve')}
         </Button>
       </div>
 
@@ -120,7 +120,7 @@ export function MobileApproval() {
             />
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setShowRejectModal(false)}>{tCommon('common.cancel')}</Button>
-              <Button variant="danger" onClick={handleReject} disabled={!rejectComment || loading}>{t('approvals.reject')}</Button>
+              <Button variant="danger" onClick={handleReject} disabled={!rejectComment || loading}>{t('common:actions.reject')}</Button>
             </div>
           </div>
         </div>

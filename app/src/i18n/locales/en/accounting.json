@@ -389,7 +389,8 @@
     "end": "End",
     "autoPeriodsHint": "The 12 monthly periods will be created automatically when the fiscal year is created.",
     "maxYears": "Maximum consultable fiscal years",
-    "maxYearsDescription": "Up to 10 fiscal years consultable simultaneously"
+    "maxYearsDescription": "Up to 10 fiscal years consultable simultaneously",
+    "description": "Manage fiscal years and their periods"
   },
   "entries": {
     "title": "Accounting entries",
@@ -611,7 +612,8 @@
     "bapError": "Error marking BAP",
     "marking": "Marking",
     "markingApplied": "Marking applied",
-    "markingError": "Error applying marking"
+    "markingError": "Error applying marking",
+    "searchError": "Search failed"
   },
   "journalsReport": {
     "breadcrumb": "Reports",
@@ -663,7 +665,11 @@
     "totalJournals": "Total journals",
     "totalPeriods": "Total periods",
     "closedJournals": "Closed journals",
-    "openJournals": "Open journals"
+    "openJournals": "Open journals",
+    "activeJournals": "Active journals",
+    "closedEntries": "Closed entries",
+    "periods": "Periods",
+    "totalEntries": "Total entries"
   },
   "saisie": {
     "title": "Journal entry",
@@ -802,7 +808,12 @@
     "openingLines": "Opening lines",
     "closingLines": "Closing lines",
     "resultAmount": "Fiscal year result",
-    "openingEntriesPreview": "Opening entries preview"
+    "openingEntriesPreview": "Opening entries preview",
+    "carryForwardEntry": "Opening balance entry",
+    "closeEntry": "Closing entry",
+    "integrityHash": "Integrity hash",
+    "resultAccount": "Income statement",
+    "resultComputed": "Result for the year: {{amount}}"
   },
   "brouillard": {
     "title": "Draft journal",
@@ -952,7 +963,8 @@
     "category": "Category",
     "amountCol": "Amount",
     "generate": "Generate income statement",
-    "generated": "Income statement generated successfully"
+    "generated": "Income statement generated successfully",
+    "exceptionalCharges": "Exceptional expenses"
   },
   "analytic": {
     "title": "Analytic sections",
@@ -1033,7 +1045,8 @@
     "variancePct": "Variance %",
     "status": "Status",
     "withinBudget": "Within budget",
-    "overrun": "Overrun"
+    "overrun": "Overrun",
+    "name": "Budget name"
   },
   "budgetCommitments": {
     "title": "Budget commitments",
@@ -1194,7 +1207,38 @@
     "calculateDepreciation": "Calculate depreciation",
     "derogatoryDepreciation": "Derogatory depreciation",
     "subventionAmount": "Subvention amount",
-    "subventionAccount": "Subvention account"
+    "subventionAccount": "Subvention account",
+    "amount": "Amount",
+    "capitalGain": "Capital gain",
+    "capitalLoss": "Capital loss",
+    "category": "Category",
+    "categoryPlaceholder": "E.g. IT equipment",
+    "confirmDisposal": "Confirm disposal",
+    "cumulative": "Cumulative",
+    "cumulativeDepreciation": "Accumulated depreciation",
+    "currentNetValue": "Current net value",
+    "depMethods": {
+      "declining_balance": "Declining balance",
+      "straight_line": "Straight-line",
+      "units_of_production": "Units of production"
+    },
+    "depreciation": "Depreciation",
+    "depreciationHistory": "Depreciation history",
+    "disposal": "Disposal",
+    "disposalDate": "Disposal date",
+    "disposalPrice": "Disposal price",
+    "entryNumber": "Entry no.",
+    "estimatedCurrentValue": "Estimated current value",
+    "netValue": "Net value",
+    "noDepreciation": "No depreciation recorded",
+    "period": "Period",
+    "purchaseDate": "Acquisition date",
+    "purchaseValue": "Acquisition value",
+    "recalcComplete": "Depreciation recalculated",
+    "recalcCompleteMsg": "{{count}} asset(s) processed",
+    "residualValue": "Residual value",
+    "totalPurchaseValue": "Total acquisition value",
+    "usefulLifeYears": "Useful life (years)"
   },
   "analyticBalance": {
     "title": "Analytic balance",
@@ -1247,7 +1291,9 @@
     "type": "Type",
     "typeSection": "Section",
     "typeTotal": "Total",
-    "complementHint": "Activate or deactivate this section. Inactive sections no longer appear in analytic entry."
+    "complementHint": "Activate or deactivate this section. Inactive sections no longer appear in analytic entry.",
+    "deleteSuccess": "Analytic section deleted",
+    "saveSuccess": "Analytic section saved"
   },
   "balanceSheet": {
     "title": "Balance sheet",
@@ -2805,5 +2851,15 @@
     "generateDepreciationEntry": "Generate depreciation entry",
     "entryGenerated": "Depreciation entry generated successfully",
     "entryError": "Error generating depreciation entry"
+  },
+  "currencyCode": "Currency",
+  "etats": {
+    "breadcrumb": "Statements"
+  },
+  "structure": {
+    "breadcrumb": "Structure"
+  },
+  "treatment": {
+    "breadcrumb": "Processing"
   }
 }

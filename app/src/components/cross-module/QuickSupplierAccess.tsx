@@ -41,7 +41,7 @@ export function QuickSupplierAccess({ onClose, onSaved, forceInline }: QuickSupp
     setLoading(true)
     try {
       setSuppliers(await getSuppliers())
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

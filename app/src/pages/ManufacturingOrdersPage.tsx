@@ -34,7 +34,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
       setBOMs(bs || [])
       setWarehouses(whs || [])
       setRoutings(rts || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, tCommon, toast])
 
@@ -67,7 +67,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-48">
           <Select label={t('manufacturing.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} options={[
-            { value: '', label: t('common.all') }, { value: 'planned', label: t('manufacturing.statuses.planned') }, { value: 'in_progress', label: t('manufacturing.statuses.in_progress') },
+            { value: '', label: t('common:common.all') }, { value: 'planned', label: t('manufacturing.statuses.planned') }, { value: 'in_progress', label: t('manufacturing.statuses.in_progress') },
             { value: 'completed', label: t('manufacturing.statuses.completed') }, { value: 'cancelled', label: t('manufacturing.statuses.cancelled') },
           ]} />
         </div>

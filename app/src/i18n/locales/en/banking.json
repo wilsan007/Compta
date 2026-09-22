@@ -60,7 +60,9 @@
     "searchPlaceholder": "Search by name, IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "account(s)",
+    "connectedAccounts": "Connected accounts"
   },
   "transactions": {
     "title": "Bank transactions",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "Bank reconciliation",
     "subtitle": "Reconcile your bank transactions",
-    "selectAccount": "Select an account",
+    "selectAccount": "Please select an account",
     "allAccounts": "All accounts",
     "bankBalance": "Bank balance",
     "accountingBalance": "Accounting balance",
@@ -125,7 +127,7 @@
     "reconcileBtn": "Reconcile",
     "smartMatch": "Smart reconciliation",
     "smartResult": "{{matched}} matches found",
-    "selectAccount": "Please select an account"
+    "autoMatchResult": "{{matched}} matched, {{unmatched}} unmatched"
   },
   "rules": {
     "title": "Bank rules",
@@ -154,8 +156,25 @@
       "startsWith": "Starts with",
       "endsWith": "Ends with",
       "greaterThan": "Greater than",
-      "lessThan": "Less than"
-    }
+      "lessThan": "Less than",
+      "greater_than": "Greater than",
+      "less_than": "Less than",
+      "starts_with": "Starts with"
+    },
+    "accountCode": "Account code",
+    "accountCodePlaceholder": "E.g. 626100",
+    "category": "Category",
+    "categoryPlaceholder": "E.g. bank fees",
+    "condition": "Condition",
+    "field": "Field",
+    "fields": {
+      "amount": "Amount",
+      "description": "Description",
+      "reference": "Reference"
+    },
+    "operator": "Operator",
+    "value": "Value",
+    "vatRate": "VAT rate (%)"
   },
   "pdfReconciliation": {
     "title": "PDF Reconciliation",

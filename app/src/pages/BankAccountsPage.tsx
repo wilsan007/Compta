@@ -31,7 +31,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
         const txns = await getBankTransactions(data[0].id)
         setTransactions(txns || [])
       }
-    } catch (err: any) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
     try {
       const txns = await getBankTransactions(id)
       setTransactions(txns || [])
-    } catch (err: any) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -62,7 +62,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       <Breadcrumb items={[{ label: t('accounts.title'), path: '/banking' }]} />
       <PageHeader
         title={t('accounts.title')}
-        subtitle={`${accounts.length} ${t('accounts.accounts')} • ${t('accounts.totalBalance')}: ${formatCurrency(totalBalance)}`}
+        subtitle={`${accounts.length} ${t('accounts.accounts')} • ${t('dashboard.totalBalance')}: ${formatCurrency(totalBalance)}`}
         action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('accounts.new')}</Button>}
       />
 
@@ -75,7 +75,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            <StatCard label={t('accounts.totalBalance')} value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
+            <StatCard label={t('dashboard.totalBalance')} value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
             <StatCard label={tCommon('common.transactions')} value={String(transactions.length)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
             <StatCard label={t('accounts.connectedAccounts')} value={String(accounts.filter((a) => a.connected).length)} icon={<Landmark className="w-5 h-5" />} color="warning" />
           </div>
@@ -143,7 +143,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   <TableCell>
                     <span className={`flex items-center gap-1 text-xs ${txn.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                       {txn.type === 'credit' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {txn.type === 'credit' ? t('accounts.credit') : t('accounts.debit')}
+                      {txn.type === 'credit' ? t('accounting:entries.credit') : t('accounting:entries.debit')}
                     </span>
                   </TableCell>
                   <TableCell className={txn.type === 'credit' ? 'text-[var(--color-success)] font-medium text-right' : 'text-[var(--color-danger)] font-medium text-right'}>
@@ -151,7 +151,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   </TableCell>
                   <TableCell>
                     <Badge variant={txn.reconciled ? 'success' : 'neutral'}>
-                      {txn.reconciled ? t('accounts.reconciled') : tCommon('status.pending')}
+                      {txn.reconciled ? t('transactions.reconciled') : tCommon('status.pending')}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -160,8 +160,8 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
           ) : (
             <EmptyState
               icon={<TrendingUp className="w-8 h-8" />}
-              title={t('accounts.noTransactions')}
-              description={t('accounts.noTransactionsDescription')}
+              title={t('transactions.noTransactions')}
+              description={t('transactions.noTransactionsDescription')}
             />
           )}
         </Card>

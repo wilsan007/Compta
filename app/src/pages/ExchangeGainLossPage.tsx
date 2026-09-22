@@ -18,7 +18,7 @@ export function ExchangeGainLossPage() {
     try {
       const data = await getExchangeGainLossEntries()
       setEntries(data || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])

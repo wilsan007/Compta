@@ -30,7 +30,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
       setSuppliers(s)
       setInvoices(inv)
     } catch (err: any) { console.error('Failed to load:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -54,7 +54,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('creditNotes.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('creditNotes.title') }]} />
       <PageHeader
         title={t('creditNotes.title')}
         subtitle={t('creditNotes.subtitle')}

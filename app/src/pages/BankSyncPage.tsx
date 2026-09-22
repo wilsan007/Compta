@@ -308,7 +308,7 @@ function ConnectionForm({ accounts, onClose, onSaved }: { accounts: BankAccount[
             { value: 'manual', label: t('bankSync.settings.manual') },
           ]} />
           <Select label={t('accounts.title')} value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} options={[
-            { value: '', label: t('thirdParty.none') || '—' },
+            { value: '', label: t('accounting:thirdParty.none') || '—' },
             ...accounts.map(a => ({ value: a.id, label: a.name })),
           ]} />
           <Select label={t('bankSync.settings.syncFrequency')} value={syncFrequency} onChange={(e) => setSyncFrequency(e.target.value)} options={[

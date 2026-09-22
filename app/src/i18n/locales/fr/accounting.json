@@ -389,7 +389,8 @@
     "end": "Fin",
     "autoPeriodsHint": "Les 12 périodes mensuelles seront créées automatiquement à la création de l'exercice.",
     "maxYears": "Nombre maximum d'exercices consultables",
-    "maxYearsDescription": "Jusqu'à 10 exercices consultables simultanément"
+    "maxYearsDescription": "Jusqu'à 10 exercices consultables simultanément",
+    "description": "Gérez les exercices comptables et leurs périodes"
   },
   "entries": {
     "title": "Écritures comptables",
@@ -611,7 +612,8 @@
     "bapError": "Erreur lors du marquage BAP",
     "marking": "Marquage",
     "markingApplied": "Marquage appliqué",
-    "markingError": "Erreur lors du marquage"
+    "markingError": "Erreur lors du marquage",
+    "searchError": "Échec de la recherche"
   },
   "journalsReport": {
     "breadcrumb": "Rapports",
@@ -663,7 +665,11 @@
     "totalJournals": "Total journaux",
     "totalPeriods": "Total périodes",
     "closedJournals": "Journaux clôturés",
-    "openJournals": "Journaux ouverts"
+    "openJournals": "Journaux ouverts",
+    "activeJournals": "Journaux actifs",
+    "closedEntries": "Écritures clôturées",
+    "periods": "Périodes",
+    "totalEntries": "Écritures totales"
   },
   "saisie": {
     "title": "Saisie des journaux",
@@ -802,7 +808,12 @@
     "openingLines": "Lignes d'ouverture",
     "closingLines": "Lignes de clôture",
     "resultAmount": "Résultat de l'exercice",
-    "openingEntriesPreview": "Aperçu des écritures d'ouverture"
+    "openingEntriesPreview": "Aperçu des écritures d'ouverture",
+    "carryForwardEntry": "Écriture d'à-nouveaux",
+    "closeEntry": "Écriture de clôture",
+    "integrityHash": "Empreinte d'intégrité",
+    "resultAccount": "Compte de résultat",
+    "resultComputed": "Résultat de l'exercice : {{amount}}"
   },
   "brouillard": {
     "title": "Brouillard",
@@ -952,7 +963,8 @@
     "category": "Rubrique",
     "amountCol": "Montant",
     "generate": "Générer le compte de résultat",
-    "generated": "Compte de résultat généré avec succès"
+    "generated": "Compte de résultat généré avec succès",
+    "exceptionalCharges": "Charges exceptionnelles"
   },
   "analytic": {
     "title": "Sections analytiques",
@@ -1033,7 +1045,8 @@
     "variancePct": "Écart %",
     "status": "Statut",
     "withinBudget": "Dans le budget",
-    "overrun": "Dépassement"
+    "overrun": "Dépassement",
+    "name": "Nom du budget"
   },
   "budgetCommitments": {
     "title": "Engagements budgétaires",
@@ -1194,7 +1207,38 @@
     "calculateDepreciation": "Calculer les amortissements",
     "derogatoryDepreciation": "Amortissement dérogatoire",
     "subventionAmount": "Montant subvention",
-    "subventionAccount": "Compte de subvention"
+    "subventionAccount": "Compte de subvention",
+    "amount": "Montant",
+    "capitalGain": "Plus-value",
+    "capitalLoss": "Moins-value",
+    "category": "Catégorie",
+    "categoryPlaceholder": "Ex. : matériel informatique",
+    "confirmDisposal": "Confirmer la cession",
+    "cumulative": "Cumul",
+    "cumulativeDepreciation": "Amortissements cumulés",
+    "currentNetValue": "Valeur nette actuelle",
+    "depMethods": {
+      "declining_balance": "Dégressif",
+      "straight_line": "Linéaire",
+      "units_of_production": "Unités d'œuvre"
+    },
+    "depreciation": "Amortissement",
+    "depreciationHistory": "Historique des amortissements",
+    "disposal": "Cession",
+    "disposalDate": "Date de cession",
+    "disposalPrice": "Prix de cession",
+    "entryNumber": "N° écriture",
+    "estimatedCurrentValue": "Valeur actuelle estimée",
+    "netValue": "Valeur nette",
+    "noDepreciation": "Aucun amortissement enregistré",
+    "period": "Période",
+    "purchaseDate": "Date d'acquisition",
+    "purchaseValue": "Valeur d'acquisition",
+    "recalcComplete": "Amortissements recalculés",
+    "recalcCompleteMsg": "{{count}} immobilisation(s) traitée(s)",
+    "residualValue": "Valeur résiduelle",
+    "totalPurchaseValue": "Valeur d'acquisition totale",
+    "usefulLifeYears": "Durée d'utilité (années)"
   },
   "analyticBalance": {
     "title": "Balance analytique",
@@ -1247,7 +1291,9 @@
     "type": "Type",
     "typeSection": "Section",
     "typeTotal": "Total",
-    "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique."
+    "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique.",
+    "deleteSuccess": "Section analytique supprimée",
+    "saveSuccess": "Section analytique enregistrée"
   },
   "balanceSheet": {
     "title": "Bilan",
@@ -2805,5 +2851,15 @@
     "generateDepreciationEntry": "Générer l'écriture d'amortissement",
     "entryGenerated": "Écriture d'amortissement générée avec succès",
     "entryError": "Erreur lors de la génération de l'écriture"
+  },
+  "currencyCode": "Devise",
+  "etats": {
+    "breadcrumb": "États"
+  },
+  "structure": {
+    "breadcrumb": "Structure"
+  },
+  "treatment": {
+    "breadcrumb": "Traitement"
   }
 }

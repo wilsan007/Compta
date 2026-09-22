@@ -69,29 +69,29 @@ export function GuestAccessConfigPanel({ permissions, onChange }: GuestAccessCon
 
   return (
     <div className="border border-[var(--color-border)] rounded-lg p-4 space-y-4 max-h-96 overflow-y-auto">
-      <p className="text-sm font-medium">{t('team:guestConfigTitle')}</p>
+      <p className="text-sm font-medium">{t('team.guestConfigTitle')}</p>
 
       {/* Project IDs */}
       <div className="space-y-1">
         <label className="text-xs font-medium text-[var(--color-text-secondary)]">
-          {t('team:guestProjectIds')}
+          {t('team.guestProjectIds')}
         </label>
         <input
           type="text"
           value={projectIdsInput}
           onChange={(e) => handleProjectIdsChange(e.target.value)}
-          placeholder={t('team:guestProjectIdsPlaceholder')}
+          placeholder={t('team.guestProjectIdsPlaceholder')}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
         <p className="text-xs text-[var(--color-text-secondary)]">
-          {t('team:guestProjectIdsHelp')}
+          {t('team.guestProjectIdsHelp')}
         </p>
       </div>
 
       {/* Views */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-          {t('team:guestViewsTitle')}
+          {t('team.guestViewsTitle')}
         </p>
         <div className="grid grid-cols-2 gap-2">
           {VIEW_OPTIONS.map(opt => {
@@ -117,7 +117,7 @@ export function GuestAccessConfigPanel({ permissions, onChange }: GuestAccessCon
       {/* Per-project permissions */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-          {t('team:guestPerProjectTitle')}
+          {t('team.guestPerProjectTitle')}
         </p>
         <div className="grid grid-cols-2 gap-2">
           {PER_PROJECT_OPTIONS.map(opt => {

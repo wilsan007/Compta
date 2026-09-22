@@ -30,7 +30,7 @@ export function SupplierInvoiceAutomationPage() {
       const [inv, sup] = await Promise.all([getPurchaseInvoices(), getSuppliers()])
       setInvoices(inv || [])
       setSuppliers(sup || [])
-    } catch (err: any) { console.error('Error loading data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ export function SupplierInvoiceAutomationPage() {
     // SECURITY: Validate file before processing
     const validation = await validateFileUpload(file, FILE_PROFILES.invoiceScan)
     if (!validation.ok) {
-      toast('error', t('common.error'), validation.error || 'Invalid file')
+      toast('error', t('common:common.error'), validation.error || 'Invalid file')
       e.target.value = ''
       return
     }
@@ -63,7 +63,7 @@ export function SupplierInvoiceAutomationPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('automation.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('automation.title') }]} />
       <PageHeader title={t('automation.title')} subtitle={t('automation.subtitle')} />
 
       <Card className="mb-6">

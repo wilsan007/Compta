@@ -326,7 +326,8 @@
     "stockReservations": "حجوزات المخزون",
     "lotTraceability": "تتبع الدفعات",
     "taxGrids": "الشرائح الضريبية",
-    "onboarding": "التأهيل"
+    "onboarding": "التأهيل",
+    "pos": "نقطة البيع"
   },
   "layout": {
     "reduce": "طي",

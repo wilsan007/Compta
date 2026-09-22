@@ -27,7 +27,7 @@ export function LiasseFiscalePage() {
     try {
       const years = await getFiscalYears()
       setFiscalYears(years || [])
-    } catch (err: any) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -43,7 +43,7 @@ export function LiasseFiscalePage() {
       ])
       setData(bs)
       setTrialBalance(tb || [])
-    } catch (err: any) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setGenerating(false)
     }

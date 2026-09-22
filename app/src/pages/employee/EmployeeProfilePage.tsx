@@ -55,7 +55,7 @@ export function EmployeeProfilePage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('profile.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('profile.title') }]} />
       <PageHeader title={t('profile.title')} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

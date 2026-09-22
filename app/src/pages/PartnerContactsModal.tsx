@@ -34,7 +34,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       ])
       setContacts(c || [])
       setBankAccounts(b || [])
-    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])

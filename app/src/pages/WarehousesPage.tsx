@@ -18,7 +18,7 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   const loadData = useCallback(async () => {
     try { setWarehouses(await getWarehouses()) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -37,7 +37,7 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('warehouses.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('warehouses.title') }]} />
       <PageHeader title={t('warehouses.title')} subtitle={`${warehouses.length} ${t('warehouses.title').toLowerCase()}`}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('warehouses.new')}</Button>} />
 

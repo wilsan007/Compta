@@ -182,7 +182,8 @@
       "received": "Received",
       "partial": "Partial",
       "cancelled": "Cancelled"
-    }
+    },
+    "purchaseOrder": "Purchase order"
   },
   "payments": {
     "title": "Supplier payments",

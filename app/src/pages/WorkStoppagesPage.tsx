@@ -72,7 +72,7 @@ export function WorkStoppagesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('workStoppages.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('workStoppages.title') }]} />
       <PageHeader
         title={t('workStoppages.title')}
         subtitle={t('workStoppages.subtitle')}

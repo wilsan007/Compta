@@ -64,7 +64,7 @@ export function GridTemplatesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteGridTemplate(id)
       await load()
@@ -169,7 +169,7 @@ export function PaymentTemplatesComptaPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deletePaymentTemplateCompta(id)
       await load()
@@ -266,7 +266,7 @@ export function StandardLabelsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteStandardLabel(id)
       await load()
@@ -366,7 +366,7 @@ export function AnalyticJournalCodesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteAnalyticJournalCode(id)
       await load()

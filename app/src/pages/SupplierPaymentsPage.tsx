@@ -30,7 +30,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
       setPayments(pays || [])
       setSuppliers(sups || [])
       setBanks(bks || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -46,7 +46,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('payments.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('payments.title') }]} />
       <PageHeader title={t('payments.title')} subtitle={t('payments.count', { count: payments.length, total: formatCurrency(totalAmount) })}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payments.new')}</Button>} />
 

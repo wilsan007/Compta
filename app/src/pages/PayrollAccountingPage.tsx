@@ -27,7 +27,7 @@ const [entries, setEntries] = useState<any[]>([])
       const [es, prs] = await Promise.all([getPayrollAccountingEntries(), getPayRuns()])
       setEntries(es || [])
       setPayRuns(prs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -51,7 +51,7 @@ const [entries, setEntries] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('payrollAccounting.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('payrollAccounting.title') }]} />
       <PageHeader title={t('payrollAccounting.title')} subtitle={t('payrollAccounting.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payrollAccounting.generate')}</Button>} />
 

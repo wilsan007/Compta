@@ -96,7 +96,7 @@ export function EmployeeLeavesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaves.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaves.title') }]} />
       <PageHeader
         title={t('leaves.title')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('leaves.newRequest')}</Button>}
@@ -151,7 +151,7 @@ export function EmployeeLeavesPage() {
 
       {loading ? <SkeletonTable rows={5} cols={5} /> : tab === 'requests' ? (
         <Card>
-          <Table headers={[t('leaves.leaveType'), t('leaves.startDate'), t('leaves.endDate'), t('leaves.status'), tCommon('table.actions')]}>
+          <Table headers={[t('leaves.leaveType'), t('leaves.startDate'), t('leaves.endDate'), t('common:common.status'), tCommon('table.actions')]}>
             {requests.map(r => (
               <TableRow key={r.id}>
                 <TableCell className="text-sm">{t(`leaves.types.${r.leave_type}`) || r.leave_type}</TableCell>

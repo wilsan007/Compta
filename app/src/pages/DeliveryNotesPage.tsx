@@ -31,7 +31,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       const [ns, custs] = await Promise.all([getDeliveryNotes(statusFilter || undefined), getCustomers()])
       setNotes(ns || [])
       setCustomers(custs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 

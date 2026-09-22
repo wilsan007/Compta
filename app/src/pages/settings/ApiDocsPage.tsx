@@ -179,7 +179,7 @@ export function ApiDocsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: t('nav.settings'), href: '/settings' }, { label: 'Documentation API' }]} />
+      <Breadcrumb items={[{ label: t('nav:items.settings'), href: '/settings' }, { label: 'Documentation API' }]} />
       <PageHeader title="Documentation API" description="API REST publique pour intégrations tierces" />
 
       <Tabs defaultValue="overview">

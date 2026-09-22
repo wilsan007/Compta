@@ -32,7 +32,7 @@ export function SuppliersPage() {
       const data = await getSuppliers()
       setSuppliers(data || [])
     } catch (err: any) { console.error('Error loading suppliers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

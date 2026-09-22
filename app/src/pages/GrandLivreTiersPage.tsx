@@ -33,7 +33,7 @@ export function GrandLivreTiersPage() {
       const data = await getThirdPartyAccounts()
       setTiers(data || [])
     } catch (err: any) { console.error('Error loading tiers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoadingTiers(false)
     }
@@ -46,7 +46,7 @@ export function GrandLivreTiersPage() {
       const data = await getGrandLivreTiers(selectedTiers, dateFrom || undefined, dateTo || undefined)
       setMovements(data || [])
     } catch (err: any) { console.error('Error loading grand livre tiers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

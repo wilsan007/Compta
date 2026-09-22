@@ -85,7 +85,8 @@
     "filterByType": "Filtrer par type",
     "numberAssigned": "Le numéro de facture (FAC-exercice-n°) est attribué à la validation, dans l'ordre chronologique.",
     "atLeastOneLine": "Ajoutez au moins une ligne avec une désignation et un montant.",
-    "draftCreated": "Brouillon enregistré. Le numéro définitif sera attribué à la validation."
+    "draftCreated": "Brouillon enregistré. Le numéro définitif sera attribué à la validation.",
+    "advanceAmount": "Montant de l'acompte"
   },
   "quotes": {
     "title": "Devis",
@@ -227,7 +228,8 @@
     "invoiceStatus": "Statut facturation",
     "invoicePending": "En attente",
     "invoicePartial": "Partiel",
-    "invoiceInvoiced": "Facturé"
+    "invoiceInvoiced": "Facturé",
+    "salesOrder": "Commande client"
   },
   "payments": {
     "title": "Règlements clients",
@@ -591,5 +593,16 @@
   },
   "calculate_penalties": "Calculer les pénalités de retard",
   "penalties_result": "{{count}} factures - Pénalités: {{amount}}",
-  "no_overdue_invoices": "Aucune facture en retard"
+  "no_overdue_invoices": "Aucune facture en retard",
+  "blocked": "Bloqué",
+  "credit_control": "Contrôle du crédit client",
+  "credit_limit": "Plafond de crédit",
+  "credit_used": "Crédit utilisé",
+  "customer": "Client",
+  "exposure": "Encours",
+  "no_customers": "Aucun client",
+  "ok": "OK",
+  "over_limit": "Plafond dépassé",
+  "status": "Statut",
+  "warning": "Alerte"
 }

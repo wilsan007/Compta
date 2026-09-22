@@ -24,7 +24,7 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
       setRecurring(rec)
       setAllInvoices(inv)
     } catch (err: any) { console.error('Failed to load recurring invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

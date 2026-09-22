@@ -421,7 +421,8 @@
     "saved": "تم الحفظ بنجاح",
     "display": "عرض",
     "refresh": "تحديث",
-    "selectEmployee": "يرجى اختيار موظف"
+    "selectEmployee": "يرجى اختيار موظف",
+    "fillRequired": "يرجى ملء جميع الحقول الإلزامية"
   },
   "dashboard": {
     "title": "لوحة التحكم",

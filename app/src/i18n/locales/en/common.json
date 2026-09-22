@@ -421,7 +421,8 @@
     "saved": "Saved successfully",
     "display": "Display",
     "refresh": "Refresh",
-    "selectEmployee": "Please select an employee"
+    "selectEmployee": "Please select an employee",
+    "fillRequired": "Please fill in all required fields"
   },
   "dashboard": {
     "title": "Dashboard",

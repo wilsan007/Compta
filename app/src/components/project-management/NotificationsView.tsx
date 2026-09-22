@@ -24,7 +24,7 @@ export function NotificationsView() {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -41,7 +41,7 @@ export function NotificationsView() {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -53,7 +53,7 @@ export function NotificationsView() {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

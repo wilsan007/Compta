@@ -22,7 +22,7 @@ export function PaymentRemindersPage() {
       const data = await getCollectionReminders()
       setReminders(data || [])
     } catch (err: any) { console.error('Failed to load reminders:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -53,7 +53,7 @@ export function PaymentRemindersPage() {
     t('reminders.level'),
     t('reminders.paymentStatus'),
     t('reminders.paymentLink'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (

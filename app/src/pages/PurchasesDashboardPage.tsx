@@ -37,7 +37,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.dashboard') }, { label: t('title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.dashboard') }, { label: t('title') }]} />
       <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       {loading ? (

@@ -131,7 +131,7 @@ export function KnowledgeBasePage() {
                   </button>
                 </div>
               </TableCell>
-              <TableCell><Badge variant={a.is_public ? 'success' : 'neutral'}>{a.is_public ? tCommon('status.yes') : tCommon('status.no')}</Badge></TableCell>
+              <TableCell><Badge variant={a.is_public ? 'success' : 'neutral'}>{a.is_public ? tCommon('common.yes') : tCommon('common.no')}</Badge></TableCell>
               <TableCell>
                 <div className="flex gap-1">
                   <button onClick={() => { setEditArticle(a); setShowForm(true) }} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>

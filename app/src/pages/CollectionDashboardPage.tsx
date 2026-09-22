@@ -26,7 +26,7 @@ const [data, setData] = useState<any>(null)
       const [res, custs] = await Promise.all([getCollectionDashboard(), getCustomers()])
       setData(res)
       setCustomers(custs || [])
-    } catch (err: any) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

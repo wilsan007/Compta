@@ -30,7 +30,7 @@ export function ExchangeRatesPage() {
       setRates(history)
       setCurrencies(curs || [])
     } catch (err: any) { console.error('Error loading exchange rates:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

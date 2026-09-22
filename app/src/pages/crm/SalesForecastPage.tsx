@@ -64,7 +64,7 @@ export function SalesForecastPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={<TrendingUp className="w-8 h-8" />} title={t('forecasts.noForecasts')} description={t('forecasts.noForecastsDescription')} />
       ) : (
-        <Table headers={[t('forecasts.period'), t('forecasts.salesRep'), t('forecasts.target'), t('forecasts.committed'), t('forecasts.bestCase'), t('forecasts.pipeline'), t('forecasts.closed')]}>
+        <Table headers={[t('forecasts.period'), t('opportunities.salesRep'), t('forecasts.target'), t('forecasts.committed'), t('forecasts.bestCase'), t('forecasts.pipeline'), t('forecasts.closed')]}>
           {filtered.map(f => (
             <TableRow key={f.id}>
               <TableCell className="font-mono text-xs">{f.period}</TableCell>
@@ -136,8 +136,8 @@ function ForecastForm({ reps, onClose, onSaved }: { reps: SalesRepresentative[];
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('forecasts.period')} required placeholder="2024-Q1" value={period} onChange={(e) => setPeriod(e.target.value)} />
-          <Select label={t('forecasts.salesRep')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+          <Select label={t('opportunities.salesRep')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} options={[
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...reps.map(r => ({ value: r.id, label: r.name })),
           ]} />
           <div className="grid grid-cols-2 gap-4">

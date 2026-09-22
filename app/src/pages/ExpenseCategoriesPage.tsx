@@ -30,7 +30,7 @@ export function ExpenseCategoriesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('expenseCategories.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('expenseCategories.title') }]} />
       <PageHeader
         title={t('expenseCategories.title')}
         subtitle={t('expenseCategories.subtitle')}

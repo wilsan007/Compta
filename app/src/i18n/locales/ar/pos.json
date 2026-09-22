@@ -70,7 +70,10 @@
     "noSessionsDescription": "لا توجد جلسات صندوق مسجلة",
     "filterTerminal": "تصفية حسب الصندوق",
     "allTerminals": "كل الصناديق",
-    "noTickets": "لا توجد تذاكر"
+    "noTickets": "لا توجد تذاكر",
+    "close": "إقفال",
+    "closeTitle": "إقفال الجلسة",
+    "confirmClose": "تأكيد الإقفال"
   },
   "stats": {
     "title": "إحصائيات الصندوق",
@@ -88,5 +91,19 @@
     "thisWeek": "هذا الأسبوع",
     "thisMonth": "هذا الشهر",
     "noData": "لا توجد بيانات متاحة"
-  }
+  },
+  "account_code": "رمز الحساب",
+  "add_method": "إضافة وسيلة دفع",
+  "name": "الاسم",
+  "no_payment_methods": "لا توجد وسائل دفع",
+  "opens_drawer": "يفتح درج النقود",
+  "order": "الترتيب",
+  "payment_methods": "وسائل الدفع",
+  "type": "النوع",
+  "type_card": "بطاقة بنكية",
+  "type_cash": "نقدًا",
+  "type_check": "شيك",
+  "type_other": "أخرى",
+  "type_transfer": "تحويل بنكي",
+  "type_voucher": "قسيمة شراء"
 }

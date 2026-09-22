@@ -18,7 +18,7 @@ export function StockReservationsPage() {
     try {
       const data = await getStockReservations()
       setReservations(data || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -29,12 +29,12 @@ export function StockReservationsPage() {
     try {
       await releaseStockReservation(id)
       await loadData()
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('stock'), path: '/stock' }, { label: t('reservations') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock'), path: '/stock' }, { label: t('reservations') }]} />
       <PageHeader title={t('reservations')} />
 
       <Card>

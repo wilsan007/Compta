@@ -40,7 +40,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       setEntries(je || [])
       setAccounts(accs || [])
     } catch (err: any) { console.error('Error loading journal entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -26,7 +26,7 @@ export function DocumentCellColumn({ taskId, projectId }: DocumentCellColumnProp
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [taskId, tCommon, toast])
 
@@ -44,7 +44,7 @@ export function DocumentCellColumn({ taskId, projectId }: DocumentCellColumnProp
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setUploading(false)
     }

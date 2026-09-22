@@ -101,7 +101,8 @@
     "noDeclarations": "Aucune déclaration",
     "noDeclarationsDescription": "Créez votre première déclaration de TVA.",
     "createFirst": "Créer ma première déclaration",
-    "searchPlaceholder": "Rechercher par période..."
+    "searchPlaceholder": "Rechercher par période...",
+    "generated": "Déclaration de TVA générée"
   },
   "journals": {
     "title": "Journaux",

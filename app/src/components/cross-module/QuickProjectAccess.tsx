@@ -38,7 +38,7 @@ export function QuickProjectAccess({ onClose, onSaved, forceInline }: QuickProje
     } catch (err: any) {
       console.error("catch:", err)
       /* ignore */
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

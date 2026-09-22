@@ -28,7 +28,7 @@ const [projects, setProjects] = useState<Project[]>([])
       setProjects(p)
       setCustomers(c)
     } catch (err: any) { console.error('Failed to load projects:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -88,7 +88,7 @@ const [projects, setProjects] = useState<Project[]>([])
         />
       ) : (
         <Card>
-          <Table headers={[t('projects.name'), t('projects.customerName'), t('projects.budget'), t('projects.actualCost'), t('projects.profitability'), t('projects.status'), tCommon('actions')]}>
+          <Table headers={[t('projects.name'), t('projects.customerName'), t('projects.budget'), t('projects.actualCost'), t('projects.profitability'), t('projects.status'), tCommon('table.actions')]}>
             {projects.map((p) => {
               const customerName = customers.find(c => c.id === p.customer_id)?.name || t('projects.noCustomer')
               const profit = Number(p.budget) - Number(p.actual_cost)

@@ -91,7 +91,7 @@ export function RhReportsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('reports.title', 'Rapports RH') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('reports.title', 'Rapports RH') }]} />
       <PageHeader title={t('reports.title', 'Rapports RH')} subtitle={t('reports.subtitle', 'Reportings et statistiques')} />
 
       <div className="flex gap-2 mb-4">

@@ -75,7 +75,7 @@ export function BatchEntryPage() {
           <div className="grid grid-cols-3 gap-3">
             <Input label={t('batchEntry.sessionName')} value={form.session_name} onChange={e => setForm({ ...form, session_name: e.target.value })} />
             <Select label={t('batchEntry.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
             <Input type="date" label={t('batchEntry.date')} value={form.session_date} onChange={e => setForm({ ...form, session_date: e.target.value })} />
           </div>
           <div className="flex gap-2">
@@ -219,7 +219,7 @@ export function ExtournePage() {
       {showForm && (
         <Card className="p-4 mb-4 space-y-3">
           <Select label={t('extourne.selectEntryLabel')} value={selectedEntry} onChange={e => setSelectedEntry(e.target.value)}
-            options={[{ value: '', label: tCommon('common.select') }, ...entries.map((e: any) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
+            options={[{ value: '', label: tCommon('actions.select') }, ...entries.map((e: any) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
           <Input label={t('extourne.reason')} value={reason} onChange={e => setReason(e.target.value)} />
           <div className="flex gap-2">
             <Button onClick={handleGenerate}><Play className="w-4 h-4" /> {t('extourne.generate')}</Button>
@@ -286,9 +286,9 @@ export function CarryForwardPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('carryForward.sourceYear')} value={sourceYear} onChange={e => setSourceYear(e.target.value)}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
             <Select label={t('carryForward.targetYear')} value={targetYear} onChange={e => setTargetYear(e.target.value)}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleGenerate}><Play className="w-4 h-4" /> {t('carryForward.generate')}</Button>
@@ -398,7 +398,7 @@ export function AccountingControlsPage() {
               <TableCell>{r.errors_found > 0 ? <span className="text-red-600 font-semibold">{r.errors_found}</span> : r.errors_found}</TableCell>
               <TableCell>{r.warnings_found > 0 ? <span className="text-orange-600 font-semibold">{r.warnings_found}</span> : r.warnings_found}</TableCell>
               <TableCell><Badge variant="success">{t(`controls.status.${r.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="secondary" size="sm" onClick={() => setSelectedRun(r)}>{tCommon('common.view')}</Button></TableCell>
+              <TableCell><Button variant="secondary" size="sm" onClick={() => setSelectedRun(r)}>{tCommon('actions.view')}</Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -473,7 +473,7 @@ export function CashControlPage() {
           <div className="grid grid-cols-3 gap-3">
             <Input label={t('cashControl.sessionNumber')} value={form.session_number} onChange={e => setForm({ ...form, session_number: e.target.value })} />
             <Select label={t('cashControl.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
             <Input type="date" label={t('cashControl.date')} value={form.session_date} onChange={e => setForm({ ...form, session_date: e.target.value })} />
             <Input type="number" step="0.01" label={t('cashControl.theoretical')} value={form.theoretical_balance} onChange={e => setForm({ ...form, theoretical_balance: parseFloat(e.target.value) || 0 })} />
             <Input type="number" step="0.01" label={t('cashControl.counted')} value={form.counted_balance} onChange={e => setForm({ ...form, counted_balance: parseFloat(e.target.value) || 0 })} />
@@ -576,7 +576,7 @@ export function FECAttestationPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('fecAttest.fiscalYear')} value={form.fiscal_year_id} onChange={e => setForm({ ...form, fiscal_year_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
             <Select label={t('fecAttest.type')} value={form.fec_type} onChange={e => setForm({ ...form, fec_type: e.target.value })}
               options={[{ value: 'definitive', label: t('fecAttest.types.definitive') }, { value: 'provisional', label: t('fecAttest.types.provisional') }]} />
           </div>
@@ -654,7 +654,7 @@ export function TierRIBsPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('tierRIB.thirdParty')} value={form.third_party_account_id} onChange={e => setForm({ ...form, third_party_account_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.account_code} - ${tp.name || tp.account_name || ''}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.account_code} - ${tp.name || tp.account_name || ''}` }))]} />
             <Input label={t('tierRIB.label')} value={form.rib_label} onChange={e => setForm({ ...form, rib_label: e.target.value })} />
             <Input label={t('tierRIB.iban')} value={form.iban} onChange={e => setForm({ ...form, iban: e.target.value })} />
             <Input label={t('tierRIB.bic')} value={form.bic} onChange={e => setForm({ ...form, bic: e.target.value })} />
@@ -824,7 +824,7 @@ export function TaxPaymentsPage() {
             <Select label={t('taxPayment.method')} value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}
               options={[{ value: 'telepayment', label: t('taxPayment.methods.telepayment') }, { value: 'bank_transfer', label: t('taxPayment.methods.bank_transfer') }, { value: 'check', label: t('taxPayment.methods.check') }]} />
             <Select label={t('taxPayment.bankAccount')} value={form.bank_account_id} onChange={e => setForm({ ...form, bank_account_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...bankAccounts.map(b => ({ value: b.id, label: b.name }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...bankAccounts.map(b => ({ value: b.id, label: b.name }))]} />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleCreate}>{tCommon('actions.save')}</Button>
@@ -1050,7 +1050,7 @@ export function JournalAccessRightsPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input label={t('journalAccessRights.userId')} value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })} placeholder="UUID" />
             <Select label={t('journalAccessRights.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
           </div>
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view} onChange={e => setForm({ ...form, can_view: e.target.checked })} /> {t('journalAccessRights.canView')}</label>

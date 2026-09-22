@@ -52,7 +52,7 @@ export function QuickUserAccess({ onClose, onSaved, forceInline, module }: Quick
     setLoading(true)
     try {
       setUsers(await getTenantUsers(user.tenantId))
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

@@ -56,7 +56,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
     try {
       setVatReturns(await getVatReturns())
     } catch (err: any) { console.error('Failed to load VAT returns:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -170,7 +170,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
 
   async function handleAutoCalc() {
     if (!periodStart || !periodEnd) {
-      toast('warning', tCommon('warning'), t('vat.selectDatesFirst'))
+      toast('warning', tCommon('common.warning'), t('vat.selectDatesFirst'))
       return
     }
     setCalculating(true)

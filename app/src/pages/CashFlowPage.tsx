@@ -18,7 +18,7 @@ export function CashFlowPage() {
       setData(await getCashFlow())
     } catch (err: any) {
       console.error('Failed to load cash flow:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

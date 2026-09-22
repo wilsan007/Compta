@@ -207,7 +207,7 @@ export function ApiWebhooksPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: t('nav.settings'), href: '/settings' }, { label: 'API & Webhooks' }]} />
+      <Breadcrumb items={[{ label: t('nav:items.settings'), href: '/settings' }, { label: 'API & Webhooks' }]} />
       <PageHeader title="API & Webhooks" description="Gérez vos clés API et webhooks sortants" />
 
       <div className="flex gap-2 border-b border-[var(--color-border)]">

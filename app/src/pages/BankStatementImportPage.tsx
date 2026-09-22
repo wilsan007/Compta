@@ -29,7 +29,7 @@ export function BankStatementImportPage() {
       setImports(imps || [])
       setAccounts(accs || [])
     } catch (err: any) { console.error('Failed to load bank statement imports:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

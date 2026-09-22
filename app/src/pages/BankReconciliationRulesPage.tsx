@@ -21,7 +21,7 @@ export function BankReconciliationRulesPage() {
       const data = await getBankReconciliationRules()
       setRules(data || [])
     } catch (err: any) { console.error('Failed to load bank recon rules:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -40,7 +40,7 @@ export function BankReconciliationRulesPage() {
     }
   }
 
-  const tableHeaders = [t('bankRecon.name'), t('bankRecon.afbCode'), t('bankRecon.counterpart'), t('bankRecon.priority'), t('bankRecon.status'), tCommon('common.table.actions')]
+  const tableHeaders = [t('bankRecon.name'), t('bankRecon.afbCode'), t('bankRecon.counterpart'), t('bankRecon.priority'), t('bankRecon.status'), tCommon('table.actions')]
 
   return (
     <div>

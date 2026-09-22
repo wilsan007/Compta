@@ -35,7 +35,7 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
       setCustomers(c)
       setInvoices(inv)
     } catch (err: any) { console.error('Failed to load credit notes:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

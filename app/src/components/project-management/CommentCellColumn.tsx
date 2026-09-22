@@ -27,7 +27,7 @@ export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }, [taskId, toast, tCommon])
 
@@ -45,7 +45,7 @@ export function CommentCellColumn({ taskId }: CommentCellColumnProps) {
     } catch (err: any) {
       console.error("catch:", err)
       // ignore
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setSending(false)
     }

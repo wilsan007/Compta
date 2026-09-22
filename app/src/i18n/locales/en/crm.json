@@ -90,7 +90,8 @@
     "conversionRate": "Conversion rate",
     "sentCount": "Sent",
     "noCampaigns": "No campaigns",
-    "noCampaignsDescription": "Create your first campaign"
+    "noCampaignsDescription": "Create your first campaign",
+    "description": "Description"
   },
   "territories": {
     "title": "Territories",

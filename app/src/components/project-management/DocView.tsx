@@ -148,7 +148,7 @@ export function DocView({ projectId }: DocViewProps) {
         setSelectedDoc(null)
         setEditMode(false)
       }
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       // ignore
     }
   }, [selectedDoc, t, tCommon, toast])

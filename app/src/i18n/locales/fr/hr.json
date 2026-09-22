@@ -146,7 +146,9 @@
       "approved": "Approuvé",
       "paid": "Payé",
       "cancelled": "Annulé"
-    }
+    },
+    "calculate": "Calculer le bulletin",
+    "calculated": "Bulletin calculé"
   },
   "payrollAccounting": {
     "title": "OD de paie",
@@ -187,7 +189,10 @@
     "createFirst": "Créer ma première feuille de temps",
     "searchPlaceholder": "Rechercher par employé, date...",
     "weeklyView": "Vue hebdomadaire",
-    "monthlyView": "Vue mensuelle"
+    "monthlyView": "Vue mensuelle",
+    "descriptionPlaceholder": "Tâche réalisée",
+    "entries": "saisie(s)",
+    "projectOptional": "Projet (facultatif)"
   },
   "leaveRequests": {
     "title": "Demandes de congé",
@@ -481,7 +486,9 @@
       "dates": "Dates",
       "budget": "Budget",
       "progress": "Progression"
-    }
+    },
+    "roleUpdated": "Rôle mis à jour",
+    "roleUpdatedMsg": "Nouveau rôle : {{role}}"
   },
   "workHardship": {
     "title": "Pénibilité du travail",
@@ -884,7 +891,8 @@
     "noRecords": "Aucune note de frais",
     "noRecordsDescription": "Aucune note de frais enregistrée",
     "noLines": "Aucune ligne",
-    "noLinesDescription": "Aucune ligne de frais enregistrée"
+    "noLinesDescription": "Aucune ligne de frais enregistrée",
+    "employee": "Salarié"
   },
   "interviews": {
     "title": "Mes entretiens",
@@ -982,7 +990,9 @@
       "pending": "En attente",
       "paid": "Payé",
       "accounted": "Comptabilisé"
-    }
+    },
+    "field": "Champ",
+    "message": "Message"
   },
   "bdes": {
     "title": "BDES",
@@ -1127,6 +1137,7 @@
       "droit": "Droit du travail",
       "procedure": "Procédures",
       "other": "Autre"
-    }
+    },
+    "status": "Statut"
   }
 }

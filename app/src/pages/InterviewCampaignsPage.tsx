@@ -46,7 +46,7 @@ export function InterviewCampaignsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('campaigns.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('campaigns.title') }]} />
       <PageHeader
         title={t('campaigns.title')}
         subtitle={t('campaigns.subtitle')}

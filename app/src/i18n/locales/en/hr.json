@@ -227,7 +227,9 @@
       "approved": "Approved",
       "paid": "Paid",
       "cancelled": "Cancelled"
-    }
+    },
+    "calculate": "Calculate payslip",
+    "calculated": "Payslip calculated"
   },
   "payrollAccounting": {
     "title": "Payroll entries",
@@ -268,7 +270,10 @@
     "createFirst": "Create my first timesheet",
     "searchPlaceholder": "Search by employee, date...",
     "weeklyView": "Weekly view",
-    "monthlyView": "Monthly view"
+    "monthlyView": "Monthly view",
+    "descriptionPlaceholder": "Work performed",
+    "entries": "entries",
+    "projectOptional": "Project (optional)"
   },
   "leaveRequests": {
     "title": "Leave requests",
@@ -562,7 +567,9 @@
       "dates": "Dates",
       "budget": "Budget",
       "progress": "Progress"
-    }
+    },
+    "roleUpdated": "Role updated",
+    "roleUpdatedMsg": "New role: {{role}}"
   },
   "leaveRules": {
     "title": "Leave Rules",
@@ -884,7 +891,8 @@
     "noRecords": "No expense reports",
     "noRecordsDescription": "No expense report recorded",
     "noLines": "No lines",
-    "noLinesDescription": "No expense line recorded"
+    "noLinesDescription": "No expense line recorded",
+    "employee": "Employee"
   },
   "interviews": {
     "title": "My Interviews",
@@ -982,7 +990,9 @@
       "pending": "Pending",
       "paid": "Paid",
       "accounted": "Accounted"
-    }
+    },
+    "field": "Field",
+    "message": "Message"
   },
   "bdes": {
     "title": "BDES",
@@ -1127,6 +1137,7 @@
       "droit": "Labor law",
       "procedure": "Procedures",
       "other": "Other"
-    }
+    },
+    "status": "Status"
   }
 }

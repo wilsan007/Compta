@@ -39,7 +39,7 @@ export function RoutingsPage() {
       setMachines(macs || [])
       setToolings(tls || [])
       setSuppliers(sups || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -54,7 +54,7 @@ export function RoutingsPage() {
         try {
           const ops = await getRoutingOperations(id)
           setOperations((prev) => ({ ...prev, [id]: ops }))
-        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)

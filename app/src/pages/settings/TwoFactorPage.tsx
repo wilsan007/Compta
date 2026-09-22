@@ -120,7 +120,7 @@ export function TwoFactorPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumb items={[{ label: t('nav.settings'), href: '/settings' }, { label: 'Sécurité 2FA' }]} />
+      <Breadcrumb items={[{ label: t('nav:items.settings'), href: '/settings' }, { label: 'Sécurité 2FA' }]} />
       <PageHeader title="Authentification à deux facteurs" description="Renforcez la sécurité de votre compte avec TOTP" />
 
       <Card className="p-6">

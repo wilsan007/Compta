@@ -156,7 +156,7 @@ function ContractForm({ customers, onClose, onSaved }: { customers: Customer[]; 
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select label={t('contracts.customer')} required value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...customers.map(c => ({ value: c.id, label: c.name })),
           ]} />
           <Input label={t('contracts.name')} required value={name} onChange={(e) => setName(e.target.value)} />

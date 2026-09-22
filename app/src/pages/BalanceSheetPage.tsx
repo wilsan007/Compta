@@ -29,7 +29,7 @@ export function BalanceSheetPage() {
       if (pick) setSelectedYear(pick.id)
       else setLoading(false)
     }).catch((err: any) => {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       setLoading(false)
     })
   }, [toast, tCommon])
@@ -41,7 +41,7 @@ export function BalanceSheetPage() {
     try {
       setData(await getBalanceSheet({ fiscalYearId: selectedYear }))
     } catch (err: any) { console.error('Failed to load balance sheet:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -46,7 +46,7 @@ export function ManagerExpenseApprovalsPage() {
     try {
       const l = await getExpenseReportLines(r.id)
       setLines(l || [])
-    } catch (e: any) { console.error(e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
+    } catch (e: any) { console.error(e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
   }
 
   if (selectedReport) {
@@ -83,7 +83,7 @@ export function ManagerExpenseApprovalsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('expenses.approvals') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('expenses.approvals') }]} />
       <PageHeader title={t('expenses.approvals')} subtitle={t('expenses.approvalsSubtitle')} />
 
       {loading ? (

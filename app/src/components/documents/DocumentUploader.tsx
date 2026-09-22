@@ -221,7 +221,7 @@ export function DocumentUploader({
             onClick={handleCancel}
             className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-accent"
           >
-            {t('common:cancel')}
+            {t('common:common.cancel')}
           </button>
           <button
             onClick={handleUpload}

@@ -53,7 +53,7 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('payRuns.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('payRuns.title') }]} />
       <PageHeader
         title={t('payRuns.title')}
         subtitle={t('payRuns.subtitle')}

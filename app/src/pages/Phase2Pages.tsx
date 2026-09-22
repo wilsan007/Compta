@@ -21,7 +21,7 @@ export function ProspectsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getProspects() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    try { setItems(await getProspects() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
@@ -83,7 +83,7 @@ export function RepresentativesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', commission_rate: 0, territory: '', active: true, tenant_id: null as string | null })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getSalesRepresentatives() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getSalesRepresentatives() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createSalesRepresentative(form); toast('success', tCommon('common.success'), t('reps.created')); setShowForm(false); setForm({ name: '', email: '', phone: '', commission_rate: 0, territory: '', active: true, tenant_id: null }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -124,7 +124,7 @@ export function WarehouseLocationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getWarehouseLocations() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getWarehouseLocations() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -154,7 +154,7 @@ export function QualityCheckPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', reference_type: 'goods_receipt', reference_id: '', status: 'pending', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getQualityChecks() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getQualityChecks() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createQualityCheck(form as Parameters<typeof createQualityCheck>[0]); toast('success', tCommon('common.success'), t('quality.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -200,7 +200,7 @@ export function PickListPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ number: '', reference_type: 'sales_order', warehouse_id: '', status: 'draft' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPickLists() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getPickLists() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createPickList(form as Parameters<typeof createPickList>[0]); toast('success', tCommon('common.success'), t('picking.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -230,7 +230,7 @@ export function SerialNumbersPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', serial_number: '', status: 'in_stock', warranty_expiry: '', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductSerialNumbers() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductSerialNumbers() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductSerialNumber(form as Parameters<typeof createProductSerialNumber>[0]); toast('success', tCommon('common.success'), t('serials.created')); setShowForm(false); setForm({ product_id: '', serial_number: '', status: 'in_stock', warranty_expiry: '', notes: '' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -260,7 +260,7 @@ export function ProductBatchesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', batch_number: '', quantity: 0, expiry_date: '', status: 'active' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductBatches() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductBatches() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductBatch(form as Parameters<typeof createProductBatch>[0]); toast('success', tCommon('common.success'), t('batches.created')); setShowForm(false); setForm({ product_id: '', batch_number: '', quantity: 0, expiry_date: '', status: 'active' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -290,7 +290,7 @@ export function DocumentTemplatesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', document_type: 'invoice', logo_url: '', primary_color: '#2563eb', secondary_color: '#64748b', is_default: false })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDocumentTemplates() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDocumentTemplates() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDocumentTemplate(form as Parameters<typeof createDocumentTemplate>[0]); toast('success', tCommon('common.success'), t('docTemplates.created')); setShowForm(false); setForm({ name: '', document_type: 'invoice', logo_url: '', primary_color: '#2563eb', secondary_color: '#64748b', is_default: false }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -320,7 +320,7 @@ export function DeliverySchedulePage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ customer_id: '', product_id: '', frequency: 'weekly', quantity: 0, start_date: '', end_date: '', active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDeliverySchedules() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getDeliverySchedules() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createDeliverySchedule(form as Parameters<typeof createDeliverySchedule>[0]); toast('success', tCommon('common.success'), t('schedules.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -350,7 +350,7 @@ export function ProductSubstitutesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', substitute_id: '', priority: 1 })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductSubstitutes() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getProductSubstitutes() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createProductSubstitute(form as Parameters<typeof createProductSubstitute>[0]); toast('success', tCommon('common.success'), t('substitutes.created')); setShowForm(false); setForm({ product_id: '', substitute_id: '', priority: 1 }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
@@ -392,7 +392,7 @@ export function DormantStockPage() {
       const { data, error } = await q
       if (error) throw error
       setItems(data || [])
-    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) } finally { setLoading(false) }
+    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [days, tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 

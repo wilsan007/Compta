@@ -93,7 +93,7 @@ export function RhKnowledgeBasePage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteRhKnowledgeBaseArticle(id)
-      toast('success', tCommon('common.deleted'))
+      toast('success', tCommon('toast.deleted'))
       loadData().catch(err => console.error('loadData:', err))
     } catch (e: any) {
       toast('error', tCommon('common.error'), e.message)
@@ -102,7 +102,7 @@ export function RhKnowledgeBasePage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('knowledgeBase.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('knowledgeBase.title') }]} />
       <PageHeader title={t('knowledgeBase.title')} subtitle={t('knowledgeBase.subtitle')} />
 
       <div className="flex gap-3 mb-4 items-end">

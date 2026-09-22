@@ -23,7 +23,7 @@ export function EmployeeInterviewsPage() {
       setCampaigns(camps || [])
     } catch (err: any) {
       console.error(err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -31,7 +31,7 @@ export function EmployeeInterviewsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('interviews.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('interviews.title') }]} />
       <PageHeader title={t('interviews.title')} subtitle={t('interviews.subtitle')} />
 
       {loading ? (

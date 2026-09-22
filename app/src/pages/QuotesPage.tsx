@@ -46,7 +46,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       })
       setStockMap(sMap)
     } catch (err: any) { console.error('Failed to load quotes:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

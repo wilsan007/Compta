@@ -40,7 +40,7 @@ const [movements, setMovements] = useState<any[]>([])
       setMovements(movs || [])
       setWarehouses(whs || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -70,7 +70,7 @@ const [movements, setMovements] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('inventory.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('inventory.title') }]} />
       <PageHeader title={t('inventory.title')} subtitle={t('inventory.subtitle')}
         action={
           <div className="flex gap-2">
@@ -84,7 +84,7 @@ const [movements, setMovements] = useState<any[]>([])
         <div className="w-56">
           <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('inventory.warehouse')}</label>
           <select className="input" value={selectedWarehouse} onChange={(e) => setSelectedWarehouse(e.target.value)}>
-            <option value="">{t('common.all') || '—'}</option>
+            <option value="">{t('common:common.all') || '—'}</option>
             {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
         </div>

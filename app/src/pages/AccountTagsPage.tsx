@@ -91,7 +91,7 @@ export function AccountTagsPage() {
       toast('success', t('accountTags.title'), t('accountTags.deleteSuccess'))
       await load()
     } catch (err: any) { console.error('Error deleting tag:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -101,7 +101,7 @@ export function AccountTagsPage() {
     try {
       setMappings(await getAccountTagMappings(tag.id))
     } catch (err: any) { console.error('Error loading tag mappings:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 
@@ -128,7 +128,7 @@ export function AccountTagsPage() {
       if (selectedTag) setMappings(await getAccountTagMappings(selectedTag.id))
       toast('success', t('accountTags.title'), t('accountTags.mappingDeleteSuccess'))
     } catch (err: any) { console.error('Error deleting tag mapping:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     }
   }
 

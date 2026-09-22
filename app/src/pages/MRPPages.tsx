@@ -24,7 +24,7 @@ export function MRPPage() {
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -56,7 +56,7 @@ export function MRPPage() {
   async function handleSelectRun(run: any) {
     setSelectedRun(run)
     try { setProposals(await getMRPProposals(run.id)) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }
 
   async function handleDeleteRun(id: string) {
@@ -183,7 +183,7 @@ export function MRPPendingDocsPage() {
 
   const loadData = useCallback(async () => {
     try { setDocs(await getMRPPendingDocs() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

@@ -389,7 +389,8 @@
     "end": "النهاية",
     "autoPeriodsHint": "سيتم إنشاء 12 فترة شهرية تلقائياً عند إنشاء السنة المالية.",
     "maxYears": "الحد الأقصى للسنوات المالية القابلة للاستعلام",
-    "maxYearsDescription": "حتى 10 سنوات مالية قابلة للاستعلام في وقت واحد"
+    "maxYearsDescription": "حتى 10 سنوات مالية قابلة للاستعلام في وقت واحد",
+    "description": "إدارة السنوات المالية وفتراتها"
   },
   "entries": {
     "title": "القيود المحاسبية",
@@ -611,7 +612,8 @@
     "bapError": "خطأ في تعليم الموافقة",
     "marking": "التعليم",
     "markingApplied": "تم تطبيق التعليم",
-    "markingError": "خطأ في تطبيق التعليم"
+    "markingError": "خطأ في تطبيق التعليم",
+    "searchError": "فشل البحث"
   },
   "journalsReport": {
     "breadcrumb": "التقارير",
@@ -663,7 +665,11 @@
     "totalJournals": "إجمالي اليوميات",
     "totalPeriods": "إجمالي الفترات",
     "closedJournals": "يوميات مقفلة",
-    "openJournals": "يوميات مفتوحة"
+    "openJournals": "يوميات مفتوحة",
+    "activeJournals": "اليوميات النشطة",
+    "closedEntries": "القيود المقفلة",
+    "periods": "الفترات",
+    "totalEntries": "إجمالي القيود"
   },
   "saisie": {
     "title": "إدخال اليوميات",
@@ -802,7 +808,12 @@
     "openingLines": "بنود الافتتاح",
     "closingLines": "بنود الإقفال",
     "resultAmount": "نتيجة السنة المالية",
-    "openingEntriesPreview": "معاينة قيود الافتتاح"
+    "openingEntriesPreview": "معاينة قيود الافتتاح",
+    "carryForwardEntry": "قيد الأرصدة الافتتاحية",
+    "closeEntry": "قيد الإقفال",
+    "integrityHash": "بصمة السلامة",
+    "resultAccount": "حساب النتيجة",
+    "resultComputed": "نتيجة السنة المالية: {{amount}}"
   },
   "brouillard": {
     "title": "مسودة اليومية",
@@ -952,7 +963,8 @@
     "category": "البند",
     "amountCol": "المبلغ",
     "generate": "إنشاء حساب النتائج",
-    "generated": "تم إنشاء حساب النتائج بنجاح"
+    "generated": "تم إنشاء حساب النتائج بنجاح",
+    "exceptionalCharges": "الأعباء الاستثنائية"
   },
   "analytic": {
     "title": "الأقسام التحليلية",
@@ -1033,7 +1045,8 @@
     "variancePct": "الانحراف %",
     "status": "الحالة",
     "withinBudget": "ضمن الميزانية",
-    "overrun": "تجاوز"
+    "overrun": "تجاوز",
+    "name": "اسم الميزانية"
   },
   "budgetCommitments": {
     "title": "الالتزامات الميزانية",
@@ -1194,7 +1207,38 @@
     "calculateDepreciation": "حساب الإهلاك",
     "derogatoryDepreciation": "إهلاك استثنائي",
     "subventionAmount": "مبلغ الإعانة",
-    "subventionAccount": "حساب الإعانة"
+    "subventionAccount": "حساب الإعانة",
+    "amount": "المبلغ",
+    "capitalGain": "فائض القيمة",
+    "capitalLoss": "ناقص القيمة",
+    "category": "الفئة",
+    "categoryPlaceholder": "مثال: معدات معلوماتية",
+    "confirmDisposal": "تأكيد التنازل",
+    "cumulative": "المجموع التراكمي",
+    "cumulativeDepreciation": "مجمع الاهتلاكات",
+    "currentNetValue": "القيمة الصافية الحالية",
+    "depMethods": {
+      "declining_balance": "متناقص",
+      "straight_line": "خطي",
+      "units_of_production": "وحدات الإنتاج"
+    },
+    "depreciation": "الاهتلاك",
+    "depreciationHistory": "سجل الاهتلاكات",
+    "disposal": "التنازل",
+    "disposalDate": "تاريخ التنازل",
+    "disposalPrice": "سعر التنازل",
+    "entryNumber": "رقم القيد",
+    "estimatedCurrentValue": "القيمة الحالية المقدرة",
+    "netValue": "القيمة الصافية",
+    "noDepreciation": "لا توجد اهتلاكات مسجلة",
+    "period": "الفترة",
+    "purchaseDate": "تاريخ الاقتناء",
+    "purchaseValue": "قيمة الاقتناء",
+    "recalcComplete": "تمت إعادة حساب الاهتلاكات",
+    "recalcCompleteMsg": "تمت معالجة {{count}} من الأصول الثابتة",
+    "residualValue": "القيمة المتبقية",
+    "totalPurchaseValue": "إجمالي قيمة الاقتناء",
+    "usefulLifeYears": "العمر الإنتاجي (بالسنوات)"
   },
   "analyticBalance": {
     "title": "الميزان التحليلي",
@@ -1247,7 +1291,9 @@
     "type": "النوع",
     "typeSection": "قسم",
     "typeTotal": "إجمالي",
-    "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي."
+    "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي.",
+    "deleteSuccess": "تم حذف القسم التحليلي",
+    "saveSuccess": "تم حفظ القسم التحليلي"
   },
   "balanceSheet": {
     "title": "الميزانية",
@@ -2805,5 +2851,15 @@
     "generateDepreciationEntry": "إنشاء قيد الإهلاك",
     "entryGenerated": "تم إنشاء قيد الإهلاك بنجاح",
     "entryError": "خطأ في إنشاء قيد الإهلاك"
+  },
+  "currencyCode": "العملة",
+  "etats": {
+    "breadcrumb": "القوائم"
+  },
+  "structure": {
+    "breadcrumb": "الهيكل"
+  },
+  "treatment": {
+    "breadcrumb": "المعالجة"
   }
 }

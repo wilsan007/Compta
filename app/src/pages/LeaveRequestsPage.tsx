@@ -26,7 +26,7 @@ const [requests, setRequests] = useState<any[]>([])
       const [reqs, emps] = await Promise.all([getLeaveRequests(statusFilter || undefined), getEmployees()])
       setRequests(reqs || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, tCommon, toast])
 
@@ -50,7 +50,7 @@ const [requests, setRequests] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaveRequests.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaveRequests.title') }]} />
       <PageHeader title={t('leaveRequests.title')} subtitle={t('leaveRequests.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('leaveRequests.new')}</Button>} />
 

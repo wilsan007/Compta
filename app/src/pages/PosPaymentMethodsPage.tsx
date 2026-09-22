@@ -25,7 +25,7 @@ export function PosPaymentMethodsPage() {
         .order('display_order')
       if (error) throw error
       setMethods(data || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -38,7 +38,7 @@ export function PosPaymentMethodsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('pos'), path: '/pos' }, { label: t('payment_methods') }]} />
+      <Breadcrumb items={[{ label: tNav('items.pos'), path: '/pos' }, { label: t('payment_methods') }]} />
       <PageHeader title={t('payment_methods')} />
 
       <Card>

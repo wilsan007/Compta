@@ -182,7 +182,8 @@
       "received": "Reçu",
       "partial": "Partiel",
       "cancelled": "Annulé"
-    }
+    },
+    "purchaseOrder": "Commande fournisseur"
   },
   "payments": {
     "title": "Règlements fournisseurs",

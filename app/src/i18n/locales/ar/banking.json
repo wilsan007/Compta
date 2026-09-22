@@ -60,7 +60,9 @@
     "searchPlaceholder": "البحث بالاسم، IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "حساب(ات)",
+    "connectedAccounts": "الحسابات المتصلة"
   },
   "transactions": {
     "title": "المعاملات البنكية",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "التسوية البنكية",
     "subtitle": "سوِّ معاملاتك البنكية",
-    "selectAccount": "اختر حساباً",
+    "selectAccount": "يرجى اختيار حساب",
     "allAccounts": "جميع الحسابات",
     "bankBalance": "الرصيد البنكي",
     "accountingBalance": "الرصيد المحاسبي",
@@ -125,7 +127,7 @@
     "reconcileBtn": "تسوية",
     "smartMatch": "تسوية ذكية",
     "smartResult": "تم العثور على {{matched}} تطابق",
-    "selectAccount": "يرجى اختيار حساب"
+    "autoMatchResult": "{{matched}} مطابقة، {{unmatched}} غير مطابقة"
   },
   "rules": {
     "title": "قواعد بنكية",
@@ -154,8 +156,25 @@
       "startsWith": "يبدأ بـ",
       "endsWith": "ينتهي بـ",
       "greaterThan": "أكبر من",
-      "lessThan": "أقل من"
-    }
+      "lessThan": "أقل من",
+      "greater_than": "أكبر من",
+      "less_than": "أصغر من",
+      "starts_with": "يبدأ بـ"
+    },
+    "accountCode": "رمز الحساب",
+    "accountCodePlaceholder": "مثال: 626100",
+    "category": "الفئة",
+    "categoryPlaceholder": "مثال: مصاريف بنكية",
+    "condition": "الشرط",
+    "field": "الحقل",
+    "fields": {
+      "amount": "المبلغ",
+      "description": "البيان",
+      "reference": "المرجع"
+    },
+    "operator": "العامل",
+    "value": "القيمة",
+    "vatRate": "نسبة الضريبة على القيمة المضافة (%)"
   },
   "pdfReconciliation": {
     "title": "مطابقة عبر PDF",

@@ -22,7 +22,7 @@ export function AnalyticPlansPage() {
       const data = await getAnalyticPlans()
       setPlans(data || [])
     } catch (err: any) { console.error('Failed to load analytic plans:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -51,7 +51,7 @@ export function AnalyticPlansPage() {
     }
   }
 
-  const tableHeaders = [t('analyticPlans.code'), t('analyticPlans.name'), t('analyticPlans.description'), t('analyticPlans.default'), tCommon('common.table.actions')]
+  const tableHeaders = [t('analyticPlans.code'), t('analyticPlans.name'), t('analyticPlans.description'), t('analyticPlans.default'), tCommon('table.actions')]
 
   return (
     <div>

@@ -97,7 +97,7 @@ export function ProductGridsPage() {
           value={selectedProduct}
           onChange={(e) => setSelectedProduct(e.target.value)}
           options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...products.map(p => ({ value: p.id, label: `${p.name} (${p.sku || '-'})` })),
           ]}
         />
@@ -126,7 +126,7 @@ export function ProductGridsPage() {
                 description={t('grids.noGridsDescription')}
               />
             ) : (
-              <Table headers={[t('grids.name'), t('grids.axis'), t('grids.values'), tCommon('table.status'), tCommon('table.actions')]}>
+              <Table headers={[t('grids.name'), t('grids.axis'), t('grids.values'), tCommon('common.status'), tCommon('table.actions')]}>
                 {grids.map((g) => (
                   <TableRow key={g.id}>
                     <TableCell className="font-medium">{g.name}</TableCell>
@@ -150,7 +150,7 @@ export function ProductGridsPage() {
               <div className="px-4 py-3 border-b border-[var(--color-border)]">
                 <h3 className="text-sm font-semibold">{t('grids.combinations')}</h3>
               </div>
-              <Table headers={[t('grids.matrix'), t('grids.sku'), t('grids.barcode'), t('grids.priceOverride'), t('grids.stock'), tCommon('table.status')]}>
+              <Table headers={[t('grids.matrix'), t('grids.sku'), t('grids.barcode'), t('grids.priceOverride'), t('grids.stock'), tCommon('common.status')]}>
                 {combinations.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="text-xs">{Object.entries(c.combination || {}).map(([k, v]) => `${k}: ${v}`).join(' | ')}</TableCell>

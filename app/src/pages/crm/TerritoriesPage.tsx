@@ -67,7 +67,7 @@ export function TerritoriesPage() {
       ) : territories.length === 0 ? (
         <EmptyState icon={<MapPin className="w-8 h-8" />} title={t('territories.noTerritories')} description={t('territories.noTerritoriesDescription')} />
       ) : (
-        <Table headers={[t('territories.name'), t('territories.code'), t('territories.salesRep'), t('territories.regions'), tCommon('table.status'), tCommon('table.actions')]}>
+        <Table headers={[t('territories.name'), t('territories.code'), t('territories.salesRep'), t('territories.regions'), tCommon('common.status'), tCommon('table.actions')]}>
           {territories.map(terr => (
             <TableRow key={terr.id}>
               <TableCell className="font-medium">{terr.name}</TableCell>
@@ -134,7 +134,7 @@ function TerritoryForm({ reps, onClose, onSaved }: { reps: SalesRepresentative[]
           <Input label={t('territories.name')} required value={name} onChange={(e) => setName(e.target.value)} />
           <Input label={t('territories.code')} value={code} onChange={(e) => setCode(e.target.value)} />
           <Select label={t('territories.salesRep')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...reps.map(r => ({ value: r.id, label: r.name })),
           ]} />
           <Input label={t('territories.regions')} placeholder="Region1, Region2" value={regionsInput} onChange={(e) => setRegionsInput(e.target.value)} />

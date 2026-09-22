@@ -44,8 +44,8 @@ export function EmployeeExpensesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('actions.confirmDelete'))) return
-    try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('common.deleted')) }
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('toast.deleted')) }
     catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
 
@@ -55,7 +55,7 @@ export function EmployeeExpensesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('expenses.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('expenses.title') }]} />
       <PageHeader
         title={t('expenses.title')}
         subtitle={t('expenses.subtitle')}
@@ -180,7 +180,7 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
       setCategories(cats || [])
     } catch (err: any) {
       console.error(err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally { setLoading(false) }
   }, [report.id, tCommon, toast])
 

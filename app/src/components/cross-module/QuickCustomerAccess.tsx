@@ -41,7 +41,7 @@ export function QuickCustomerAccess({ onClose, onSaved, forceInline }: QuickCust
     setLoading(true)
     try {
       setCustomers(await getCustomers())
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

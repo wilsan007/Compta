@@ -28,7 +28,7 @@ export function MealVouchersPage() {
       const [cfg, runs] = await Promise.all([getMealVoucherConfig(), getPayRuns()])
       setConfig(cfg)
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -68,7 +68,7 @@ export function MealVouchersPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('mealVouchers.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('mealVouchers.title') }]} />
       <PageHeader title={t('mealVouchers.title')} subtitle={t('mealVouchers.subtitle')} />
 
       <div className="flex justify-between items-end mb-3">

@@ -277,6 +277,7 @@ Ces modules ont été moins audités le 21/09. Le lot commence donc par **mesure
 | `AUD-I03` | États financiers sans choix d'exercice | Sélecteur d'exercice et de dates sur bilan, compte de résultat, SIG, balance |
 | `AUD-I04` | Messages d'erreur techniques remontés tels quels (« violates not-null constraint ») | Traduire les erreurs métier des triggers en clés i18n (fr/en/ar) ; jamais de message SQL brut à l'écran |
 | `AUD-I05` | Contraste (H du suivi, 2 points ouverts) | Clore les 2 décisions en attente |
+| `AUD-I06` | `i18n:check` ne contrôle que la parité fr/en/ar, jamais qu'une clé appelée dans le code existe : clés brutes à l'écran (31 `purchaseInvoices.*`, `toast.loadError` partout) | Contrôle CI des clés littérales par espace de noms ; ajouter ou corriger chaque clé manquante |
 
 ---
 
@@ -446,6 +447,17 @@ Après relecture : 180 (**22**), 192 (**15**) verts ; PostgREST **1 489** requê
 **Non vérifié** : l'affichage dans le navigateur ; les e2e (lot J) ; le rejeu sur une copie de prod, pourtant nécessaire avant déploiement puisque la prod est à 188 (reprises de la 190 : comptes et journaux créés pour les comptes bancaires existants).
 
 **Restes identifiés** : `vat_account_mapping` envoie `FR20` et `AUTOLIQ` vers les mêmes comptes (445711/445661), à séparer pour la déclaration de TVA ; `toast.loadError` et d'autres clés manquent dans plusieurs écrans (lot I) ; le paiement des salaires (D 421 / C 512) n'est pas généré.
+
+
+### Lot I, `AUD-I06` — clés i18n utilisées — 21/09/2026
+
+Nouveau contrôle `scripts/check-i18n-usage.mjs` (`npm run i18n:usage`, enchaîné par `npm run i18n:check`, étape du job CI `i18n-check`). Il lit `src/` avec le compilateur TypeScript, relie chaque `t` / `tCommon` / `tX` au `useTranslation(ns, { keyPrefix })` qui l'a produit (portée comprise), et résout les clés littérales comme i18next : préfixe `ns:`, option `ns`, pluriels avec `count`, variantes avec `context`, objets seulement avec `returnObjects`. Clés dynamiques ignorées (359 appels) ; une `defaultValue` ne dispense pas la clé d'exister. Non suivi : une fonction `t` reçue en paramètre ou en prop.
+
+**Vu rouge sur l'état après V3** : 661 appels en défaut, 261 clés distinctes, 212 fichiers. Dont `common:toast.loadError` (235 appels), un espace de noms `inventory` inexistant (écrans produits et listes de prix entièrement en clés brutes), `nav:sections.*` (54 fils d'Ariane), les écrans immobilisations (`assets.*` au lieu de `fixedAssets.*`), contrôle du crédit client, traçabilité des lots, réservations de stock, moyens de paiement POS, règles bancaires.
+
+**Correction** : environ 400 appels réécrits vers une clé existante (`toast.loadError` → `toast.loadingError`, `inventory` → `stock`, `sections.hr` → `groups.hr`, `team:guestX` → `team.guestX`…) ; 154 clés ajoutées en fr/en/ar. Contrôle vert : 12 660 appels littéraux vérifiés. Parité, oxlint, `tsc -b`, 1 393 tests unitaires verts.
+
+**Non vérifié** : l'affichage dans le navigateur ; la relecture des traductions arabes par un locuteur.
 
 ---
 

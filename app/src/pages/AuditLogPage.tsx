@@ -24,7 +24,7 @@ export function AuditLogPage() {
       setLogs(data || [])
     } catch (err: any) {
       console.error('Error loading audit log:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -35,7 +35,7 @@ export function ActionCreationDialog({ open, onClose, onConfirm }: ActionCreatio
       maxWidth="28rem"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>{tCommon('cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('common.cancel')}</Button>
           <Button onClick={handleConfirm} disabled={!title.trim()}>{t('action.create')}</Button>
         </>
       }

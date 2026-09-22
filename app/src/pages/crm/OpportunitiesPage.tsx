@@ -93,7 +93,7 @@ export function OpportunitiesPage() {
           <input type="text" placeholder={t('opportunities.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-9" />
         </div>
         <Select value={filterRep} onChange={(e) => setFilterRep(e.target.value)} options={[
-          { value: '', label: tCommon('select.all') },
+          { value: '', label: tCommon('common.all') },
           ...reps.map(r => ({ value: r.id, label: r.name })),
         ]} />
       </div>
@@ -217,7 +217,7 @@ function OpportunityForm({ customers, reps, onClose, onSaved }: { customers: Cus
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('opportunities.titleField')} required value={title} onChange={(e) => setTitle(e.target.value)} />
           <Select label={t('opportunities.customer')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...customers.map(c => ({ value: c.id, label: c.name })),
           ]} />
           <div className="grid grid-cols-2 gap-4">
@@ -229,7 +229,7 @@ function OpportunityForm({ customers, reps, onClose, onSaved }: { customers: Cus
             <Input label={t('opportunities.expectedCloseDate')} type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
           </div>
           <Select label={t('opportunities.salesRep')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} options={[
-            { value: '', label: tCommon('select.choose') },
+            { value: '', label: tCommon('form.selectPlaceholder') },
             ...reps.map(r => ({ value: r.id, label: r.name })),
           ]} />
           <Input label={t('opportunities.source')} value={source} onChange={(e) => setSource(e.target.value)} />

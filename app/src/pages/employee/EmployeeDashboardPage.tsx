@@ -37,7 +37,7 @@ export function EmployeeDashboardPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('dashboard.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('dashboard.title') }]} />
       <PageHeader
         title={t('dashboard.welcome', { name: `${emp?.first_name || ''} ${emp?.last_name || ''}` })}
         subtitle={t('dashboard.title')}

@@ -27,7 +27,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
       const [rcpts, sups] = await Promise.all([getGoodsReceipts(statusFilter || undefined), getSuppliers()])
       setReceipts(rcpts || [])
       setSuppliers(sups || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -46,7 +46,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('goodsReceipts.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('goodsReceipts.title') }]} />
       <PageHeader title={t('goodsReceipts.title')} subtitle={`${receipts.length} ${t('goodsReceipts.title').toLowerCase()}`}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('goodsReceipts.new')}</Button>} />
 

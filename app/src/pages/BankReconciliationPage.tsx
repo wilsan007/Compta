@@ -24,7 +24,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       setTransactions(txns)
       setAccounts(accs)
     } catch (err: any) { console.error('Failed to load:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

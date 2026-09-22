@@ -24,7 +24,7 @@ export function StockMovementsPage() {
       const [movs, whs] = await Promise.all([getStockMovements(undefined, whFilter || undefined), getWarehouses()])
       setMovements(movs || [])
       setWarehouses(whs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [whFilter, tCommon, toast])
 
@@ -32,7 +32,7 @@ export function StockMovementsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('movements.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('movements.title') }]} />
       <PageHeader title={t('movements.title')} subtitle={`${movements.length} mouvement(s)`} />
 
       <div className="flex gap-3 mb-4 items-end">

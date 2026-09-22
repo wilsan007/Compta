@@ -25,7 +25,7 @@ export function MachinesPage() {
       const [macs, wcs] = await Promise.all([getMachines(), getWorkCenters()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 

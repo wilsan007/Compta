@@ -53,7 +53,7 @@ export function ThirdPartyAccountsPage() {
       setChartAccounts(ca || [])
     } catch (err: any) {
       console.error('Error loading third party accounts:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

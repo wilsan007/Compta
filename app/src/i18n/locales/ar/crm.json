@@ -90,7 +90,8 @@
     "conversionRate": "معدل التحويل",
     "sentCount": "المرسلة",
     "noCampaigns": "لا توجد حملات",
-    "noCampaignsDescription": "أنشئ حملتك الأولى"
+    "noCampaignsDescription": "أنشئ حملتك الأولى",
+    "description": "الوصف"
   },
   "territories": {
     "title": "المناطق",

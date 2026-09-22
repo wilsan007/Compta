@@ -42,12 +42,12 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                 return total / 12
               })
             }
-          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
+          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
         }
       }
       setRealized(realizedMap)
     } catch (err: any) { console.error('Error loading budgets:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

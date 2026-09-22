@@ -23,7 +23,7 @@ export function TvsPage() {
       const data = await getTvsDeclarations()
       setDecls(data || [])
     } catch (err: any) { console.error('Failed to load TVS declarations:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -50,7 +50,7 @@ export function TvsPage() {
     t('tvs.amountAge'),
     t('tvs.amountTotal'),
     t('tvs.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (

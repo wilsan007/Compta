@@ -43,7 +43,7 @@ export function ManufacturingOrderDetailPage() {
         const prod = (prods || []).find((p: any) => p.id === moData.product_id)
         if ((prod as any)?.units_per_carton) setLabelQty((prod as any).units_per_carton)
       }
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [id, tCommon, toast])
 
@@ -52,16 +52,16 @@ export function ManufacturingOrderDetailPage() {
   async function loadTabData(tab: string) {
     if (!id) return
     if (tab === 'labels' && labels.length === 0) {
-      try { setLabels(await getOFLabels(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      try { setLabels(await getOFLabels(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     }
     if (tab === 'lots' && lots.length === 0) {
-      try { setLots(await getOFLots(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      try { setLots(await getOFLots(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     }
     if (tab === 'consumptions' && consumptions.length === 0) {
-      try { setConsumptions(await getOFConsumptions(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      try { setConsumptions(await getOFConsumptions(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
-      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     }
   }
 

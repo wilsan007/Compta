@@ -22,7 +22,7 @@ export function FiscalBackupPage() {
       const data = await getFiscalBackups()
       setBackups(data || [])
     } catch (err: any) { console.error('Failed to load fiscal backups:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

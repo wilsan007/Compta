@@ -21,7 +21,7 @@ const [rules, setRules] = useState<BankRule[]>([])
     try {
       setRules(await getBankRules())
     } catch (err: any) { console.error('Failed to load rules:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

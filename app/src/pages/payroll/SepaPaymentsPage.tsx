@@ -23,7 +23,7 @@ export function SepaPaymentsPage() {
       const [ords, runs] = await Promise.all([getSepaPaymentOrders(), getPayRuns()])
       setOrders(ords || [])
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -61,7 +61,7 @@ export function SepaPaymentsPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('sepa.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('sepa.title') }]} />
       <PageHeader title={t('sepa.title')} subtitle={t('sepa.subtitle')} />
 
       {loading ? <SkeletonTable rows={4} cols={7} /> : orders.length === 0 ? (

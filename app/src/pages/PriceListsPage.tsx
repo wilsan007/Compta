@@ -10,7 +10,7 @@ import { confirmSync } from '@/lib/confirm'
 
 export function PriceListsPage() {
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
 const [lists, setLists] = useState<PriceList[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -25,7 +25,7 @@ const [lists, setLists] = useState<PriceList[]>([])
       const [pls, prods] = await Promise.all([getPriceLists(), getProducts()])
       setLists(pls || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -40,7 +40,7 @@ const [lists, setLists] = useState<PriceList[]>([])
         try {
           const lns = await getPriceListLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
@@ -130,7 +130,7 @@ const [lists, setLists] = useState<PriceList[]>([])
 function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [code, setCode] = useState('')
   const [type, setType] = useState('sales')
@@ -178,7 +178,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceListId: string; products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [unitPrice, setUnitPrice] = useState(0)
   const [minQuantity, setMinQuantity] = useState(1)

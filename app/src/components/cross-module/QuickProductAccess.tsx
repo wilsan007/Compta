@@ -42,7 +42,7 @@ export function QuickProductAccess({ onClose, onSaved, forceInline }: QuickProdu
     setLoading(true)
     try {
       setProducts(await getProducts())
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       /* ignore */
     } finally {
       setLoading(false)

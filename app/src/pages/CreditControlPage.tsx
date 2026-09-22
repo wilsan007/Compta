@@ -27,7 +27,7 @@ export function CreditControlPage() {
         .order('name')
       if (error) throw error
       setCustomers(data || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -63,7 +63,7 @@ export function CreditControlPage() {
         try {
           const result = await calculateLatePaymentPenalties(inv.id)
           total += Number(result?.penalty_amount ?? result ?? 0)
-        } catch (e: any) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
+        } catch (e: any) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
       }
       toast('success', tCommon('common.success'), t('penalties_result', { amount: total, count: invoices.length }))
     } catch (err: any) {
@@ -75,7 +75,7 @@ export function CreditControlPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sales'), path: '/sales' }, { label: t('credit_control') }]} />
+      <Breadcrumb items={[{ label: tNav('items.sales'), path: '/sales' }, { label: t('credit_control') }]} />
       <PageHeader title={t('credit_control')} />
 
       <div className="mb-4 flex justify-end">

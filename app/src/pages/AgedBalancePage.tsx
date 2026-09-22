@@ -25,7 +25,7 @@ export function AgedBalancePage() {
       setData(res)
     } catch (err: any) {
       console.error('Error loading aged balance:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError'))
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

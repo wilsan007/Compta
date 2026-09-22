@@ -21,7 +21,7 @@ export function WorkflowsPage() {
 
   const loadData = useCallback(async () => {
     try { setWorkflows(await getWorkflows() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -159,7 +159,7 @@ export function EquivalencesPage() {
       const [eqs, prods] = await Promise.all([getProductEquivalences(), getProducts()])
       setEquivalences(eqs || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -245,7 +245,7 @@ export function OFDocumentAccessPage() {
 
   const loadData = useCallback(async () => {
     try { setAccessList(await getOFDocumentAccess() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

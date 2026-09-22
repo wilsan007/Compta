@@ -42,7 +42,7 @@ export function DocumentManagementPage() {
           try {
             const docs = await getEmployeeDocuments(emp.id)
             allDocs.push(...docs)
-          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadError')) }
+          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
         }
         setDocuments(allDocs)
       }
@@ -110,7 +110,7 @@ export function DocumentManagementPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('demat.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('demat.title') }]} />
       <PageHeader title={t('demat.title')} subtitle={t('demat.subtitle')} />
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -140,7 +140,7 @@ export function DocumentManagementPage() {
                       <TableCell>{doc.e_signed ? <PenTool className="w-4 h-4 text-blue-600" /> : '-'}</TableCell>
                       <TableCell className="text-xs">{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('common.deleted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
+                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('toast.deleted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -29,7 +29,7 @@ const [contracts, setContracts] = useState<any[]>([])
       const [cs, emps] = await Promise.all([getContracts(), getEmployees()])
       setContracts(cs || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -50,7 +50,7 @@ const [contracts, setContracts] = useState<any[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('contracts.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('contracts.title') }]} />
       <PageHeader title={t('contracts.title')} subtitle={t('contracts.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('contracts.new')}</Button>} />
 

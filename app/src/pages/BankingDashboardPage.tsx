@@ -36,7 +36,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.dashboards') }, { label: t('title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.dashboards') }, { label: t('title') }]} />
       <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       {loading ? (
