@@ -25,8 +25,8 @@ function extractTableNames() {
   const files = readdirSync(sqlDir).filter(f => f.endsWith('.sql'))
   for (const file of files) {
     const content = readFileSync(join(sqlDir, file), 'utf8')
-    // CREATE TABLE IF NOT EXISTS table_name (
-    const matches = content.matchAll(/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+(\w+)/gi)
+    // CREATE TABLE IF NOT EXISTS [public.]table_name (
+    const matches = content.matchAll(/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+(?:public\.)?"?(\w+)/gi)
     for (const m of matches) {
       tables.add(m[1])
     }
@@ -83,8 +83,21 @@ const SYSTEM_TABLES = [
   'supabase_migrations', 'schema_migrations',
 ]
 
+// Tables lues et écrites uniquement par des fonctions SQL (triggers, RPC) :
+// aucun écran n'a à les lire. Chaque entrée dit pourquoi ; ne pas s'en servir
+// pour masquer une table métier qui attend son écran.
+const SERVER_ONLY_TABLES = {
+  journal_posting_sequences: '187 — compteur de numérotation des écritures validées (post_journal_entry)',
+  chart_required_accounts: '201 — comptes exigés avant publication d\'un plan (contrôle serveur)',
+  chart_provisional_fallbacks: '201 — correspondances du plan provisoire DJ, lues par la bascule',
+  chart_pack_switch_log: '201 — journal technique des bascules de plan',
+  payroll_account_mapping: '191 — comptes de la paie par rubrique, lus par payroll_post_run ; remplacés par les rôles de comptes (LOC1-34), pas d\'écran prévu',
+  platform_admins: '201 — administrateurs plateforme, vérifiés par les RPC d\'import de plan',
+}
+
 function isBusinessTable(name) {
   if (SYSTEM_TABLES.includes(name)) return false
+  if (Object.hasOwn(SERVER_ONLY_TABLES, name)) return false
   for (const prefix of SYSTEM_TABLE_PREFIXES) {
     if (name.startsWith(prefix)) return false
   }

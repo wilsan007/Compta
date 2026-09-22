@@ -20,7 +20,7 @@ export interface ChartPackRow {
   vat_rate?: string
 }
 
-export type ChartAccountType = 'asset' | 'liability' | 'equity' | 'income' | 'expense'
+type ChartAccountType = 'asset' | 'liability' | 'equity' | 'income' | 'expense'
 
 export interface ChartPackStatus {
   pack_code: string
