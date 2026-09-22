@@ -2,8 +2,8 @@
   "files": 30,
   "dependencies": 0,
   "devDependencies": 0,
-  "exports": 24,
+  "exports": 23,
   "types": 13,
-  "total": 67,
-  "frozenAt": "2026-09-18"
+  "total": 66,
+  "frozenAt": "2026-09-22"
 }

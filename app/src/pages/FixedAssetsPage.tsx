@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset } from '@/lib/queries/accounting'
+import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, getFiscalYears } from '@/lib/queries/accounting'
 import { calculateDepreciation } from '@/lib/queries/businessFunctions'
 import { calculateAllDepreciation } from '@/lib/queries/misc'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
-import type { FixedAsset, AssetDepreciation } from '@/types'
+import type { FixedAsset, AssetDepreciation, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
@@ -406,6 +406,31 @@ function AssetAccountingModal({ asset, onClose, onSaved }: { asset: FixedAsset; 
   const [accountExpenseDep, setAccountExpenseDep] = useState(asset.account_expense_depreciation_code || '')
   const [assetJournal, setAssetJournal] = useState(asset.journal_id || '')
   const [saving, setSaving] = useState(false)
+  // R-01 : la dotation se comptabilise dans l'exercice ouvert
+  const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
+  const [generating, setGenerating] = useState(false)
+  const openYear = fiscalYears.find((y) => y.status === 'open')
+
+  useEffect(() => {
+    getFiscalYears().then((years) => setFiscalYears(years || [])).catch(() => setFiscalYears([]))
+  }, [])
+
+  async function handleGenerateEntry() {
+    if (!openYear) {
+      toast('warning', t('assetAccounts.title'), t('assetAccounts.noOpenYear'))
+      return
+    }
+    setGenerating(true)
+    try {
+      await generateDepreciationEntry(asset.id, openYear.id)
+      toast('success', t('assetAccounts.title'), t('assetAccounts.entryGenerated'))
+      onSaved()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('assetAccounts.entryError'))
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -445,6 +470,9 @@ function AssetAccountingModal({ asset, onClose, onSaved }: { asset: FixedAsset; 
           <Input label={t('assetAccounts.journal')} value={assetJournal} onChange={(e) => setAssetJournal(e.target.value)} placeholder="IMMO" />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button variant="secondary" type="button" loading={generating} disabled={!openYear} onClick={handleGenerateEntry}>
+              <Calculator className="w-4 h-4" aria-hidden="true" /> {t('assetAccounts.generateDepreciationEntry')}
+            </Button>
             <Button type="submit" loading={saving}>{t('assetAccounts.save')}</Button>
           </div>
         </form>

@@ -85,6 +85,10 @@
     "filterByType": "Filtrer par type",
     "numberAssigned": "Le numéro de facture (FAC-exercice-n°) est attribué à la validation, dans l'ordre chronologique.",
     "atLeastOneLine": "Ajoutez au moins une ligne avec une désignation et un montant.",
+    "advanceDeductions": "Acomptes à déduire",
+    "advanceDeductionLine": "Déduction de l'acompte {{number}}",
+    "advanceRemaining": "reste {{amount}} HT (TVA {{rate}} %)",
+    "advanceExceedsTotal": "Les acomptes déduits dépassent le montant de la facture.",
     "draftCreated": "Brouillon enregistré. Le numéro définitif sera attribué à la validation.",
     "advanceAmount": "Montant de l'acompte"
   },

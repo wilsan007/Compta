@@ -353,7 +353,7 @@ Les vagues V3 et V4 peuvent avancer en parallèle si deux personnes travaillent 
 |---|---|---|---|
 | 1 | Trop-perçu client | E08 | Refuser le paiement, ou le porter en avance client (4191) |
 | 2 | Numérotation des factures | E04 | Compteur par exercice (`FAC-2026-000001`) ou continu sur toute la vie de la société |
-| 3 | Affectation du résultat | D04 | Automatique en report à nouveau, ou écran d'affectation obligatoire avant de clore l'exercice suivant |
+| 3 | Affectation du résultat | D04 | **Décidé le 22/09 : écran d'affectation obligatoire** avant de clore l'exercice suivant (voir journal V2) |
 | 4 | `generate-pdf` | H03 | Corriger ou retirer du déploiement |
 | 5 | Import OCR via OpenAI | H04 | Garder avec consentement, remplacer, ou retirer |
 | 6 | Rotation de la clé Supabase | H05 | À faire par vous |
@@ -387,15 +387,16 @@ Protocole suivi : chaque nouveau scénario a été vu rouge sur le code d'avant 
 | `AUD-D01` à `D06`, `D08` | **OK** | `sql/189_closing_and_statements.sql` : `close_fiscal_year` réécrite ; bilan, balance et compte de résultat sur une règle de périmètre commune (un exercice reporté par ses à-nouveaux n'est plus relu). Nouveaux scénarios D08 (états après clôture), D09 (ordre des clôtures, exercice suivant retrouvé) et R08 (compte hors plan au bilan), vus rouges. 179 : **17/17 verts**. `BalanceSheetPage` : le sélecteur d'exercice pilote enfin les données, les comptes non classés s'affichent et un bandeau signale un écart. |
 | `AUD-D07` | **OK** | Surcharge `close_fiscal_year(uuid)` supprimée ; compte de résultat hors journal `CL`. |
 | `AUD-D09` | **OK** | `getSIGData` passe par `get_income_statement`. Chiffre d'affaires du tableau de bord : comptes 70 HT de l'exercice en cours, et non plus le TTC des factures payées. |
-| Test de propriété | **OK** | `sql/189_accounting_property_tests.sql`, branché en CI. 3 exercices, **100 000 écritures** : 7 invariants verts ; clôtures en 0,9 s (seuil 30 s) ; 53 s au total. Sur le code d'avant la 189, 5 invariants sur 7 échouent. |
+| Test de propriété | **OK** | `sql/189_accounting_property_tests.sql`, branché en CI. 3 exercices, **100 000 écritures** : 7 invariants verts ; clôtures en 3,2 s et 2,4 s (seuil 30 s) ; **2 min 20 au total** le 22/09 après le correctif de plan (le fichier fait `ANALYZE` après son chargement et fige les écritures avant de lire les lignes — sinon, sous RLS et statistiques périmées, un contrôle prenait 39 s au lieu de 99 ms et la CI dépassait 15 min). Sur le code d'avant la 189, 5 invariants sur 7 échouent. |
+| Affectation du résultat (décision n° 3) | **OK** | Dans la 189 : l'exercice mémorise son résultat à la clôture (`closing_result`). `allocate_result(exercice, répartition, date)` passe l'affectation dans l'exercice suivant : bénéfice en 106/108/110/457, perte en 119/106/110/108, somme égale au résultat au centime, une seule fois. `close_fiscal_year` refuse de clôturer N+1 tant que le résultat de N n'est pas affecté. L'ancienne `allocate_result`, qui débitait 120 même en cas de perte, est supprimée. D10 et D11 vus rouges puis verts. Écran : carte « Affectation du résultat » dans la page de clôture, qui bloque la clôture suivante ; 3 tests d'écran, dont 2 vus rouges sur l'ancienne page. Le test de propriété affecte le résultat 2023 entre les deux clôtures. |
 | Performance de la validation | **OK** | Trouvé par le test de propriété sur base neuve : **100 000 validations en 18 min**. Cause : `log_nf525_event` cherchait le dernier maillon de la chaîne NF525 sans index sur `(tenant_id, id)`, donc le coût de chaque validation croissait avec l'historique de la société. Le défaut existe aussi en production. Index ajouté dans la 189 : 30 000 validations passent de 50,6 s à 6,8 s, et 100 000 prennent 25 s. |
+| Performance des états | **OK** | Trouvé le 22/09 en rejouant le test sur une base qui contient déjà d'autres sociétés : **un compte de résultat prenait 14 s** sur 40 000 écritures. Dans ces fonctions, le planificateur estimait une écriture pour la société et relisait toutes ses lignes pour chacune (29 millions de lignes écartées). Les quatre fonctions d'états (compte de résultat, tendance mensuelle, bilan, balance) partent désormais des écritures de l'exercice et lisent leurs lignes par `journal_id`, avec une barrière `OFFSET 0`, ce qui rend le plan indépendant des statistiques : 15,7 s → 0,24 s. Le cas se présente en production pour une société qui grossit entre deux passages d'`ANALYZE`. |
 
 **Écarts assumés par rapport au plan** :
 - une ligne 0/0 n'est pas enregistrée (au lieu d'être refusée) ; une ligne ramenée à 0/0 bloque la validation ;
 - le numéro définitif est une colonne à part, `posting_number` (`OD-2025-000001`) ; `number` reste le numéro de saisie ;
 - `post_journal_entry` range en `OD` une écriture sans journal ;
-- `allocate_result` n'est pas réécrite (décision n° 3 en attente) ;
-- `generate_depreciation_entry`, `generate_residual_entry` et `post_deferred_charge` restent cassées comme avant (en-tête créé directement en « posted », comptes fictifs `6_____`). Elles sont désormais refusées dès l'en-tête. Elles relèvent du lot G.
+- `generate_depreciation_entry`, `generate_residual_entry` et `post_deferred_charge` ont été réparées après coup par la **211** (phase 1 du reste-à-faire du 22/09) : brouillard puis validation, comptes du plan, contrepartie de tiers sur l'écart, idempotence ; 16 scénarios dans `sql/211_asset_deferred_tests.sql` (14 rouges avant).
 
 **Tests retouchés, et pourquoi** : P02 était un **faux vert** (sans écriture, l'`UPDATE` ne touchait rien et le test concluait « ok ») ; il exige maintenant une écriture validée. S03 vérifie les comptes de repli réels (445710/445660). Les sociétés de test reçoivent plan, journaux et exercice (`_mk_tenant`, `ci/ledger_fixture.sql`), comme une société réelle depuis la 183. Deux tests unitaires décrivaient l'ancien `getFECData` ; deux tests SIG ne vérifiaient rien et ont été remplacés.
 
@@ -479,8 +480,6 @@ Nouveau contrôle `scripts/check-i18n-usage.mjs` (`npm run i18n:usage`, enchaîn
 **Correction** : environ 400 appels réécrits vers une clé existante (`toast.loadError` → `toast.loadingError`, `inventory` → `stock`, `sections.hr` → `groups.hr`, `team:guestX` → `team.guestX`…) ; 154 clés ajoutées en fr/en/ar. Contrôle vert : 12 660 appels littéraux vérifiés. Parité, oxlint, `tsc -b`, 1 393 tests unitaires verts.
 
 **Non vérifié** : l'affichage dans le navigateur ; la relecture des traductions arabes par un locuteur.
-
----
 
 ---
 

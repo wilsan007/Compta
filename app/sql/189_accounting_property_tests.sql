@@ -9,11 +9,19 @@
 --   P2  compte de résultat = Σ classe 7 − Σ classe 6, calculé indépendamment
 --   P3  bilan : Σ des soldes = 0 (actif = passif + capitaux propres + résultat)
 --   P4  après clôture : classes 6/7 à zéro, à-nouveaux = soldes de clôture compte par compte
---   P5  deux clôtures successives : à-nouveaux N+2 = cumul des soldes hors 6/7, sans double comptage
+--   P5  deux clôtures successives (résultat N affecté entre les deux) : à-nouveaux N+2 = cumul
+--       des soldes hors 6/7, sans double comptage
 --   P6  chaque clôture en moins de 30 s
 --   P7  numéros définitifs continus : pour chaque journal et exercice, 1..n sans trou
 --
 -- Nombre d'écritures : variable psql `n` (défaut 100000), p. ex. -v n=5000 en local.
+--
+-- Le fichier charge en masse puis interroge : deux précautions, mesurées, pour que
+-- le temps d'exécution mesure le produit et non l'état des statistiques du
+-- planificateur — `ANALYZE` après le chargement et, dans les contrôles, les
+-- écritures du périmètre figées avant les lignes (`journal_lines` lues par
+-- `journal_id`). Sans elles : 39 s au lieu de 99 ms sur un seul contrôle à
+-- 20 000 écritures, et plus de 15 min en CI sur les 100 000 (22/09/2026).
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '189', false);
@@ -80,6 +88,12 @@ BEGIN
   d_post := clock_timestamp() - t0;
   RAISE NOTICE 'Validation de % écritures : %', n, d_post;
 
+  -- Statistiques rafraîchies après le chargement en masse, comme en production
+  -- (autovacuum). Sans elles, le planificateur estime « 1 ligne » pour la société
+  -- et la clôture comme les contrôles de ce fichier partent en boucle imbriquée.
+  ANALYZE journal_entries;
+  ANALYZE journal_lines;
+
   PERFORM _as_user();
 
   -- P7 — numéros définitifs continus par journal et exercice
@@ -99,10 +113,18 @@ BEGIN
     FOR fy IN SELECT id, code, start_date, end_date FROM fiscal_years WHERE tenant_id = t AND code IN ('2023', '2024', '2025') ORDER BY code LOOP
       SELECT sum(closing_debit), sum(closing_credit) INTO v_d, v_c FROM get_trial_balance(fy.id, NULL, NULL, NULL);
       SELECT COALESCE(sum(credit - debit), 0) INTO v_is FROM get_income_statement(fy.id, NULL, NULL);
+      -- Référence calculée indépendamment, en figeant d'abord les écritures du
+      -- périmètre : sous RLS, avec des statistiques pas encore rafraîchies après
+      -- le chargement, le planificateur estime « 1 ligne » pour la société et
+      -- choisit une boucle imbriquée (39 s mesurées sur 20 000 écritures au lieu
+      -- de 99 ms). Le test ne vérifie pas un plan, il vérifie un solde.
       SELECT COALESCE(sum(jl.credit - jl.debit), 0) INTO v_ref
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-      WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN fy.start_date AND fy.end_date
-        AND jl.account_code ~ '^[67]';
+      FROM (
+        SELECT je.id FROM journal_entries je
+        WHERE je.tenant_id = t AND je.status = 'posted'
+          AND je.date BETWEEN fy.start_date AND fy.end_date) e
+      JOIN journal_lines jl ON jl.journal_id = e.id
+      WHERE jl.account_code ~ '^[67]';
       SELECT COALESCE(sum(balance), 0) INTO v_bs FROM get_balance_sheet(fy.id, NULL);
       IF v_d <> v_c OR v_is <> v_ref OR v_bs <> 0 THEN v_bad := v_bad + 1; END IF;
       v_det := v_det || format('%s: balance %s/%s, CR %s (attendu %s), Σbilan %s ; ', fy.code, v_d, v_c, v_is, v_ref, v_bs);
@@ -116,17 +138,21 @@ BEGIN
   d_c1 := clock_timestamp() - t0;
 
   -- P4 — classes 6/7 soldées en 2023 ; à-nouveaux 2024 = soldes de clôture 2023, compte par compte
+  -- (même précaution de plan que ci-dessus : écritures figées d'abord)
+  CREATE TEMP TABLE _p4_e ON COMMIT DROP AS
+  SELECT je.id, je.journal_code FROM journal_entries je
+  WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN '2023-01-01' AND '2023-12-31';
+  CREATE INDEX ON _p4_e (id);
+
   SELECT count(*) INTO v_bad FROM (
-    SELECT jl.account_code FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-    WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN '2023-01-01' AND '2023-12-31'
+    SELECT jl.account_code FROM journal_lines jl JOIN _p4_e e ON e.id = jl.journal_id
     GROUP BY jl.account_code
     HAVING jl.account_code ~ '^[67]' AND sum(jl.debit - jl.credit) <> 0) x;
   SELECT count(*) INTO v_res FROM (
     SELECT account, sum(s) FROM (
       SELECT jl.account_code AS account, jl.debit - jl.credit AS s
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-      WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN '2023-01-01' AND '2023-12-31'
-        AND jl.account_code !~ '^[67]'
+      FROM journal_lines jl JOIN _p4_e e ON e.id = jl.journal_id
+      WHERE jl.account_code !~ '^[67]'
       UNION ALL
       SELECT jl.account_code, -(jl.debit - jl.credit)
       FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
@@ -137,6 +163,14 @@ BEGIN
     format('clôture=%s ; comptes 6/7 non soldés=%s ; comptes dont l''à-nouveau diffère=%s ; résultat=%s',
       COALESCE(r1->>'error', r1->>'success'), v_bad, v_res, r1->>'result'));
 
+  -- Affectation du résultat 2023 (obligatoire avant de clôturer 2024) : tout en report à nouveau
+  r2 := allocate_result(fy23, jsonb_build_array(jsonb_build_object(
+          'account', CASE WHEN (r1->>'result')::numeric >= 0 THEN '110000' ELSE '119000' END,
+          'amount', abs((r1->>'result')::numeric))), NULL, NULL);
+  IF NOT COALESCE((r2->>'success')::boolean, false) THEN
+    RAISE NOTICE 'Affectation 2023 refusée : %', r2->>'error';
+  END IF;
+
   -- Clôture 2024 → 2025 (périodes closes au préalable, comme dans l'écran)
   UPDATE fiscal_periods SET status = 'closed' WHERE fiscal_year_id = fy24;
   t0 := clock_timestamp();
@@ -144,12 +178,16 @@ BEGIN
   d_c2 := clock_timestamp() - t0;
 
   -- P5 — à-nouveaux 2025 = cumul 2023-2024 hors classes 6/7 et hors à-nouveaux (sinon double comptage)
+  CREATE TEMP TABLE _p5_e ON COMMIT DROP AS
+  SELECT je.id, je.journal_code FROM journal_entries je
+  WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN '2023-01-01' AND '2024-12-31';
+  CREATE INDEX ON _p5_e (id);
+
   SELECT count(*) INTO v_res FROM (
     SELECT account, sum(s) FROM (
       SELECT jl.account_code AS account, jl.debit - jl.credit AS s
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-      WHERE je.tenant_id = t AND je.status = 'posted' AND je.date BETWEEN '2023-01-01' AND '2024-12-31'
-        AND je.journal_code <> 'AN' AND jl.account_code !~ '^[67]'
+      FROM journal_lines jl JOIN _p5_e e ON e.id = jl.journal_id
+      WHERE e.journal_code <> 'AN' AND jl.account_code !~ '^[67]'
       UNION ALL
       SELECT jl.account_code, -(jl.debit - jl.credit)
       FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
@@ -165,9 +203,12 @@ BEGIN
   -- P2 — le compte de résultat d'un exercice clos reste lisible (écritures CL exclues)
   SELECT COALESCE(sum(credit - debit), 0) INTO v_is FROM get_income_statement(fy23, NULL, NULL);
   SELECT COALESCE(sum(jl.credit - jl.debit), 0) INTO v_ref
-  FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
-  WHERE je.tenant_id = t AND je.status = 'posted' AND je.journal_code <> 'CL'
-    AND je.date BETWEEN '2023-01-01' AND '2023-12-31' AND jl.account_code ~ '^[67]';
+  FROM (
+    SELECT je.id FROM journal_entries je
+    WHERE je.tenant_id = t AND je.status = 'posted' AND je.journal_code <> 'CL'
+      AND je.date BETWEEN '2023-01-01' AND '2023-12-31') e
+  JOIN journal_lines jl ON jl.journal_id = e.id
+  WHERE jl.account_code ~ '^[67]';
   PERFORM _rec('P2', 'compte de résultat 2023 après clôture = Σ7 − Σ6 = résultat de clôture',
     v_is = v_ref AND v_is = (r1->>'result')::numeric, format('CR=%s attendu=%s clôture=%s', v_is, v_ref, r1->>'result'));
 

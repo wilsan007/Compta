@@ -291,18 +291,18 @@ export async function calculateProvisions(fiscalYearId: string) {
   return data
 }
 
-/** CCA / PCA avec répartition mensuelle */
+/** CCA / PCA avec répartition mensuelle (régularisation de l'écran) */
 export async function postDeferredCharge(
-  entryId: string,
+  regularizationId: string,
   type: 'cca' | 'pca',
-  amount: number,
+  amount?: number,
   months?: number
 ) {
   const { data, error } = await supabase.rpc('post_deferred_charge', {
-    p_entry_id: entryId,
+    p_regularization_id: regularizationId,
     p_type: type,
-    p_amount: amount,
-    p_months: months,
+    p_amount: amount ?? null,
+    p_months: months ?? null,
   })
   if (error) throw error
   return data

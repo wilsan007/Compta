@@ -22,6 +22,8 @@ vi.mock('@/lib/queries/sales', () => ({
   getInvoices: vi.fn(async () => invoiceList),
   getQuotes: vi.fn(async () => []),
   getCreditNotes: vi.fn(async () => []),
+  // R-03 : les acomptes ouverts du client (aucun dans ces scénarios)
+  getOpenAdvanceInvoices: vi.fn(async () => []),
   createInvoice: (...a: unknown[]) => createInvoice(...a),
   createQuote: (...a: unknown[]) => createQuote(...a),
   createCreditNote: (...a: unknown[]) => createCreditNote(...a),

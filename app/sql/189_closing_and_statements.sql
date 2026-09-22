@@ -49,6 +49,18 @@ AS $$
 $$;
 
 -- ------------------------------------------------------------
+-- Affectation du résultat (décision n° 3 : écran d'affectation obligatoire)
+--   L'exercice mémorise son résultat à la clôture ; l'affectation (réserves,
+--   report à nouveau, dividendes) est une écriture distincte, passée dans
+--   l'exercice suivant, et elle est exigée avant de clôturer cet exercice suivant.
+-- ------------------------------------------------------------
+ALTER TABLE fiscal_years ADD COLUMN IF NOT EXISTS closing_result numeric(18,2);
+ALTER TABLE fiscal_years ADD COLUMN IF NOT EXISTS result_allocated_at timestamptz;
+ALTER TABLE fiscal_years ADD COLUMN IF NOT EXISTS result_allocation_entry_id uuid REFERENCES journal_entries(id) ON DELETE RESTRICT;
+COMMENT ON COLUMN fiscal_years.closing_result IS 'Résultat déterminé par close_fiscal_year (bénéfice > 0, perte < 0). NULL : exercice clos avant la 189.';
+COMMENT ON COLUMN fiscal_years.result_allocated_at IS 'Date de l''affectation du résultat (allocate_result) ; exigée avant de clôturer l''exercice suivant.';
+
+-- ------------------------------------------------------------
 -- Clôture d'exercice
 -- ------------------------------------------------------------
 DROP FUNCTION IF EXISTS close_fiscal_year(uuid, uuid, boolean);
@@ -67,6 +79,7 @@ DECLARE
   v_fy fiscal_years%ROWTYPE;
   v_next fiscal_years%ROWTYPE;
   v_prev_open text;
+  v_prev_unallocated text;
   v_drafts int;
   v_d numeric;
   v_c numeric;
@@ -94,6 +107,15 @@ BEGIN
   FROM fiscal_years WHERE tenant_id = v_tid AND end_date < v_fy.start_date AND status = 'open';
   IF v_prev_open IS NOT NULL THEN
     RAISE EXCEPTION 'Clôturez d''abord l''exercice antérieur : %', v_prev_open;
+  END IF;
+
+  -- Décision n° 3 : le résultat d'un exercice clos est affecté avant de clôturer le suivant
+  SELECT string_agg(code, ', ' ORDER BY start_date) INTO v_prev_unallocated
+  FROM fiscal_years
+  WHERE tenant_id = v_tid AND end_date < v_fy.start_date
+    AND closing_result IS NOT NULL AND closing_result <> 0 AND result_allocated_at IS NULL;
+  IF v_prev_unallocated IS NOT NULL THEN
+    RAISE EXCEPTION 'Affectez d''abord le résultat de l''exercice % (réserves, report à nouveau, dividendes)', v_prev_unallocated;
   END IF;
 
   SELECT count(*) INTO v_drafts FROM journal_entries
@@ -248,7 +270,8 @@ BEGIN
 
   UPDATE fiscal_periods SET status = 'closed'
   WHERE tenant_id = v_tid AND fiscal_year_id = v_fy.id AND status = 'open';
-  UPDATE fiscal_years SET status = 'closed', closed_at = now(), closed_by = v_closed_by
+  UPDATE fiscal_years SET status = 'closed', closed_at = now(), closed_by = v_closed_by,
+         closing_result = v_result
   WHERE id = v_fy.id;
 
   IF v_an_id IS NOT NULL THEN
@@ -299,14 +322,21 @@ AS $$
     FROM fiscal_years
     WHERE id = p_fiscal_year_id AND tenant_id = current_tenant_id()
   ),
-  perimetre AS (
-    SELECT COALESCE(jl.account_general, jl.account_code) AS code, jl.account_name, jl.debit, jl.credit
-    FROM journal_lines jl
-    JOIN journal_entries je ON je.id = jl.journal_id
-    CROSS JOIN bornes b
+  -- Écritures d'abord (index par société et date), lignes ensuite par journal_id :
+  -- le plan ne dépend pas de l'estimation du nombre de lignes de la société
+  ecritures AS MATERIALIZED (
+    SELECT je.id
+    FROM journal_entries je CROSS JOIN bornes b
     WHERE je.tenant_id = b.tenant_id AND je.status = 'posted' AND je.date <= b.date_to
       AND NOT EXISTS (SELECT 1 FROM carried_forward_ranges(b.tenant_id, b.start_date) r
                       WHERE je.date BETWEEN r.start_date AND r.end_date)
+  ),
+  perimetre AS (
+    SELECT COALESCE(jl.account_general, jl.account_code) AS code, jl.account_name, jl.debit, jl.credit
+    FROM ecritures e
+    -- Lignes lues écriture par écriture (index journal_id) ; OFFSET 0 empêche le
+    -- planificateur d'aplatir la sous-requête et de revenir à une boucle sur toute la société
+    CROSS JOIN LATERAL (SELECT jl0.* FROM journal_lines jl0 WHERE jl0.journal_id = e.id OFFSET 0) jl
   ),
   comptes AS (
     SELECT p.code, max(p.account_name) AS account_name, sum(p.debit) AS debit, sum(p.credit) AS credit
@@ -349,17 +379,23 @@ AS $$
     FROM fiscal_years
     WHERE id = p_fiscal_year_id AND tenant_id = current_tenant_id()
   ),
-  lignes AS (
-    SELECT COALESCE(jl.account_general, jl.account_code) AS code, jl.account_name, jl.debit, jl.credit,
+  ecritures AS MATERIALIZED (
+    SELECT je.id,
            (je.date < b.start_date OR (je.journal_code = 'AN' AND je.date = b.start_date)) AS ouverture,
            (je.date BETWEEN b.p_from AND b.p_to) AS dans_periode
-    FROM journal_lines jl
-    JOIN journal_entries je ON je.id = jl.journal_id
-    CROSS JOIN bornes b
+    FROM journal_entries je CROSS JOIN bornes b
     WHERE je.tenant_id = b.tenant_id AND je.status = 'posted' AND je.date <= b.p_to
       AND (p_journal_code IS NULL OR je.journal_code = p_journal_code)
       AND NOT EXISTS (SELECT 1 FROM carried_forward_ranges(b.tenant_id, b.start_date) r
                       WHERE je.date BETWEEN r.start_date AND r.end_date)
+  ),
+  lignes AS (
+    SELECT COALESCE(jl.account_general, jl.account_code) AS code, jl.account_name, jl.debit, jl.credit,
+           e.ouverture, e.dans_periode
+    FROM ecritures e
+    -- Lignes lues écriture par écriture (index journal_id) ; OFFSET 0 empêche le
+    -- planificateur d'aplatir la sous-requête et de revenir à une boucle sur toute la société
+    CROSS JOIN LATERAL (SELECT jl0.* FROM journal_lines jl0 WHERE jl0.journal_id = e.id OFFSET 0) jl
   ),
   mouvements AS (
     SELECT code, max(account_name) AS account_name,
@@ -382,15 +418,31 @@ $$;
 
 -- ------------------------------------------------------------
 -- Compte de résultat : hors écritures de clôture (journal CL)
+--   SECURITY DEFINER, comme le bilan et la balance : les écritures sont filtrées
+--   explicitement sur current_tenant_id() et les lignes ne sont lues qu'à travers
+--   elles. Sous RLS, le filtre société de journal_lines rendait l'index par
+--   société éligible pour chaque écriture : 27 s par appel mesurées juste après
+--   un chargement, statistiques pas encore à jour.
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_income_statement(p_fiscal_year_id uuid, p_date_from date DEFAULT NULL, p_date_to date DEFAULT NULL)
 RETURNS TABLE(account_code text, account_name text, account_type text, debit numeric, credit numeric, balance numeric)
-LANGUAGE sql STABLE SECURITY INVOKER
+LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
   WITH bornes AS (
     SELECT start_date, end_date FROM fiscal_years
     WHERE id = p_fiscal_year_id AND tenant_id = current_tenant_id()
+  ),
+  -- Écritures d'abord, lignes par journal_id : mesuré sur 40 000 écritures, 17,7 s
+  -- (boucle imbriquée sur l'estimation « 1 ligne ») → 0,9 s
+  ecritures AS MATERIALIZED (
+    SELECT je.id
+    FROM journal_entries je CROSS JOIN bornes b
+    WHERE je.tenant_id = current_tenant_id()
+      AND je.status = 'posted'
+      AND je.journal_code <> 'CL'
+      AND je.date >= GREATEST(b.start_date, COALESCE(p_date_from, b.start_date))
+      AND je.date <= LEAST(b.end_date, COALESCE(p_date_to, b.end_date))
   ),
   mouvements AS (
     SELECT
@@ -398,15 +450,11 @@ AS $$
       max(jl.account_name) AS line_name,
       SUM(jl.debit) AS debit,
       SUM(jl.credit) AS credit
-    FROM journal_lines jl
-    JOIN journal_entries je ON je.id = jl.journal_id AND je.tenant_id = jl.tenant_id
-    CROSS JOIN bornes b
-    WHERE jl.tenant_id = current_tenant_id()
-      AND je.status = 'posted'
-      AND je.journal_code <> 'CL'
-      AND je.date >= GREATEST(b.start_date, COALESCE(p_date_from, b.start_date))
-      AND je.date <= LEAST(b.end_date, COALESCE(p_date_to, b.end_date))
-      AND COALESCE(jl.account_general, jl.account_code) ~ '^[67]'
+    FROM ecritures e
+    -- Lignes lues écriture par écriture (index journal_id) ; OFFSET 0 empêche le
+    -- planificateur d'aplatir la sous-requête et de revenir à une boucle sur toute la société
+    CROSS JOIN LATERAL (SELECT jl0.* FROM journal_lines jl0 WHERE jl0.journal_id = e.id OFFSET 0) jl
+    WHERE COALESCE(jl.account_general, jl.account_code) ~ '^[67]'
     GROUP BY 1
   )
   SELECT
@@ -423,7 +471,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION get_income_statement_monthly(p_fiscal_year_id uuid)
 RETURNS TABLE(month date, revenue numeric, expense numeric, result numeric)
-LANGUAGE sql STABLE SECURITY INVOKER
+LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
   WITH bornes AS (
@@ -434,19 +482,24 @@ AS $$
     SELECT generate_series(date_trunc('month', b.start_date), date_trunc('month', b.end_date), interval '1 month')::date AS month
     FROM bornes b
   ),
-  mouvements AS (
-    SELECT
-      date_trunc('month', je.date)::date AS month,
-      SUM(CASE WHEN COALESCE(jl.account_general, jl.account_code) ~ '^7' THEN jl.credit - jl.debit ELSE 0 END) AS revenue,
-      SUM(CASE WHEN COALESCE(jl.account_general, jl.account_code) ~ '^6' THEN jl.debit - jl.credit ELSE 0 END) AS expense
-    FROM journal_lines jl
-    JOIN journal_entries je ON je.id = jl.journal_id AND je.tenant_id = jl.tenant_id
-    CROSS JOIN bornes b
-    WHERE jl.tenant_id = current_tenant_id()
+  ecritures AS MATERIALIZED (
+    SELECT je.id, je.date
+    FROM journal_entries je CROSS JOIN bornes b
+    WHERE je.tenant_id = current_tenant_id()
       AND je.status = 'posted'
       AND je.journal_code <> 'CL'
       AND je.date BETWEEN b.start_date AND b.end_date
-      AND COALESCE(jl.account_general, jl.account_code) ~ '^[67]'
+  ),
+  mouvements AS (
+    SELECT
+      date_trunc('month', e.date)::date AS month,
+      SUM(CASE WHEN COALESCE(jl.account_general, jl.account_code) ~ '^7' THEN jl.credit - jl.debit ELSE 0 END) AS revenue,
+      SUM(CASE WHEN COALESCE(jl.account_general, jl.account_code) ~ '^6' THEN jl.debit - jl.credit ELSE 0 END) AS expense
+    FROM ecritures e
+    -- Lignes lues écriture par écriture (index journal_id) ; OFFSET 0 empêche le
+    -- planificateur d'aplatir la sous-requête et de revenir à une boucle sur toute la société
+    CROSS JOIN LATERAL (SELECT jl0.* FROM journal_lines jl0 WHERE jl0.journal_id = e.id OFFSET 0) jl
+    WHERE COALESCE(jl.account_general, jl.account_code) ~ '^[67]'
     GROUP BY 1
   )
   SELECT mo.month,
@@ -508,3 +561,122 @@ END $$;
 --   (45 s dans log_nf525_event), 100 000 en 18 min ; 6,8 s avec l'index.
 -- ------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_nf525_tenant_id_desc ON nf525_event_log (tenant_id, id DESC);
+
+-- ------------------------------------------------------------
+-- allocate_result : écriture d'affectation du résultat d'un exercice clos
+--   p_allocation : [{"account": "106100", "amount": 20}, {"account": "110000", "amount": 380}]
+--   Bénéfice : D 120000 / C réserves (106…), report à nouveau (110…), dividendes (457…),
+--              compte de l'exploitant (108…).
+--   Perte    : C 129000 / D report à nouveau débiteur (119…), imputation sur réserves
+--              (106…) ou sur report créditeur (110…), compte de l'exploitant (108…).
+--   La somme est égale au résultat au centime ; une seule affectation par exercice ;
+--   l'écriture est datée dans l'exercice suivant (par défaut son premier jour).
+-- Remplace allocate_result(uuid, numeric, numeric, text), qui débitait toujours 120000
+-- (même pour une perte) et n'était appelée par aucun écran.
+-- ------------------------------------------------------------
+DROP FUNCTION IF EXISTS allocate_result(uuid, numeric, numeric, text);
+
+CREATE OR REPLACE FUNCTION allocate_result(
+  p_fiscal_year_id uuid,
+  p_allocation jsonb,
+  p_date date DEFAULT NULL,
+  p_description text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_tid uuid := current_tenant_id();
+  v_fy fiscal_years%ROWTYPE;
+  v_next fiscal_years%ROWTYPE;
+  v_date date;
+  v_profit boolean;
+  v_total numeric(18,2);
+  v_sum numeric(18,2);
+  v_bad text;
+  v_result_account text;
+  v_entry_id uuid;
+BEGIN
+  SELECT * INTO v_fy FROM fiscal_years WHERE id = p_fiscal_year_id AND tenant_id = v_tid;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Exercice introuvable ou accès interdit';
+  END IF;
+  IF v_fy.status NOT IN ('closed', 'locked') OR v_fy.closing_result IS NULL THEN
+    RAISE EXCEPTION 'L''exercice % n''est pas clôturé : son résultat n''est pas encore déterminé', v_fy.code;
+  END IF;
+  IF v_fy.result_allocated_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Le résultat de l''exercice % est déjà affecté', v_fy.code;
+  END IF;
+  IF v_fy.closing_result = 0 THEN
+    RAISE EXCEPTION 'Résultat nul : rien à affecter pour l''exercice %', v_fy.code;
+  END IF;
+
+  SELECT * INTO v_next FROM fiscal_years
+  WHERE tenant_id = v_tid AND start_date = v_fy.end_date + 1;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'L''exercice qui suit % est introuvable : l''affectation y est passée', v_fy.code;
+  END IF;
+  v_date := COALESCE(p_date, v_next.start_date);
+  IF v_date NOT BETWEEN v_next.start_date AND v_next.end_date THEN
+    RAISE EXCEPTION 'La date d''affectation doit appartenir à l''exercice % (du % au %)',
+      v_next.code, v_next.start_date, v_next.end_date;
+  END IF;
+
+  v_profit := v_fy.closing_result > 0;
+  v_total := abs(v_fy.closing_result);
+  v_result_account := CASE WHEN v_profit THEN '120000' ELSE '129000' END;
+
+  IF jsonb_typeof(p_allocation) IS DISTINCT FROM 'array' OR jsonb_array_length(p_allocation) = 0 THEN
+    RAISE EXCEPTION 'Répartition vide : indiquez au moins un compte et un montant';
+  END IF;
+
+  SELECT string_agg(COALESCE(x->>'account', '(vide)'), ', ') INTO v_bad
+  FROM jsonb_array_elements(p_allocation) x
+  WHERE COALESCE(x->>'account', '') !~ CASE WHEN v_profit THEN '^(106|108|110|457)' ELSE '^(106|108|110|119)' END
+     OR COALESCE((x->>'amount')::numeric, 0) <= 0
+     OR (x->>'amount')::numeric <> round((x->>'amount')::numeric, 2);
+  IF v_bad IS NOT NULL THEN
+    RAISE EXCEPTION 'Ligne(s) d''affectation invalide(s) : % — %', v_bad,
+      CASE WHEN v_profit
+        THEN 'un bénéfice s''affecte en réserves (106), report à nouveau (110), dividendes (457) ou compte de l''exploitant (108), montant positif au centime'
+        ELSE 'une perte s''affecte en report à nouveau débiteur (119), sur les réserves (106), le report créditeur (110) ou le compte de l''exploitant (108), montant positif au centime' END;
+  END IF;
+
+  SELECT sum((x->>'amount')::numeric) INTO v_sum FROM jsonb_array_elements(p_allocation) x;
+  IF v_sum <> v_total THEN
+    RAISE EXCEPTION 'La répartition (%) doit être égale au résultat de l''exercice % (%)', v_sum, v_fy.code, v_total;
+  END IF;
+
+  INSERT INTO journal_entries (tenant_id, number, date, journal_code, status, description, reference)
+  VALUES (v_tid, 'AFF-' || v_fy.code, v_date, 'OD', 'draft',
+          COALESCE(NULLIF(p_description, ''), 'Affectation du résultat de l''exercice ' || v_fy.code),
+          'AFFECTATION-' || v_fy.code)
+  RETURNING id INTO v_entry_id;
+
+  INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description, line_order)
+  VALUES (v_tid, v_entry_id, v_result_account, v_result_account,
+          CASE WHEN v_profit THEN v_total ELSE 0 END, CASE WHEN v_profit THEN 0 ELSE v_total END,
+          'Résultat ' || v_fy.code, 0);
+
+  INSERT INTO journal_lines (tenant_id, journal_id, account_code, account_general, debit, credit, description, line_order)
+  SELECT v_tid, v_entry_id, x->>'account', x->>'account',
+         CASE WHEN v_profit THEN 0 ELSE (x->>'amount')::numeric END,
+         CASE WHEN v_profit THEN (x->>'amount')::numeric ELSE 0 END,
+         'Affectation du résultat ' || v_fy.code, ord::int
+  FROM jsonb_array_elements(p_allocation) WITH ORDINALITY AS a(x, ord);
+
+  UPDATE journal_entries SET status = 'posted' WHERE id = v_entry_id;
+
+  UPDATE fiscal_years SET result_allocated_at = now(), result_allocation_entry_id = v_entry_id
+  WHERE id = v_fy.id;
+
+  RETURN jsonb_build_object('success', true, 'entry_id', v_entry_id, 'fiscal_year_id', v_fy.id,
+                            'result', v_fy.closing_result, 'date', v_date);
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END $$;
+
+REVOKE ALL ON FUNCTION allocate_result(uuid, jsonb, date, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION allocate_result(uuid, jsonb, date, text) TO authenticated, service_role;

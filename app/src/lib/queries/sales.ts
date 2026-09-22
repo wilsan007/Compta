@@ -103,6 +103,46 @@ export async function getInvoices() {
   return data as Invoice[]
 }
 
+// R-03 : acomptes validés d'un client qui restent à déduire d'une facture finale
+export interface OpenAdvanceInvoice {
+  id: string
+  number: string
+  date: string
+  /** HT restant à déduire */
+  remaining: number
+  vat_rate: number
+}
+
+export async function getOpenAdvanceInvoices(customerId: string): Promise<OpenAdvanceInvoice[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('invoices').select('id, number, date, subtotal, invoice_lines(vat_rate)')
+    .eq('customer_id', customerId).eq('invoice_type', 'advance').eq('validation_status', 'validated')
+    .order('date').order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data: advances, error } = await q
+  if (error) throw error
+  if (!advances?.length) return []
+  let dq = supabase.from('invoice_lines').select('advance_invoice_id, total, invoices(validation_status)')
+    .in('advance_invoice_id', advances.map(a => a.id)).order('id')
+  if (tid) dq = dq.eq('tenant_id', tid)
+  const { data: deductions, error: dErr } = await dq
+  if (dErr) throw dErr
+  const used = new Map<string, number>()
+  for (const d of (deductions || []) as any[]) {
+    if (d.invoices?.validation_status !== 'validated') continue
+    used.set(d.advance_invoice_id, (used.get(d.advance_invoice_id) ?? 0) - Number(d.total))
+  }
+  return advances
+    .map((a: any) => ({
+      id: a.id,
+      number: a.number,
+      date: a.date,
+      remaining: Math.round((Number(a.subtotal) - (used.get(a.id) ?? 0)) * 100) / 100,
+      vat_rate: Number(a.invoice_lines?.[0]?.vat_rate ?? 0),
+    }))
+    .filter(a => a.remaining > 0)
+}
+
 // AUD-E03/E04 : le serveur recalcule lignes et totaux ; la facture naît en brouillon
 // avec un numéro provisoire, remplacé par FAC-<exercice>-n à la validation.
 export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines: Omit<InvoiceLine, 'id' | 'created_at' | 'invoice_id'>[] }) {

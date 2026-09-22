@@ -809,6 +809,29 @@
     "closingLines": "Closing lines",
     "resultAmount": "Fiscal year result",
     "openingEntriesPreview": "Opening entries preview",
+    "allocation": {
+      "title": "Allocation of the {{code}} result",
+      "introProfit": "Profit of {{amount}}: split it between reserves, retained earnings and dividends. The following year cannot be closed before this is done.",
+      "introLoss": "Loss of {{amount}}: allocate it to retained earnings (debit) or charge it against reserves. The following year cannot be closed before this is done.",
+      "account": "Account",
+      "amount": "Amount",
+      "addLine": "Add a line",
+      "removeLine": "Remove line",
+      "date": "Date of the allocation entry",
+      "remaining": "Left to allocate: {{amount}}",
+      "submit": "Allocate the result",
+      "saving": "Allocating…",
+      "done": "Result of year {{code}} allocated",
+      "blocking": "Closing not allowed: first allocate the result of year {{codes}} (“Allocation of the result” card above).",
+      "accounts": {
+        "106100": "Legal reserve",
+        "106800": "Other reserves",
+        "110000": "Retained earnings",
+        "457000": "Dividends payable",
+        "108000": "Owner's account",
+        "119000": "Retained earnings (debit)"
+      }
+    },
     "carryForwardEntry": "Opening balance entry",
     "closeEntry": "Closing entry",
     "integrityHash": "Integrity hash",
@@ -2850,7 +2873,8 @@
     "saved": "Linked accounts saved successfully",
     "generateDepreciationEntry": "Generate depreciation entry",
     "entryGenerated": "Depreciation entry generated successfully",
-    "entryError": "Error generating depreciation entry"
+    "entryError": "Error generating depreciation entry",
+    "noOpenYear": "No open fiscal year: open one before posting the depreciation"
   },
   "currencyCode": "Currency",
   "etats": {

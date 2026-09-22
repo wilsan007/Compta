@@ -2,13 +2,21 @@
 
 > **Objet** : tout ce qui reste à faire pour que le produit soit juste, déployé, prouvé et vendable à Djibouti, **dans l'ordre où le faire**.
 > **Point de départ** : vagues V1, V2 et V3 du [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) exécutées ; lots A à G traités ; registre des défauts connus vide ; liste blanche PostgREST vide.
-> **Branche** : `commercial-hr-paie`, HEAD `11e2b7f`. **Production** : schéma à la migration **188**.
+> **Branche** : `commercial-hr-paie`, phase 1 commitée (`fix(compta): phase 1 du reste-à-faire — résultat, acomptes, amortissements, reports`). **Production** : schéma à la migration **188**.
 > **Sources** : [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) (§ 6, journal des vagues), [suivi](SUIVI-CAHIER-CORRECTIF.md), [cahier de localisation](../localisation/CAHIER-DES-CHARGES-LOCALISATION.md), [plan de perfection](PLAN-PERFECTION-9.5.md), mesures relevées dans le dépôt le 22/09.
 
 > **Avancement du 22/09 (après-midi)** — phase 0, étapes P0-01 à P0-05 :
 > - P0-01 ✅ lot I (i18n) et 197 (TVA) intégrés ; P0-02/03 ✅ V3 commitée seule (`0dd4e1a`), instantané rejoué seul (181 migrations) ; P0-04 ✅ 200-202 (`af5b5cb`), puis `2dc9bb8` (plafonds knip et tables non lues, dépassés depuis 187), `d980c5a` (lot I), `f948fe9` (197), `3a4f30b` (UX-03 : `window.confirm` de l'écran de plans) ;
 > - P0-05 ⏳ poussé ; premier run : tout vert sauf UX-03 (corrigé en `3a4f30b`) et la 189, qui dépasse 15 min en CI : le correctif de performance des états est dans la copie de travail de la session V2 (« lancer v2 »), à commiter ;
 > - P0-06 à P0-09 👤 : la répétition sur copie de prod demande votre accord pour lire les conteneurs `prod_rehearsal` / `onusuite_prod_backup_20260921` ; déploiement et vérification à l'écran restent à planifier avec vous.
+
+> **Avancement du 22/09 (soirée)** — phase 1, dettes des vagues V1 à V3 :
+> - **R-01 ✅** amortissements, écarts de lettrage et reports d'avance réparés (migration **211**) : les trois fonctions inséraient leur en-tête en `posted` (refusé depuis la 187) ; elles écrivent désormais en brouillard puis valident, avec les comptes du plan (`681200`/`281000`, `486000`, `487000`), et l'écart de lettrage produit une écriture **équilibrée** (charge d'écart + contrepartie de tiers). `post_deferred_charge` attend l'identifiant de `regularization_entries` : l'écran l'envoyait, la fonction cherchait dans `journal_entries` — 16 scénarios dans `sql/211_asset_deferred_tests.sql`, 2 tests d'écran ;
+> - **R-02 ✅** affectation du résultat obligatoire avant la clôture suivante (écran, garde dans `close_fiscal_year`, 19 scénarios de la 179, 3 tests d'écran) ;
+> - **R-03 ✅** factures d'acompte en 4191 et déduction sur la facture finale (210, 12 scénarios) ;
+> - **P0-05 ⏳** performance de la 189 : cause trouvée et mesurée. Les états financiers (bilan, balance, compte de résultat, tendance) sont réécrits — écritures du périmètre figées, lignes lues par `journal_id` — et ils sont **SECURITY DEFINER** (comme le bilan) : 0,8 s pour la balance et 0,1 s pour le compte de résultat à 100 000 écritures. Le dépassement de 15 min venait des **contrôles du fichier de test** : sous RLS, avec des statistiques pas encore rafraîchies après le chargement, le planificateur estime « 1 ligne » pour la société et part en boucle imbriquée (**39 s** pour un seul contrôle à 20 000 écritures, contre 99 ms avec des statistiques à jour). Le fichier fait désormais `ANALYZE` après son chargement et fige les écritures avant de lire les lignes. **Mesure du 22/09 au soir sur base neuve : 100 000 écritures en 2 min 20 (validation 1 min, clôtures 3,2 s et 2,4 s), 7 scénarios verts** — contre plus de 15 min avant.
+>
+> Chaîne complète rejouée sur base neuve le 22/09 au soir : **186 migrations, 0 erreur** ; 20 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n et **1 405 tests** unitaires au vert.
 
 Légende : 🔴 bloquant · 🟠 résultat faux ou trompeur · 🟡 confort ou robustesse · 👤 action ou décision de votre part · ⏳ en cours dans une autre session
 
@@ -224,13 +232,13 @@ Après déploiement : créer une société de test par l'inscription réelle, co
 
 | # | Question | Options | Qui en dépend |
 |---|---|---|---|
-| D-3 | Affectation du résultat (plan § 5, n° 3) | automatique en report à nouveau, **ou** écran d'affectation obligatoire avant de clore l'exercice suivant | R-02 |
+| D-3 | Affectation du résultat (plan § 5, n° 3) | ✅ **tranchée le 22/09** : écran d'affectation obligatoire avant de clore l'exercice suivant | R-02, fait |
 | D-4 | `generate-pdf` (AUD-H03, SSRF prouvée) | (a) supprimer le paramètre `html`, (b) Gotenberg durci, (c) **retirer la fonction** (aucun appelant) | H03 |
 | D-5 | Import OCR via OpenAI (AUD-H04) | garder avec consentement explicite par société, remplacer, ou retirer | H04 |
 | D-6 | Rôles utilisateurs (7 politiques RLS sur 2 296 regardent le rôle) | **généraliser le rôle dans la RLS** (chantier), ou documenter que les rôles ne sont qu'un confort d'affichage | H08 |
 | D-7 | Contraste H2 / H3 (18 + 20 usages juste sous 4,5:1) | éclaircir les **fonds** des pastilles et des zones grises | I05 |
 | D-8 | Trop-payé fournisseur en 4091 : j'ai appliqué la décision n° 1 par symétrie | confirmer ou préférer le refus | déjà en place |
-| D-9 | Factures d'acompte (R-03) | acompte en 4191 et imputation sur la facture finale (norme), ou garder le fonctionnement actuel | R-03 |
+| D-9 | Factures d'acompte (R-03) | ✅ **tranchée le 22/09** : acompte en 4191 et imputation sur la facture finale (norme) | R-03, fait |
 | D-10 | « Marquer payée » sans choix de banque (R-08) | ouvrir une petite fenêtre (date, mode, compte bancaire), ou garder le raccourci en 512000/BQ | R-08 |
 | D-11 | Localisation (cahier LOC) | périmètre secteur public (couche `DJ-EP` seule, ou aussi `DJ-ADM` : 8 à 10 semaines) ; arabe dès la v1 ; groupes multi-pays hors v1 | phase 5 |
 | D-12 | Numérotation existante en prod (P0-06) | reprendre la séquence après le plus grand numéro existant, ou repartir à 1 par exercice | P0-07 |
@@ -243,20 +251,23 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 
 ### 4.1 Comptabilité générale
 
-#### R-01 🔴 Amortissements, écarts résiduels et charges constatées d'avance cassés
+#### R-01 ✅ Amortissements, écarts résiduels et charges constatées d'avance
 - **Constat (V2)** : `generate_depreciation_entry`, `generate_residual_entry` et `post_deferred_charge` créent l'en-tête directement en `posted` (refusé depuis la 187) et imputent des comptes fictifs `6_____`. `post_deferred_charge` est appelée par `src/lib/queries/businessFunctions.ts:301`.
-- **À faire** : scénarios SQL (amortissement linéaire d'une immobilisation 12 000 sur 5 ans → D 6811 / C 2813 de 2 400 ; écart de lettrage → 658/758 ; CCA → 486/6xx) ; réécriture en brouillard puis validation, comptes du plan ; écran « Immobilisations » vérifié.
-- **Effort** : 1,5 j.
+- **Fait (211)** : écriture en brouillard puis validation — les triggers de la 187 (équilibre, exercice, comptes du plan, permission) s'appliquent ; comptes réels (`681200`/`281000` par défaut, ceux de l'immobilisation s'ils sont renseignés ; `486000`/`487000` et le compte de charge/produit de la régularisation) ; l'écart de lettrage passe une écriture **équilibrée** (charge ou produit d'écart + contrepartie du compte de tiers du groupe) ; dotation linéaire avec **prorata temporis** en jours la première année, plafonnée à la base amortissable, écrite dans l'historique `asset_depreciations` et reflétée dans la valeur nette ; idempotence par référence (`AMORT:`, `ECART:`, `DEFER:`) ; `post_deferred_charge` prend désormais l'identifiant de `regularization_entries` (ce que l'écran envoyait déjà) ; l'écran « Immobilisations » porte le bouton « Générer l'écriture d'amortissement » dans l'exercice ouvert.
+- **Preuve** : `sql/211_asset_deferred_tests.sql` — 16 scénarios, rouges avant la migration (14/16) et verts après ; `src/pages/__tests__/FixedAssetDepreciation.test.tsx` (2 tests).
+- **Effort** : 1,5 j (fait).
 
-#### R-02 🟠 Affectation du résultat (`allocate_result`)
+#### R-02 ✅ Affectation du résultat (`allocate_result`)
 - **Constat** : non réécrite en V2, faute de décision (D-3).
-- **À faire** : selon D-3, écriture AN : D 120 / C 110 (report à nouveau), 1061 (réserve légale), 457 (dividendes) ; blocage de la clôture N+1 si le résultat N n'est pas affecté (si option « écran obligatoire »).
-- **Effort** : 1 j.
+- **Fait (189)** : décision n° 3 retenue — écran d'affectation obligatoire. `fiscal_years` mémorise `closing_result`, `result_allocated_at` et `result_allocation_entry_id` ; `allocate_result` passe l'écriture dans l'exercice suivant (D 120/129 → 1061 réserves, 110 report à nouveau, 457 dividende ; une perte s'affecte en 119 ou sur les réserves/report créditeur — dividende refusé) ; `close_fiscal_year` **refuse** de clôturer N+1 tant que le résultat de N n'est pas affecté ; l'écran de clôture propose l'affectation et bloque le bouton.
+- **Preuve** : `sql/179_closing_and_statements_tests.sql` — scénarios D10/D11 (échec hors registre avant, verts après) ; `src/pages/__tests__/FiscalYearClosureAllocation.test.tsx` (3 tests).
+- **Effort** : 1 j (fait).
 
-#### R-03 🟠 Factures d'acompte comptabilisées en ventes
+#### R-03 ✅ Factures d'acompte comptabilisées en ventes
 - **Constat (lecture de code, à prouver par un scénario)** : `createAdvanceInvoice` (`misc.ts`) crée une facture `invoice_type = 'advance'` dont la ligne sans article est comptabilisée en 707000 par le trigger de validation. Or un acompte reçu se comptabilise en **4191** (avec TVA si prestation de services), puis s'impute sur la facture finale.
-- **À faire** : scénario rouge ; compte 4191 pour les factures d'acompte ; déduction de l'acompte sur la facture finale (ligne négative ou imputation) et lettrage 4191 ; écran d'imputation.
-- **Effort** : 1,5 j (dépend de D-9).
+- **Fait (210)** : décision D-9 retenue (norme) — facture d'acompte : D 411 TTC / C 4191 HT / C 4457 TVA ; facture finale : ligne négative rattachée à l'acompte (`advance_invoice_id`), déduction plafonnée au solde, lettrage 4191 quand l'acompte est entièrement déduit ; l'écran de facture propose les acomptes validés du client et refuse une déduction supérieure au total.
+- **Preuve** : `sql/210_advance_invoices_tests.sql` — 12 scénarios ; tests d'écran `SalesDocumentForms.test.tsx`.
+- **Effort** : 1,5 j (fait, dépendait de D-9).
 
 #### R-04 🟠 Paiement des salaires non généré
 - **Constat** : la 191 comptabilise la paie (charges et dettes), pas son **paiement** : pas d'écriture D 421 / C 512 au versement des salaires, ni D 431 / C 512 au paiement des organismes, ni pour les acomptes sur salaire (425).

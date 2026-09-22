@@ -809,6 +809,29 @@
     "closingLines": "Lignes de clôture",
     "resultAmount": "Résultat de l'exercice",
     "openingEntriesPreview": "Aperçu des écritures d'ouverture",
+    "allocation": {
+      "title": "Affectation du résultat {{code}}",
+      "introProfit": "Bénéfice de {{amount}} : répartissez-le entre réserves, report à nouveau et dividendes. L'exercice suivant ne peut pas être clôturé avant.",
+      "introLoss": "Perte de {{amount}} : affectez-la en report à nouveau débiteur ou imputez-la sur les réserves. L'exercice suivant ne peut pas être clôturé avant.",
+      "account": "Compte",
+      "amount": "Montant",
+      "addLine": "Ajouter une ligne",
+      "removeLine": "Retirer la ligne",
+      "date": "Date de l'écriture d'affectation",
+      "remaining": "Reste à affecter : {{amount}}",
+      "submit": "Affecter le résultat",
+      "saving": "Affectation…",
+      "done": "Résultat de l'exercice {{code}} affecté",
+      "blocking": "Clôture impossible : affectez d'abord le résultat de l'exercice {{codes}} (carte « Affectation du résultat » ci-dessus).",
+      "accounts": {
+        "106100": "Réserve légale",
+        "106800": "Autres réserves",
+        "110000": "Report à nouveau",
+        "457000": "Dividendes à payer",
+        "108000": "Compte de l'exploitant",
+        "119000": "Report à nouveau (débiteur)"
+      }
+    },
     "carryForwardEntry": "Écriture d'à-nouveaux",
     "closeEntry": "Écriture de clôture",
     "integrityHash": "Empreinte d'intégrité",
@@ -2850,7 +2873,8 @@
     "saved": "Comptes liés enregistrés avec succès",
     "generateDepreciationEntry": "Générer l'écriture d'amortissement",
     "entryGenerated": "Écriture d'amortissement générée avec succès",
-    "entryError": "Erreur lors de la génération de l'écriture"
+    "entryError": "Erreur lors de la génération de l'écriture",
+    "noOpenYear": "Aucun exercice ouvert : ouvrez un exercice avant de comptabiliser la dotation"
   },
   "currencyCode": "Devise",
   "etats": {

@@ -426,6 +426,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-03 — acomptes : D 411 / C 4191 / C 4457, déduction sur la facture finale, lettrage 4191.
+      - name: 'AUD : factures d''acompte et déduction (210)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/210_advance_invoices_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-01 — amortissements, écarts de lettrage, charges/produits constatés d'avance :
+      # écriture en brouillard puis validation, comptes du plan, idempotence.
+      - name: 'AUD : amortissements, écarts et reports (211)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/211_asset_deferred_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Lot D — 3 exercices, 100 000 écritures aléatoires (graine fixe) : balance, compte de
       # résultat, bilan, à-nouveaux après deux clôtures, numérotation continue, clôture < 30 s.
       # ≈ 70 s sur PostgreSQL 16 local.

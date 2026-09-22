@@ -700,6 +700,20 @@ export async function deleteFixedAsset(id: string) {
   if (error) throw error
 }
 
+/**
+ * Dotation aux amortissements d'un exercice (R-01) : écriture D 681x / C 28x
+ * validée, historique `asset_depreciations` et valeur nette mis à jour.
+ * Renvoie l'identifiant de l'écriture, ou `null` s'il n'y a rien à amortir.
+ */
+export async function generateDepreciationEntry(assetId: string, fiscalYearId: string) {
+  const { data, error } = await supabase.rpc('generate_depreciation_entry', {
+    p_fixed_asset_id: assetId,
+    p_fiscal_year_id: fiscalYearId,
+  })
+  if (error) throw error
+  return data as string | null
+}
+
 
 // ============ Currencies ============
 export async function getCurrencies() {
@@ -1552,6 +1566,29 @@ export async function closeFiscalYear(fiscalYearId: string, newFiscalYearId?: st
     hash?: string
     log_id?: string
   }
+}
+
+// --- Affectation du résultat (décision n° 3 : obligatoire avant la clôture suivante) ---
+export type ResultAllocationLine = { account: string; amount: number }
+
+/** Exercices clos dont le résultat attend son affectation (la clôture suivante est bloquée). */
+export function pendingResultAllocations(years: FiscalYear[]): FiscalYear[] {
+  return years
+    .filter((y) => y.status !== 'open' && y.closing_result != null && Number(y.closing_result) !== 0 && !y.result_allocated_at)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+}
+
+export async function allocateResult(fiscalYearId: string, lines: ResultAllocationLine[], date?: string | null) {
+  const { data, error } = await supabase.rpc('allocate_result', {
+    p_fiscal_year_id: fiscalYearId,
+    p_allocation: lines.map((l) => ({ account: l.account, amount: Math.round(l.amount * 100) / 100 })),
+    p_date: date || null,
+    p_description: null,
+  })
+  if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec de l\'affectation du résultat')
+  return res as { success: true; entry_id: string; fiscal_year_id: string; result: number; date: string }
 }
 
 // --- VAT auto-calc from journal lines (accounts 4456x / 4457x) ---

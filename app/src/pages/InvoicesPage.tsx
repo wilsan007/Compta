@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
-import { getInvoices, createInvoice, updateInvoice } from '@/lib/queries/sales'
+import { getInvoices, createInvoice, updateInvoice, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
 import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
 import { transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries/misc'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
@@ -364,14 +364,33 @@ function InvoiceForm({ customers, onClose, onSaved }: {
   const emptyLine = () => ({ description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
   const [lines, setLines] = useState<{ description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
   const [saving, setSaving] = useState(false)
+  // R-03 : acomptes validés du client à déduire (ligne négative rattachée à l'acompte)
+  const [openAdvances, setOpenAdvances] = useState<OpenAdvanceInvoice[]>([])
+  const [deducted, setDeducted] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setOpenAdvances([]); setDeducted({})
+    if (!customerId) return
+    let cancelled = false
+    getOpenAdvanceInvoices(customerId)
+      .then(list => { if (!cancelled) setOpenAdvances(list) })
+      .catch(() => { if (!cancelled) setOpenAdvances([]) })
+    return () => { cancelled = true }
+  }, [customerId])
 
   // Aperçu : le serveur fait foi (arrondi au centime par ligne, comme lui)
   const round2 = (n: number) => Math.round(n * 100) / 100
   const lineHt = (l: { quantity: number; unit_price: number }) => round2(Number(l.quantity) * Number(l.unit_price))
   const lineVat = (l: { quantity: number; unit_price: number; vat_rate: number }) => round2(lineHt(l) * Number(l.vat_rate) / 100)
   const filledLines = lines.filter(l => l.description.trim() && lineHt(l) > 0)
-  const subtotal = filledLines.reduce((sum, l) => sum + lineHt(l), 0)
-  const vatTotal = filledLines.reduce((sum, l) => sum + lineVat(l), 0)
+  const deductionLines = openAdvances.filter(a => deducted[a.id]).map(a => ({
+    description: t('invoices.advanceDeductionLine', { number: a.number }),
+    quantity: 1, unit_price: -a.remaining, vat_rate: a.vat_rate, advance_invoice_id: a.id,
+  }))
+  const allLines: { description: string; quantity: number; unit_price: number; vat_rate: number; advance_invoice_id?: string }[] =
+    [...filledLines, ...deductionLines]
+  const subtotal = round2(allLines.reduce((sum, l) => sum + lineHt(l), 0))
+  const vatTotal = round2(allLines.reduce((sum, l) => sum + lineVat(l), 0))
   const total = round2(subtotal + vatTotal)
 
   function updateLine(idx: number, field: 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
@@ -382,6 +401,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
     e.preventDefault()
     if (!customerId) { toast('warning', t('invoices.customer'), tCommon('form.requiredField')); return }
     if (filledLines.length === 0) { toast('warning', t('invoices.title'), t('invoices.atLeastOneLine')); return }
+    if (total < 0) { toast('warning', t('invoices.title'), t('invoices.advanceExceedsTotal')); return }
     setSaving(true)
     try {
       const customer = customers.find(c => c.id === customerId)
@@ -399,7 +419,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
         notes: '',
         recurring: false,
         recurring_frequency: null,
-        lines: filledLines.map((l, i) => ({
+        lines: allLines.map((l, i) => ({
           product_id: null,
           description: l.description.trim(),
           quantity: Number(l.quantity),
@@ -409,6 +429,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
           vat_total: lineVat(l),
           vat_amount: lineVat(l),
           line_order: i,
+          advance_invoice_id: l.advance_invoice_id ?? null,
         })),
       })
       toast('success', t('invoices.title'), t('invoices.draftCreated'))
@@ -474,6 +495,21 @@ function InvoiceForm({ customers, onClose, onSaved }: {
               + {t('invoices.addLine')}
             </button>
           </div>
+
+          {openAdvances.length > 0 && (
+            <fieldset className="border border-[var(--color-border)] rounded-lg p-3 space-y-2">
+              <legend className="text-xs font-semibold px-1">{t('invoices.advanceDeductions')}</legend>
+              {openAdvances.map(a => (
+                <label key={a.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!deducted[a.id]} onChange={(e) => setDeducted(prev => ({ ...prev, [a.id]: e.target.checked }))} />
+                    {a.number} — {formatDate(a.date)}
+                  </span>
+                  <span className="font-mono text-xs">{t('invoices.advanceRemaining', { amount: formatCurrency(a.remaining), rate: a.vat_rate })}</span>
+                </label>
+              ))}
+            </fieldset>
+          )}
 
           <div className="flex justify-end gap-6 text-sm">
             <div><span className="text-[var(--color-text-secondary)]">{t('invoices.subtotal')}: </span><span className="font-mono font-semibold">{formatCurrency(subtotal)}</span></div>

@@ -178,6 +178,8 @@ export interface InvoiceLine {
   sales_order_line_id?: string | null
   vat_code?: string | null
   vat_amount?: number
+  /** Ligne de déduction d'acompte (montant négatif) : facture d'acompte déduite */
+  advance_invoice_id?: string | null
 }
 
 export interface Invoice {
@@ -1012,6 +1014,11 @@ export interface FiscalYear {
   closed_at: string | null
   closed_by: string | null
   created_at: string
+  /** Résultat déterminé à la clôture (bénéfice > 0, perte < 0) ; null avant clôture */
+  closing_result?: number | null
+  /** Décision n° 3 : l'affectation est exigée avant de clôturer l'exercice suivant */
+  result_allocated_at?: string | null
+  result_allocation_entry_id?: string | null
 }
 
 export interface FiscalPeriod {

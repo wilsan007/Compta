@@ -127,6 +127,74 @@ BEGIN
     format('2026 : %s | 2025 : %s | statuts %s/%s', COALESCE(r1->>'error', r1->>'success'), COALESCE(r2->>'error', r2->>'success'), st1, st2));
 END $$;
 
+-- D10 — affectation du résultat obligatoire avant de clôturer l'exercice suivant (décision n° 3)
+DO $$
+DECLARE t uuid := _mk_tenant('D10', false); fy25 uuid; fy26 uuid; fy27 uuid;
+  r_close25 jsonb; r_early jsonb; r_bad jsonb; r_ok jsonb; r_twice jsonb; r_close26 jsonb; s120 numeric; st26 text;
+BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy25;
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy26;
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2027', '2027-01-01', '2027-12-31', 'open') RETURNING id INTO fy27;
+  PERFORM _as_user();
+  PERFORM _entry(t, 'CAP', DATE '2025-01-02', '[{"a":"512000","d":10000},{"a":"101000","c":10000}]');
+  PERFORM _entry(t, 'VTE', DATE '2025-05-10', '[{"a":"512000","d":1000},{"a":"706000","c":1000}]');
+  PERFORM _entry(t, 'ACH', DATE '2025-06-10', '[{"a":"601000","d":600},{"a":"512000","c":600}]');
+  r_close25 := close_fiscal_year(fy25, fy26, true);
+  BEGIN
+    r_early := close_fiscal_year(fy26, fy27, true);   -- résultat 2025 non affecté
+    r_bad := allocate_result(fy25, '[{"account":"106100","amount":20},{"account":"110000","amount":300}]'::jsonb, NULL, NULL);  -- 320 ≠ 400
+    r_ok := allocate_result(fy25, '[{"account":"106100","amount":20},{"account":"110000","amount":380}]'::jsonb, NULL, NULL);
+    r_twice := allocate_result(fy25, '[{"account":"110000","amount":400}]'::jsonb, NULL, NULL);
+    SELECT COALESCE(sum(jl.debit - jl.credit), 0) INTO s120
+    FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
+    WHERE je.tenant_id = t AND je.status = 'posted' AND je.date >= '2026-01-01' AND jl.account_code = '120000';
+    r_close26 := close_fiscal_year(fy26, fy27, true);
+    SELECT status INTO st26 FROM fiscal_years WHERE id = fy26;
+    PERFORM _rec('D10', 'clôture 2026 refusée tant que le résultat 2025 n''est pas affecté ; affectation exacte, une seule fois',
+      COALESCE((r_close25->>'success')::boolean, false)
+        AND NOT COALESCE((r_early->>'success')::boolean, true) AND COALESCE(r_early->>'error', '') ~ 'Affectez'
+        AND NOT COALESCE((r_bad->>'success')::boolean, true)
+        AND COALESCE((r_ok->>'success')::boolean, false)
+        AND NOT COALESCE((r_twice->>'success')::boolean, true)
+        AND s120 = 0 AND COALESCE((r_close26->>'success')::boolean, false) AND st26 = 'closed',
+      format('clôture 2025=%s | 2026 avant affectation=%s | affectation 320=%s | affectation 400=%s | 2e affectation=%s | 120 en 2026=%s | clôture 2026=%s',
+        r_close25->>'success', COALESCE(r_early->>'error', r_early->>'success'), COALESCE(r_bad->>'error', r_bad->>'success'),
+        COALESCE(r_ok->>'error', r_ok->>'success'), COALESCE(r_twice->>'error', r_twice->>'success'), s120,
+        COALESCE(r_close26->>'error', r_close26->>'success')));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM _rec('D10', 'clôture 2026 refusée tant que le résultat 2025 n''est pas affecté ; affectation exacte, une seule fois', false, SQLERRM);
+  END;
+END $$;
+
+-- D11 — une perte s'affecte au débit (report à nouveau débiteur 119), le 129 est soldé
+DO $$
+DECLARE t uuid := _mk_tenant('D11', false); fy25 uuid; fy26 uuid; r_close jsonb; r_div jsonb; r_ok jsonb; s129 numeric; s119 numeric;
+BEGIN
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2025', '2025-01-01', '2025-12-31', 'open') RETURNING id INTO fy25;
+  INSERT INTO fiscal_years (tenant_id, code, start_date, end_date, status) VALUES (t, '2026', '2026-01-01', '2026-12-31', 'open') RETURNING id INTO fy26;
+  PERFORM _as_user();
+  PERFORM _entry(t, 'CAP', DATE '2025-01-02', '[{"a":"512000","d":10000},{"a":"101000","c":10000}]');
+  PERFORM _entry(t, 'ACH', DATE '2025-06-10', '[{"a":"601000","d":250},{"a":"512000","c":250}]');
+  r_close := close_fiscal_year(fy25, fy26, true);
+  BEGIN
+    r_div := allocate_result(fy25, '[{"account":"457000","amount":250}]'::jsonb, NULL, NULL);   -- pas de dividende sur une perte
+    r_ok := allocate_result(fy25, '[{"account":"119000","amount":250}]'::jsonb, NULL, NULL);
+    SELECT COALESCE(sum(jl.debit - jl.credit) FILTER (WHERE jl.account_code = '129000'), 0),
+           COALESCE(sum(jl.debit - jl.credit) FILTER (WHERE jl.account_code = '119000'), 0)
+      INTO s129, s119
+    FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
+    WHERE je.tenant_id = t AND je.status = 'posted' AND je.date >= '2026-01-01';
+    PERFORM _rec('D11', 'perte 250 : dividende refusé, affectée en 119 (débit), 129 soldé',
+      COALESCE((r_close->>'success')::boolean, false) AND (r_close->>'result')::numeric = -250
+        AND NOT COALESCE((r_div->>'success')::boolean, true) AND COALESCE((r_ok->>'success')::boolean, false)
+        AND s129 = 0 AND s119 = 250,
+      format('clôture=%s résultat=%s | dividende=%s | affectation=%s | 129=%s 119=%s', r_close->>'success', r_close->>'result',
+        COALESCE(r_div->>'error', r_div->>'success'), COALESCE(r_ok->>'error', r_ok->>'success'), s129, s119));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM _rec('D11', 'perte 250 : dividende refusé, affectée en 119 (débit), 129 soldé', false, SQLERRM);
+  END;
+END $$;
+
 -- R01 à R04 — états financiers d'un exercice ouvert
 DO $$
 DECLARE t uuid := _mk_tenant('R01', false); fy uuid; c uuid; inv uuid;
