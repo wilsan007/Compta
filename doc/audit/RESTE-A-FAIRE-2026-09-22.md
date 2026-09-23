@@ -350,12 +350,14 @@ Session parallèle en cours. Vérifier à l'intégration : CA3 séparant l'autol
 #### R-16 🟠 Clés de traduction manquantes ⏳
 Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.loadError` appelé dans de nombreuses pages alors que la clé s'appelle `toast.loadingError`.
 
-#### R-17 🟠 Droits sur les nouvelles RPC
-- **Constat** : `post_payroll_journal`, `convert_quote_to_invoice`, `get_bank_reconciliation_state` ne vérifient que la société, pas le rôle (`has_permission`). C'est le cas de presque toute l'application (D-6).
-- **À faire** : dépend de D-6 ; au minimum, `has_permission('payroll.post')` sur la paie et `has_permission('journal_entry.post')` sur les RPC qui valident des écritures.
-- **Effort** : 0,5 j (au minimum) ; voir H08 pour la généralisation.
+#### R-17 ✅ Droits sur les nouvelles RPC
+- **Constat** : `post_payroll_journal`, `convert_quote_to_invoice` et `get_bank_reconciliation_state` ne vérifiaient que la société, pas le rôle (`has_permission`). C'est le cas de presque toute l'application (D-6).
+- **Vérification du constat, sur le code** : sur les trois, **une seule était un vrai trou**. (1) `has_permission('journal_entry.post')` sur les RPC qui valident des écritures est **déjà en place par construction** : `journal_entry_guard` (187) refuse tout `INSERT` dont le statut n'est pas `draft`, donc le seul chemin vers `posted` est un `UPDATE`, gardé par `enforce_journal_entry_permissions` (154) — cela couvre déjà la paie, les avoirs, la TVA, les amortissements, la clôture POS. (2) `get_bank_reconciliation_state` est une **lecture** `STABLE` : un contrôle de rôle y est sans objet ; ses manques sont R-07/R-09. (3) `convert_quote_to_invoice` crée une facture **en brouillon** et ne valide rien ; aucune clé commerciale n'existe dans `has_permission`, l'ajouter bloquerait tout le monde sauf l'administrateur — dépendance de H08/D-6.
+- **Fait (220)** : la porte de la paie est gardée — `payroll.post` sur `post_payroll_journal`, `payroll.pay` sur le versement ; le socle du rôle `accountant` gagne ces deux clés (sinon la garde bloquerait le comptable : c'est le défaut exact que la 165 avait corrigé pour la validation des écritures). `payroll_post_run` **n'est pas** gardée : elle est appelée en interne par le passage à « payé » (191) et par le versement (212) — y mettre la garde casserait des flux légitimes. Le corps du versement est **renommé** (`payroll_payment_inner`) puis enveloppé dans la garde — recopier 300 lignes aurait fait diverger deux versions —, et l'ancien nom est **révoqué** de `anon` et `authenticated` : sans cela il resterait exposé par PostgREST et la garde serait contournable.
+- **Preuve** : `sql/220_payroll_permission_tests.sql` — **P02 à P05 vus rouges avant**, et le détail rouge est le constat lui-même : le comptable n'avait **aucun** droit de paie (`droits=f`) tout en réussissant l'écriture (la clé métier manquait, l'effet passait par le trigger) ; un lecteur était bloqué par le trigger d'écriture **seulement** — sur un lot déjà comptabilisé, le chemin idempotent le laissait passer sans aucune vérification, et le message parlait de `journal_entry.post`, pas de la paie ; un administrateur révoqué recevait « Lot de paie introuvable » au lieu d'un refus de droit. **5/5 verts après**. 181 (7/7), 212 (9/9) et 166 restent verts.
+- **Effort** : 0,5 j (fait).
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-13, R-14** (≈ 7,6 j). Reste : R-07, R-09, R-10, R-11, R-12, R-17.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-13, R-14, R-17** (≈ 8,1 j). Reste : R-07, R-09, R-10, R-11, R-12.
 
 ---
 
