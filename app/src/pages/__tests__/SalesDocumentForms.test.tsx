@@ -30,6 +30,13 @@ vi.mock('@/lib/queries/sales', () => ({
   updateInvoice: (...a: unknown[]) => updateInvoice(...a), updateQuote: vi.fn(), deleteQuote: vi.fn(),
   updateCreditNote: vi.fn(), deleteCreditNote: vi.fn(), convertQuoteToInvoice: vi.fn(),
 }))
+// R-08 : la fenêtre de règlement propose les comptes bancaires de la société
+vi.mock('@/lib/queries/banking', () => ({
+  getBankAccounts: vi.fn(async () => [
+    { id: 'bq1', name: 'Compte courant', bank_name: 'BCI' },
+    { id: 'bq2', name: 'Compte devises', bank_name: 'BCI' },
+  ]),
+}))
 vi.mock('@/lib/queries/partners', () => ({ getCustomers: vi.fn(async () => customers), createCustomerPayment: (...a: unknown[]) => createCustomerPayment(...a) }))
 vi.mock('@/lib/queries/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/queries/core')>()
@@ -172,10 +179,20 @@ describe('Formulaires de pièces de vente (AUD-E02, AUD-E04)', () => {
     render(<MemoryRouter><InvoicesPage /></MemoryRouter>)
     expect(await screen.findByText('Comptabilisé')).toBeInTheDocument()
     fireEvent.click(screen.getByTitle('invoices.markAsPaid'))
-    // R-08 : le règlement se saisit dans la fenêtre (date, montant, mode, compte)
+    // R-08 : le règlement se saisit dans la fenêtre — et ce qui y est SAISI doit
+    // arriver jusqu'au règlement, sinon tout repartirait en 512000/BQ comme avant
     const dialog = await screen.findByRole('dialog')
+    await waitFor(() => expect(within(dialog).getByText('Compte devises — BCI')).toBeInTheDocument())
+    fireEvent.change(within(dialog).getByLabelText(/payments\.date/), { target: { value: '2026-04-15' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.amount/), { target: { value: '80' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.method/), { target: { value: 'check' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.bankAccount/), { target: { value: 'bq2' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.reference/), { target: { value: 'CHQ-77' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'payments.record' }))
     await waitFor(() => expect(createCustomerPayment).toHaveBeenCalledTimes(1))
-    expect(createCustomerPayment.mock.calls[0][0]).toMatchObject({ number: 'REG-2026-000007', invoice_id: 'v1', amount: 120 })
+    expect(createCustomerPayment.mock.calls[0][0]).toMatchObject({
+      number: 'REG-2026-000007', invoice_id: 'v1',
+      amount: 80, payment_date: '2026-04-15', method: 'check', bank_account_id: 'bq2', reference: 'CHQ-77',
+    })
   })
 })

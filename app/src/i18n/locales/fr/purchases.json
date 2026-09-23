@@ -221,7 +221,8 @@
     "exchangeRate": "Taux de change",
     "refreshRate": "Actualiser le taux",
     "amountCurrency": "Montant en devise",
-    "recordFor": "Régler la facture fournisseur {{number}}"
+    "recordFor": "Régler la facture fournisseur {{number}}",
+    "overpaidNotice": "Excédent de {{amount}} : il sera comptabilisé en avance fournisseur (4091)."
   },
   "suppliers": {
     "title": "Fournisseurs",

@@ -226,6 +226,7 @@ export function PurchaseInvoicesPage() {
           defaultAmount={Number(paying.amount_due ?? paying.total ?? 0)}
           maxAmount={Number(paying.amount_due ?? paying.total ?? 0)}
           defaultReference={paying.supplier_reference || paying.number}
+          overpaidNotice={(excess) => t('payments.overpaidNotice', { amount: excess })}
           onSubmit={(values) => handleRecordPayment(paying, values)}
           onClose={() => setPaying(null)}
         />

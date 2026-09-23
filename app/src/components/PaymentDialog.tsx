@@ -21,8 +21,8 @@ export interface PaymentValues {
 }
 
 export function PaymentDialog({
-  title, subtitle, defaultAmount, maxAmount, defaultReference, amountEditable = true, showAmount = true, submitLabel,
-  onSubmit, onClose,
+  title, subtitle, defaultAmount, maxAmount, defaultReference, overpaidNotice,
+  amountEditable = true, showAmount = true, submitLabel, onSubmit, onClose,
 }: {
   title: string
   subtitle?: string
@@ -30,6 +30,9 @@ export function PaymentDialog({
   /** Montant dû : au-delà, l'excédent part en avance (4191 / 4091) — signalé à l'écran */
   maxAmount?: number
   defaultReference?: string | null
+  /** Achats : l'excédent part en 4091 (avances fournisseurs), pas en 4191 — le
+   *  texte vient donc de l'appelant, qui seul connaît son sens de règlement */
+  overpaidNotice?: (excess: string) => string
   amountEditable?: boolean
   /** Paie : le montant est calculé par le serveur, périmètre par périmètre */
   showAmount?: boolean
@@ -91,7 +94,8 @@ export function PaymentDialog({
         </div>
         {overpaid && (
           <p className="text-xs text-[var(--color-warning-text)]">
-            {t('payments.overpaidNotice', { amount: formatCurrency(amount - (maxAmount ?? 0)) })}
+            {(overpaidNotice ?? ((excess: string) => t('payments.overpaidNotice', { amount: excess })))(
+              formatCurrency(amount - (maxAmount ?? 0)))}
           </p>
         )}
         <div className="grid grid-cols-2 gap-4">

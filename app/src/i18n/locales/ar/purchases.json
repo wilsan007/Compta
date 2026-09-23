@@ -221,7 +221,8 @@
     "exchangeRate": "سعر الصرف",
     "refreshRate": "تحديث السعر",
     "amountCurrency": "المبلغ بالعملة",
-    "recordFor": "تسجيل دفعة لفاتورة المورد {{number}}"
+    "recordFor": "تسجيل دفعة لفاتورة المورد {{number}}",
+    "overpaidNotice": "فائض قدره {{amount}}: سيُقيَّد كدفعة مقدَّمة للمورّد (4091)."
   },
   "suppliers": {
     "title": "الموردون",

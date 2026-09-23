@@ -509,6 +509,30 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Vérification en profondeur de R-01 à R-08 (23/09) — trois défauts mesurés
+      # sur base neuve, rouges avant ces migrations.
+
+      # R-04 — le versement de la paie n'accepte qu'un lot de la société active,
+      # et solde chaque compte de dette sociale, pas seulement le premier.
+      - name: 'AUD : périmètre du versement de la paie (224)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/224_payroll_payment_scope_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-06 — l'ordre des lignes d'une commande est total : deux lignes ne
+      # peuvent plus porter le même, sinon une réception compterait deux fois.
+      - name: 'AUD : ordre total des lignes de commande (225)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/225_purchase_line_order_unique_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-01 — la VNC de l'historique d'amortissement ne retranche plus deux fois
+      # la valeur résiduelle : elle dit le même chiffre que la fiche.
+      - name: 'AUD : valeur nette et valeur résiduelle (226)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/226_asset_net_book_value_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'

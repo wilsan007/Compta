@@ -26,6 +26,13 @@ vi.mock('@/lib/queries/sales', () => ({
   updatePurchaseCreditNote: (...a: unknown[]) => updatePurchaseCreditNote(...a),
   updatePurchaseInvoice: (...a: unknown[]) => updatePurchaseInvoice(...a), deletePurchaseCreditNote: vi.fn(),
 }))
+// R-08 : la fenêtre de règlement propose les comptes bancaires de la société
+vi.mock('@/lib/queries/banking', () => ({
+  getBankAccounts: vi.fn(async () => [
+    { id: 'bq1', name: 'Compte courant', bank_name: 'BCI' },
+    { id: 'bq2', name: 'Compte devises', bank_name: 'BCI' },
+  ]),
+}))
 vi.mock('@/lib/queries/partners', () => ({ getSuppliers: vi.fn(async () => suppliers), createSupplierPayment: (...a: unknown[]) => createSupplierPayment(...a) }))
 vi.mock('@/lib/queries/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/queries/core')>()
@@ -141,11 +148,20 @@ describe('Formulaires de pièces d’achat (AUD-G01, AUD-G02)', () => {
     const buttons = screen.getAllByTitle('purchaseInvoices.markPaid')
     expect(buttons).toHaveLength(1)
     fireEvent.click(buttons[0])
-    // R-08 : le décaissement se saisit dans la fenêtre (date, montant, mode, compte)
+    // R-08 : le décaissement se saisit dans la fenêtre — et ce qui y est SAISI doit
+    // arriver jusqu'au règlement, sinon tout repartirait en 512000/BQ comme avant
     const dialog = await screen.findByRole('dialog')
+    await waitFor(() => expect(within(dialog).getByText('Compte devises — BCI')).toBeInTheDocument())
+    fireEvent.change(within(dialog).getByLabelText(/payments\.date/), { target: { value: '2026-04-20' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.amount/), { target: { value: '50' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.method/), { target: { value: 'transfer' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.bankAccount/), { target: { value: 'bq2' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'payments.record' }))
     await waitFor(() => expect(createSupplierPayment).toHaveBeenCalledTimes(1))
-    expect(createSupplierPayment.mock.calls[0][0]).toMatchObject({ number: 'DEC-2026-000003', purchase_invoice_id: 'p-ok', amount: 120, status: 'recorded' })
+    expect(createSupplierPayment.mock.calls[0][0]).toMatchObject({
+      number: 'DEC-2026-000003', purchase_invoice_id: 'p-ok', status: 'recorded',
+      amount: 50, payment_date: '2026-04-20', method: 'transfer', bank_account_id: 'bq2',
+    })
     expect(updatePurchaseInvoice).not.toHaveBeenCalled()
   })
 })

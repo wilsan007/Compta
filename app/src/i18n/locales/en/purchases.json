@@ -221,7 +221,8 @@
     "exchangeRate": "Exchange rate",
     "refreshRate": "Refresh rate",
     "amountCurrency": "Amount in currency",
-    "recordFor": "Record payment for supplier invoice {{number}}"
+    "recordFor": "Record payment for supplier invoice {{number}}",
+    "overpaidNotice": "Overpayment of {{amount}}: it will be recorded as a supplier advance (4091)."
   },
   "suppliers": {
     "title": "Suppliers",
