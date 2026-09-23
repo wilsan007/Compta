@@ -153,6 +153,59 @@ BEGIN
 END $$;
 
 -- ------------------------------------------------------------
+-- H02 : rattacher chaque ligne fille à un parent de la MÊME société
+--
+-- Les colonnes uuid obligatoires sont alimentées par gen_random_uuid() : la
+-- ligne fille pointe donc vers un parent qui n'existe pas. Or plusieurs tables
+-- de lignes (invoice_lines, purchase_request_lines, pick_list_lines,
+-- distribution_grill_lines, project_task_tags, crm_campaign_recipients,
+-- service_ticket_messages) portent une politique RLS qui passe par le parent
+-- (EXISTS sur invoices, pick_lists…) et ignore leur propre tenant_id : sans
+-- parent, la ligne est invisible à sa propre société, et son `leak_count = 0`
+-- est vrai pour la mauvaise raison — rien n'y est visible, ni les données de B,
+-- ni les siennes. On recolle donc chaque clé étrangère simple vers la ligne
+-- semée dans la table parente pour la même société.
+-- ------------------------------------------------------------
+DO $$
+DECLARE
+  v_tenant_a uuid := 'a0000000-0000-0000-0000-00000000000a';
+  v_tenant_b uuid := 'b0000000-0000-0000-0000-00000000000b';
+  fk RECORD;
+  v_tenant uuid;
+BEGIN
+  SET LOCAL session_replication_role = 'replica';
+
+  FOR fk IN
+    SELECT ch.relname AS child_table, ca.attname AS child_col,
+           pr.relname AS parent_table, pa.attname AS parent_col
+    FROM pg_constraint c
+    JOIN pg_class ch ON ch.oid = c.conrelid
+    JOIN pg_class pr ON pr.oid = c.confrelid
+    JOIN pg_namespace n ON n.oid = ch.relnamespace AND n.nspname = 'public'
+    JOIN pg_attribute ca ON ca.attrelid = c.conrelid AND ca.attnum = c.conkey[1]
+    JOIN pg_attribute pa ON pa.attrelid = c.confrelid AND pa.attnum = c.confkey[1]
+    WHERE c.contype = 'f'
+      AND array_length(c.conkey, 1) = 1
+      AND c.conrelid <> c.confrelid
+      AND format_type(ca.atttypid, NULL) = 'uuid'
+      AND ch.relname IN (SELECT table_name FROM rls_test_tables)
+      AND pr.relname IN (SELECT table_name FROM rls_test_tables)
+  LOOP
+    FOREACH v_tenant IN ARRAY ARRAY[v_tenant_a, v_tenant_b] LOOP
+      BEGIN
+        EXECUTE format(
+          'UPDATE public.%I SET %I = (SELECT p.%I FROM public.%I p WHERE p.tenant_id = %L LIMIT 1) WHERE tenant_id = %L',
+          fk.child_table, fk.child_col, fk.parent_col, fk.parent_table, v_tenant, v_tenant);
+      EXCEPTION WHEN OTHERS THEN
+        -- contrainte d'unicité ou de cohérence : la ligne reste orpheline et
+        -- le contrôle final (invisible à sa propre société) le signalera.
+        NULL;
+      END;
+    END LOOP;
+  END LOOP;
+END $$;
+
+-- ------------------------------------------------------------
 -- Vérification sous le rôle authenticated, connecté comme l'utilisateur de A
 -- ------------------------------------------------------------
 BEGIN;
@@ -207,6 +260,14 @@ BEGIN
   FROM rls_test_tables;
 
   RAISE NOTICE 'RLS : % tables, % alimentées, % visibles par leur propre tenant, % fuite(s)', v_total, v_seeded, v_own, v_leaks;
+
+  -- H02 : une table qu'on ne voit PAS depuis sa propre société ne prouve rien.
+  -- Son `leak_count = 0` est alors vrai pour la mauvaise raison (rien n'est
+  -- visible, ni les données de B, ni les siennes) : le test serait vert sans
+  -- avoir rien vérifié. Toute table dans ce cas fait échouer le contrôle.
+  IF v_seeded > v_own THEN
+    RAISE EXCEPTION 'FAIL : % table(s) alimentée(s) invisible(s) à leur propre société — isolation non prouvée sur elles', v_seeded - v_own;
+  END IF;
 
   IF v_leaks > 0 THEN
     RAISE EXCEPTION 'FAIL : % table(s) laissent voir les données d''un autre tenant', v_leaks;

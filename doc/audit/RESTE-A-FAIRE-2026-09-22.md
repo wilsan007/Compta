@@ -6,7 +6,7 @@
 > **Sources** : [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) (§ 6, journal des vagues), [suivi](SUIVI-CAHIER-CORRECTIF.md), [cahier de localisation](../localisation/CAHIER-DES-CHARGES-LOCALISATION.md), [plan de perfection](PLAN-PERFECTION-9.5.md), mesures relevées dans le dépôt le 22/09.
 
 > **Avancement du 23/09 (fin de journée)** — **phase 1 close** :
-> - **R-09 ✅** l'état de rapprochement devient un écran (223) et le pointage écrit les **deux** côtés ; **R-10 ✅** lecteur OFX (SGML et XML), contrôle de devise, solde de clôture repris à l'import, fixtures de relevés réels — et **deux lecteurs faux** (CFONB 120 : dates, montants et libellés ; MT940 : date de valeur) corrigés, trouvés par ces fixtures (§ 4.2). Il ne reste de la phase 1 que **R-15** et **R-16**, en cours dans d'autres sessions.
+> - **R-09 ✅** l'état de rapprochement devient un écran (223) et le pointage écrit les **deux** côtés ; **R-10 ✅** lecteur OFX (SGML et XML), contrôle de devise, solde de clôture repris à l'import, fixtures de relevés réels — et **deux lecteurs faux** (CFONB 120 : dates, montants et libellés ; MT940 : date de valeur) corrigés, trouvés par ces fixtures (§ 4.2). **La phase 1 est close, R-15 et R-16 compris** : les deux sessions parallèles ont livré et sont commitées (`f948fe9` pour la TVA autoliquidée — migration **197** —, `d980c5a` pour le contrôle des clés i18n) ; vérifié le 23/09 au soir : 197 rejouée 7/7, job CI « i18n (parité fr/en/ar + clés utilisées) » vert, `toast.loadError` 0 occurrence dans `src/`.
 > - **P0-06 reprise et prolongée** sur la copie de production : les **13 migrations 214 → 226** puis la **227** (garde de société, autre session) passent sans erreur — **34 suites SQL vertes** (179 et 218 échouent sous le rôle `postgres` non superutilisateur à cause de `session_replication_role` ; elles passent sous `supabase_admin`), `plpgsql_check` 0 erreur, contrôle de trigger atteignable OK. Chaîne complète rejouée **sur base neuve : 202 migrations, 0 erreur**.
 > - **Réserve de méthode, mesurée** : la copie de répétition restaure les fonctions mais **pas leurs ACL** (restauration sous un rôle non propriétaire). `ci/check_tenant_guard` y signale donc **14 fonctions sans garde de société** qui n'en manquent pas en production : `pg_proc.proacl` relu **sur le cloud** montre `create_invoice_atomic` refusé à `anon` et `seed_vat_accounts` refusé à `anon` et `authenticated`, exactement l'état voulu par les migrations. **Le contrôle doit être lu sur la production après déploiement (P0-09), jamais sur la copie.**
 > - **P0-07 ✅ le 23/09 au soir** : sauvegarde (`prod-20260923-avant-deploiement`, restaurée et vérifiée), puis les **29 migrations 189 → 227 appliquées à la production sans aucune erreur**. Contrôles : 369 tables, 343 fonctions, 1 788 policies, `plpgsql_check` 0 erreur, trigger atteignable OK, **garde de société OK** (81 fonctions, aucune exposée sans contrôle), **96/96 RPC de l'écran présentes**. **P0-09 ✅** : inscription réelle sur le cloud — 712 comptes, 10 journaux, 1 exercice, 1 utilisateur + fiche salarié, puis société et utilisateur supprimés. **P0-08 reste 👤** : les 14 parcours à l'écran, après déploiement du front.
@@ -84,8 +84,9 @@ Légende : 🔴 bloquant · 🟠 résultat faux ou trompeur · 🟡 confort ou r
 
 | Session | Sujet | À surveiller |
 |---|---|---|
-| ⏳ « Séparer TVA FR20 et autoliquidation » | `vat_account_mapping` envoie `FR20` et `AUTOLIQ` vers les mêmes comptes 445711/445661 | Elle posera une migration : numéro libre à vérifier (**197 à 199** restent dans la plage V3) |
-| ⏳ « Détecter les clés i18n manquantes » | contrôle CI des clés utilisées, `toast.loadError` absent partout | Touche `src/i18n/locales/*` et `ci.yml`, deux fichiers que V3 modifie aussi |
+| ✅ « Séparer TVA FR20 et autoliquidation » | terminée : migration **197** commitée (`f948fe9`), 7/7 verte — R-15 | — |
+| ✅ « Détecter les clés i18n manquantes » | terminée : `check-i18n-usage.mjs` + étape CI (`d980c5a`) — R-16 | — |
+| ⏳ session en cours (copie de travail **non commitée**, 23/09) | `formatCurrency` à la place de `… €` codé en dur (4 pages : sortie de salarié, ordres de fabrication, préparation de paie) et **mode strict dans `tsconfig.test.json` (SOC-03)** | Elle a ajouté `t('settings.api.rateLimit')` dans `ApiDocsPage.tsx` **sans créer la clé** : `check-i18n-usage.mjs` est **rouge** dans la copie de travail (vert à `HEAD`). À corriger avant son commit, sinon la CI tombe. |
 | « Migration PostgreSQL 17 production » | 200 à 209 réservés ; migrations exécutées en prod : **136 à 188, ne plus jamais les modifier** | Elle a indexé ses fichiers dans l'index git **partagé** |
 | « lancer v2 » | Lot D commité ; a pris 200+ un temps, puis y a renoncé | — |
 
@@ -398,11 +399,14 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 
 ### 4.4 Qualité transversale
 
-#### R-15 🔴 TVA : `FR20` et `AUTOLIQ` sur les mêmes comptes ⏳
-Session parallèle en cours. Vérifier à l'intégration : CA3 séparant l'autoliquidation, libellés des comptes 445711/445661 corrigés, reprise des écritures existantes si nécessaire.
+#### R-15 ✅ TVA : `FR20` et `AUTOLIQ` sur les mêmes comptes
+- **Fait (197, `f948fe9`)** par la session parallèle : comptes propres — AUTOLIQ → 445790 (due) / 445668 (déductible), UE → 445200 / 445667 —, libellés portés par le paramétrage (les comptes du 20 % s'intitulaient « TVA collectée AUTOLIQ » pour toutes les sociétés), drapeau `reverse_charge`, écriture d'achat autoliquidé D déductible / C due, et `calculate_vat_ca3` corrigée : elle additionnait les factures « paid »/« sent » alors qu'une facture validée reste `draft` — la déclaration valait **0**.
+- **Vérifié le 23/09** : `sql/197_vat_reverse_charge_tests.sql` rejoué **7/7** sur base neuve, 192 (15/15) et 102 restent verts ; CI verte sur le commit.
+- **Reste** : la lecture de la CA3 elle-même (cases, TVA sur encaissements) est couverte par **M-10** (phase 3), pas par R-15.
 
-#### R-16 🟠 Clés de traduction manquantes ⏳
-Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.loadError` appelé dans de nombreuses pages alors que la clé s'appelle `toast.loadingError`.
+#### R-16 ✅ Clés de traduction manquantes
+- **Fait (`d980c5a`)** : `scripts/check-i18n-usage.mjs` analyse le code au compilateur TypeScript et refuse toute clé littérale `t('…')` absente en fr ; étape CI « Lot I : clés i18n utilisées dans le code » dans le job i18n.
+- **Vérifié le 23/09** : `toast.loadError` — le point connu — **0 occurrence** dans `src/` ; job i18n vert sur les 8 derniers runs.
 
 #### R-17 ✅ Droits sur les nouvelles RPC
 - **Constat** : `post_payroll_journal`, `convert_quote_to_invoice` et `get_bank_reconciliation_state` ne vérifiaient que la société, pas le rôle (`has_permission`). C'est le cas de presque toute l'application (D-6).
@@ -411,7 +415,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **Preuve** : `sql/220_payroll_permission_tests.sql` — **P02 à P05 vus rouges avant**, et le détail rouge est le constat lui-même : le comptable n'avait **aucun** droit de paie (`droits=f`) tout en réussissant l'écriture (la clé métier manquait, l'effet passait par le trigger) ; un lecteur était bloqué par le trigger d'écriture **seulement** — sur un lot déjà comptabilisé, le chemin idempotent le laissait passer sans aucune vérification, et le message parlait de `journal_entry.post`, pas de la paie ; un administrateur révoqué recevait « Lot de paie introuvable » au lieu d'un refus de droit. **5/5 verts après**. 181 (7/7), 212 (9/9) et 166 restent verts.
 - **Effort** : 0,5 j (fait).
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-14 et R-17** (≈ 13,85 j). **La phase 1 est close** : ne restent que R-15 et R-16, en cours dans d'autres sessions.
+**Total phase 1** : ≈ 15 j. **Fait au 23/09 : R-01 à R-17, sans exception** (R-15 et R-16 livrés par les sessions parallèles et vérifiés ici). **La phase 1 est close.**
 
 ---
 
@@ -423,7 +427,7 @@ Reprise des lots H, I, J du plan correctif, mis à jour avec les mesures du 22/0
 
 | Réf | Constat | À faire | Test / preuve | Effort |
 |---|---|---|---|---:|
-| **H02** 🟠 | `105_rls_tests.sql` : 7 tables non visibles par leur propre société (330/337) | lister les 7 tables ; pour chacune, « politique manquante » (corriger) ou « table de service » (documenter) ; faire échouer 105 sur toute table non justifiée | 105 : 337/337 ou exceptions justifiées | 0,5 j |
+| **H02** ✅ | **Aucune politique ne manquait — c'est le test qui ne prouvait rien sur ces 7 tables.** Mesuré le 23/09 sur base neuve (202 migrations) : `crm_campaign_recipients`, `distribution_grill_lines`, **`invoice_lines`**, `pick_list_lines`, `project_task_tags`, `purchase_request_lines`, `service_ticket_messages`. Toutes portent une politique qui passe par le **parent** (`EXISTS` sur `invoices`, `pick_lists`…) ; or le semeur remplit les uuid obligatoires par `gen_random_uuid()`, donc la ligne fille pointait vers un parent inexistant : invisible à sa propre société, et son `leak_count = 0` était vrai **pour la mauvaise raison**. | fait : le test recolle chaque clé étrangère simple vers la ligne semée dans la table parente de la **même** société, et **échoue** désormais dès qu'une table alimentée reste invisible à sa société | **rouge vu d'abord** (7 tables à 0), puis **340 tables, 340 alimentées, 340 visibles, 0 fuite** — en-tête `x-tenant-id` falsifié compris. L'insertion est elle aussi gardée par le parent (`WITH CHECK` sur `invoices`), donc une société ne peut pas rattacher une ligne au document d'une autre. | 0,5 j (fait) |
 | **H03** 🔴 | `generate-pdf` : SSRF en lecture prouvée (I1), `html` fourni par le client, interpolation sans échappement (I3), déployée `--no-verify-jwt`, aucun appelant (I2) | selon D-4 ; à défaut : **retirer de `deploy-all-functions.sh`** et supprimer la fonction du projet | test : appel sans jeton → 401 ; `<iframe>` interne → refus | 0,5 à 1 j |
 | **H04** 🟠 | `ocr-invoice-import` envoie des factures à OpenAI (I4) | selon D-5 : consentement par société, désactivé par défaut, mention dans la documentation et le registre RGPD | test : société sans consentement → refus | 0,5 j |
 | **H05** 🔴 👤 | clé `sb_secret_…` en clair | rotation (👤-1), puis `gitleaks` sur tout l'historique | job `security-audit` vert | — |
@@ -438,12 +442,12 @@ Reprise des lots H, I, J du plan correctif, mis à jour avec les mesures du 22/0
 
 | Réf | Constat (mesuré le 22/09) | À faire | Effort |
 |---|---|---|---:|
-| **I01** 🟠 | `confirmSync` (= `window.confirm`) dans **82 fichiers** ; `window.prompt` **9 fois** (ex. motif d'avoir dans `InvoicesPage`) | migrer vers `useConfirm` / une vraie fenêtre ; règle CI interdisant `confirmSync` et `window.prompt` | 2 j |
+| **I01** 🟠 | `confirmSync` (= `window.confirm`) dans **85 fichiers** (remesuré le 23/09 : 82 le 22/09, le compte **monte**) ; `window.prompt` **9 fois** (ex. motif d'avoir dans `InvoicesPage`) | migrer vers `useConfirm` / une vraie fenêtre ; règle CI interdisant `confirmSync` et `window.prompt` | 2 j |
 | **I02** 🟡 | champs factices de `ChartAccountsPage` (lignes 617–633 au 21/09) | brancher sur des colonnes réelles ou retirer | 0,25 j |
 | **I03** 🟠 | sélecteur d'exercice et de dates : fait sur bilan et compte de résultat (V2) | étendre à SIG, balance, grand livre, FEC, TVA | 0,5 j |
 | **I04** 🟠 | messages SQL bruts à l'écran (« violates check constraint… ») | traduire les erreurs métier des triggers (codes `check_violation` + message) en clés i18n fr/en/ar ; les nouveaux messages de 190–196 sont en français seulement | 1 j |
 | **I05** 🟡 👤 | contraste H2/H3 (D-7) | éclaircir les fonds ; vider `app/.contrast-allowlist.json` | 0,5 j |
-| **I06** ⏳ | clés i18n manquantes | session parallèle (R-16) | — |
+| **I06** ✅ | clés i18n manquantes | fait (R-16, `d980c5a`) : contrôle CI des clés utilisées | — |
 | **I07** 🟡 | libellés codés en dur dans les pages modifiées : « Comptabilisé », « Non comptabilisé », « Compta », « Rapprochement 3 voies » | clés i18n | 0,25 j |
 | **I08** 🟠 | arabe : revue par un locuteur natif (plan § 3) | 👤 relecteur ; RTL vérifié écran par écran (P0-08) | 1 j + relecture |
 
