@@ -64,7 +64,16 @@ WHERE n.nspname = 'public' AND p.prokind IN ('f', 'p')
   -- L'outillage des suites de test (_rec, _mk_tenant, _as_user…) est créé par
   -- ci/audit_helpers.sql dans la base de CI, jamais par une migration : il
   -- n'existe pas en production. Ce contrôle passe d'ailleurs AVANT les suites.
-  AND p.proname NOT LIKE '\_%';
+  AND p.proname NOT LIKE '\_%'
+  -- Les fonctions d'extension (pgcrypto, uuid-ossp, pg_trgm, et plpgsql_check
+  -- que la CI installe APRÈS les migrations) ne sont pas les nôtres : elles
+  -- arrivent avec leurs droits par défaut, hors de portée d'une migration qui
+  -- s'est déjà exécutée. La 228 révoque celles qui existent au déploiement ;
+  -- installer une extension dans `public` reste un acte délibéré, qui se relit
+  -- pour lui-même. Le nombre d'écartées est affiché, pour que l'exclusion se voie.
+  AND NOT EXISTS (SELECT 1 FROM pg_depend d
+                  WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
+                    AND d.refclassid = 'pg_extension'::regclass AND d.deptype = 'e');
 
 CREATE TEMP TABLE anon_grants_verdicts AS
 SELECT c.nom, c.args, c.via_public, c.via_anon, c.prosecdef,
@@ -74,10 +83,15 @@ WHERE c.via_public OR c.via_anon;
 
 DO $$
 DECLARE
-  v_corpus int; v_exposees int; v_inscrites int; v_definer int;
+  v_corpus int; v_exposees int; v_inscrites int; v_definer int; v_extensions int;
   v_hors text; v_perimees text; v_row record;
 BEGIN
   SELECT count(*) INTO v_corpus FROM anon_grants_corpus;
+  SELECT count(*) INTO v_extensions
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace AND n.nspname = 'public'
+  WHERE EXISTS (SELECT 1 FROM pg_depend d
+                WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
+                  AND d.refclassid = 'pg_extension'::regclass AND d.deptype = 'e');
   IF v_corpus = 0 THEN
     RAISE EXCEPTION 'check_anon_grants : aucune fonction examinée — le contrôle ne vérifie rien';
   END IF;
@@ -102,8 +116,8 @@ BEGIN
     WHERE v.nom IS NULL
   ) s;
 
-  RAISE NOTICE 'check_anon_grants : % fonction(s) dans public, % exposée(s) sans connexion (% SECURITY DEFINER), % inscrite(s) au registre',
-    v_corpus, v_exposees, v_definer, v_inscrites;
+  RAISE NOTICE 'check_anon_grants : % fonction(s) examinées dans public (% écartées : fonctions d''extension), % exposée(s) sans connexion (% SECURITY DEFINER), % inscrite(s) au registre',
+    v_corpus, v_extensions, v_exposees, v_definer, v_inscrites;
 
   IF v_hors IS NOT NULL THEN
     RAISE EXCEPTION E'check_anon_grants : % fonction(s) appelables par un visiteur non connecté :\n  %\n'

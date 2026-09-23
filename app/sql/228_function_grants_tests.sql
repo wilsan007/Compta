@@ -97,6 +97,9 @@ BEGIN
   SELECT count(*), string_agg(p.proname, ', ' ORDER BY p.proname) INTO n, noms
   FROM pg_proc p JOIN pg_namespace ns ON ns.oid = p.pronamespace AND ns.nspname = 'public'
   WHERE p.proname NOT LIKE '\_%'   -- outillage des suites de test, absent de la production
+    AND NOT EXISTS (SELECT 1 FROM pg_depend d   -- fonctions d'extension : voir ci/check_anon_grants.sql
+                    WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid
+                      AND d.refclassid = 'pg_extension'::regclass AND d.deptype = 'e')
     AND (p.proacl IS NULL            -- NULL = droit par défaut = EXECUTE à PUBLIC
          OR EXISTS (SELECT 1 FROM aclexplode(p.proacl) a
                     WHERE (a).privilege_type = 'EXECUTE' AND (a).grantee = 0));
