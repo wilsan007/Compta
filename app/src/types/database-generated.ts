@@ -16479,6 +16479,9 @@ export interface Database {
         base_account: string | null
         reverse_charge: boolean
         account_name: string | null
+        label: string | null
+        ca3_base_box: string | null
+        ca3_tax_box: string | null
       }
       Insert: {
         id?: string
@@ -16491,6 +16494,9 @@ export interface Database {
         base_account?: string
         reverse_charge?: boolean
         account_name?: string
+        label?: string
+        ca3_base_box?: string
+        ca3_tax_box?: string
       }
       Update: {
         id?: string
@@ -16503,6 +16509,9 @@ export interface Database {
         base_account?: string
         reverse_charge?: boolean
         account_name?: string
+        label?: string
+        ca3_base_box?: string
+        ca3_tax_box?: string
       }
       Relationships: []
     }

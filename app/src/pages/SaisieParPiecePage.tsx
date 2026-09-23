@@ -2,11 +2,13 @@ import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Breadcrumb, Input, Select } from '@/components/ui'
 import { errorMessage, formatCurrency } from '@/lib/utils'
-import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts, getThirdPartyAccounts, getEntryTemplates, getTaxRates, getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateVAT, calculateEcheance } from '@/lib/queries/accounting'
+import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts, getThirdPartyAccounts, getEntryTemplates, getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateEcheance } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, CheckCircle2, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
-import type { Journal, FiscalYear, FiscalPeriod, ChartAccount, ThirdPartyAccount, EntryTemplate, TaxRate } from '@/types'
+import type { Journal, FiscalYear, FiscalPeriod, ChartAccount, ThirdPartyAccount, EntryTemplate } from '@/types'
+import { getVatCodes } from '@/lib/queries/businessFunctions'
+import { buildVatLines, type VatCode } from '@/lib/vatLines'
 import { useToast } from '@/lib/toast'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
@@ -45,7 +47,7 @@ export function SaisieParPiecePage() {
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
-  const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+  const [vatCodes, setVatCodes] = useState<VatCode[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -76,14 +78,14 @@ export function SaisieParPiecePage() {
         getChartAccounts(),
         getThirdPartyAccounts(),
         getEntryTemplates(),
-        getTaxRates(),
+        getVatCodes(),
       ])
       setJournals(jls || [])
       setFiscalYears(fys || [])
       setAccounts(accs || [])
       setThirdParties(tp || [])
       setTemplates(tmpls || [])
-      setTaxRates(txs || [])
+      setVatCodes(txs || [])
       if (fys && fys.length > 0) {
         setSelectedYear(fys[0].id)
       }
@@ -162,40 +164,43 @@ export function SaisieParPiecePage() {
 
   function handleCalculateVAT(idx: number) {
     const line = lines[idx]
-    const taxRate = taxRates.find((tr) => String(tr.rate) === line.vat_code)
-    if (!taxRate || (!line.debit && !line.credit)) {
+    const code = vatCodes.find((v) => v.vat_code === line.vat_code)
+    const isDebit = Boolean(line.debit)
+    const amount = Number(line.debit) || Number(line.credit) || 0
+    // 198 : comptes du paramétrage TVA ; autoliquidation = TVA déductible et due, contrepartie HT
+    const calc = code ? buildVatLines(code, amount, isDebit) : null
+    if (!code || !calc) {
       toast('warning', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatSelectRate'))
       return
     }
-    const amount = Number(line.debit) || Number(line.credit) || 0
-    const isDebit = Boolean(line.debit)
-    const { ht, tva, ttc } = calculateVAT(amount, taxRate.rate, 'ht')
 
     // Update current line to HT
-    updateLine(idx, 'vat_amount', String(tva))
+    updateLine(idx, 'vat_amount', String(calc.tva))
 
-    // Add TVA line
-    const vatAccount = isDebit ? (taxRate.account_deductible || '445660') : (taxRate.account_collectee || '445710')
-    const vatLine = blankLine()
-    vatLine.account_general = vatAccount
-    vatLine.account_name = taxRate.name
-    vatLine.description = `TVA ${taxRate.rate}%`
-    vatLine.vat_code = line.vat_code
-    if (isDebit) { vatLine.debit = String(tva) } else { vatLine.credit = String(tva) }
+    const vatLines = calc.lines.map((l) => {
+      const vatLine = blankLine()
+      vatLine.account_general = l.account
+      vatLine.account_name = code.label
+      vatLine.description = l.description
+      vatLine.vat_code = code.vat_code
+      if (l.debit) vatLine.debit = String(l.debit)
+      if (l.credit) vatLine.credit = String(l.credit)
+      return vatLine
+    })
 
-    // Add TTC line (contrepartie)
+    // Add TTC line (contrepartie) — HT en autoliquidation
     const ttcLine = blankLine()
     ttcLine.account_general = selectedJournalObj?.account_counterpart || ''
     ttcLine.account_name = 'Contrepartie'
     ttcLine.description = line.description || 'TTC'
-    if (isDebit) { ttcLine.credit = String(ttc) } else { ttcLine.debit = String(ttc) }
+    if (isDebit) { ttcLine.credit = String(calc.counterpart) } else { ttcLine.debit = String(calc.counterpart) }
 
     setLines((prev) => {
       const newLines = [...prev]
-      newLines.splice(idx + 1, 0, vatLine, ttcLine)
+      newLines.splice(idx + 1, 0, ...vatLines, ttcLine)
       return newLines
     })
-    toast('success', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht, tva, ttc }))
+    toast('success', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht: calc.ht, tva: calc.tva, ttc: calc.counterpart }))
   }
 
   function equilibrate() {
@@ -447,8 +452,8 @@ export function SaisieParPiecePage() {
                         onChange={(e) => updateLine(idx, 'vat_code', e.target.value)}
                       >
                         <option value="">—</option>
-                        {taxRates.map((tr) => (
-                          <option key={tr.id} value={tr.rate}>{tr.rate}% — {tr.name}</option>
+                        {vatCodes.map((v) => (
+                          <option key={v.vat_code} value={v.vat_code}>{v.label}</option>
                         ))}
                       </select>
                     </td>

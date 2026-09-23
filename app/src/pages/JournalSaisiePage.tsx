@@ -2,11 +2,13 @@ import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate, evaluateExpression } from '@/lib/utils'
-import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods, createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry, getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber, getJournalPeriodBalance, getAnalyticSections, getTaxRates, calculateVAT, applyAutoLabelRules, calculateEcheance, createChartAccount, chartAccountTypeFromCode, isSegregationEnforced } from '@/lib/queries/accounting'
+import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods, createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry, getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber, getJournalPeriodBalance, getAnalyticSections, applyAutoLabelRules, calculateEcheance, createChartAccount, chartAccountTypeFromCode, isSegregationEnforced } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
-import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount, AnalyticSection, TaxRate } from '@/types'
+import type { Journal, FiscalYear, FiscalPeriod, JournalEntry, ChartAccount, EntryTemplate, ThirdPartyAccount, AnalyticSection } from '@/types'
+import { getVatCodes } from '@/lib/queries/businessFunctions'
+import { buildVatLines, type VatCode } from '@/lib/vatLines'
 import { useToast } from '@/lib/toast'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
@@ -422,7 +424,7 @@ function SaisieForm({
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [analyticSections, setAnalyticSections] = useState<AnalyticSection[]>([])
-  const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+  const [vatCodes, setVatCodes] = useState<VatCode[]>([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [pieceNumber, setPieceNumber] = useState('')
@@ -460,13 +462,13 @@ function SaisieForm({
         getEntryTemplates(),
         getThirdPartyAccounts(),
         getAnalyticSections().catch(() => []),
-        getTaxRates().catch(() => []),
+        getVatCodes().catch(() => []),
       ])
       setAccounts(accs || [])
       setTemplates(tmpls || [])
       setThirdParties(tp || [])
       setAnalyticSections(sections || [])
-      setTaxRates(txs || [])
+      setVatCodes(txs || [])
       setPieceNumber(tmpls ? '' : '')
     } catch (err) { console.error('Error loading form data:', err)
     toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
@@ -544,36 +546,36 @@ function SaisieForm({
 
   function handleCalculateVAT(idx: number) {
     const line = lines[idx]
-    const taxRate = taxRates.find((tr) => String(tr.rate) === line.vat_code)
-    if (!taxRate || (!line.debit && !line.credit)) {
+    const code = vatCodes.find((v) => v.vat_code === line.vat_code)
+    const isDebit = Boolean(line.debit)
+    const amount = Number(line.debit) || Number(line.credit) || 0
+    // 198 : comptes du paramétrage TVA ; autoliquidation = TVA déductible et due, contrepartie HT
+    const calc = code ? buildVatLines(code, amount, isDebit) : null
+    if (!code || !calc) {
       toast('warning', t('saisie.vatCalc'), t('saisieParPiece.vatSelectRate'))
       return
     }
-    const amount = Number(line.debit) || Number(line.credit) || 0
-    const isDebit = Boolean(line.debit)
-    const { ht, tva, ttc } = calculateVAT(amount, taxRate.rate, 'ht')
-    const vatAccount = isDebit ? (taxRate.account_deductible || '445660') : (taxRate.account_collectee || '445710')
-    const vatLine = blankLine({
-      account_general: vatAccount,
-      account_name: taxRate.name,
-      description: `TVA ${taxRate.rate}%`,
-      vat_code: line.vat_code,
-      debit: isDebit ? String(tva) : '',
-      credit: isDebit ? '' : String(tva),
-    })
+    const vatLines = calc.lines.map((l) => blankLine({
+      account_general: l.account,
+      account_name: code.label,
+      description: l.description,
+      vat_code: code.vat_code,
+      debit: l.debit ? String(l.debit) : '',
+      credit: l.credit ? String(l.credit) : '',
+    }))
     const ttcLine = blankLine({
       account_general: journal.account_counterpart || '',
       account_name: 'Contrepartie',
       description: line.description || 'TTC',
-      debit: isDebit ? '' : String(ttc),
-      credit: isDebit ? String(ttc) : '',
+      debit: isDebit ? '' : String(calc.counterpart),
+      credit: isDebit ? String(calc.counterpart) : '',
     })
     setLines((prev) => {
       const newLines = [...prev]
-      newLines.splice(idx + 1, 0, vatLine, ttcLine)
+      newLines.splice(idx + 1, 0, ...vatLines, ttcLine)
       return newLines
     })
-    toast('success', t('saisie.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht, tva, ttc }))
+    toast('success', t('saisie.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht: calc.ht, tva: calc.tva, ttc: calc.counterpart }))
   }
 
   function applyTemplate() {
@@ -890,8 +892,8 @@ function SaisieForm({
                         onChange={(e) => updateLine(idx, 'vat_code', e.target.value)}
                       >
                         <option value="">—</option>
-                        {taxRates.map((tr) => (
-                          <option key={tr.id} value={tr.rate}>{tr.rate}% — {tr.name}</option>
+                        {vatCodes.map((v) => (
+                          <option key={v.vat_code} value={v.vat_code}>{v.label}</option>
                         ))}
                       </select>
                     </td>

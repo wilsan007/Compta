@@ -5,6 +5,8 @@ import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntr
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
 import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
 import { useToast } from '@/lib/toast'
+import { getVatCodes } from '@/lib/queries/businessFunctions'
+import type { VatCode } from '@/lib/vatLines'
 import { confirmSync } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
@@ -140,13 +142,6 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
 
 const AMOUNT_TYPES: TemplateAmountType[] = ['input', 'fixed', 'percent', 'balance', 'calc_vat']
 
-const VAT_RATES = [
-  { code: '', label: '—' },
-  { code: 'V0', label: '0% — Exonéré' },
-  { code: 'V5.5', label: '5.5% — Réduit' },
-  { code: 'V10', label: '10% — Intermédiaire' },
-  { code: 'V20', label: '20% — Normal' },
-]
 
 function TemplateForm({ template, journals, onClose, onSaved }: {
   template: EntryTemplate | null
@@ -169,16 +164,20 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
   const [accounts, setAccounts] = useState<any[]>([])
   const [thirdParties, setThirdParties] = useState<any[]>([])
   const [analyticSections, setAnalyticSections] = useState<any[]>([])
+  // 198 : codes du paramétrage TVA (et non plus V0 / V5.5 / V10 / V20, inconnus des déclarations)
+  const [vatCodes, setVatCodes] = useState<VatCode[]>([])
 
   useEffect(() => {
     Promise.all([
       getChartAccounts().catch(() => []),
       getThirdPartyAccounts().catch(() => []),
       getAnalyticSections().catch(() => []),
-    ]).then(([a, tp, as]) => {
+      getVatCodes().catch(() => []),
+    ]).then(([a, tp, as, vc]) => {
       setAccounts(a || [])
       setThirdParties(tp || [])
       setAnalyticSections(as || [])
+      setVatCodes(vc || [])
     })
   }, [])
 
@@ -309,8 +308,9 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
                         value={line.vat_code || ''}
                         onChange={(e) => updateLine(idx, 'vat_code', e.target.value || null)}
                       >
-                        {VAT_RATES.map((v) => (
-                          <option key={v.code} value={v.code}>{v.label}</option>
+                        <option value="">—</option>
+                        {vatCodes.map((v) => (
+                          <option key={v.vat_code} value={v.vat_code}>{v.label}</option>
                         ))}
                       </select>
                     </div>

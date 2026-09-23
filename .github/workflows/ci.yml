@@ -703,6 +703,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 198 — les CODES de TVA de la saisie manuelle, et les cases A/B de la CA3.
+      # Mesuré le 02/10/2026 : la saisie offrait un code `20` là où le
+      # paramétrage déclare `FR20`, et la vente disparaissait de la synthèse
+      # (base 0, taux 0, sans case). La normalisation et les cases sont ici.
+      - name: 'AUD : codes de TVA de la saisie et cases de la CA3 (198)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/198_vat_codes_ca3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-03 — acomptes : D 411 / C 4191 / C 4457, déduction sur la facture finale, lettrage 4191.
       - name: 'AUD : factures d''acompte et déduction (210)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/210_advance_invoices_tests.sql

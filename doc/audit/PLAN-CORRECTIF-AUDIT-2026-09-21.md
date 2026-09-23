@@ -468,7 +468,29 @@ Après relecture : 180 (**22**), 192 (**15**) verts ; PostgREST **1 489** requê
 
 **Rejeu sur base neuve (jusqu'à 202, avec 197)** : 184 migrations sans erreur ; `plpgsql_check` et contrôle d'atteignabilité des triggers OK ; suites 102, 105, 166, 168, 170, 173, 175, 177 vertes ; 178 (23), 180 (22), 181 (7), 182 (8), 192 (15, dont G10 : les nouveaux comptes sont au plan semé), 197 (7), 202 (13) entièrement vertes ; **rejoué le 22/09 sur la branche à jour (lot D final, V3, 200-202, lot I)** : 184 migrations, 179 (17, R08 compris) verte, PostgREST 1 489 requêtes acceptées ; types régénérés ; oxlint 0, `tsc -b` 0, 1 400 tests unitaires.
 
-**Hors de ce correctif** : Les codes TVA de la saisie manuelle (`JournalSaisiePage`, `SaisieParPiecePage`) sont des taux (`'20'`) et non des codes (`FR20`) : ils ne trouvent aucun paramétrage. Les cases CA3 (`ca3_box`) du paramétrage restent à revoir. Avant déploiement, lister `vat_reverse_charge_legacy_lines` sur une copie de prod.
+**Hors de ce correctif** : ~~les codes TVA de la saisie manuelle sont des taux ; les cases CA3 restent à revoir~~ — traités par la 198, ci-dessous. Avant déploiement, lister `vat_reverse_charge_legacy_lines` sur une copie de prod.
+
+### Codes TVA de la saisie manuelle et cases de la CA3 — 22-23/09/2026 (migration 198)
+
+**Défauts prouvés** (`sql/198_vat_codes_ca3_tests.sql`, 6 scénarios, tous vus rouges avant la 198) :
+- la saisie manuelle proposait les taux de `tax_rates`, **tous pays confondus** (20 % du Maroc, 19 % de l'Allemagne, 22 % de l'Italie…), sans rapport avec les comptes imputés, et enregistrait le **taux** comme code (`'20'`, `'5.5'`) ; les modèles d'écriture un troisième codage (`'V20'`, `'V5.5'`). Aucun ne correspond au paramétrage (`FR20`, `FR055`) : la ligne sortait de la synthèse par code avec un taux 0 et sans case ;
+- le compte de TVA proposé venait de `tax_rates.account_collectee/deductible`, avec repli 445710/445660, et non du paramétrage ;
+- `ca3_box` mélangeait le cadre A (A1, A2, B2) et le cadre B (08) : toute la TVA collectée tombait en « A1 » quel que soit le taux, l'exonéré était en « A2 » (opérations *imposables*) et l'autoliquidation interne en « B2 » (acquisitions intracommunautaires).
+
+| Action | État | Preuve |
+|---|:---:|---|
+| Un seul codage | **OK** | `vat_code_normalize` : `20`, `V20`, `« 10 % »`, `5,5` → `FR20`, `FR10`, `FR055` (code de même taux, non autoliquidé, société d'abord). Appliquée par trigger à l'enregistrement des lignes d'écriture et des modèles, et par `line_vat_code` aux lignes de pièces. Un taux hors paramétrage (19 %) est conservé tel quel, pas ramené à `FR20`. C01, C06. |
+| Historique | **OK** | Une ligne validée est immuable (`prevent_posted_line_modification`) : l'historique n'est **pas** réécrit, il est normalisé à la lecture des déclarations. C02 (ligne posée trigger désactivé, comme avant la 198). La migration compte ces lignes et le dit en `NOTICE`. |
+| Liste proposée | **OK** | RPC `get_vat_codes` (le paramétrage global n'est pas lisible d'un utilisateur : RLS) : code, libellé, taux, autoliquidation, comptes collecté et déductible. Les trois écrans (`JournalSaisiePage`, `SaisieParPiecePage`, `EntryTemplatesPage`) l'utilisent ; `tax_rates` n'alimente plus la saisie. C03. |
+| Calcul de la TVA à la saisie | **OK** | `src/lib/vatLines.ts` (module pur, 4 tests unitaires) : TVA ordinaire → une ligne sur le compte du paramétrage, contrepartie TTC ; **autoliquidation → TVA déductible ET TVA due, contrepartie HT**. Les deux écrans partagent ce module. |
+| Cases CA3 | **OK** | Colonnes `ca3_base_box` (cadre A) et `ca3_tax_box` (cadre B) ; `ca3_box` conservée = taxe, sinon base. 20 % → A1:08, 10 % → A1:9B, 5,5 % → A1:09, 2,1 % → A1:T6, exonéré → E2 sans taxe, acquisition intracommunautaire → B2:08, autoliquidation → A2:08, déductible → 20. C04. |
+| Déclaration ventilée | **OK** | `calculate_vat_ca3` renvoie `ca3` : montant par case, plus 16 (total brut), 17 (dont acquisitions intracommunautaires), 23 (total déductible), 25 (crédit), 28 (TVA nette due), et `unassigned` pour ce qui n'a pas de case. C05 : 08 = 280, 9B = 50, 16 = 330, 17 = 80, 20 = 180, 23 = 180. |
+
+**À faire valider par l'expert-comptable** : les cases retenues, en particulier **T6** (taux 2,1 % métropole) et **A2** pour l'autoliquidation interne (art. 283-2 nonies, sous-traitance BTP). Elles sont regroupées dans un seul `UPDATE` en tête de la 198 : une correction ne demande qu'une nouvelle migration de deux lignes.
+
+**Rejeu sur base neuve (branche à jour, `dc7155b` + 198)** : 188 migrations sans erreur ; `plpgsql_check` et atteignabilité des triggers OK ; suites 102, 105, 166, 168, 170, 173, 175, 177 vertes ; 178 (23), 179 (19), 180 (22), 181 (7), 182 (8), 192 (15), 197 (7), **198 (6)**, 202 (13), 210 (6), 211 (16), 212 (9) entièrement vertes ; types régénérés (3 colonnes ajoutées, rien d'autre) ; `tsc -b` 0, oxlint 0, **1 411 tests unitaires**.
+
+**Non vérifié** : l'affichage dans le navigateur (l'application pointe sur le projet cloud et demande vos identifiants).
 
 
 ### Lot I, `AUD-I06` — clés i18n utilisées — 21/09/2026
