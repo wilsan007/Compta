@@ -7,7 +7,7 @@ import { transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/querie
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
-import { generateFacturX, downloadXML } from '@/lib/facturX'
+import { generateFacturX, downloadXML, isDraftDocument } from '@/lib/facturX'
 import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
@@ -145,17 +145,28 @@ export function InvoicesPage() {
   }
 
   function handleDownload(inv: Invoice) {
-    const content = `${t('invoices.title')} ${inv.number}\n${t('invoices.customer')}: ${inv.customer_name}\n${t('invoices.date')}: ${formatDate(inv.date)}\n${t('invoices.dueDate')}: ${formatDate(inv.due_date)}\n${t('invoices.total')}: ${formatCurrency(Number(inv.total))}\n${t('invoices.balance')}: ${formatCurrency(Number(inv.amount_due))}`
+    // R-11 : un brouillon se télécharge, mais en disant ce qu'il est — et son
+    // nom de fichier l'annonce, pour qu'il ne circule pas comme une facture.
+    const provisoire = isDraftDocument(inv)
+    const mention = provisoire ? `${t('invoices.proFormaNotice')}\n\n` : ''
+    const content = `${mention}${t('invoices.title')} ${inv.number}\n${t('invoices.customer')}: ${inv.customer_name}\n${t('invoices.date')}: ${formatDate(inv.date)}\n${t('invoices.dueDate')}: ${formatDate(inv.due_date)}\n${t('invoices.total')}: ${formatCurrency(Number(inv.total))}\n${t('invoices.balance')}: ${formatCurrency(Number(inv.amount_due))}`
     const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${inv.number}.txt`
+    a.download = provisoire ? `PRO-FORMA-${inv.number}.txt` : `${inv.number}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
 
   function handleEInvoice(inv: Invoice) {
+    // R-11 : le bouton est masqué sur un brouillon, mais la génération refuse
+    // aussi (garde dans facturX.ts) — on ne présente pas une pièce au numéro
+    // provisoire comme une facture électronique.
+    if (isDraftDocument(inv)) {
+      toast('error', tCommon('common.error'), t('invoices.proFormaNotice'))
+      return
+    }
     const customer = customers.find((c) => c.id === inv.customer_id) || null
     const xml = generateFacturX(inv, customer, company)
     downloadXML(xml, `${inv.number}.factur-x.xml`)

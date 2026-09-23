@@ -18,6 +18,7 @@
   },
   "invoices": {
     "title": "Factures",
+    "proFormaNotice": "PRO FORMA — document provisoire, non valable comme facture",
     "subtitle": "Gérez vos factures de vente",
     "new": "Nouvelle facture",
     "create": "Créer une facture",

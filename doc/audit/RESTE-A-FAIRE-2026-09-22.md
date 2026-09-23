@@ -319,10 +319,12 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 
 ### 4.3 Ventes, achats, caisse
 
-#### R-11 🟡 Documents provisoires imprimables
-- **Constat** : un brouillon peut être téléchargé en PDF avec son numéro `BROUILLON-FAC-…`, sans mention.
-- **À faire** : filigrane « PRO FORMA — non valable comme facture » sur tout brouillon ; Factur-X interdit sur brouillon (déjà masqué à l'écran, à interdire côté génération).
-- **Effort** : 0,5 j.
+#### R-11 ✅ Documents provisoires imprimables
+- **Constat** : un brouillon pouvait être téléchargé avec son numéro `BROUILLON-FAC-…`, sans mention.
+- **Vérification du constat, sur le code** : **il n'existe aucun PDF de facture** dans l'application — aucune route d'impression, `SharedDocumentPage` n'en parle pas, la fonction `generate-pdf` n'a aucun appelant. Le seul chemin « imprimable » est le bouton de téléchargement de `InvoicesPage`, qui écrit un **`.txt`** nommé d'après le numéro, **sans condition de statut**. Le « filigrane » du plan ne pouvait donc pas être posé : ce que l'on peut garantir, c'est que le document dit ce qu'il est et que son nom l'annonce. Factur-X : le bouton était masqué à l'écran sur un brouillon, mais `generateFacturX`/`generateUBL` acceptaient n'importe quelle facture — un appel direct produisait un XML au numéro provisoire.
+- **Fait (front, sans migration)** : `isDraftDocument` (statut de validation autre que `validated` ; `validation_status` absent — donnée ancienne — compté comme provisoire, par prudence) ; le téléchargement d'un brouillon porte la mention **`PRO FORMA — document provisoire, non valable comme facture`** et son fichier s'appelle `PRO-FORMA-<numéro>.txt` ; `generateFacturX` et `generateUBL` **refusent** un document provisoire (la garde est dans la génération, pas seulement dans le bouton) ; le bouton de l'écran porte la garde défensive avec un message. Clés fr/en/ar.
+- **Preuve** : `src/lib/__tests__/facturX.test.ts` et `src/pages/__tests__/DraftDocumentPolicy.test.tsx` — **4 des 6 scénarios vus rouges avant** (le XML était produit et le `.txt` ne portait aucune mention), verts après ; les 2 scénarios de non-régression (facture validée) étaient verts d'emblée. 1 413 tests au total.
+- **Effort** : 0,5 j (fait).
 
 #### R-12 🟡 Factures créées par l'API publique ou l'OCR sans lignes
 - **Constat** : `public-api` (`supabase/functions/public-api/index.ts:227`) insère l'en-tête seul ; `ocr-invoice-import` crée probablement des factures d'achat sans ligne (à vérifier). Depuis 190/192, une pièce sans ligne n'est **ni validable ni approuvable**.
@@ -357,7 +359,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **Preuve** : `sql/220_payroll_permission_tests.sql` — **P02 à P05 vus rouges avant**, et le détail rouge est le constat lui-même : le comptable n'avait **aucun** droit de paie (`droits=f`) tout en réussissant l'écriture (la clé métier manquait, l'effet passait par le trigger) ; un lecteur était bloqué par le trigger d'écriture **seulement** — sur un lot déjà comptabilisé, le chemin idempotent le laissait passer sans aucune vérification, et le message parlait de `journal_entry.post`, pas de la paie ; un administrateur révoqué recevait « Lot de paie introuvable » au lieu d'un refus de droit. **5/5 verts après**. 181 (7/7), 212 (9/9) et 166 restent verts.
 - **Effort** : 0,5 j (fait).
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-13, R-14, R-17** (≈ 8,1 j). Reste : R-07, R-09, R-10, R-11, R-12.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-11, R-13, R-14, R-17** (≈ 8,85 j). Reste : R-07, R-09, R-10, R-12.
 
 ---
 

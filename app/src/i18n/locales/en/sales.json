@@ -18,6 +18,7 @@
   },
   "invoices": {
     "title": "Invoices",
+    "proFormaNotice": "PRO FORMA — provisional document, not valid as an invoice",
     "subtitle": "Manage your sales invoices",
     "new": "New invoice",
     "create": "Create an invoice",

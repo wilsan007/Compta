@@ -19,6 +19,28 @@ function formatDateISO(date: string): string {
   return date.split('T')[0]
 }
 
+// ============ R-11 : un document provisoire n'est pas une facture ============
+//
+// Un brouillon peut être téléchargé (il porte alors la mention PRO FORMA), mais
+// il ne peut pas devenir une facture électronique : Factur-X et UBL sont des
+// pièces opposables, et l'écran ne suffisait pas à l'interdire — un appel direct
+// produisait un XML au numéro BROUILLON-FAC-…. La garde est donc au niveau de la
+// génération, pas seulement du bouton.
+//
+// `validation_status` absent (donnée ancienne) est traité comme provisoire : dans
+// le doute, on refuse d'émettre une pièce, on n'en émet pas une douteuse.
+export function isDraftDocument(doc: { validation_status?: string | null } | null | undefined): boolean {
+  return doc?.validation_status !== 'validated'
+}
+
+function assertEInvoiceAllowed(doc: { validation_status?: string | null } | null | undefined): void {
+  if (isDraftDocument(doc)) {
+    throw new Error(
+      'Document provisoire : une facture électronique (Factur-X, UBL) ne peut être générée que sur une facture validée.',
+    )
+  }
+}
+
 // ============ Factur-X (CII / EN 16931) ============
 
 export function generateFacturX(
@@ -26,6 +48,7 @@ export function generateFacturX(
   customer: Customer | null,
   company: CompanySettings | null,
 ): string {
+  assertEInvoiceAllowed(invoice)   // R-11 : jamais sur un brouillon
   const invDate = formatDateISO(invoice.date)
   const dueDate = formatDateISO(invoice.due_date)
   const invNumber = escapeXml(invoice.number)
@@ -175,6 +198,7 @@ export function generateUBL(
   customer: Customer | null,
   company: CompanySettings | null,
 ): string {
+  assertEInvoiceAllowed(invoice)   // R-11 : jamais sur un brouillon
   const invDate = formatDateISO(invoice.date)
   const dueDate = formatDateISO(invoice.due_date)
   const invNumber = escapeXml(invoice.number)
