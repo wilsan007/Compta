@@ -16175,7 +16175,7 @@ export interface Database {
         id: string
         tenant_id: string
         endpoint_id: string
-        event_name: string
+        event_name: string | null
         payload: Json
         signature: string | null
         attempts: number | null
@@ -16199,8 +16199,8 @@ export interface Database {
         id?: string
         tenant_id: string
         endpoint_id: string
-        event_name: string
-        payload: Json
+        event_name?: string
+        payload?: Json
         signature?: string
         attempts?: number
         max_attempts?: number

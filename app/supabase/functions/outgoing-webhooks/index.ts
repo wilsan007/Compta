@@ -243,18 +243,17 @@ async function deliverWebhook(url: string, event: string, payload: any, tenantId
   }
 }
 
-// ASY-01 : Traiter la queue depuis PostgreSQL
+// ASY-01 / H10 : traiter la queue depuis PostgreSQL.
+// Le lot est PRIS par claim_webhook_batch (migration 234) : FOR UPDATE SKIP
+// LOCKED, statut « sending », et aucune tentative consommée. La lecture directe
+// d'avant interrogeait une colonne de retard qui n'existe pas dans la table
+// (elle porte next_attempt_at) : la requête échouait et plus rien n'était
+// jamais livré. Sans verrou, l'appel qui suit une insertion et celui du cron
+// pouvaient en outre livrer deux fois le même événement.
 async function processQueue(supabase: any) {
-  // Récupérer les entries pending/retry qui sont prêtes à être traitées
-  const { data: pending, error } = await supabase
-    .from("webhook_delivery_queue")
-    .select("id, url, event, payload, tenant_id, secret, attempts, next_retry_at")
-    .in("status", ["pending", "retry"])
-    .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
-    .order("created_at", { ascending: true })
-    .limit(50)
+  const { data: pending, error } = await supabase.rpc("claim_webhook_batch", { p_batch_size: 50 })
 
-  if (error) { console.error("outgoing-webhooks fetch pending:", error); return 0 }
+  if (error) { console.error("outgoing-webhooks claim batch:", error); return 0 }
   if (!pending || pending.length === 0) return 0
 
   let processed = 0
@@ -313,7 +312,7 @@ async function processQueue(supabase: any) {
         await supabase.from("webhook_delivery_queue").update({
           attempts: newAttempts,
           status: "retry",
-          next_retry_at: nextRetry,
+          next_attempt_at: nextRetry,
           last_error: result.response_body,
           http_status: result.status,
           updated_at: new Date().toISOString(),
