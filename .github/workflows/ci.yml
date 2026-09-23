@@ -628,6 +628,47 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Audit des modules hors comptabilité (doc/audit/AUDIT-MODULES-HORS-COMPTA-2026-09-23.md).
+      # S-08/S-09 — les RPC de stock suivaient la société de la SESSION et non celle
+      # du mouvement, et la quantité d'une transaction concurrente était perdue sans
+      # bruit (ON CONFLICT DO NOTHING). T01, T02, T03 et T04 vus rouges.
+      - name: 'AUD : société du mouvement et addition atomique (240)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/240_stock_movement_tenant_and_upsert_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-01 à S-04, S-10, S-11 — la réception n'entrait nulle part (pas de dépôt),
+      # ne valait rien (pas de couche) et ne s'écrivait pas ; les comptes étaient
+      # codés en dur et la traçabilité des lots était décorative. T01 à T07 rouges.
+      - name: 'AUD : réceptions, valorisation et écriture de stock (241)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/241_receipt_stock_and_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-05 à S-07 — la livraison décrémentait l'article sans son dépôt, ne
+      # consommait aucune couche et ne libérait jamais la réservation de la
+      # commande (le déclencheur écoutait un statut que l'écran n'écrit pas).
+      - name: 'AUD : livraisons, dépôt et réservations (242)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/242_delivery_warehouse_and_reservation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # RH-01 à RH-04 — les écrans affichaient « null null » (first_name/last_name
+      # jamais remplis), deux calculate_payslip coexistaient (les taux fictifs
+      # étaient atteignables), les heures d'un pointage se dupliquaient à chaque
+      # réapprobation et les heures supplémentaires étaient comptées deux fois.
+      - name: 'AUD : fiches salariés, paie et pointages (243)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/243_payroll_and_employee_name_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # SUP-01 à SUP-03 — supprimer un salarié effaçait ses bulletins, un compte
+      # bancaire ses opérations, un article son historique de mouvements.
+      - name: 'AUD : suppressions qui préservent l''historique (244)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/244_preserve_history_delete_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Lot D — 3 exercices, 100 000 écritures aléatoires (graine fixe) : balance, compte de
       # résultat, bilan, à-nouveaux après deux clôtures, numérotation continue, clôture < 30 s.
       # ≈ 70 s sur PostgreSQL 16 local.

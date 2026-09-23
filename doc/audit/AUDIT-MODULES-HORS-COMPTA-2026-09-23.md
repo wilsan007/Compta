@@ -5,6 +5,11 @@ existent mais **n'ont jamais été vérifiés en exécutant un scénario chiffr�
 la phase 1 (R-01 à R-17) ont traité la saisie, la clôture, les états financiers, et une première
 passe sur ventes / achats / paie / banque. Tout ce qui suit est **nouveau**.
 
+> **Les 18 premiers défauts (S-01 → S-11, RH-01 → RH-04, SUP-01 → SUP-03) sont corrigés** —
+> migrations **240 → 244** du 24 septembre 2026, 31 scénarios chiffrés vus rouges avant et verts
+> après, 45 suites de CI vertes. Voir [§ Correctifs appliqués](#correctifs-appliqués--migrations-240--244)
+> et, pour ce qui reste ouvert, [§ Ce que ces correctifs ne font pas](#ce-que-ces-correctifs-ne-font-pas-inscrit-au-registre).
+
 ## Méthode
 
 - Base neuve montée pour l'audit : schéma + **203 migrations, 0 erreur** (conteneur `pg_audmod`),
@@ -826,3 +831,46 @@ L'ordre proposé va du plus dangereux au plus coûteux, et tient compte des dép
 
 Un troisième contrôle, purement SQL, mériterait d'exister : **refuser toute politique permissive
 en double** sur un couple table/commande — c'est ce doublon qui a neutralisé 38 gardes de droits.
+
+---
+
+## Correctifs appliqués — migrations 240 → 244
+
+Appliqué le 24 septembre 2026 : les **18 défauts du registre initial** (S-01 → S-11, RH-01 → RH-04,
+SUP-01 → SUP-03) et **trois défauts de la même famille** sont corrigés, chacun par une migration et
+une suite de scénarios chiffrés, vus **rouges avant** et **verts après** sur une base neuve.
+
+| Migration | Défauts | Ce qu'elle fait | Scénarios |
+|---|---|---|---|
+| **240** `240_stock_movement_tenant_and_upsert.sql` | S-08, S-09 | la société devient un **paramètre** des mouvements de stock (`_stock_increment` / `_stock_decrement`), le déclencheur passe `NEW.tenant_id` ; l'entrée additionne par `ON CONFLICT … DO UPDATE` (la quantité d'une transaction concurrente n'est plus perdue en silence) ; une sortie supérieure au stock **du dépôt** est refusée au lieu d'être rognée à 0 ; un stock non localisé est rattaché au dépôt utilisé au lieu d'être refusé | `240_…_tests.sql` T01→T04 (4/4) |
+| **241** `241_receipt_stock_and_ledger.sql` | S-01 → S-04, S-10, S-11 | `goods_receipts.warehouse_id`, avec repli sur `resolve_default_warehouse` ; le mouvement d'entrée porte **dépôt, coût, lot et numéro de série** (prix de la ligne de commande, puis prix d'achat, puis coût de revient) → couche de valorisation **et** écriture ST (D 310000 / C 603000) ; les comptes sont **résolus** par article puis famille d'articles (`resolve_stock_account` / `resolve_variation_account`, écrits depuis la 125 et appelés nulle part) ; article suivi sans lot → **refus** | `241_…_tests.sql` T01→T07 (7/7) |
+| **242** `242_delivery_warehouse_and_reservation.sql` | S-05, S-06, S-07 | la sortie porte le dépôt de la réservation, sinon celui qui peut servir la ligne, sinon celui de la société → les **couches sont réellement consommées** ; l'expédition libère la réservation **au prorata** (une commande de 10 livrée en 4 puis 6 libère 4 puis 6) ; les réservations sont toujours rattachées à un dépôt ; reprise du stock existant dans son dépôt | `242_…_tests.sql` T01→T06 (6/6) |
+| **243** `243_payroll_and_employee_name.sql` | RH-01 → RH-04 | `first_name` / `last_name` remplis depuis `name` (déclencheur + reprise des fiches) → les 17 écrans RH ne montrent plus « null null » ; `calculate_payslip(uuid, text)` **supprimée** (la surcharge à taux fictifs n'est plus atteignable) ; le pointage **met à jour** sa ligne de paie (verrou consultatif par pointage) ; une seule mesure des heures supplémentaires (`overtime_minutes`), et l'agrégat du bulletin ne compte plus `timesheet_hours` comme des heures supplémentaires | `243_…_tests.sql` T01→T05 (5/5) |
+| **244** `244_preserve_history_delete_guards.sql` | SUP-01 → SUP-03 | garde de suppression sur `employees` (bulletins de paie), `bank_accounts` (opérations et relevés) et `pay_runs` (bulletins du lot) : refus **expliqué** ; `stock_movements.product_id` passe en `ON DELETE SET NULL` — l'historique survit à la suppression d'un article, comme le font déjà `journal_lines`, `invoice_lines` et `purchase_invoice_lines` ; l'effacement d'une société entière reste possible (AUD-B00, jeux de test) | `244_…_tests.sql` T01→T09 (9/9) |
+
+**Preuve d'exécution** — base neuve, schéma + **214 migrations, 0 erreur** (les migrations des
+sessions parallèles — 232 séparation des tâches, 233 chaîne NF-525, 234 file de webhooks — sont
+dans la même base) :
+
+- les cinq suites **avant** correctif : **26 scénarios rouges sur 31** — les cinq verts d'emblée
+  sont les garde-fous qui gardent qu'une suppression légitime reste possible (salarié sans
+  bulletin, compte sans opération, article sans mouvement, lot de paie sans bulletin, société
+  entière) ;
+- les mêmes suites **après** : **31/31 verts** ;
+- les **45 suites de la CI** restent vertes, ainsi que `check_trigger_reachability` (82
+  comparaisons vérifiées, aucune impossible), `check_tenant_guard` (80 fonctions, aucune exposée
+  sans contrôle) et `check_anon_grants` (2 fonctions exposées, les deux inscrites au registre) ;
+- les types TypeScript régénérés ne diffèrent que de la colonne ajoutée
+  (`goods_receipts.warehouse_id`).
+
+### Ce que ces correctifs ne font pas (inscrit au registre)
+
+| Réf | Ce qui reste ouvert | Pourquoi, et où c'est chiffré |
+|---|---|---|
+| S-06 (suite) | le stock **antérieur** à la 241 n'a ni couche de valorisation ni écriture d'entrée : ses sorties consomment les couches des entrées postérieures, pas les siennes | reprendre une valeur de stock existante est une **décision comptable** (date, coût, écriture) qui appartient au propriétaire ; la reprise de la 242 ne range que la **quantité**, jamais la valeur. Le CUMP de `stock_quantities` tient les écritures justes |
+| S-07 (suite) | annuler un BL expédié ne **contre-passe pas** la sortie de stock (même manque que pour l'OF, M-06/M-08) | demande une écriture de contrepassation documentée, et une décision sur la date |
+| S-11 (suite) | un article suivi en lot ne peut plus **sortir** sans lot, mais `delivery_note_lines.lot_id` n'est rempli par aucun écran (`delivery_notes`/`delivery_note_lines` : colonnes présentes, saisie absente) | travail d'écran (`app/src`), à faire avec le parcours P0-08 : sans cela, un article suivi ne se livre plus, ce qui est le prix de la traçabilité |
+| RH-04 (suite) | `app/src/lib/queries/leavesAbsences.ts:593` calcule encore des heures supplémentaires en « heures − 8 » au taux 1,25 et crée un élément `overtime` **avec un montant** | hors périmètre SQL : c'est une **troisième** façon de calculer, à aligner sur `overtime_tiers` / `calculate_overtime_pay` (PAY-07) |
+| SUP-01/SUP-02 (suite) | l'écran propose toujours « Supprimer » ; le refus est désormais expliqué par un message, mais aucune action « désactiver » n'est offerte pour un salarié ou un compte bancaire | travail d'écran : un bouton « Désactiver » éviterait d'aller au refus |
+| 241 (suite) | l'écriture de réception entre au **journal des stocks** (ST, D 310000 / C 603000) : c'est la convention du produit (variation de stocks). Une comptabilité à la **facture non parvenue** (C 4081) serait plus orthodoxe et reste une décision | cf. `S-03` : le correctif rétablit l'écriture, pas la méthode de rattachement à la facture |
+

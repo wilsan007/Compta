@@ -5690,6 +5690,7 @@ export interface Database {
         notes: string | null
         created_at: string | null
         tenant_id: string
+        warehouse_id: string | null
       }
       Insert: {
         id?: string
@@ -5701,6 +5702,7 @@ export interface Database {
         notes?: string
         created_at?: string
         tenant_id: string
+        warehouse_id?: string
       }
       Update: {
         id?: string
@@ -5712,6 +5714,7 @@ export interface Database {
         notes?: string
         created_at?: string
         tenant_id?: string
+        warehouse_id?: string
       }
       Relationships: []
     }
