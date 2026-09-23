@@ -6396,6 +6396,7 @@ export interface Database {
         fiscal_year_id: string | null
         posting_seq: number | null
         posting_number: string | null
+        is_manual: boolean
       }
       Insert: {
         id?: string
@@ -6426,6 +6427,7 @@ export interface Database {
         fiscal_year_id?: string
         posting_seq?: number
         posting_number?: string
+        is_manual?: boolean
       }
       Update: {
         id?: string
@@ -6456,6 +6458,7 @@ export interface Database {
         fiscal_year_id?: string
         posting_seq?: number
         posting_number?: string
+        is_manual?: boolean
       }
       Relationships: []
     }

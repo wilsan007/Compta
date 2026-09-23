@@ -573,6 +573,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # H11 — journal fiscal NF-525 : le contrôle d'intégrité déclarait invalide
+      # toute chaîne, même intacte (id comparé à lui-même). T01, T02, T03 et T05
+      # vus rouges sur la version d'avant.
+      - name: 'H11 : intégrité du journal NF-525 (233)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/233_nf525_chain_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'

@@ -663,5 +663,8 @@
     "notSwitched": "Sociétés non basculées (écritures déjà validées, transposition manuelle) : {{count}}",
     "forbiddenTitle": "Accès réservé",
     "forbidden": "Cette page est réservée aux administrateurs de la plateforme."
+  },
+  "api": {
+    "rateLimit": "Limitation de débit"
   }
 }

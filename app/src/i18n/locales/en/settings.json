@@ -663,5 +663,8 @@
     "notSwitched": "Companies not switched (entries already posted, manual transposition): {{count}}",
     "forbiddenTitle": "Restricted access",
     "forbidden": "This page is reserved for platform administrators."
+  },
+  "api": {
+    "rateLimit": "Rate limiting"
   }
 }
