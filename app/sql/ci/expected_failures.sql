@@ -11,3 +11,7 @@
 -- 180 — ventes (lot E)
 -- 181 — paie (lot F)
 -- 182 — inscription (lot B)
+
+-- 231 — temps passés (M-17)
+INSERT INTO _audit_expected (test_id, reason) VALUES
+  ('M-17-01', 'Les heures facturables n''atteignent aucune facture : create_billable_line_on_timesheet_stop ne crée qu''une notification. Manque de fonction, chiffré 0,5 j à la phase 3 du reste-à-faire.');

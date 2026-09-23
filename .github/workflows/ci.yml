@@ -321,6 +321,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Une valeur littérale écrite dans une colonne que la contrainte CHECK
+      # n'admet pas fait échouer la transaction sur toutes les données. Ce
+      # contrôle a été écrit après la 230 : release_stock_on_delivery écrivait
+      # 'fulfilled' dans stock_reservations.status, et aucune commande confirmée
+      # ne pouvait passer à « livrée ». check_trigger_reachability ne le voyait
+      # pas : il décide des comparaisons, pas des affectations.
+      - name: Écritures de statut impossibles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_status_writes.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: Générer les types TypeScript depuis PostgreSQL
         run: node scripts/generate-db-types.mjs
         env:
@@ -585,6 +596,27 @@ jobs:
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/214_purchase_receipt_order_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-08 — production : rebuts déduits des pièces entrées en stock, coût unitaire
+      # réparti sur les pièces bonnes, seconde clôture refusée (le stock doublait).
+      - name: 'AUD : ordres de fabrication, rebuts et reclôture (229)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/229_manufacturing_order_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
+      # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
+      - name: 'AUD : livraisons, sorties de stock et réservations (230)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/230_delivery_stock_out_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-17 — temps passés : isolation entre sociétés, devise, et absence d'écriture
+      # directe. M-17-01 reste rouge au registre : les heures n'atteignent pas de facture.
+      - name: 'AUD : temps passés et refacturation projet (231)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/231_project_time_billing_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

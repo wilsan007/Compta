@@ -473,6 +473,11 @@ Reprise des lots H, I, J du plan correctif, mis à jour avec les mesures du 22/0
 
 ## 6. PHASE 3 — Modules jamais audités par exécution
 
+> **Mesure du 24/09** : [couverture d'audit par module](COUVERTURE-AUDIT-PAR-MODULE-2026-09-24.md).
+> Sur 341 tables métier, **80 sont traversées par un scénario (23 %)** ; sur les **67 qui portent
+> une logique SQL**, **43 le sont (64 %)**. Les **20 fonctions Edge n'ont aucun test**.
+> **16 des 20 modules ci-dessous n'ont jamais vu un scénario chiffré.**
+
 L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, achats, paie (FR), stock, caisse et banque. Les modules ci-dessous existent (198 pages, 21 fonctions Edge) mais **n'ont jamais été vérifiés en exécutant un scénario chiffré**. Chacun suit la même méthode : scénario SQL ou e2e qui lit les chiffres → défauts inscrits au registre → correctifs rouge puis vert.
 
 | # | Module | Ce qu'il faut vérifier | Effort audit |
@@ -482,9 +487,9 @@ L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, ac
 | M-03 | **Analytique** | répartition `analytic_distribution` sur les écritures générées ; balance analytique = balance générale sur les classes 6/7 | 0,5 j |
 | M-04 | **Budgets** | réalisé = mouvements des comptes (hors à-nouveaux et clôture), engagements libérés à la facturation | 0,5 j |
 | M-05 | **Notes de frais** | validation → écriture 625x / 421 ; TVA récupérable | 0,5 j |
-| M-06 | **Commandes → livraisons → factures** (ventes) | double sortie de stock signalée par Gemini le 12/09 (`create_stock_out_on_delivery`) : **revérifier** ; réservations (`reserved_quantity` et `quantity_reserved`, deux colonnes) | 1 j |
+| M-06 | ✅ **Commandes → livraisons** (24/09) | La double sortie du 12/09 n'existe plus (STK-01 + index unique). **Trouvé à l'exécution** : livrer une commande confirmée échouait **toujours** — `release_stock_on_delivery` écrivait un statut de réservation que la contrainte CHECK refuse. Réexpédier un BL annulé rendait un code d'index. Migration **230**, tests **230** (5 scénarios). Reste : livraisons → factures, reliquats. | 0,5 j restant |
 | M-07 | **Réceptions et contrôle qualité** (achats) | double entrée signalée le 12/09 : **revérifier** ; rapprochement 3 voies avec reliquats | 0,5 j |
-| M-08 | **Production** (au-delà de 177) | OF multi-niveaux, rebuts, écarts de coût | 0,5 j |
+| M-08 | ✅ **Production, rebuts et reclôture** (24/09) | **Trouvé à l'exécution** : `qty_scrapped` n'était lue par aucun code — les rebuts entraient en stock comme des pièces bonnes et le coût unitaire était sous-évalué ; et reclôturer un OF doublait le stock sans doubler l'écriture, seul déclencheur à ne pas renseigner `reference_id`. Migration **229**, tests **229** (6 scénarios). Reste : OF multi-niveaux, écarts de coût. | 0,5 j restant |
 | M-09 | **Lots et numéros de série** | `check_tracking_on_sm` lève si `lot_id` est nul pour un article suivi : aucun écran ne le renseigne ? | 0,5 j |
 | M-10 | **Déclaration de TVA** (`submit-vat-return`, `EdiTvaPage`) | CA3 depuis les écritures, cases correctes, autoliquidation séparée (R-15), TVA sur encaissements | 1 j |
 | M-11 | **FEC** | conformité à l'arrêté (18 colonnes, `EcritureNum` = `posting_number` depuis la 187), contrôle par l'outil de la DGFiP (Test Compta Demat) | 0,5 j |
@@ -493,12 +498,28 @@ L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, ac
 | M-14 | **Relances de paiement** (`cron-payment-reminders`) | ne relancer que les factures validées non payées | 0,25 j |
 | M-15 | **Stripe** (`handle-stripe-webhook`) | vérification de signature, idempotence, écriture comptable de l'abonnement | 0,5 j |
 | M-16 | **Synchronisation bancaire** (`sync-bank-transactions`) | lignes importées en `statement`, pointage 196, pas de doublon avec l'import de fichier | 0,5 j |
-| M-17 | **CRM, projets, temps passés, tâches** | refacturation des temps → facture ; aucune écriture directe | 0,5 j |
+| M-17 | ⏳ **Temps passés** (24/09) | **Trouvé à l'exécution** : un temps de la société B pouvait viser le projet de la société A, et son nom partait dans une notification de B (famille 227/H02) ; montant libellé « € » en dur. Migration **231**, tests **231** (6 scénarios). **`M-17-01` reste rouge au registre** : les heures facturables n'atteignent aucune facture — `create_billable_line` ne crée qu'une notification. Reste : CRM, tâches, et la refacturation elle-même. | 1 j restant |
 | M-18 | **Utilisateurs et invitations** (`create-user`, `auth-signup`) | un utilisateur invité ne voit que sa société ; rôle appliqué (lié à H08) | 0,5 j |
 | M-19 | **Import Sage** (`SageImportPage`) | reprise d'un FEC ou d'une balance : équilibre, comptes créés, tiers | 0,5 j |
 | M-20 | **Miroir** (`mirror-daemon`, 200) | après la 200 : écrits par un démon authentifié seulement | 0,25 j |
 
 **Total audit** : ≈ 12 j, **plus les correctifs** qu'il révélera (estimation prudente : autant).
+
+> **Relevé du 24/09 — les trois premiers modules audités.** M-06, M-08 et M-17 ont été
+> pris en premier parce qu'ils sont les seuls ponts entre la gestion (production,
+> livraison, projets) et le grand livre. Ils ont rendu **six défauts**, dont un
+> **bloquant** (aucune commande confirmée ne pouvait passer à « livrée ») et un de
+> **sécurité** (nom de projet d'une société visible depuis une autre). Aucun n'était
+> visible sans exécuter un scénario chiffré : les 34 suites SQL existantes ne
+> traversaient ni les rebuts, ni une reclôture, ni le cycle de réservation.
+>
+> Deux enseignements pour la suite de la phase 3 :
+> - **chiffrer 0,5 j par module était optimiste** — trois modules ont pris une session
+>   à eux seuls, correctifs compris ;
+> - **les chemins d'annulation sont le gisement**. Les trois défauts d'idempotence
+>   viennent du même motif : un statut `cancelled` permis par la contrainte CHECK,
+>   qu'aucun déclencheur ne traite. `goods_receipts` porte le même motif et n'a pas
+>   encore été vérifié (M-07).
 
 ---
 
