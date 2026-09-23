@@ -222,13 +222,47 @@ serve(async (req) => {
       }
 
       const body = await req.json()
-      // SEC-01 : Forcer tenant_id — jamais confiance au client
-      body.tenant_id = tenantId
-      const { data, error } = await supabase.from("invoices").insert(body).select().single()
-      if (error) {
+      // R-12 : une facture sans ligne n'est ni validable ni approuvable (190).
+      // L'API insérait auparavant l'en-tête seul : tout ce qu'une intégration
+      // créait était une pièce inutilisable, découvert seulement en essayant de
+      // la valider dans l'interface. Le refus est donc explicite, à la porte.
+      const { lines, ...invoice } = body || {}
+      if (!Array.isArray(lines) || lines.length === 0) {
         await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
-        return errorResponse("VALIDATION_ERROR", error.message, 400)
+        return errorResponse(
+          "VALIDATION_ERROR",
+          "Au moins une ligne est requise (champ « lines ») : une facture sans ligne n'est ni validable ni approuvable",
+          400
+        )
       }
+
+      // RPC composée : la société est passée explicitement (l'API s'authentifie
+      // par clé, service_role, donc current_tenant_id() y vaut NULL), au moins une
+      // ligne est exigée côté serveur aussi, et les totaux sont recalculés depuis
+      // les lignes — l'appelant ne peut pas annoncer un total qui ne correspond
+      // pas à ce qu'il envoie.
+      const { data: created, error } = await supabase.rpc("create_invoice_service", {
+        p_tenant: tenantId,
+        p_invoice: invoice,
+        p_lines: lines,
+      })
+      if (error || !created?.success) {
+        const message = error?.message || created?.error || "Création impossible"
+        await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
+        return errorResponse("VALIDATION_ERROR", message, 400)
+      }
+
+      const { data, error: readErr } = await supabase
+        .from("invoices")
+        .select("*, invoice_lines(*)")
+        .eq("id", created.invoice_id)
+        .eq("tenant_id", tenantId)
+        .single()
+      if (readErr) {
+        await logApiCall(authClient, keyData.id, tenantId, method, path, 400, idempotencyKey || undefined)
+        return errorResponse("VALIDATION_ERROR", readErr.message, 400)
+      }
+
       if (idempotencyKey) {
         await storeIdempotency(authClient, idempotencyKey, tenantId, { data }, 201)
       }

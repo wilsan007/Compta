@@ -488,6 +488,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-12 — une facture créée par l'API a des lignes : refus explicite sinon,
+      # et totaux recalculés depuis les lignes.
+      - name: 'AUD : facture créée par l''API (221)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/221_invoice_api_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'

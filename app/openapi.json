@@ -60,6 +60,37 @@
           "limit": { "type": "integer" },
           "total": { "type": "integer" }
         }
+      },
+      "InvoiceLineInput": {
+        "type": "object",
+        "required": ["description", "quantity", "unit_price"],
+        "description": "Une ligne de facture. Les montants de ligne sont calcules par le serveur.",
+        "properties": {
+          "description": { "type": "string" },
+          "quantity": { "type": "number" },
+          "unit_price": { "type": "number" },
+          "vat_rate": { "type": "number", "description": "Taux de TVA en pourcentage (ex. 20)" },
+          "product_id": { "type": "string", "format": "uuid", "nullable": true },
+          "line_order": { "type": "integer", "description": "Ordre de la ligne (attribue dans l'ordre du tableau si absent)" }
+        }
+      },
+      "InvoiceCreate": {
+        "type": "object",
+        "required": ["customer_id", "date", "lines"],
+        "description": "Creation d'une facture (R-12). Elle nait en brouillon avec son numero provisoire ; son numero legal (FAC-<annee>-nnnnnn) est attribue a la validation. La societe vient de la cle API, jamais du corps.",
+        "properties": {
+          "customer_id": { "type": "string", "format": "uuid" },
+          "date": { "type": "string", "format": "date" },
+          "due_date": { "type": "string", "format": "date", "nullable": true },
+          "currency_code": { "type": "string", "nullable": true },
+          "notes": { "type": "string", "nullable": true },
+          "lines": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/InvoiceLineInput" },
+            "minItems": 1,
+            "description": "AU MOINS UNE ligne : une facture sans ligne n'est ni validable ni approuvable. Les totaux (subtotal, vat_total, total, amount_due) sont recalcules par le serveur depuis ces lignes ; toute valeur envoyee a ces champs est ignoree."
+          }
+        }
       }
     }
   },
@@ -90,10 +121,10 @@
         "parameters": [
           { "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" }, "description": "Clé d'idempotence pour éviter les doublons" }
         ],
-        "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceCreate" } } } },
         "responses": {
-          "201": { "description": "Créée" },
-          "400": { "description": "Erreur de validation" },
+          "201": { "description": "Créée (brouillon, avec ses lignes)" },
+          "400": { "description": "Erreur de validation (notamment : « lines » vide ou absent)" },
           "409": { "description": "Conflit (idempotence)" }
         }
       }

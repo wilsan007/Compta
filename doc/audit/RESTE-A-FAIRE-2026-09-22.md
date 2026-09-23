@@ -326,10 +326,13 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 - **Preuve** : `src/lib/__tests__/facturX.test.ts` et `src/pages/__tests__/DraftDocumentPolicy.test.tsx` — **4 des 6 scénarios vus rouges avant** (le XML était produit et le `.txt` ne portait aucune mention), verts après ; les 2 scénarios de non-régression (facture validée) étaient verts d'emblée. 1 413 tests au total.
 - **Effort** : 0,5 j (fait).
 
-#### R-12 🟡 Factures créées par l'API publique ou l'OCR sans lignes
-- **Constat** : `public-api` (`supabase/functions/public-api/index.ts:227`) insère l'en-tête seul ; `ocr-invoice-import` crée probablement des factures d'achat sans ligne (à vérifier). Depuis 190/192, une pièce sans ligne n'est **ni validable ni approuvable**.
-- **À faire** : l'API accepte des lignes (RPC composée) ; l'OCR crée au moins une ligne par taux ; documenter le contrat de l'API ; tests.
-- **Effort** : 1 j.
+#### R-12 ✅ Factures créées par l'API publique ou l'OCR sans lignes
+- **Constat** : `public-api` (`POST /v1/invoices`) insérait l'en-tête seul ; `ocr-invoice-import` « crée probablement des factures d'achat sans ligne (à vérifier) ». Depuis 190/192, une pièce sans ligne n'est **ni validable ni approuvable**.
+- **Vérification du constat, sur le code** : la seconde moitié était **fausse** — `ocr-invoice-import` (120 lignes) **ne crée aucune facture** : elle appelle OpenAI, fait correspondre un fournisseur et renvoie `extracted_data` (dont `items`) à l'appelant. Il n'y avait donc rien à corriger de ce côté, et l'écrire évite une correction inutile. La première moitié est exacte, et le défaut est plus grave qu'un manque de fonctionnalité : l'intégration créait une pièce **inutilisable**, et l'appelant ne l'apprenait qu'en essayant de la valider dans l'interface.
+- **Pourquoi une fonction dédiée, et pas les RPC existantes** : l'API publique s'authentifie par clé (clé `service_role`), donc `current_tenant_id()` y vaut NULL (`tenant_users.auth_id = auth.uid()` ne peut pas être vrai sans JWT) — `create_invoice_atomic` (147, réécrite par 184) lève « Aucun tenant actif ». La société est donc **passée explicitement**, et la fonction n'est ouverte qu'à `service_role` : un jeton utilisateur ne peut pas créer une facture chez une autre société en l'appelant.
+- **Fait (221 + API)** : `create_invoice_service(p_tenant, p_invoice, p_lines)` — au moins une ligne **exigée** (refus explicite sinon, aucune pièce laissée derrière), lignes insérées par l'helper interne réutilisé de la 184, puis **totaux recalculés depuis les lignes** par les triggers de la 190 (`invoice_line_compute`, `invoice_guard`) : un appelant ne peut pas annoncer un total qui ne correspond pas à ce qu'il envoie. `public-api` appelle cette RPC, refuse en 400 sans ligne, et renvoie la facture **avec ses lignes**. Contrat publié dans `openapi.json` (`InvoiceCreate`, `lines` en `minItems: 1`, mention que les totaux sont recalculés et que la société vient de la clé).
+- **Preuve** : `sql/221_invoice_api_tests.sql` — **V01 à V04 vus rouges avant** (fonction absente), verts après : la facture créée par l'API porte ses **2 lignes**, se **valide** et reçoit son numéro légal `FAC-2026-000001` (HT 250 / TVA 45 / TTC 295) ; sans ligne, refus « Au moins une ligne est requise » et **aucune facture créée** ; un total annoncé de 9 999 est **écrasé** par celui des lignes (100/20/120) ; `anon` et `authenticated` ne peuvent pas exécuter la fonction.
+- **Effort** : 1 j (fait).
 
 #### R-13 ✅ Caisse (POS) : TVA mono-compte et écart de caisse
 - **Constat** : la clôture créditait **une seule ligne dure `445710`** avec `SUM(pos_tickets.vat_total)`, alors que `pos_ticket_lines.vat_rate` porte le taux de chaque ligne : une session mêlant 20 % et 10 % déclarait tout en 20 %, et la CA3 était fausse. Et l'écart de comptage — colonnes `expected_amount`/`difference` depuis la 54 — n'était **jamais comptabilisé** ; pire, l'attendu de l'écran additionnait tous les tickets sans regarder le moyen de paiement (`posAdvanced.ts:70-74`), donc était faux dès qu'un ticket était réglé par carte.
@@ -359,7 +362,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **Preuve** : `sql/220_payroll_permission_tests.sql` — **P02 à P05 vus rouges avant**, et le détail rouge est le constat lui-même : le comptable n'avait **aucun** droit de paie (`droits=f`) tout en réussissant l'écriture (la clé métier manquait, l'effet passait par le trigger) ; un lecteur était bloqué par le trigger d'écriture **seulement** — sur un lot déjà comptabilisé, le chemin idempotent le laissait passer sans aucune vérification, et le message parlait de `journal_entry.post`, pas de la paie ; un administrateur révoqué recevait « Lot de paie introuvable » au lieu d'un refus de droit. **5/5 verts après**. 181 (7/7), 212 (9/9) et 166 restent verts.
 - **Effort** : 0,5 j (fait).
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-11, R-13, R-14, R-17** (≈ 8,85 j). Reste : R-07, R-09, R-10, R-12.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-11, R-12, R-13, R-14, R-17** (≈ 9,85 j). **Reste : R-07, R-09, R-10** (le bloc banque, ≈ 4,5 j).
 
 ---
 
