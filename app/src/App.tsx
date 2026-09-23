@@ -43,6 +43,7 @@ const ProductsPage = lazy(() => import('@/pages/ProductsPage').then(m => ({ defa
 const PurchaseCreditNotesPage = lazy(() => import('@/pages/PurchaseCreditNotesPage').then(m => ({ default: m.PurchaseCreditNotesPage })))
 const BankTransactionsPage = lazy(() => import('@/pages/BankTransactionsPage').then(m => ({ default: m.BankTransactionsPage })))
 const BankReconciliationPage = lazy(() => import('@/pages/BankReconciliationPage').then(m => ({ default: m.BankReconciliationPage })))
+const BankReconciliationStatePage = lazy(() => import('@/pages/BankReconciliationStatePage').then(m => ({ default: m.BankReconciliationStatePage })))
 const BankReconciliationPdfPage = lazy(() => import('@/pages/BankReconciliationPdfPage').then(m => ({ default: m.BankReconciliationPdfPage })))
 const BankRulesPage = lazy(() => import('@/pages/BankRulesPage').then(m => ({ default: m.BankRulesPage })))
 const BankSyncPage = lazy(() => import('@/pages/BankSyncPage').then(m => ({ default: m.BankSyncPage })))
@@ -399,6 +400,7 @@ function App() {
           <Route path="/banking/accounts" element={<BankAccountsPage />} />
           <Route path="/banking/transactions" element={<BankTransactionsPage />} />
           <Route path="/banking/reconciliation" element={<BankReconciliationPage />} />
+          <Route path="/banking/reconciliation-state" element={<BankReconciliationStatePage />} />
           <Route path="/banking/reconciliation-pdf" element={<BankReconciliationPdfPage />} />
           <Route path="/banking/rules" element={<BankRulesPage />} />
           <Route path="/banking/sync" element={<BankSyncPage />} />

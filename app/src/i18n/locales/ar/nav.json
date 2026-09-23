@@ -59,6 +59,7 @@
     "journalClosure": "إقفال اليوميات",
     "fiscalYearClosure": "إقفال السنة المالية",
     "bankReconciliation": "التسوية البنكية",
+    "bankReconciliationState": "كشف التسوية",
     "bankReconciliationPdf": "التسوية عبر PDF",
     "bankTransactions": "المعاملات البنكية",
     "bankRules": "القواعد البنكية",

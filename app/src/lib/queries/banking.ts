@@ -110,6 +110,115 @@ export async function autoMatchBankTransactions(accountId?: string): Promise<{ m
 }
 
 
+// ============ État de rapprochement (R-09) ============
+// L'écran « État de rapprochement » lit `get_bank_reconciliation_state` (196, réécrite
+// par la 223) : soldes du relevé et du compte 512x, écarts des DEUX côtés, pointages
+// effectués, comparaison au solde de clôture du relevé importé. Les mutations passent
+// par les RPC gardées : un drapeau posé d'un seul côté n'est pas un pointage.
+
+export interface BankStatementEcart {
+  id: string
+  date: string
+  label: string | null
+  reference?: string | null
+  type: 'debit' | 'credit'
+  raw_amount: number
+  amount: number
+}
+
+export interface BankLedgerEcart {
+  id: string
+  date: string
+  entry_number: string | null
+  entry_label?: string | null
+  label: string | null
+  debit: number
+  credit: number
+  amount: number
+}
+
+export interface BankReconciledPair {
+  id: string
+  date: string
+  label: string | null
+  type: 'debit' | 'credit'
+  raw_amount: number
+  amount: number
+  reconciled_entry_id: string
+  entry_number: string | null
+  entry_date: string | null
+  match_type: string | null
+  matched_account_code: string | null
+}
+
+export interface BankReconciliationState {
+  bank_account_id: string
+  account_code: string | null
+  statement_balance: number
+  accounting_balance: number
+  unmatched_debits: number
+  unmatched_credits: number
+  ledger_unmatched_debits: number
+  ledger_unmatched_credits: number
+  /** Intégrité des paires pointées — vrai par construction quand le pointage est cohérent */
+  is_balanced: boolean
+  unmatched_transactions: BankStatementEcart[]
+  ledger_unmatched_transactions: BankLedgerEcart[]
+  reconciled_transactions: BankReconciledPair[]
+  difference: number
+  explained_difference: number
+  /** Plus aucun écart des deux côtés : la réponse à « est-ce rapproché ? » */
+  is_reconciled: boolean
+  unmatched_count: number
+  ledger_unmatched_count: number
+  reconciled_count: number
+  statement_closing_balance: number | null
+  closing_date: string | null
+  closing_difference: number | null
+  closing_matches: boolean | null
+}
+
+export async function getBankReconciliationState(bankAccountId: string, date: string) {
+  const { data, error } = await supabase.rpc('get_bank_reconciliation_state', {
+    p_bank_account_id: bankAccountId,
+    p_date: date,
+  })
+  if (error) throw error
+  const row = Array.isArray(data) ? data[0] : data
+  return (row || null) as unknown as BankReconciliationState | null
+}
+
+/** Pointe une ligne de relevé contre une écriture du compte — les DEUX côtés */
+export async function reconcileBankStatementLine(transactionId: string, journalLineId: string) {
+  const { data, error } = await supabase.rpc('reconcile_bank_statement_line', {
+    p_transaction_id: transactionId,
+    p_journal_line_id: journalLineId,
+  })
+  if (error) throw error
+  return data
+}
+
+/** Défait un pointage — les DEUX côtés reviennent dans les écarts */
+export async function unreconcileBankStatementLine(transactionId: string) {
+  const { data, error } = await supabase.rpc('unreconcile_bank_statement_line', {
+    p_transaction_id: transactionId,
+  })
+  if (error) throw error
+  return data
+}
+
+/** « Comptabiliser » une ligne de relevé non pointée (frais bancaires, agios…) */
+export async function postBankStatementLine(transactionId: string, accountCode?: string | null, label?: string | null) {
+  const { data, error } = await supabase.rpc('post_bank_statement_line', {
+    p_transaction_id: transactionId,
+    p_account_code: accountCode || null,
+    p_label: label || null,
+  })
+  if (error) throw error
+  return data
+}
+
+
 // ============ Bank Rules ============
 export async function getBankRules() {
   const tid = await getTenantId()

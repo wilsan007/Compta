@@ -502,6 +502,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-09 — l'état de rapprochement : écarts des deux côtés, solde de clôture
+      # comparé, pointage à deux côtés, comptabilisation d'une ligne non pointée.
+      - name: 'AUD : état de rapprochement bancaire (223)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/223_bank_reconciliation_state_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'

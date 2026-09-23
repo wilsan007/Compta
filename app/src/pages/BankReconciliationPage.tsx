@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries/banking'
 import { smartBankReconciliation, applyBankReconciliationRules } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { CheckCircle, XCircle, Zap } from 'lucide-react'
+import { ArrowRight, CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -12,6 +13,7 @@ export function BankReconciliationPage() {
   const { toast } = useToast()
   const { t } = useTranslation('banking')
   const { t: tCommon } = useTranslation('common')
+  const navigate = useNavigate()
 const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,6 +108,11 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         </Button>
         <Button onClick={handleApplyRules} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
           <Zap className="w-4 h-4" /> Appliquer les règles
+        </Button>
+        {/* R-09 : l'état de rapprochement (soldes, écarts des deux côtés, pointage
+            et comptabilisation d'une ligne non pointée) a son propre écran. */}
+        <Button onClick={() => navigate('/banking/reconciliation-state')} variant="secondary">
+          <ArrowRight className="w-4 h-4" /> {t('state.title')}
         </Button>
       </div>
 

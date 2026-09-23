@@ -59,6 +59,7 @@
     "journalClosure": "Clôture des journaux",
     "fiscalYearClosure": "Clôture d'exercice",
     "bankReconciliation": "Rapprochement bancaire",
+    "bankReconciliationState": "État de rapprochement",
     "bankReconciliationPdf": "Rapprochement par PDF",
     "bankTransactions": "Transactions bancaires",
     "bankRules": "Règles bancaires",

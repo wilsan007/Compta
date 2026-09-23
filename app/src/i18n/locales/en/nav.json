@@ -59,6 +59,7 @@
     "journalClosure": "Journal closure",
     "fiscalYearClosure": "Fiscal year closure",
     "bankReconciliation": "Bank reconciliation",
+    "bankReconciliationState": "Reconciliation statement",
     "bankReconciliationPdf": "PDF reconciliation",
     "bankTransactions": "Bank transactions",
     "bankRules": "Bank rules",
