@@ -1690,6 +1690,8 @@ export interface PurchaseOrderLine {
   unit_price: number
   vat_rate: number
   line_total: number
+  /** R-06 : ordre de la ligne dans la commande (décide l'allocation d'une réception partielle) */
+  line_order?: number
 }
 
 export interface GoodsReceipt {

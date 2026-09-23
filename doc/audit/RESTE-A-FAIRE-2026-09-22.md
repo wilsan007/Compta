@@ -17,9 +17,10 @@
 > - **R-04 ✅** paiement de la paie (migration **212**) : `post_payroll_payment` verse le net (D 421 par salarié, auxiliaire, **lettré**), les organismes (431), l'impôt (447) et les acomptes (425), par périmètre idempotent ; le lot ne passe à « payé » que quand tout est versé. Deux défauts de plus corrigés : statut `processing` refusé par `pay_runs` et statut `processed` inexistant écrit par l'intégration des acomptes — 9 scénarios (`sql/212_payroll_payment_tests.sql`, 9 rouges avant), 2 tests d'écran ;
 > - **R-08 ✅** fenêtre de règlement partagée (date, montant, mode, compte bancaire) pour « Marquer payée » dans les ventes et les achats, au lieu du virement implicite en 512000/BQ — tests d'écran des deux pages mis à jour ; décision **D-10** à confirmer formellement ;
 > - **R-05 ✅** avoirs sans article : contrepassation au prorata des comptes de la facture d'origine (migration **213**) — le chiffre d'affaires par activité était faux, 6 scénarios dont 4 rouges avant ;
+> - **R-06 ✅** réception partielle : l'allocation suit l'ordre de saisie des lignes (`line_order`, migration **214**) et non plus l'ordre aléatoire des uuid — 3 scénarios ;
 > - **P0-05 ⏳** performance de la 189 : cause trouvée et mesurée. Les états financiers (bilan, balance, compte de résultat, tendance) sont réécrits — écritures du périmètre figées, lignes lues par `journal_id` — et ils sont **SECURITY DEFINER** (comme le bilan) : 0,8 s pour la balance et 0,1 s pour le compte de résultat à 100 000 écritures. Le dépassement de 15 min venait des **contrôles du fichier de test** : sous RLS, avec des statistiques pas encore rafraîchies après le chargement, le planificateur estime « 1 ligne » pour la société et part en boucle imbriquée (**39 s** pour un seul contrôle à 20 000 écritures, contre 99 ms avec des statistiques à jour). Le fichier fait désormais `ANALYZE` après son chargement et fige les écritures avant de lire les lignes. **Mesure du 22/09 au soir sur base neuve : 100 000 écritures en 2 min 20 (validation 1 min, clôtures 3,2 s et 2,4 s), 7 scénarios verts** — contre plus de 15 min avant.
 >
-> Chaîne complète rejouée sur base neuve le 22/09 au soir : **187 migrations, 0 erreur** ; 22 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n, knip (66/67), build Vite et **1 407 tests** unitaires au vert.
+> Chaîne complète rejouée sur base neuve le 22/09 au soir : **189 migrations, 0 erreur** ; 23 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n, knip (66/67), build Vite et **1 407 tests** unitaires au vert.
 
 Légende : 🔴 bloquant · 🟠 résultat faux ou trompeur · 🟡 confort ou robustesse · 👤 action ou décision de votre part · ⏳ en cours dans une autre session
 
@@ -281,13 +282,14 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 #### R-05 ✅ Avoirs sans article : comptes par défaut
 - **Constat** : un avoir client sans article est imputé en 707000 (709000 s'il n'a pas de ligne) ; un avoir fournisseur en 609000. Pour un avoir sur facture, la contrepassation des **comptes de la facture d'origine** est plus juste.
 - **Fait (213)** : quand l'avoir est rattaché à une facture et que ses lignes ne portent pas d'article (ou qu'il n'a aucune ligne), les comptes de produits (classe 7) / charges (classe 6) de l'**écriture d'origine** sont contre-passés **au prorata** de leurs montants, la dernière ligne absorbant le centime d'arrondi (`prorata_source_accounts`) ; la TVA reste ventilée par taux quand l'avoir a des lignes, sinon en une ligne. Sans facture d'origine, l'avoir reste une remise commerciale (709000 / 609000).
-- **Preuve** : `sql/213_credit_note_accounts_tests.sql` — 6 scénarios (E23, E23b, E23c, E23d, A10, A10b), **4 vus rouges** avant la migration (500 en 709000 au lieu de 300/200).
+- **Preuve** : `sql/213_credit_note_accounts_tests.sql` — 6 scénarios. **3 mesurés rouges** avant la migration (E23 : 500 en 709000 au lieu de 300/200 ; E23c ; A10), 6 verts après ; E23d (ligne présente mais sans article) et E23b/A10b (avoir hors facture → remise) couvrent les branches voisines. Non-régression vérifiée sur la 197 : la garde des avoirs fournisseur conserve le traitement de la TVA autoliquidée (V06 et les 7 scénarios de la 197 au vert).
 - **Effort** : 1 j (fait).
 
-#### R-06 🟡 Allocation du reçu entre lignes de commande du même article
+#### R-06 ✅ Allocation du reçu entre lignes de commande du même article
 - **Constat** : `quantity_received` (195) solde les lignes dans l'ordre de leur `id` (uuid, donc arbitraire).
-- **À faire** : ajouter `line_order` à `purchase_order_lines` (rempli à la création) et trier dessus ; scénario G06 durci.
-- **Effort** : 0,25 j.
+- **Fait (214)** : `purchase_order_lines.line_order` ajouté et repris pour les lignes existantes (ordre des uuid, celui qu'elles suivaient déjà) ; attribué automatiquement à toute nouvelle ligne qui n'en porte pas (`order` d'insertion), pour que la règle tienne quelle que soit la porte d'entrée ; l'allocation d'une réception partielle suit désormais `line_order` ; l'écran envoie l'ordre des lignes converties (demande d'achat, échéancier de livraison).
+- **Preuve** : `sql/214_purchase_receipt_order_tests.sql` — 3 scénarios (G06b : uuid plus petit saisi en second, c'est bien la ligne `line_order` 1 qui est servie ; G06c ; G06d), **3 vus rouges** avant (colonne absente, allocation par uuid). Exécution vérifiée : la 214 s'applique après la 213 sans la contredire, et la suite 192 (qui lit `quantity_received`) reste verte.
+- **Effort** : 0,25 j (fait).
 
 ### 4.2 Trésorerie et banque
 
@@ -347,7 +349,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **À faire** : dépend de D-6 ; au minimum, `has_permission('payroll.post')` sur la paie et `has_permission('journal_entry.post')` sur les RPC qui valident des écritures.
 - **Effort** : 0,5 j (au minimum) ; voir H08 pour la généralisation.
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 22/09 au soir : R-01, R-02, R-03, R-04, R-08** (≈ 5,5 j). Reste : R-05, R-06, R-07, R-09, R-10, R-11 à R-14, R-17.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 22/09 au soir : R-01, R-02, R-03, R-04, R-05, R-06, R-08** (≈ 6,75 j). Reste : R-07, R-09, R-10, R-11 à R-14, R-17.
 
 ---
 

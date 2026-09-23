@@ -60,13 +60,15 @@ export async function convertPurchaseRequestToOrder(prId: string, supplierId: st
   if (orderError) throw orderError
 
   if (pr.purchase_request_lines && pr.purchase_request_lines.length > 0) {
-    const orderLines = pr.purchase_request_lines.map((line: any) => ti({
+    const orderLines = pr.purchase_request_lines.map((line: any, idx: number) => ti({
       purchase_order_id: order.id,
       product_id: line.product_id,
       description: line.description,
       quantity: line.quantity,
       unit_price: line.estimated_price || 0,
       vat_rate: 0,
+      // R-06 : l'ordre de saisie décide quelle ligne une réception partielle solde
+      line_order: idx + 1,
     }, 'purchase_order_lines', tid))
     const { error: lineError } = await supabase.from('purchase_order_lines').insert(orderLines)
     if (lineError) throw lineError
@@ -208,13 +210,15 @@ export async function generatePurchaseFromSchedule(date: string) {
     }, 'purchase_orders', tid)).select().single()
     if (orderError) throw orderError
 
-    const orderLines = items.map(item => ti({
+    const orderLines = items.map((item, idx) => ti({
       purchase_order_id: order.id,
       product_id: item.product_id,
       description: 'Generated from delivery schedule',
       quantity: item.quantity,
       unit_price: 0,
       vat_rate: 0,
+      // R-06 : l'ordre de saisie décide quelle ligne une réception partielle solde
+      line_order: idx + 1,
     }, 'purchase_order_lines', tid))
     const { error: lineError } = await supabase.from('purchase_order_lines').insert(orderLines)
     if (lineError) throw lineError
