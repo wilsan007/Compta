@@ -452,6 +452,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Le numéro légal porte l'ANNÉE de l'exercice, jamais son libellé libre
+      # (trouvé sur copie de prod : FAC-FY2026-000001 au lieu de FAC-2026-000001)
+      - name: 'AUD : année du numéro de pièce (216)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/216_document_number_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'
