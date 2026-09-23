@@ -16,6 +16,7 @@
 > - **R-03 ✅** factures d'acompte en 4191 et déduction sur la facture finale (210, 12 scénarios) ;
 > - **R-04 ✅** paiement de la paie (migration **212**) : `post_payroll_payment` verse le net (D 421 par salarié, auxiliaire, **lettré**), les organismes (431), l'impôt (447) et les acomptes (425), par périmètre idempotent ; le lot ne passe à « payé » que quand tout est versé. Deux défauts de plus corrigés : statut `processing` refusé par `pay_runs` et statut `processed` inexistant écrit par l'intégration des acomptes — 9 scénarios (`sql/212_payroll_payment_tests.sql`, 9 rouges avant), 2 tests d'écran ;
 > - **R-08 ✅** fenêtre de règlement partagée (date, montant, mode, compte bancaire) pour « Marquer payée » dans les ventes et les achats, au lieu du virement implicite en 512000/BQ — tests d'écran des deux pages mis à jour ; décision **D-10** à confirmer formellement ;
+> - **R-05 ✅** avoirs sans article : contrepassation au prorata des comptes de la facture d'origine (migration **213**) — le chiffre d'affaires par activité était faux, 6 scénarios dont 4 rouges avant ;
 > - **P0-05 ⏳** performance de la 189 : cause trouvée et mesurée. Les états financiers (bilan, balance, compte de résultat, tendance) sont réécrits — écritures du périmètre figées, lignes lues par `journal_id` — et ils sont **SECURITY DEFINER** (comme le bilan) : 0,8 s pour la balance et 0,1 s pour le compte de résultat à 100 000 écritures. Le dépassement de 15 min venait des **contrôles du fichier de test** : sous RLS, avec des statistiques pas encore rafraîchies après le chargement, le planificateur estime « 1 ligne » pour la société et part en boucle imbriquée (**39 s** pour un seul contrôle à 20 000 écritures, contre 99 ms avec des statistiques à jour). Le fichier fait désormais `ANALYZE` après son chargement et fige les écritures avant de lire les lignes. **Mesure du 22/09 au soir sur base neuve : 100 000 écritures en 2 min 20 (validation 1 min, clôtures 3,2 s et 2,4 s), 7 scénarios verts** — contre plus de 15 min avant.
 >
 > Chaîne complète rejouée sur base neuve le 22/09 au soir : **187 migrations, 0 erreur** ; 22 suites SQL, `plpgsql_check` (0 erreur), tsc, oxlint, i18n, knip (66/67), build Vite et **1 407 tests** unitaires au vert.
@@ -277,10 +278,11 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 - **Preuve** : `sql/212_payroll_payment_tests.sql` — P08 à P16, **9 scénarios vus rouges** avant la migration (dont P12 : contrainte de statut) et verts après ; `src/pages/__tests__/PayrollPayment.test.tsx` (2 tests).
 - **Effort** : 1,5 j (fait).
 
-#### R-05 🟡 Avoirs sans article : comptes par défaut
+#### R-05 ✅ Avoirs sans article : comptes par défaut
 - **Constat** : un avoir client sans article est imputé en 707000 (709000 s'il n'a pas de ligne) ; un avoir fournisseur en 609000. Pour un avoir sur facture, la contrepassation des **comptes de la facture d'origine** est plus juste.
-- **À faire** : quand l'avoir est rattaché à une facture et que ses lignes n'ont pas d'article, répartir sur les comptes de produits/charges de l'écriture d'origine au prorata ; scénarios E23 et A10.
-- **Effort** : 1 j.
+- **Fait (213)** : quand l'avoir est rattaché à une facture et que ses lignes ne portent pas d'article (ou qu'il n'a aucune ligne), les comptes de produits (classe 7) / charges (classe 6) de l'**écriture d'origine** sont contre-passés **au prorata** de leurs montants, la dernière ligne absorbant le centime d'arrondi (`prorata_source_accounts`) ; la TVA reste ventilée par taux quand l'avoir a des lignes, sinon en une ligne. Sans facture d'origine, l'avoir reste une remise commerciale (709000 / 609000).
+- **Preuve** : `sql/213_credit_note_accounts_tests.sql` — 6 scénarios (E23, E23b, E23c, E23d, A10, A10b), **4 vus rouges** avant la migration (500 en 709000 au lieu de 300/200).
+- **Effort** : 1 j (fait).
 
 #### R-06 🟡 Allocation du reçu entre lignes de commande du même article
 - **Constat** : `quantity_received` (195) solde les lignes dans l'ordre de leur `id` (uuid, donc arbitraire).

@@ -21,7 +21,7 @@ export interface PaymentValues {
 }
 
 export function PaymentDialog({
-  title, subtitle, defaultAmount, maxAmount, defaultReference, amountEditable = true, submitLabel,
+  title, subtitle, defaultAmount, maxAmount, defaultReference, amountEditable = true, showAmount = true, submitLabel,
   onSubmit, onClose,
 }: {
   title: string
@@ -31,6 +31,8 @@ export function PaymentDialog({
   maxAmount?: number
   defaultReference?: string | null
   amountEditable?: boolean
+  /** Paie : le montant est calculé par le serveur, périmètre par périmètre */
+  showAmount?: boolean
   submitLabel?: string
   onSubmit: (values: PaymentValues) => Promise<void> | void
   onClose: () => void
@@ -59,7 +61,7 @@ export function PaymentDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (amount <= 0) return
+    if (showAmount && amount <= 0) return
     setSaving(true)
     try {
       await onSubmit({
@@ -74,16 +76,18 @@ export function PaymentDialog({
     }
   }
 
-  const overpaid = maxAmount !== undefined && amount > maxAmount
+  const overpaid = showAmount && maxAmount !== undefined && amount > maxAmount
 
   return (
     <Modal open onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {subtitle && <p className="text-xs text-[var(--color-text-secondary)]">{subtitle}</p>}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={showAmount ? 'grid grid-cols-2 gap-4' : ''}>
           <Input label={t('payments.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label={t('payments.amount')} type="number" step="0.01" required value={amount}
-            disabled={!amountEditable} onChange={(e) => setAmount(Number(e.target.value))} />
+          {showAmount && (
+            <Input label={t('payments.amount')} type="number" step="0.01" required value={amount}
+              disabled={!amountEditable} onChange={(e) => setAmount(Number(e.target.value))} />
+          )}
         </div>
         {overpaid && (
           <p className="text-xs text-[var(--color-warning-text)]">

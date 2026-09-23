@@ -8,6 +8,7 @@ import { Calendar, Plus, Trash2, X, FileText, Banknote } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
 
 export function PayRunsPage() {
   const { toast } = useToast()
@@ -20,6 +21,10 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [showForm, setShowForm] = useState(false)
   // R-04 : identifiant du lot en cours de versement (bouton désactivé pendant l'appel)
   const [paying, setPaying] = useState<string | null>(null)
+  // R-08 (décision D-10) : le versement se saisit dans la fenêtre de règlement —
+  // date et compte bancaire choisis, comme pour les factures. Sans elle, tout
+  // partait au compte 512000 / journal BQ, à la date du jour.
+  const [payRunToPay, setPayRunToPay] = useState<PayRun | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -51,12 +56,12 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
     }
   }
 
-  async function handlePay(id: string) {
-    if (!confirmSync(t('payRuns.payConfirm'))) return
-    setPaying(id)
+  async function handlePay(run: PayRun, values: PaymentValues) {
+    setPaying(run.id)
     try {
-      const res = await payPayrollRun(id, null, new Date().toISOString().split('T')[0], 'all')
+      const res = await payPayrollRun(run.id, values.bank_account_id, values.payment_date, 'all')
       const reste = (res.remaining || []).length
+      setPayRunToPay(null)
       if ((res.entries || []).length === 0 && reste === 0) {
         toast('info', t('payRuns.pay'), t('payRuns.payNothing'))
       } else if (reste > 0) {
@@ -107,7 +112,7 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
                   <div className="flex items-center gap-1">
                     <button onClick={() => handleGenerateJournal(pr.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payrollAccounting.generate')}><FileText className="w-4 h-4" /></button>
                     {pr.status !== 'paid' && pr.status !== 'cancelled' && pr.status !== 'draft' && (
-                      <button onClick={() => handlePay(pr.id)} disabled={paying === pr.id} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)] disabled:opacity-50" title={paying === pr.id ? t('payRuns.paying') : t('payRuns.pay')} aria-label={t('payRuns.pay')}>
+                      <button onClick={() => setPayRunToPay(pr)} disabled={paying === pr.id} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)] disabled:opacity-50" title={paying === pr.id ? t('payRuns.paying') : t('payRuns.pay')} aria-label={t('payRuns.pay')}>
                         <Banknote className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
@@ -121,6 +126,18 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
       )}
 
       {showForm && <PayRunForm employees={activeEmployees} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+
+      {payRunToPay && (
+        <PaymentDialog
+          title={t('payRuns.payTitle', { number: payRunToPay.number })}
+          subtitle={t('payRuns.paySubtitle')}
+          defaultAmount={0}
+          showAmount={false}
+          submitLabel={t('payRuns.pay')}
+          onSubmit={(values) => handlePay(payRunToPay, values)}
+          onClose={() => setPayRunToPay(null)}
+        />
+      )}
     </div>
   )
 }

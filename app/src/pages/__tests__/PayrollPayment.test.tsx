@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 // R-04 : le versement de la paie se déclenche depuis la liste des campagnes
@@ -22,6 +22,7 @@ vi.mock('@/lib/queries/misc', () => ({
   payPayrollRun: (...a: unknown[]) => payPayrollRun(...a),
 }))
 vi.mock('@/lib/toast', () => ({ useToast: vi.fn(() => ({ toast: vi.fn() })) }))
+vi.mock('@/lib/queries/banking', () => ({ getBankAccounts: vi.fn(async () => ([{ id: 'b1', name: 'Compte courant', bank_name: 'Banque' }])) }))
 vi.mock('@/lib/confirm', () => ({ confirmSync: vi.fn(() => true) }))
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-i18next')>()
@@ -50,10 +51,21 @@ describe('PayRunsPage — versement de la paie (R-04)', () => {
     payPayrollRun.mockResolvedValue({ success: true, entries: [{ scope: 'net', entry_id: 'e1' }], already_paid: [], remaining: [] })
   })
 
-  it('verse la paie du lot approuvé via la RPC serveur', async () => {
+  // R-08 (décision D-10) : le versement passe par la fenêtre de règlement — la date
+  // et le compte bancaire choisis sont transmis au serveur, au lieu de 512000/BQ
+  // à la date du jour.
+  it('verse la paie du lot approuvé avec la date et le compte bancaire choisis', async () => {
     render(<PayRunsPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'payRuns.pay' }))
-    await waitFor(() => expect(payPayrollRun).toHaveBeenCalledWith('pr-1', null, expect.any(String), 'all'))
+
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText(/payments\.date/), { target: { value: '2026-04-05' } })
+    fireEvent.change(within(dialog).getByLabelText(/payments\.bankAccount/), { target: { value: 'b1' } })
+    // le montant est calculé par le serveur, périmètre par périmètre : pas de champ
+    expect(within(dialog).queryByLabelText(/payments\.amount/)).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'payRuns.pay' }))
+
+    await waitFor(() => expect(payPayrollRun).toHaveBeenCalledWith('pr-1', 'b1', '2026-04-05', 'all'))
   })
 
   it('ne propose pas de versement pour un lot déjà payé', async () => {
