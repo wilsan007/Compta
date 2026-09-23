@@ -131,13 +131,22 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-DECLARE r record; v_year text; v_max integer; v_n integer := 0;
+DECLARE r record; v_year text; v_max integer; v_n integer := 0; v_prev text;
 BEGIN
+  -- Trouvé sur copie de production : les tables de pièces portent
+  -- FORCE ROW LEVEL SECURITY et, chez l'hébergeur, le rôle des migrations n'est
+  -- pas superutilisateur — l'owner lui-même est donc soumis aux politiques. Sans
+  -- contexte de société, la lecture ne voit AUCUNE ligne et la réparation serait
+  -- silencieusement inopérante (mesuré : « 0 compteur réparé »). Le contexte est
+  -- donc posé société par société, puis rendu à sa valeur précédente.
+  v_prev := current_setting('app.active_tenant_id', true);
+
   FOR r IN
     SELECT s.id, s.tenant_id, s.prefix, s.next_number, fy AS fy_row
     FROM document_number_sequences s
     JOIN fiscal_years fy ON fy.id = s.fiscal_year_id
   LOOP
+    PERFORM set_config('app.active_tenant_id', r.tenant_id::text, true);
     v_year := fiscal_year_number_segment(r.fy_row);
     v_max := document_number_used_max(r.tenant_id, r.prefix, v_year);
     -- next_number EST le prochain numéro à attribuer : il doit dépasser ce qui
@@ -149,13 +158,17 @@ BEGIN
       v_n := v_n + 1;
     END IF;
   END LOOP;
+
+  PERFORM set_config('app.active_tenant_id', COALESCE(v_prev, ''), true);
   RETURN v_n;
 END $$;
 REVOKE ALL ON FUNCTION repair_document_number_sequences() FROM PUBLIC, anon, authenticated;
 
 COMMENT ON FUNCTION repair_document_number_sequences() IS
   'Remonte les compteurs de numérotation restés sous le plus grand numéro utilisé '
-  '(sociétés reprises). Idempotente, ne rabaisse jamais un compteur (D-12, 218).';
+  '(sociétés reprises). Idempotente, ne rabaisse jamais un compteur. Pose le contexte '
+  'de société société par société : sous FORCE ROW LEVEL SECURITY, une migration '
+  'sans contexte ne verrait aucune ligne (D-12, 218).';
 
 DO $$
 DECLARE v_n integer;

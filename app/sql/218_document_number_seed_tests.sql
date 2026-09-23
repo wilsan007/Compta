@@ -106,7 +106,12 @@ BEGIN
     VALUES (t, 'FAC', fy, 2);
     SELECT next_number INTO avant FROM document_number_sequences
     WHERE tenant_id = t AND prefix = 'FAC' AND fiscal_year_id = fy;
+    -- Cas « migration » : aucun contexte de société posé (sous FORCE ROW LEVEL
+    -- SECURITY chez l'hébergeur, une réparation qui lit sans contexte ne voit
+    -- rien — c'est le défaut trouvé sur copie de production le 23/09).
+    PERFORM set_config('app.active_tenant_id', '', true);
     v_n := repair_document_number_sequences();
+    PERFORM set_config('app.active_tenant_id', t::text, true);
     n := _valide218(t, '2024-03-01');
     PERFORM _rec('D04', 'compteur en retard (2) sur 7 documents : réparé, la facture est FAC-2024-000008',
       n = 'FAC-2024-000008' AND v_n >= 1,

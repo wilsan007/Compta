@@ -474,6 +474,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-13 — clôture de caisse : TVA ventilée par taux, écart de caisse en
+      # 658/758 contre le compte du moyen de paiement espèces.
+      - name: 'AUD : clôture de caisse, TVA et écart (219)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/219_pos_vat_cash_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'

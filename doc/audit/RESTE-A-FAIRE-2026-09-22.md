@@ -247,7 +247,7 @@ Après déploiement : créer une société de test par l'inscription réelle, co
 | D-9 | Factures d'acompte (R-03) | ✅ **tranchée le 22/09** : acompte en 4191 et imputation sur la facture finale (norme) | R-03, fait |
 | D-10 | « Marquer payée » sans choix de banque (R-08) | ✅ **implémentée le 22/09** : fenêtre de règlement (date, montant, mode, compte bancaire) — reste à confirmer formellement | R-08, fait |
 | D-11 | Localisation (cahier LOC) | périmètre secteur public (couche `DJ-EP` seule, ou aussi `DJ-ADM` : 8 à 10 semaines) ; arabe dès la v1 ; groupes multi-pays hors v1 | phase 5 |
-| D-12 | Numérotation existante en prod (P0-06) | ✅ **tranchée le 23/09 : option (a)**, reprendre après le plus grand numéro existant (mesure : 1 société reprise sans séquence aurait réattribué le numéro 1) — migration **218** | 218, fait |
+| D-12 | Numérotation existante en prod (P0-06) | ✅ **tranchée et vérifiée le 23/09 : option (a)**, reprendre après le plus grand numéro existant — migration **218** ; preuve sur données de production : la société reprise `…0001` (EX2024, aucune séquence) passe de `FAC-2024-000001` (déjà pris) à **`FAC-2024-000006`** | 218, fait |
 
 ---
 
@@ -329,10 +329,12 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 - **À faire** : l'API accepte des lignes (RPC composée) ; l'OCR crée au moins une ligne par taux ; documenter le contrat de l'API ; tests.
 - **Effort** : 1 j.
 
-#### R-13 🟠 Caisse (POS) : TVA mono-compte et écart de caisse
-- **Constat** : la clôture impute toute la TVA en 445710 (quel que soit le taux) et ne comptabilise pas l'écart entre montant compté et montant attendu.
-- **À faire** : TVA par taux (mapping `collected`) ; écart de caisse en 658/758 (ou 471 selon la politique) ; scénario G09 étendu.
-- **Effort** : 0,75 j.
+#### R-13 ✅ Caisse (POS) : TVA mono-compte et écart de caisse
+- **Constat** : la clôture créditait **une seule ligne dure `445710`** avec `SUM(pos_tickets.vat_total)`, alors que `pos_ticket_lines.vat_rate` porte le taux de chaque ligne : une session mêlant 20 % et 10 % déclarait tout en 20 %, et la CA3 était fausse. Et l'écart de comptage — colonnes `expected_amount`/`difference` depuis la 54 — n'était **jamais comptabilisé** ; pire, l'attendu de l'écran additionnait tous les tickets sans regarder le moyen de paiement (`posAdvanced.ts:70-74`), donc était faux dès qu'un ticket était réglé par carte.
+- **Fait (219)** : la TVA se ventile **par taux** via `vat_account_mapping` (direction `collected`, correspondance canonique du taux — société puis ligne partagée —, puis autre code du même taux, régimes particuliers `AUTOLIQ`/`UE`/`EXO` en dernier, repli `445710`) ; le total crédité reste celui du ticket, l'écart d'arrondi étant absorbé par le taux le plus élevé. Aucun compte nouveau en dur : `445710` est déjà exigé du plan (`chart_required_accounts`, 201), ce qui garde la neutralité des packs pays (LOC1). L'attendu est **recalculé par le serveur sur les espèces seules** (`ppm.type = 'cash'`), écrit dans la session, et l'écart est comptabilisé : manquant D `658000` / C compte de caisse, excédent D compte de caisse / C `758000`. Le trigger passe en **`BEFORE UPDATE`** pour que l'appelant (l'écran de clôture) reçoive l'écart du serveur, et non celui qu'il a proposé.
+- **Preuve** : `sql/219_pos_vat_cash_tests.sql` — **G13a à G13d vus rouges avant** (`repli=30.00`, toute la TVA sur le compte unique ; `attendu` et `écart` vides, jamais calculés), verts après (20 → `445711`, 10 → `445712`, repli 0 ; manquant 5 → D 658 / C caisse ; excédent 3 → C 758 ; carte exclue de l'attendu, taux 7,7 % au repli). G09 (192, clôture POS) reste vert. **Deux erreurs de ma part trouvées par les tests** : un appariement par code TVA envoyait la TVA à 7,7 % sur le compte de 20 % (`vat_code_for_rate` retombe sur `FR20`) — supprimé ; et un tri par code TVA choisissait `AUTOLIQ` → `445790` pour 20 %, envoyant une vente au comptoir en autoliquidation — corrigé par la priorité au code canonique du taux.
+- **Répétition sur copie de production** : la 219 s'applique sans erreur, et **les 124 sociétés (sur 124) portent déjà** `445711`, `445712`, `445710`, `658000`, `758000` et `530000` — aucun plan à compléter, aucune clôture de caisse ne peut échouer sur un compte absent.
+- **Effort** : 0,75 j (fait).
 
 #### R-14 ✅ Devis : numéros « perdus »
 - **Constat** : le numéro `DEV-…` est attribué à la création ; un devis supprimé laisse un trou (légal pour un devis, à documenter).
@@ -353,7 +355,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **À faire** : dépend de D-6 ; au minimum, `has_permission('payroll.post')` sur la paie et `has_permission('journal_entry.post')` sur les RPC qui valident des écritures.
 - **Effort** : 0,5 j (au minimum) ; voir H08 pour la généralisation.
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-14** (≈ 6,85 j). Reste : R-07, R-09, R-10, R-11, R-12, R-13, R-17.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-13, R-14** (≈ 7,6 j). Reste : R-07, R-09, R-10, R-11, R-12, R-17.
 
 ---
 
