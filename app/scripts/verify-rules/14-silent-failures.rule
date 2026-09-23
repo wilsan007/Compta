@@ -23,3 +23,19 @@ run_custom_rule() {
   " 2>/dev/null || echo 0)
   echo "$errors"
 }
+
+# Les findings eux-mêmes, sans quoi le rapport n'affiche qu'un compteur.
+show_custom_rule() {
+  node scripts/audit-silent-failures.mjs --json 2>/dev/null | node -e "
+    let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{
+      try {
+        const j=JSON.parse(d)
+        for (const k in j.results) {
+          const r=j.results[k]
+          const arr=Array.isArray(r)?r:(r.findings||[])
+          for (const f of arr) if (f.severity==='error') console.log(\`\${f.file}:\${f.line} — \${f.note||k}\`)
+        }
+      } catch { /* le compteur a déjà signalé l'échec */ }
+    });
+  " 2>/dev/null
+}

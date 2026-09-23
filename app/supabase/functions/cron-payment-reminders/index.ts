@@ -114,6 +114,7 @@ serve(async (req) => {
     // === 3. Mettre à jour le statut des factures très en retard ===
     // NOTE: Intentionnellement cross-tenant — ce cron traite toutes les factures en retard
     // de tous les tenants. Le filtre tenant_id n'est pas applicable ici.
+    // audit-silent-failures: cross-tenant — cron service-role, balaie tous les tenants
     const { data: veryOverdue, error: overdueError } = await supabase
       .from("invoices")
       .update({ status: "overdue" })

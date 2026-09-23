@@ -209,7 +209,7 @@ export function ApiDocsPage() {
           </Card>
 
           <Card className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold">Rate Limiting</h2>
+            <h2 className="text-lg font-semibold">{t('settings.api.rateLimit', { defaultValue: 'Rate Limiting' })}</h2>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 border border-[var(--color-border)] rounded-lg">
                 <div className="text-2xl font-bold text-[var(--color-primary)]">100</div>

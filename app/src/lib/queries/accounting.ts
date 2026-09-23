@@ -2464,7 +2464,7 @@ export async function createDistributionGrill(grill: Omit<DistributionGrill, 'id
   if (lines && lines.length > 0) {
     const { error: lineError } = await supabase
       .from('distribution_grill_lines')
-      .insert(lines.map(l => ({ ...l, grill_id: grillId })))
+      .insert(lines.map(l => ti({ ...l, grill_id: grillId }, 'distribution_grill_lines', tid)))
     if (lineError) throw lineError
   }
   return data
@@ -3157,7 +3157,7 @@ export async function generateExtourne(originalEntryId: string, reason: string) 
     const { error: e3 } = await supabase.from('journal_lines').insert(reversedLines)
     if (e3) throw e3
   }
-  const { error: ePost } = await supabase.from('journal_entries').update({ status: 'posted' }).eq('id', newEntry.id)
+  const { error: ePost } = await tud(supabase.from('journal_entries').update({ status: 'posted' }), 'journal_entries', tid).eq('id', newEntry.id)
   if (ePost) throw ePost
 
   await createExtourneLog({
@@ -3260,7 +3260,7 @@ export async function generateCarryForward(sourceFiscalYearId: string, targetFis
   const linesWithEntry = anLines.map(l => ({ ...l, journal_id: newEntry.id }))
   const { error: e2 } = await supabase.from('journal_lines').insert(linesWithEntry)
   if (e2) throw e2
-  const { error: ePost } = await supabase.from('journal_entries').update({ status: 'posted' }).eq('id', newEntry.id)
+  const { error: ePost } = await tud(supabase.from('journal_entries').update({ status: 'posted' }), 'journal_entries', tid).eq('id', newEntry.id)
   if (ePost) throw ePost
 
   await createCarryForwardLog({
@@ -3735,9 +3735,10 @@ export async function deletePayrollTaxGrid(id: string) {
 }
 
 export async function createPayrollTaxGridLines(lines: Omit<PayrollTaxGridLine, 'id' | 'created_at'>[]) {
+  const tid = await getTenantId()
   const { data, error } = await supabase
     .from('payroll_tax_grid_lines')
-    .insert(lines)
+    .insert(lines.map(l => ti(l, 'payroll_tax_grid_lines', tid)))
     .select()
   if (error) throw error
   return data as PayrollTaxGridLine[]
@@ -3750,11 +3751,14 @@ export async function deletePayrollTaxGridLines(gridId: string) {
     .select('id')
     .eq('id', gridId)
   if (tid) gridQ = gridQ.eq('tenant_id', tid)
-  const { error: gridErr } = await gridQ.maybeSingle()
+  const { data: grid, error: gridErr } = await gridQ.maybeSingle()
   if (gridErr) throw gridErr
-  const { error } = await supabase
+  // maybeSingle() rend null sans erreur quand la grille est celle d'une autre société :
+  // sans ce test, le contrôle d'appartenance passe et la suppression part quand même.
+  if (!grid) throw new Error('Grille de paie introuvable')
+  const { error } = await tud(supabase
     .from('payroll_tax_grid_lines')
-    .delete()
+    .delete(), 'payroll_tax_grid_lines', tid)
     .eq('grid_id', gridId)
   if (error) throw error
 }
@@ -3827,9 +3831,10 @@ export async function deleteCorporateTaxGrid(id: string) {
 }
 
 export async function createCorporateTaxGridLines(lines: Omit<CorporateTaxGridLine, 'id' | 'created_at'>[]) {
+  const tid = await getTenantId()
   const { data, error } = await supabase
     .from('corporate_tax_grid_lines')
-    .insert(lines)
+    .insert(lines.map(l => ti(l, 'corporate_tax_grid_lines', tid)))
     .select()
   if (error) throw error
   return data as CorporateTaxGridLine[]
@@ -3837,16 +3842,18 @@ export async function createCorporateTaxGridLines(lines: Omit<CorporateTaxGridLi
 
 export async function deleteCorporateTaxGridLines(gridId: string) {
   const tid = await getTenantId()
-  const { error: gridErr } = await supabase
+  const { data: grid, error: gridErr } = await supabase
     .from('corporate_tax_grids')
     .select('id')
     .eq('id', gridId)
     .eq('tenant_id', tid ?? '')
     .maybeSingle()
   if (gridErr) throw gridErr
-  const { error } = await supabase
+  // Même piège qu'en paie : sans ce test, une grille d'une autre société passe le contrôle.
+  if (!grid) throw new Error('Grille d\'impôt société introuvable')
+  const { error } = await tud(supabase
     .from('corporate_tax_grid_lines')
-    .delete()
+    .delete(), 'corporate_tax_grid_lines', tid)
     .eq('grid_id', gridId)
   if (error) throw error
 }

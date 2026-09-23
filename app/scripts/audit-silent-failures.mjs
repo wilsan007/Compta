@@ -308,45 +308,143 @@ function detectUndefinedSpread(lines, _filePath) {
 }
 
 /**
- * 7. MISSING_TENANT_FILTER — supabase.from('table') sur table tenant sans .eq('tenant_id', ...)
- *    Détecte les chaînes .from('tenantTable').select/insert/update/delete qui n'ont pas
- *    .eq('tenant_id' ni tud( ni ti( helpers.
+ * 7. MISSING_TENANT_FILTER — supabase.from('table') sur table tenant sans portée tenant
+ *
+ * La nature de l'opération se lit dans la CHAÎNE d'appels qui porte le .from(), jamais dans
+ * une fenêtre de lignes fixe : une fenêtre happe le .insert()/.update()/.delete() de la
+ * requête voisine et classe une lecture en écriture. Sur ce dépôt, ±10/+15 lignes donnait
+ * 15 faux positifs sur 17 — assez de bruit pour rendre les vrais cas invisibles.
+ *
+ * Dérogation explicite, sur la requête ou dans les 3 lignes au-dessus :
+ *   // audit-silent-failures: cross-tenant — <raison>
  */
+
+// Bornes de la chaîne d'appels contenant la ligne i. On suit les maillons (lignes commençant
+// par un point) ET les délimiteurs encore ouverts, sinon un argument objet multi-ligne
+// — .insert({\n tenant_id: ...\n }) — couperait la chaîne avant son propre payload.
+function chainRange(lines, i) {
+  let start = i
+  // Maillons, puis l'enveloppe éventuelle : tud(\n  supabase\n    .from(...) — le tud( vit
+  // au-dessus du `supabase` et serait perdu si l'on ne remontait que les lignes en point.
+  for (let guard = 0; start > 0 && guard < 8; guard++) {
+    const cur = lines[start].trim()
+    const prev = lines[start - 1].trim()
+    if (cur.startsWith('.') || prev.endsWith('(') || prev.endsWith(',')) { start--; continue }
+    break
+  }
+  let end = start
+  let depth = 0
+  for (let n = start; n < lines.length && n < start + 60; n++) {
+    for (const c of lines[n]) {
+      if (c === '(' || c === '{' || c === '[') depth++
+      else if (c === ')' || c === '}' || c === ']') depth--
+    }
+    end = n
+    const next = n + 1 < lines.length ? lines[n + 1].trim() : ''
+    if (depth <= 0 && !next.startsWith('.')) break
+  }
+  return [start, Math.max(end, i)]
+}
+
+// Texte d'une instruction à partir de la ligne k, jusqu'à ce que les délimiteurs se referment.
+function statementText(lines, k, maxLines = 40) {
+  const out = []
+  let depth = 0
+  for (let n = k; n < lines.length && n < k + maxLines; n++) {
+    out.push(lines[n])
+    for (const c of lines[n]) {
+      if (c === '(' || c === '{' || c === '[') depth++
+      else if (c === ')' || c === '}' || c === ']') depth--
+    }
+    if (depth <= 0) break
+  }
+  return out.join('\n')
+}
+
+// Argument passé à .insert(, jusqu'à sa parenthèse fermante.
+function insertArg(chainText) {
+  const m = chainText.match(/\.insert\s*\(/)
+  if (!m) return null
+  const open = m.index + m[0].length - 1
+  let depth = 0
+  for (let k = open; k < chainText.length; k++) {
+    if (chainText[k] === '(') depth++
+    else if (chainText[k] === ')') { depth--; if (depth === 0) return chainText.slice(open + 1, k) }
+  }
+  return chainText.slice(open + 1)
+}
+
+// Le payload porte-t-il le tenant ? Littéral, ti(), ou variable dont on remonte l'origine
+// (const X = ti(...), const X = Y.map(...), const X = []; X.push({ ...base })).
+function payloadCarriesTenant(arg, lines, before, depth = 0, seen = new Set()) {
+  if (arg == null || depth > 2) return false
+  if (/\bti\s*\(/.test(arg) || /tenant_id/.test(arg)) return true
+  const ident = arg.trim().match(/^([A-Za-z_$][\w$]*)/)
+  if (!ident) return false
+  const name = ident[1]
+  if (seen.has(name)) return false
+  seen.add(name)
+  const decl = new RegExp(`\\b(?:const|let|var)\\s+${name}\\b`)
+  for (let k = before; k >= 0; k--) {
+    if (!decl.test(lines[k])) continue
+    const body = statementText(lines, k)
+    if (/\bti\s*\(/.test(body) || /tenant_id/.test(body)) return true
+    // Dérivation d'une autre variable : const X = Y.map(...)
+    const rhs = body.slice(body.indexOf('=') + 1).trim()
+    const derived = rhs.match(/^\[?\s*\.{0,3}\s*([A-Za-z_$][\w$]*)/)
+    if (derived && derived[1] !== name && payloadCarriesTenant(derived[1], lines, k - 1, depth + 1, seen)) return true
+    // Tableau rempli plus loin : const X = []; ... X.push({ ...base })
+    const push = new RegExp(`\\b${name}\\.push\\s*\\(`)
+    for (let n = k; n < lines.length; n++) {
+      if (!push.test(lines[n])) continue
+      const pushed = statementText(lines, n)
+      if (/\bti\s*\(/.test(pushed) || /tenant_id/.test(pushed)) return true
+      const spread = pushed.match(/\.\.\.\s*([A-Za-z_$][\w$]*)/)
+      if (spread && payloadCarriesTenant(spread[1], lines, n, depth + 1, seen)) return true
+    }
+    return false
+  }
+  return false
+}
+
 function detectMissingTenantFilter(lines, _filePath) {
   const findings = []
-  // Only in query files and pages where supabase is called directly
-  const _fullText = lines.join('\n')
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    const fromMatch = line.match(/\.from\(\s*['"]([a-z_]+)['"]\s*\)/)
+    const fromMatch = lines[i].match(/\.from\(\s*['"]([a-z_]+)['"]\s*\)/)
     if (!fromMatch) continue
     const table = fromMatch[1]
     if (!TENANT_TABLES.has(table)) continue
-    // Look at surrounding context: 10 lines before (tud/ti may wrap .from() in multi-line calls) + 15 lines after
-    const startLine = Math.max(0, i - 10)
-    const chunk = lines.slice(startLine, Math.min(i + 15, lines.length)).join('\n')
-    const hasTenantFilter = /\.eq\(\s*['"]tenant_id['"]/.test(chunk)
-    const hasTiHelper = /\bti\s*\(/.test(chunk)
-    const hasTudHelper = /\btud\s*\(/.test(chunk)
-    // Also check for inline tenant_id in insert payload: any tenant_id: <value> or shorthand tenant_id,
-    const hasInlineTenantId = /tenant_id\s*:\s*[^\s,)}\]]|tenant_id\s*[,}]/.test(chunk)
-    const isSelect = /\.select\s*\(/.test(chunk)
-    const isInsert = /\.insert\s*\(/.test(chunk)
-    const isUpdate = /\.update\s*\(/.test(chunk)
-    const isDelete = /\.delete\s*\(/.test(chunk)
-    // For select: need .eq('tenant_id') OR RLS handles it (but we flag for defense-in-depth)
-    // For insert: need ti() helper OR explicit tenant_id in payload
-    // For update/delete: need tud() helper OR .eq('tenant_id')
-    if (isSelect && !hasTenantFilter) {
-      // RLS covers this, but defense-in-depth wants app-level filter too
-      findings.push({ line: i + 1, code: line.trim(), severity: 'info', note: `SELECT sur ${table} sans .eq('tenant_id') — RLS couvre, mais defense-in-depth recommandée` })
+
+    const [cs, ce] = chainRange(lines, i)
+    const chain = lines.slice(cs, ce + 1).join('\n')
+    if (/audit-silent-failures\s*:\s*cross-tenant/.test(lines.slice(Math.max(0, cs - 3), ce + 1).join('\n'))) continue
+
+    const isInsert = /\.insert\s*\(/.test(chain)
+    const isUpdate = /\.update\s*\(/.test(chain)
+    const isDelete = /\.delete\s*\(/.test(chain)
+    const hasTud = /\btud\s*\(/.test(chain)
+    // Filtre posé après la chaîne sur la variable du builder : if (tid) q = q.eq('tenant_id', tid)
+    const builder = lines[cs].match(/\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=/)
+    const tail = lines.slice(ce + 1, Math.min(ce + 12, lines.length)).join('\n')
+    const refined = !!builder && new RegExp(`${builder[1]}\\s*=\\s*${builder[1]}\\.(?:eq|or)\\([^)]*tenant_id`).test(tail)
+    const hasEqTenant = /\.eq\(\s*['"]tenant_id['"]/.test(chain) || refined
+
+    if (isUpdate || isDelete) {
+      if (!hasEqTenant && !hasTud) {
+        findings.push({ line: i + 1, code: lines[i].trim(), severity: 'error', note: `${isUpdate ? 'UPDATE' : 'DELETE'} sur ${table} sans filtre tenant (tud() manquant)` })
+      }
+      continue
     }
-    if ((isUpdate || isDelete) && !hasTenantFilter && !hasTudHelper) {
-      findings.push({ line: i + 1, code: line.trim(), severity: 'error', note: `${isUpdate ? 'UPDATE' : 'DELETE'} sur ${table} sans filtre tenant (tud() manquant)` })
+    if (isInsert) {
+      if (!hasEqTenant && !payloadCarriesTenant(insertArg(chain), lines, cs)) {
+        findings.push({ line: i + 1, code: lines[i].trim(), severity: 'error', note: `INSERT sur ${table} sans tenant_id (ti() manquant)` })
+      }
+      continue
     }
-    if (isInsert && !hasTiHelper && !hasTenantFilter && !hasInlineTenantId) {
-      findings.push({ line: i + 1, code: line.trim(), severity: 'error', note: `INSERT sur ${table} sans tenant_id (ti() manquant)` })
-    }
+    if (!/\.select\s*\(/.test(chain) || hasEqTenant || hasTud) continue
+    if (/\.or\(\s*[`'"][^`'"]*tenant_id/.test(chain)) continue
+    // RLS couvre la lecture : on ne signale qu'en info, pour la défense en profondeur.
+    findings.push({ line: i + 1, code: lines[i].trim(), severity: 'info', note: `SELECT sur ${table} sans .eq('tenant_id') — RLS couvre, defense-in-depth recommandée` })
   }
   return findings
 }

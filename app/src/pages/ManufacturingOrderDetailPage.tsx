@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
+import { formatCurrency } from '@/lib/utils'
 import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
@@ -104,7 +105,7 @@ export function ManufacturingOrderDetailPage() {
       const res = await calculateProductionCost(id)
       setProductionCost(res)
       const total = (res as any)?.total_cost ?? res
-      toast('success', t('manufacturing.detail.info.cost'), `${total} €`)
+      toast('success', t('manufacturing.detail.info.cost'), formatCurrency(Number(total ?? 0)))
     } catch (err: any) { toast('error', t('common.error'), err.message) }
     finally { setCostLoading(false) }
   }
@@ -178,7 +179,7 @@ export function ManufacturingOrderDetailPage() {
             <div className="flex items-center justify-between p-4">
               <div>
                 <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{t('manufacturing.detail.info.cost')}</p>
-                <p className="text-sm font-medium">{productionCost != null ? `${productionCost.total_cost ?? productionCost} €` : '—'}</p>
+                <p className="text-sm font-medium">{productionCost != null ? formatCurrency(Number(productionCost.total_cost ?? productionCost ?? 0)) : '—'}</p>
               </div>
               <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : t('manufacturing.detail.info.calculateCost', { defaultValue: 'Calculer le coût' })}</Button>
             </div>
@@ -187,24 +188,24 @@ export function ManufacturingOrderDetailPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.materialCost', { defaultValue: 'Coût matières' })}</p>
-                    <p className="font-mono font-medium">{Number(productionCost.material_cost || 0).toFixed(2)} €</p>
+                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.material_cost || 0))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.laborCost', { defaultValue: 'Coût main-d\'œuvre' })}</p>
-                    <p className="font-mono font-medium">{Number(productionCost.labor_cost || 0).toFixed(2)} €</p>
+                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.labor_cost || 0))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.overheadCost', { defaultValue: 'Frais généraux' })}</p>
-                    <p className="font-mono font-medium">{Number(productionCost.overhead_cost || 0).toFixed(2)} €</p>
+                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.overhead_cost || 0))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.unitCost', { defaultValue: 'Coût unitaire' })}</p>
-                    <p className="font-mono font-medium">{Number(productionCost.unit_cost || 0).toFixed(2)} €</p>
+                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.unit_cost || 0))}</p>
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.totalCost', { defaultValue: 'Coût total' })} ({Number(productionCost.quantity || mo.quantity || 0)} unités)</span>
-                  <span className="font-bold font-mono text-base">{Number(productionCost.total_cost || 0).toFixed(2)} €</span>
+                  <span className="font-bold font-mono text-base">{formatCurrency(Number(productionCost.total_cost || 0))}</span>
                 </div>
               </div>
             )}

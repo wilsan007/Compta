@@ -214,7 +214,14 @@ for rulefile in "$RULES_DIR"/*.rule; do
       SHOW_COUNT=10
     fi
     # Show matches
-    if [ "$RULE_USE_GREP_L" = true ]; then
+    if [ "$RULE_USE_CUSTOM" = true ]; then
+      # Une règle custom ne fournit qu'un compteur ; sans cette branche on retombait sur
+      # grep avec un motif VIDE, qui remonte toutes les lignes de tous les fichiers et
+      # noyait les vrais findings sous du bruit.
+      if declare -f show_custom_rule > /dev/null; then
+        show_custom_rule 2>/dev/null | head -$SHOW_COUNT | sed 's/^/    /'
+      fi
+    elif [ "$RULE_USE_GREP_L" = true ]; then
       CMD="grep -rL \"$RULE_GREP_SEARCH\" $RULE_GREP_INCLUDES $RULE_GREP_PATHS"
       [ -n "$EXCLUDE_CHAIN" ] && CMD="$CMD$EXCLUDE_CHAIN"
       eval "$CMD" | head -$SHOW_COUNT | sed 's/^/    /'

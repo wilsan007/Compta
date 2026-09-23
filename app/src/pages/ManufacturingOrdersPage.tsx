@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrders, createManufacturingOrder, updateManufacturingOrder, deleteManufacturingOrder } from '@/lib/queries/production'
 import { getBOMs, getWarehouses, getRoutings } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
@@ -54,7 +54,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   async function handleProductionCost(id: string) {
     try {
       const res = await calculateProductionCost(id)
-      toast('success', t('manufacturing.title'), `${res?.total_cost ?? res} €`)
+      toast('success', t('manufacturing.title'), formatCurrency(Number(res?.total_cost ?? res ?? 0)))
     } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
   }
 

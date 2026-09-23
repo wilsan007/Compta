@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { getExitProcesses, createExitProcess } from '@/lib/queries/sprintDE'
 import { getEmployees } from '@/lib/queries/payroll'
 import { calculateSeverancePay, calculateNoticeCompensation } from '@/lib/queries/businessFunctions'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { LogOut, Plus, X, ChevronRight, FileText, Send, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -123,7 +123,7 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
       const res = await calculateSeverancePay(employeeId, exitDate)
       const amount = Number(res) || 0
       setSeverance(amount)
-      toast('success', tCommon('common.success'), `${'Indemnité de rupture'}: ${amount.toFixed(2)} €`)
+      toast('success', tCommon('common.success'), `${'Indemnité de rupture'}: ${formatCurrency(amount)}`)
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setCalcLoading(false) }
@@ -136,7 +136,7 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
       const res = await calculateNoticeCompensation(employeeId)
       const amount = Number(res?.amount ?? res?.notice_compensation ?? res ?? 0)
       setNoticeComp(amount)
-      toast('success', tCommon('common.success'), `Indemnité de préavis: ${amount.toFixed(2)} €`)
+      toast('success', tCommon('common.success'), `Indemnité de préavis: ${formatCurrency(amount)}`)
     } catch (err: any) {
       toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally { setNoticeLoading(false) }
@@ -191,12 +191,12 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
           </div>
           {severance !== null && (
             <div className="mt-2 p-3 rounded bg-[var(--color-neutral-100)] text-sm">
-              <strong>Indemnité de rupture:</strong> <span className="font-mono">{severance.toFixed(2)} €</span>
+              <strong>Indemnité de rupture:</strong> <span className="font-mono">{formatCurrency(severance)}</span>
             </div>
           )}
           {noticeComp !== null && (
             <div className="mt-2 p-3 rounded bg-[var(--color-neutral-100)] text-sm">
-              <strong>Indemnité de préavis:</strong> <span className="font-mono">{noticeComp.toFixed(2)} €</span>
+              <strong>Indemnité de préavis:</strong> <span className="font-mono">{formatCurrency(noticeComp)}</span>
             </div>
           )}
         </form>

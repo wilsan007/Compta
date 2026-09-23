@@ -49,16 +49,24 @@ export interface PublishResult {
 export async function getAvailableSignupCountries(): Promise<SignupCountry[] | null> {
   try {
     const { data, error } = await supabase.rpc('available_signup_countries')
-    if (error) return null
+    if (error) {
+      console.warn('[chartPacks] available_signup_countries indisponible :', error.message)
+      return null
+    }
     return (data ?? []) as SignupCountry[]
-  } catch {
+  } catch (err) {
+    console.warn('[chartPacks] available_signup_countries a échoué :', err)
     return null
   }
 }
 
 export async function isPlatformAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc('is_platform_admin')
-  if (error) return false
+  if (error) {
+    // Refus par défaut : une permission qui ne peut être prouvée n'est pas accordée.
+    console.warn('[chartPacks] is_platform_admin indisponible, refus par défaut :', error.message)
+    return false
+  }
   return data === true
 }
 

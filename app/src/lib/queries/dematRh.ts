@@ -53,7 +53,8 @@ export async function uploadEmployeeDocument(employeeId: string, file: File, met
 }
 
 export async function deleteEmployeeDocument(id: string): Promise<void> {
-  const { error } = await supabase.from('employee_documents').delete().eq('id', id)
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('employee_documents').delete(), 'employee_documents', tid).eq('id', id)
   if (error) throw error
 }
 

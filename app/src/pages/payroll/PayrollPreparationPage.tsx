@@ -423,7 +423,7 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
       const res = await calculateOvertimePay(employeeId, Number(hours) || 0, Number(rate) || 1.25)
       const amount = Number(res?.amount ?? res?.overtime_pay ?? res ?? 0)
       setResult(amount)
-      toast('success', tCommon('common.success'), `Heures sup: ${amount.toFixed(2)} €`)
+      toast('success', tCommon('common.success'), `Heures sup: ${formatCurrency(amount)}`)
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
@@ -474,7 +474,7 @@ function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onC
       const res = await calculateSickLeavePay(employeeId, Number(days) || 0)
       const amount = Number(res?.amount ?? res?.sick_leave_pay ?? res?.ijss ?? res ?? 0)
       setResult(amount)
-      toast('success', tCommon('common.success'), `IJSS: ${amount.toFixed(2)} €`)
+      toast('success', tCommon('common.success'), `IJSS: ${formatCurrency(amount)}`)
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
