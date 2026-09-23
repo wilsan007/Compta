@@ -2,20 +2,22 @@
 
 > **Objet** : tout ce qui reste à faire pour que le produit soit juste, déployé, prouvé et vendable à Djibouti, **dans l'ordre où le faire**.
 > **Point de départ** : vagues V1, V2 et V3 du [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) exécutées ; lots A à G traités ; registre des défauts connus vide ; liste blanche PostgREST vide.
-> **Branche** : `commercial-hr-paie`, phase 1 commitée (`fix(compta): phase 1 du reste-à-faire — résultat, acomptes, amortissements, reports`). **Production** : schéma à la migration **188**.
+> **Branche** : `commercial-hr-paie`, phase 1 commitée (`fix(compta): phase 1 du reste-à-faire — résultat, acomptes, amortissements, reports`). **Production** : **schéma à la migration 227 depuis le 23/09** (déployée le 23/09 au soir — voir P0-07).
 > **Sources** : [plan correctif](PLAN-CORRECTIF-AUDIT-2026-09-21.md) (§ 6, journal des vagues), [suivi](SUIVI-CAHIER-CORRECTIF.md), [cahier de localisation](../localisation/CAHIER-DES-CHARGES-LOCALISATION.md), [plan de perfection](PLAN-PERFECTION-9.5.md), mesures relevées dans le dépôt le 22/09.
 
 > **Avancement du 23/09 (fin de journée)** — **phase 1 close** :
 > - **R-09 ✅** l'état de rapprochement devient un écran (223) et le pointage écrit les **deux** côtés ; **R-10 ✅** lecteur OFX (SGML et XML), contrôle de devise, solde de clôture repris à l'import, fixtures de relevés réels — et **deux lecteurs faux** (CFONB 120 : dates, montants et libellés ; MT940 : date de valeur) corrigés, trouvés par ces fixtures (§ 4.2). Il ne reste de la phase 1 que **R-15** et **R-16**, en cours dans d'autres sessions.
 > - **P0-06 reprise et prolongée** sur la copie de production : les **13 migrations 214 → 226** puis la **227** (garde de société, autre session) passent sans erreur — **34 suites SQL vertes** (179 et 218 échouent sous le rôle `postgres` non superutilisateur à cause de `session_replication_role` ; elles passent sous `supabase_admin`), `plpgsql_check` 0 erreur, contrôle de trigger atteignable OK. Chaîne complète rejouée **sur base neuve : 202 migrations, 0 erreur**.
 > - **Réserve de méthode, mesurée** : la copie de répétition restaure les fonctions mais **pas leurs ACL** (restauration sous un rôle non propriétaire). `ci/check_tenant_guard` y signale donc **14 fonctions sans garde de société** qui n'en manquent pas en production : `pg_proc.proacl` relu **sur le cloud** montre `create_invoice_atomic` refusé à `anon` et `seed_vat_accounts` refusé à `anon` et `authenticated`, exactement l'état voulu par les migrations. **Le contrôle doit être lu sur la production après déploiement (P0-09), jamais sur la copie.**
-> - **Mesure avant déploiement (cloud, schéma 188)** : **254 fonctions publiques exécutables par `anon`** (dont 211 `SECURITY DEFINER`) — chiffre à remesurer après l'application des 189 → 227, dont les `REVOKE` doivent le faire baisser.
+> - **P0-07 ✅ le 23/09 au soir** : sauvegarde (`prod-20260923-avant-deploiement`, restaurée et vérifiée), puis les **29 migrations 189 → 227 appliquées à la production sans aucune erreur**. Contrôles : 369 tables, 343 fonctions, 1 788 policies, `plpgsql_check` 0 erreur, trigger atteignable OK, **garde de société OK** (81 fonctions, aucune exposée sans contrôle), **96/96 RPC de l'écran présentes**. **P0-09 ✅** : inscription réelle sur le cloud — 712 comptes, 10 journaux, 1 exercice, 1 utilisateur + fiche salarié, puis société et utilisateur supprimés. **P0-08 reste 👤** : les 14 parcours à l'écran, après déploiement du front.
+> - **Plan de retour arrière** : restauration testée ; **piège mesuré** — une restauration ne rend pas les ACL (`pg_dump` + `ALTER DEFAULT PRIVILEGES` de l'image re-accordent `anon`/`authenticated` à la création) : rejouer `sql/78_revoke_anon_and_rls_verification.sql` après toute restauration.
+> - **Mesure avant déploiement (cloud, schéma 188)** : **254 fonctions publiques exécutables par `anon`** (dont 211 `SECURITY DEFINER`) ; après déploiement **286 sur 343** — la hausse vient des 69 fonctions créées par les 189 → 227, chacune révoquée ou gardée selon son usage (le contrôle de garde, lui, est passé de « 14 exposées » sur la copie à **0 sur le cloud**).
 >
 > **Avancement du 22/09 (après-midi)** — phase 0, étapes P0-01 à P0-05 :
 > - P0-01 ✅ lot I (i18n) et 197 (TVA) intégrés ; P0-02/03 ✅ V3 commitée seule (`0dd4e1a`), instantané rejoué seul (181 migrations) ; P0-04 ✅ 200-202 (`af5b5cb`), puis `2dc9bb8` (plafonds knip et tables non lues, dépassés depuis 187), `d980c5a` (lot I), `f948fe9` (197), `3a4f30b` (UX-03 : `window.confirm` de l'écran de plans) ;
 > - P0-05 ⏳ poussé ; premier run : tout vert sauf UX-03 (corrigé en `3a4f30b`) et la 189, qui dépasse 15 min en CI : le correctif de performance des états est dans la copie de travail de la session V2 (« lancer v2 »), à commiter ;
 > - **P0-06 ✅ faite le 23/09** sur copie de production fraîche (conteneur `prod_copy_20260923`, sauvegarde `~/onusuite-backups/prod-20260923-avant-migration`) : les **15 migrations 189 → 213 passent sans erreur** sous le rôle `postgres`, `plpgsql_check` 0 erreur, 12 suites vertes, inscription France et Djibouti réussies (712 comptes, pack FR provisoire pour DJ), facture de bout en bout équilibrée. **Deux défauts trouvés, invisibles en CI** : (1) `bootstrap_tenant` exécutable par `anon` en prod — dérive de la 183, corrigée par la **215** ; (2) le numéro légal reprenait le **libellé libre** de l'exercice (`FAC-FY2026-000001`, `FAC-EX2024-000001` selon les sociétés) — corrigé par la **216**, qui impose l'année. **D-12 tranchée** : aucun numéro existant au format `FAC-<année>-nnnnnn` (les actuels sont à 3 chiffres), la séquence peut démarrer à 1.
-> - P0-07 à P0-09 👤
+> - P0-07 ✅ (déployée le 23/09 au soir, 189 → 227, 0 erreur) · P0-09 ✅ (AUD-B00 sur le cloud) · **P0-08 👤** (14 parcours à l'écran, à faire après déploiement du front)
 >
 > **Contrôle indépendant du 23/09** — 215 et 216 rejouées par mes soins sur base neuve de CI (stubs + instantané + **191 migrations, 0 erreur**) : **215** rouge → verte → **idempotente** (droit `anon` rendu à la main puis révoqué ; `authenticated` et `service_role` conservés) ; **216** 4 scénarios sur 4 verts. Mais **la 216 laissait un défaut de même nature** : `posting_number` — le numéro d'écriture, **exporté au FEC comme numéro de pièce** (`FECExportPage.tsx:32`) — concaténait encore le libellé libre de l'exercice. Mesuré en clair sur la copie de production : `AN-EX2024-000001`, `BQ-EX2024-000001`, `OD-EX2024-000001`, `VT-EX2024-000001` à côté de `VT-2026-000342`. Corrigé par la **217** (même fonction `fiscal_year_number_segment` que la 216 ; `sql/217_posting_number_year_tests.sql`, **P01 à P05 vus rouges avant** : `OD-FY2026-000001`, `OD-Exercice courant-000001`). Les numéros déjà attribués ne sont pas touchés, comme en 216 — un FEC déposé y renvoie. **Deuxième défaut trouvé en chemin** : les types générés étaient restés en arrière depuis la **214** (`purchase_order_lines.line_order` absent), ce qui fait échouer l'étape CI « Vérifier que les types sont à jour » — régénérés et commités. **Nuance sur D-12** : la mesure confirme qu'aucun numéro existant n'est au format `FAC-<année>-nnnnnn` (les anciens sont à 3 chiffres, `FAC-2024-001`), donc pas de collision de chaîne ; mais pour une société reprise qui a déjà `FAC-2024-001` à `FAC-2024-005`, la séquence repart à `FAC-2024-000001` — « numéro 1 » réutilisé dans le même exercice, à défaut de collision. C'est l'option (a) de D-12 (reprendre après le plus grand numéro) qui l'évite ; elle reste à trancher.
 > **Avancement du 22/09 (soirée)** — phase 1, dettes des vagues V1 à V3 :
@@ -188,7 +190,7 @@ Après les migrations :
 
 **Point à trancher avant déploiement** 👤 : des factures existantes en prod pourraient déjà porter des numéros au format `FAC-2026-000001` (compteur libre de `get_next_document_number`). Si c'est le cas, faire démarrer la séquence par exercice **après le plus grand numéro existant**, par une reprise dans une migration 197+.
 
-### P0-07 — Déploiement en production 🔴 👤
+### P0-07 — Déploiement en production ✅ (23/09 au soir)
 
 1. Sauvegarde complète (`~/onusuite-backups`, comme le 21/09) et **test de restauration** de cette sauvegarde.
 2. Fenêtre annoncée (les triggers de 190 et 192 changent le comportement de la saisie).
@@ -197,6 +199,15 @@ Après les migrations :
 5. Contrôle immédiat : `sql_migrations_tracker`, `plpgsql_check`, inscription de test, facture de test **dans une société de test** puis suppression de la société.
 6. Déploiement du front **seulement après** (P0-05).
 7. **Plan de retour arrière** écrit avant la fenêtre : restauration de la sauvegarde, et front à la version précédente.
+
+**Fait le 23/09 au soir** — fenêtre ouverte par vous, déploiement exécuté par mes soins :
+
+1. **Sauvegarde** `~/onusuite-backups/prod-20260923-avant-deploiement` (7,9 Mo, 6 652 entrées, 182 migrations tracées) et **test de restauration réussi** dans un conteneur `supabase/postgres:17.6.1.143` : **362 tables, 3 sociétés, 10 factures, 22 écritures, 1 777 policies** — conforme à la production de départ.
+2. **Rôle de connexion** : `postgres` du pooler, `PGSSLROOTCERT` sur le `ca.crt` de la sauvegarde, TLS vérifié (`verify-full`).
+3. **Migrations** : les **29 en attente — 189 → 197, 200, 201, 210 → 227** — appliquées **sans une seule erreur** (« 29 succès, 0 erreurs »), chacune dans sa transaction, arrêt prévu à la première erreur. Le front n'a **pas** été déployé (la branche `commercial-hr-paie` ne déclenche pas `deploy.yml`, réservé à `main`/`master` : c'est le bon ordre).
+4. **Contrôles immédiats sur le cloud** : 211 migrations tracées toutes `success` ; **369 tables** (362), **343 fonctions** (274), **1 788 policies** (1 777) ; `plpgsql_check` **0 erreur** (31 avertissements, les mêmes que sur base neuve) ; contrôle de trigger atteignable **OK** ; **garde de société OK — 81 fonctions examinées, 72 gardées, 9 inscrites, aucune exposée sans contrôle** (la 227 tient sur la production) ; **les 96 RPC appelées par l'écran existent toutes** en base (vérifié nom par nom) → le front peut être déployé sans appel manquant.
+5. **AUD-B00** (P0-09) et le détail de la société de test : voir plus bas.
+6. **Plan de retour arrière** : restaurer `prod-20260923-avant-deploiement` (testé), remettre le front à la version précédente. **Piège mesuré** : une restauration rend les **données** fidèlement mais **pas les ACL** — `pg_dump` décrit l'état final des droits (par exemple `REVOKE ALL … FROM PUBLIC; GRANT ALL … TO service_role;`) et le `ALTER DEFAULT PRIVILEGES` de l'image Supabase re-accorde `anon`/`authenticated` à la création : sur la copie restaurée, `seed_vat_accounts` et `create_invoice_atomic` redeviennent exécutables par `anon`, alors que la production les refuse. Après une restauration, **rejouer `sql/78_revoke_anon_and_rls_verification.sql`** (le `REVOKE … FROM anon` global) avant de rouvrir, sinon la base de secours est plus permissive que celle qu'elle remplace.
 
 ### P0-08 — Vérification à l'écran (jamais faite depuis V1) 🔴
 
@@ -221,9 +232,25 @@ Sur l'application pointant vers la base à jour, avec un compte de test. Chaque 
 
 Livrable : captures d'écran jointes au suivi, et chaque écart devient un scénario rouge.
 
-### P0-09 — AUD-B00 sur le cloud 🟠
+**Ce qui est levé, ce qui reste.** Les prérequis sont en place : la base est déployée (227), les **96 RPC** de l'écran existent, l'inscription réelle passe et provisionne (P0-09), les 34 suites SQL passent sur les données de production. Il reste à **déployer le front** sur cette base, puis à faire les 14 parcours ci-dessus à la main — c'est la seule partie qui ne peut pas être automatisée ici : elle demande un navigateur, un compte et des captures. Le contrôle « Import de relevé » peut être fait avec les **six relevés de `app/src/lib/__tests__/fixtures/`** (R-10) ; « Tout → changer de langue » se lit sur les mêmes écrans.
+
+### P0-09 — AUD-B00 sur le cloud ✅ (23/09 au soir)
 
 Après déploiement : créer une société de test par l'inscription réelle, compter comptes, journaux, exercices et paramètres, puis supprimer la société. Consigner le résultat dans le suivi.
+
+**Fait sur la production déployée**, par le chemin réel : un utilisateur d'authentification est créé (API admin, adresse de test sans boîte → confirmation directe au lieu du courriel), il se connecte par mot de passe, puis appelle `create_tenant_for_current_user` — la RPC que l'onboarding appelle.
+
+| Contrôle | Résultat |
+|---|---|
+| Réponse du provisionnement | `success: true`, `chart_pack_code: FR`, `chart_provisional: false` |
+| Plan comptable | **712 comptes** |
+| Journaux | **10** |
+| Exercices | **1** |
+| Séquences de numérotation | 0 — créées au premier document (attendu) |
+| Utilisateur + fiche salarié | 1 + 1 |
+| Suppression | société supprimée (`DELETE 1`, retour à **3** sociétés, **0** compte résiduel), utilisateur supprimé (HTTP 200) |
+
+**Un faux positif, écarté en le poursuivant** : un premier appel avec `country: "FR"` — le **code** au lieu du **nom** — répond `PAYS_NON_DISPONIBLE` (« Le pays FR n'est pas encore disponible ») alors que la France l'est. `normalize_country_code` cherche par `legislation_packs.country_name` et n'accepte le code que par son second paramètre, que la RPC laisse à `NULL`. L'application envoie toujours le nom (`createTenantForUser` met `country: 'France'` par défaut, `OnboardingPage` aussi), donc **il n'y a pas de défaut en production** ; mais le message est trompeur pour un appelant direct. À reprendre le jour où l'API publique créera des sociétés : passer `p_data ->> 'country'` **aussi** en second argument.
 
 ---
 
