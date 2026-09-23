@@ -592,13 +592,24 @@ Le mécanisme : `update_parent_status_on_subtasks_done` est `SECURITY DEFINER` e
 `UPDATE project_tasks SET status='done' WHERE id = v_parent_id` **sans filtre `tenant_id`**.
 `SECURITY DEFINER` contourne la RLS : la ligne de l'autre société est modifiée.
 
-**13 fonctions trigger `SECURITY DEFINER` écrivent sans jamais mentionner `tenant_id`** :
+**13 fonctions trigger `SECURITY DEFINER` écrivent sans jamais mentionner `tenant_id`.** Le
+critère, relu le 24/09 : `prosecdef`, type de retour `trigger`, un `UPDATE`/`INSERT INTO`/`DELETE
+FROM` dans le corps, et aucune occurrence de `tenant_id`.
+
 `update_parent_status_on_subtasks_done`, `update_parent_status_on_subtask_started`,
 `recalc_project_progress_on_task_change`, `recalc_parent_progress_on_subtask_change`,
 `recalc_task_progress_on_action_change`, `auto_reach_milestone_on_tasks_done`,
 `update_project_hours_on_time_entry`, `update_task_time_on_time_entry`,
-`notify_assignee_on_assignment`, `trigger_revoke_expired_auditors`, et les quatre
-`*_lines_refresh_totals`.
+`trigger_revoke_expired_auditors`, et les quatre `*_lines_refresh_totals`
+(`invoice_lines_refresh_totals`, `credit_note_lines_refresh_totals`,
+`purchase_invoice_lines_refresh_totals`, `purchase_credit_lines_refresh_totals`) — 9 + 4 = 13.
+
+> **Correction du 24/09.** La première rédaction citait aussi
+> `notify_assignee_on_assignment` : elle **n'y a pas sa place**, son corps insère la notification
+> avec `NEW.tenant_id` et n'écrit donc pas chez autrui. L'énumération donnait alors quatorze noms
+> pour un compte de treize ; le compte, lui, était juste. À l'inverse,
+> `quote_lines_refresh_totals` est bien hors liste : elle n'est pas `SECURITY DEFINER`, donc la
+> RLS s'applique à son écriture.
 
 ### ISO-02 🔴 — 189 tables acceptent une clé étrangère vers une autre société
 
