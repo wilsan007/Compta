@@ -11834,6 +11834,7 @@ export interface Database {
         vat_rate: number | null
         line_total: number | null
         tenant_id: string
+        line_order: number | null
       }
       Insert: {
         id?: string
@@ -11845,6 +11846,7 @@ export interface Database {
         vat_rate?: number
         line_total?: number
         tenant_id: string
+        line_order?: number
       }
       Update: {
         id?: string
@@ -11856,6 +11858,7 @@ export interface Database {
         vat_rate?: number
         line_total?: number
         tenant_id?: string
+        line_order?: number
       }
       Relationships: []
     }

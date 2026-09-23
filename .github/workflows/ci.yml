@@ -459,6 +459,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Suite de la 216 — MÊME défaut sur le numéro d'ÉCRITURE (posting_number),
+      # qui est exporté au FEC comme numéro de pièce : AN-EX2024-000001,
+      # VT-FY2026-000001 au lieu de VT-2026-000001.
+      - name: 'AUD : année du numéro d''écriture (217)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/217_posting_number_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'
