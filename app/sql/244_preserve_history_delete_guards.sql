@@ -66,8 +66,11 @@ BEGIN
     WHERE ps.employee_id = OLD.id AND ps.tenant_id = OLD.tenant_id;
 
     IF v_n > 0 THEN
+      -- `to_jsonb(OLD)` plutôt que `OLD.name` : la fonction est branchée sur
+      -- trois tables, et plpgsql_check résout les champs colonne par colonne
+      -- (c'est déjà le motif des gardes de 190 et 192).
       RAISE EXCEPTION 'Salarié % : % bulletin(s) de paie rattaché(s). La suppression effacerait des documents de paie — passez la fiche en « inactif ».',
-        OLD.name, v_n
+        to_jsonb(OLD)->>'name', v_n
         USING ERRCODE = 'check_violation';
     END IF;
 
@@ -82,7 +85,7 @@ BEGIN
 
     IF v_n > 0 OR v_releves > 0 THEN
       RAISE EXCEPTION 'Compte bancaire % : % opération(s) et % relevé(s) importé(s) rattaché(s). La suppression effacerait des opérations bancaires (dont les rapprochements) — conservez le compte.',
-        OLD.name, v_n, v_releves
+        to_jsonb(OLD)->>'name', v_n, v_releves
         USING ERRCODE = 'check_violation';
     END IF;
 
@@ -95,7 +98,7 @@ BEGIN
 
     IF v_n > 0 THEN
       RAISE EXCEPTION 'Lot de paie % (% bulletin(s) — statut %) : la suppression effacerait les bulletins du lot. Annulez le lot, ou laissez-le en place.',
-        OLD.number, v_n, OLD.status
+        to_jsonb(OLD)->>'number', v_n, to_jsonb(OLD)->>'status'
         USING ERRCODE = 'check_violation';
     END IF;
   END IF;
