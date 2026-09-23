@@ -1590,7 +1590,7 @@
   },
   "bankImport": {
     "title": "استيراد كشوف الحساب البنكي",
-    "subtitle": "استورد كشوفك (CFONB, MT940, Camt.053)",
+    "subtitle": "استورد كشوفك (CFONB, MT940, Camt.053, OFX)",
     "breadcrumb": "استيراد الكشوف",
     "upload": "رفع",
     "uploading": "جار الرفع...",
@@ -1612,7 +1612,9 @@
     },
     "autoDetect": "اكتشاف تلقائي",
     "nothingRead": "تعذّرت قراءة أي عملية من هذا الملف.",
-    "importSummary": "تم استيراد {{imported}} عملية، وتجاهل {{duplicates}} موجودة مسبقًا."
+    "importSummary": "تم استيراد {{imported}} عملية، وتجاهل {{duplicates}} موجودة مسبقًا.",
+    "currencyMismatch": "هذا الكشف بعملة {{statement}} بينما الحساب بعملة {{account}}: المبالغ ليست بالوحدة نفسها. استورد كشفًا بعملة {{account}}، أو اختر الحساب المطابق.",
+    "closingBalanceSaved": "تم تسجيل الرصيد الختامي للكشف على الحساب: {{amount}} بتاريخ {{date}}."
   },
   "ediTva": {
     "title": "التصريح الإلكتروني للضريبة (EDI-TVA)",

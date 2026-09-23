@@ -1590,7 +1590,7 @@
   },
   "bankImport": {
     "title": "Bank statement import",
-    "subtitle": "Import your statements (CFONB, MT940, Camt.053)",
+    "subtitle": "Import your statements (CFONB, MT940, Camt.053, OFX)",
     "breadcrumb": "Statement import",
     "upload": "Upload",
     "uploading": "Uploading...",
@@ -1612,7 +1612,9 @@
     },
     "autoDetect": "Automatic detection",
     "nothingRead": "No transaction could be read from this file.",
-    "importSummary": "{{imported}} transaction(s) imported, {{duplicates}} already present skipped."
+    "importSummary": "{{imported}} transaction(s) imported, {{duplicates}} already present skipped.",
+    "currencyMismatch": "This statement is in {{statement}} while the account is in {{account}}: the amounts are not in the same unit. Import a {{account}} statement, or select the matching account.",
+    "closingBalanceSaved": "Statement closing balance recorded on the account: {{amount}} as of {{date}}."
   },
   "ediTva": {
     "title": "VAT e-filing (EDI-TVA)",

@@ -1590,7 +1590,7 @@
   },
   "bankImport": {
     "title": "Import d'extraits bancaires",
-    "subtitle": "Importez vos extraits (CFONB, MT940, Camt.053)",
+    "subtitle": "Importez vos extraits (CFONB, MT940, Camt.053, OFX)",
     "breadcrumb": "Import extraits",
     "upload": "Téléverser",
     "uploading": "Téléversement...",
@@ -1612,7 +1612,9 @@
     },
     "autoDetect": "Détection automatique",
     "nothingRead": "Aucune opération lue dans ce fichier.",
-    "importSummary": "{{imported}} opération(s) importée(s), {{duplicates}} déjà présente(s) écartée(s)."
+    "importSummary": "{{imported}} opération(s) importée(s), {{duplicates}} déjà présente(s) écartée(s).",
+    "currencyMismatch": "Ce relevé est libellé en {{statement}} alors que le compte est en {{account}} : les montants ne sont pas dans la même unité. Importez un relevé en {{account}}, ou choisissez le compte correspondant.",
+    "closingBalanceSaved": "Solde de clôture du relevé repris sur le compte : {{amount}} au {{date}}."
   },
   "ediTva": {
     "title": "Télé-déclaration TVA (EDI-TVA)",

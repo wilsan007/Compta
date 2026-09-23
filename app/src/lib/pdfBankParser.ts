@@ -18,6 +18,15 @@ export interface BankStatementParseResult {
   openingBalance: number | null
   closingBalance: number | null
   currency: string | null
+  /**
+   * R-10 : vrai si `currency` a été **lue dans le fichier**. Les lecteurs retombent
+   * sur « EUR » quand le relevé n'annonce pas sa devise (CFONB sans code devise,
+   * CAMT sans `Ccy`, MT940 sans devise dans le solde…) : c'est un repli d'affichage,
+   * pas une information du relevé. Confondre les deux ferait refuser un relevé muet
+   * sur un compte en DJF — et, à l'inverse, accepter un relevé libellé en USD sur un
+   * compte en EUR (LOC1-49).
+   */
+  currencyFromFile?: boolean
   warnings: string[]
 }
 

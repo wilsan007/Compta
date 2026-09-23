@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankStatementImports } from '@/lib/queries/accounting'
-import { getBankAccounts, importBankStatement } from '@/lib/queries/banking'
+import { getBankAccounts, importBankStatement, BankStatementCurrencyError } from '@/lib/queries/banking'
 import type { BankStatementFormat } from '@/lib/bankParsers'
 import { useLocale } from '@/hooks/useLocale'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
@@ -14,7 +14,7 @@ export function BankStatementImportPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const { formatDate } = useLocale()
+  const { formatDate, formatCurrency } = useLocale()
   const [imports, setImports] = useState<BankStatementImport[]>([])
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,10 +59,28 @@ export function BankStatementImportPage() {
         toast('error', tCommon('common.error'), summary.warnings.join(' ') || t('bankImport.nothingRead'))
       } else {
         toast('success', tCommon('common.success'), t('bankImport.importSummary', { imported: summary.imported, duplicates: summary.duplicates }))
+        // R-10 : le solde de clôture repris du relevé est ce qui rend l'état de
+        // rapprochement comparable à la banque — le taire laisserait croire qu'il faut
+        // le saisir à la main dans l'écran des comptes.
+        if (summary.closingBalance != null && summary.closingBalanceDate) {
+          toast('success', tCommon('common.success'), t('bankImport.closingBalanceSaved', {
+            amount: formatCurrency(summary.closingBalance),
+            date: formatDate(summary.closingBalanceDate),
+          }))
+        }
       }
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      // R-10 : le refus de devise est traduit, sinon l'utilisateur lit un message
+      // technique qui ne dit pas quel compte est en cause.
+      if (err instanceof BankStatementCurrencyError) {
+        toast('error', tCommon('common.error'), t('bankImport.currencyMismatch', {
+          statement: err.statementCurrency,
+          account: err.accountCurrency,
+        }))
+      } else {
+        toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      }
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -99,13 +117,14 @@ export function BankStatementImportPage() {
               { value: 'cfonb120', label: 'CFONB 120' },
               { value: 'mt940', label: 'MT940' },
               { value: 'camt053', label: 'CAMT.053' },
+              { value: 'ofx', label: 'OFX' },
             ]}
           />
           <Button disabled={uploading || !selectedAccount}>
             <label className="flex items-center gap-2 cursor-pointer">
               <Upload className="w-4 h-4" />
               {uploading ? t('bankImport.uploading') : t('bankImport.upload')}
-              <input type="file" className="hidden" onChange={handleFileUpload} accept=".xml,.txt,.sta,.940,.mt940,.cfonb,.dat" />
+              <input type="file" className="hidden" onChange={handleFileUpload} accept=".xml,.txt,.sta,.940,.mt940,.cfonb,.dat,.ofx,.qfx" />
             </label>
           </Button>
         </div>

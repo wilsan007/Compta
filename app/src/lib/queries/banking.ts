@@ -368,19 +368,61 @@ export interface BankStatementImportSummary {
   imported: number
   duplicates: number
   warnings: string[]
+  /** R-10 : solde de clôture repris sur le compte — null si le relevé n'en portait pas, ou pas de date pour le porter */
+  closingBalance?: number | null
+  closingBalanceDate?: string | null
 }
 
 /**
- * Lit un relevé normé (CAMT.053, MT940, CFONB 120), écarte les opérations déjà
- * importées sur ce compte (même date, montant signé et référence) et enregistre
- * les autres comme lignes de relevé (source « import »). Le serveur les pointe
- * contre les écritures du compte de trésorerie (migration 196).
+ * Lit un relevé normé (CAMT.053, MT940, CFONB 120, OFX 1.x/2.x), écarte les opérations
+ * déjà importées sur ce compte (même date, montant signé et référence), enregistre les
+ * autres comme lignes de relevé (source « import ») et reprend le solde de clôture du
+ * relevé sur le compte. Le serveur les pointe contre les écritures du compte de
+ * trésorerie (migration 196).
  */
+// ============================================================
+// R-10 : le relevé refusé quand sa devise n'est pas celle du compte
+//
+// Un relevé en USD importé sur un compte en EUR écrit des montants qui n'ont pas
+// la même unité que le solde du compte : ni le pointage automatique (montant égal)
+// ni l'état de rapprochement (soldes comparés) ne veulent plus rien dire — et rien
+// dans l'écran ne le signalait (LOC1-49). Le refus est explicite et porte un code,
+// pour que l'écran puisse le traduire plutôt que d'afficher un message brut.
+// ============================================================
+export class BankStatementCurrencyError extends Error {
+  readonly code = 'bank_statement_currency_mismatch'
+  readonly statementCurrency: string
+  readonly accountCurrency: string
+  constructor(statementCurrency: string, accountCurrency: string) {
+    super(`Devise du relevé (${statementCurrency}) différente de celle du compte (${accountCurrency})`)
+    this.name = 'BankStatementCurrencyError'
+    this.statementCurrency = statementCurrency
+    this.accountCurrency = accountCurrency
+  }
+}
+
+const normalizeCurrency = (value: unknown) => (typeof value === 'string' ? value.trim().toUpperCase() : '')
+
 export async function importBankStatement(bankAccountId: string, filename: string, content: string, format?: BankStatementFormat): Promise<BankStatementImportSummary> {
   const tid = await getTenantId()
   const detected = format && format !== 'unknown' ? format : detectBankStatementFormat(content)
   const result = parseBankStatement(content, detected)
   const signed = (t: { type: string; amount: number }) => (t.type === 'debit' ? -Math.abs(t.amount) : Math.abs(t.amount))
+
+  // Compte visé : sa devise fait foi (c'est celle de la comptabilité) et son
+  // solde de clôture sera repris du relevé.
+  const { data: account, error: accountError } = await supabase.from('bank_accounts')
+    .select('id, currency, calculated_balance').eq('id', bankAccountId).maybeSingle()
+  if (accountError) throw accountError
+
+  const accountCurrency = normalizeCurrency(account?.currency)
+  const statementCurrency = normalizeCurrency(result.currency)
+  // Seule une devise RÉELLEMENT LUE dans le fichier peut fonder un refus : les lecteurs
+  // retombent sur « EUR » quand le relevé n'en porte pas, et refuser sur ce repli ferait
+  // échouer un relevé muet sur un compte en DJF.
+  if (result.currencyFromFile && statementCurrency && accountCurrency && statementCurrency !== accountCurrency) {
+    throw new BankStatementCurrencyError(statementCurrency, accountCurrency)
+  }
 
   let q = supabase.from('bank_transactions').select('date, amount, type, reference')
     .eq('source', 'import').or(`bank_account_id.eq.${bankAccountId},account_id.eq.${bankAccountId}`).order('id')
@@ -413,6 +455,23 @@ export async function importBankStatement(bankAccountId: string, filename: strin
     if (error) throw error
   }
 
+  // R-10 : le solde de CLÔTURE du relevé est la donnée qui manquait pour comparer le
+  // compte à sa banque (LOC1-49) — `updateStatementBalance` (misc.ts) existait sans
+  // appelant. Il n'est repris que si le lecteur en a trouvé un ET qu'il sait le dater :
+  // sans date, l'état de rapprochement (223) ne comparerait rien.
+  let closingBalance: number | null = null
+  let closingBalanceDate: string | null = null
+  if (result.closingBalance != null && result.periodEnd) {
+    closingBalance = result.closingBalance
+    closingBalanceDate = result.periodEnd
+    const { error: balanceError } = await tud(supabase.from('bank_accounts').update({
+      statement_balance: closingBalance,
+      statement_balance_date: closingBalanceDate,
+      reconciliation_diff: closingBalance - Number(account?.calculated_balance ?? 0),
+    }), 'bank_accounts', tid).eq('id', bankAccountId)
+    if (balanceError) throw balanceError
+  }
+
   const failed = result.transactions.length === 0
   const { error: logError } = await supabase.from('bank_statement_imports').insert({
     tenant_id: tid,
@@ -426,5 +485,5 @@ export async function importBankStatement(bankAccountId: string, filename: strin
   })
   if (logError) throw logError
 
-  return { format: detected, parsed: result.transactions.length, imported: fresh.length, duplicates: result.transactions.length - fresh.length, warnings: result.warnings }
+  return { format: detected, parsed: result.transactions.length, imported: fresh.length, duplicates: result.transactions.length - fresh.length, warnings: result.warnings, closingBalance, closingBalanceDate }
 }
