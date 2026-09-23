@@ -1286,6 +1286,7 @@ export interface Database {
         matched_account_code: string | null
         match_type: string | null
         bank_account_id: string | null
+        kind: string
       }
       Insert: {
         id?: string
@@ -1315,6 +1316,7 @@ export interface Database {
         matched_account_code?: string
         match_type?: string
         bank_account_id?: string
+        kind?: string
       }
       Update: {
         id?: string
@@ -1344,6 +1346,7 @@ export interface Database {
         matched_account_code?: string
         match_type?: string
         bank_account_id?: string
+        kind?: string
       }
       Relationships: []
     }

@@ -372,6 +372,12 @@ export interface BankTransaction {
   exchange_rate?: number | null
   exchange_gain_loss?: number | null
   source?: string | null
+  /**
+   * R-07 : nature de la ligne. « book » = mouvement de trésorerie saisi (reflet
+   * d'un règlement), « statement » = ligne du relevé. Seul « book » alimente le
+   * solde du compte : une opération saisie puis importée n'est comptée qu'une fois.
+   */
+  kind?: 'book' | 'statement'
 }
 
 export interface BankConnection {

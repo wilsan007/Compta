@@ -296,6 +296,8 @@ export async function importBankStatement(bankAccountId: string, filename: strin
       type: signed(t) < 0 ? 'debit' : 'credit',
       amount: Math.abs(t.amount),
       source: 'import',
+      // R-07 : une ligne de relevé, par opposition au reflet d'un règlement saisi
+      kind: 'statement',
       reconciled: false,
       matched: false,
     }, 'bank_transactions', tid)))

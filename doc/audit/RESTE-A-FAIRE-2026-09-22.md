@@ -295,10 +295,12 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 
 ### 4.2 Trésorerie et banque
 
-#### R-07 🟠 Modèle `bank_transactions` à double sens
-- **Constat** : la table contient à la fois les **reflets des règlements saisis** (`source = customer_payment / supplier_payment`) et les **lignes de relevé** (`import`, `manual`…). `update_bank_balance_on_transaction` ajoute les deux à `calculated_balance`, qui compte donc deux fois une opération importée et saisie. La source par défaut `manual` est ambiguë (saisie comptable ou ligne de relevé ?).
-- **À faire** : distinguer explicitement `kind = 'book' | 'statement'` ; `calculated_balance` = solde comptable 512x (ou supprimé) ; `statement_balance` = solde de clôture lu dans le relevé (le lecteur le fournit : `closingBalance`) ; scénario G12 (import + saisie de la même opération → solde juste).
-- **Effort** : 1,5 j.
+#### R-07 ✅ Modèle `bank_transactions` à double sens
+- **Constat** : la table contenait à la fois les **reflets des règlements saisis** (`source = customer_payment / supplier_payment`) et les **lignes de relevé** (`import`, `manual`…). `update_bank_balance_on_transaction` ajoutait les deux à `calculated_balance`, qui comptait donc **deux fois** une opération importée et saisie. La source par défaut `manual` était ambiguë.
+- **Fait (222)** : `kind ∈ {book, statement}`, non nul, défaut `statement` (tout ce qui n'est pas un reflet de règlement est une ligne de relevé — la règle que `is_statement_line` codait en creux, désormais écrite), reprenne des lignes existantes par leur source. Le solde `calculated_balance` est celui des **mouvements de trésorerie saisis** (`kind = 'book'`) et il est **recalculé** (jamais incrémenté) à chaque insertion, mise à jour **ou suppression** — et sur l'ancien compte si la ligne en change. Les deux portes d'entrée écrivent leur nature : reflets de règlement en `book`, import normé et import PDF en `statement`. `statement_line_ledger_match`, `auto_reconcile_by_score` et `get_bank_reconciliation_state` lisent `kind` au lieu de déduire la nature de la source ; `is_statement_line` est **supprimée** (aucune référence résiduelle vérifiée en base).
+- **Ce que R-07 laisse volontairement à R-09/R-10** : `statement_balance` (solde de **clôture** lu dans le relevé) reste à alimenter par le lecteur — c'est R-10 ; et ce que l'écran d'état **montre** (dont `is_balanced`, qui est vrai par construction) est R-09.
+- **Preuve** : `sql/222_bank_transaction_kind_tests.sql` — **G12a à G12e vus rouges avant avec les valeurs fautives** : G12b `solde=240` (double comptage de la même opération saisie puis importée), G12c `solde=80` (figé après suppression), G12e `solde=500` (une ligne de relevé gonflait le solde des mouvements saisis) ; verts après (`120`, `0`, `0`), et G12a prouve la nature explicite (`kind=book`). G12d (pointage d'une ligne de relevé contre l'écriture du compte) était vert avant et le reste : non-régression de la 196.
+- **Effort** : 1,5 j (fait).
 
 #### R-08 ✅ « Marquer payée » sans choix du mode ni du compte bancaire
 - **Constat** : les deux boutons enregistrent un règlement « virement » sans compte bancaire, donc en 512000/BQ.
@@ -362,7 +364,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **Preuve** : `sql/220_payroll_permission_tests.sql` — **P02 à P05 vus rouges avant**, et le détail rouge est le constat lui-même : le comptable n'avait **aucun** droit de paie (`droits=f`) tout en réussissant l'écriture (la clé métier manquait, l'effet passait par le trigger) ; un lecteur était bloqué par le trigger d'écriture **seulement** — sur un lot déjà comptabilisé, le chemin idempotent le laissait passer sans aucune vérification, et le message parlait de `journal_entry.post`, pas de la paie ; un administrateur révoqué recevait « Lot de paie introuvable » au lieu d'un refus de droit. **5/5 verts après**. 181 (7/7), 212 (9/9) et 166 restent verts.
 - **Effort** : 0,5 j (fait).
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-11, R-12, R-13, R-14, R-17** (≈ 9,85 j). **Reste : R-07, R-09, R-10** (le bloc banque, ≈ 4,5 j).
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-08, R-11 à R-14, R-17** (≈ 11,35 j). **Reste : R-09 et R-10** (l’écran d’état de rapprochement et les relevés OFX/devise, ≈ 3 j).
 
 ---
 

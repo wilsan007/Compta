@@ -140,6 +140,8 @@ export function BankReconciliationPdfPage() {
           matched_line_id: null,
           invoice_id: null,
           purchase_invoice_id: null,
+          // R-07 : une ligne de relevé (et non le reflet d'un règlement saisi)
+          kind: 'statement',
         })
         count++
       }
