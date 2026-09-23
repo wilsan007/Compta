@@ -247,7 +247,7 @@ Après déploiement : créer une société de test par l'inscription réelle, co
 | D-9 | Factures d'acompte (R-03) | ✅ **tranchée le 22/09** : acompte en 4191 et imputation sur la facture finale (norme) | R-03, fait |
 | D-10 | « Marquer payée » sans choix de banque (R-08) | ✅ **implémentée le 22/09** : fenêtre de règlement (date, montant, mode, compte bancaire) — reste à confirmer formellement | R-08, fait |
 | D-11 | Localisation (cahier LOC) | périmètre secteur public (couche `DJ-EP` seule, ou aussi `DJ-ADM` : 8 à 10 semaines) ; arabe dès la v1 ; groupes multi-pays hors v1 | phase 5 |
-| D-12 | Numérotation existante en prod (P0-06) | reprendre la séquence après le plus grand numéro existant, ou repartir à 1 par exercice | P0-07 |
+| D-12 | Numérotation existante en prod (P0-06) | ✅ **tranchée le 23/09 : option (a)**, reprendre après le plus grand numéro existant (mesure : 1 société reprise sans séquence aurait réattribué le numéro 1) — migration **218** | 218, fait |
 
 ---
 
@@ -334,9 +334,11 @@ Chaque ligne suit le protocole : **scénario rouge → migration 210+ → vert �
 - **À faire** : TVA par taux (mapping `collected`) ; écart de caisse en 658/758 (ou 471 selon la politique) ; scénario G09 étendu.
 - **Effort** : 0,75 j.
 
-#### R-14 🟡 Devis : numéros « perdus »
+#### R-14 ✅ Devis : numéros « perdus »
 - **Constat** : le numéro `DEV-…` est attribué à la création ; un devis supprimé laisse un trou (légal pour un devis, à documenter).
-- **Effort** : 0,1 j (documentation).
+- **Fait (218, documentation)** : la règle est écrite au lieu d'être implicite — `COMMENT ON COLUMN quotes.number` et l'en-tête de la 218 : un devis est numéroté **à sa création** (`quote_assign_number`, 190) et non à sa validation, parce qu'il n'est pas une pièce comptable ; un brouillon supprimé laisse donc un trou dans la suite `DEV`, ce qui est **licite pour un devis**. Le devis créé hors exercice garde une suite propre au préfixe, sans année (hors exercice, il n'y a pas d'année à porter).
+- **Preuve** : aucune — c'est un livrable de documentation, et le dire fait partie de la preuve (le plan le chiffrait ainsi : 0,1 j).
+- **Effort** : 0,1 j (fait).
 
 ### 4.4 Qualité transversale
 
@@ -351,7 +353,7 @@ Session parallèle en cours (contrôle CI + clés). Point connu : `common:toast.
 - **À faire** : dépend de D-6 ; au minimum, `has_permission('payroll.post')` sur la paie et `has_permission('journal_entry.post')` sur les RPC qui valident des écritures.
 - **Effort** : 0,5 j (au minimum) ; voir H08 pour la généralisation.
 
-**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 22/09 au soir : R-01, R-02, R-03, R-04, R-05, R-06, R-08** (≈ 6,75 j). Reste : R-07, R-09, R-10, R-11 à R-14, R-17.
+**Total phase 1** : ≈ 15 j (hors R-15/R-16 en cours). **Fait au 23/09 : R-01 à R-06, R-08, R-14** (≈ 6,85 j). Reste : R-07, R-09, R-10, R-11, R-12, R-13, R-17.
 
 ---
 

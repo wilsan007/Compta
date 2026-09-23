@@ -68,3 +68,6 @@ yarn.lock.bak
 
 # Claude Code (worktrees locaux, 266 Mo)
 .claude/
+
+# Outillage local de session (réglages d'une autre session, non versionné)
+claude/

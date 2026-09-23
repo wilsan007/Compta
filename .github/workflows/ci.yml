@@ -467,6 +467,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # D-12 — la numérotation reprend après le plus grand numéro déjà attribué
+      # à la société : une société reprise ne réattribue pas un numéro existant.
+      - name: 'AUD : reprise de la numérotation (218)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/218_document_number_seed_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
       # plus jamais l'ordre des uuid.
       - name: 'AUD : ordre des lignes de commande à la réception (214)'
