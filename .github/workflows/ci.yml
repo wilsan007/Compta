@@ -301,6 +301,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Une fonction SECURITY DEFINER exposée à `authenticated` qui reçoit un uuid
+      # du client doit vérifier que l'appelant appartient à la société visée.
+      # Ce contrôle a trouvé six fonctions qui ne le faisaient pas (227), dont une
+      # qui supprimait des données et une qui insérait des écritures comptables.
+      - name: Garde de société sur les fonctions exposées
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_tenant_guard.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: Générer les types TypeScript depuis PostgreSQL
         run: node scripts/generate-db-types.mjs
         env:
@@ -530,6 +539,13 @@ jobs:
       # la valeur résiduelle : elle dit le même chiffre que la fiche.
       - name: 'AUD : valeur nette et valeur résiduelle (226)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/226_asset_net_book_value_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Agir au nom d'une autre société : import annulé ou validé, rapprochement
+      # à trois voies, écriture récurrente — quatre scénarios vus rouges avant.
+      - name: 'AUD : garde de société sur les RPC exposées (227)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/227_tenant_guard_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
