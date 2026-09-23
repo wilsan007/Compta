@@ -310,6 +310,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 332 des 389 fonctions étaient exécutables par `anon`, le rôle du visiteur
+      # non connecté — dont trois fonctions SECURITY DEFINER qui écrivent,
+      # lancées sans jeton pour le prouver (228). Le droit PUBLIC de
+      # CREATE FUNCTION revient à chaque fonction créée : ce contrôle est le
+      # seul garde-fou permanent. Il passe AVANT les suites, qui créent leur
+      # propre outillage dans `public`.
+      - name: Droits du visiteur non connecté sur les fonctions
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_anon_grants.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: Générer les types TypeScript depuis PostgreSQL
         run: node scripts/generate-db-types.mjs
         env:
@@ -546,6 +557,11 @@ jobs:
       # à trois voies, écriture récurrente — quatre scénarios vus rouges avant.
       - name: 'AUD : garde de société sur les RPC exposées (227)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/227_tenant_guard_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'H09 : droits des fonctions (228)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/228_function_grants_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
