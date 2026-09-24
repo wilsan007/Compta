@@ -5,11 +5,15 @@
 --
 -- Chaque scénario enregistre son verdict dans `_audit_results` au lieu de
 -- s'arrêter au premier échec. En fin de fichier, `_audit_assert('<nnn>')`
--- confronte les verdicts au registre `ci/expected_failures.sql` :
+-- confronte les verdicts au registre `ci/expected_failures.sql`, **sur le
+-- couple (fichier, identifiant)** — jamais sur l'identifiant seul (AUD-X01) :
 --   - un échec hors registre    → la CI échoue (régression ou défaut nouveau) ;
 --   - un succès inscrit au registre → la CI échoue aussi : le défaut est corrigé,
 --     il faut le retirer du registre dans le même commit ;
 --   - aucun verdict enregistré  → la CI échoue (un test qui ne vérifie rien).
+--
+-- Treize fichiers emploient les identifiants `T01`…`T07` : indexer le registre
+-- sur le seul identifiant blanchirait le `T01` de tous les autres.
 --
 -- Les scénarios s'exécutent sous le rôle `authenticated` (sans BYPASSRLS)
 -- dès que le contexte est posé (`_as_user()`), comme un utilisateur réel.
@@ -26,8 +30,21 @@ CREATE TABLE IF NOT EXISTS _audit_results (
 GRANT SELECT, INSERT ON _audit_results TO authenticated, service_role;
 GRANT USAGE ON SEQUENCE _audit_results_id_seq TO authenticated, service_role;
 
-CREATE TABLE IF NOT EXISTS _audit_expected (test_id text PRIMARY KEY, reason text NOT NULL);
-TRUNCATE _audit_expected;
+-- ── Registre des échecs attendus (AUD-X01) ───────────────────
+-- La clé est le COUPLE (fichier, identifiant). Indexé sur le seul `test_id`,
+-- inscrire `T01` blanchissait `T01` dans les treize fichiers qui l'emploient —
+-- y compris ceux qui étaient verts — et taisait donc une régression réelle.
+-- Le tableau est RECRÉÉ à chaque inclusion : `audit_helpers.sql` est chargé par
+-- chaque fichier de test dans la même session, et `expected_failures.sql` doit
+-- être réinséré pour chacun.
+DROP TABLE IF EXISTS _audit_expected;
+CREATE TABLE _audit_expected (
+  file    text NOT NULL,
+  test_id text NOT NULL,
+  reason  text NOT NULL,
+  PRIMARY KEY (file, test_id)
+);
+GRANT SELECT ON _audit_expected TO authenticated, service_role;
 \ir expected_failures.sql
 
 -- Verdict d'un scénario
@@ -105,7 +122,9 @@ BEGIN
 
   FOR r IN SELECT test_id, ok, label, detail FROM _audit_results WHERE file = p_file ORDER BY id LOOP
     RAISE NOTICE '% % — % | %',
-      CASE WHEN r.ok THEN '✅' WHEN EXISTS (SELECT 1 FROM _audit_expected e WHERE e.test_id = r.test_id) THEN '🟠' ELSE '❌' END,
+      CASE WHEN r.ok THEN '✅' WHEN EXISTS (
+        SELECT 1 FROM _audit_expected e WHERE e.file = p_file AND e.test_id = r.test_id
+      ) THEN '🟠' ELSE '❌' END,
       r.test_id, r.label, left(COALESCE(r.detail, ''), 200);
   END LOOP;
 
@@ -116,15 +135,16 @@ BEGIN
   SELECT string_agg(ar.test_id || ' (' || ar.label || ')', ', ') INTO v_regressions
   FROM _audit_results ar
   WHERE ar.file = p_file AND NOT ar.ok
-    AND NOT EXISTS (SELECT 1 FROM _audit_expected e WHERE e.test_id = ar.test_id);
+    AND NOT EXISTS (SELECT 1 FROM _audit_expected e WHERE e.file = ar.file AND e.test_id = ar.test_id);
 
   SELECT string_agg(ar.test_id, ', ') INTO v_fixed
   FROM _audit_results ar
   WHERE ar.file = p_file AND ar.ok
-    AND EXISTS (SELECT 1 FROM _audit_expected e WHERE e.test_id = ar.test_id);
+    AND EXISTS (SELECT 1 FROM _audit_expected e WHERE e.file = ar.file AND e.test_id = ar.test_id);
 
   SELECT count(*) INTO v_expected_red FROM _audit_results ar
-  WHERE ar.file = p_file AND NOT ar.ok AND EXISTS (SELECT 1 FROM _audit_expected e WHERE e.test_id = ar.test_id);
+  WHERE ar.file = p_file AND NOT ar.ok
+    AND EXISTS (SELECT 1 FROM _audit_expected e WHERE e.file = ar.file AND e.test_id = ar.test_id);
 
   RAISE NOTICE '[%] % scénario(s) : % vert(s), % rouge(s) attendu(s) au registre', p_file, v_total, v_ok, v_expected_red;
 

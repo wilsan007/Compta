@@ -282,7 +282,6 @@ Après déploiement : créer une société de test par l'inscription réelle, co
 | D-10 | « Marquer payée » sans choix de banque (R-08) | ✅ **implémentée le 22/09** : fenêtre de règlement (date, montant, mode, compte bancaire) — reste à confirmer formellement | R-08, fait |
 | D-11 | Localisation (cahier LOC) | périmètre secteur public (couche `DJ-EP` seule, ou aussi `DJ-ADM` : 8 à 10 semaines) ; arabe dès la v1 ; groupes multi-pays hors v1 | phase 5 |
 | D-12 | Numérotation existante en prod (P0-06) | ✅ **tranchée et vérifiée le 23/09 : option (a)**, reprendre après le plus grand numéro existant — migration **218** ; preuve sur données de production : la société reprise `…0001` (EX2024, aucune séquence) passe de `FAC-2024-000001` (déjà pris) à **`FAC-2024-000006`** | 218, fait |
-| D-13 | Périmètre de la séparation des tâches (H06) | **appliquée le 24/09, à confirmer** : la règle porte sur les écritures **saisies** ; une écriture produite par un document (facture, achat, paie, caisse, stock) est validée avec le document — l'y soumettre rendrait la facturation impossible dès que l'option est cochée, puisque la fonction du document crée et valide d'un seul mouvement | 232, fait |
 
 ---
 
@@ -432,12 +431,12 @@ Reprise des lots H, I, J du plan correctif, mis à jour avec les mesures du 22/0
 | **H03** 🔴 | `generate-pdf` : SSRF en lecture prouvée (I1), `html` fourni par le client, interpolation sans échappement (I3), déployée `--no-verify-jwt`, aucun appelant (I2) | selon D-4 ; à défaut : **retirer de `deploy-all-functions.sh`** et supprimer la fonction du projet | test : appel sans jeton → 401 ; `<iframe>` interne → refus | 0,5 à 1 j |
 | **H04** 🟠 | `ocr-invoice-import` envoie des factures à OpenAI (I4) | selon D-5 : consentement par société, désactivé par défaut, mention dans la documentation et le registre RGPD | test : société sans consentement → refus | 0,5 j |
 | **H05** 🔴 👤 | clé `sb_secret_…` en clair | rotation (👤-1), puis `gitleaks` sur tout l'historique | job `security-audit` vert | — |
-| **H06** ✅ | **En écrivant le scénario, le contrôle s'est révélé creux** : `check_segregation_of_duties` compare l'auteur d'une écriture au valideur, mais **`journal_entries.created_by` n'est jamais renseigné** — aucun défaut de colonne, aucun trigger, et `post_journal_entry` (seul chemin de saisie de l'application) ne l'écrit pas. La fonction rendait donc `true` sans rien comparer : **même avec `enforce_segregation = true`, l'auteur validait sa propre écriture**. `validated_by` et `validated_at` n'étaient écrits par aucune fonction : ni l'auteur ni le valideur n'étaient enregistrés. | fait (**232**) : l'auteur est posé à l'insertion, le valideur et sa date à la validation ; la séparation porte sur les écritures **saisies** (décision **D-13**), reconnues par la pile d'appel (`PG_CONTEXT`) et non par une déclaration — toute fonction génératrice, même future, donne une écriture automatique ; saisir et valider d'un seul geste est refusé quand l'option est active, sinon la règle se contourne en cochant « comptabilisée » à la saisie | `232_segregation_tests.sql` : **T01, T02, T03, T05 vus rouges**, **8/8 verts** après, dont trois non-régressions (option inactive, validation par un tiers, facture qui produit toujours son écriture) ; **37 suites SQL** restent vertes | 0,5 j (fait) |
+| **H06** 🟠 | séparation des tâches | scénario : avec `enforce_segregation`, l'auteur d'une écriture ne peut pas la valider | nouveau scénario SQL | 0,5 j |
 | **H07** ✅ | tests en rôle `authenticated` | fait en V1 (A04) | — | — |
 | **H08** 🔴 | les rôles ne protègent rien (7 politiques sur 2 296) | selon D-6 : politiques par rôle sur les tables sensibles (écritures, factures, paie, paramètres, utilisateurs) **ou** documentation explicite | 105 étendu : `viewer` ne peut ni insérer ni supprimer une facture par PostgREST | 3 à 6 j |
 | **H09** ✅ | **Mesuré, pas supposé : 332 des 389 fonctions de `public` étaient exécutables par `anon`** — le visiteur non connecté, dont la clé voyage dans le bundle — dont **231 `SECURITY DEFINER`** et **75 des 96 RPC de l'écran**. Prouvé en les appelant sans jeton : `auto_revoke_expired_auditors()`, `generate_recurring_tasks()` et `cleanup_expired_idempotency()` **s'exécutaient** (SECURITY DEFINER, elles écrivent). La 78 avait bien révoqué `anon` — 149 migrations l'ont défait, fonction par fonction. | fait (**228**) : `REVOKE EXECUTE … FROM PUBLIC, anon` sur tout le schéma, **deux exceptions inscrites et justifiées** (`current_tenant_id()`, appelée par les politiques RLS des référentiels lus à l'inscription ; `available_signup_countries()`), `authenticated` intact | contrôle CI **`sql/ci/check_anon_grants.sql`** (le nom prévu, `check_definer_grants`, ne décrivait pas ce qu'il fait) **vu rouge — 387 fonctions hors registre — puis vert** ; suite `228_function_grants_tests.sql` **5 scénarios rouges avant, 7/7 verts après** ; anon passe de **332 à 2** fonctions, `authenticated` reste à **362**, les **33 autres suites SQL restent vertes**. **Mesure qui change la conclusion du plan** : `ALTER DEFAULT PRIVILEGES … REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` **ne fait rien** (la fonction créée ensuite a `proacl = NULL`, donc EXECUTE à PUBLIC) — le droit PUBLIC ne se retire pas d'avance, seul le contrôle CI tient dans la durée. | 1 j (fait) |
-| **H10** ✅ | **Le constat était périmé et le vrai défaut bien pire** : la file est en base depuis la 154 — mais **rien n'y entrait et rien n'en sortait**. (1) `webhook_delivery_queue.event_name` est NOT NULL (129) et la fonction Edge insère `event` (colonne ajoutée par la 154) sans jamais l'écrire : **chaque insertion violait la contrainte**, et le code répondait `success: true, queued: 0`. (2) `processQueue` lisait `next_retry_at`, **colonne inexistante** (la table porte `next_attempt_at`) : la requête échouait, la fonction rendait 0. (3) `process_webhook_queue`, programmée **chaque minute**, incrémentait `attempts` **sans rien envoyer** : en trois minutes toute entrée atteignait la limite de réessais. Origine commune : la 154 a ajouté un second jeu de colonnes pour les mêmes notions sans réconcilier celles de la 129. | fait (**234**) : colonnes jumelles mises en miroir par trigger (`event`/`event_name`, `http_status`/`last_response_status`, `response_body`/`last_response_body`) ; `claim_webhook_batch()` prend un lot atomiquement (`FOR UPDATE SKIP LOCKED`, statut `sending`) **sans consommer de tentative** — la fonction Edge lisait sans verrou alors qu'elle est appelée après chaque insertion **et** par le cron ; `requeue_stale_webhook_deliveries()` récupère les envois interrompus ; le cron ne touche plus aux tentatives ; la fonction Edge passe par la RPC et écrit `next_attempt_at` | `234_webhook_queue_tests.sql` : **T01 rouge, et T02 à T07 impossibles à jouer** avant (toute insertion échouait), **8/8 verts** après. Garde SSRF vérifiée aux **deux** étages : refus dès l'enregistrement du point de livraison (167) et blocage d'une URL devenue interne avant l'envoi. **Reste à câbler** : le déclenchement périodique de `?process=1` (pg_net + `app.functions_base_url`), sans quoi les réessais attendent un appel extérieur — `trigger_webhook_delivery()` est prête et le dit. | 1 j (fait) |
-| **H11** ✅ | **Revérifié, et le défaut était l'inverse de celui annoncé** : le maillon précédent est bien comparé (154) — c'est la **continuité des identifiants** qui était fausse. `v_last_id` était écrasé par l'identifiant courant **avant** le test, qui se lisait donc `id <> id + 1`, vrai pour toute ligne : trois événements intacts rendaient « 3 sauts, chaîne **invalide** », `after_id = before_id`, `missing_count = -1`. Le journal fiscal d'une société saine se déclarait altéré **à chaque vérification**. | fait (**233**) : la continuité se mesure contre la ligne précédente, et `chain_valid` ne dépend plus des sauts — **mesuré** : une transaction annulée consomme son numéro de séquence (4519 → 4521 sans aucune suppression), donc un saut arrive en exploitation normale. Ce qui prouve une altération reste le chaînage ; les sauts sont comptés, détaillés et expliqués. | `233_nf525_chain_tests.sql` : **T01, T02, T03, T05 vus rouges** sur la version d'avant, **6/6 verts** après — dont une chaîne réellement altérée (maillon supprimé, contenu retouché, triggers neutralisés pour se mettre dans la peau d'un accès direct à la base) et l'**inaltérabilité** du journal par le chemin normal, refusée même sous rôle privilégié. **Limite dite** : supprimer le dernier maillon ne casse aucun chaînage — seul un ancrage extérieur le verrait. | 0,5 j (fait) |
+| **H10** 🟠 | `outgoing-webhooks` : file en mémoire dans une fonction Edge (audit Gemini du 12/09) | file persistante (table + cron) ; vérifier que le garde SSRF 167/168 s'applique | test SSRF | 1 j |
+| **H11** 🟡 | NF525 : `verify_nf525_chain` ne comparait pas le maillon précédent (audit Gemini) ; index ajouté en 189 | **revérifier** l'état actuel ; scénario : suppression d'un maillon → chaîne invalide | nouveau scénario | 0,5 j |
 
 ### 5.2 Lot I — Ergonomie et i18n
 
@@ -473,11 +472,6 @@ Reprise des lots H, I, J du plan correctif, mis à jour avec les mesures du 22/0
 
 ## 6. PHASE 3 — Modules jamais audités par exécution
 
-> **Mesure du 24/09** : [couverture d'audit par module](COUVERTURE-AUDIT-PAR-MODULE-2026-09-24.md).
-> Sur 341 tables métier, **80 sont traversées par un scénario (23 %)** ; sur les **67 qui portent
-> une logique SQL**, **43 le sont (64 %)**. Les **20 fonctions Edge n'ont aucun test**.
-> **16 des 20 modules ci-dessous n'ont jamais vu un scénario chiffré.**
-
 L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, achats, paie (FR), stock, caisse et banque. Les modules ci-dessous existent (198 pages, 21 fonctions Edge) mais **n'ont jamais été vérifiés en exécutant un scénario chiffré**. Chacun suit la même méthode : scénario SQL ou e2e qui lit les chiffres → défauts inscrits au registre → correctifs rouge puis vert.
 
 | # | Module | Ce qu'il faut vérifier | Effort audit |
@@ -487,9 +481,9 @@ L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, ac
 | M-03 | **Analytique** | répartition `analytic_distribution` sur les écritures générées ; balance analytique = balance générale sur les classes 6/7 | 0,5 j |
 | M-04 | **Budgets** | réalisé = mouvements des comptes (hors à-nouveaux et clôture), engagements libérés à la facturation | 0,5 j |
 | M-05 | **Notes de frais** | validation → écriture 625x / 421 ; TVA récupérable | 0,5 j |
-| M-06 | ✅ **Commandes → livraisons** (24/09) | La double sortie du 12/09 n'existe plus (STK-01 + index unique). **Trouvé à l'exécution** : livrer une commande confirmée échouait **toujours** — `release_stock_on_delivery` écrivait un statut de réservation que la contrainte CHECK refuse. Réexpédier un BL annulé rendait un code d'index. Migration **230**, tests **230** (5 scénarios). Reste : livraisons → factures, reliquats. | 0,5 j restant |
+| M-06 | **Commandes → livraisons → factures** (ventes) | double sortie de stock signalée par Gemini le 12/09 (`create_stock_out_on_delivery`) : **revérifier** ; réservations (`reserved_quantity` et `quantity_reserved`, deux colonnes) | 1 j |
 | M-07 | **Réceptions et contrôle qualité** (achats) | double entrée signalée le 12/09 : **revérifier** ; rapprochement 3 voies avec reliquats | 0,5 j |
-| M-08 | ✅ **Production, rebuts et reclôture** (24/09) | **Trouvé à l'exécution** : `qty_scrapped` n'était lue par aucun code — les rebuts entraient en stock comme des pièces bonnes et le coût unitaire était sous-évalué ; et reclôturer un OF doublait le stock sans doubler l'écriture, seul déclencheur à ne pas renseigner `reference_id`. Migration **229**, tests **229** (6 scénarios). Reste : OF multi-niveaux, écarts de coût. | 0,5 j restant |
+| M-08 | **Production** (au-delà de 177) | OF multi-niveaux, rebuts, écarts de coût | 0,5 j |
 | M-09 | **Lots et numéros de série** | `check_tracking_on_sm` lève si `lot_id` est nul pour un article suivi : aucun écran ne le renseigne ? | 0,5 j |
 | M-10 | **Déclaration de TVA** (`submit-vat-return`, `EdiTvaPage`) | CA3 depuis les écritures, cases correctes, autoliquidation séparée (R-15), TVA sur encaissements | 1 j |
 | M-11 | **FEC** | conformité à l'arrêté (18 colonnes, `EcritureNum` = `posting_number` depuis la 187), contrôle par l'outil de la DGFiP (Test Compta Demat) | 0,5 j |
@@ -498,28 +492,12 @@ L'audit du 21/09 et les vagues V1 à V3 ont couvert saisie, clôture, ventes, ac
 | M-14 | **Relances de paiement** (`cron-payment-reminders`) | ne relancer que les factures validées non payées | 0,25 j |
 | M-15 | **Stripe** (`handle-stripe-webhook`) | vérification de signature, idempotence, écriture comptable de l'abonnement | 0,5 j |
 | M-16 | **Synchronisation bancaire** (`sync-bank-transactions`) | lignes importées en `statement`, pointage 196, pas de doublon avec l'import de fichier | 0,5 j |
-| M-17 | ⏳ **Temps passés** (24/09) | **Trouvé à l'exécution** : un temps de la société B pouvait viser le projet de la société A, et son nom partait dans une notification de B (famille 227/H02) ; montant libellé « € » en dur. Migration **231**, tests **231** (6 scénarios). **`M-17-01` reste rouge au registre** : les heures facturables n'atteignent aucune facture — `create_billable_line` ne crée qu'une notification. Reste : CRM, tâches, et la refacturation elle-même. | 1 j restant |
+| M-17 | **CRM, projets, temps passés, tâches** | refacturation des temps → facture ; aucune écriture directe | 0,5 j |
 | M-18 | **Utilisateurs et invitations** (`create-user`, `auth-signup`) | un utilisateur invité ne voit que sa société ; rôle appliqué (lié à H08) | 0,5 j |
 | M-19 | **Import Sage** (`SageImportPage`) | reprise d'un FEC ou d'une balance : équilibre, comptes créés, tiers | 0,5 j |
 | M-20 | **Miroir** (`mirror-daemon`, 200) | après la 200 : écrits par un démon authentifié seulement | 0,25 j |
 
 **Total audit** : ≈ 12 j, **plus les correctifs** qu'il révélera (estimation prudente : autant).
-
-> **Relevé du 24/09 — les trois premiers modules audités.** M-06, M-08 et M-17 ont été
-> pris en premier parce qu'ils sont les seuls ponts entre la gestion (production,
-> livraison, projets) et le grand livre. Ils ont rendu **six défauts**, dont un
-> **bloquant** (aucune commande confirmée ne pouvait passer à « livrée ») et un de
-> **sécurité** (nom de projet d'une société visible depuis une autre). Aucun n'était
-> visible sans exécuter un scénario chiffré : les 34 suites SQL existantes ne
-> traversaient ni les rebuts, ni une reclôture, ni le cycle de réservation.
->
-> Deux enseignements pour la suite de la phase 3 :
-> - **chiffrer 0,5 j par module était optimiste** — trois modules ont pris une session
->   à eux seuls, correctifs compris ;
-> - **les chemins d'annulation sont le gisement**. Les trois défauts d'idempotence
->   viennent du même motif : un statut `cancelled` permis par la contrainte CHECK,
->   qu'aucun déclencheur ne traite. `goods_receipts` porte le même motif et n'a pas
->   encore été vérifié (M-07).
 
 ---
 
