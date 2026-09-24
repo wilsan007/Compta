@@ -31,6 +31,41 @@ npm run build
 wrangler pages deploy dist --project-name=onusuite
 ```
 
+#### ⚠️ Piège mesuré le 24/09/2026 — un build local pointe vers `localhost`
+
+`app/.env.local` (l'environnement de développement, non versionné) fixe
+`VITE_SUPABASE_URL=http://127.0.0.1:54321`. Or Vite charge `.env.local` **dans tous
+les modes**, y compris `production`, et il a la priorité sur `.env`. Un
+`npm run build` lancé tel quel produit donc un bundle qui parle au Supabase **local** :
+
+```
+Build tel quel                          : 4 bundles contiennent 127.0.0.1:54321, 0 contiennent l'URL cloud
+Build avec les variables dans l'env.    : 4 bundles contiennent l'URL cloud,      0 contiennent 127.0.0.1
+```
+
+C'est la raison pour laquelle le front n'a **jamais** été vérifié contre la base
+déployée : le bundle déployé regardait une base qui n'existe que sur le poste du
+développeur. Les variables passées dans l'**environnement** ont la priorité sur les
+fichiers : c'est le chemin qui marche.
+
+```bash
+cd app
+VITE_SUPABASE_URL="https://<projet>.supabase.co" \
+VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_…" \
+  npm run build
+npx wrangler deploy            # wrangler.jsonc = Workers, assets = app/dist
+# Vérification, à faire AVANT de déployer :
+grep -rlo '127.0.0.1:54321' dist/assets | wc -l   # doit valoir 0
+grep -rlo '<projet>.supabase.co' dist/assets | wc -l  # doit être > 0
+```
+
+Deux écarts à trancher au passage : `wrangler.jsonc` décrit un **Worker** nommé
+`onusuite` (assets statiques, `not_found_handling: single-page-application`), alors
+que la commande ci-dessus déploie vers **Pages** (`--project-name=onusuite`) et que
+`app/public/_redirects` nomme un worker `projet-compta`. Le repli SPA est assuré par
+`wrangler.jsonc` : `app/public/_redirects` ne peut pas contenir de règle `/* /index.html 200`
+(Workers la refuse comme boucle infinie — mesuré le 23/09).
+
 ### Configuration automatique (Git integration)
 
 1. Aller sur https://dash.cloudflare.com → Workers & Pages → Create application → Pages
