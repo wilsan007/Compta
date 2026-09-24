@@ -242,6 +242,30 @@ for rulefile in "$RULES_DIR"/*.rule; do
 done
 
 # ══════════════════════════════════════════════════════════════
+# CONTRÔLES DE BASE (W0) — seulement si une base est joignable
+# ══════════════════════════════════════════════════════════════
+# Ces deux contrôles confrontent le CODE au SCHÉMA RÉEL : sans base, ils ne
+# prouvent rien, donc ils sont ignorés plutôt que faussement verts. En CI, le job
+# `db-integration` les exécute de toute façon (étapes « W0 — … » de ci.yml).
+section "Contrôles de base (colonnes écrites, erreurs non lues)"
+
+if [ -z "${DATABASE_URL:-}" ] && [ -z "${PGHOST:-}" ]; then
+  warn "DATABASE_URL/PGHOST absents : contrôles de base ignorés (jamais prouvés sans schéma réel)"
+else
+  if node scripts/check-written-columns.mjs; then
+    pass "colonnes écrites : aucune écriture impossible hors baseline"
+  else
+    fail "colonnes écrites : écriture(s) impossible(s) ou baseline périmée" 1
+  fi
+
+  if node scripts/check-unchecked-writes.mjs; then
+    pass "erreurs non lues : aucune écriture nouvelle sans contrôle d'erreur"
+  else
+    fail "erreurs non lues : écriture(s) nouvelle(s) ou baseline périmée" 1
+  fi
+fi
+
+# ══════════════════════════════════════════════════════════════
 # FIXE 5/5: Tests Vitest
 # ══════════════════════════════════════════════════════════════
 section "5/5  Tests Vitest"

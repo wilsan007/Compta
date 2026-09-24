@@ -332,6 +332,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # ISO-03 / ISO-04 : 495 couples (table, commande) portent DEUX politiques
+      # permissives — une générique `tenant_select` et une par table qui porte la
+      # garde `can_perform`. Deux politiques permissives sont OU-ées : la plus
+      # large gagne, et les 38 gardes de droits deviennent inopérantes, y compris
+      # par appel direct à PostgREST. Le contrôle refuse un doublon hors registre
+      # et refuse aussi une ligne de registre devenue périmée (la 238 les videra).
+      - name: Politiques RLS permissives jumelles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_policy_duplicates.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: Générer les types TypeScript depuis PostgreSQL
         run: node scripts/generate-db-types.mjs
         env:
@@ -370,6 +381,38 @@ jobs:
           node scripts/check-embeds.mjs
         env:
           PGRST_URL: http://localhost:3333
+
+      # `check-embeds` ne regarde que les LECTURES. Une colonne inexistante dans
+      # un `.insert()` / `.update()` n'est vue ni par tsc, ni par les tests
+      # (Supabase y est simulé), ni par PostgREST tant que la requête n'est pas
+      # jouée : 20 écritures impossibles subsistent, toutes en baseline avec la
+      # vague qui les corrige (W6). Une écriture NOUVELLE casse la CI, et une
+      # ligne de baseline devenue fausse la casse aussi (plafond qui ne peut que
+      # baisser) — sans quoi la baseline se remplirait de dettes périmées.
+      - name: W0 — Colonnes écrites confrontées au schéma réel
+        run: node scripts/check-written-columns.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # `audit-silent-failures` cherche une déstructuration INCOMPLÈTE
+      # (`const { data } = …` sans `error`). Il ne voit pas l'absence TOTALE de
+      # déstructuration : 29 écritures (19 instructions) dont l'erreur n'est
+      # jamais lue, dont quatre alimentations de la paie.
+      - name: W0 — Écritures dont l'erreur n'est jamais lue
+        run: node scripts/check-unchecked-writes.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # AUD-X01 — le registre des échecs attendus est indexé sur le COUPLE
+      # (fichier, identifiant). Tant qu'il l'était sur `test_id` seul, inscrire
+      # `T01` blanchissait le `T01` de treize fichiers, y compris verts. Cet
+      # auto-test monte deux fichiers homonymes et exige qu'un seul soit blanchi ;
+      # il échoue si l'ancienne clé revient. Il tourne APRÈS `check_anon_grants`,
+      # parce que `audit_helpers.sql` crée ses fonctions dans `public`.
+      - name: AUD-X01 — le registre porte le couple (fichier, identifiant)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/audit_registry_selftest.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       - name: Tests de triggers (SOC-01)
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/102_trigger_tests.sql
@@ -666,6 +709,19 @@ jobs:
       # bancaire ses opérations, un article son historique de mouvements.
       - name: 'AUD : suppressions qui préservent l''historique (244)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/244_preserve_history_delete_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
+      # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
+      # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER
+      # contourne la RLS). La 236 filtre les dix-huit fonctions d'écriture relevées
+      # (sept scénarios vus rouges avant) ; ce fichier prouve l'effet dans les deux
+      # sens — la donnée de B intacte, l'action légitime de A toujours faite — et
+      # porte le T02 resté rouge au registre : l'insertion inter-sociétés attend les
+      # clés étrangères composites (ISO-02, vague 237).
+      - name: 'ISO-01 : écritures des déclencheurs SECURITY DEFINER (236)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/236_security_definer_tenant_writes_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
