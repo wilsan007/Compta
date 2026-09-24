@@ -2453,6 +2453,11 @@ export interface QualityCheck {
   checked_at: string | null
   notes: string | null
   created_at: string
+  // 251 (S-13) : la quantité réellement contrôlée, et celle rebutée. NULL sur
+  // `quantity_checked` = tout ce qui est entré (comportement d'avant la 251) ;
+  // NULL sur `quantity_rejected` = tout le contrôlé sur un échec.
+  quantity_checked: number | null
+  quantity_rejected: number | null
 }
 
 export interface PickList {

@@ -160,13 +160,15 @@ export async function getPosTickets(sessionId?: string, date?: string): Promise<
   return (data || []) as any
 }
 
-export async function cancelPosTicket(id: string): Promise<void> {
-  const tid = await getTenantId()
-  const { error } = await supabase
-    .from('pos_tickets')
-    .update({ status: 'cancelled' })
-    .eq('id', id)
-    .eq('tenant_id', tid || '')
+export async function cancelPosTicket(id: string, reason?: string): Promise<void> {
+  // 250 (POS-01) : l'annulation passe par la fonction dédiée. La garde
+  // d'inaltérabilité refuse toute écriture directe sur un ticket encaissé ;
+  // `void_pos_ticket` trace le motif, écrit l'événement NF-525, et refuse une
+  // annulation après clôture de la session (l'avoir corrige alors la vente).
+  const { error } = await supabase.rpc('void_pos_ticket', {
+    p_ticket_id: id,
+    p_reason: reason ?? null,
+  })
   if (error) throw error
 }
 

@@ -762,6 +762,35 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # POS-01 à POS-04 — le ticket de caisse « inaltérable » se réécrivait
+      # (120 € → 12 €, empreinte inchangée), ses lignes se supprimaient, le numéro
+      # était attribué par MAX+1 sans verrou, `created_at` venait du client (et un
+      # ticket dont le client omettait la société recevait un hachage calculé sur
+      # NULL, donc une chaîne invalide) ; aucune contrainte ne bornait le statut,
+      # donc une vente pouvait sortir de la clôture en silence. La 250 rend les
+      # montants, la date, le numéro et l'empreinte immuables — pour l'appel
+      # direct comme pour le propriétaire de la table —, pose l'unicité et le
+      # verrou par caisse, répare les doublons en recalculant les empreintes, et
+      # ouvre la sortie honnête : `void_pos_ticket()`, tracée et refusée après
+      # clôture (l'avoir corrige alors). 11 scénarios vus rouges avant, verts après.
+      - name: 'POS : inaltérabilité NF-525 du ticket de caisse (250)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/250_pos_nf525_immutability_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-12/S-13 — annuler une réception reçue ne remettait ni le stock, ni la
+      # couche de valorisation, ni l'écriture ; et un contrôle qualité en échec
+      # rebutait la TOTALITÉ de la ligne reçue (10 rebutés pour 3 contrôlés), sur
+      # un mouvement sans dépôt (l'article baissait, le dépôt non). La 251
+      # contrepasse l'annulation — sortie miroir au même coût, écriture inverse au
+      # journal ST, écriture d'origine intacte —, refuse la réédition d'une
+      # réception comme la double contrepassation, et ne rebute que la quantité
+      # contrôlée (ou rebutée), au dépôt de la réception.
+      - name: 'AUD : chemins d''annulation et quantité contrôlée (251)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/251_cancel_paths_and_quality_quantity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
       # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER

@@ -77,6 +77,50 @@
   couverture passe de 333 à **340 tables visibles sur 340**).
 - Preuves : `doc/audit/VAGUE-W1-ISO02-04-PERM01-2026-09-24.md`.
 
+### Vagues W2 et W3 — inaltérabilité de la caisse et chemins d'annulation (2026-09-24) ✅
+- **W2 / POS-01→04 (250)** : un ticket de caisse « inaltérable » se réécrivait
+  (120 € → 12 €, empreinte inchangée), ses lignes se modifiaient et se
+  supprimaient, le numéro était attribué par `MAX+1` sans verrou, `created_at`
+  venait du client (et un ticket dont le client omettait la société recevait un
+  hachage calculé sur NULL, donc une chaîne invalide) ; le statut n'était pas
+  contraint, donc une vente pouvait sortir de la clôture en silence. La **250**
+  pose la garde d'inaltérabilité (montants, date, numéro, empreinte — pour
+  l'appel direct **et** pour le propriétaire de la table), l'unicité
+  `(tenant, caisse, numéro)` sous `pg_advisory_xact_lock`, la reprise des
+  doublons (numéros **et** empreintes recalculés), et la sortie honnête
+  `void_pos_ticket()` (tracée, événement NF-525, refusée après clôture — un
+  avoir corrige alors). `cancelPosTicket()` de l'écran passe par cette RPC.
+  11 scénarios, **vus rouges avant** (0 vert), **11/11 après**.
+- **W3 / S-12, S-13 (251)** : annuler une réception reçue ne remettait ni le
+  stock, ni la couche de valorisation, ni l'écriture, et le statut `received`
+  était rejouable ; un contrôle qualité en échec rebutait **tout** le reçu
+  (10 rebutés pour 3 contrôlés) sur un mouvement sans dépôt (l'article baissait,
+  le dépôt non). La **251** contrepasse l'annulation (sortie miroir au même
+  coût + écriture inverse au journal ST, l'écriture d'origine restant intacte),
+  refuse la réédition d'une réception comme la double contrepassation, et ne
+  rebute que la quantité contrôlée (ou rebutée), au dépôt de la réception.
+  6 scénarios : 2 verts de non-régression, **4 rouges avant**, **6/6 après**.
+- **Contrôles et suites** : `check_anon_grants`, `check_tenant_guard`,
+  `check_status_writes`, `check_trigger_reachability`, `check_composite_fks`,
+  `check_policy_duplicates`, `check_roles_opposables` verts après les deux
+  migrations ; batterie complète (54 suites + 8 contrôles, base neuve
+  **223 migrations, 0 erreur**) verte, hors les deux rouges du registre
+  (`231 M-17-01`, `245 T08`). `tsc -b` exit 0, `oxlint` 0 avertissement.
+- **Numéros** : `245`→`249` étaient déjà pris (TVA, cumuls de paie, seconde
+  passe des clés composites). W2 prend **250**, W3 prend **251** ; les vagues
+  suivantes prennent le premier numéro libre **au moment de leur exécution**
+  (252 est déjà pris par le socle des chaînages, `252_chain_socle.sql`) — un
+  numéro se constate dans le dépôt, il ne se réserve pas.
+- Preuves : `doc/audit/VAGUE-W2-W3-2026-09-24.md` (mesures d'entrée, batteries,
+  limites dites).
+- ⚠️ **Incident de session, et ce qu'il apprend** : une synchronisation externe
+  (iCloud/Desktop) a remplacé le dossier `app/sql` par un état antérieur —
+  fichiers **non suivis** perdus (`237`→`249`, `ci/check_composite_fks.sql`,
+  `ci/check_roles_opposables.sql`) et quatre modifications non commitées
+  perdues avec eux. Tout a été restauré depuis les checkpoints de l'éditeur
+  (`5e37af8` pour les fichiers suivis, `e876c08` pour les non suivis), mais la
+  leçon est celle du plan (`AUD-X02`) : **le travail non commité n'existe pas**.
+
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string
 - `create-user/index.ts:450` — `otpError` non défini → `emailSent`

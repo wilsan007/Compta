@@ -118,8 +118,8 @@ Colonnes : **Preuve** = mode d'établissement (exécution / structure / lecture)
 | S-09 | Stock | `increment_stock` perd la quantité en cas de course (`ON CONFLICT DO NOTHING`) | 🟠 | lecture | **240** | W3 |
 | S-10 | Stock | Comptes 310000/603000 codés en dur, `products.stock_account_code` ignoré | 🟠 | lecture | **241** | W3 |
 | S-11 | Stock | Traçabilité lot/série désactivée en pratique (avertissement au lieu de refus) | 🟠 | lecture | **241** | W3 |
-| S-12 | Stock | Un BL annulé puis réexpédié sort le stock **deux fois** | 🟡 | lecture | à écrire | W3 |
-| S-13 | Achats | Un contrôle qualité en échec rebute la quantité **totale** reçue | 🟠 | structure | à écrire | W3 |
+| S-12 | Stock | Un BL annulé puis réexpédié sort le stock **deux fois** | 🟡 | lecture | 251 | W3 |
+| S-13 | Achats | Un contrôle qualité en échec rebute la quantité **totale** reçue | 🟠 | structure | 251 | W3 |
 
 #### 1.2.2 Comptabilité avancée : devises, immobilisations, analytique, budgets (15 défauts)
 
@@ -203,10 +203,10 @@ Aucune des 20 fonctions Edge n'a de test (couverture §4). Les huit défauts ci-
 
 | ID | Module | Défaut | Niv. | Preuve | Spéc | Vague |
 |---|---|---|---|:---:|:---:|:---:|
-| **POS-01** | Caisse | Un ticket « inaltérable » se réécrit de 120 € à 12 € (aucun trigger en modification ; hachage non recalculé → chaîne « valide ») | 🔴 | exécution | `POS`* | W2 |
-| **POS-02** | Caisse | Les lignes de ticket se suppriment librement | 🔴 | exécution | `POS`* | W2 |
-| POS-03 | Caisse | Pas d'unicité `(tenant_id, terminal_id, sequential_number)` et numéroté par `MAX+1` sans verrou | 🟠 | structure | à écrire | W2 |
-| POS-04 | Caisse | `created_at` fourni par le client entre dans le hachage (ticket antidaté cohérent) | 🟠 | lecture | à écrire | W2 |
+| **POS-01** | Caisse | Un ticket « inaltérable » se réécrit de 120 € à 12 € (aucun trigger en modification ; hachage non recalculé → chaîne « valide ») | 🔴 | exécution | 250 | W2 |
+| **POS-02** | Caisse | Les lignes de ticket se suppriment librement | 🔴 | exécution | 250 | W2 |
+| POS-03 | Caisse | Pas d'unicité `(tenant_id, terminal_id, sequential_number)` et numéroté par `MAX+1` sans verrou | 🟠 | structure | 250 | W2 |
+| POS-04 | Caisse | `created_at` fourni par le client entre dans le hachage (ticket antidaté cohérent) | 🟠 | lecture | 250 | W2 |
 | **TVA-01** | TVA (M-10) | `submitEdiTva` fabrique un identifiant, écrit `edi_status: 'submitted'` et **ne transmet rien** (la fonction Edge `submit-vat-return`, elle, est correcte — et jamais appelée) | 🔴 | lecture | à écrire | W6 |
 | PROD-01 | Production | Nomenclature explosée sur **un seul niveau** (`WHERE bl.bom_id = NEW.bom_id`) | 🟠 | lecture | à écrire | W8 |
 | PROD-02 | Production | Ni rebuts ni écarts de coût ; `qty_produced` forcée à la quantité commandée | 🟠 | lecture | à écrire | W8 |
@@ -1361,31 +1361,40 @@ Un défaut est fermé quand **les six** conditions sont réunies :
 | **W1** | Clés composites `(tenant_id, …)` | 237 (+249) | 237 (8 scénarios) | ✅ **fait le 24/09** — 408 clés converties, 2 nées après la 237 (249), 0 mono-colonne, `ci/check_composite_fks.sql` |
 | **W1** | Dédoublonnage 326 politiques / 11 index | 238 | 238 (8 scénarios) | ✅ **fait le 24/09** — 495 couples dédoublonnés (506 politiques, 12 index), 57 gardes rendues opposables |
 | **W1** | Rôles opposables | 239 | 239 (9 scénarios) | ✅ **fait le 24/09** — décision `D-6` tranchée : 41 tables sensibles (123 politiques), `ci/check_roles_opposables.sql`, 257 tables restantes publiées |
-| **W2** | Gardes de suppression (SUP-01→03) | 244 | 244 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
-| **W2** | Immuabilité NF-525 (POS-01→04) | 245 | 245 | ⬜ |
-| **W3** | Stock société + upsert (S-08, S-09) | 240 | 240 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
-| **W3** | Réception → stock → compta (S-01→04, S-10, S-11) | 241 | 241 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
-| **W3** | Livraison, dépôt, réservations (S-05→07) | 242 | 242 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
-| **W3** | Chemins d'annulation + quantité contrôlée (S-12, S-13) | 246 | 246 | ⬜ |
-| **W4** | Nom du salarié, moteurs de paie (RH-01→04) | 243 | 243 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
-| **W4** | Bornes de période, montants, congés à cheval (RH-06→10) | 249, 250 | 249, 250 | ⬜ |
-| **W4** | Notes de frais → grand livre (RH-07, RH-08) | 251 | 251 | ⬜ |
-| **W4** | Un seul diviseur mensuel (RH-05) | 249 | 249 | ⬜ |
-| **W5** | Un seul moteur d'amortissement (IMMO-01→05) | 252 | 252 | ⬜ |
-| **W6** | Colonnes fantômes + erreurs lues (EF-04, 05, 07, 08) | 253 | 253 | ⬜ |
-| **W6** | Relances de paiement (EF-01, EF-02) | 254 | 254 | ⬜ |
-| **W6** | Placebos branchés ou retirés (EF-03, 06, TVA-01) | 255 | 255 | ⬜ |
-| **W7** | Multi-devises (M01-01→03) | 256 | 256 | ⬜ |
-| **W7** | Analytique (ANA-01→03) | 257 | 257 | ⬜ |
-| **W7** | Budgets (BUD-01→04) | 258 | 258 | ⬜ |
-| **W7** | Import Sage + FEC unique (SAGE-01→03, FEC-01) | 259, 260 | 259, 260 | ⬜ |
-| **W8** | Production multi-niveaux et écarts (PROD-01→03) | 261 | 261 | ⬜ |
-| **W8** | Refacturation et cycles projets (PROJ-01→03, M-17-01) | 262 | 262 | ⬜ |
-| **W9** | Registre d'absence (TRV-01, TRV-02, TRV-14, TRV-15) | 263 | 263 | ⬜ |
-| **W9** | Gardes en aval (TRV-03→TRV-10) | 264 | 264 | ⬜ |
-| **W9** | Paie, annulations, régularisation (TRV-11→TRV-13) | 265 | 265 | ⬜ |
-| **W9** | 34 assertions transverses + contrôle quotidien (TRV-16) | — | 266 | ⬜ |
+| **W2** | Gardes de suppression (SUP-01→03) | 244 | 244 ✅ | ✅ **fait le 24/09 (vague W0)** — 9 scénarios verts, commit `062eef7` |
+| **W2** | Immuabilité NF-525 (POS-01→04) | **250** | 250 (11 scénarios) | ✅ **fait le 24/09** — 11 rouges avant, 11/11 après ; `void_pos_ticket()`, unicité + verrou par caisse, reprise des doublons, `CHECK` de statut ; `doc/audit/VAGUE-W2-W3-2026-09-24.md` |
+| **W3** | Stock société + upsert (S-08, S-09) | 240 | 240 ✅ | ✅ **fait le 24/09 (vague W0)** — 4 scénarios verts, commit `062eef7` |
+| **W3** | Réception → stock → compta (S-01→04, S-10, S-11) | 241 | 241 ✅ | ✅ **fait le 24/09 (vague W0)** — 7 scénarios verts, commit `062eef7` |
+| **W3** | Livraison, dépôt, réservations (S-05→07) | 242 | 242 ✅ | ✅ **fait le 24/09 (vague W0)** — 6 scénarios verts, commit `062eef7` |
+| **W3** | Chemins d'annulation + quantité contrôlée (S-12, S-13) | **251** | 251 (6 scénarios) | ✅ **fait le 24/09** — 4 rouges avant (stock non rendu, réédition, rebut total, dépôt ignoré), 6/6 après ; contrepassation du stock et de l'écriture, `quantity_checked`/`quantity_rejected` |
+| **W4** | Nom du salarié, moteurs de paie (RH-01→04) | 243 | 243 ✅ | ✅ **fait le 24/09 (vague W0)** — 5 scénarios verts, commit `062eef7` |
+| **W4** | Bornes de période, montants, congés à cheval (RH-06→10) | à l'exécution | idem | ⬜ |
+| **W4** | Notes de frais → grand livre (RH-07, RH-08) | à l'exécution | idem | ⬜ |
+| **W4** | Un seul diviseur mensuel (RH-05) | à l'exécution | idem | ⬜ |
+| **W5** | Un seul moteur d'amortissement (IMMO-01→05) | à l'exécution | idem | ⬜ |
+| **W6** | Colonnes fantômes + erreurs lues (EF-04, 05, 07, 08) | à l'exécution | idem | ⬜ |
+| **W6** | Relances de paiement (EF-01, EF-02) | à l'exécution | idem | ⬜ |
+| **W6** | Placebos branchés ou retirés (EF-03, 06, TVA-01) | à l'exécution | idem | ⬜ |
+| **W7** | Multi-devises (M01-01→03) | à l'exécution | idem | ⬜ |
+| **W7** | Analytique (ANA-01→03) | à l'exécution | idem | ⬜ |
+| **W7** | Budgets (BUD-01→04) | à l'exécution | idem | ⬜ |
+| **W7** | Import Sage + FEC unique (SAGE-01→03, FEC-01) | à l'exécution | idem | ⬜ |
+| **W8** | Production multi-niveaux et écarts (PROD-01→03) | à l'exécution | idem | ⬜ |
+| **W8** | Refacturation et cycles projets (PROJ-01→03, M-17-01) | à l'exécution | idem | ⬜ |
+| **W9** | Registre d'absence (TRV-01, TRV-02, TRV-14, TRV-15) | à l'exécution | idem | ⬜ |
+| **W9** | Gardes en aval (TRV-03→TRV-10) | à l'exécution | idem | ⬜ |
+| **W9** | Paie, annulations, régularisation (TRV-11→TRV-13) | à l'exécution | idem | ⬜ |
+| **W9** | 34 assertions transverses + contrôle quotidien (TRV-16) | à l'exécution | idem | ⬜ |
 | — | Scénarios transverses T1→T9 | — | — | ⬜ |
+
+> **Numéros : ce tableau est une file, pas une réservation.** `245` → `249` ont
+> été consommés le 24/09 (TVA 245/246, cumuls de paie 247/248, seconde passe des
+> clés composites 249) ; **W2 prend 250, W3 prend 251** — et **252 est déjà
+> pris** (`252_chain_socle.sql`, le socle des chaînages) au moment où ces lignes
+> sont écrites. Les vagues encore ouvertes se voient attribuer leur numéro **au
+> moment de leur exécution**, dans l'ordre où elles entrent : un numéro libre
+> aujourd'hui peut ne plus l'être demain, et c'est la migration qui porte le
+> numéro, pas l'estimation.
 
 ### 5.4 Les seize premiers commits, dans l'ordre (PROPOSÉ)
 
