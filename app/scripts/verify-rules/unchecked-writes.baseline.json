@@ -1,0 +1,159 @@
+{
+  "frozenAt": "2026-09-24",
+  "note": "Écritures dont l’erreur n’est jamais lue, gelées le 24/09/2026 : 29 occurrences (19 instructions distinctes) — le total de l’audit du 23/09. Le nombre d’occurrences par instruction est gelé aussi : recopier une de ces écritures fait échouer la CI.",
+  "total": 29,
+  "findings": [
+    {
+      "file": "src/components/project-management/DocView.tsx",
+      "line": 144,
+      "code": "await supabase.from('project_docs').delete().eq('id', docId).eq('tenant_id', tid || '')",
+      "occurrences": 1,
+      "wave": "W8",
+      "reason": "la suppression d’un document de projet n’échoue jamais visiblement."
+    },
+    {
+      "file": "src/lib/queries/dematRh.ts",
+      "line": 287,
+      "code": "await supabase.from('rh_knowledge_base').update({ views: (article.views || 0) + 1 }).eq('id', id).eq('tenant_id', tid || '')",
+      "occurrences": 1,
+      "wave": "W4",
+      "reason": "le compteur de vues d’un article RH peut échouer en silence."
+    },
+    {
+      "file": "src/lib/queries/documents.ts",
+      "line": 46,
+      "code": "await supabase.from('module_document_access_log').insert(",
+      "occurrences": 1,
+      "wave": "W7",
+      "reason": "le journal d’accès aux documents (module_document_access_log) peut perdre une trace en silence."
+    },
+    {
+      "file": "src/lib/queries/leavesAbsences.ts",
+      "line": 64,
+      "code": "await supabase.from('leave_balances').insert(ti({",
+      "occurrences": 2,
+      "wave": "W4",
+      "reason": "deux alimentations de la PAIE (leave_balances, payroll_variable_elements) : si l’insertion échoue, le solde et la retenue ne le savent pas — c’est le défaut RH-10 (migration 250)."
+    },
+    {
+      "file": "src/lib/queries/leavesAbsences.ts",
+      "line": 534,
+      "code": "await supabase.from('payroll_variable_elements').insert(ti({",
+      "occurrences": 4,
+      "wave": "W4",
+      "reason": "deux alimentations de la PAIE (leave_balances, payroll_variable_elements) : si l’insertion échoue, le solde et la retenue ne le savent pas — c’est le défaut RH-10 (migration 250)."
+    },
+    {
+      "file": "src/lib/queries/projectManagementSprint1.ts",
+      "line": 406,
+      "code": "await supabase.from('project_tasks').insert(subPayload)",
+      "occurrences": 1,
+      "wave": "W8",
+      "reason": "l’insertion d’une tâche et de son journal d’action peut échouer sans le dire."
+    },
+    {
+      "file": "src/lib/queries/projectManagementSprint1.ts",
+      "line": 371,
+      "code": "await supabase.from('task_actions').insert(actionPayload)",
+      "occurrences": 1,
+      "wave": "W8",
+      "reason": "l’insertion d’une tâche et de son journal d’action peut échouer sans le dire."
+    },
+    {
+      "file": "src/lib/queries/socialDeclarations.ts",
+      "line": 479,
+      "code": "await supabase.from('at_rates').insert(ti({",
+      "occurrences": 1,
+      "wave": "W4",
+      "reason": "trois référentiels de cotisations (at_rates, pas_rates, bdes_indicators) : une écriture perdue = un taux faux, et une paie fausse."
+    },
+    {
+      "file": "src/lib/queries/socialDeclarations.ts",
+      "line": 529,
+      "code": "await supabase.from('bdes_indicators').insert(ti(ind, 'bdes_indicators', tid))",
+      "occurrences": 1,
+      "wave": "W4",
+      "reason": "trois référentiels de cotisations (at_rates, pas_rates, bdes_indicators) : une écriture perdue = un taux faux, et une paie fausse."
+    },
+    {
+      "file": "src/lib/queries/socialDeclarations.ts",
+      "line": 445,
+      "code": "await supabase.from('pas_rates').insert(ti({",
+      "occurrences": 1,
+      "wave": "W4",
+      "reason": "trois référentiels de cotisations (at_rates, pas_rates, bdes_indicators) : une écriture perdue = un taux faux, et une paie fausse."
+    },
+    {
+      "file": "src/lib/queries/stock.ts",
+      "line": 800,
+      "code": "await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))",
+      "occurrences": 1,
+      "wave": "W3",
+      "reason": "trois anticipations de stock (mrp_proposals, planning_slots, production_forecasts) écrites sans lecture d’erreur."
+    },
+    {
+      "file": "src/lib/queries/stock.ts",
+      "line": 1005,
+      "code": "await supabase.from('planning_slots').insert(ti({",
+      "occurrences": 1,
+      "wave": "W3",
+      "reason": "trois anticipations de stock (mrp_proposals, planning_slots, production_forecasts) écrites sans lecture d’erreur."
+    },
+    {
+      "file": "src/lib/queries/stock.ts",
+      "line": 878,
+      "code": "await supabase.from('production_forecasts').insert(ti({",
+      "occurrences": 1,
+      "wave": "W3",
+      "reason": "trois anticipations de stock (mrp_proposals, planning_slots, production_forecasts) écrites sans lecture d’erreur."
+    },
+    {
+      "file": "supabase/functions/auth-signup/index.ts",
+      "line": 141,
+      "code": "await supabase.from(\"notification_email_queue\").insert({",
+      "occurrences": 1,
+      "wave": "W6",
+      "reason": "la file d’e-mails de bienvenue peut ne jamais recevoir la demande."
+    },
+    {
+      "file": "supabase/functions/create-user/index.ts",
+      "line": 249,
+      "code": "await supabase.from(\"notification_email_queue\").insert({",
+      "occurrences": 2,
+      "wave": "W6",
+      "reason": "l’invitation d’un utilisateur peut ne jamais partir, et l’écran dire « invité »."
+    },
+    {
+      "file": "supabase/functions/outgoing-webhooks/index.ts",
+      "line": 298,
+      "code": "await supabase.from(\"webhook_delivery_logs\").insert({",
+      "occurrences": 3,
+      "wave": "W6",
+      "reason": "sept écritures de la file et du journal des webhooks sans lecture d’erreur : une livraison perdue restait « pending » sans trace (EF-03, EF-04 — corollaire de la 234)."
+    },
+    {
+      "file": "supabase/functions/outgoing-webhooks/index.ts",
+      "line": 277,
+      "code": "await supabase.from(\"webhook_delivery_queue\").update({",
+      "occurrences": 4,
+      "wave": "W6",
+      "reason": "sept écritures de la file et du journal des webhooks sans lecture d’erreur : une livraison perdue restait « pending » sans trace (EF-03, EF-04 — corollaire de la 234)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "line": 77,
+      "code": "await supabase.from(\"electronic_signatures\").insert({",
+      "occurrences": 1,
+      "wave": "W6",
+      "reason": "l’enregistrement d’une demande de signature peut échouer en silence (EF-05)."
+    },
+    {
+      "file": "supabase/functions/send-notification-email/index.ts",
+      "line": 114,
+      "code": "await supabase.from(\"notification_email_queue\").insert({",
+      "occurrences": 1,
+      "wave": "W6",
+      "reason": "la mise en file d’un e-mail transactionnel peut échouer en silence."
+    }
+  ]
+}

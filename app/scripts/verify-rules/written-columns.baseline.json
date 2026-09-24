@@ -1,0 +1,187 @@
+{
+  "frozenAt": "2026-09-24",
+  "note": "Écritures impossibles connues (colonne absente du schéma), gelées le 24/09/2026. L’audit du 23/09 en comptait 21 ; il en reste 20, parce que `next_retry_at` (outgoing-webhooks) a déjà été renommée `next_attempt_at` dans l’arbre. Un plafond qui ne peut que baisser : toute ligne retirée du code doit être retirée d’ici.",
+  "total": 20,
+  "findings": [
+    {
+      "file": "src/components/employee/MobileApproval.tsx",
+      "table": "leave_requests",
+      "column": "manager_comment",
+      "op": "update",
+      "line": 45,
+      "wave": "W6",
+      "reason": "leave_requests n’a pas de colonne manager_comment (elle existe sur expense_reports) : l’approbation mobile ne peut rien écrire."
+    },
+    {
+      "file": "src/lib/queries/banking.ts",
+      "table": "bank_transactions",
+      "column": "matched_line_id",
+      "op": "update",
+      "line": 101,
+      "wave": "W6",
+      "reason": "bank_transactions.matched_line_id n’existe pas — la colonne est matched_invoice_id : le rapprochement ne marque rien."
+    },
+    {
+      "file": "supabase/functions/cron-payment-reminders/index.ts",
+      "table": "collection_reminders",
+      "column": "days_overdue",
+      "op": "insert",
+      "line": 95,
+      "wave": "W6",
+      "reason": "collection_reminders n’a ni days_overdue, ni sent_at, ni email_sent : la relance échouait et était comptée comme envoyée (EF-01, EF-02 — migration 254)."
+    },
+    {
+      "file": "supabase/functions/cron-payment-reminders/index.ts",
+      "table": "collection_reminders",
+      "column": "email_sent",
+      "op": "insert",
+      "line": 95,
+      "wave": "W6",
+      "reason": "collection_reminders n’a ni days_overdue, ni sent_at, ni email_sent : la relance échouait et était comptée comme envoyée (EF-01, EF-02 — migration 254)."
+    },
+    {
+      "file": "supabase/functions/cron-payment-reminders/index.ts",
+      "table": "collection_reminders",
+      "column": "sent_at",
+      "op": "insert",
+      "line": 95,
+      "wave": "W6",
+      "reason": "collection_reminders n’a ni days_overdue, ni sent_at, ni email_sent : la relance échouait et était comptée comme envoyée (EF-01, EF-02 — migration 254)."
+    },
+    {
+      "file": "supabase/functions/handle-stripe-webhook/index.ts",
+      "table": "notification_email_queue",
+      "column": "metadata",
+      "op": "insert",
+      "line": 88,
+      "wave": "W6",
+      "reason": "notification_email_queue n’a pas de colonne metadata : la notification d’abonnement n’était jamais mise en file (EF-06)."
+    },
+    {
+      "file": "supabase/functions/outgoing-webhooks/index.ts",
+      "table": "webhook_delivery_logs",
+      "column": "http_status",
+      "op": "insert",
+      "line": 298,
+      "wave": "W6",
+      "reason": "webhook_delivery_logs porte response_code, pas http_status : le journal ne consignait pas le code de réponse (EF-04 — corollaire de la 234)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "table": "electronic_signatures",
+      "column": "initiated_at",
+      "op": "insert",
+      "line": 77,
+      "wave": "W6",
+      "reason": "electronic_signatures ne porte ni provider, ni provider_signature_id, ni status, ni signers, ni initiated_at : la demande de signature n’était jamais enregistrée (EF-05 — la table porte signature_hash, signer_name)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "table": "electronic_signatures",
+      "column": "provider",
+      "op": "insert",
+      "line": 77,
+      "wave": "W6",
+      "reason": "electronic_signatures ne porte ni provider, ni provider_signature_id, ni status, ni signers, ni initiated_at : la demande de signature n’était jamais enregistrée (EF-05 — la table porte signature_hash, signer_name)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "table": "electronic_signatures",
+      "column": "provider_signature_id",
+      "op": "insert",
+      "line": 77,
+      "wave": "W6",
+      "reason": "electronic_signatures ne porte ni provider, ni provider_signature_id, ni status, ni signers, ni initiated_at : la demande de signature n’était jamais enregistrée (EF-05 — la table porte signature_hash, signer_name)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "table": "electronic_signatures",
+      "column": "signers",
+      "op": "insert",
+      "line": 77,
+      "wave": "W6",
+      "reason": "electronic_signatures ne porte ni provider, ni provider_signature_id, ni status, ni signers, ni initiated_at : la demande de signature n’était jamais enregistrée (EF-05 — la table porte signature_hash, signer_name)."
+    },
+    {
+      "file": "supabase/functions/request-signature/index.ts",
+      "table": "electronic_signatures",
+      "column": "status",
+      "op": "insert",
+      "line": 77,
+      "wave": "W6",
+      "reason": "electronic_signatures ne porte ni provider, ni provider_signature_id, ni status, ni signers, ni initiated_at : la demande de signature n’était jamais enregistrée (EF-05 — la table porte signature_hash, signer_name)."
+    },
+    {
+      "file": "supabase/functions/submit-e-invoice/index.ts",
+      "table": "invoices",
+      "column": "e_invoice_id",
+      "op": "update",
+      "line": 105,
+      "wave": "W6",
+      "reason": "invoices n’a aucune colonne e_invoice_* : le dépôt de facture électronique n’était jamais tracé, et l’écran affichait un identifiant fabriqué (EF-07)."
+    },
+    {
+      "file": "supabase/functions/submit-e-invoice/index.ts",
+      "table": "invoices",
+      "column": "e_invoice_platform",
+      "op": "update",
+      "line": 105,
+      "wave": "W6",
+      "reason": "invoices n’a aucune colonne e_invoice_* : le dépôt de facture électronique n’était jamais tracé, et l’écran affichait un identifiant fabriqué (EF-07)."
+    },
+    {
+      "file": "supabase/functions/submit-e-invoice/index.ts",
+      "table": "invoices",
+      "column": "e_invoice_status",
+      "op": "update",
+      "line": 105,
+      "wave": "W6",
+      "reason": "invoices n’a aucune colonne e_invoice_* : le dépôt de facture électronique n’était jamais tracé, et l’écran affichait un identifiant fabriqué (EF-07)."
+    },
+    {
+      "file": "supabase/functions/submit-e-invoice/index.ts",
+      "table": "invoices",
+      "column": "e_invoice_submitted_at",
+      "op": "update",
+      "line": 105,
+      "wave": "W6",
+      "reason": "invoices n’a aucune colonne e_invoice_* : le dépôt de facture électronique n’était jamais tracé, et l’écran affichait un identifiant fabriqué (EF-07)."
+    },
+    {
+      "file": "supabase/functions/sync-bank-transactions/index.ts",
+      "table": "bank_connections",
+      "column": "link_url",
+      "op": "insert",
+      "line": 78,
+      "wave": "W6",
+      "reason": "bank_connections porte provider_connection_id, pas provider_requisition_id / link_url / user_id ; bank_transactions n’a pas provider_transaction_id : la synchronisation n’écrivait rien (EF-08)."
+    },
+    {
+      "file": "supabase/functions/sync-bank-transactions/index.ts",
+      "table": "bank_connections",
+      "column": "provider_requisition_id",
+      "op": "insert",
+      "line": 78,
+      "wave": "W6",
+      "reason": "bank_connections porte provider_connection_id, pas provider_requisition_id / link_url / user_id ; bank_transactions n’a pas provider_transaction_id : la synchronisation n’écrivait rien (EF-08)."
+    },
+    {
+      "file": "supabase/functions/sync-bank-transactions/index.ts",
+      "table": "bank_connections",
+      "column": "user_id",
+      "op": "insert",
+      "line": 78,
+      "wave": "W6",
+      "reason": "bank_connections porte provider_connection_id, pas provider_requisition_id / link_url / user_id ; bank_transactions n’a pas provider_transaction_id : la synchronisation n’écrivait rien (EF-08)."
+    },
+    {
+      "file": "supabase/functions/sync-bank-transactions/index.ts",
+      "table": "bank_transactions",
+      "column": "provider_transaction_id",
+      "op": "insert",
+      "line": 186,
+      "wave": "W6",
+      "reason": "bank_connections porte provider_connection_id, pas provider_requisition_id / link_url / user_id ; bank_transactions n’a pas provider_transaction_id : la synchronisation n’écrivait rien (EF-08)."
+    }
+  ]
+}
