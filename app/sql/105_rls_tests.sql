@@ -175,6 +175,12 @@ DECLARE
 BEGIN
   SET LOCAL session_replication_role = 'replica';
 
+  -- Depuis la 237, ces clés sont COMPOSITES `(tenant_id, colonne)` : la boucle
+  -- ne cherchait que `array_length(conkey, 1) = 1` et ne recollait donc plus
+  -- rien — sept tables de lignes restaient orphelines, donc invisibles à leur
+  -- propre société, et la suite le signalait (à raison) sans pouvoir le
+  -- réparer. Elle passe par `unnest(... ) WITH ORDINALITY` et recolle la
+  -- colonne qui n'est PAS `tenant_id`, que la clé porte une ou deux colonnes.
   FOR fk IN
     SELECT ch.relname AS child_table, ca.attname AS child_col,
            pr.relname AS parent_table, pa.attname AS parent_col
@@ -182,10 +188,16 @@ BEGIN
     JOIN pg_class ch ON ch.oid = c.conrelid
     JOIN pg_class pr ON pr.oid = c.confrelid
     JOIN pg_namespace n ON n.oid = ch.relnamespace AND n.nspname = 'public'
-    JOIN pg_attribute ca ON ca.attrelid = c.conrelid AND ca.attnum = c.conkey[1]
-    JOIN pg_attribute pa ON pa.attrelid = c.confrelid AND pa.attnum = c.confkey[1]
+    JOIN LATERAL (
+      SELECT u.attnum AS catt, v.attnum AS patt
+      FROM unnest(c.conkey) WITH ORDINALITY AS u(attnum, ord)
+      JOIN unnest(c.confkey) WITH ORDINALITY AS v(attnum, ord) ON v.ord = u.ord
+    ) k ON true
+    JOIN pg_attribute ca ON ca.attrelid = c.conrelid AND ca.attnum = k.catt
+    JOIN pg_attribute pa ON pa.attrelid = c.confrelid AND pa.attnum = k.patt
     WHERE c.contype = 'f'
-      AND array_length(c.conkey, 1) = 1
+      AND array_length(c.conkey, 1) <= 2
+      AND ca.attname <> 'tenant_id'
       AND c.conrelid <> c.confrelid
       AND format_type(ca.atttypid, NULL) = 'uuid'
       AND ch.relname IN (SELECT table_name FROM rls_test_tables)
@@ -250,7 +262,7 @@ FROM rls_test_tables WHERE NOT seeded ORDER BY table_name;
 
 DO $$
 DECLARE
-  v_total int; v_seeded int; v_leaks int; v_unseeded int; v_own int;
+  v_total int; v_seeded int; v_leaks int; v_unseeded int; v_own int; v_noms text;
 BEGIN
   SELECT count(*), count(*) FILTER (WHERE seeded),
          count(*) FILTER (WHERE leak_count > 0 OR spoof_leak_count > 0),
@@ -265,8 +277,14 @@ BEGIN
   -- Son `leak_count = 0` est alors vrai pour la mauvaise raison (rien n'est
   -- visible, ni les données de B, ni les siennes) : le test serait vert sans
   -- avoir rien vérifié. Toute table dans ce cas fait échouer le contrôle.
+  -- Le message NOMME les tables (24/09) : un « 7 tables invisibles » sans liste
+  -- obligeait à instrumenter le test pour savoir lesquelles, et une suite qui ne
+  -- dit pas ce qui échoue ne se répare pas.
   IF v_seeded > v_own THEN
-    RAISE EXCEPTION 'FAIL : % table(s) alimentée(s) invisible(s) à leur propre société — isolation non prouvée sur elles', v_seeded - v_own;
+    SELECT string_agg(table_name, ', ' ORDER BY table_name) INTO v_noms
+    FROM rls_test_tables WHERE seeded AND own_visible = 0;
+    RAISE EXCEPTION 'FAIL : % table(s) alimentée(s) invisible(s) à leur propre société — isolation non prouvée sur elles : %',
+      v_seeded - v_own, v_noms;
   END IF;
 
   IF v_leaks > 0 THEN

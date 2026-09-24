@@ -6,18 +6,23 @@
 -- utilisateur de la société A :
 --
 --   Y0  la lecture croisée tient       : le client de B est invisible depuis A (RLS) ;
---   Y1  la facture de A vise le client de B : acceptée     (ISO-02, vague 237) ;
---   Y2  la sous-tâche de A vise la tâche de B : acceptée    (ISO-02) ;
---   Y3  et le statut de la tâche de B passe de 'todo' à 'done' (ISO-01, ici).
+--   Y1  la facture de A vise le client de B : refusée      (ISO-02, 237) ;
+--   Y2  la sous-tâche de A vise la tâche de B : refusée    (ISO-02, 237) ;
+--   Y3  et le statut de la tâche de B ne bouge pas         (ISO-01, ici).
 --
--- Ces scénarios mesurent la PROPRIÉTÉ (« la donnée de B n'a pas bougé »), et non
--- l'interdiction de l'insertion : l'insertion reste acceptée tant que la 237
--- (clés étrangères composites) n'est pas écrite. C'est ce qu'inscrit T02, rouge
--- au registre, avec sa raison.
+-- ÉTAT APRÈS LA 237 (24/09/2026). Les deux insertions ci-dessus, mesurées
+-- « acceptées » par le constat d'origine, sont désormais REFUSÉES par les clés
+-- étrangères composites — c'est le `T02` de ce fichier, qui passe du rouge au
+-- vert et dont le registre des échecs attendus perd la ligne dans le même
+-- commit. Les scénarios qui ont besoin d'un état hostile (une ligne de A qui
+-- désigne une ligne de B) le fabriquent donc clés neutralisées, avec `_ref236`
+-- et sa raison écrite : la garde de la 236 doit tenir contre cet état, quel
+-- qu'en soit l'auteur.
 --
--- Chaque test VÉRIFIE son propre chemin d'attaque : il commence par constater
--- que l'écriture de A a bien été acceptée. Un scénario qui passerait parce que
--- l'insertion a échoué ne prouverait rien.
+-- Ces scénarios mesurent la PROPRIÉTÉ (« la donnée de B n'a pas bougé ») et non
+-- l'interdiction de l'insertion : c'est la 237 qui interdit la référence, la
+-- 236 empêche l'ÉCRITURE chez le voisin par un déclencheur `SECURITY DEFINER`.
+-- Les deux verrous sont mesurés séparément, dans deux fichiers.
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '236', false);
@@ -40,8 +45,20 @@ DELETE FROM _audit_results WHERE file = '236';
 CREATE OR REPLACE FUNCTION _as236(p_tenant uuid) RETURNS uuid LANGUAGE plpgsql AS $$
 DECLARE v_user uuid;
 BEGIN
+  -- L'appelant est l'ADMINISTRATEUR de la société — celui que `_mk_tenant` crée —
+  -- parce que c'est lui, dans le produit, qui appelle `auto_revoke_expired_auditors()`
+  -- (`src/lib/auth.tsx`). Ne jamais trier sur `created_at` seul : `_mk_tenant` le
+  -- pose à `now()`, et les auditeurs de T12/T13 sont insérés dans la MÊME
+  -- transaction — même horodatage. MESURÉ le 24/09/2026 : 2 utilisateurs actifs,
+  -- **un seul** horodatage distinct ; l'ordre rendu est alors un ex æquo tranché
+  -- par le plan. Une exécution retenait l'auditeur, et `prevent_role_escalation`
+  -- refusait alors « Cannot change own status » : T12/T13 mouraient hors registre
+  -- et la suite entière avec eux. Une exécution identique retenait
+  -- l'administrateur et rendait 17/17. Le rôle départage donc d'abord, puis
+  -- `created_at` et `id` pour que le choix soit déterministe.
   SELECT auth_id INTO v_user FROM tenant_users
-  WHERE tenant_id = p_tenant AND status = 'active' ORDER BY created_at LIMIT 1;
+  WHERE tenant_id = p_tenant AND status = 'active'
+  ORDER BY (role = 'admin') DESC, created_at, id LIMIT 1;
   IF v_user IS NULL THEN RAISE EXCEPTION 'Aucun utilisateur actif pour la société %', p_tenant; END IF;
   PERFORM set_config('request.jwt.claim.sub', v_user::text, false);
   PERFORM set_config('request.jwt.claims',
@@ -61,6 +78,30 @@ END $$;
 CREATE OR REPLACE FUNCTION _mesure236() RETURNS void LANGUAGE sql AS $$
   SELECT set_config('role', 'postgres', true)
 $$;
+
+-- FABRIQUER UNE RÉFÉRENCE INTER-SOCIÉTÉ — ce que la 237 a rendu impossible.
+-- Cinq scénarios ci-dessous doivent partir d'un état que l'application ne peut
+-- plus produire : une ligne de A qui désigne une ligne de B, et qui doit ENCORE
+-- pouvoir être modifiée par A pour déclencher la garde mesurée. Depuis la 237,
+-- la clé composite refuse l'insertion ET toute modification ultérieure de cette
+-- ligne : `session_replication_role = replica` ne suffirait donc pas (le
+-- déclencheur mesuré serait éteint en même temps que la clé).
+-- Les déclencheurs INTERNES de la table — les clés étrangères, et elles seules —
+-- sont donc désactivés le temps du scénario : les déclencheurs utilisateur, dont
+-- ceux de la 236, restent actifs, et c'est leur portée qui est mesurée.
+-- Ce n'est pas un contournement du correctif : c'est le seul moyen de fabriquer
+-- l'état hostile contre lequel la garde de la 236 doit tenir, quel qu'en soit
+-- l'auteur. Les déclencheurs sont réarmés dans le même scénario.
+CREATE OR REPLACE FUNCTION _fk236(p_table text, p_on boolean) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE t record;
+BEGIN
+  FOR t IN SELECT tgname FROM pg_trigger
+           WHERE tgrelid = ('public.' || p_table)::regclass AND tgisinternal
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I %s TRIGGER %I',
+                   p_table, CASE WHEN p_on THEN 'ENABLE' ELSE 'DISABLE' END, t.tgname);
+  END LOOP;
+END $$;
 
 CREATE OR REPLACE FUNCTION _fixture236(p_tenant uuid)
 RETURNS TABLE (projet uuid, tache uuid, jalon uuid, facture uuid)
@@ -83,33 +124,47 @@ END $$;
 
 
 -- ── T01 : la tâche du voisin n'est plus fermée (le Y3 du constat) ─────────
+-- Depuis la 237, la sous-tâche de A qui désigne la tâche de B est refusée : la
+-- référence est donc fabriquée déclencheurs neutralisés, puis A fait son geste
+-- légitime — fermer SA sous-tâche — sous son vrai rôle. C'est ce geste qui,
+-- avant la 236, fermait la tâche de B.
 DO $$
-DECLARE ta uuid; tb uuid; fb record; v_statut text; v_insere boolean := false; err text := '—';
+DECLARE ta uuid; tb uuid; fb record; v_sous uuid; v_statut text; v_ref boolean := false;
 BEGIN
   ta := _mk_tenant('ISO236A1'); tb := _mk_tenant('ISO236B1');
   PERFORM _fixture236(ta);
   SELECT * INTO fb FROM _fixture236(tb);
+  PERFORM _fk236('project_tasks', false);
+  -- le déclencheur de journal recopie la référence dans `project_activity_log` :
+  -- sa clé composite la refuserait aussi — elle est donc neutralisée le temps du
+  -- scénario, comme celle de `project_tasks`
+  PERFORM _fk236('project_activity_log', false);
+  INSERT INTO project_tasks (tenant_id, parent_id, title, status, progress)
+  VALUES (ta, fb.tache, 'Sous-tâche de A sur la tâche de B', 'todo', 0)
+  RETURNING id INTO v_sous;
+  v_ref := true;
   PERFORM _as236(ta);
-  BEGIN
-    INSERT INTO project_tasks (tenant_id, project_id, parent_id, title, status, progress)
-    VALUES (ta, NULL, fb.tache, 'Sous-tâche de A sur la tâche de B', 'done', 100);
-    v_insere := true;
-  EXCEPTION WHEN OTHERS THEN err := SQLERRM;
-  END;
+  UPDATE project_tasks SET status = 'done', progress = 100 WHERE id = v_sous;
   PERFORM _mesure236();
+  PERFORM _fk236('project_tasks', true);
+  PERFORM _fk236('project_activity_log', true);
   SELECT status INTO v_statut FROM project_tasks WHERE id = fb.tache;
   PERFORM _rec('T01', 'fermer sa sous-tâche ne ferme plus la tâche du voisin',
-    v_insere AND v_statut IS NOT DISTINCT FROM 'todo',
-    format('chemin d''attaque ouvert=%s, statut de la tâche de B=%s (attendu todo) | %s',
-           v_insere, COALESCE(v_statut, 'NULL'), left(err, 80)));
+    v_ref AND v_statut IS NOT DISTINCT FROM 'todo',
+    format('référence hostile fabriquée=%s, statut de la tâche de B=%s (attendu todo)',
+           v_ref, COALESCE(v_statut, 'NULL')));
 END $$;
 
--- ── T02 : l'insertion inter-sociétés reste acceptée (ISO-02, vague 237) ───
--- Rouge au registre : ce n'est pas un défaut de la 236, c'est la preuve que le
--- second verrou manque. Quand 237 sera écrite, ce verdict passera au vert et la
--- CI demandera de retirer la ligne du registre.
+-- ── T02 : l'insertion inter-sociétés est désormais REFUSÉE (ISO-02, 237) ───
+-- Ce scénario mesurait le trou : « l'insertion reste acceptée tant que les clés
+-- composites n'existent pas ». La 237 existe : le verdict s'inverse, et le
+-- registre des échecs attendus perd sa ligne dans le même commit — la CI
+-- l'exige, c'est ce qui empêche un défaut corrigé de rester inscrit.
+-- L'assertion reste ici parce qu'elle mesure une PROPRIÉTÉ de la base, et non
+-- une ligne de code : le jour où une clé composite sauterait, elle repasserait
+-- au rouge.
 DO $$
-DECLARE ta uuid; tb uuid; fb record; v_refuse boolean := false; err text := '—';
+DECLARE ta uuid; tb uuid; fb record; v_state text := NULL; v_err text := '—';
 BEGIN
   ta := _mk_tenant('ISO236A2'); tb := _mk_tenant('ISO236B2');
   PERFORM _fixture236(ta);
@@ -118,12 +173,14 @@ BEGIN
   BEGIN
     INSERT INTO project_tasks (tenant_id, project_id, parent_id, title, status, progress)
     VALUES (ta, NULL, fb.tache, 'Sous-tâche de A sur la tâche de B', 'todo', 0);
-  EXCEPTION WHEN OTHERS THEN v_refuse := true; err := SQLERRM;
+  EXCEPTION WHEN OTHERS THEN v_state := SQLSTATE; v_err := SQLERRM;
   END;
   PERFORM _mesure236();
   PERFORM _rec('T02', 'une ligne de A ne peut pas référencer une ligne de B (clé étrangère composite, ISO-02)',
-    v_refuse,
-    format('refusée=%s | %s', v_refuse, left(err, 110)));
+    v_state = '23503',
+    format('SQLSTATE=%s (attendu 23503) | %s',
+           COALESCE(v_state, 'aucune erreur — la référence inter-sociétés est acceptée'),
+           left(v_err, 90)));
 END $$;
 
 -- ── T03 : la fonction fait toujours son travail dans sa propre société ────
@@ -143,20 +200,27 @@ BEGIN
 END $$;
 
 -- ── T04 : l'avancement du projet du voisin n'est pas recalculé ────────────
+-- La référence hostile (tâche de A dans le projet de B) est fabriquée
+-- déclencheurs neutralisés depuis la 237 ; c'est ensuite la modification de SA
+-- tâche par A, sous son vrai rôle, qui déclenche le recalcul mesuré.
 DO $$
-DECLARE ta uuid; tb uuid; fb record; v_avant integer; v_apres integer;
+DECLARE ta uuid; tb uuid; fb record; v_avant integer; v_apres integer; v_tache uuid;
 BEGIN
   ta := _mk_tenant('ISO236A4'); tb := _mk_tenant('ISO236B4');
   PERFORM _fixture236(ta);
   SELECT * INTO fb FROM _fixture236(tb);
   PERFORM _mesure236();
   SELECT progress INTO v_avant FROM projects WHERE id = fb.projet;
-  PERFORM _as236(ta);
-  -- tâche de premier niveau de A visant le projet de B : sans filtre, la moyenne
-  -- des tâches du projet de B inclut celle-ci
+  PERFORM _fk236('project_tasks', false);
+  PERFORM _fk236('project_activity_log', false);
   INSERT INTO project_tasks (tenant_id, project_id, title, status, progress)
-  VALUES (ta, fb.projet, 'Tâche de A dans le projet de B', 'todo', 100);
+  VALUES (ta, fb.projet, 'Tâche de A dans le projet de B', 'todo', 0)
+  RETURNING id INTO v_tache;
+  PERFORM _as236(ta);
+  UPDATE project_tasks SET progress = 100 WHERE id = v_tache;
   PERFORM _mesure236();
+  PERFORM _fk236('project_tasks', true);
+  PERFORM _fk236('project_activity_log', true);
   SELECT progress INTO v_apres FROM projects WHERE id = fb.projet;
   PERFORM _rec('T04', 'l''avancement du projet d''une autre société n''est pas recalculé',
     v_apres IS NOT DISTINCT FROM v_avant,
@@ -164,18 +228,26 @@ BEGIN
 END $$;
 
 -- ── T05 : le jalon du voisin n'est pas déclaré atteint ────────────────────
+-- Même fabrication : la tâche de A rattachée au jalon de B est posée
+-- déclencheurs neutralisés, puis A termine SA tâche sous son vrai rôle. Le
+-- jalon de B n'a aucune autre tâche : sans le filtre de la 236, celle-ci suffit
+-- à le déclarer atteint.
 DO $$
-DECLARE ta uuid; tb uuid; fb record; v_apres boolean;
+DECLARE ta uuid; tb uuid; fb record; v_apres boolean; v_tache uuid;
 BEGIN
   ta := _mk_tenant('ISO236A5'); tb := _mk_tenant('ISO236B5');
   PERFORM _fixture236(ta);
   SELECT * INTO fb FROM _fixture236(tb);
-  PERFORM _as236(ta);
-  -- le jalon de B n'a AUCUNE tâche : sans filtre, la tâche terminée de A suffit
-  -- à le déclarer atteint
+  PERFORM _fk236('project_tasks', false);
+  PERFORM _fk236('project_activity_log', false);
   INSERT INTO project_tasks (tenant_id, milestone_id, title, status, progress)
-  VALUES (ta, fb.jalon, 'Tâche de A sur le jalon de B', 'done', 100);
+  VALUES (ta, fb.jalon, 'Tâche de A sur le jalon de B', 'todo', 0)
+  RETURNING id INTO v_tache;
+  PERFORM _as236(ta);
+  UPDATE project_tasks SET status = 'done', progress = 100 WHERE id = v_tache;
   PERFORM _mesure236();
+  PERFORM _fk236('project_tasks', true);
+  PERFORM _fk236('project_activity_log', true);
   SELECT is_reached INTO v_apres FROM project_milestones WHERE id = fb.jalon;
   PERFORM _rec('T05', 'un jalon d''une autre société n''est pas déclaré atteint',
     v_apres IS NOT DISTINCT FROM false,
@@ -288,16 +360,22 @@ BEGIN
 END $$;
 
 -- ── T11 : l'avancement de la tâche du voisin n'est pas recalculé ──────────
+-- Même fabrication : l'action de A rattachée à la tâche de B est posée
+-- déclencheurs neutralisés, puis A la termine sous son vrai rôle.
 DO $$
-DECLARE ta uuid; tb uuid; fb record; v_apres integer;
+DECLARE ta uuid; tb uuid; fb record; v_apres integer; v_action uuid;
 BEGIN
   ta := _mk_tenant('ISO236A11'); tb := _mk_tenant('ISO236B11');
   PERFORM _fixture236(ta);
   SELECT * INTO fb FROM _fixture236(tb);
-  PERFORM _as236(ta);
+  PERFORM _fk236('task_actions', false);
   INSERT INTO task_actions (tenant_id, task_id, title, weight_percentage, is_done)
-  VALUES (ta, fb.tache, 'Action de A sur la tâche de B', 100, true);
+  VALUES (ta, fb.tache, 'Action de A sur la tâche de B', 100, false)
+  RETURNING id INTO v_action;
+  PERFORM _as236(ta);
+  UPDATE task_actions SET is_done = true WHERE id = v_action;
   PERFORM _mesure236();
+  PERFORM _fk236('task_actions', true);
   SELECT progress INTO v_apres FROM project_tasks WHERE id = fb.tache;
   PERFORM _rec('T11', 'une action d''une société ne recalcule pas l''avancement de la tâche d''une autre',
     v_apres IS NOT DISTINCT FROM 0,

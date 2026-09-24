@@ -20,13 +20,6 @@
 INSERT INTO _audit_expected (file, test_id, reason) VALUES
   ('231', 'M-17-01', 'Les heures facturables n''atteignent aucune facture : create_billable_line_on_timesheet_stop ne crée qu''une notification. Manque de fonction, chiffré 0,5 j à la phase 3 du reste-à-faire.');
 
--- 236 — écritures des déclencheurs SECURITY DEFINER (ISO-01)
--- T02 mesure la PROPRIÉTÉ que la 236 ne peut pas rendre vraie à elle seule :
--- l'insertion d'une ligne de A qui référence une ligne de B est acceptée tant
--- qu'il n'y a pas de clé étrangère composite (ISO-02, vague 237, 3 j).
-INSERT INTO _audit_expected (file, test_id, reason) VALUES
-  ('236', 'T02', 'Une ligne de la société A peut encore référencer une ligne de la société B : la garde de la 236 empêche l''ÉCRITURE chez le voisin, pas la RÉFÉRENCE. Seules des clés étrangères composites (tenant_id, id) la refusent — ISO-02, vague 237, chantier de la phase 2.');
-
 -- 245 — déclaration de TVA (M-10)
 -- La base hors taxe de la CA3 est reconstituée depuis la TVA (montant ÷ taux).
 -- Un chiffre d'affaires non taxé — exonéré, export, livraison
