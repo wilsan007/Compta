@@ -335,11 +335,36 @@ jobs:
       # ISO-03 / ISO-04 : 495 couples (table, commande) portent DEUX politiques
       # permissives — une générique `tenant_select` et une par table qui porte la
       # garde `can_perform`. Deux politiques permissives sont OU-ées : la plus
-      # large gagne, et les 38 gardes de droits deviennent inopérantes, y compris
-      # par appel direct à PostgREST. Le contrôle refuse un doublon hors registre
-      # et refuse aussi une ligne de registre devenue périmée (la 238 les videra).
+      # large gagne, et les 57 gardes de droits deviennent inopérantes, y compris
+      # par appel direct à PostgREST. La 238 a retiré les 506 politiques en trop
+      # (495 couples, dont 11 en portaient trois) et vidé le registre gelé : le
+      # contrôle ne garde plus que la règle et son auto-test.
       - name: Politiques RLS permissives jumelles
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_policy_duplicates.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-02 : une clé étrangère mono-colonne relie encore deux tables
+      # cloisonnées — la société A peut désigner une ligne de la société B, que la
+      # RLS lui cache pourtant en lecture, et ni `service_role` ni un déclencheur
+      # `SECURITY DEFINER` ne s'y opposent : seule une clé composite le fait,
+      # parce qu'elle vit dans les DONNÉES. Mesuré avant la 237 : 411 clés de ce
+      # type sur 219 tables. Le contrôle refuse la moindre clé mono-colonne et
+      # échoue si le relevé ne trouve plus les clés composites.
+      - name: Clés étrangères composites (isolation des données)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_composite_fks.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PERM-01 : la matrice des rôles n'est opposable que si la politique RLS la
+      # porte. Avant la 239, un `viewer` créait une facture et supprimait un
+      # client par appel direct (7 politiques sur 2 296 regardaient le rôle). La
+      # 239 a posé la garde `can_perform` sur les 41 tables du périmètre de la
+      # décision `D-6` ; ce contrôle exige la garde sur TOUTES leurs politiques
+      # d'écriture, et publie le nombre de tables qui restent sous la garde de
+      # société seule — un état daté, jamais silencieux.
+      - name: Rôles opposables sur le périmètre sensible
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_roles_opposables.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -712,6 +737,31 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # M-10 (TVA) — la base hors taxe de la CA3 était reconstituée depuis la TVA
+      # (montant ÷ taux) : un chiffre d'affaires non taxé — exonéré, export,
+      # livraison intracommunautaire — n'entrait dans aucune base (cases A2, E1,
+      # E2). La 246 tire la base des comptes de produits par code de TVA. La suite
+      # garde les deux branches : la base reconstituée quand le taux existe, et la
+      # ventilation par code de TVA.
+      - name: 'AUD : déclaration de TVA, bases de la CA3 (245)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/245_vat_return_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
+      # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
+      # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son
+      # cumul (assiette fausse jusqu'au 31 décembre, et en DSN) ; le cumul
+      # s'écrivait par un appel direct, sans bulletin ni droit de paie ; annuler un
+      # lot comptabilisé laissait le pont à « transferred » et l'écriture au grand
+      # livre. Le dernier scénario mesure la **contrepassation** (et non la
+      # réécriture de l'écriture d'origine, que le noyau de saisie interdit) et
+      # l'idempotence de l'annulation.
+      - name: 'AUD : cumuls de paie et pont comptable (247)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/247_payroll_cumulative_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
       # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER
@@ -722,6 +772,43 @@ jobs:
       # clés étrangères composites (ISO-02, vague 237).
       - name: 'ISO-01 : écritures des déclencheurs SECURITY DEFINER (236)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/236_security_definer_tenant_writes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-02 — une clé étrangère mono-colonne ne regarde pas la société : la
+      # facture de A pouvait désigner le client de B, que A ne voyait même pas en
+      # lecture. La 237 a converti les 408 clés relevées en clés composites
+      # `(tenant_id, colonne)` — dont 200 en `ON DELETE SET NULL (colonne)`, sans
+      # quoi la clé annulerait aussi `tenant_id`, NOT NULL, et la suppression
+      # légitime échouerait. La 249 reprend les 2 clés nées APRÈS la 237 (241 en
+      # ajoute une avec sa colonne, 244 recrée la seconde mono-colonne), que seul
+      # le contrôle permanent, qui mesure l'état final, pouvait trouver. Le T02 de
+      # la 236 (l'insertion inter-sociétés encore acceptée) est passé au vert et sa
+      # ligne a quitté le registre des échecs attendus dans le même commit.
+      - name: 'ISO-02 : clés étrangères composites (237)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/237_composite_foreign_keys_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-03 / ISO-04 — 495 couples (table, commande) portaient deux politiques
+      # permissives : la plus large gagnait, et les 57 gardes `can_perform` des
+      # politiques par table n'étaient jamais atteintes. La 238 a retiré les 506
+      # politiques en trop et 12 index en double. Le scénario décisif est T03 :
+      # un `viewer` ne peut plus insérer par appel direct, et un administrateur
+      # le peut toujours.
+      - name: 'ISO-03/ISO-04 : dédoublonnage des politiques et des index (238)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/238_policy_dedup_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PERM-01 — un `viewer` créait une facture et supprimait un client par appel
+      # direct : la matrice des rôles n'était opposable nulle part. La 239 a posé
+      # `can_perform` sur les 41 tables où l'argent, les personnes et la
+      # comptabilité circulent (décision D-6, tranche assumée et chiffrée). Le
+      # fichier rejoue le constat `M18_role_non_opposable.sql` et mesure, dans le
+      # même geste, que chaque rôle garde ce qu'il doit pouvoir faire.
+      - name: 'PERM-01 : rôles opposables (239)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/239_roles_opposables_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
