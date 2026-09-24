@@ -145,3 +145,103 @@ BEGIN
   RAISE NOTICE 'Garde de société : OK — % fonction(s) examinée(s), aucune exposée sans contrôle hors registre', v_total;
 END;
 $$;
+
+-- ============================================================
+-- DEUXIÈME RÈGLE (ISO-01, migration 236) — un `SECURITY DEFINER` qui écrit doit
+-- nommer la société.
+--
+-- LA PREMIÈRE RÈGLE ci-dessus ne regarde que les fonctions *exposées* et *prenant
+-- un uuid*. Elle ne voyait donc pas les DÉCLENCHEURS, qui ne sont pas exposés :
+-- mesuré le 24/09, **sept déclencheurs `SECURITY DEFINER` modifiaient la ligne
+-- d'une autre société** — la société A fermait une tâche de la société B, dont
+-- elle ne voyait même pas la ligne (les scénarios 236 le prouvent, T01 à T16).
+--
+-- LA RÈGLE, lue sur `pg_proc.prosrc` : toute fonction `SECURITY DEFINER` du schéma
+-- `public` qui écrit (`INSERT INTO`, `UPDATE`, `DELETE FROM`) dans une table
+-- portant `tenant_id` doit nommer `tenant_id` — ou `current_tenant_id()`.
+--
+-- CE QU'ELLE NE PROUVE PAS — et il faut le lire avant de s'y fier :
+--   * elle lit le TEXTE : nommer la colonne ne prouve pas qu'elle est dans le
+--     `WHERE` de la bonne requête. C'est un filet tendu en travers du chemin.
+--   * elle ne suit pas les DÉLÉGATIONS : `trigger_revoke_expired_auditors`
+--     n'écrit rien elle-même, elle appelle `auto_revoke_expired_auditors` — le
+--     détecteur ne la voit pas. Les scénarios 236, eux, mesurent l'effet.
+--   * elle est aveugle aux écritures dynamiques (`EXECUTE format(…)`).
+--   Le seuil de corpus ci-dessous (`< 50`) est là pour qu'une expression
+--   régulière cassée fasse échouer le contrôle au lieu de le vider en silence.
+--
+-- LE REGISTRE. Aucune exception : la 236 les a filtrées toutes (relevé : 295
+-- fonctions `SECURITY DEFINER`, 135 écrivent dans une table cloisonnée, 0 sans
+-- mention de la société). Une ligne ajoutée ici est une dette, pas un droit, et
+-- le contrôle refuse aussi une ligne devenue périmée.
+-- ============================================================
+
+CREATE TEMP TABLE tenant_write_tables AS
+SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind = 'r'
+  AND EXISTS (SELECT 1 FROM information_schema.columns col
+              WHERE col.table_schema = 'public' AND col.table_name = c.relname
+                AND col.column_name = 'tenant_id');
+
+CREATE TEMP TABLE tenant_write_corpus AS
+SELECT p.oid, p.proname, pg_get_function_identity_arguments(p.oid) AS args,
+       (SELECT count(*) FROM tenant_write_tables t
+        WHERE p.prosrc ~* ('(insert[[:space:]]+into|update|delete[[:space:]]+from)'
+                           || '[[:space:]]+(public\.)?"?' || t.relname || '"?([^a-z0-9_]|$)')) AS tables,
+       p.prosrc ~* 'tenant_id' AS nomme
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.prokind = 'f' AND p.prosecdef;
+
+CREATE TEMP TABLE tenant_write_registre (nom text, args text, raison text);
+-- Aucune exception à ce jour. Format d'une ligne, si un jour il en fallait une :
+--   ('nom_de_la_fonction', 'ses arguments exacts', 'pourquoi, daté');
+
+CREATE TEMP TABLE tenant_write_verdicts AS
+SELECT c.oid, c.proname, c.args, c.tables, c.nomme,
+       EXISTS (SELECT 1 FROM tenant_write_registre r
+               WHERE r.nom = c.proname AND r.args = c.args) AS inscrite
+FROM tenant_write_corpus c
+WHERE c.tables > 0;
+
+DO $$
+DECLARE
+  v_total int; v_ecrivantes int; v_sans text; v_perimees text;
+BEGIN
+  SELECT count(*), count(*) FILTER (WHERE tables > 0) INTO v_total, v_ecrivantes
+  FROM tenant_write_corpus;
+
+  -- Un contrôle qui n'examine rien ne prouve rien (cf. B3 du 18/09)
+  IF v_ecrivantes < 50 THEN
+    RAISE EXCEPTION 'check_tenant_guard (règle 2) : % fonction(s) examinée(s) dont % écrivante(s) — le détecteur ne trouve plus rien, il est cassé',
+      v_total, v_ecrivantes;
+  END IF;
+
+  SELECT string_agg(v.proname || '(' || left(v.args, 60) || ')', ', ' ORDER BY v.proname)
+    INTO v_sans
+  FROM tenant_write_verdicts v
+  WHERE NOT v.nomme AND NOT v.inscrite;
+
+  SELECT string_agg(r.nom || '(' || left(r.args, 60) || ')', ', ' ORDER BY r.nom)
+    INTO v_perimees
+  FROM tenant_write_registre r
+  LEFT JOIN tenant_write_verdicts v ON v.proname = r.nom AND v.args = r.args
+  WHERE v.oid IS NULL OR v.nomme;
+
+  RAISE NOTICE 'check_tenant_guard (règle 2) : % fonction(s) SECURITY DEFINER examinée(s), % écrivant dans une table cloisonnée, % sans mention de la société',
+    v_total, v_ecrivantes,
+    (SELECT count(*) FROM tenant_write_verdicts WHERE NOT nomme);
+
+  IF v_sans IS NOT NULL THEN
+    RAISE EXCEPTION E'check_tenant_guard (règle 2) : % fonction(s) SECURITY DEFINER écrivent dans une table cloisonnée sans nommer la société :\n  %\n'
+      '  Ajoutez `tenant_id` (ou `current_tenant_id()`) au `WHERE` de leurs écritures — la société du mouvement, jamais celle de la ligne visée —, ou inscrivez-les au registre de ci/check_tenant_guard.sql avec leur raison.',
+      (SELECT count(*) FROM tenant_write_verdicts WHERE NOT nomme AND NOT inscrite), v_sans;
+  END IF;
+  IF v_perimees IS NOT NULL THEN
+    RAISE EXCEPTION E'check_tenant_guard (règle 2) : registre périmé — ces lignes sont désormais filtrées ou ont disparu :\n  %\n'
+      '  Retirez-les de ci/check_tenant_guard.sql dans le même commit que le correctif.', v_perimees;
+  END IF;
+
+  RAISE NOTICE 'Écritures des fonctions SECURITY DEFINER : OK — aucune table cloisonnée écrite sans mention de la société';
+END;
+$$;
+

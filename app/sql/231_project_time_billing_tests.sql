@@ -69,9 +69,8 @@ BEGIN
   PERFORM _rec('T01', '3 h pointées remontent dans les heures du projet',
     hrs = 3.00, format('heures du projet=%s (3,00 attendues)', COALESCE(hrs, 0)));
 
-  -- Identifiant porté au registre : `_audit_expected` a pour clé le seul
-  -- test_id, sans le nom du fichier. Un « T02 » y dispenserait le T02 de tous
-  -- les autres fichiers.
+  -- Identifiant porté au registre : le couple (fichier, identifiant). Un « T02 »
+  -- inscrit ici ne dispenserait pas le T02 des autres fichiers (AUD-X01).
   PERFORM _rec('M-17-01', '3 h facturables à 80 atteignent une ligne de facture de 240',
     n_line >= 1,
     format('lignes de facture=%s (au moins 1 attendue) factures=%s notifications=%s — la fonction create_billable_line ne crée qu''une notification',
