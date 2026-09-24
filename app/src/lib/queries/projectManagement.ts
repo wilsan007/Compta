@@ -612,7 +612,9 @@ export async function getProjectMembers(projectId: string): Promise<ProjectMembe
   const tid = await getTenantId()
   let q = supabase
     .from('project_members')
-    .select('*, employees:employee_id(name)')
+    // Clé composite depuis la 237 (ISO-02) : `employee_id` seul ne désigne plus la
+    // relation, le nom de la contrainte si (LOT7-04, mesuré sur PostgREST v16.3).
+    .select('*, employees:employees!project_members_employee_id_fkey(name)')
     .eq('project_id', projectId)
     .order('created_at', { ascending: true })
   if (tid) q = q.eq('tenant_id', tid)

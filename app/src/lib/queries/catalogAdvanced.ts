@@ -127,7 +127,9 @@ export async function deleteProductPackaging(id: string) {
 
 export async function getProductLinks(productId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('product_links').select('*, linked_product:products!linked_product_id(name, sku)').eq('product_id', productId).order('created_at', { ascending: false })
+  // Clé composite depuis la 237 (ISO-02) : le nom de la contrainte est le seul hint que
+  // PostgREST résolve pour une clé à plusieurs colonnes (LOT7-04, mesuré sur v16.3).
+  let q = supabase.from('product_links').select('*, linked_product:products!product_links_linked_product_id_fkey(name, sku)').eq('product_id', productId).order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error

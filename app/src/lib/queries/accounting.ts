@@ -3659,7 +3659,11 @@ export async function getNonAnalyticJournals() {
 // ============ #28 — Third party default bank account ============
 export async function getThirdPartyWithBank(tpaId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('third_party_accounts').select('*, bank_accounts!default_bank_account_id(*)').eq('id', tpaId)
+  // La clé est COMPOSITE depuis la 237 (ISO-02) : `(tenant_id, default_bank_account_id)
+  // → bank_accounts(tenant_id, id)`. Un hint qui ne nomme qu'une partie des colonnes de la
+  // clé ne résout plus la relation : seul le NOM DE LA CONTRAINTE le fait (mesuré sur
+  // PostgREST v16.3, contrôle LOT7-04 — `db:embeds`).
+  let q = supabase.from('third_party_accounts').select('*, bank_accounts!tpa_default_bank_account_id_fkey(*)').eq('id', tpaId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q.single()
   if (error) throw error
