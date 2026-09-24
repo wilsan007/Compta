@@ -50,6 +50,33 @@
 - Migration: `supabase/migrations/0001_add_missing_tables.sql`
 - Seed data: `supabase/seed_business_data.sql` (5 clients, 3 fournisseurs, 5 produits, 5 factures, 5 écritures, 5 employés, 3 projets, 12 tâches)
 
+### Vague W1 — isolation et droits (2026-09-24) ✅
+- **ISO-01 (236)** : 18 fonctions `SECURITY DEFINER` filtraient mal la société
+  (`UPDATE … WHERE id = …` sans `tenant_id`) : A modifiait les données de B.
+  17 scénarios, contrôle `ci/check_tenant_guard.sql` (règle 2, 137 fonctions
+  écrivantes examinées).
+- **ISO-02 (237 + 249)** : 408 clés étrangères mono-colonnes reliaient deux
+  tables cloisonnées — A référençait une ligne de B que la RLS lui cachait.
+  Générateur `scripts/generate-composite-fks.mjs` (clés composites
+  `(tenant_id, colonne)`, `ON DELETE SET NULL (colonne)` sur 200 d'entre elles) ;
+  2 clés nées **après** la 237 (241 en ajoute une, 244 en recrée une
+  mono-colonne) reprises par la **249**. Contrôle `ci/check_composite_fks.sql` :
+  410 clés composites, 0 mono-colonne.
+- **ISO-03 / ISO-04 (238)** : 495 couples (table, commande) portaient deux
+  politiques RLS permissives — la plus large gagnait et les 57 gardes
+  `can_perform` étaient annulées. 506 politiques en trop et 12 index en double
+  retirés ; registre gelé de `ci/check_policy_duplicates.sql` vidé.
+- **PERM-01 / décision D-6 (239)** : un `viewer` créait une facture et
+  supprimait un client par appel direct. Le rôle devient opposable sur **41
+  tables sensibles** (123 politiques gardées par `can_perform`) ; les **257
+  autres** tables écrites restent sous la garde de société et le nombre est
+  **publié** par `ci/check_roles_opposables.sql` à chaque exécution.
+- **Suites adaptées** : 236 (fabrication d'état hostile par désactivation des
+  seuls déclencheurs de clés étrangères, T02 inversé et retiré du registre),
+  105 (recollage des clés composites par `unnest … WITH ORDINALITY` — la
+  couverture passe de 333 à **340 tables visibles sur 340**).
+- Preuves : `doc/audit/VAGUE-W1-ISO02-04-PERM01-2026-09-24.md`.
+
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string
 - `create-user/index.ts:450` — `otpError` non défini → `emailSent`

@@ -399,10 +399,10 @@ Le dépôt a déjà une convention, qu'on ne réinvente pas : **`NNN_<nom>.sql` 
 | Numéro | Fichier correctif | Fichier test | Vague |
 |---:|---|---|:---:|
 | 235 | `235_audit_registry_per_file.sql` *(modifie `ci/audit_helpers.sql`)* | — | W0 |
-| 236 | `236_trigger_tenant_scope.sql` | `236_trigger_tenant_scope_tests.sql` | W1 |
-| 237 | `237_composite_foreign_keys.sql` | `237_composite_foreign_keys_tests.sql` | W1 |
-| 238 | `238_policy_dedup.sql` | `238_policy_dedup_tests.sql` | W1 |
-| 239 | `239_roles_opposables.sql` | `239_roles_opposables_tests.sql` | W1 |
+| 236 | `236_security_definer_tenant_writes.sql` (livré sous ce nom) | `236_security_definer_tenant_writes_tests.sql` | W1 ✅ |
+| 237 | `237_composite_foreign_keys.sql` (généré) + `249_composite_fks_after.sql` | `237_composite_foreign_keys_tests.sql` | W1 ✅ |
+| 238 | `238_policy_dedup.sql` | `238_policy_dedup_tests.sql` | W1 ✅ |
+| 239 | `239_roles_opposables.sql` | `239_roles_opposables_tests.sql` | W1 ✅ |
 | **240** | `240_stock_movement_tenant_and_upsert.sql` **écrit** | **`240_…_tests.sql` ✅ écrit** | W3 |
 | **241** | `241_receipt_stock_and_ledger.sql` **écrit** | **`241_…_tests.sql` ✅ écrit** | W3 |
 | **242** | `242_delivery_warehouse_and_reservation.sql` **écrit** | **`242_…_tests.sql` ✅ écrit** | W3 |
@@ -1355,12 +1355,12 @@ Un défaut est fermé quand **les six** conditions sont réunies :
 |---|---|---|---|---|
 | **W0** | Registre par fichier (AUD-X01) | — (pas de migration : `ci/audit_helpers.sql`) | `ci/audit_registry_selftest.sql` (Z1→Z4b) | ✅ **fait le 24/09** — commit `7e25a7f`, contre-épreuve Z1/Z4b rouges avec l'ancienne clé |
 | **W0** | Scanners en CI (colonnes écrites, erreurs non lues) | — | baselines gelées : 20 et 29 | ✅ **fait le 24/09** — commit `1ade873` |
-| **W0** | Contrôle des politiques en double | — | `ci/check_policy_duplicates.sql` + auto-test | ✅ **fait le 24/09** — commit `1ade873`, 495 couples gelés (périmètre de la 238) |
+| **W0** | Contrôle des politiques en double | — | `ci/check_policy_duplicates.sql` + auto-test | ✅ **fait le 24/09** — commit `1ade873` ; registre vidé par la 238 (506 politiques retirées) |
 | **W0** | Specs 240-244 commitées et inscrites au registre | 240→244 (commit `062eef7`) | 240→244 | ✅ **fait le 24/09** — les cinq suites **vertes** sur base neuve ; rien à inscrire au registre |
-| **W1** | `tenant_id` dans les 13 triggers + contrôle étendu | 236 | 236 | ⬜ |
-| **W1** | Clés composites `(tenant_id, …)` | 237 | 237 | ⬜ |
-| **W1** | Dédoublonnage 326 politiques / 11 index | 238 | 238 | ⬜ |
-| **W1** | Rôles opposables | 239 | 239 | ⬜ |
+| **W1** | `tenant_id` dans les 13 triggers + contrôle étendu | 236 | 236 | ✅ **fait le 24/09** — 18 fonctions relevées et filtrées, suite 17/17 (commit `c116e53`) |
+| **W1** | Clés composites `(tenant_id, …)` | 237 (+249) | 237 (8 scénarios) | ✅ **fait le 24/09** — 408 clés converties, 2 nées après la 237 (249), 0 mono-colonne, `ci/check_composite_fks.sql` |
+| **W1** | Dédoublonnage 326 politiques / 11 index | 238 | 238 (8 scénarios) | ✅ **fait le 24/09** — 495 couples dédoublonnés (506 politiques, 12 index), 57 gardes rendues opposables |
+| **W1** | Rôles opposables | 239 | 239 (9 scénarios) | ✅ **fait le 24/09** — décision `D-6` tranchée : 41 tables sensibles (123 politiques), `ci/check_roles_opposables.sql`, 257 tables restantes publiées |
 | **W2** | Gardes de suppression (SUP-01→03) | 244 | 244 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
 | **W2** | Immuabilité NF-525 (POS-01→04) | 245 | 245 | ⬜ |
 | **W3** | Stock société + upsert (S-08, S-09) | 240 | 240 ✅ | 🟡 correctif écrit, **à rejouer + commiter** |
