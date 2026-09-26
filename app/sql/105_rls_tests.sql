@@ -28,11 +28,21 @@ CREATE TEMP TABLE rls_test_tables (
 );
 GRANT ALL ON rls_test_tables TO authenticated;
 
+-- Une table cloisonnée est ici au sens OÙ LA SOCIÉTÉ SE LIT : la table
+-- ordinaire, et la table PARTITIONNÉE (relkind = 'p') qui porte la politique.
+-- Une PARTITION (relispartition) ne se lit jamais en direct : elle est le
+-- stockage d'un parent, ses droits sont retirés et sa RLS est fermée par
+-- défaut (mesuré par `sql/252_chain_socle_tests.sql` T14, socle des chaînages).
+-- L'exclure n'est pas contourner le contrôle : c'est prouver l'isolation là où
+-- le client lit réellement — et inclure le parent partitionné, que
+-- l'énumération `relkind = 'r'` d'avant la 252 ne voyait PAS (le socle est la
+-- première table partitionnée de `public` : `domain_events`, `chain_traces`).
 INSERT INTO rls_test_tables (table_name)
 SELECT c.relname
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
-WHERE c.relkind = 'r'
+WHERE c.relkind IN ('r', 'p')
+  AND NOT c.relispartition
   AND EXISTS (SELECT 1 FROM information_schema.columns col
               WHERE col.table_schema = 'public' AND col.table_name = c.relname
                 AND col.column_name = 'tenant_id')

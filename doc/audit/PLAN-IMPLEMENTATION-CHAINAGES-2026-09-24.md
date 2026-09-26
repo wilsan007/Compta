@@ -436,7 +436,7 @@ Chaque lot a **un indicateur qui bouge** : c'est ce qui prouve qu'il est fait, e
 
 | Lot | Indicateur qui bouge | État |
 |---|---|---|
-| L0 | tables de socle en place, grille `BT` verte | ⬜ |
+| L0 | tables de socle en place, grille `BT` verte | ✅ **fait** — migration **252**, 16 scénarios verts, 7 contrôles verts ([preuve](VAGUE-L0-CHAÎNAGES-2026-09-24.md)) |
 | L1 | chaînages existants tracés (**0 / 62** → 62 / 62) | ⬜ |
 | L2 | portes CI G1 → G6 actives | ⬜ |
 | L3 | chaînages robustes prouvés (**0 / 62** → 62 / 62) | ⬜ |

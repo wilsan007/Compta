@@ -28,7 +28,7 @@
 | **W2** | Inaltérabilité NF-525 de la caisse : `250` — garde en modification (montants, date, numéro, empreinte, **pour tout le monde**), unicité `(société, caisse, numéro)` sous verrou, réparation des doublons avec recalcul des empreintes, `CHECK` de statut, `void_pos_ticket()` comme sortie honnête | **11 scénarios vus rouges avant, 11/11 après** ; `cancelPosTicket()` passe par la RPC |
 | **W3** | `251` — annulation d'une réception : contrepassation du stock et de l'écriture, refus de la réédition et de la double contrepassation ; contrôle qualité : la quantité **contrôlée** et **rebutée**, au dépôt de la réception | **4 rouges avant, 6/6 après** |
 | **Dettes déclarées (24/09, cette session)** | `253` annulation d'un **BL expédié** (stock, couche, écriture, refus de la double contrepassation) · `254` **une seule vérité de valorisation** (couches alignées sur le CUMP que la comptabilité applique) · `255` **l'avoir d'un ticket clôturé** (avoir commercial, stock rendu, vente marquée `refunded`, NF-525) · le **formulaire de contrôle qualité** expose `quantity_checked`/`quantity_rejected` (+ statut « partiel ») | 253 **5/5** · 254 **5/5** · 255 **5/5** ; `tsc`, `oxlint`, parité i18n fr/en/ar verts ; suites voisines (173, 219, 230, 241, 242, 251, 192) vertes |
-| **Chaînages — L0 (socle)** | `252_chain_socle.sql` : 5 tables + `chain_settings`, 6 fonctions utilitaires, gabarit de maillon, partitions mensuelles | **en cours** (session parallèle) — le socle existe, **aucun maillon n'est encore branché** |
+| **Chaînages — L0 (socle)** | `252_chain_socle.sql` : 5 tables + `chain_settings`, 6 fonctions utilitaires, gabarit de maillon, partitions mensuelles | **fait** — 16/16 scénarios verts, batterie entière **67/67** verte sur base neuve (227 migrations) ; les deux contrôles que le socle faisait tomber (105, 238) sont corrigés et mesurés ([preuve](VAGUE-L0-CHAÎNAGES-2026-09-24.md)). **Aucun maillon n'est encore branché** — c'est le lot L1 |
 | **Exploitation** | Production alignée (29 migrations appliquées le 23/09), inscription réelle vérifiée, `plpgsql_check` 0 erreur sur la prod, 96/96 RPC des écrans présentes | `RESTE-A-FAIRE-2026-09-22.md` §P0-07/P0-09 |
 
 **Ce que cela veut dire en une phrase.** Le socle de la comptabilité, de la
@@ -67,7 +67,7 @@ idempotence **15 %**, trace **11 %** — et **62 états de statut sans effet ava
 
 | Bloc de lots | Contenu | Charge |
 |---|---|---:|
-| **L0** | socle : 5 tables, 6 fonctions utilitaires, gabarit de maillon, partitions — **en cours de commit** | 3 j |
+| **L0** | socle : 5 tables, 6 fonctions utilitaires, gabarit de maillon, partitions — **fait (252)** | 3 j |
 | **L1** | rétro-instrumentation des **62 maillons** (`link_documents`, `emit_domain_event`) + rattrapage de l'historique | 5 j |
 | **L2** | les **6 portes CI** (dont le contrat d'effet) + banc de performance | 3 j |
 | **L3** | banc d'épreuve **D1→D8** (rejeu, concurrence, panne partielle, annulation, réouverture, retour arrière, volume, isolation) sur 62 maillons | 5 j |
@@ -144,7 +144,7 @@ chantier des chaînages, qui **exige** les vagues ; la phase 10 est continue.
 
 | Élément | Détail |
 |---|---|
-| **Fait** | Les 4 dettes déclarées sont fermées : `253` (annulation d'un BL expédié), `254` (une seule vérité de valorisation), `255` (l'avoir d'un ticket clôturé), formulaire de contrôle qualité |
+| **Fait** | Les 4 dettes déclarées sont fermées : `253` (annulation d'un BL expédié), `254` (une seule vérité de valorisation), `255` (l'avoir d'un ticket clôturé), formulaire de contrôle qualité — **et le lot L0** (socle des chaînages, `252`) : 16 scénarios verts, batterie entière 67/67 sur base neuve, deux contrôles permanents adaptés et mesurés ([preuve](VAGUE-L0-CHAÎNAGES-2026-09-24.md)) |
 | **Reste** | Les décisions qui bloquent : D-4 (`generate-pdf`), D-5 (OCR), D-7 (contraste), D-10 et D-13 (à confirmer), D-11 (périmètre de la localisation) |
 | **Reste (vous)** | 👤-1 tourner la clé `sb_secret_…` ; 👤-2 les secrets E2E ; P0-08 (14 parcours à l'écran) ; 👤-4 expert-comptable ; 👤-5 les 14 documents djiboutiens ; 👤-6 les pilotes |
 | **Critère de sortie** | Chaque décision est tranchée dans le registre (`RESTE-A-FAIRE` §3.2), la clé est tournée, les secrets sont posés — sinon les phases suivantes héritent de trous d'exploitation |

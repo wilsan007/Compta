@@ -93,6 +93,20 @@ const SERVER_ONLY_TABLES = {
   chart_pack_switch_log: '201 — journal technique des bascules de plan',
   payroll_account_mapping: '191 — comptes de la paie par rubrique, lus par payroll_post_run ; remplacés par les rôles de comptes (LOC1-34), pas d\'écran prévu',
   platform_admins: '201 — administrateurs plateforme, vérifiés par les RPC d\'import de plan',
+  // ── Socle des chaînages (252, lot L0) ──────────────────────
+  // Ces six tables sont écrites par les fonctions du socle (link_documents,
+  // emit_domain_event, chain_trace) et lues par la vue chaîne et les tableaux
+  // de bord, qui viennent aux lots L5 → L7 et L23. Les deux partitions par
+  // défaut sont du stockage : elles ne se lisent jamais en direct (leurs droits
+  // sont retirés et leur RLS activée, mesuré par sql/252_chain_socle_tests.sql).
+  document_links: '252 (L0) — registre de chaîne : écrit par link_documents(), lu par la vue chaîne du lot L6',
+  document_effects: '252 (L0) — contrat d\'effet, donnée de référence lue par chain_autorise() ; l\'écran d\'administration arrive au lot L7',
+  domain_events: '252 (L0) — journal d\'événements : alimenté par emit_domain_event() ; automatisations et webhooks au lot L23',
+  chain_traces: '252 (L0) — traces d\'exécution des maillons, lues par les tableaux de bord internes du lot L5',
+  chain_regeneration_log: '252 (L0) — historique des régénérations (M-04), append-only, relu par l\'audit',
+  chain_settings: '252 (L0) — drapeau d\'application par société, lu par chain_enforcement_mode() ; l\'écran arrive au lot L5',
+  domain_events_defaut: '252 (L0) — partition par défaut du journal d\'événements : stockage, jamais lue en direct',
+  chain_traces_defaut: '252 (L0) — partition par défaut des traces : stockage, jamais lue en direct',
 }
 
 function isBusinessTable(name) {

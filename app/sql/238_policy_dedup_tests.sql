@@ -173,6 +173,13 @@ BEGIN
     -- causé par elle — elles sont donc gelées ici pour que le scénario parle du
     -- retrait et non d'un état antérieur.
     AND c.relname NOT IN ('chart_provisional_fallbacks', 'platform_admins')
+    -- Une PARTITION n'est pas une cloison : c'est le stockage d'un parent
+    -- (relkind = 'p'), atteint par lui, avec les droits retirés et la RLS
+    -- fermée par défaut — donc sans politique, et c'est voulu. Le socle des
+    -- chaînages (252) est la première table partitionnée de `public` ; le fait
+    -- est mesuré par `sql/252_chain_socle_tests.sql` T14. Le parent, lui, a
+    -- bien sa politique (sinon la ligne d'après le dirait).
+    AND NOT c.relispartition
     AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid);
 
   PERFORM _rec('T07', 'aucune table cloisonnée ne reste sans politique après le retrait',

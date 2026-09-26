@@ -821,6 +821,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L0 — le socle des chaînages transverses (252) : les cinq tables du plan
+      # (document_links, document_effects, domain_events, chain_regeneration_log,
+      # chain_traces), le drapeau chain_settings, les six fonctions utilitaires et
+      # le gabarit de maillon. Le référentiel a mesuré, sur les 62 chaînages
+      # existants, 15 % d'idempotence et 11 % de trace : sans ce socle, chaque
+      # maillon réinvente sa clé et sa mesure. Ce fichier mesure les propriétés
+      # du socle (idempotence structurelle, contrat fermé par défaut, cloisonnement,
+      # partitions) et, quand c'est le cas, les limites — dont celle dite dans
+      # l'en-tête : la trace d'un refus ne survit pas au rollback de l'opération
+      # refusée. 16 scénarios.
+      - name: 'L0 : socle des chaînages (252)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/252_chain_socle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
       # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER
