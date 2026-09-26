@@ -134,31 +134,18 @@ export async function createMyLeaveRequest(data: {
     ...(data || {}), status: 'pending',
   }, 'leave_requests', tid)).select().single()
   if (error) throw error
-  const balQ = supabase.from('leave_balances').select('*').eq('employee_id', data.employee_id).eq('leave_type', data.leave_type)
-  const { data: bal } = await balQ.maybeSingle()
-  if (bal) {
-    const newPending = Number(bal.pending) + data.days
-    const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - Number(bal.taken) - newPending
-    await tud(supabase.from('leave_balances').update({ pending: newPending, remaining: newRemaining }), 'leave_balances', tid).eq('id', bal.id)
-  }
+  // W9 (TRV-15) : le solde n'est PLUS débité ici. Le mouvement vit en base
+  // (déclencheur `apply_leave_balance` de la 263) : le faire aussi dans l'écran
+  // le comptait deux fois, et un import ou un appel direct le perdait.
   return result as LeaveRequest
 }
 
 export async function cancelMyLeaveRequest(id: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
-  if (error) { console.error('cancelMyLeaveRequest:', error); return }
-  if (!lr) return
-  await tud(supabase.from('leave_requests').update({ status: 'cancelled' }), 'leave_requests', tid).eq('id', id)
-  if (lr.status === 'pending') {
-    const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
-    if (balError) { console.error('cancelMyLeaveRequest:', balError); return }
-    if (bal) {
-      const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
-      const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - Number(bal.taken) - newPending
-      await tud(supabase.from('leave_balances').update({ pending: newPending, remaining: newRemaining }), 'leave_balances', tid).eq('id', bal.id)
-    }
-  }
+  const { error } = await tud(supabase.from('leave_requests').update({ status: 'cancelled' }), 'leave_requests', tid).eq('id', id)
+  if (error) throw error
+  // W9 (TRV-15) : la restitution du solde est faite par le déclencheur de la
+  // base, qui connaît l'état d'origine (`pending` ou `approved`) — pas l'écran.
 }
 
 // LOT7-04 : cette fonction échouait systématiquement, pour DEUX raisons cumulées,
@@ -200,39 +187,25 @@ export async function getPendingLeaveRequests(
 
 export async function approveLeaveRequest(id: string, _managerId: string, comment?: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
-  if (error) { console.error('approveLeaveRequest:', error); return }
-  if (!lr) return
-  await tud(supabase.from('leave_requests').update({
-    status: 'approved', approved_at: new Date().toISOString(), approved_by: _managerId, reason: comment || lr.reason,
+  const { error: readError } = await supabase.from('leave_requests').select('id').eq('id', id).maybeSingle()
+  if (readError) throw readError
+  const { error } = await tud(supabase.from('leave_requests').update({
+    status: 'approved', approved_at: new Date().toISOString(), approved_by: _managerId, reason: comment || undefined,
   }), 'leave_requests', tid).eq('id', id)
-  const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
-  if (balError) { console.error('approveLeaveRequest:', balError); return }
-  if (bal) {
-    const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
-    const newTaken = Number(bal.taken) + Number(lr.days)
-    const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - newTaken - newPending
-    await tud(supabase.from('leave_balances').update({ pending: newPending, taken: newTaken, remaining: newRemaining }), 'leave_balances', tid).eq('id', bal.id)
-  }
+  if (error) throw error
+  // W9 (TRV-15) : le transfert « en attente » → « pris » est fait par le
+  // déclencheur `apply_leave_balance` de la base. L'écran ne touche plus au
+  // solde : son calcul était faux dès qu'un import ou un appel direct écrivait
+  // la même décision.
 }
 
 export async function rejectLeaveRequest(id: string, _managerId: string, comment?: string): Promise<void> {
   const tid = await getTenantId()
-  const { data: lr, error } = await supabase.from('leave_requests').select('*').eq('id', id).maybeSingle()
-  if (error) { console.error('rejectLeaveRequest:', error); return }
-  if (!lr) return
-  await tud(supabase.from('leave_requests').update({
-    status: 'rejected', approved_by: _managerId, reason: comment || lr.reason,
+  const { error } = await tud(supabase.from('leave_requests').update({
+    status: 'rejected', approved_by: _managerId, reason: comment || undefined,
   }), 'leave_requests', tid).eq('id', id)
-  if (lr.status === 'pending') {
-    const { data: bal, error: balError } = await supabase.from('leave_balances').select('*').eq('employee_id', lr.employee_id).eq('leave_type', lr.leave_type).maybeSingle()
-    if (balError) { console.error('rejectLeaveRequest:', balError); return }
-    if (bal) {
-      const newPending = Math.max(0, Number(bal.pending) - Number(lr.days))
-      const newRemaining = Number(bal.acquired) + Number(bal.carry_over) - Number(bal.taken) - newPending
-      await tud(supabase.from('leave_balances').update({ pending: newPending, remaining: newRemaining }), 'leave_balances', tid).eq('id', bal.id)
-    }
-  }
+  if (error) throw error
+  // W9 (TRV-15) : la restitution du « en attente » est faite par la base.
 }
 
 // ============ Public Holidays ============
@@ -335,6 +308,19 @@ export async function calculateLeaveProvisions(period: string): Promise<LeavePro
   const { data: employees, error: empErr } = await empQ
   if (empErr) throw empErr
   if (!employees) return []
+
+  // W9 (cohérence UI ↔ base, suite de RH-05) : le taux journalier d'une
+  // provision de congés est LE diviseur de la société — celui que la paie
+  // applique (RPC `payroll_divisors`, 256). Le `/ 21` que l'écran portait
+  // encore était le cinquième diviseur : la même journée valait 100,00 € pour
+  // la paie et 123,81 € dans la provision.
+  const { data: divisors, error: divErr } = await supabase.rpc('payroll_divisors')
+  if (divErr) throw divErr
+  const joursDivisor = Number((divisors as any)?.jours ?? 0)
+  if (!(joursDivisor > 0)) {
+    throw new Error("Provision de congés : le diviseur mensuel « jours » de la société est introuvable — la provision ne peut pas être valorisée sans lui.")
+  }
+
   const results: LeaveProvision[] = []
   for (const emp of employees) {
     let balQ = supabase.from('leave_balances').select('*').eq('employee_id', emp.id).eq('year', year)
@@ -346,7 +332,7 @@ export async function calculateLeaveProvisions(period: string): Promise<LeavePro
     const cpDays = cpBal ? Number(cpBal.remaining) : 0
     const rttDays = rttBal ? Number(rttBal.remaining) : 0
     const recDays = recBal ? Number(recBal.remaining) : 0
-    const dailyRate = Number(emp.salary) / 21
+    const dailyRate = Number(emp.salary) / joursDivisor
     const cpProv = cpDays * dailyRate
     const rttProv = rttDays * dailyRate
     const recProv = recDays * dailyRate
@@ -825,3 +811,134 @@ export async function generatePayrollAnalyticEntries(payRunId: string): Promise<
     cost_center: sl.employees?.department || 'N/A',
   }))
 }
+
+// ============ W9 — le registre d'absence (263) ============
+// Une seule vérité par jour et par salarié, alimentée par les quatre sources
+// (congé approuvé, arrêt de maladie, arrêt de travail, pointage d'absence) et
+// calculée par la BASE. L'écran LIT, il ne recompose pas la logique de
+// priorité : deux écrans qui la recomposeraient divergeraient au premier
+// changement de règle.
+
+export type AbsenceKind =
+  | 'annual' | 'rtt' | 'sick' | 'work_accident' | 'maternity'
+  | 'unpaid' | 'personal' | 'mission' | 'stoppage' | 'unjustified'
+
+export type AbsenceDay = {
+  employee_id: string
+  employee_name: string
+  day: string
+  absence_kind: AbsenceKind
+  absence_label: string
+  origin: 'leave_request' | 'sick_leaf' | 'work_stoppage' | 'timesheet'
+  justification_state: 'pending' | 'provided' | 'missing'
+  blocks_work: boolean
+  allows_expenses: boolean
+  paid: boolean
+  pay_rule_code: string | null
+}
+
+export type AbsenceSummary = {
+  employee_id: string
+  from: string
+  to: string
+  days_total: number
+  days_paid: number
+  days_unpaid: number
+  working_days: number
+  unjustified_days: number
+  by_kind: Record<string, number>
+}
+
+export type AbsenceConflict = {
+  employee_id: string
+  employee_name: string
+  day: string
+  absence_kind: AbsenceKind
+  conflict_type: 'pointage' | 'heures_supplementaires' | 'temps_projet' | 'temps_facturable' | 'frais'
+  detail: string
+}
+
+/**
+ * Le calendrier d'absence de la société active (RPC `absence_calendar`, 263).
+ * Borné à 400 jours côté base : une plage plus large est refusée, pas tronquée.
+ */
+export async function getAbsenceCalendar(
+  employeeId?: string,
+  from?: string,
+  to?: string
+): Promise<AbsenceDay[]> {
+  // Les paramètres NON fournis sont omis, jamais passés à `null` : la base a
+  // des défauts (le mois courant), et un `null` explicite les écraserait —
+  // `d.day BETWEEN NULL AND …` ne rendrait alors aucune ligne, en silence.
+  const args: Record<string, unknown> = {}
+  if (employeeId) args.p_employee = employeeId
+  if (from) args.p_from = from
+  if (to) args.p_to = to
+  const { data, error } = await supabase.rpc('absence_calendar', args)
+  if (error) throw error
+  return (data ?? []) as AbsenceDay[]
+}
+
+/** Le résumé chiffré d'une plage, pour le contrôle de paie et le calendrier RH. */
+export async function getAbsenceSummary(
+  employeeId: string, from: string, to: string
+): Promise<AbsenceSummary | null> {
+  const tid = await getTenantId()
+  if (!tid) throw new Error("Résumé d'absence : aucune société active.")
+  const { data, error } = await supabase.rpc('absence_summary', {
+    p_tenant: tid, p_employee: employeeId, p_from: from, p_to: to,
+  })
+  if (error) throw error
+  return (data ?? null) as AbsenceSummary | null
+}
+
+/**
+ * Les anomalies : une absence ET un pointage, des heures supplémentaires, du
+ * temps projet (facturable ou non) ou une ligne de frais (RPC
+ * `absence_conflicts_current`, 264 / TRV-16). Le contrôle NOMME, il ne répare
+ * pas — c'est l'écran « Anomalies ».
+ */
+export async function getAbsenceConflicts(
+  from?: string,
+  to?: string
+): Promise<AbsenceConflict[]> {
+  const args: Record<string, unknown> = {}
+  if (from) args.p_from = from
+  if (to) args.p_to = to
+  const { data, error } = await supabase.rpc('absence_conflicts_current', args)
+  if (error) throw error
+  return (data ?? []) as AbsenceConflict[]
+}
+
+export type AbsenceConflictEntry = {
+  id: string
+  employee_id: string
+  day: string
+  kept_kind: AbsenceKind
+  kept_origin: string
+  dropped_kind: AbsenceKind
+  dropped_origin: string
+  detected_at: string
+}
+
+/**
+ * Le journal des arbitrages (`absence_conflict_log`, 263 / TRV-02) : quand deux
+ * sources déclarent la même journée, la priorité tranche **et** laisse une
+ * trace. L'écran l'affiche parce qu'un conflit silencieux est indécidable pour
+ * l'utilisateur : sans cette liste, un jour « maladie » à la place d'un jour
+ * « congé payé » ne s'explique pas.
+ */
+export async function getAbsenceConflictLog(
+  from?: string,
+  to?: string
+): Promise<AbsenceConflictEntry[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('absence_conflict_log')
+    .select('id, employee_id, day, kept_kind, kept_origin, dropped_kind, dropped_origin, detected_at')
+    .order('day', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (from) q = q.gte('day', from)
+  if (to) q = q.lte('day', to)
+  return fetchAllRows<AbsenceConflictEntry>(q, { label: 'getAbsenceConflictLog' })
+}
+

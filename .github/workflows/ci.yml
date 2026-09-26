@@ -850,6 +850,38 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
+      # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
+      # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
+      # `timesheets.absence_type` que personne n'écrivait) ; la 264 rend ce registre
+      # OPPOSABLE (pointage, heures supplémentaires, temps projet, frais, tâches) et
+      # pose le contrôle quotidien ; la 265 ramène la paie à UN seul chemin de
+      # retenue (deux déclencheurs écrivaient pour la même journée, et le second
+      # écrivait un type qu'aucun moteur de bulletin ne lit) ; la 266 vérifie la
+      # chaîne de bout en bout — une absence d'un jour apparaît UNE fois dans la
+      # paie, la DSN, le coût projet et le plafond, et une absence annulée n'y est
+      # plus appliquée. 13 + 11 + 10 + 34 scénarios.
+      - name: 'W9 : le registre d''absence (263)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/263_absence_registry_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : les gardes en aval et le contrôle quotidien (264)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/264_absence_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : une seule retenue de paie par jour d''absence (265)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/265_absence_payroll_single_path_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : la chaîne de l''absence, 34 assertions transverses (266)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/266_absence_transverse_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
       # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER

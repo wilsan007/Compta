@@ -377,6 +377,7 @@ export const navModules: NavModule[] = [
       { labelKey: 'items.interviewCampaigns', path: '/hr/interview-campaigns' },
       { labelKey: 'items.leaveBalances', path: '/hr/leave-balances' },
       { labelKey: 'items.leavePlanning', path: '/hr/leave-planning' },
+      { labelKey: 'items.absenceAnomalies', path: '/hr/absence-anomalies' },
       { labelKey: 'items.leaveRules', path: '/hr/leave-rules' },
       { labelKey: 'items.socialDeclarations', path: '/hr/social-declarations' },
       { labelKey: 'items.bdes', path: '/hr/bdes' },

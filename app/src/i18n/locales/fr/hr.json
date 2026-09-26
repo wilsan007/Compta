@@ -228,7 +228,12 @@
       "maternity": "Maternité",
       "paternity": "Paternité",
       "unpaid": "Congé sans solde",
-      "other": "Autre"
+      "other": "Autre",
+      "rtt": "RTT",
+      "recovery": "Récupération",
+      "parental": "Congé parental",
+      "personal": "Absence personnelle",
+      "mission": "Mission"
     },
     "noRequests": "Aucune demande de congé",
     "noRequestsDescription": "Aucune demande de congé enregistrée",
@@ -618,7 +623,11 @@
     "noRulesDescription": "Aucune règle de congé configurée",
     "types": {
       "recovery": "Récupération",
-      "special": "Congé spécial"
+      "special": "Congé spécial",
+      "rtt": "RTT",
+      "parental": "Congé parental",
+      "personal": "Absence personnelle",
+      "mission": "Mission"
     },
     "newHoliday": "Nouveau jour férié",
     "holidayName": "Nom",
@@ -1152,5 +1161,51 @@
       "other": "Autre"
     },
     "status": "Statut"
+  },
+  "absenceAnomalies": {
+    "title": "Anomalies d'absence",
+    "subtitle": "Les journées qui portent une absence ET un pointage, des heures supplémentaires, du temps projet ou une ligne de frais. Le contrôle nomme, il ne répare pas.",
+    "empty": "Aucune anomalie sur la période",
+    "emptyDesc": "Le registre d'absence et les saisies concordent.",
+    "employee": "Salarié",
+    "day": "Jour",
+    "kind": "Absence",
+    "conflict": "Incohérence",
+    "detail": "Détail",
+    "from": "Du",
+    "to": "Au",
+    "refresh": "Recalculer",
+    "conflictTypes": {
+      "pointage": "Pointage",
+      "heures_supplementaires": "Heures supplémentaires",
+      "temps_projet": "Temps projet",
+      "temps_facturable": "Temps facturable",
+      "frais": "Frais"
+    },
+    "kinds": {
+      "annual": "Congé annuel",
+      "rtt": "RTT",
+      "sick": "Maladie",
+      "work_accident": "Accident du travail",
+      "maternity": "Maternité / paternité",
+      "unpaid": "Congé sans solde",
+      "personal": "Absence personnelle",
+      "mission": "Mission",
+      "stoppage": "Arrêt de travail",
+      "unjustified": "Absence non justifiée"
+    },
+    "tabs": {
+      "anomalies": "Anomalies d'absence",
+      "arbitrages": "Journées arbitrées"
+    },
+    "arbitrages": {
+      "tab": "Journées arbitrées",
+      "empty": "Aucun arbitrage sur la période",
+      "emptyDesc": "Aucune journée n’a été déclarée par deux sources.",
+      "kept": "Type retenu",
+      "dropped": "Type écarté",
+      "origins": "Provenances",
+      "detectedAt": "Arbitré le"
+    }
   }
 }

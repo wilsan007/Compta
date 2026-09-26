@@ -54,7 +54,10 @@ export function MobileLeaveRequest() {
       <div>
         <label className="text-sm font-medium mb-2 block">{t('leaves.leaveType')}</label>
         <div className="grid grid-cols-2 gap-2">
-          {['annual', 'rtt', 'recovery', 'sick', 'unpaid', 'special'].map(type => (
+          {/* W9 : la liste est celle que la BASE accepte (263). « special »
+              figurait ici et était refusé par `leave_requests_leave_type_check`
+              — l'écran offrait un type que le serveur rejetait. */}
+          {['annual', 'rtt', 'recovery', 'sick', 'maternity', 'unpaid', 'personal', 'mission'].map(type => (
             <button
               key={type}
               type="button"

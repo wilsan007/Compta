@@ -149,6 +149,7 @@ const ApiDocsPage = lazy(() => import('@/pages/settings/ApiDocsPage').then(m => 
 const Nf525AuditPage = lazy(() => import('@/pages/settings/Nf525AuditPage').then(m => ({ default: m.Nf525AuditPage })))
 const LeaveBalancesPage = lazy(() => import('@/pages/hr/LeaveBalancesPage').then(m => ({ default: m.LeaveBalancesPage })))
 const LeavePlanningPage = lazy(() => import('@/pages/hr/LeavePlanningPage').then(m => ({ default: m.LeavePlanningPage })))
+const AbsenceAnomaliesPage = lazy(() => import('@/pages/hr/AbsenceAnomaliesPage').then(m => ({ default: m.AbsenceAnomaliesPage })))
 const ManagerLeaveApprovalsPage = lazy(() => import('@/pages/employee/ManagerLeaveApprovalsPage').then(m => ({ default: m.ManagerLeaveApprovalsPage })))
 const PayrollPreparationPage = lazy(() => import('@/pages/payroll/PayrollPreparationPage').then(m => ({ default: m.PayrollPreparationPage })))
 const MealVouchersPage = lazy(() => import('@/pages/payroll/MealVouchersPage').then(m => ({ default: m.MealVouchersPage })))
@@ -508,6 +509,7 @@ function App() {
           <Route path="/hr/leave-rules" element={<LeaveRulesPage />} />
           <Route path="/hr/leave-balances" element={<LeaveBalancesPage />} />
           <Route path="/hr/leave-planning" element={<LeavePlanningPage />} />
+          <Route path="/hr/absence-anomalies" element={<AbsenceAnomaliesPage />} />
           <Route path="/hr/leave-approvals" element={<ManagerLeaveApprovalsPage />} />
           <Route path="/hr/payroll-preparation" element={<PayrollPreparationPage />} />
           <Route path="/hr/meal-vouchers" element={<MealVouchersPage />} />

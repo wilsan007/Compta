@@ -129,12 +129,18 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
   const [countMethod, setCountMethod] = useState(rule?.count_method || 'working_days')
   const [color, setColor] = useState(rule?.color || DEFAULT_LEAVE_COLOR)
   const [active, setActive] = useState(rule?.active ?? true)
+  // W9 : deux réglages qui existaient en base et que l'écran n'exposait pas.
+  // `affects_pay` EST lu par le registre d'absence (263) : à true, un jour de ce
+  // type devient non payé (retenue). Le laisser invisible revenait à afficher
+  // « n'affecte pas la paie » pour la règle qui la déduit.
+  const [affectsPay, setAffectsPay] = useState(rule?.affects_pay ?? false)
+  const [requiresJustification, setRequiresJustification] = useState(rule?.requires_justification ?? false)
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true)
     try {
-      const data = { leave_type: leaveType, label, accrual_rate: Number(accrualRate), max_carry_over: Number(maxCarryOver), min_notice_days: Number(minNotice), max_consecutive_days: Number(maxConsecutive), count_method: countMethod as any, color, active }
+      const data = { leave_type: leaveType, label, accrual_rate: Number(accrualRate), max_carry_over: Number(maxCarryOver), min_notice_days: Number(minNotice), max_consecutive_days: Number(maxConsecutive), count_method: countMethod as any, color, active, affects_pay: affectsPay, requires_justification: requiresJustification }
       if (rule) await updateLeaveRule(rule.id, data)
       else await createLeaveRule(data as any)
       onSaved()
@@ -151,10 +157,13 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select label={t('leaveRules.leaveType')} value={leaveType} onChange={(e) => setLeaveType(e.target.value)} options={[
-            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'rtt', label: 'RTT' }, { value: 'recovery', label: t('leaveRules.types.recovery') },
+            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'rtt', label: t('leaveRequests.types.rtt') },
+            { value: 'recovery', label: t('leaveRequests.types.recovery') },
             { value: 'sick', label: t('leaveRequests.types.sick') }, { value: 'unpaid', label: t('leaveRequests.types.unpaid') },
             { value: 'maternity', label: t('leaveRequests.types.maternity') }, { value: 'paternity', label: t('leaveRequests.types.paternity') },
-            { value: 'special', label: t('leaveRules.types.special') },
+            { value: 'parental', label: t('leaveRequests.types.parental') },
+            { value: 'personal', label: t('leaveRequests.types.personal') }, { value: 'mission', label: t('leaveRequests.types.mission') },
+            { value: 'other', label: t('leaveRequests.types.other') },
           ]} />
           <Input label={t('leaveRules.label')} required value={label} onChange={(e) => setLabel(e.target.value)} />
           <div className="grid grid-cols-2 gap-4">
@@ -176,6 +185,14 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
               {t('leaveRules.active')}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={affectsPay} onChange={(e) => setAffectsPay(e.target.checked)} />
+              {t('leaveRules.affectsPay')}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={requiresJustification} onChange={(e) => setRequiresJustification(e.target.checked)} />
+              {t('leaveRules.requiresJustification')}
             </label>
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">

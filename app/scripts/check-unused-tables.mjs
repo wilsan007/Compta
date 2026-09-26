@@ -93,6 +93,15 @@ const SERVER_ONLY_TABLES = {
   chart_pack_switch_log: '201 — journal technique des bascules de plan',
   payroll_account_mapping: '191 — comptes de la paie par rubrique, lus par payroll_post_run ; remplacés par les rôles de comptes (LOC1-34), pas d\'écran prévu',
   platform_admins: '201 — administrateurs plateforme, vérifiés par les RPC d\'import de plan',
+  // ── W9 (263) : le registre d'absence ───────────────────────
+  // Il n'est JAMAIS lu en direct par un écran, et c'est délibéré : la règle de
+  // priorité entre les quatre sources (accident > maladie > maternité > arrêt >
+  // sans solde > congé payé > mission) et les drapeaux calculés (blocks_work,
+  // allows_expenses, paid, pay_rule_code) vivent dans la BASE. Un écran qui
+  // lirait la table et recomposerait la règle divergerait au premier changement.
+  // Les écrans le lisent par `absence_calendar()` et `absence_summary()`.
+  employee_absence_days: '263 (W9) — registre d\'absence : lu par absence_calendar() / absence_summary(), jamais en direct (la priorité et les drapeaux sont calculés par la base)',
+
   // ── Socle des chaînages (252, lot L0) ──────────────────────
   // Ces six tables sont écrites par les fonctions du socle (link_documents,
   // emit_domain_event, chain_trace) et lues par la vue chaîne et les tableaux

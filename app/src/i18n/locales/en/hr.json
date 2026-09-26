@@ -215,7 +215,6 @@
       "paid": "Paid",
       "cancelled": "Cancelled"
     },
-    "pay": "Pay payroll",
     "payTitle": "Payroll payment {{number}}",
     "paySubtitle": "Net salaries, social bodies, withheld tax and advances: one treasury entry per kind.",
     "paid": "Payroll paid: {{count}} treasury entry(ies)",
@@ -310,7 +309,12 @@
       "maternity": "Maternity leave",
       "paternity": "Paternity leave",
       "unpaid": "Unpaid leave",
-      "other": "Other"
+      "other": "Other",
+      "rtt": "RTT",
+      "recovery": "Time off in lieu",
+      "parental": "Parental leave",
+      "personal": "Personal absence",
+      "mission": "Business trip"
     },
     "noRequests": "No leave requests",
     "noRequestsDescription": "No leave request recorded",
@@ -618,8 +622,12 @@
     "noRules": "No Rules",
     "noRulesDescription": "No leave rules configured",
     "types": {
-      "recovery": "Recovery",
-      "special": "Special Leave"
+      "recovery": "Time off in lieu",
+      "special": "Special Leave",
+      "rtt": "RTT",
+      "parental": "Parental leave",
+      "personal": "Personal absence",
+      "mission": "Business trip"
     },
     "newHoliday": "New Holiday",
     "holidayName": "Name",
@@ -1153,5 +1161,51 @@
       "other": "Other"
     },
     "status": "Status"
+  },
+  "absenceAnomalies": {
+    "title": "Absence anomalies",
+    "subtitle": "Days that carry an absence AND a time entry, overtime, project time or an expense line. The check names them; it does not fix them.",
+    "empty": "No anomaly in this period",
+    "emptyDesc": "The absence registry and the entries agree.",
+    "employee": "Employee",
+    "day": "Day",
+    "kind": "Absence",
+    "conflict": "Conflict",
+    "detail": "Detail",
+    "from": "From",
+    "to": "To",
+    "refresh": "Refresh",
+    "conflictTypes": {
+      "pointage": "Time entry",
+      "heures_supplementaires": "Overtime",
+      "temps_projet": "Project time",
+      "temps_facturable": "Billable time",
+      "frais": "Expense"
+    },
+    "kinds": {
+      "annual": "Annual leave",
+      "rtt": "RTT",
+      "sick": "Sick leave",
+      "work_accident": "Work accident",
+      "maternity": "Maternity / paternity",
+      "unpaid": "Unpaid leave",
+      "personal": "Personal absence",
+      "mission": "Business trip",
+      "stoppage": "Work stoppage",
+      "unjustified": "Unjustified absence"
+    },
+    "tabs": {
+      "anomalies": "Absence anomalies",
+      "arbitrages": "Arbitrated days"
+    },
+    "arbitrages": {
+      "tab": "Arbitrated days",
+      "empty": "No arbitration in this period",
+      "emptyDesc": "No day was declared by two sources.",
+      "kept": "Kept type",
+      "dropped": "Dropped type",
+      "origins": "Origins",
+      "detectedAt": "Arbitrated on"
+    }
   }
 }

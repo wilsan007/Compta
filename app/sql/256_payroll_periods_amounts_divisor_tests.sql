@@ -133,7 +133,15 @@ BEGIN
            v_apres_1, v_refus, left(COALESCE(v_msg, ''), 70), v_apres_2, v_manuels));
 END $$;
 
--- ── T04 — relancer un import ne double plus (RH-10) ─────────────────────────
+-- ── T04 — relancer l'import ne double plus (RH-10), mesuré PAR JOURNÉE ──────
+-- DOCTRINE CHANGÉE PAR LA 265 (TRV-11), et le test est réécrit — pas vidé.
+-- La 256 indexait l'élément de retenue sur le DOCUMENT source (`source_id` =
+-- l'identifiant du congé) : trois jours de congé donnaient UNE ligne de 3 jours.
+-- La 265 ramène la paie d'absence au REGISTRE : une ligne PAR JOURNÉE,
+-- `source = 'absence_day'` et `source_id = day_uid` (identifiant stable du jour,
+-- recalculé à l'identique). C'est ce qui permet d'annuler un seul jour, et ce
+-- qui empêche la double retenue quand deux sources déclarent le même jour.
+-- Ce qui est mesuré reste la même propriété : **rejouer ne double pas**.
 DO $$
 DECLARE
   t uuid; e uuid; lr uuid; v_n int; v_avant int;
@@ -148,16 +156,19 @@ BEGIN
   VALUES (t, e, 'unpaid', '2026-04-06', '2026-04-08', 3, 'pending') RETURNING id INTO lr;
 
   UPDATE leave_requests SET status = 'approved' WHERE id = lr;        -- 1er passage
-  SELECT count(*) INTO v_avant FROM payroll_variable_elements WHERE tenant_id = t AND source_id = lr;
+  SELECT count(*) INTO v_avant FROM payroll_variable_elements
+   WHERE tenant_id = t AND source = 'absence_day';
 
   -- Le congé est refusé puis approuvé de nouveau : l'import est rejoué.
   UPDATE leave_requests SET status = 'rejected' WHERE id = lr;
   UPDATE leave_requests SET status = 'approved' WHERE id = lr;
-  SELECT count(*) INTO v_n FROM payroll_variable_elements WHERE tenant_id = t AND source_id = lr;
+  SELECT count(*) INTO v_n FROM payroll_variable_elements
+   WHERE tenant_id = t AND source = 'absence_day';
 
-  PERFORM _rec('T04', 'approuver, refuser puis réapprouver un congé laisse UNE retenue, pas deux',
-    v_avant = 1 AND v_n = 1,
-    format('éléments après le 1er passage=%s, après ré-approbation=%s (1 attendu)', v_avant, v_n));
+  PERFORM _rec('T04', 'approuver, refuser puis réapprouver un congé de 3 jours laisse 3 retenues (une par jour), pas 6',
+    v_avant = 3 AND v_n = 3,
+    format('éléments après le 1er passage=%s, après ré-approbation=%s (3 attendus : une par journée)',
+           v_avant, v_n));
 END $$;
 
 -- ── T05 — la note de frais entre en paie pour son total (RH-07) ─────────────

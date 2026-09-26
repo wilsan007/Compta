@@ -153,6 +153,47 @@
   `domain_events_*` / `chain_traces_*` sont à traiter (GRANT + RLS) avant son
   commit, sinon la CI tombe sur l'isolation.
 
+### Vagues W4 et W9 — la paie, puis le chaînage de l'absence (2026-09-26) ✅
+- **W4 / RH-05 → RH-10 (256)** : quatre conventions mensuelles contradictoires
+  (retard `weekly_hours × 4,33`, congé sans solde `/ 30`, heures sup `/ 151,67`,
+  front `/ 21`), un import qui échouait cinq mois sur douze (`-31` refusé par
+  PostgreSQL, 22008), une note de frais entrée en paie pour 0 (`Number(exp.amount)`,
+  colonne inexistante), sans TVA ni écriture, un congé à cheval sur deux mois omis,
+  et des titres-restaurant doublés au réimport. **Un** diviseur par société
+  (`payroll_legal_parameters`, défaut calculé `35 × 52 / 12` et `5 × 52 / 12`),
+  index unique `(société, salarié, période, type, source, source_id)`, notes de
+  frais au grand livre (D charge HT + D TVA / C 421). 8/8 scénarios, 17 tests
+  Vitest. [Preuve](doc/audit/VAGUE-W4-2026-09-26.md)
+- **W9 / TRV-01 → TRV-16 (263, 264, 265, 266)** : les quatre sources d'absence
+  (congé approuvé, arrêt de maladie, arrêt de travail, pointage d'absence —
+  `timesheets.absence_type` existait depuis la 104 et **n'était écrite par
+  personne**) ne se parlaient pas ; rien ne lisait l'absence en aval ; **deux**
+  chemins de retenue existaient pour la même journée, dont un **inerte** (il
+  écrivait `unpaid_absence_deduction`, un type qu'aucun moteur de bulletin ne
+  lit) ; `leave_rules.affects_pay` n'était lu par personne. La **263** pose le
+  registre `employee_absence_days` (un jour, un salarié, une vérité), le journal
+  des conflits, le recalcul idempotent et l'API de lecture ; la **264** rend le
+  registre opposable (pointage, heures supplémentaires, temps projet, frais,
+  tâches) et pose le contrôle quotidien ; la **265** ramène la paie à **un seul**
+  chemin (une retenue par journée, identifiant `day_uid` déterministe,
+  contre-passation d'un élément déjà intégré, régularisation d'une période close,
+  et rattachement au classeur des éléments posés avant lui) ; la **266** traverse
+  cinq modules en **34 assertions** (une absence d'un jour apparaît **une fois**
+  dans la paie, la DSN, le coût projet et le plafond). Base neuve **231
+  migrations, 0 erreur** ; **63/63 suites**, 8/8 contrôles ; front `tsc` 0,
+  `oxlint` 0, i18n fr/en/ar, **Vitest 1 474**. Le **T04 de la 256** est réécrit
+  dans le même commit (doctrine changée : la retenue est indexée sur la journée,
+  pas sur le document source). [Preuve](doc/audit/VAGUE-W9-2026-09-26.md)
+- **Cohérence UI ↔ base, sur cette vague** : quatre écritures de
+  `leave_balances` retirées du front (elles doublaient le déclencheur), le
+  cinquième diviseur `/ 21` de la provision de congés ramené sur
+  `payroll_divisors()`, une seule liste de types de congé pour les trois écrans
+  (`special` était offert et refusé par la base), `affects_pay` et
+  `requires_justification` enfin exposés dans l'écran des règles, et un écran
+  **`/hr/absence-anomalies`** (TRV-16) qui lit le contrôle sans rien réparer tout
+  seul.
+
+### Bugs corrigés
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string
 - `create-user/index.ts:450` — `otpError` non défini → `emailSent`

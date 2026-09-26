@@ -139,8 +139,12 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
             </select>
           </div>
           <Select label={t('leaveRequests.type')} value={leaveType} onChange={(e) => setLeaveType(e.target.value)} options={[
-            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'sick', label: t('leaveRequests.types.sick') }, { value: 'maternity', label: t('leaveRequests.types.maternity') },
-            { value: 'paternity', label: t('leaveRequests.types.paternity') }, { value: 'unpaid', label: t('leaveRequests.types.unpaid') }, { value: 'other', label: t('leaveRequests.types.other') },
+            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'rtt', label: t('leaveRequests.types.rtt') },
+            { value: 'recovery', label: t('leaveRequests.types.recovery') }, { value: 'sick', label: t('leaveRequests.types.sick') },
+            { value: 'maternity', label: t('leaveRequests.types.maternity') },
+            { value: 'paternity', label: t('leaveRequests.types.paternity') }, { value: 'parental', label: t('leaveRequests.types.parental') },
+            { value: 'unpaid', label: t('leaveRequests.types.unpaid') }, { value: 'personal', label: t('leaveRequests.types.personal') },
+            { value: 'mission', label: t('leaveRequests.types.mission') }, { value: 'other', label: t('leaveRequests.types.other') },
           ]} />
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('leaveRequests.startDate')} type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
