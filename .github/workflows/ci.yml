@@ -791,6 +791,36 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # S-12, côté vente — la 230 refusait la réexpédition d'un BL annulé et
+      # laissait l'annulation sans effet : annuler un BL expédié ou livré ne
+      # remettait ni le stock, ni la couche, ni l'écriture. La 253 écrit la sortie
+      # miroir (au coût que la comptabilité a sorti) et son écriture inverse au
+      # journal ST, et refuse la double contrepassation. T02, T03, T05 rouges avant.
+      - name: 'AUD : annulation d''un bon de livraison expédié (253)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/253_delivery_cancel_reversal_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Valorisation — la comptabilité sortait au CUMP (50 × 12 = 600) pendant que
+      # les couches consommaient en FIFO (50 × 10 = 500) : 100 € d'écart entre
+      # deux tables décrivant le même stock. La 254 aligne les couches sur le CUMP
+      # que la comptabilité applique (la quantité consommée reste FIFO). Le TEST 3
+      # de 173 est réécrit dans le même commit — doctrine changée, pas test vidé.
+      - name: 'AUD : une seule vérité de valorisation, CUMP et couches (254)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/254_stock_valuation_single_truth_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # POS-01, la suite — la 250 refuse d'annuler un ticket clôturé et renvoie
+      # vers « un avoir » qui n'existait pas. La 255 le crée : un avoir commercial
+      # (le schéma interdit les montants négatifs sur un ticket de caisse), validé
+      # quand il peut l'être, le stock rendu au CUMP, la vente marquée « refunded »
+      # avec ses montants et son empreinte intacts, et l'événement NF-525.
+      - name: 'POS : l''avoir d''un ticket de caisse clôturé (255)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/255_pos_refund_ticket_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
       # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER

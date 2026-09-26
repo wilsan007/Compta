@@ -103,22 +103,28 @@ BEGIN
   RAISE NOTICE '✅ TEST 2 : compte 310000 = 1 800 = valorisation du stock, contrepartie 603000 équilibrée';
 
   -- ============================================================
-  -- TEST 3 : couches de valorisation consommées dans l'ordre FIFO
-  --   sortie de 50 sur 100@10 + 100@14 → reste 50@10 et 100@14 = 1 900
+  -- TEST 3 : les couches portent le CUMP — une seule vérité (254)
+  --   sortie de 50 sur 100@10 + 100@14 (CUMP 12) → 150 unités valant 150 × 12 = 1 800.
+  --   AVANT la 254, les couches consommaient en FIFO (reste 50 @ 10 + 100 @ 14
+  --   = 1 900) alors que la comptabilité sortait 50 × 12 = 600 : 100 € d'écart
+  --   entre deux tables décrivant le même stock. La doctrine retenue est celle
+  --   que la comptabilité applique déjà — le CUMP ; la quantité consommée, elle,
+  --   reste FIFO (traçabilité des lots).
   -- ============================================================
   SELECT COALESCE(SUM(remaining_qty * unit_cost), 0) INTO v_layers
   FROM stock_valuation_layers WHERE tenant_id = v_tenant_id;
 
-  IF v_layers <> 1900 THEN
-    RAISE EXCEPTION 'TEST 3 : couches à % au lieu de 1 900 (FIFO : reste 50 @ 10 et 100 @ 14)', v_layers;
+  IF round(v_layers, 2) <> 1800 THEN
+    RAISE EXCEPTION 'TEST 3 : couches à % au lieu de 1 800 (150 unités × CUMP 12)', v_layers;
   END IF;
 
-  SELECT remaining_qty INTO v_qty
-  FROM stock_valuation_layers WHERE tenant_id = v_tenant_id AND unit_cost = 10;
-  IF v_qty <> 50 THEN
-    RAISE EXCEPTION 'TEST 3 : la couche la plus ancienne (10) garde % au lieu de 50 — consommation non FIFO', v_qty;
+  SELECT COALESCE(SUM(remaining_qty), 0), count(DISTINCT unit_cost) INTO v_qty, v_n
+  FROM stock_valuation_layers WHERE tenant_id = v_tenant_id AND remaining_qty > 0;
+  IF v_qty <> 150 OR v_n <> 1 THEN
+    RAISE EXCEPTION 'TEST 3 : % unités vivantes (% attendues) et % valeur(s) distincte(s) dans les couches (1 attendue : le CUMP)',
+      v_qty, 150, v_n;
   END IF;
-  RAISE NOTICE '✅ TEST 3 : couches FIFO — la plus ancienne consommée en premier, reste 1 900';
+  RAISE NOTICE '✅ TEST 3 : couches au CUMP — 150 unités à 12 = 1 800, une seule valeur';
 
   -- ============================================================
   -- TEST 4 : parcours bon de livraison → sortie de stock → écriture

@@ -122,7 +122,7 @@ BEGIN
   SELECT * INTO s FROM (SELECT * FROM _stock251(a.t, a.p, a.wh)) x;
   SELECT * INTO e FROM (SELECT * FROM _ecr251(a.t, 'BR-T01')) x;
   PERFORM _rec('T01', 'la réception entre en stock, au dépôt et au journal ST (241 non régressée)',
-    s.article = 110 AND s.depot = 110 AND s.couches = 110 AND s.valeur = 570
+    s.article = 110 AND s.depot = 110 AND s.couches = 110 AND round(s.valeur, 2) = 570
       AND e.nb = 1 AND e.d31 = 70 AND e.c31 = 0 AND e.statut = 'posted',
     format('article=%s dépôt=%s couches=%s valeur=%s (110/110/110/570 attendus) | BR-T01 : %s écriture(s) %s, D31=%s, C31=%s',
            s.article, s.depot, s.couches, s.valeur, e.nb, e.statut, e.d31, e.c31));

@@ -121,6 +121,38 @@
   (`5e37af8` pour les fichiers suivis, `e876c08` pour les non suivis), mais la
   leçon est celle du plan (`AUD-X02`) : **le travail non commité n'existe pas**.
 
+### Dettes de W2/W3 soldées, et le plan par phases (2026-09-24) ✅
+- **`253` — annulation d'un BL expédié** (le pendant de la 251 côté vente) : sortie
+  miroir au coût que la comptabilité a sorti, écriture inverse au journal ST,
+  l'écriture d'origine intacte, refus de la double contrepassation. Le coût de la
+  sortie d'origine n'est pas toujours posé (la comptabilité dérive le CUMP) :
+  recopier `0` ne créait ni couche ni écriture — mesuré, puis corrigé dans la
+  même migration avant son commit. 5 scénarios, **T02/T03/T05 rouges avant**.
+- **`254` — une seule vérité de valorisation** : la comptabilité sort au **CUMP**
+  pendant que les couches consommaient en **FIFO** (100 € d'écart mesuré sur un
+  cas de 100@10 + 100@14). Les couches portent désormais le CUMP, la quantité
+  consommée reste FIFO. Le TEST 3 de `173` est **réécrit** dans le même commit —
+  doctrine changée, test non vidé. 5 scénarios, 3 rouges avant.
+- **`255` — l'avoir d'un ticket de caisse clôturé** : la 250 refusait d'annuler
+  après clôture et renvoyait vers « un avoir » qui n'existait pas. Le schéma
+  interdit les montants négatifs sur `pos_tickets` (`*_nonneg`) : l'avoir est une
+  **pièce commerciale** (`credit_notes`), créée puis validée quand elle peut
+  l'être, avec les lignes de la vente ; le stock revient au CUMP, la vente passe à
+  `refunded` (montants et empreinte intacts) et l'événement NF-525 est écrit.
+  5 scénarios (dont une vente sans client : refusée — un avoir crédite quelqu'un).
+- **Formulaire de contrôle qualité** : `quantity_checked` / `quantity_rejected` et
+  le statut « partiel » sont exposés (fr / en / ar).
+- **Le reste à faire et le plan par phases** :
+  `doc/audit/RESTE-A-FAIRE-ET-PLAN-PHASES-2026-09-24.md` — **≈ 169 j restants**
+  (34 défauts du plan correctif + 25 lots de chaînages + la couverture d'audit),
+  en **10 phases**, avec les charges, les dépendances, les critères de sortie et
+  les décisions qui bloquent.
+- ⚠️ **Mesuré le 24/09 sur base neuve** : le socle des chaînages
+  (`252_chain_socle.sql`, session parallèle) fait **échouer la suite 105**
+  (`permission denied for table chain_traces_2026_09`) — les partitions
+  `domain_events_*` / `chain_traces_*` sont à traiter (GRANT + RLS) avant son
+  commit, sinon la CI tombe sur l'isolation.
+
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string
 - `create-user/index.ts:450` — `otpError` non défini → `emailSent`

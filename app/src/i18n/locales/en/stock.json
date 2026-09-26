@@ -294,9 +294,13 @@
     "created": "Check created successfully",
     "pass": "Pass",
     "fail": "Fail",
+    "checkedQty": "Quantity checked",
+    "rejectedQty": "Quantity rejected",
+    "rejectedQtyShort": "Rejected",
     "statuses": {
       "pending": "Pending",
       "passed": "Passed",
+      "partial": "Partial",
       "failed": "Failed"
     },
     "deliveryNote": "Delivery note",

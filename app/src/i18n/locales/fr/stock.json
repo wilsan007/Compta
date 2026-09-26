@@ -294,9 +294,13 @@
     "created": "Contrôle créé avec succès",
     "pass": "Conforme",
     "fail": "Non conforme",
+    "checkedQty": "Quantité contrôlée",
+    "rejectedQty": "Quantité rebutée",
+    "rejectedQtyShort": "Rebuts",
     "statuses": {
       "pending": "En attente",
       "passed": "Conforme",
+      "partial": "Partiel",
       "failed": "Non conforme"
     },
     "deliveryNote": "Bon de livraison",

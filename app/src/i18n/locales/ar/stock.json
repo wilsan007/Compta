@@ -294,9 +294,13 @@
     "created": "تم إنشاء الفحص بنجاح",
     "pass": "مطابق",
     "fail": "غير مطابق",
+    "checkedQty": "الكمية المفحوصة",
+    "rejectedQty": "الكمية المرفوضة",
+    "rejectedQtyShort": "مرفوض",
     "statuses": {
       "pending": "في الانتظار",
       "passed": "مطابق",
+      "partial": "جزئي",
       "failed": "غير مطابق"
     },
     "deliveryNote": "إذن التسليم",

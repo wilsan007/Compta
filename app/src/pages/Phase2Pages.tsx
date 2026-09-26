@@ -152,13 +152,33 @@ export function QualityCheckPage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ product_id: '', reference_type: 'goods_receipt', reference_id: '', status: 'pending', notes: '' })
+  const [form, setForm] = useState({ product_id: '', reference_type: 'goods_receipt', reference_id: '', status: 'pending', notes: '', quantity_checked: '', quantity_rejected: '' })
+  // 251 (S-13) : la quantité rebutée se saisit sur la ligne, au moment du
+  // verdict — c'est elle qui décide de ce qui sort du stock.
+  const [rejets, setRejets] = useState<Record<string, string>>({})
 
   const loadData = useCallback(async () => { setLoading(true); try { setItems(await getQualityChecks() || []) } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createQualityCheck(form as Parameters<typeof createQualityCheck>[0]); toast('success', tCommon('common.success'), t('quality.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleStatus(id: string, status: string) { try { await updateQualityCheck(id, { status: status as QualityCheck['status'], checked_at: new Date().toISOString() }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleCreate() {
+    const payload = {
+      ...form,
+      quantity_checked: form.quantity_checked === '' ? null : Number(form.quantity_checked),
+      quantity_rejected: form.quantity_rejected === '' ? null : Number(form.quantity_rejected),
+    }
+    try { await createQualityCheck(payload as Parameters<typeof createQualityCheck>[0]); toast('success', tCommon('common.success'), t('quality.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+  }
+  async function handleStatus(id: string, status: string) {
+    const rej = rejets[id]
+    try {
+      await updateQualityCheck(id, {
+        status: status as QualityCheck['status'],
+        checked_at: new Date().toISOString(),
+        ...(rej !== undefined && rej !== '' ? { quantity_rejected: Number(rej) } : {}),
+      })
+      await loadData()
+    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+  }
 
   return (
     <div>
@@ -178,12 +198,21 @@ export function QualityCheckPage() {
           </div>
           <Input placeholder={t('quality.referenceId', { defaultValue: 'ID de référence' })} value={form.reference_id} onChange={e => setForm({ ...form, reference_id: e.target.value })} />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input type="number" placeholder={t('quality.checkedQty')} value={form.quantity_checked} onChange={e => setForm({ ...form, quantity_checked: e.target.value })} />
+          <Input type="number" placeholder={t('quality.rejectedQty')} value={form.quantity_rejected} onChange={e => setForm({ ...form, quantity_rejected: e.target.value })} />
+        </div>
         <Input placeholder={t('quality.notes')} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
         <div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div>
       </Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('quality.empty')} /> : (
         <Table headers={[t('quality.product'), t('quality.status'), t('quality.date'), tCommon('table.actions')]}>
-          {items.map(q => (<TableRow key={q.id}><TableCell>{q.products?.name || '-'}</TableCell><TableCell><Badge>{t(`quality.statuses.${q.status}`)}</Badge></TableCell><TableCell>{q.checked_at ? new Date(q.checked_at).toLocaleDateString() : '-'}</TableCell><TableCell><div className="flex gap-1"><Button size="sm" variant="secondary" onClick={() => handleStatus(q.id, 'passed')}>{t('quality.pass')}</Button><Button size="sm" variant="secondary" onClick={() => handleStatus(q.id, 'failed')}>{t('quality.fail')}</Button></div></TableCell></TableRow>))}
+          {items.map(q => (<TableRow key={q.id}><TableCell>{q.products?.name || '-'}</TableCell><TableCell><Badge>{t(`quality.statuses.${q.status}`)}</Badge></TableCell><TableCell>{q.checked_at ? new Date(q.checked_at).toLocaleDateString() : '-'}</TableCell><TableCell><div className="flex gap-1 items-center">
+              <input type="number" min="0" step="1" inputMode="decimal" aria-label={t('quality.rejectedQty')} placeholder={t('quality.rejectedQtyShort')} value={rejets[q.id] ?? ''} onChange={e => setRejets({ ...rejets, [q.id]: e.target.value })} className="w-24 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-sm" />
+              <Button size="sm" variant="secondary" onClick={() => handleStatus(q.id, 'passed')}>{t('quality.pass')}</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleStatus(q.id, 'partial')}>{t('quality.statuses.partial')}</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleStatus(q.id, 'failed')}>{t('quality.fail')}</Button>
+            </div></TableCell></TableRow>))}
         </Table>
       )}
     </div>
