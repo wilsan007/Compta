@@ -821,6 +821,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W4 — la paie et les RH : quatre façons de compter un mois (RH-05 → RH-10).
+      # Mesuré avant : trois diviseurs contradictoires dans les déclencheurs
+      # (weekly_hours × 4,33 pour le retard, / 30 pour le congé sans solde, / 151,67
+      # pour les heures supplémentaires) ; la note de frais entrait en paie pour 0
+      # (`exp.amount`, colonne inexistante sur `expense_reports`) sans écriture ni
+      # TVA ; aucune contrainte ne liait un élément de paie à son document source.
+      # 256 pose UN diviseur par société (paramétré), la clé d'unicité
+      # (tenant, salarié, période, type, source, source_id) et l'écriture
+      # D charge HT + D TVA récupérable / C 421. 8 scénarios.
+      - name: 'W4 : paie — diviseur unique, un élément par source, notes de frais au grand livre (256)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/256_payroll_periods_amounts_divisor_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L0 — le socle des chaînages transverses (252) : les cinq tables du plan
       # (document_links, document_effects, domain_events, chain_regeneration_log,
       # chain_traces), le drapeau chain_settings, les six fonctions utilitaires et

@@ -29,6 +29,7 @@
 | **W3** | `251` — annulation d'une réception : contrepassation du stock et de l'écriture, refus de la réédition et de la double contrepassation ; contrôle qualité : la quantité **contrôlée** et **rebutée**, au dépôt de la réception | **4 rouges avant, 6/6 après** |
 | **Dettes déclarées (24/09, cette session)** | `253` annulation d'un **BL expédié** (stock, couche, écriture, refus de la double contrepassation) · `254` **une seule vérité de valorisation** (couches alignées sur le CUMP que la comptabilité applique) · `255` **l'avoir d'un ticket clôturé** (avoir commercial, stock rendu, vente marquée `refunded`, NF-525) · le **formulaire de contrôle qualité** expose `quantity_checked`/`quantity_rejected` (+ statut « partiel ») | 253 **5/5** · 254 **5/5** · 255 **5/5** ; `tsc`, `oxlint`, parité i18n fr/en/ar verts ; suites voisines (173, 219, 230, 241, 242, 251, 192) vertes |
 | **Chaînages — L0 (socle)** | `252_chain_socle.sql` : 5 tables + `chain_settings`, 6 fonctions utilitaires, gabarit de maillon, partitions mensuelles | **fait** — 16/16 scénarios verts, batterie entière **67/67** verte sur base neuve (227 migrations) ; les deux contrôles que le socle faisait tomber (105, 238) sont corrigés et mesurés ([preuve](VAGUE-L0-CHAÎNAGES-2026-09-24.md)). **Aucun maillon n'est encore branché** — c'est le lot L1 |
+| **W4 — Paie et RH** | `256_payroll_periods_amounts_divisor.sql` : un diviseur mensuel par société (paramétré), index unique `(société, salarié, période, type, source, source_id)`, notes de frais → paie **et** grand livre ; front : bornes calculées, intersection des congés, import idempotent | **fait** — 8/8 scénarios verts, batterie entière **68/68** verte sur base neuve (228 migrations), 17 tests Vitest nouveaux ([preuve](VAGUE-W4-2026-09-26.md)) |
 | **Exploitation** | Production alignée (29 migrations appliquées le 23/09), inscription réelle vérifiée, `plpgsql_check` 0 erreur sur la prod, 96/96 RPC des écrans présentes | `RESTE-A-FAIRE-2026-09-22.md` §P0-07/P0-09 |
 
 **Ce que cela veut dire en une phrase.** Le socle de la comptabilité, de la
@@ -45,7 +46,7 @@ et le **grand chantier des chaînages transverses** (25 lots).
 
 | Vague | Défauts ouverts | Charge | Contenu |
 |---|---:|---:|---|
-| **W4 — Paie et RH** | 6 | 4 j | RH-05 quatre conventions mensuelles contradictoires (4,33 / 30 / 21 / 151,67) → **un seul diviseur par société** · RH-06 l'import des éléments variables échoue **5 mois sur 12** (`${period}-31` : février, avril, juin, septembre, novembre) · RH-07 notes de frais intégrées en paie pour **0 €** (`exp.amount` au lieu de `total_amount`) · RH-08 ni TVA récupérable, ni écriture 625x / 421 · RH-09 un congé **à cheval sur deux mois** est omis · RH-10 titres restaurant dupliqués au réimport |
+| **W4 — Paie et RH** ✅ **faite (256, 26/09)** | 0 (était 6) | 4 j | RH-05 un seul diviseur mensuel par société (paramétré) · RH-06 bornes de période calculées · RH-07 notes de frais en paie pour leur `total_amount` · RH-08 TVA récupérable et écriture D 625x / 421 · RH-09 congé à cheval sur deux mois par intersection · RH-10 index unique par document source ([preuve](VAGUE-W4-2026-09-26.md)) |
 | **W5 — Un seul moteur par grandeur** | 8 (1 🔴) | 2 j | deux moteurs d'amortissement (`generate_depreciation_entry` concurrent de l'écran) ; reste des heures supplémentaires |
 | **W6 — Fonctions Edge et écrans placebos** | 9 (5 🔴) | 3,5 j | EF-01/02 le cron de relances échoue dès la première facture et la **relance part tous les jours** · EF-03/04 le bouton « Synchroniser » n'appelle **jamais** la fonction Edge, et celle-ci écrit une colonne inexistante en disant `success: true` · EF-05/06 la facture électronique n'est jamais enregistrée → **double envoi** · EF-07 signature jamais enregistrée · EF-08 webhooks (mauvais noms de colonnes) · TVA-01 l'EDI-TVA **n'envoie rien** — **plus** les deux baselines gelées par W0 : **20 écritures impossibles** et **29 erreurs non lues**, à ramener à zéro |
 | **W7 — Comptabilité avancée** | 15 (4 🔴) | 6 j | M01-01→03 le taux de change est saisi, protégé… et **jamais appliqué** · ANA-01→03 (balance analytique sur tout l'historique, section non propagée) · BUD-01→04 (réalisé non borné à l'exercice) · SAGE-01→03 (écritures importées en brouillon, soldes **écrasés**, import partiel non transactionnel) · FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
@@ -55,6 +56,10 @@ et le **grand chantier des chaînages transverses** (25 lots).
 
 **Chemin critique : W4 → W9** — la paie d'abord, c'est le module où l'audit a
 trouvé 4 défauts bloquants et le chaînage social tout entier en dépend.
+**W4 est faite (26/09, `256`)** : la 243 avait unifié les heures supplémentaires,
+la 256 unifie le diviseur mensuel, lie chaque élément de paie à son document
+source et fait entrer la note de frais au grand livre. **W9 peut s'appuyer
+dessus** — et l'absence approvée écrira ses éléments protégés par la contrainte.
 **Parallélisable sans risque** : W6 (tables disjointes). **À sérialiser** : W5,
 W6 et W8 touchent les mêmes écrans (un seul rédacteur par fichier) ; W3 et W7 se
 croisent sur `journal_lines`.
@@ -149,10 +154,11 @@ chantier des chaînages, qui **exige** les vagues ; la phase 10 est continue.
 | **Reste (vous)** | 👤-1 tourner la clé `sb_secret_…` ; 👤-2 les secrets E2E ; P0-08 (14 parcours à l'écran) ; 👤-4 expert-comptable ; 👤-5 les 14 documents djiboutiens ; 👤-6 les pilotes |
 | **Critère de sortie** | Chaque décision est tranchée dans le registre (`RESTE-A-FAIRE` §3.2), la clé est tournée, les secrets sont posés — sinon les phases suivantes héritent de trous d'exploitation |
 
-### Phase 2 — W4 : la paie et les RH (4 j) — *le chemin critique*
+### Phase 2 — W4 : la paie et les RH (4 j) — *le chemin critique* ✅ **faite le 26/09 (256)**
 
 | Élément | Détail |
 |---|---|
+| **État** | ✅ **Faite le 26/09/2026** — migration `256`, suite **8/8**, batterie **68/68** sur base neuve (228 migrations), 17 tests Vitest, câblage CI. [Preuve](VAGUE-W4-2026-09-26.md) |
 | **Défauts** | RH-05 (un seul diviseur mensuel par société), RH-06 (import des éléments variables qui échoue 5 mois sur 12), RH-07 (notes de frais à 0 €), RH-08 (TVA récupérable et écriture 625x/421), RH-09 (congé à cheval sur deux mois), RH-10 (titres restaurant dupliqués) |
 | **Livrables** | Une migration (bornes de période calculées, `total_amount`, filtre d'intersection, idempotence par contrainte d'unicité `(tenant, salarié, période, type, source, source_id)`, un jeu de paramètres par société pour le diviseur, notes de frais → grand livre) + une suite par défaut |
 | **Critère de sortie** | `243`, `247`, `181`, `212`, `224` non régressés ; **un seul élément de paie par document source** vérifié par la contrainte, pas par un `NOT EXISTS` recopié ; les 4 mois « impossibles » (février, avril, juin, septembre) passent en test |

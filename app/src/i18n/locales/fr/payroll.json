@@ -233,6 +233,7 @@
       "commission": "Commission",
       "absence": "Absence",
       "meal_voucher": "Titre restaurant",
+      "meal_vouchers": "Titres restaurant (paie)",
       "transport": "Transport",
       "other": "Autre",
       "advance_deduction": "Acompte sur salaire",

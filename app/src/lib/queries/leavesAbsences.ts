@@ -1,12 +1,22 @@
 import { supabase } from '@/lib/supabase'
 import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
+// W4 (RH-06, RH-09) : bornes de période calculées et intersection des congés.
+import { periodBounds, periodOf, periodOverlapFilter } from '@/lib/payrollPeriods'
 import type {
   LeaveBalance, PublicHoliday, LeaveRule, ApprovalWorkflow,
   LeaveProvision, StaffRequirement, Employee, LeaveRequest,
   MealVoucherConfig, PayrollVariableElement, SepaPaymentOrder,
   PaySlipClarified, PayrollComponent,
 } from '@/types'
+
+/**
+ * Clé d'unicité des éléments de paie : `uniq_payroll_element_source` (256).
+ * Un même document source ne produit qu'un élément — c'est aussi l'arbitre
+ * que PostgREST reçoit, pour que rejouer un import n'échoue pas et ne double
+ * rien (RH-10).
+ */
+const PAYROLL_ELEMENT_KEYS = 'tenant_id,employee_id,period,element_type,source,source_id'
 
 // ============ Leave Balances ============
 export async function getLeaveBalances(employeeId?: string, year?: number): Promise<LeaveBalance[]> {
@@ -453,12 +463,16 @@ export async function checkMinStaffRequired(department: string, startDate: strin
 
 export async function exportLeaveDataToPayroll(period: string): Promise<any[]> {
   const tid = await getTenantId()
+  const bounds = periodBounds(period)
   // LOT7-04 : deux clés étrangères relient `leave_requests` à `employees`
   // (`employee_id` et `approved_by`) : sans nommer la contrainte, PostgREST répond
   // 300/PGRST201 et l'export des absences vers la paie échouait.
   let q = supabase.from('leave_requests').select('*, employees!leave_requests_employee_id_fkey(name, department)')
     .eq('status', 'approved')
-    .gte('start_date', `${period}-01`).lte('end_date', `${period}-31`)
+    // W4 (RH-09) : INTERSECTION de périodes, et non « contenu dans la période ».
+    // Un congé du 28/04 au 03/05 est donc compté dans les deux bulletins — il
+    // n'est plus omis des deux.
+    .or(periodOverlapFilter(bounds))
     .order('id')
   if (tid) q = q.eq('tenant_id', tid)
   // LOT7-03 : alimentation de la paie. Une absence oubliée = un bulletin faux.
@@ -531,18 +545,27 @@ export async function generateMealVoucherElements(payRunId: string, month: numbe
   const calculations = await calculateMealVouchers(month, year)
   const period = `${year}-${String(month).padStart(2, '0')}`
   for (const calc of calculations) {
-    await supabase.from('payroll_variable_elements').insert(ti({
+    // W4 (RH-10) : la source est LE LOT DE PAIE et l'insertion est un upsert qui
+    // ignore le doublon — relancer l'import ne double plus l'élément (la
+    // contrainte `uniq_payroll_element_source` le garantit aussi en base).
+    // Et le type est `meal_vouchers` (pluriel) : c'est celui que lit le moteur
+    // de bulletins (`calculate_payslip`). En `meal_voucher`, la ligne existait
+    // mais n'entrait dans aucun net.
+    const { error: writeError } = await supabase.from('payroll_variable_elements').upsert(ti({
       employee_id: calc.employee_id,
       pay_run_id: payRunId,
       period,
-      element_type: 'meal_voucher',
+      element_type: 'meal_vouchers',
       description: `Titres restaurant ${period}`,
       quantity: calc.nb_vouchers,
       unit_price: calc.voucher_value,
       amount: calc.employee_amount,
-      source: 'import',
+      source: 'meal_voucher',
+      source_id: payRunId,
       integrated: false,
-    }, 'payroll_variable_elements', tid))
+    }, 'payroll_variable_elements', tid), { onConflict: PAYROLL_ELEMENT_KEYS, ignoreDuplicates: true })
+    // W0 : une écriture qui échoue sans le dire est pire qu'une écriture absente.
+    if (writeError) throw writeError
   }
 }
 
@@ -582,25 +605,34 @@ export async function deleteVariableElement(id: string): Promise<void> {
 export async function importTimesheetElements(payRunId: string, month: number, year: number): Promise<void> {
   const tid = await getTenantId()
   const period = `${year}-${String(month).padStart(2, '0')}`
+  // W4 (RH-06) : le dernier jour est CALCULÉ. « 2026-04-31 » n'existe pas et
+  // PostgreSQL refuse la requête (22008) — l'import échouait cinq mois sur douze.
+  const bounds = periodBounds(period)
   let q = supabase.from('timesheets').select('*, employees(name)').eq('status', 'approved')
-    .gte('date', `${period}-01`).lte('date', `${period}-31`)
+    .gte('date', bounds.first).lte('date', bounds.last)
   if (tid) q = q.eq('tenant_id', tid)
   const { data: timesheets, error } = await q
   if (error) throw error
   if (!timesheets) return
+  // W4 (RH-05) : le diviseur mensuel vient de la SOCIÉTÉ, pas d'un littéral.
+  // Le front lit la même valeur que les déclencheurs de la base.
+  const { data: divisors, error: divisorsError } = await supabase.rpc('payroll_divisors')
+  if (divisorsError) throw divisorsError
+  const hourlyDivisor = Number((divisors as any)?.heures || 0)
   for (const ts of timesheets) {
     const hours = Number(ts.hours || 0)
     const overtimeHours = Math.max(0, hours - 8)
     if (overtimeHours > 0) {
       const empSalary = await supabase.from('employees').select('salary').eq('id', ts.employee_id).maybeSingle()
-      const hourlyRate = Number(empSalary.data?.salary || 0) / 151.67
+      const hourlyRate = hourlyDivisor > 0 ? Number(empSalary.data?.salary || 0) / hourlyDivisor : 0
       const overtimeRate = hourlyRate * 1.25
-      await supabase.from('payroll_variable_elements').insert(ti({
+      const { error: writeError } = await supabase.from('payroll_variable_elements').upsert(ti({
         employee_id: ts.employee_id, pay_run_id: payRunId, period,
         element_type: 'overtime', description: `Heures sup ${period}`,
         quantity: overtimeHours, unit_price: overtimeRate, amount: overtimeHours * overtimeRate,
         source: 'timesheet', source_id: ts.id, integrated: false,
-      }, 'payroll_variable_elements', tid))
+      }, 'payroll_variable_elements', tid), { onConflict: PAYROLL_ELEMENT_KEYS, ignoreDuplicates: true })
+      if (writeError) throw writeError
     }
   }
 }
@@ -608,22 +640,33 @@ export async function importTimesheetElements(payRunId: string, month: number, y
 export async function importLeaveElements(payRunId: string, month: number, year: number): Promise<void> {
   const tid = await getTenantId()
   const period = `${year}-${String(month).padStart(2, '0')}`
+  const bounds = periodBounds(period)
   let q = supabase.from('leave_requests').select('*').eq('status', 'approved')
-    .gte('start_date', `${period}-01`).lte('end_date', `${period}-31`)
+    // W4 (RH-09) : INTERSECTION — le congé qui traverse deux mois entre dans les
+    // deux bulletins, au lieu de n'entrer dans aucun.
+    .or(periodOverlapFilter(bounds))
   if (tid) q = q.eq('tenant_id', tid)
   const { data: leaves, error } = await q
   if (error) throw error
   if (!leaves) return
+  // W4 (RH-05) : taux journalier = diviseur JOURS de la société (le même que le
+  // déclencheur `deduct_unpaid_leave_on_approval`), jamais « / 21 ».
+  const { data: divisors, error: divisorsError } = await supabase.rpc('payroll_divisors')
+  if (divisorsError) throw divisorsError
+  const dailyDivisor = Number((divisors as any)?.jours || 0)
   for (const lr of leaves) {
     if (lr.leave_type === 'unpaid') {
       const empSalary = await supabase.from('employees').select('salary').eq('id', lr.employee_id).maybeSingle()
-      const dailyRate = Number(empSalary.data?.salary || 0) / 21
-      await supabase.from('payroll_variable_elements').insert(ti({
+      const dailyRate = dailyDivisor > 0 ? Number(empSalary.data?.salary || 0) / dailyDivisor : 0
+      // W4 (RH-10) : le type est `unpaid_leave_deduction` — celui que le moteur
+      // de bulletins retranche du brut. En `absence`, la ligne était ignorée.
+      const { error: writeError } = await supabase.from('payroll_variable_elements').upsert(ti({
         employee_id: lr.employee_id, pay_run_id: payRunId, period,
-        element_type: 'absence', description: `Absence ${lr.leave_type} ${period}`,
+        element_type: 'unpaid_leave_deduction', description: `Absence ${lr.leave_type} ${period}`,
         quantity: Number(lr.days), unit_price: dailyRate, amount: Number(lr.days) * dailyRate,
         source: 'leave_request', source_id: lr.id, integrated: false,
-      }, 'payroll_variable_elements', tid))
+      }, 'payroll_variable_elements', tid), { onConflict: PAYROLL_ELEMENT_KEYS, ignoreDuplicates: true })
+      if (writeError) throw writeError
     }
   }
 }
@@ -631,19 +674,27 @@ export async function importLeaveElements(payRunId: string, month: number, year:
 export async function importExpenseElements(payRunId: string, month: number, year: number): Promise<void> {
   const tid = await getTenantId()
   const period = `${year}-${String(month).padStart(2, '0')}`
+  const bounds = periodBounds(period)
   let q = supabase.from('expense_reports').select('*').eq('status', 'approved')
-    .gte('created_at', `${period}-01`).lt('created_at', `${period}-31T23:59:59`)
+    // W4 (RH-06, RH-07) : bornes calculées, et la période de la note d'abord —
+    // `created_at` ne décide plus seul de la période de paie.
+    .or(`period.eq.${period},and(period.is.null,created_at.gte.${bounds.first},created_at.lte.${bounds.last}T23:59:59)`)
     .order('id')
   if (tid) q = q.eq('tenant_id', tid)
   // LOT7-03 : import des notes de frais dans la paie — aucune ne doit être omise.
   const expenses = await fetchAllRows<any>(q, { label: 'importExpenseElements/expense_reports' })
   for (const exp of expenses) {
-    await supabase.from('payroll_variable_elements').insert(ti({
-      employee_id: exp.employee_id, pay_run_id: payRunId, period,
-      element_type: 'other', description: `Note de frais ${period}`,
-      quantity: null, unit_price: null, amount: Number(exp.amount),
+    // W4 (RH-07) : le montant est `total_amount`. `amount` n'existe pas sur
+    // `expense_reports` : la note entrait en paie pour 0 (et, quand le type était
+    // `other`, elle sortait du net au lieu d'y entrer).
+    const { error: writeError } = await supabase.from('payroll_variable_elements').upsert(ti({
+      employee_id: exp.employee_id, pay_run_id: payRunId,
+      period: exp.period || periodOf(exp.created_at || `${period}-01`),
+      element_type: 'expense_reimbursement', description: `Note de frais ${exp.number || period}`,
+      quantity: null, unit_price: null, amount: Number(exp.total_amount ?? 0),
       source: 'expense_report', source_id: exp.id, integrated: false,
-    }, 'payroll_variable_elements', tid))
+    }, 'payroll_variable_elements', tid), { onConflict: PAYROLL_ELEMENT_KEYS, ignoreDuplicates: true })
+    if (writeError) throw writeError
   }
 }
 

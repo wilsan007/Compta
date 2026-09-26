@@ -554,7 +554,7 @@ d'abord » est déjà fait.
 `177` (coût de fabrication) et `229` (production) non régressées. Pour chaque grandeur — stock par
 dépôt, couche, écriture, CUMP, réservation — **une seule vérité**.
 
-### W4 — Paie et RH : quatre façons de compter un mois (RH-01→RH-10) — 4 j PROPOSÉ
+### W4 — Paie et RH : quatre façons de compter un mois (RH-01→RH-10) — 4 j ✅ **FAIT le 26/09/2026 (migration 256)** — [preuve](../audit/VAGUE-W4-2026-09-26.md)
 
 **243 — la spec écrite** (`243_…_tests.sql`, T01→T05) : `T01` une fiche créée avec `name` seul doit
 remplir `first_name` et `last_name` pour les 18 écrans ; `T02` la reprise des fiches existantes ;

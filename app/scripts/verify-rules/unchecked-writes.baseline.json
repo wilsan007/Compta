@@ -1,7 +1,7 @@
 {
-  "frozenAt": "2026-09-24",
+  "frozenAt": "2026-09-26",
   "note": "Écritures dont l’erreur n’est jamais lue, gelées le 24/09/2026 : 29 occurrences (19 instructions distinctes) — le total de l’audit du 23/09. Le nombre d’occurrences par instruction est gelé aussi : recopier une de ces écritures fait échouer la CI.",
-  "total": 29,
+  "total": 25,
   "findings": [
     {
       "file": "src/components/project-management/DocView.tsx",
@@ -29,17 +29,9 @@
     },
     {
       "file": "src/lib/queries/leavesAbsences.ts",
-      "line": 64,
+      "line": 74,
       "code": "await supabase.from('leave_balances').insert(ti({",
       "occurrences": 2,
-      "wave": "W4",
-      "reason": "deux alimentations de la PAIE (leave_balances, payroll_variable_elements) : si l’insertion échoue, le solde et la retenue ne le savent pas — c’est le défaut RH-10 (migration 250)."
-    },
-    {
-      "file": "src/lib/queries/leavesAbsences.ts",
-      "line": 534,
-      "code": "await supabase.from('payroll_variable_elements').insert(ti({",
-      "occurrences": 4,
       "wave": "W4",
       "reason": "deux alimentations de la PAIE (leave_balances, payroll_variable_elements) : si l’insertion échoue, le solde et la retenue ne le savent pas — c’est le défaut RH-10 (migration 250)."
     },
