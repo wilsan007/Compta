@@ -334,37 +334,57 @@ export async function calculateInventoryVariance(warehouseId?: string) {
 // ACHATS — Rapprochement 3 voies (migration 89)
 // ============================================================
 
-/** Rapprochement 3 voies (commande / réception / facture) */
+/**
+ * Rapprochement 3 voies (commande / réception / facture).
+ *
+ * W10 : la fonction appelée avant (`perform_three_way_match`) est un
+ * DÉCLENCHEUR (`RETURNS trigger`, `BEFORE UPDATE OF approval_status` sur
+ * `purchase_invoices`) : PostgREST ne l'expose JAMAIS — l'appel ne pouvait que
+ * renvoyer 404. La fonction RÉELLE et appelable est `run_three_way_match` :
+ * elle pose le statut `pending` (ce qui fait jouer le contrôle), puis rend
+ * `match_status` et les écarts (quantités, prix) ligne à ligne.
+ */
 export async function performThreeWayMatch(purchaseInvoiceId: string) {
-  const { data, error } = await supabase.rpc('perform_three_way_match', {
-    p_purchase_invoice_id: purchaseInvoiceId,
+  const { data, error } = await supabase.rpc('run_three_way_match', {
+    p_invoice_id: purchaseInvoiceId,
   })
   if (error) throw error
-  return data
+  const row = Array.isArray(data) ? data[0] : data
+  return row as {
+    match_status: string
+    total_ordered: number
+    total_received: number
+    total_invoiced: number
+    price_variance: number
+    quantity_variance: number
+    line_results: unknown
+  } | undefined
 }
 
 // ============================================================
 // PRODUCTION — MRP & Nomenclatures (migration 89)
 // ============================================================
 
-/** Lance le calcul des besoins nets (MRP) */
-export async function runMRP(productId: string, depth?: number) {
-  const { data, error } = await supabase.rpc('run_mrp', {
-    p_product_id: productId,
-    p_depth: depth || 5,
-  })
+/**
+ * Lance le calcul des besoins nets (MRP) sur l'horizon demandé, en jours.
+ *
+ * W10 : la base expose `run_mrp(p_tenant_id, p_horizon_days)` — la société est
+ * celle du contexte (`current_tenant_id()`), donc `p_tenant_id` s'omet et garde
+ * son défaut. Le front envoyait `p_product_id` / `p_depth`, deux arguments qui
+ * n'existent dans AUCUNE signature : l'appel ne pouvait pas aboutir.
+ */
+export async function runMRP(horizonDays = 90) {
+  const { data, error } = await supabase.rpc('run_mrp', { p_horizon_days: horizonDays })
   if (error) throw error
-  return data
-}
-
-/** Éclate une nomenclature récursivement */
-export async function explodeBOMRecursive(productId: string, quantity: number) {
-  const { data, error } = await supabase.rpc('explode_bom_recursive', {
-    p_product_id: productId,
-    p_quantity: quantity,
-  })
-  if (error) throw error
-  return data
+  return data as {
+    product_id: string
+    product_name: string
+    net_need: number
+    suggested_qty: number
+    suggested_date: string
+    source: string
+    is_late: boolean
+  }[]
 }
 
 // ============================================================
@@ -403,14 +423,32 @@ export async function getOvertimeMajoration() {
   return Number(data ?? 1.25)
 }
 
-/** Calcule les indemnités journalières de sécurité sociale (IJSS) */
-export async function calculateSickLeavePay(employeeId: string, days: number) {
+/**
+ * Indemnités journalières de sécurité sociale (IJSS) d'un arrêt de maladie.
+ *
+ * W10 : la base calcule à partir de l'ARRÊT DÉCLARÉ (`sick_leaves`), pas d'un
+ * couple (salarié, jours) inventé par l'écran — `calculate_sick_leave_pay`
+ * n'accepte que `p_sick_leave_id`. L'écran doit donc désigner l'arrêt, ce que la
+ * fonction lit vraiment : jours d'arrêt, délai de carence, garantie employeur et
+ * IJSS. Avant, `p_employee_id` / `p_days` n'existaient dans aucune signature :
+ * l'appel ne pouvait pas aboutir.
+ */
+export async function calculateSickLeavePay(sickLeaveId: string) {
   const { data, error } = await supabase.rpc('calculate_sick_leave_pay', {
-    p_employee_id: employeeId,
-    p_days: days,
+    p_sick_leave_id: sickLeaveId,
   })
   if (error) throw error
-  return data
+  const row = Array.isArray(data) ? data[0] : data
+  return row as {
+    leave_days: number
+    waiting_days: number
+    retained_days: number
+    daily_rate: number
+    retention_amount: number
+    maintenance_amount: number
+    ijss_amount: number
+    net_impact: number
+  } | undefined
 }
 
 /** Calcule l'indemnité compensatrice de préavis */
@@ -425,62 +463,38 @@ export async function calculateNoticeCompensation(employeeId: string) {
 // ============================================================
 // BANQUE — Rapprochement automatique (migration 89)
 // ============================================================
-
-/** Rapprochement bancaire automatique par score de similarité */
-export async function autoReconcileByScore(bankAccountId: string) {
-  const { data, error } = await supabase.rpc('auto_reconcile_by_score', {
-    p_bank_account_id: bankAccountId,
-  })
-  if (error) throw error
-  return data
-}
-
-/** Applique les règles de rapprochement bancaire paramétrées */
-export async function applyBankReconciliationRules(bankAccountId: string) {
-  const { data, error } = await supabase.rpc('apply_bank_reconciliation_rules', {
-    p_bank_account_id: bankAccountId,
-  })
-  if (error) throw error
-  return data
-}
+//
+// W10 : `auto_reconcile_by_score()` et `apply_bank_reconciliation_rules()` sont
+// des DÉCLENCHEURS (`RETURNS trigger`) sur `bank_transactions` — le second
+// `BEFORE INSERT`, le premier `AFTER INSERT`. PostgREST n'expose jamais une
+// fonction de déclencheur : les enveloppes `autoReconcileByScore()` et
+// `applyBankReconciliationRules()` (supprimées ici) ne pouvaient QUE échouer, et
+// leur bouton prétendait pourtant agir. Les règles s'appliquent à l'import ; la
+// seule action réelle offerte est le rapprochement par score déjà branché
+// (`smart_bank_reconciliation`, lu par `smartBankReconciliation()`).
 
 // ============================================================
 // COMMERCIAL — Crédit client (migration 89)
 // ============================================================
-
-/** Vérifie la limite de crédit d'un client */
-export async function checkCustomerCreditLimit(customerId: string) {
-  const { data, error } = await supabase.rpc('check_customer_credit_limit', {
-    p_customer_id: customerId,
-  })
-  if (error) throw error
-  return data
-}
+//
+// W10 : `check_customer_credit_limit()` est un DÉCLENCHEUR (`BEFORE UPDATE` sur
+// `sales_orders`) : il refuse une commande qui dépasse la limite, il ne se
+// « demande » pas. PostgREST ne l'expose pas — l'enveloppe
+// `checkCustomerCreditLimit()` (supprimée ici) ne pouvait pas aboutir. La
+// lecture réelle du risque client est `customer_credit_score()`, déjà branchée
+// sur l'écran 360 (`customerCreditScore()`).
 
 // ============================================================
 // STOCK — Conversion d'unités & coûts logistiques (migration 89)
 // ============================================================
-
-/** Conversion d'unités de mesure */
-export async function convertUom(fromUnit: string, toUnit: string, quantity: number) {
-  const { data, error } = await supabase.rpc('convert_uom', {
-    p_from_unit: fromUnit,
-    p_to_unit: toUnit,
-    p_quantity: quantity,
-  })
-  if (error) throw error
-  return data
-}
-
-/** Répartition des coûts logistiques sur une réception */
-export async function distributeLandedCost(receiptId: string, costItems: any) {
-  const { data, error } = await supabase.rpc('distribute_landed_cost', {
-    p_receipt_id: receiptId,
-    p_cost_items: costItems,
-  })
-  if (error) throw error
-  return data
-}
+//
+// W10 : `convertUom()` et `distributeLandedCost()` (supprimées ici) ne
+// correspondaient à aucune signature réelle : `convert_uom` attend
+// `(p_quantity, p_from_uom_id, p_to_uom_id)` — des IDENTIFIANTS d'unité, pas des
+// codes — et `distribute_landed_cost` attend `p_landed_cost_id`, non un
+// `p_receipt_id` avec des lignes de coût. Aucun écran ne les appelait : les
+// deviner aurait inventé un contrat. Elles reviendront le jour où un écran
+// portera l'action, alignées sur la base.
 
 /** Recherche d'un produit équivalent (substitution) */
 export async function findEquivalentProduct(productId: string) {
@@ -495,20 +509,35 @@ export async function findEquivalentProduct(productId: string) {
 // NF525 — Clôture & Attestation (migration 89)
 // ============================================================
 
-/** Clôture une période NF525 (fige la chaîne) */
-export async function closeNf525Period(periodEnd: string) {
+/**
+ * Clôture une période NF525 (fige la chaîne).
+ *
+ * W10 : la base raisonne par PÉRIODE au format `YYYY-MM` — c'est ce que les
+ * déclencheurs écrivent (`to_char(now(), 'YYYY-MM')`, `to_char(NEW.date,
+ * 'YYYY-MM')`) et ce que `get_nf525_attestation` reçoit. L'écran envoyait une
+ * DATE de fin (`p_period_end`) : la fonction cherchait les événements d'une
+ * période nommée « 2026-09-30 » et n'en trouvait aucun.
+ */
+export async function closeNf525Period(period: string) {
   const { data, error } = await supabase.rpc('close_nf525_period', {
-    p_period_end: periodEnd,
+    p_period: period,
   })
   if (error) throw error
-  return data
+  return data as {
+    period: string
+    event_count: number
+    closing_hash: string
+    closed_at: string
+  }
 }
 
-/** Génère l'attestation NF525 pour une période */
-export async function getNf525Attestation(periodStart: string, periodEnd: string) {
+/**
+ * Attestation NF525 d'une période clôturée (`YYYY-MM`), vérifiée contre la
+ * chaîne (W10 : une seule période, comme la fonction l'exige).
+ */
+export async function getNf525Attestation(period: string) {
   const { data, error } = await supabase.rpc('get_nf525_attestation', {
-    p_period_start: periodStart,
-    p_period_end: periodEnd,
+    p_period: period,
   })
   if (error) throw error
   return data

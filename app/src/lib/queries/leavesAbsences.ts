@@ -18,6 +18,41 @@ import type {
  */
 const PAYROLL_ELEMENT_KEYS = 'tenant_id,employee_id,period,element_type,source,source_id'
 
+// ============ Arrêts de maladie (W10) ============
+
+/**
+ * Un arrêt de maladie tel que la BASE le connaît. Les IJSS se calculent à partir
+ * de cet enregistrement (`calculate_sick_leave_pay(p_sick_leave_id)`) : délai de
+ * carence, taux journalier, subrogation et garantie employeur sont des données
+ * de l'arrêt, pas des paramètres d'écran.
+ */
+export type SickLeave = {
+  id: string
+  employee_id: string
+  leave_type: string | null
+  start_date: string
+  end_date: string
+  waiting_days: number | null
+  daily_ijss: number | null
+  is_subrogated: boolean | null
+  maintenance_rate: number | null
+  status: string | null
+  medical_certificate_url: string | null
+}
+
+export async function getSickLeaves(employeeId?: string): Promise<SickLeave[]> {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('sick_leaves')
+    .select('id, employee_id, leave_type, start_date, end_date, waiting_days, daily_ijss, is_subrogated, maintenance_rate, status, medical_certificate_url')
+    .order('start_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (employeeId) q = q.eq('employee_id', employeeId)
+  const { data, error } = await q
+  if (error) throw error
+  return data as SickLeave[]
+}
+
 // ============ Leave Balances ============
 export async function getLeaveBalances(employeeId?: string, year?: number): Promise<LeaveBalance[]> {
   const tid = await getTenantId()

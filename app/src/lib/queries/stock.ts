@@ -50,13 +50,12 @@ export async function createStockMovement(sm: Omit<StockMovement, 'id' | 'create
   const tid = await getTenantId()
   const { data, error } = await supabase.from('stock_movements').insert(ti(sm, 'stock_movements', tid)).select().single()
   if (error) throw error
-  if (sm.movement_type === 'in') {
-    await supabase.rpc('increment_stock', { p_id: sm.product_id, qty: sm.quantity })
-  } else if (sm.movement_type === 'out') {
-    await supabase.rpc('decrement_stock', { p_id: sm.product_id, qty: sm.quantity })
-  } else {
-    await tud(supabase.from('products').update({ stock_quantity: sm.quantity }), 'products', tid).eq('id', sm.product_id)
-  }
+  // W10 : le stock est mis à jour par le DÉCLENCHEUR `update_stock_on_movement`
+  // (sur `stock_movements`), qui appelle `_stock_increment` / `_stock_decrement`
+  // et couvre aussi l'ajustement et l'initialisation. Le front appelait EN PLUS
+  // `increment_stock({ p_id, qty })` : le nom des arguments n'existe dans aucune
+  // signature (`p_product_id`, `p_qty`), l'appel échouait donc toujours — et,
+  // s'il avait abouti, il aurait compté le mouvement DEUX fois. Un seul moteur.
   return data as StockMovement
 }
 

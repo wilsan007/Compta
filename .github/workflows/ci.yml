@@ -460,6 +460,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # `check-unchecked-writes` voit l'absence de lecture d'erreur, pas le
+      # CONTRAT de l'appel. Un `.rpc('nom', { arguments })` faux n'est vu ni par
+      # `tsc` (client typé « any »), ni par les tests (Supabase y est simulé), ni
+      # par PostgREST tant qu'il n'est pas joué : PostgREST répond 404 pour un nom
+      # inconnu, un argument inconnu, une arité incomplète — et jamais pour une
+      # fonction `RETURNS trigger`, qu'il n'expose pas. Mesuré le 27/09/2026 :
+      # **14 contrats rompus** sur 117 appels, dont 4 fonctions de déclencheur
+      # appelées depuis des écrans vivants. La baseline est à ZÉRO (W10) : tout
+      # appel nouveau qui ne viserait pas une fonction réelle fait échouer la CI.
+      - name: W10 — Appels RPC confrontés aux signatures réelles
+        run: node scripts/check-rpc-contract.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # AUD-X01 — le registre des échecs attendus est indexé sur le COUPLE
       # (fichier, identifiant). Tant qu'il l'était sur `test_id` seul, inscrire
       # `T01` blanchissait le `T01` de treize fichiers, y compris verts. Cet
@@ -910,6 +924,22 @@ jobs:
 
       - name: 'W9 : la chaîne de l''absence, 34 assertions transverses (266)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/266_absence_transverse_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W10 — le contrat d'appel front ↔ base, et la clôture NF-525. Le contrôle
+      # `check-rpc-contract.mjs` trouvait 14 appels que la base ne pouvait pas
+      # servir (4 fonctions de DÉCLENCHEUR appelées depuis des écrans, un stock
+      # compté deux fois, la période NF-525 envoyée comme une date, une paie IJSS
+      # calculée sur un couple (salarié, jours)) ; la 267 rend la CLÔTURE possible :
+      # elle n'écrit plus dans le journal inaltérable (`UPDATE … SET closed`, qui
+      # levait toujours « NF525: Le journal d'événements est inaltérable ») mais
+      # AJOUTE l'événement de clôture et inscrit la clôture dans
+      # `nf525_period_closures` — la table que lit l'attestation, et que rien ne
+      # remplissait : l'attestation levait « Période non clôturée ». 6 scénarios,
+      # dont T04 et T05 ROUGES avant la 267.
+      - name: 'W10 : le contrat d''appel et la clôture NF-525 (267)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/267_nf525_closure_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

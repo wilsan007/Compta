@@ -216,8 +216,11 @@ export async function getDocumentDownloadUrl(doc: ModuleDocument): Promise<strin
 
   // Log access + increment download count
   await logAccess(doc.id, 'download', tid)
+  // W10 : la base attend `p_document_id` ; le front passait `doc_id`, un nom
+  // d'argument qui n'existe dans aucune signature — PostgREST renvoyait 404 et le
+  // compteur de téléchargements n'a jamais été incrémenté.
   await tud(
-    supabase.rpc('increment_download_count', { doc_id: doc.id }),
+    supabase.rpc('increment_download_count', { p_document_id: doc.id }),
     'module_documents',
     tid
   ).then(() => {}, () => {}) // best-effort

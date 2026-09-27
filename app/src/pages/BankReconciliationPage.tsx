@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries/banking'
-import { smartBankReconciliation, applyBankReconciliationRules } from '@/lib/queries/businessFunctions'
+import { smartBankReconciliation } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowRight, CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
@@ -68,21 +68,6 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
     }
   }
 
-  async function handleApplyRules() {
-    if (!selectedAccount) {
-      toast('error', tCommon('common.error'), t('reconciliation.selectAccount'))
-      return
-    }
-    try {
-      const result = await applyBankReconciliationRules(selectedAccount)
-      const applied = result?.applied ?? result?.matched ?? result?.count ?? 0
-      toast('success', tCommon('common.success'), `${applied} règle(s) appliquée(s)`)
-      await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
-    }
-  }
-
   const unreconciled = transactions.filter(t => !t.reconciled)
   const reconciled = transactions.filter(t => t.reconciled)
   const totalUnreconciled = unreconciled.reduce((s, t) => s + (t.type === 'credit' ? Number(t.amount) : -Number(t.amount)), 0)
@@ -106,9 +91,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         <Button onClick={handleSmartReconciliation} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
           <Zap className="w-4 h-4" /> {t('reconciliation.smartMatch')}
         </Button>
-        <Button onClick={handleApplyRules} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
-          <Zap className="w-4 h-4" /> Appliquer les règles
-        </Button>
+        {/* W10 : le bouton « Appliquer les règles » appelait
+            `apply_bank_reconciliation_rules` — un DÉCLENCHEUR `BEFORE INSERT` sur
+            `bank_transactions`, que PostgREST n'expose jamais : l'action ne
+            pouvait qu'échouer. Les règles s'appliquent à l'import de la ligne ; le
+            rapprochement demandé à la main est celui du bouton précédent
+            (`smart_bank_reconciliation`, une fonction réellement appelable). */}
         {/* R-09 : l'état de rapprochement (soldes, écarts des deux côtés, pointage
             et comptabilisation d'une ligne non pointée) a son propre écran. */}
         <Button onClick={() => navigate('/banking/reconciliation-state')} variant="secondary">

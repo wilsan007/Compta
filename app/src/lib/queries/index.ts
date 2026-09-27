@@ -50,19 +50,18 @@ export {
   calculateInventoryVariance,
   performThreeWayMatch,
   runMRP,
-  explodeBOMRecursive,
   previewOvertimePay,
   getOvertimeMajoration,
   calculateSickLeavePay,
   calculateNoticeCompensation,
-  autoReconcileByScore,
-  applyBankReconciliationRules,
-  checkCustomerCreditLimit,
-  convertUom,
-  distributeLandedCost,
   findEquivalentProduct,
   closeNf525Period,
   getNf525Attestation,
 } from './businessFunctions'
+// W10 : `explodeBOMRecursive`, `autoReconcileByScore`,
+// `applyBankReconciliationRules`, `checkCustomerCreditLimit`, `convertUom` et
+// `distributeLandedCost` sont retirés — leurs fonctions cibles n'existent pas
+// (ou sont des déclencheurs, jamais exposés par PostgREST). Le contrôle
+// `scripts/check-rpc-contract.mjs` interdit leur retour.
 // W5 (IMMO-01) : l'alias `calculateDepreciationRpc` est retiré avec la RPC
 // `calculate_depreciation` — un seul moteur d'amortissement, côté SQL.

@@ -8,6 +8,14 @@ deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
 
 * **≈ 145 j restants** : plan correctif **W7 / W8 + 9 transverses** (≈ 14 j),
   chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
+* **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
+  l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
+  écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
+  Mesure : **14 appels que la base ne pouvait pas servir** (4 fonctions de
+  déclencheur appelées depuis des écrans vivants, le stock compté deux fois, la
+  période NF-525 envoyée comme une date, les IJSS calculées sur un couple
+  salarié/jours). Le contrôle `check-rpc-contract` (baseline **à zéro**) les
+  interdit désormais, et la **267** rend la clôture NF-525 possible.
 * **Deux défauts encore rouges au registre** (`app/sql/ci/expected_failures.sql`) :
   `231 M-17-01` (la refacturation des temps — **W8**) et `245 T08` (le CA non
   taxé absent de la CA3 — **W7**). La CI **échoue** si l'un se met à passer : la
@@ -351,6 +359,64 @@ deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
   donc les bandes supérieures et l'exonération ne sont **pas** appliquées
   (point ouvert, phase 6) ; coefficients et majoration sont **français** (D-11) ;
   le simulateur garde un **repli** documenté (1,25) hors contexte de société.
+
+### Vague W10 — le contrat d'appel front ↔ base (2026-09-27) ✅
+- **L'angle mort** : trois contrôles regardaient les **lectures** (`check-embeds`,
+  N4), les **colonnes écrites** (`check-written-columns`, W0.2) et l'**erreur non
+  lue** (`check-unchecked-writes`, W0.3). Aucun ne regardait les **appels de
+  fonction** — `.rpc('nom', { … })`, que ni `tsc` (client « any »), ni les tests
+  (Supabase simulé), ni PostgREST avant exécution ne voient. Mesure : **14
+  contrats rompus** sur 117 appels littéraux.
+- **Quatre fonctions de DÉCLENCHEUR appelées comme des RPC** (`RETURNS trigger` :
+  PostgREST ne les expose **jamais**, 404 garanti) — dont trois depuis des écrans
+  vivants : `perform_three_way_match` (rapprochement 3 voies), `check_customer_credit_limit`
+  (fiche client 360), `apply_bank_reconciliation_rules` (rapprochement bancaire),
+  plus `auto_reconcile_by_score` (sans appelant). Les enveloppes sont **repointées
+  sur les vraies lectures** (`run_three_way_match`, `customer_credit_score`,
+  `smart_bank_reconciliation`) ou retirées, et **deux boutons placebos
+  disparaissent** (ils ne pouvaient qu'échouer).
+- **Le stock compté deux fois** : `createStockMovement` appelait
+  `increment_stock({ p_id, qty })` / `decrement_stock({ p_id, qty })` après
+  l'insertion du mouvement — des noms d'arguments qui n'existent dans aucune
+  signature (`p_product_id`, `p_qty`), donc un appel qui échouait toujours et
+  aurait doublé la variation si le déclencheur `update_stock_on_movement` n'était
+  pas déjà le seul moteur. Les deux appels sont retirés.
+- **Signatures dérivées** : `run_mrp(p_horizon_days)` (et non `p_product_id`),
+  `calculate_sick_leave_pay(p_sick_leave_id)` (la base calcule sur l'ARRÊT — la
+  modale IJSS lit désormais les arrêts déclarés du salarié via `getSickLeaves`),
+  `close_nf525_period` / `get_nf525_attestation` avec `p_period` (`AAAA-MM`, et
+  l'écran passe de champs *date* à des champs **mois**),
+  `increment_download_count(p_document_id)` (le compteur de téléchargements
+  n'avait jamais été incrémenté). Deux enveloppes mortes (`convertUom`,
+  `distributeLandedCost`) sont supprimées plutôt que devinées.
+- **Le trou trouvé en chemin (bouché)** : la clôture NF-525 **ne pouvait pas
+  aboutir**. `close_nf525_period` faisait `UPDATE nf525_event_log SET closed =
+  true` en comptant sur `SECURITY DEFINER` pour « contourner » le déclencheur
+  d'inaltérabilité — un déclencheur ne se contourne pas ainsi, et il lève sans
+  condition (`ERROR: NF525: Le journal d'événements est inaltérable`). Ce drapeau
+  n'était **lu par personne**, et **rien** n'insérait dans
+  `nf525_period_closures`, la table que lit l'attestation : elle levait donc
+  « Période non clôturée ». La **267** rend la clôture **append-only** : elle
+  n'écrit plus dans le journal, elle y **ajoute** l'événement `period_close` et
+  inscrit la clôture (période, événements, empreinte, auteur, date) dans
+  `nf525_period_closures` ; elle refuse une période vide, déjà clôturée, ou d'un
+  format autre que `AAAA-MM`.
+- **Ce qui garde** : `scripts/check-rpc-contract.mjs` (nouveau contrôle, baseline
+  **à zéro** — `--update-baseline` refuse d'ajouter), son **miroir statique**
+  `src/lib/__tests__/rpc-contract.test.ts` (6 tests ; vérifié **rouge** par une
+  sonde hors `__tests__`), la suite `sql/267_nf525_closure_tests.sql` (**6/6**,
+  dont **T04 et T05 rouges avant la 267**) et les deux étapes de CI.
+- **Cohérence UI ↔ base, mesurée** : `check-written-columns` **0**,
+  `check-unchecked-writes` **0**, `check-rpc-contract` **0** (109 appels) ;
+  `tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 502** (+6) ;
+  **28/28** contrôles et suites rejoués sur la base migrée (236 migrations,
+  0 erreur). [Preuve](doc/audit/VAGUE-W10-2026-09-27.md)
+- **Limites dites** : les fonctions de déclencheur **restent** des déclencheurs
+  (aucune n'a été convertie) ; la clôture NF-525 **n'interdit pas** d'écrire
+  ensuite dans un mois clos — c'est une décision de gestion, pas un correctif
+  (l'attestation revérifie la chaîne à la demande) ; le contrôle ne suit pas
+  `.rpc(variable)` ni `.schema('x').rpc(…)` ; `calculate_payslip` reste
+  « non vérifiable » (objet d'arguments variable).
 
 ### Bugs corrigés
 ### Bugs corrigés

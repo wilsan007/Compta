@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPayRuns, getEmployees, getPayrollComponents } from '@/lib/queries/payroll'
-import { getVariableElements, createVariableElement, deleteVariableElement, attachTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet } from '@/lib/queries/leavesAbsences'
+import { getVariableElements, createVariableElement, deleteVariableElement, attachTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet, getSickLeaves } from '@/lib/queries/leavesAbsences'
+import type { SickLeave } from '@/lib/queries/leavesAbsences'
 import { previewOvertimePay, calculateSickLeavePay } from '@/lib/queries/businessFunctions'
 import type { PayRun, Employee, PayrollVariableElement, PayrollComponent } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -479,18 +480,38 @@ function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onC
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [employeeId, setEmployeeId] = useState('')
-  const [days, setDays] = useState('')
-  const [result, setResult] = useState<number | null>(null)
+  const [sickLeaveId, setSickLeaveId] = useState('')
+  const [leaves, setLeaves] = useState<SickLeave[]>([])
+  const [result, setResult] = useState<{ ijss: number; retention: number; maintien: number; net: number; jours: number; carence: number } | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // W10 : la base calcule les IJSS d'un ARRÊT DÉCLARÉ, pas d'un nombre de jours
+  // saisi. L'écran lit donc les arrêts du salarié et désigne celui à calculer.
+  useEffect(() => {
+    setSickLeaveId('')
+    setResult(null)
+    if (!employeeId) { setLeaves([]); return }
+    let cancelled = false
+    getSickLeaves(employeeId)
+      .then((rows) => { if (!cancelled) setLeaves(rows) })
+      .catch((err) => { if (!cancelled) toast('error', tCommon('toast.error'), err.message) })
+    return () => { cancelled = true }
+  }, [employeeId, tCommon, toast])
+
   async function handleCalculate() {
-    if (!employeeId) { toast('warning', tCommon('form.requiredField'), t('preparation.employee')); return }
+    if (!sickLeaveId) { toast('warning', tCommon('form.requiredField'), 'Arrêt de maladie'); return }
     setLoading(true)
     try {
-      const res = await calculateSickLeavePay(employeeId, Number(days) || 0)
-      const amount = Number(res?.amount ?? res?.sick_leave_pay ?? res?.ijss ?? res ?? 0)
-      setResult(amount)
-      toast('success', tCommon('common.success'), `IJSS: ${formatCurrency(amount)}`)
+      const res = await calculateSickLeavePay(sickLeaveId)
+      setResult({
+        ijss: Number(res?.ijss_amount ?? 0),
+        retention: Number(res?.retention_amount ?? 0),
+        maintien: Number(res?.maintenance_amount ?? 0),
+        net: Number(res?.net_impact ?? 0),
+        jours: Number(res?.leave_days ?? 0),
+        carence: Number(res?.waiting_days ?? 0),
+      })
+      toast('success', tCommon('common.success'), `IJSS: ${formatCurrency(Number(res?.ijss_amount ?? 0))}`)
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
@@ -507,12 +528,26 @@ function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onC
             { value: '', label: '—' },
             ...employees.map((e) => ({ value: e.id, label: e.name })),
           ]} />
-          <Input label="Jours d'arrêt" type="number" step="1" value={days} onChange={(e) => setDays(e.target.value)} placeholder="0" />
-          <Button onClick={handleCalculate} disabled={loading || !employeeId}><Calculator className="w-4 h-4" /> {loading ? '…' : 'Calculer'}</Button>
+          {employeeId && leaves.length === 0 && (
+            <p className="text-sm text-[var(--color-text-secondary)]">Aucun arrêt de maladie déclaré pour ce salarié.</p>
+          )}
+          {leaves.length > 0 && (
+            <Select label="Arrêt déclaré" value={sickLeaveId} onChange={(e) => setSickLeaveId(e.target.value)} options={[
+              { value: '', label: '—' },
+              ...leaves.map((l) => ({
+                value: l.id,
+                label: `${formatDate(l.start_date)} → ${formatDate(l.end_date)}${l.status ? ` (${l.status})` : ''}`,
+              })),
+            ]} />
+          )}
+          <Button onClick={handleCalculate} disabled={loading || !sickLeaveId}><Calculator className="w-4 h-4" /> {loading ? '…' : 'Calculer'}</Button>
           {result !== null && (
-            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)]">
+            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)] space-y-1">
               <div className="text-xs text-[var(--color-text-secondary)]">Indemnités journalières (IJSS)</div>
-              <div className="text-2xl font-bold">{formatCurrency(result)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(result.ijss)}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {result.jours} jour(s) d'arrêt — {result.carence} jour(s) de carence — maintien employeur {formatCurrency(result.maintien)} — retenue {formatCurrency(result.retention)} — impact net {formatCurrency(result.net)}
+              </div>
             </div>
           )}
           <div className="flex justify-end pt-2 border-t border-[var(--color-border)]">

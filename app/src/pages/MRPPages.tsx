@@ -45,8 +45,12 @@ export function MRPPage() {
   async function handleRunMRP() {
     setMrpLoading(true)
     try {
-      const result = await runMRP('', 5)
-      const count = Array.isArray(result) ? result.length : (result?.count ?? result?.proposals ?? 0)
+      // W10 : `run_mrp` ne prend pas de produit — elle parcourt les besoins de la
+      // société sur un HORIZON en jours (défaut 90). L'ancien appel
+      // `runMRP('', 5)` envoyait une chaîne vide dans `p_product_id`, un argument
+      // qui n'existe dans aucune signature : il ne pouvait pas aboutir.
+      const result = await runMRP(90)
+      const count = Array.isArray(result) ? result.length : 0
       toast('success', t('mrp.mrpCalculated'), `${count} besoin(s) net(s) calculé(s)`)
       await loadData()
     } catch (err: any) { toast('error', t('mrp.mrpError'), err.message) }

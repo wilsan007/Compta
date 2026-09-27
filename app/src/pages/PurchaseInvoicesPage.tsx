@@ -80,14 +80,21 @@ export function PurchaseInvoicesPage() {
   async function handleThreeWayMatch(id: string) {
     setActionLoading('3way-' + id)
     try {
+      // W10 : la lecture réelle est `run_three_way_match` (la fonction appelée
+      // avant, `perform_three_way_match`, est un DÉCLENCHEUR — jamais exposé par
+      // PostgREST). Elle rend `match_status` ∈ {matched, partial_match,
+      // mismatch, pending_review} et les écarts de quantité et de prix.
       const result = await performThreeWayMatch(id)
-      const matched = result?.matched ?? result?.success ?? false
-      const discrepancies = result?.discrepancies || result?.discrepancy_count || 0
-      if (matched) {
-        toast('success', 'Rapprochement 3 voies', `Conforme — ${discrepancies} écart(s)`)
+      const status = result?.match_status ?? 'pending_review'
+      const qtyVariance = Number(result?.quantity_variance ?? 0)
+      const priceVariance = Number(result?.price_variance ?? 0)
+      const ecarts = [qtyVariance, priceVariance].filter((v) => Math.abs(v) > 0.004).length
+      if (status === 'matched') {
+        toast('success', 'Rapprochement 3 voies', `Conforme — ${ecarts} écart(s)`)
       } else {
-        toast('warning', 'Rapprochement 3 voies', `Écarts détectés — ${discrepancies} différence(s)`)
+        toast('warning', 'Rapprochement 3 voies', `${status} — ${ecarts} écart(s)`)
       }
+      await loadInvoices()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     } finally {

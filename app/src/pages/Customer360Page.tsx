@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCustomer360, createCustomerContact, updateCustomerContact, deleteCustomerContact } from '@/lib/queries/customerAdvanced'
-import { customerCreditScore, checkCustomerCreditLimit } from '@/lib/queries/businessFunctions'
+import { customerCreditScore } from '@/lib/queries/businessFunctions'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ArrowLeft, UserCircle, FileText, CreditCard, Bell, BarChart3, Users, Plus, Trash2, Edit2, AlertTriangle } from 'lucide-react'
@@ -37,22 +37,11 @@ export function Customer360Page() {
     }
   }
 
-  async function handleCheckCreditLimit() {
-    if (!id) return
-    try {
-      const result = await checkCustomerCreditLimit(id)
-      const exceeded = result?.exceeded ?? result?.limit_exceeded ?? false
-      const used = result?.used ?? result?.credit_used ?? 0
-      const limit = result?.limit ?? result?.credit_limit ?? 0
-      if (exceeded) {
-        toast('warning', 'Limite de crédit', `Limite dépassée — utilisé: ${used} / limite: ${limit}`)
-      } else {
-        toast('success', 'Limite de crédit', `OK — utilisé: ${used} / limite: ${limit}`)
-      }
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
-    }
-  }
+  // W10 : le bouton « Vérifier la limite de crédit » appelait
+  // `check_customer_credit_limit` — un DÉCLENCHEUR `BEFORE UPDATE` sur
+  // `sales_orders` (il REFUSE une commande qui dépasse la limite), jamais exposé
+  // par PostgREST : le verdict affiché ne pouvait venir d'aucune réponse. La
+  // lecture réelle du risque client est le score ci-dessous, déjà branché.
 
   useEffect(() => {
     if (id) loadData().catch(err => console.error('loadData:', err))
@@ -103,9 +92,6 @@ export function Customer360Page() {
         subtitle={customer?.email || ''}
         action={
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleCheckCreditLimit}>
-              <CreditCard className="w-4 h-4" /> Vérifier la limite de crédit
-            </Button>
             <Button variant="secondary" onClick={handleCreditScore} disabled={scoringCredit}>
               <BarChart3 className="w-4 h-4" /> {scoringCredit ? '…' : 'Calculer le score de crédit'}
             </Button>

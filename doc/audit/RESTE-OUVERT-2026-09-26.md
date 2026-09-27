@@ -1,4 +1,4 @@
-# Ce qui reste ouvert — état au 26 septembre 2026
+# Ce qui reste ouvert — état au 26 septembre 2026 (mise à jour du 27/09 : W5, W10)
 
 > **Objet.** Une seule page, à jour, de **tout ce qui n'est pas fermé** après la
 > vague W6 : ce qui attend une décision, ce qui vit hors du dépôt, ce qui reste
@@ -12,7 +12,8 @@
 > les preuves de vague ([W0](PREUVES-W0-2026-09-24.md),
 > [W1](VAGUE-W1-ISO02-04-PERM01-2026-09-24.md), [W2/W3](VAGUE-W2-W3-2026-09-24.md),
 > [W4](VAGUE-W4-2026-09-26.md), [W6](VAGUE-W6-2026-09-26.md),
-> [W9](VAGUE-W9-2026-09-26.md)).
+> [W9](VAGUE-W9-2026-09-26.md), [W5](VAGUE-W5-2026-09-27.md),
+> [W10](VAGUE-W10-2026-09-27.md)).
 > **Mémoire.** Ce document est référencé par `AGENTS.md` (section « Reste
 > ouvert ») : c'est le point d'entrée pour reprendre le travail.
 
@@ -30,11 +31,13 @@
 | **W6** | Fonctions Edge et écrans placebos : 20 colonnes réelles, relance idempotente, un écran ne peut plus tamponner un succès, **les deux baselines de W0 à zéro**, contrat d'entrée des 20 fonctions testé (32 tests Deno), fonctions sans appelant branchées ou neutralisées | [W6](VAGUE-W6-2026-09-26.md) |
 | **W9** | Chaînage de l'absence : registre `employee_absence_days`, gardes en aval, une seule retenue de paie, 34 assertions transverses | [W9](VAGUE-W9-2026-09-26.md) |
 | **W5** | Un seul moteur par grandeur : `calculate_depreciation` supprimée, méthode d'amortissement **lue** (dégressif paramétré, `units_of_production` retirée), exercice **borné**, lot à verdict par immobilisation, heures supplémentaires à **un** seuil / **un** taux / **un** montant | [W5](VAGUE-W5-2026-09-27.md) |
+| **W10** | Le contrat d'appel front ↔ base : le contrôle `check-rpc-contract` (baseline **à zéro**), les **14 appels** que la base ne pouvait pas servir (4 fonctions de déclencheur appelées depuis des écrans vivants, stock compté deux fois, période NF-525 envoyée comme une date, IJSS calculées sur un couple salarié/jours), et la **267** qui rend la clôture NF-525 possible (append-only, elle cesse d'écrire dans le journal inaltérable et remplit `nf525_period_closures`) | [W10](VAGUE-W10-2026-09-27.md) |
 
-État mesuré sur base neuve : **235 migrations, 0 erreur** ; **67/67 suites**,
-**9/9 contrôles** (dont `check_plpgsql` : 0 erreur, 33 avertissements) ; front
-`tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 496**, **32 tests Edge
-Deno**, plafond de code mort **66/66**.
+État mesuré sur base neuve : **236 migrations, 0 erreur** ; **28/28** contrôles et
+suites rejoués sur la base migrée (8 contrôles + 20 suites, dont `267` :
+**6/6**) ; front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 502**,
+**32 tests Edge Deno** ; les **trois** scanners de code (`check-written-columns`,
+`check-unchecked-writes`, `check-rpc-contract`) à **0**, baselines vides.
 
 ---
 
@@ -86,6 +89,11 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 > laisse un point ouvert pour la phase 6 : `calculate_overtime_pay` (tranches et
 > exonération de 7 500 €) n'a plus d'appelant, et le chemin de paie applique la
 > **première** tranche — les bandes supérieures ne sont donc pas appliquées.
+>
+> **W10 (27/09) n'était pas au plan** : elle vient de l'angle mort que les trois
+> contrôles existants laissaient ouvert — **les appels de fonction**. Elle a
+> coûté ≈ 2 j et n'entre donc dans aucune ligne de ce tableau : l'audit des
+> modules restants en produira d'autres du même genre.
 
 ### D. Les chaînages (le gros du reste)
 
@@ -131,6 +139,24 @@ dans le commit du correctif.
 * **La recette réseau** des neuf intégrations (tableau B).
 * **La décision `D-4`** (tableau A).
 
+### H. Ce que W10 laisse explicitement non fermé
+
+* **Deux boutons ont été retirés** (« Appliquer les règles » au rapprochement
+  bancaire, « Vérifier la limite de crédit » sur la fiche client) : ils
+  appelaient des fonctions de **déclencheur**, que PostgREST n'expose jamais. Si
+  l'action manuelle est voulue un jour, elle demande une **vraie** fonction —
+  c'est un ajout, pas un rebranchement.
+* **Faut-il refuser l'écriture d'un événement NF-525 dans une période déjà
+  clôturée ?** Aujourd'hui non : l'interdire changerait le sort d'une vente ou
+  d'une facture saisie après coup. C'est une **décision de gestion** (candidat
+  au tableau A), pas un correctif. L'attestation revérifie la chaîne et recompte
+  les événements (`verify_nf525_chain`), donc l'écart est visible.
+* **Le contrôle d'appel ne suit pas les indirections** : `.rpc(nomVariable)`
+  (aucun aujourd'hui) et `.schema('x').rpc(…)` (aucun non plus) échapperaient à
+  la confrontation — le premier est compté « non vérifiable », le second n'est
+  pas suivi. Et `calculate_payslip` restera non vérifiable tant que son objet
+  d'arguments sera une variable.
+
 ---
 
 ## 3. Le total restant (chiffres)
@@ -141,10 +167,13 @@ dans le commit du correctif.
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
 | **Total restant au 27/09/2026** | **≈ 145 j** |
-| Déjà livré et prouvé (W0 → W9 — dont W5, `260` — et chaînages L0) | ≈ 20,5 j |
+| Déjà livré et prouvé (W0 → W10 — dont W5, `260`, et W10, `267` — et chaînages L0) | ≈ 22,5 j |
 
 Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
-(W9, 4 j) et W5 (2 j) en sont sortis — d'où **≈ 145 j** aujourd'hui.
+(W9, 4 j) et W5 (2 j) en sont sortis — d'où **≈ 145 j** aujourd'hui. **W10
+(≈ 2 j)** s'ajoute aux livraisons sans réduire ce total : elle était **hors
+plan**, découverte par un angle mort (les appels de fonction), pas retirée du
+plan.
 
 **Ce que ces chiffres ne comptent pas** : les défauts que l'audit des 16 modules
 restants révélera, les délais externes (les 14 documents djiboutiens,
@@ -193,6 +222,7 @@ npx vitest run                     # 1 488
 npm run edge:test                  # 32 (Deno requis ; sinon : npx -y deno test …)
 DATABASE_URL=… node scripts/check-written-columns.mjs   # 0 attendu
 node scripts/check-unchecked-writes.mjs                 # 0 attendu
+DATABASE_URL=… node scripts/check-rpc-contract.mjs       # 0 attendu (W10)
 ```
 
 ---

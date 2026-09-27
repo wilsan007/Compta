@@ -431,6 +431,17 @@ Le dépôt a déjà une convention, qu'on ne réinvente pas : **`NNN_<nom>.sql` 
 | 265 | `265_absence_payroll_single_path.sql` | `265_absence_payroll_single_path_tests.sql` | **W9** |
 | 266 | `266_absence_transverse_tests.sql` | *(c'est le test)* | **W9** |
 
+> **Numérotation — ce tableau est un PLAN, pas un état.** Les numéros se
+> **constatent** dans le dépôt au moment de l'exécution (la règle est rappelée
+> dans `AGENTS.md`, section W2/W3). Mesuré le 27/09/2026 : à partir de **250**,
+> les numéros réellement pris sont `250` (inaltérabilité de la caisse, W2),
+> `251` (chemins d'annulation, W3), `252` (socle des chaînages, L0), `253`/`254`/
+> `255` (BL, valorisation unique, avoir), `256` (paie : un seul diviseur, W4),
+> `257`/`258`/`259` (W6), `260` (un seul moteur d'amortissement, W5),
+> `263`→`266` (W9) et `267` (contrat d'appel + clôture NF-525, **W10**). Les
+> lignes 256 → 262 de ce tableau (« W7 ») ne désignent donc pas les fichiers de
+> ces numéros : W7 et W8 prendront, à leur exécution, le premier numéro libre.
+
 **Règle de commit, pour chaque ligne du tableau** : `git add` du correctif **et** de son test **et**
 de l'étape ajoutée à `.github/workflows/ci.yml` — **un seul commit**, message au format du dépôt
 (`fix(<module>): <le défaut> (<ID>, <numéro>)`). Les cinq specs 240-244 sont commitées **dans ce

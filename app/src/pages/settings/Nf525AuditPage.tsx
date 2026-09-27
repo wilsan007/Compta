@@ -36,10 +36,12 @@ export function Nf525AuditPage() {
   const [filterType, setFilterType] = useState<string>('all')
   const [integrityStatus, setIntegrityStatus] = useState<'idle' | 'verified' | 'corrupted' | 'checking'>('idle')
   const [integrityMessage, setIntegrityMessage] = useState<string>('')
-  const [periodEnd, setPeriodEnd] = useState('')
-  const [_periodStart, _setPeriodStart] = useState('')
-  const [attestationStart, setAttestationStart] = useState('')
-  const [attestationEnd, setAttestationEnd] = useState('')
+  // W10 : NF-525 raisonne par PÉRIODE au format `YYYY-MM` — c'est ce que les
+  // déclencheurs écrivent (`to_char(now(),'YYYY-MM')`) et ce que la base relit
+  // (`(p_period || '-01')::timestamp`). Les champs « date de fin » et « plage de
+  // dates » envoyaient une DATE : aucune période ne portait ce nom.
+  const [period, setPeriod] = useState('')
+  const [attestationPeriod, setAttestationPeriod] = useState('')
   const [closingPeriod, setClosingPeriod] = useState(false)
   const [downloadingAttestation, setDownloadingAttestation] = useState(false)
 
@@ -97,12 +99,12 @@ export function Nf525AuditPage() {
   }
 
   async function handleClosePeriod() {
-    if (!periodEnd) { toast('warning', t('common.error'), 'Veuillez saisir la date de fin de période'); return }
+    if (!period) { toast('warning', t('common.error'), 'Veuillez saisir la période (AAAA-MM)'); return }
     setClosingPeriod(true)
     try {
-      const result = await closeNf525Period(periodEnd)
-      toast('success', 'Période clôturée', result?.message || 'La période NF525 a été clôturée')
-      setPeriodEnd('')
+      const result = await closeNf525Period(period)
+      toast('success', 'Période clôturée', `${result?.event_count ?? 0} événement(s) figé(s) — empreinte ${String(result?.closing_hash ?? '').slice(0, 12)}…`)
+      setPeriod('')
       await loadEvents()
     } catch (err: any) {
       toast('error', t('common.error'), err.message)
@@ -110,19 +112,19 @@ export function Nf525AuditPage() {
   }
 
   async function handleDownloadAttestation() {
-    if (!attestationStart || !attestationEnd) { toast('warning', t('common.error'), 'Veuillez saisir la plage de dates'); return }
+    if (!attestationPeriod) { toast('warning', t('common.error'), 'Veuillez saisir la période (AAAA-MM)'); return }
     setDownloadingAttestation(true)
     try {
-      const result = await getNf525Attestation(attestationStart, attestationEnd)
+      const result = await getNf525Attestation(attestationPeriod)
       const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
       const blob = new Blob([content], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `attestation-nf525-${attestationStart}_${attestationEnd}.json`
+      a.download = `attestation-nf525-${attestationPeriod}.json`
       a.click()
       URL.revokeObjectURL(url)
-      toast('success', 'Attestation générée', 'Téléchargement de l\'attestation NF525')
+      toast('success', 'Attestation générée', `Téléchargement de l'attestation NF525 ${attestationPeriod}`)
     } catch (err: any) {
       toast('error', t('common.error'), err.message)
     } finally { setDownloadingAttestation(false) }
@@ -183,11 +185,11 @@ export function Nf525AuditPage() {
               <Lock className="w-5 h-5 text-[var(--color-primary)]" />
               <div>
                 <h3 className="font-semibold text-[var(--color-text)]">Clôturer la période</h3>
-                <p className="text-sm text-[var(--color-text-secondary)]">Fige la chaîne NF525 jusqu'à la date sélectionnée.</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">Fige la chaîne NF525 pour le mois sélectionné.</p>
               </div>
             </div>
-            <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} placeholder="Date de fin de période" />
-            <Button onClick={handleClosePeriod} disabled={closingPeriod || !periodEnd} className="mt-3">
+            <Input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="2026-09" />
+            <Button onClick={handleClosePeriod} disabled={closingPeriod || !period} className="mt-3">
               <Lock className="w-4 h-4" /> {closingPeriod ? 'Clôture en cours…' : 'Clôturer la période'}
             </Button>
           </div>
@@ -196,14 +198,13 @@ export function Nf525AuditPage() {
               <Download className="w-5 h-5 text-[var(--color-primary)]" />
               <div>
                 <h3 className="font-semibold text-[var(--color-text)]">Télécharger l'attestation</h3>
-                <p className="text-sm text-[var(--color-text-secondary)]">Génère l'attestation NF525 pour la plage de dates.</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">Génère l'attestation NF525 du mois clôturé.</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <Input type="date" value={attestationStart} onChange={(e) => setAttestationStart(e.target.value)} placeholder="Début" />
-              <Input type="date" value={attestationEnd} onChange={(e) => setAttestationEnd(e.target.value)} placeholder="Fin" />
+              <Input type="month" value={attestationPeriod} onChange={(e) => setAttestationPeriod(e.target.value)} placeholder="2026-09" />
             </div>
-            <Button onClick={handleDownloadAttestation} disabled={downloadingAttestation || !attestationStart || !attestationEnd} className="mt-3">
+            <Button onClick={handleDownloadAttestation} disabled={downloadingAttestation || !attestationPeriod} className="mt-3">
               <Download className="w-4 h-4" /> {downloadingAttestation ? 'Génération…' : 'Télécharger l\'attestation'}
             </Button>
           </div>
