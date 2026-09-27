@@ -30,6 +30,7 @@ vi.mock('@/lib/supabase', () => ({
 }))
 
 import { supabase } from '@/lib/supabase'
+import { generateDepreciationEntries } from '@/lib/queries/accounting'
 import {
   calculatePayslip,
   generateDsn,
@@ -38,7 +39,6 @@ import {
   generateBalanceSheet,
   generateProfitLoss,
   closeFiscalYearRpc,
-  calculateDepreciation,
   autoLetterAccounts,
   smartBankReconciliation,
   calculateStockValuation,
@@ -574,21 +574,27 @@ describe('Workflow Trésorerie & Échéances', () => {
 describe('Workflow Amortissements & Annexe', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('calculateDepreciation calcule l\'amortissement mensuel', async () => {
+  it('generateDepreciationEntries rend le verdict PAR immobilisation', async () => {
+    // W5 (IMMO-05) : le lot ne rend plus une liste partielle muette — il rend
+    // le nombre de dotations comptabilisées et les échecs NOMMÉS.
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: {
-        monthly_amount: 833.33,
-        accumulated_depreciation: 10000,
-        net_book_value: 40000,
-        method: 'linear',
+        exercice: '2026',
+        total: 3,
+        comptabilisees: 2,
+        sans_objet: 0,
+        echecs: [{ asset_id: 'fa-3', asset: 'Camion', message: 'Compte 289999 absent du plan comptable de la société' }],
+        entrees: { 'fa-1': 'je-1', 'fa-2': 'je-2' },
       },
       error: null,
     } as any)
 
-    const result = await calculateDepreciation('asset-1', '2025-01')
+    const verdict = await generateDepreciationEntries('fy-2026')
 
-    expect(result.method).toBe('linear')
-    expect(result.net_book_value).toBe(40000)
+    expect(supabase.rpc).toHaveBeenCalledWith('generate_depreciation_entries', { p_fiscal_year_id: 'fy-2026' })
+    expect(verdict.comptabilisees).toBe(2)
+    expect(verdict.echecs).toHaveLength(1)
+    expect(verdict.echecs[0].message).toContain('289999')
   })
 
   it('generateAccountingAnnex génère 6 sections', async () => {

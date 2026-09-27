@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
 import { getPayRuns, getEmployees, getPayrollComponents } from '@/lib/queries/payroll'
-import { getVariableElements, createVariableElement, deleteVariableElement, importTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet } from '@/lib/queries/leavesAbsences'
-import { calculateOvertimePay, calculateSickLeavePay } from '@/lib/queries/businessFunctions'
+import { getVariableElements, createVariableElement, deleteVariableElement, attachTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet } from '@/lib/queries/leavesAbsences'
+import { previewOvertimePay, calculateSickLeavePay } from '@/lib/queries/businessFunctions'
 import type { PayRun, Employee, PayrollVariableElement, PayrollComponent } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Wand2, Plus, Trash2, X, ArrowRight, ArrowLeft, Calculator, Upload } from 'lucide-react'
@@ -64,7 +64,15 @@ export function PayrollPreparationPage() {
       const month = date.getMonth() + 1
       const year = date.getFullYear()
       switch (source) {
-        case 'timesheet': await importTimesheetElements(selectedPayRun, month, year); break
+        case 'timesheet': {
+          // W5 (RH-04) : la base a déjà calculé et écrit les heures du pointage
+          // (approuvé). L'écran les RATTACHE au bulletin ; il ne les recalcule
+          // pas. Le nombre rattaché est DIT — jamais un succès muet.
+          const attachees = await attachTimesheetElements(selectedPayRun, month, year)
+          await loadVariableElements()
+          toast('success', tCommon('common.success'), t('preparation.attached', { count: attachees }))
+          return
+        }
         case 'leave': await importLeaveElements(selectedPayRun, month, year); break
         case 'expense': await importExpenseElements(selectedPayRun, month, year); break
         case 'meal': await generateMealVoucherElements(selectedPayRun, month, year); break
@@ -412,18 +420,23 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
   const { toast } = useToast()
   const [employeeId, setEmployeeId] = useState('')
   const [hours, setHours] = useState('')
-  const [rate, setRate] = useState('1.25')
-  const [result, setResult] = useState<number | null>(null)
+  const [result, setResult] = useState<{ montant: number; taux: number; source: string } | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleCalculate() {
     if (!employeeId) { toast('warning', tCommon('form.requiredField'), t('preparation.employee')); return }
     setLoading(true)
     try {
-      const res = await calculateOvertimePay(employeeId, Number(hours) || 0, Number(rate) || 1.25)
-      const amount = Number(res?.amount ?? res?.overtime_pay ?? res ?? 0)
-      setResult(amount)
-      toast('success', tCommon('common.success'), `Heures sup: ${formatCurrency(amount)}`)
+      // W5 (RH-04) : AUCUN taux n'est saisi ici. Le taux horaire majoré et le
+      // montant sont ceux que la BASE applique — diviseur de la société ×
+      // majoration (`overtime_tiers`, sinon le paramètre MAJORATION_HEURES_SUP).
+      // C'est le même calcul que celui du pointage approuvé : l'écran LIT.
+      const res = await previewOvertimePay(employeeId, Number(hours) || 0)
+      setResult({
+        montant: Number(res?.montant || 0),
+        taux: Number(res?.taux_horaire_majore || 0),
+        source: String(res?.source || 'parametre'),
+      })
     } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
@@ -432,7 +445,7 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">Calculer les heures sup</h2>
+          <h2 className="text-lg font-semibold">{t('preparation.overtime.title')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4">
@@ -440,13 +453,16 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
             { value: '', label: '—' },
             ...employees.map((e) => ({ value: e.id, label: e.name })),
           ]} />
-          <Input label="Heures" type="number" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="0" />
-          <Input label="Taux (ex: 1.25 = 25%)" type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} />
-          <Button onClick={handleCalculate} disabled={loading || !employeeId}><Calculator className="w-4 h-4" /> {loading ? '…' : 'Calculer'}</Button>
+          <Input label={t('preparation.overtime.hours')} type="number" step="0.5" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="0" />
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('preparation.overtime.rateHint')}</p>
+          <Button onClick={handleCalculate} disabled={loading || !employeeId}><Calculator className="w-4 h-4" /> {loading ? '…' : t('preparation.overtime.compute')}</Button>
           {result !== null && (
-            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)]">
-              <div className="text-xs text-[var(--color-text-secondary)]">Montant heures supplémentaires</div>
-              <div className="text-2xl font-bold">{formatCurrency(result)}</div>
+            <div className="p-4 rounded-lg bg-[var(--color-neutral-50)] space-y-1">
+              <div className="text-xs text-[var(--color-text-secondary)]">{t('preparation.overtime.amount')}</div>
+              <div className="text-2xl font-bold">{formatCurrency(result.montant)}</div>
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {t('preparation.overtime.rateApplied', { rate: result.taux.toFixed(4) })} — {t(`preparation.overtime.sources.${result.source}`)}
+              </div>
             </div>
           )}
           <div className="flex justify-end pt-2 border-t border-[var(--color-border)]">

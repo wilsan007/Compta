@@ -594,39 +594,36 @@ export async function deleteVariableElement(id: string): Promise<void> {
   if (error) throw error
 }
 
-export async function importTimesheetElements(payRunId: string, month: number, year: number): Promise<void> {
+/**
+ * W5 (RH-04) : LE calcul des heures supplémentaires appartient à la base. Le
+ * pointage approuvé pose déjà son élément (`overtime_minutes` mesurés sur
+ * l'horaire prévu → `payroll_overtime_amount` pour le taux et le montant). Le
+ * front ne recalcule plus rien — il n'a plus de seuil à lui (l'ancien « > 8 h »
+ * contredisait celui de la base) ni de taux à lui (le « × 1,25 » était en dur).
+ *
+ * Ce que l'écran fait encore, et qui lui appartient : RATTACHER au lot de paie
+ * les éléments que la base a écrits avant que le lot n'existe. C'est ce que
+ * l'ancien import ne faisait pas : son `upsert` était avalé par l'index unique
+ * de la 256 (l'élément existait déjà) et l'élément restait sans `pay_run_id`,
+ * donc hors du bulletin (`calculate_payslip` lit par `pay_run_id`).
+ *
+ * Renvoie le nombre d'éléments rattachés (0 = tout était déjà rattaché).
+ */
+export async function attachTimesheetElements(payRunId: string, month: number, year: number): Promise<number> {
   const tid = await getTenantId()
   const period = `${year}-${String(month).padStart(2, '0')}`
-  // W4 (RH-06) : le dernier jour est CALCULÉ. « 2026-04-31 » n'existe pas et
-  // PostgreSQL refuse la requête (22008) — l'import échouait cinq mois sur douze.
-  const bounds = periodBounds(period)
-  let q = supabase.from('timesheets').select('*, employees(name)').eq('status', 'approved')
-    .gte('date', bounds.first).lte('date', bounds.last)
+  let q = supabase.from('payroll_variable_elements')
+    .update({ pay_run_id: payRunId })
+    .eq('source', 'timesheet')
+    .eq('period', period)
+    .is('pay_run_id', null)
+    // `integrated` peut être NULL (les alimentations de la base ne le posent pas
+    // toujours) : « non intégré » couvre les deux écritures.
+    .or('integrated.is.null,integrated.eq.false')
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: timesheets, error } = await q
+  const { data, error } = await q.select('id')
   if (error) throw error
-  if (!timesheets) return
-  // W4 (RH-05) : le diviseur mensuel vient de la SOCIÉTÉ, pas d'un littéral.
-  // Le front lit la même valeur que les déclencheurs de la base.
-  const { data: divisors, error: divisorsError } = await supabase.rpc('payroll_divisors')
-  if (divisorsError) throw divisorsError
-  const hourlyDivisor = Number((divisors as any)?.heures || 0)
-  for (const ts of timesheets) {
-    const hours = Number(ts.hours || 0)
-    const overtimeHours = Math.max(0, hours - 8)
-    if (overtimeHours > 0) {
-      const empSalary = await supabase.from('employees').select('salary').eq('id', ts.employee_id).maybeSingle()
-      const hourlyRate = hourlyDivisor > 0 ? Number(empSalary.data?.salary || 0) / hourlyDivisor : 0
-      const overtimeRate = hourlyRate * 1.25
-      const { error: writeError } = await supabase.from('payroll_variable_elements').upsert(ti({
-        employee_id: ts.employee_id, pay_run_id: payRunId, period,
-        element_type: 'overtime', description: `Heures sup ${period}`,
-        quantity: overtimeHours, unit_price: overtimeRate, amount: overtimeHours * overtimeRate,
-        source: 'timesheet', source_id: ts.id, integrated: false,
-      }, 'payroll_variable_elements', tid), { onConflict: PAYROLL_ELEMENT_KEYS, ignoreDuplicates: true })
-      if (writeError) throw writeError
-    }
-  }
+  return data?.length ?? 0
 }
 
 export async function importLeaveElements(payRunId: string, month: number, year: number): Promise<void> {

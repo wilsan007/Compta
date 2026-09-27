@@ -714,6 +714,30 @@ export async function generateDepreciationEntry(assetId: string, fiscalYearId: s
   return data as string | null
 }
 
+/**
+ * W5 (IMMO-02, IMMO-05) : dotation de TOUTES les immobilisations actives d'un
+ * exercice, par le moteur de la base. Le verdict est PAR immobilisation : les
+ * échecs sont nommés (`echecs`), les immobilisations sans objet sont comptées.
+ * L'écran affiche ce verdict — il ne compte plus les succès lui-même et ne
+ * saute plus les échecs en silence.
+ */
+export type DepreciationRun = {
+  exercice: string
+  total: number
+  comptabilisees: number
+  sans_objet: number
+  echecs: { asset_id: string; asset: string; message: string }[]
+  entrees: Record<string, string>
+}
+
+export async function generateDepreciationEntries(fiscalYearId: string): Promise<DepreciationRun> {
+  const { data, error } = await supabase.rpc('generate_depreciation_entries', {
+    p_fiscal_year_id: fiscalYearId,
+  })
+  if (error) throw error
+  return data as DepreciationRun
+}
+
 
 // ============ Currencies ============
 export async function getCurrencies() {

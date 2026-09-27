@@ -1262,7 +1262,9 @@
     "purchaseDate": "تاريخ الاقتناء",
     "purchaseValue": "قيمة الاقتناء",
     "recalcComplete": "تمت إعادة حساب الاهتلاكات",
-    "recalcCompleteMsg": "تمت معالجة {{count}} من الأصول الثابتة",
+    "recalcCompleteMsg": "تم ترحيل {{count}} من الأصول الثابتة",
+    "depreciationFailures": "فشل {{count}} من الأصول الثابتة — لم يُسجَّل أي قيد إهلاك لها",
+    "noOpenYear": "لا توجد سنة مالية مفتوحة: أنشئ السنة المالية قبل حساب الإهلاك",
     "residualValue": "القيمة المتبقية",
     "totalPurchaseValue": "إجمالي قيمة الاقتناء",
     "usefulLifeYears": "العمر الإنتاجي (بالسنوات)"

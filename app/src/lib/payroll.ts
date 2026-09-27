@@ -10,6 +10,11 @@ export interface PayrollInput {
   contractType: 'cdi' | 'cdd' | 'apprentice'
   hoursPerWeek: number
   overtimeHours: number
+  // W5 (RH-04) : majoration des heures supplémentaires de la SOCIÉTÉ (première
+  // tranche d'`overtime_tiers`, sinon le paramètre MAJORATION_HEURES_SUP), lue
+  // par l'écran. Sans société (simulateur hors contexte), le repli ci-dessous
+  // s'applique — c'est un REPLI, plus la valeur de référence.
+  overtimeRate?: number
   mealVouchers: number
   transportAllowance: number
   age: number
@@ -95,7 +100,10 @@ export interface PayrollResult {
   lineDetails: { label: string; amount: number; category: string }[]
 }
 
-// 2024-2025 French payroll rates (fallback when no grid lines provided)
+// 2024-2025 French payroll rates (fallback when no grid lines provided).
+// `overtimeRate` n'est PLUS la référence : la société la fournit
+// (`payroll_overtime_majoration`, W5/RH-04) ; ce repli ne sert qu'aux appels
+// sans société (simulateur hors contexte) et aux tests.
 const FALLBACK_RATES = {
   socialSecurity: { employee: 6.98, employer: 29.74 },
   health: { employee: 0.40, employer: 7.28 },
@@ -252,7 +260,7 @@ export function calculatePayroll(input: PayrollInput, gridLines?: PayrollTaxGrid
   const proratedGross = input.grossSalary * proration - absenceDeduction
 
   const grossSalary = proratedGross
-  const overtimeRate = FALLBACK_RATES.overtimeRate
+  const overtimeRate = Number(input.overtimeRate ?? FALLBACK_RATES.overtimeRate)
   const overtimePay = input.overtimeHours * (input.grossSalary / 151.67) * overtimeRate
 
   // Éléments variables de workflow (migration 81)

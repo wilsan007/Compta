@@ -51,7 +51,8 @@ export {
   performThreeWayMatch,
   runMRP,
   explodeBOMRecursive,
-  calculateOvertimePay,
+  previewOvertimePay,
+  getOvertimeMajoration,
   calculateSickLeavePay,
   calculateNoticeCompensation,
   autoReconcileByScore,
@@ -63,5 +64,5 @@ export {
   closeNf525Period,
   getNf525Attestation,
 } from './businessFunctions'
-// calculateDepreciation existe déjà dans ./misc — on garde la version RPC sous un alias
-export { calculateDepreciation as calculateDepreciationRpc } from './businessFunctions'
+// W5 (IMMO-01) : l'alias `calculateDepreciationRpc` est retiré avec la RPC
+// `calculate_depreciation` — un seul moteur d'amortissement, côté SQL.

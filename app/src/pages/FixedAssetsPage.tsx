@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, getFiscalYears } from '@/lib/queries/accounting'
-import { calculateDepreciation } from '@/lib/queries/businessFunctions'
-import { calculateAllDepreciation } from '@/lib/queries/misc'
+import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, generateDepreciationEntries, getFiscalYears } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
 import type { FixedAsset, AssetDepreciation, FiscalYear } from '@/types'
@@ -24,11 +22,17 @@ export function FixedAssetsPage() {
   const [depreciations, setDepreciations] = useState<Record<string, AssetDepreciation[]>>({})
 
   const [showAccounting, setShowAccounting] = useState<FixedAsset | null>(null)
+  // W5 (IMMO-02, IMMO-03) : la dotation se demande POUR UN EXERCICE — celui qui
+  // est ouvert. Il n'y a plus de calcul « au jour d'aujourd'hui » côté écran.
+  const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
+  const openYear = fiscalYears.find((y) => y.status === 'open')
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      setAssets(await getFixedAssets())
+      const [assets, years] = await Promise.all([getFixedAssets(), getFiscalYears()])
+      setAssets(assets)
+      setFiscalYears(years || [])
     } catch (err: any) { console.error('Failed to load fixed assets:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
@@ -74,8 +78,15 @@ export function FixedAssetsPage() {
   }
 
   async function handleCalculateDepreciation(id: string) {
+    if (!openYear) {
+      toast('warning', t('fixedAssets.title'), t('fixedAssets.noOpenYear'))
+      return
+    }
     try {
-      await calculateDepreciation(id)
+      // W5 (IMMO-02) : le moteur COMPTABILISE (D 681x / C 28x) au lieu de
+      // recalculer une valeur côté écran — c'est ce que faisait l'ancien
+      // `calculateDepreciation`, qui n'écrivait aucune écriture.
+      await generateDepreciationEntry(id, openYear.id)
       const deps = await getAssetDepreciations(id)
       setDepreciations((prev) => ({ ...prev, [id]: deps }))
       await loadData()
@@ -85,9 +96,25 @@ export function FixedAssetsPage() {
   }
 
   async function handleCalculateAll() {
+    if (!openYear) {
+      toast('warning', t('fixedAssets.title'), t('fixedAssets.noOpenYear'))
+      return
+    }
     try {
-      const results = await calculateAllDepreciation()
-      toast('success', t('fixedAssets.recalcComplete'), t('fixedAssets.recalcCompleteMsg', { count: results.length }))
+      const verdict = await generateDepreciationEntries(openYear.id)
+      if (verdict.echecs.length > 0) {
+        // W5 (IMMO-05) : les échecs sont DITS, nommés, avec leur motif. L'ancien
+        // lot les avalait (`console.error`) et rendait une liste partielle comme
+        // un succès.
+        toast(
+          'error',
+          t('fixedAssets.depreciationFailures', { count: verdict.echecs.length }),
+          verdict.echecs.map((e) => `${e.asset} : ${e.message}`).join(' · ').slice(0, 900),
+        )
+      } else {
+        toast('success', t('fixedAssets.recalcComplete'),
+          t('fixedAssets.recalcCompleteMsg', { count: verdict.comptabilisees }))
+      }
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
@@ -104,7 +131,7 @@ export function FixedAssetsPage() {
       <PageHeader
         title={t('fixedAssets.title')}
         subtitle={t('fixedAssets.subtitle')}
-        action={<div className="flex gap-2"><Button variant="secondary" onClick={handleCalculateAll}><Calculator className="w-4 h-4" /> {t('fixedAssets.calculateDepreciation')}</Button><Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('fixedAssets.new')}</Button></div>}
+        action={<div className="flex gap-2"><Button variant="secondary" onClick={handleCalculateAll} disabled={!openYear}><Calculator className="w-4 h-4" /> {t('fixedAssets.calculateDepreciation')}</Button><Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('fixedAssets.new')}</Button></div>}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -175,7 +202,7 @@ export function FixedAssetsPage() {
                         <button onClick={() => setShowAccounting(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={t('assetAccounts.title')}>
                           <BookOpen className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleCalculateDepreciation(a.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('fixedAssets.calculateDepreciation')}>
+                        <button onClick={() => handleCalculateDepreciation(a.id)} disabled={!openYear} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)] disabled:opacity-40 disabled:cursor-not-allowed" title={openYear ? t('fixedAssets.calculateDepreciation') : t('fixedAssets.noOpenYear')}>
                           <Calculator className="w-4 h-4" />
                         </button>
                         {a.status === 'active' && (
@@ -305,8 +332,6 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [currencyCode, setCurrencyCode] = useState('EUR')
   const [saving, setSaving] = useState(false)
 
-  const currentValue = purchaseValue - ((purchaseValue - residualValue) / Math.max(usefulLife, 1)) * Math.min(usefulLife, Math.floor((Date.now() - new Date(purchaseDate).getTime()) / (365.25 * 86400000)))
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -315,7 +340,11 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         name, code: code || undefined, category,
         purchase_date: purchaseDate,
         purchase_value: purchaseValue,
-        current_value: Math.max(currentValue, residualValue),
+        // W5 (IMMO-03) : la valeur nette de départ est la valeur d'acquisition.
+        // L'écran la calculait « au jour d'aujourd'hui » (`Date.now()`), avec un
+        // plan qui n'était pas celui du moteur : deux vérités pour la même
+        // immobilisation. Ce sont les dotations qui font baisser `current_value`.
+        current_value: purchaseValue,
         depreciation_method: depMethod,
         useful_life_years: usefulLife,
         residual_value: residualValue,
@@ -358,10 +387,11 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             <Input label={t('fixedAssets.usefulLifeYears')} type="number" value={usefulLife} onChange={(e) => setUsefulLife(Number(e.target.value))} />
             <Input label={t('fixedAssets.residualValue')} type="number" step="0.01" value={residualValue} onChange={(e) => setResidualValue(Number(e.target.value))} />
           </div>
+          {/* W5 (IMMO-04) : « units_of_production » est RETIRÉE de l'écran comme
+              du moteur — la fiche ne porte aucun compteur d'unités produites. */}
           <Select label={t('fixedAssets.depreciationMethod')} value={depMethod} onChange={(e) => setDepMethod(e.target.value)} options={[
             { value: 'straight_line', label: t('fixedAssets.depMethods.straight_line') },
             { value: 'declining_balance', label: t('fixedAssets.depMethods.declining_balance') },
-            { value: 'units_of_production', label: t('fixedAssets.depMethods.units_of_production') },
           ]} />
           <div className="space-y-3">
             <label className="flex items-center gap-2 text-sm">
@@ -382,10 +412,6 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
               <Input label={t('assetAccounts.journal')} value={assetJournal} onChange={(e) => setAssetJournal(e.target.value)} placeholder="IMMO" />
               <Input label={t('currencyCode')} value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} placeholder="EUR" />
             </div>
-          </div>
-          <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] text-sm">
-            <span className="text-[var(--color-text-secondary)]">{t('fixedAssets.estimatedCurrentValue')}: </span>
-            <span className="font-mono font-bold">{formatCurrency(Math.max(currentValue, residualValue))}</span>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

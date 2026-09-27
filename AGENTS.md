@@ -1,12 +1,12 @@
 # AGENTS.md — Onusuite/compta
 
-## Reste ouvert — au 26 septembre 2026
+## Reste ouvert — au 27 septembre 2026
 
 **Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
 (ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, les
 deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
 
-* **≈ 147 j restants** : plan correctif **W5 / W7 / W8 + 9 transverses** (≈ 16 j),
+* **≈ 145 j restants** : plan correctif **W7 / W8 + 9 transverses** (≈ 14 j),
   chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
 * **Deux défauts encore rouges au registre** (`app/sql/ci/expected_failures.sql`) :
   `231 M-17-01` (la refacturation des temps — **W8**) et `245 T08` (le CA non
@@ -296,6 +296,61 @@ deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
     `deploy-all-functions.sh` distingue **13 fonctions à JWT vérifié par la
     passerelle**, **6 points d'entrée publics** (garde propre) et **1 non
     déployée**.
+
+### Vague W5 — un seul moteur par grandeur (2026-09-27) ✅
+- **IMMO-01 → IMMO-05 + RH-04 (260)** : le défaut n'était pas le calcul, c'est
+  qu'il y en avait **plusieurs**. Trois moteurs d'amortissement se contredisaient
+  (le moteur SQL qui comptabilise, la RPC `calculate_depreciation`, le front en
+  `floor(jours / 365,25)`), `depreciation_method` n'était lue par **personne**
+  (linéaire et dégressif amortissaient pareil, `units_of_production` était
+  linéaire en silence), un recalcul partait de `Date.now()` (il écrasait la
+  valeur d'un exercice clos) et le lot du front **avalait** ses échecs
+  (`console.error`) en rendant une liste partielle comme un succès. La 260 :
+  `calculate_depreciation` **supprimée**, méthode **lue** (linéaire ; dégressif
+  avec coefficient légal **paramétré** — `payroll_legal_parameters`,
+  `AMORT_COEFF_DEGRESSIF_3_4/_5_6/_7_PLUS` = 1,5 / 2 / 2,5 — et **bascule** sur
+  le linéaire du restant ; `units_of_production` **retirée** : la fiche ne porte
+  aucun compteur d'unités produites), exercice **borné** (dotation d'exercice
+  clos refusée), lot **`generate_depreciation_entries`** qui rend un verdict
+  **par immobilisation** (`comptabilisees`, `sans_objet`, `echecs` nommés).
+  Heures supplémentaires : **un** seuil (l'horaire prévu → `overtime_minutes`),
+  **un** taux (diviseur de la société × `overtime_majoration` : première tranche
+  d'`overtime_tiers` sinon paramètre `MAJORATION_HEURES_SUP`), **un** montant
+  (`payroll_overtime_amount`) — le déclencheur écrit désormais **37,09 €** là où
+  il écrivait **0**. 10 scénarios, **9 rouges avant**, 10/10 après.
+- **Le trou trouvé en chemin (bouché)** : la 256 avait posé l'index unique
+  `uniq_payroll_element_source` ; l'`upsert` de l'ancien
+  `importTimesheetElements` était **avalé** par `ON CONFLICT DO NOTHING`, donc un
+  élément écrit **avant** la création du lot gardait `pay_run_id = NULL` — et
+  `calculate_payslip` lit **par `pay_run_id`** : l'heure supplémentaire n'était
+  **pas payée**. L'écran ne recalcule plus, il **rattache**
+  (`attachTimesheetElements`) et **dit** combien (`0` compris).
+- **Cohérence UI ↔ base, mesurée** : `misc.ts` perd ses **deux** fonctions
+  d'amortissement ; `businessFunctions.ts` perd la RPC et gagne
+  `previewOvertimePay` + `getOvertimeMajoration` (`calculateOvertimePay`
+  appelait `calculate_overtime_pay` avec des paramètres **inexistants** :
+  l'appel échouait toujours) ; `FixedAssetsPage` passe par le moteur **et** son
+  lot, affiche les échecs, n'offre plus `units_of_production` et crée ses fiches
+  à la valeur d'acquisition (plus de `Date.now()`) ; la modale des heures sup
+  n'a plus de **taux saisi** — elle lit le taux majoré et le montant de la base ;
+  le simulateur (`PayrollCalcPage`) lit la majoration de la société. Nouveau
+  **`src/lib/__tests__/single-engine.test.ts`** (5 tests) : balayage statique de
+  `src/` interdisant les symboles du second moteur, commentaires exclus.
+- **Le contrôle a servi** : `check_tenant_guard` a **refusé** les trois nouvelles
+  fonctions internes (SECURITY DEFINER + `uuid` en paramètre + exposées) avant
+  qu'elles ne partent — traitées comme le socle des diviseurs (256) : **non
+  exposées**.
+- Base neuve **235 migrations, 0 erreur** ; **67/67 suites** ; **9/9 contrôles**
+  (`check_plpgsql` : 0 erreur, 33 avertissements) ; `tsc` 0, `oxlint` 0, parité
+  i18n fr/en/ar, **Vitest 1 496** (+8), plafond de code mort **66/66**. Le
+  registre `ci/expected_failures.sql` n'a pas bougé (`231 M-17-01` → W8,
+  `245 T08` → W7). [Preuve](doc/audit/VAGUE-W5-2026-09-27.md)
+- **Limites dites** : `units_of_production` n'est pas implémentée (retirée +
+  refusée) ; `calculate_overtime_pay` (tranches + exonération de 7 500 €) n'a
+  **plus aucun appelant** — le chemin de paie applique la **première** tranche,
+  donc les bandes supérieures et l'exonération ne sont **pas** appliquées
+  (point ouvert, phase 6) ; coefficients et majoration sont **français** (D-11) ;
+  le simulateur garde un **repli** documenté (1,25) hors contexte de société.
 
 ### Bugs corrigés
 ### Bugs corrigés

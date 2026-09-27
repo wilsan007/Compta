@@ -29,11 +29,12 @@
 | **W4** | Paie : un seul diviseur mensuel par société, bornes de période calculées, notes de frais au grand livre, idempotence par document source | [W4](VAGUE-W4-2026-09-26.md) |
 | **W6** | Fonctions Edge et écrans placebos : 20 colonnes réelles, relance idempotente, un écran ne peut plus tamponner un succès, **les deux baselines de W0 à zéro**, contrat d'entrée des 20 fonctions testé (32 tests Deno), fonctions sans appelant branchées ou neutralisées | [W6](VAGUE-W6-2026-09-26.md) |
 | **W9** | Chaînage de l'absence : registre `employee_absence_days`, gardes en aval, une seule retenue de paie, 34 assertions transverses | [W9](VAGUE-W9-2026-09-26.md) |
+| **W5** | Un seul moteur par grandeur : `calculate_depreciation` supprimée, méthode d'amortissement **lue** (dégressif paramétré, `units_of_production` retirée), exercice **borné**, lot à verdict par immobilisation, heures supplémentaires à **un** seuil / **un** taux / **un** montant | [W5](VAGUE-W5-2026-09-27.md) |
 
-État mesuré sur base neuve : **234 migrations, 0 erreur** ; **66/66 suites**,
-**8/8 contrôles** (dont `check_plpgsql` : 0 erreur) ; front `tsc` 0, `oxlint` 0,
-parité i18n fr/en/ar, **Vitest 1 488**, **32 tests Edge Deno**, plafond de code
-mort **66/66**.
+État mesuré sur base neuve : **235 migrations, 0 erreur** ; **67/67 suites**,
+**9/9 contrôles** (dont `check_plpgsql` : 0 erreur, 33 avertissements) ; front
+`tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 496**, **32 tests Edge
+Deno**, plafond de code mort **66/66**.
 
 ---
 
@@ -76,11 +77,15 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 
 | Vague | Défauts | Charge | Contenu |
 |---|---:|---:|---|
-| **W5 — Un seul moteur par grandeur** | 8 (1 🔴) | 2 j | deux moteurs d'amortissement (`generate_depreciation_entry` concurrent de l'écran) ; reste des heures supplémentaires |
 | **W7 — Comptabilité avancée** | 15 (4 🔴) | 6 j | M01-01→03 le taux de change est saisi… et **jamais appliqué** ; ANA-01→03 analytique ; BUD-01→04 réalisé non borné à l'exercice ; SAGE-01→03 import équilibré et transactionnel ; FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
 | **W8 — Production et projets** | 6 (1 🔴) | 3 j | PROD-01→03 nomenclature à **un seul niveau**, ni rebuts ni écarts, écriture datée du jour de clôture ; PROJ-01→03 la **refacturation des temps n'existe pas** (c'est le `M-17-01` encore rouge au registre) |
 | **T1 → T9** | 9 scénarios transverses | 5 j | commande → livraison → facture → encaissement → lettrage → clôture ; achat → réception → qualité → facture → paiement ; temps → projet → facture → marge ; **absence → paie → DSN → coût projet** (fait, `266`) ; caisse → clôture → comptabilité → TVA ; immobilisation → amortissement → cession ; budget → engagement → réalisé ; import → lettrage → états ; **contre-épreuve de falsification** |
-| | **Total** | **≈ 16 j** | |
+| | **Total** | **≈ 14 j** | |
+
+> **W5 a été exécutée le 27/09** (2 j, `260`) : elle sort de ce tableau. Elle
+> laisse un point ouvert pour la phase 6 : `calculate_overtime_pay` (tranches et
+> exonération de 7 500 €) n'a plus d'appelant, et le chemin de paie applique la
+> **première** tranche — les bandes supérieures ne sont donc pas appliquées.
 
 ### D. Les chaînages (le gros du reste)
 
@@ -132,14 +137,14 @@ dans le commit du correctif.
 
 | Bloc | Charge |
 |---|---:|
-| Plan correctif — phases 5 et 6 (W5, W7, W8 + les 9 transverses) | ≈ 16 j |
+| Plan correctif — phases 5 et 6 (W7, W8 + les 9 transverses) | ≈ 14 j |
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
-| **Total restant au 26/09/2026** | **≈ 147 j** |
-| Déjà livré et prouvé (W0 → W3, W4, W6, W9, chaînages L0) | ≈ 18,5 j |
+| **Total restant au 27/09/2026** | **≈ 145 j** |
+| Déjà livré et prouvé (W0 → W9 — dont W5, `260` — et chaînages L0) | ≈ 20,5 j |
 
-Au 24/09 le total était de ≈ 169 j ; W4 (4 j) et W6 (3,5 j) en sont sortis, ainsi
-que la chaîne de l'absence (W9, 4 j) — d'où **≈ 147 j** aujourd'hui.
+Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
+(W9, 4 j) et W5 (2 j) en sont sortis — d'où **≈ 145 j** aujourd'hui.
 
 **Ce que ces chiffres ne comptent pas** : les défauts que l'audit des 16 modules
 restants révélera, les délais externes (les 14 documents djiboutiens,
@@ -200,4 +205,5 @@ node scripts/check-unchecked-writes.mjs                 # 0 attendu
 | **ce document** | ce qui reste ouvert, par nature, avec les charges et les blocages |
 | `doc/audit/RESTE-A-FAIRE-ET-PLAN-PHASES-2026-09-24.md` | le plan par phases (détail, critères de sortie, décisions) |
 | `doc/audit/VAGUE-W6-2026-09-26.md` | la preuve de la vague W6 (mesures avant/après, « rouge d'abord », limites) |
+| `doc/audit/VAGUE-W5-2026-09-27.md` | la preuve de la vague W5 (moteurs uniques : mesures avant/après, « rouge d'abord », limites dites) |
 | `app/sql/ci/expected_failures.sql` | les deux défauts encore rouges, avec leur raison |

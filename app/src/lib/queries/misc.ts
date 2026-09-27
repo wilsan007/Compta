@@ -2,7 +2,7 @@ import { supabase, isTenantTable } from '@/lib/supabase'
 import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { createStockMovement } from './stock'
-import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, FixedAsset, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
+import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
 
 // ============ Journals Report ============
 export async function getJournalsReport(startDate?: string, endDate?: string) {
@@ -53,63 +53,13 @@ export async function payPayrollRun(
   }
 }
 
-// Calculate and update depreciation for a fixed asset
-export async function calculateDepreciation(assetId: string) {
-  const tid = await getTenantId()
-  let faQ = supabase.from('fixed_assets').select('*').eq('id', assetId)
-  if (tid) faQ = faQ.eq('tenant_id', tid)
-  const { data: asset, error } = await faQ.single()
-  if (error) throw error
-
-  const purchaseValue = Number(asset.purchase_value)
-  const residualValue = Number(asset.residual_value)
-  const usefulLife = Number(asset.useful_life_years)
-  if (usefulLife <= 0) throw new Error('Durée de vie invalide')
-
-  const annualDepreciation = (purchaseValue - residualValue) / usefulLife
-  const yearsElapsed = Math.min(
-    usefulLife,
-    Math.floor((Date.now() - new Date(asset.purchase_date).getTime()) / (365.25 * 86400000))
-  )
-  const totalDepreciation = annualDepreciation * yearsElapsed
-  const currentValue = Math.max(purchaseValue - totalDepreciation, residualValue)
-
-  const status = currentValue <= residualValue ? 'fully_depreciated' : asset.status
-
-  const { data, error: updateError } = await tud(supabase
-    .from('fixed_assets')
-    .update({ current_value: currentValue, status }), 'fixed_assets', tid)
-    .eq('id', assetId)
-    .select()
-    .single()
-  if (updateError) throw updateError
-  return data as FixedAsset
-}
-
-// Calculate depreciation for all active assets
-export async function calculateAllDepreciation() {
-  const tid = await getTenantId()
-  let q = supabase
-    .from('fixed_assets')
-    .select('*')
-    .eq('status', 'active')
-    .order('id')
-  if (tid) q = q.eq('tenant_id', tid)
-  // LOT7-03 : dotation aux amortissements de fin d'exercice. Tronquée à 1 000, elle
-  // laissait des immobilisations sans dotation, sans aucun message.
-  const assets = await fetchAllRows<any>(q, { label: 'calculateAllDepreciation/fixed_assets' })
-
-  const results: FixedAsset[] = []
-  for (const asset of assets) {
-    try {
-      const updated = await calculateDepreciation(asset.id)
-      results.push(updated)
-    } catch (err) {
-      console.error('Depreciation failed for asset', asset.id, err)
-    }
-  }
-  return results
-}
+// W5 (IMMO-01, IMMO-02, IMMO-05) : le calcul d'amortissement du front est
+// SUPPRIMÉ. Il produisait un plan différent du moteur SQL (`floor(jours/365,25)`),
+// partait de `Date.now()` — donc écrasait la valeur d'un exercice clos — et son
+// lot avalait les échecs (`console.error`) en rendant une liste partielle comme
+// un succès. Le seul moteur est `generate_depreciation_entry` (base) ; le lot
+// est `generate_depreciation_entries` (base), appelé depuis
+// `@/lib/queries/accounting`.
 
 // Create stock movement linked to an invoice
 export async function createInvoiceStockMovement(productId: string, type: 'in' | 'out', quantity: number, reference: string, invoiceId?: string) {

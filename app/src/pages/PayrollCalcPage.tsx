@@ -5,6 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getEmployees } from '@/lib/queries/payroll'
 import { getActiveLegislationPack, getActivePayrollTaxGrid, getPayrollTaxGridLines } from '@/lib/queries/accounting'
 import { calculatePayroll, type PayrollInput, type PayrollResult, formatPayrollAmount } from '@/lib/payroll'
+import { getOvertimeMajoration } from '@/lib/queries/businessFunctions'
 import { Calculator, FileText, Globe } from 'lucide-react'
 import type { Employee, PayrollTaxGridLine, LegislationPack } from '@/types'
 
@@ -27,6 +28,10 @@ export function PayrollCalcPage() {
   const [mealVouchers, setMealVouchers] = useState(80)
   const [transportAllowance, setTransportAllowance] = useState(75)
   const [taxRate, setTaxRate] = useState(3.5)
+  // W5 (RH-04) : la majoration des heures supplémentaires vient de la SOCIÉTÉ.
+  // Le simulateur n'a plus de constante légale à lui (le repli de `payroll.ts`
+  // ne sert que hors contexte de société).
+  const [overtimeRate, setOvertimeRate] = useState<number | undefined>(undefined)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -37,6 +42,9 @@ export function PayrollCalcPage() {
       ])
       setEmployees((empData || []).filter((e) => e.status === 'active'))
       setLegislationPack(pack)
+      getOvertimeMajoration()
+        .then((m) => { if (Number.isFinite(m) && m > 0) setOvertimeRate(m) })
+        .catch(() => console.error('Majoration des heures supplémentaires illisible — repli du simulateur'))
 
       if (pack?.country_code) {
         const grid = await getActivePayrollTaxGrid(pack.country_code, 'composite').catch(() => undefined)
@@ -93,6 +101,8 @@ export function PayrollCalcPage() {
       contractType,
       hoursPerWeek,
       overtimeHours,
+      // W5 (RH-04) : la majoration de la société, pas une constante du front.
+      overtimeRate,
       mealVouchers,
       transportAllowance,
       age: 30,

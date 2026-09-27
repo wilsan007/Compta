@@ -1262,7 +1262,9 @@
     "purchaseDate": "Acquisition date",
     "purchaseValue": "Acquisition value",
     "recalcComplete": "Depreciation recalculated",
-    "recalcCompleteMsg": "{{count}} asset(s) processed",
+    "recalcCompleteMsg": "{{count}} asset(s) posted to the ledger",
+    "depreciationFailures": "{{count}} asset(s) failed — no depreciation entry was written for them",
+    "noOpenYear": "No open fiscal year: create the fiscal year before calculating a depreciation",
     "residualValue": "Residual value",
     "totalPurchaseValue": "Total acquisition value",
     "usefulLifeYears": "Useful life (years)"

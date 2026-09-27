@@ -18,6 +18,7 @@ const h = vi.hoisted(() => ({
   filters: [] as Array<[string, string, string]>,
   ors: [] as string[],
   upserts: [] as Array<{ table: string; payload: any; options: any }>,
+  updates: [] as Array<{ table: string; payload: any }>,
   rpcs: [] as string[],
   single: null as any,
   rows: [] as any[],
@@ -28,9 +29,9 @@ vi.mock('@/lib/supabase', () => {
   const chain: any = {
     select: () => chain,
     insert: () => chain,
-    update: () => chain,
+    update: (payload: any) => { h.updates.push({ table: h.table, payload }); return chain },
     delete: () => chain,
-    eq: () => chain,
+    eq: (col: string, val: string) => { h.filters.push(['eq', col, val]); return chain },
     neq: () => chain,
     order: () => chain,
     limit: () => chain,
@@ -69,13 +70,14 @@ vi.mock('@/lib/queries/core', () => ({
 }))
 
 import {
-  importExpenseElements, importLeaveElements, importTimesheetElements, generateMealVoucherElements,
+  importExpenseElements, importLeaveElements, attachTimesheetElements, generateMealVoucherElements,
 } from '@/lib/queries/leavesAbsences'
 
 beforeEach(() => {
   h.filters = []
   h.ors = []
   h.upserts = []
+  h.updates = []
   h.rpcs = []
   h.single = null
   h.rows = []
@@ -137,26 +139,30 @@ describe('importLeaveElements — RH-09 et le diviseur (RH-05)', () => {
   })
 })
 
-describe('importTimesheetElements — RH-06 et RH-05', () => {
-  it('février est borné au 28, et le taux horaire vient du diviseur de la société', async () => {
-    h.rows = [{ id: 'ts-1', employee_id: 'emp-1', hours: 9 }]
-    h.single = { salary: 1516.67 }   // / 151,6667 → 10,00 l'heure
-    await importTimesheetElements('run-1', 2, 2026)
+describe('attachTimesheetElements — W5 (RH-04) : le front rattache, il ne calcule plus', () => {
+  it('ne pose QUE `pay_run_id` sur les éléments de pointage de la période', async () => {
+    await attachTimesheetElements('run-1', 2, 2026)
 
-    expect(h.filters).toContainEqual(['lte', 'date', '2026-02-28'])
-    expect(JSON.stringify(h.filters)).not.toContain('2026-02-31')
-    expect(h.rpcs).toContain('payroll_divisors')
+    expect(h.table).toBe('payroll_variable_elements')
+    const [write] = h.updates
+    // Aucun taux, aucun montant, aucune quantité : le calcul est en base.
+    expect(write.payload).toEqual({ pay_run_id: 'run-1' })
 
-    const [write] = h.upserts
-    expect(write.payload.element_type).toBe('overtime')
-    expect(write.payload.unit_price).toBeCloseTo(12.5, 2)   // 10,00 × 1,25
-    expect(write.payload.amount).toBeCloseTo(12.5, 2)       // 1 h supplémentaire
+    expect(h.filters).toContainEqual(['eq', 'source', 'timesheet'])
+    expect(h.filters).toContainEqual(['eq', 'period', '2026-02'])
+    expect(h.filters).toContainEqual(['eq', 'tenant_id', 't-1'])
+    expect(h.ors).toContain('integrated.is.null,integrated.eq.false')
+    // Le diviseur de la société n'est même plus lu par l'écran.
+    expect(h.rpcs).not.toContain('payroll_divisors')
+    // Et plus aucune écriture d'élément (l'ancien import réécrivait `overtime`).
+    expect(h.upserts).toHaveLength(0)
   })
 
-  it('un pointage de 8 h ne produit aucune heure supplémentaire', async () => {
-    h.rows = [{ id: 'ts-2', employee_id: 'emp-1', hours: 8 }]
-    await importTimesheetElements('run-1', 2, 2026)
-    expect(h.upserts).toHaveLength(0)
+  it('rend le nombre d’éléments rattachés — 0 est dit, jamais un succès muet', async () => {
+    h.rows = [{ id: 'e1' }, { id: 'e2' }]
+    expect(await attachTimesheetElements('run-1', 2, 2026)).toBe(2)
+    h.rows = []
+    expect(await attachTimesheetElements('run-1', 2, 2026)).toBe(0)
   })
 })
 

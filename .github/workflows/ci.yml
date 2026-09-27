@@ -938,6 +938,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W5 — un seul moteur par grandeur (IMMO-01 → IMMO-05, RH-04). Mesuré
+      # avant : TROIS moteurs d'amortissement se contredisaient (le moteur SQL
+      # qui comptabilise, la RPC `calculate_depreciation`, le calcul du front en
+      # `floor(jours / 365,25)`), les trois méthodes offertes à l'écran n'avaient
+      # aucun effet, un recalcul partait de `Date.now()` (il écrasait la valeur
+      # d'un exercice clos) et le lot du front avalait les dotations en échec
+      # (`console.error`) ; les heures supplémentaires avaient trois moteurs,
+      # deux seuils (7 h et 8 h) et un montant NUL. La 260 n'en garde qu'un de
+      # chaque : la méthode est LUE (linéaire, dégressif paramétré, et
+      # `units_of_production` RETIRÉE faute de compteur d'unités), l'exercice est
+      # borné, le lot rend un verdict PAR immobilisation (`echecs` nommés), et le
+      # pointage écrit ses heures sup avec un MONTANT (taux horaire de la société
+      # × majoration paramétrée). 10 scénarios, 9 rouges avant.
+      # Le miroir côté front (aucun écran ne réintroduit un moteur) est mesuré par
+      # `src/lib/__tests__/single-engine.test.ts` (Vitest).
+      - name: 'W5 : un seul moteur par grandeur — amortissement et heures sup (260)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/260_single_depreciation_engine_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

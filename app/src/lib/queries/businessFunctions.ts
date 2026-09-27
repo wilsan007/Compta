@@ -89,18 +89,13 @@ export async function closeFiscalYearRpc(fiscalYearId: string) {
 }
 
 // ============================================================
-// IMMOBILISATIONS (migration 88)
+// IMMOBILISATIONS
 // ============================================================
-
-/** Calcule l'amortissement d'une immobilisation pour une période */
-export async function calculateDepreciation(assetId: string, period?: string) {
-  const { data, error } = await supabase.rpc('calculate_depreciation', {
-    p_asset_id: assetId,
-    p_period: period,
-  })
-  if (error) throw error
-  return data
-}
+// W5 (IMMO-01) : `calculateDepreciation` (RPC `calculate_depreciation`) est
+// SUPPRIMÉE — le second moteur. La dotation se demande par
+// `generateDepreciationEntry` / `generateDepreciationEntries` de
+// `@/lib/queries/accounting`, qui comptabilisent (D 681x / C 28x) et rendent un
+// verdict par immobilisation.
 
 // ============================================================
 // LETTRAGE & RAPPROCHEMENT (migration 88)
@@ -376,15 +371,36 @@ export async function explodeBOMRecursive(productId: string, quantity: number) {
 // PAIE — Heures sup, IJSS, Préavis (migration 89)
 // ============================================================
 
-/** Calcule la rémunération des heures supplémentaires */
-export async function calculateOvertimePay(employeeId: string, hours: number, rate: number) {
-  const { data, error } = await supabase.rpc('calculate_overtime_pay', {
+/**
+ * W5 (RH-04) : ce que la BASE applique à N heures supplémentaires pour un
+ * salarié — taux horaire de la société (diviseur de la 256) × majoration
+ * (première tranche `overtime_tiers`, sinon le paramètre
+ * MAJORATION_HEURES_SUP). L'écran ne transmet AUCUN taux : il ne calcule plus
+ * rien, il lit.
+ */
+export async function previewOvertimePay(employeeId: string, hours: number) {
+  const { data, error } = await supabase.rpc('payroll_overtime_preview', {
     p_employee_id: employeeId,
     p_hours: hours,
-    p_rate: rate,
   })
   if (error) throw error
-  return data
+  return data as {
+    heures: number
+    taux_horaire_majore: number
+    montant: number
+    source: 'tranches' | 'parametre'
+  }
+}
+
+/**
+ * W5 (RH-04) : la majoration des heures supplémentaires de la société active.
+ * Les écrans de SIMULATION (PayrollCalcPage) la lisent ici au lieu de porter
+ * une constante légale en dur.
+ */
+export async function getOvertimeMajoration() {
+  const { data, error } = await supabase.rpc('payroll_overtime_majoration')
+  if (error) throw error
+  return Number(data ?? 1.25)
 }
 
 /** Calcule les indemnités journalières de sécurité sociale (IJSS) */

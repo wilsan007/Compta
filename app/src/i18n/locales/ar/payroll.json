@@ -204,13 +204,26 @@
     "grossTotal": "إجمالي الراتب", "netTotal": "صافي الإجمالي",
     "variableTotal": "إجمالي المتغيرات", "estimatedTotal": "الإجمالي المقدر",
     "reverseCalc": "حساب عكسي",
-    "importTimesheet": "استيراد ساعات العمل", "importLeaves": "استيراد العطل",
+    "importTimesheet": "ربط الساعات المسجلة", "importLeaves": "استيراد العطل",
     "importExpenses": "استيراد المصاريف", "importMealVouchers": "استيراد قسائم الطعام",
     "addElement": "إضافة عنصر",
     "employee": "الموظف", "type": "النوع", "description": "الوصف",
     "quantity": "الكمية", "unitPrice": "سعر الوحدة", "amount": "المبلغ",
-    "noElements": "لا عناصر متغيرة", "noElementsDescription": "لم يتم استيراد عناصر متغيرة لحملة الرواتب هذه",
+    "noElements": "لا عناصر متغيرة", "noElementsDescription": "لا توجد عناصر متغيرة مرتبطة بهذه الحملة؛ ساعات الدوام المعتمدة تكتبها قاعدة البيانات (المقسّم والزيادة القانونية للشركة)",
     "imported": "تم الاستيراد بنجاح",
+    "attached": "تم ربط {{count}} من عناصر سجل الدوام بكشف الرواتب",
+    "overtime": {
+      "title": "الساعات الإضافية",
+      "hours": "الساعات",
+      "rateHint": "الأجر الساعي المعزّز يأتي من الشركة (المقسّم الساعي × الزيادة)؛ لا يُدخل هنا.",
+      "compute": "احسب",
+      "amount": "مبلغ الساعات الإضافية",
+      "rateApplied": "الأجر الساعي المعزّز المطبّق: {{rate}}",
+      "sources": {
+        "tranches": "شرائح الساعات الإضافية للشركة",
+        "parametre": "معامل الزيادة القانونية للشركة"
+      }
+    },
     "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "meal_vouchers": "قسائم طعام (راتب)", "transport": "نقل", "other": "أخرى", "advance_deduction": "خصم سلفة الراتب", "pay_recall": "استدراك الراتب", "expense_reimbursement": "تعويض المصاريف", "unpaid_leave_deduction": "خصم إجازة بدون أجر", "timesheet_hours": "ساعات العمل", "lateness_deduction": "خصم التأخير", "unpaid_absence": "غياب بدون أجر" },
     "validate": "التحقق من التحضير", "validated": "تم التحقق من التحضير",
     "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير"

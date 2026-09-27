@@ -1262,7 +1262,9 @@
     "purchaseDate": "Date d'acquisition",
     "purchaseValue": "Valeur d'acquisition",
     "recalcComplete": "Amortissements recalculés",
-    "recalcCompleteMsg": "{{count}} immobilisation(s) traitée(s)",
+    "recalcCompleteMsg": "{{count}} immobilisation(s) comptabilisée(s)",
+    "depreciationFailures": "{{count}} immobilisation(s) en échec — aucune dotation n'a été écrite pour elles",
+    "noOpenYear": "Aucun exercice ouvert : créez l'exercice avant de calculer une dotation",
     "residualValue": "Valeur résiduelle",
     "totalPurchaseValue": "Valeur d'acquisition totale",
     "usefulLifeYears": "Durée d'utilité (années)"

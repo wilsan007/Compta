@@ -213,7 +213,7 @@
     "variableTotal": "Total variable",
     "estimatedTotal": "Total estimé",
     "reverseCalc": "Calcul à l'envers",
-    "importTimesheet": "Importer feuilles de temps",
+    "importTimesheet": "Rattacher les heures pointées",
     "importLeaves": "Importer congés",
     "importExpenses": "Importer notes de frais",
     "importMealVouchers": "Importer titres restaurant",
@@ -225,8 +225,21 @@
     "unitPrice": "Prix unitaire",
     "amount": "Montant",
     "noElements": "Aucun élément variable",
-    "noElementsDescription": "Aucun élément variable importé pour cette campagne",
+    "noElementsDescription": "Aucun élément variable rattaché à cette campagne ; les heures d'un pointage approuvé sont écrites par la base (diviseur et majoration de la société)",
     "imported": "Importation réussie",
+    "attached": "{{count}} élément(s) de pointage rattaché(s) au bulletin",
+    "overtime": {
+      "title": "Heures supplémentaires",
+      "hours": "Heures",
+      "rateHint": "Le taux horaire majoré vient de la société (diviseur horaire × majoration) ; il n'est pas saisi ici.",
+      "compute": "Calculer",
+      "amount": "Montant des heures supplémentaires",
+      "rateApplied": "Taux horaire majoré appliqué : {{rate}}",
+      "sources": {
+        "tranches": "tranches d'heures supplémentaires de la société",
+        "parametre": "paramètre de majoration de la société"
+      }
+    },
     "elementTypes": {
       "overtime": "Heures sup.",
       "bonus": "Prime",
