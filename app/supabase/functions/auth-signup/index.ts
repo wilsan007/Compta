@@ -135,20 +135,22 @@ serve(async (req) => {
       })
       emailSent = emailResult.success
 
-      // 5. Log to email queue
+      // 5. Log to email queue.
+      // W6 : l'erreur est LUE. Un `try/catch` ne suffisait pas — PostgREST ne
+      // lève pas d'exception, il rend `{ error }` ; l'échec était donc
+      // strictement invisible. La mise en file reste non bloquante.
       if (emailResult.success) {
-        try {
-          await supabase.from("notification_email_queue").insert({
-            recipient_email: email,
-            recipient_name: name,
-            notification_type: "signup_confirmation",
-            subject: template.subject,
-            status: "sent",
-            resend_id: emailResult.id || null,
-            sent_at: new Date().toISOString(),
-            tenant_id: null, // Pas de tenant lors du signup — créé ultérieurement
-          })
-        } catch { /* queue logging failure is non-blocking */ }
+        const { error: queueErr } = await supabase.from("notification_email_queue").insert({
+          recipient_email: email,
+          recipient_name: name,
+          notification_type: "signup_confirmation",
+          subject: template.subject,
+          status: "sent",
+          resend_id: emailResult.id || null,
+          sent_at: new Date().toISOString(),
+          tenant_id: null, // Pas de tenant lors du signup — créé ultérieurement
+        })
+        if (queueErr) console.error("auth-signup: e-mail de bienvenue non journalisé:", queueErr.message)
       }
     }
 

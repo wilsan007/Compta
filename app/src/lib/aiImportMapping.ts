@@ -2,6 +2,11 @@
 // Uses fuzzy string matching + a French/English synonym dictionary
 // to automatically detect which source column maps to which target field,
 // regardless of column order or naming conventions.
+//
+// W6 : ce module appelle la fonction Edge `ai-import-mapping`, qui exige un
+// jeton depuis toujours — il faut donc le client Supabase ici (le repli IA
+// n'a jamais fonctionné sans lui).
+import { supabase } from '@/lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -844,9 +849,23 @@ export async function aiFallbackMapping(
   edgeFunctionUrl: string,
 ): Promise<AIFallbackResult | null> {
   try {
+    // W6 — LA FONCTION EXIGE UN JETON (`401 Token d'authentification requis`)
+    // et ce fetch n'en envoyait aucun : l'appel répondait 401, la fonction
+    // rendait `null`, et l'écran affichait « IA indisponible ». La
+    // fonctionnalité n'a donc **jamais** pu fonctionner en production.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      console.error('AI fallback : aucune session — appel refusé sans jeton')
+      return null
+    }
+
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+      },
       body: JSON.stringify({
         sourceHeaders,
         sampleRows: sampleRows.slice(0, 5),

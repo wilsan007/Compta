@@ -27,6 +27,7 @@
     "verify:fast": "bash scripts/verify.sh --skip-tests --skip-lint",
     "audit:silent": "node scripts/audit-silent-failures.mjs",
     "audit:silent:json": "node scripts/audit-silent-failures.mjs --json",
+    "edge:test": "deno test --allow-env --allow-read --import-map=supabase/functions/__tests__/import_map.json supabase/functions/__tests__/",
     "prepare": "husky"
   },
   "lint-staged": {

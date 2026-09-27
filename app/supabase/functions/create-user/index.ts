@@ -243,20 +243,21 @@ serve(async (req) => {
           })
           emailSent = emailResult.success
 
-          // Log to email queue
+          // Log to email queue.
+          // W6 : l'erreur est lue (`{ error }`, jamais une exception) — la
+          // mise en file reste non bloquante, mais elle n'est plus muette.
           if (emailResult.success) {
-            try {
-              await supabase.from("notification_email_queue").insert({
-                tenant_id,
-                recipient_email: email,
-                recipient_name: name,
-                notification_type: "invitation_pending",
-                subject: template.subject,
-                status: "sent",
-                resend_id: emailResult.id || null,
-                sent_at: new Date().toISOString(),
-              })
-            } catch { /* queue logging failure is non-blocking */ }
+            const { error: queueErr } = await supabase.from("notification_email_queue").insert({
+              tenant_id,
+              recipient_email: email,
+              recipient_name: name,
+              notification_type: "invitation_pending",
+              subject: template.subject,
+              status: "sent",
+              resend_id: emailResult.id || null,
+              sent_at: new Date().toISOString(),
+            })
+            if (queueErr) console.error("create-user: invitation non journalisée:", queueErr.message)
           }
         }
 
@@ -418,20 +419,20 @@ serve(async (req) => {
       })
       emailSent = emailResult.success
 
-      // Log to email queue
+      // Log to email queue.
+      // W6 : l'erreur est lue (`{ error }`, jamais une exception).
       if (emailResult.success) {
-        try {
-          await supabase.from("notification_email_queue").insert({
-            tenant_id,
-            recipient_email: email,
-            recipient_name: name,
-            notification_type: "invitation_pending",
-            subject: template.subject,
-            status: "sent",
-            resend_id: emailResult.id || null,
-            sent_at: new Date().toISOString(),
-          })
-        } catch { /* queue logging failure is non-blocking */ }
+        const { error: queueErr } = await supabase.from("notification_email_queue").insert({
+          tenant_id,
+          recipient_email: email,
+          recipient_name: name,
+          notification_type: "invitation_pending",
+          subject: template.subject,
+          status: "sent",
+          resend_id: emailResult.id || null,
+          sent_at: new Date().toISOString(),
+        })
+        if (queueErr) console.error("create-user: invitation non journalisée:", queueErr.message)
       }
     }
 

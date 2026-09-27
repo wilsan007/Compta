@@ -368,7 +368,9 @@ export async function applyTaskTemplate(
         'task_actions',
         tid
       )
-      await supabase.from('task_actions').insert(actionPayload)
+      // W6 : le journal d'action d'une tâche ne peut pas se perdre en silence.
+      const { error: actionErr } = await supabase.from('task_actions').insert(actionPayload)
+      if (actionErr) throw actionErr
     }
   }
 
@@ -403,7 +405,10 @@ export async function applyTaskTemplate(
         'project_tasks',
         tid
       )
-      await supabase.from('project_tasks').insert(subPayload)
+      // W6 : une sous-tâche qui ne s'insère pas doit le dire — sinon le modèle
+      // de projet semble appliqué alors qu'il manque la moitié de l'arbre.
+      const { error: subErr } = await supabase.from('project_tasks').insert(subPayload)
+      if (subErr) throw subErr
     }
   }
 

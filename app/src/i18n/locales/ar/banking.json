@@ -324,6 +324,7 @@
       "connectionFailed": "فشل الاتصال"
     },
     "syncSuccess": "اكتملت المزامنة",
+    "syncImported": "{{count}} عملية مستوردة",
     "syncError": "خطأ في المزامنة",
     "autoSynced": "مزامنة تلقائية",
     "reconcile": "تسوية"

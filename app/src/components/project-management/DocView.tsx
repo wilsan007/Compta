@@ -141,7 +141,10 @@ export function DocView({ projectId }: DocViewProps) {
     try {
       if (!docId.startsWith('draft-')) {
         const tid = await getTenantId()
-        await supabase.from('project_docs').delete().eq('id', docId).eq('tenant_id', tid || '')
+        // W6 : une suppression qui échoue ne doit pas disparaître de l'écran
+        // en silence (le document resterait en base, invisible).
+        const { error: delErr } = await supabase.from('project_docs').delete().eq('id', docId).eq('tenant_id', tid || '')
+        if (delErr) throw delErr
       }
       setDocs((prev) => prev.filter((d) => d.id !== docId))
       if (selectedDoc?.id === docId) {

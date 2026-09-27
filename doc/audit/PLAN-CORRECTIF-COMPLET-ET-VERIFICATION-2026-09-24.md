@@ -1372,9 +1372,9 @@ Un défaut est fermé quand **les six** conditions sont réunies :
 | **W4** | Notes de frais → grand livre (RH-07, RH-08) | à l'exécution | idem | ⬜ |
 | **W4** | Un seul diviseur mensuel (RH-05) | à l'exécution | idem | ⬜ |
 | **W5** | Un seul moteur d'amortissement (IMMO-01→05) | à l'exécution | idem | ⬜ |
-| **W6** | Colonnes fantômes + erreurs lues (EF-04, 05, 07, 08) | à l'exécution | idem | ⬜ |
-| **W6** | Relances de paiement (EF-01, EF-02) | à l'exécution | idem | ⬜ |
-| **W6** | Placebos branchés ou retirés (EF-03, 06, TVA-01) | à l'exécution | idem | ⬜ |
+| **W6** | Colonnes fantômes + erreurs lues (EF-04, 05, 07, 08) | **257** | `257_edge_columns_and_errors_tests.sql` (8 scénarios) | ✅ **fait le 26/09** — 20 colonnes réelles + garanties, code aligné, **baseline à 0** |
+| **W6** | Relances de paiement (EF-01, EF-02) | **258** | `258_payment_reminders_idempotent_tests.sql` (5 scénarios) | ✅ **fait le 26/09** — `claim_` / `finalize_collection_reminder()`, unicité partielle, reprise des doublons |
+| **W6** | Placebos branchés ou retirés (EF-03, 06, TVA-01) | **259** | `259_placebos_removed_or_wired_tests.sql` (3 scénarios) | ✅ **fait le 26/09** — les écrans passent par les fonctions Edge, la porte refuse un succès tamponné |
 | **W7** | Multi-devises (M01-01→03) | à l'exécution | idem | ⬜ |
 | **W7** | Analytique (ANA-01→03) | à l'exécution | idem | ⬜ |
 | **W7** | Budgets (BUD-01→04) | à l'exécution | idem | ⬜ |

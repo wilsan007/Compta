@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV } from '@/components/ui'
 import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getChartAccounts } from '@/lib/queries/accounting'
 import { getCustomers, getSuppliers } from '@/lib/queries/partners'
+import { verifyIban, type IbanCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
 import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download, Landmark } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
@@ -300,6 +302,21 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   const [siret, setSiret] = useState(account?.siret || '')
   const [vatIntra, setVatIntra] = useState(account?.vat_intra || '')
   const [iban, setIban] = useState(account?.iban || '')
+  const [ibanCheck, setIbanCheck] = useState<IbanCheck | null>(null)
+  const [checkingIban, setCheckingIban] = useState(false)
+
+  // W6 — `verify-iban` était déployée sans appelant : l'IBAN d'un tiers était
+  // saisi sans contrôle, alors qu'une clé fausse fait échouer un virement.
+  async function handleCheckIban() {
+    setCheckingIban(true)
+    try {
+      setIbanCheck(await verifyIban(iban.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingIban(false)
+    }
+  }
   const [bic, setBic] = useState(account?.bic || '')
   const [bankCode, setBankCode] = useState(account?.bank_code || '')
   const [branchCode, setBranchCode] = useState(account?.branch_code || '')
@@ -460,7 +477,22 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
 
             {activeTab === 'banques' && (
               <>
-                <Input label={t('thirdParty.iban')} value={iban} onChange={(e) => setIban(e.target.value)} placeholder="FR76 1234 5678 9012 3456 7890 123" />
+                <div>
+                  <Input label={t('thirdParty.iban')} value={iban} onChange={(e) => setIban(e.target.value)} placeholder="FR76 1234 5678 9012 3456 7890 123" />
+                  <VerificationLine
+                    busy={checkingIban}
+                    disabled={!iban.trim()}
+                    onCheck={handleCheckIban}
+                    result={ibanCheck}
+                    labels={{
+                      check: t('thirdParty.verifyIban'),
+                      checking: t('thirdParty.verifyingIban'),
+                      atSource: t('thirdParty.ibanChecked'),
+                      formatOnly: t('thirdParty.ibanChecked'),
+                      invalid: t('thirdParty.ibanInvalid'),
+                    }}
+                  />
+                </div>
                 <Input label={t('thirdParty.bic')} value={bic} onChange={(e) => setBic(e.target.value)} placeholder="ABCDEFGHXXX" />
                 <div className="grid grid-cols-4 gap-4">
                   <Input label={t('thirdParty.bankCode')} value={bankCode} onChange={(e) => setBankCode(e.target.value)} placeholder="12345" />

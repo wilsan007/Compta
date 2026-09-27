@@ -108,23 +108,22 @@ serve(async (req) => {
       )
     }
 
-    // Log to notification_email_queue
+    // Log to notification_email_queue.
+    // W6 : l'erreur est LUE. La mise en file reste non bloquante — un
+    // journalisation ratée ne doit pas faire échouer un e-mail déjà parti —
+    // mais elle n'est plus muette (PostgREST rend `{ error }`, il ne lève pas).
     const supabase = createClient(supabaseUrl, serviceRoleKey)
-    try {
-      await supabase.from("notification_email_queue").insert({
-        recipient_email: to_email,
-        recipient_name: to_name || null,
-        notification_type: notification_type || "generic",
-        subject: template.subject,
-        status: "sent",
-        resend_id: emailResult.id || null,
-        sent_at: new Date().toISOString(),
-        tenant_id: tenant_id,
-      })
-    } catch (err) {
-      console.error("catch:", err)
-      // Queue logging failure should not block the response
-    }
+    const { error: queueErr } = await supabase.from("notification_email_queue").insert({
+      recipient_email: to_email,
+      recipient_name: to_name || null,
+      notification_type: notification_type || "generic",
+      subject: template.subject,
+      status: "sent",
+      resend_id: emailResult.id || null,
+      sent_at: new Date().toISOString(),
+      tenant_id: tenant_id,
+    })
+    if (queueErr) console.error("send-notification-email: notification non journalisée:", queueErr.message)
 
     return new Response(
       JSON.stringify({ success: true, email_id: emailResult.id }),

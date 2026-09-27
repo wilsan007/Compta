@@ -34,12 +34,25 @@ serve(async (req) => {
     }
 
     const body = await req.json()
-    const { document_type, document_id, html, options = {} } = body
+    const { document_type, document_id, options = {} } = body
 
     if (!document_type || !document_id) {
       return new Response(JSON.stringify({ error: "document_type et document_id requis" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
       })
+    }
+
+    // W6 / AUD-H03 : `html` fourni par le client est **refusé**. Chromium va
+    // chercher tout ce que contient la page — une `<iframe src="http://169.254…">`
+    // faisait du serveur un proxy vers le réseau interne (SSRF prouvée), et les
+    // valeurs interpolées dans le gabarit n'étaient pas échappées.
+    // Le HTML est désormais **toujours** construit ici, depuis le document.
+    if (body.html) {
+      return new Response(JSON.stringify({
+        success: false,
+        code: "CLIENT_HTML_REFUSED",
+        error: "Le HTML fourni par le client est refusé : le document est construit par le serveur à partir de la pièce enregistrée.",
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
     // Liste fermée : la clé service ne doit jamais lire une table choisie par le client
@@ -71,13 +84,8 @@ serve(async (req) => {
     }
     if (!(await isTenantMember(supabase, user.id, doc.tenant_id))) return forbidden(corsHeaders)
 
-    // HTML fourni par le client ou généré depuis le document
-    let pdfHtml = html
-    if (!pdfHtml) {
-
-      // Générer un HTML basique depuis les données du document
-      pdfHtml = generateDocumentHtml(document_type, doc)
-    }
+    // HTML **construit ici**, depuis la pièce : plus de HTML client.
+    const pdfHtml = generateDocumentHtml(document_type, doc)
 
     // Convertir HTML → PDF via Gotenberg (self-hosted ou API)
     const gotenbergUrl = Deno.env.get("GOTENBERG_URL") || "http://localhost:3000"
@@ -141,9 +149,27 @@ serve(async (req) => {
   }
 })
 
-// Génération HTML basique pour un document
+// Génération HTML basique pour un document.
+// W6 / AUD-H03 (I3) : toutes les valeurs interpolées sont ÉCHAPPÉES — un nom de
+// client contenant `<script>` n'a pas à devenir du code dans le PDF.
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
 function generateDocumentHtml(type: string, doc: any): string {
   const title = type === "invoice" ? "Facture" : type === "quote" ? "Devis" : type === "payslip" ? "Bulletin de paie" : "Document"
+  const nombre = escapeHtml(doc.number || "")
+  const date = escapeHtml(doc.date || doc.period_start || "")
+  const sousTotal = escapeHtml(doc.subtotal ?? doc.gross_salary ?? "0.00")
+  const tva = escapeHtml(doc.vat_total ?? "0.00")
+  const total = escapeHtml(doc.total ?? doc.net_salary ?? "0.00")
+  const net = escapeHtml(doc.net_salary ?? doc.total ?? "0.00")
+
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
   body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
@@ -156,15 +182,15 @@ function generateDocumentHtml(type: string, doc: any): string {
   .meta { color: #666; font-size: 0.9em; }
 </style></head><body>
   <div class="header">
-    <h1>${title} ${doc.number || ""}</h1>
-    <div class="meta">Date: ${doc.date || doc.period_start || ""}</div>
+    <h1>${title} ${nombre}</h1>
+    <div class="meta">Date: ${date}</div>
   </div>
   <table>
     <tr><th>Description</th><th>Montant</th></tr>
-    <tr><td>Total HT</td><td>${doc.subtotal || doc.gross_salary || "0.00"} €</td></tr>
-    <tr><td>TVA</td><td>${doc.vat_total || "0.00"} €</td></tr>
-    <tr><td><strong>Total TTC</strong></td><td><strong>${doc.total || doc.net_salary || "0.00"} €</strong></td></tr>
+    <tr><td>Total HT</td><td>${sousTotal} €</td></tr>
+    <tr><td>TVA</td><td>${tva} €</td></tr>
+    <tr><td><strong>Total TTC</strong></td><td><strong>${total} €</strong></td></tr>
   </table>
-  <p class="total">Net à payer: ${doc.net_salary || doc.total || "0.00"} €</p>
+  <p class="total">Net à payer: ${net} €</p>
 </body></html>`
 }

@@ -5,6 +5,8 @@ import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { getCompanySettings, getChartAccounts, getLegislationPacks, updateCompanySettings } from '@/lib/queries/accounting'
 import { getTenantUsers } from '@/lib/queries/misc'
+import { verifySiret, validateVatVies, type SiretCheck, type VatCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
 import { type TenantUser } from '@/lib/queries'
 import { useLegislation } from '@/lib/legislation'
 import { Building2, Users, BookOpen, Link2, Save, Scale, LayoutGrid, CheckCircle2, Lock } from 'lucide-react'
@@ -538,6 +540,37 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
     setSaved(false)
   }
 
+  // W6 — les vérifications externes avaient une fonction Edge déployée et
+  // aucun appelant : le SIRET et le numéro de TVA étaient saisis « à l'œil ».
+  // L'écran dit ce qui a été vérifié et **où** : à la source (INSEE / VIES)
+  // quand l'accès est configuré, ou le seul format et la clé de contrôle.
+  const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
+  const [vatCheck, setVatCheck] = useState<VatCheck | null>(null)
+  const [checkingSiret, setCheckingSiret] = useState(false)
+  const [checkingVat, setCheckingVat] = useState(false)
+
+  async function handleCheckSiret() {
+    setCheckingSiret(true)
+    try {
+      setSiretCheck(await verifySiret(form.siret.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingSiret(false)
+    }
+  }
+
+  async function handleCheckVat() {
+    setCheckingVat(true)
+    try {
+      setVatCheck(await validateVatVies(form.vat_number.trim(), form.vat_number.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingVat(false)
+    }
+  }
+
   async function handleSave() {
     if (!company) return
     setSaving(true)
@@ -569,8 +602,38 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input label={t('company.name')} value={form.name} onChange={(e) => update('name', e.target.value)} />
         <Input label={t('company.legalName')} value={form.legal_name} onChange={(e) => update('legal_name', e.target.value)} />
-        <Input label={t('company.vatNumber')} value={form.vat_number} onChange={(e) => update('vat_number', e.target.value)} />
-        <Input label={t('company.siret')} value={form.siret} onChange={(e) => update('siret', e.target.value)} />
+        <div>
+          <Input label={t('company.vatNumber')} value={form.vat_number} onChange={(e) => update('vat_number', e.target.value)} />
+          <VerificationLine
+            busy={checkingVat}
+            disabled={!form.vat_number.trim()}
+            onCheck={handleCheckVat}
+            result={vatCheck}
+            labels={{
+              check: t('company.verify'),
+              checking: t('company.verifying'),
+              atSource: t('company.verifiedAtSource'),
+              formatOnly: t('company.verifiedFormatOnly'),
+              invalid: t('company.verifyInvalid'),
+            }}
+          />
+        </div>
+        <div>
+          <Input label={t('company.siret')} value={form.siret} onChange={(e) => update('siret', e.target.value)} />
+          <VerificationLine
+            busy={checkingSiret}
+            disabled={!form.siret.trim()}
+            onCheck={handleCheckSiret}
+            result={siretCheck}
+            labels={{
+              check: t('company.verify'),
+              checking: t('company.verifying'),
+              atSource: t('company.verifiedAtSource'),
+              formatOnly: t('company.verifiedFormatOnly'),
+              invalid: t('company.verifyInvalid'),
+            }}
+          />
+        </div>
         <Input label={t('company.address')} value={form.address} onChange={(e) => update('address', e.target.value)} />
         <Input label={t('company.city')} value={form.city} onChange={(e) => update('city', e.target.value)} />
         <Input label={t('company.zipCode')} value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} />
@@ -604,3 +667,9 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
     </Card>
   )
 }
+
+// ============================================================
+// W6 — la ligne de vérification vient désormais de `@/components/VerificationLine`
+// (partagée avec l'écran des comptes tiers, qui en fait la même chose pour
+// l'IBAN). Elle est importée en tête de ce fichier.
+// ============================================================

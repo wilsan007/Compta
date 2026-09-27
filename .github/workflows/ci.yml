@@ -135,6 +135,38 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────
+  # Job 2 bis: Edge Functions (contrat d'entrée)
+  #
+  # W6 — « un jeton, une réponse » : les 20 fonctions sont importées et leur
+  # gestionnaire est appelé SANS identité ; chacune doit refuser par un code
+  # explicite (401/400/405), jamais en rendant `null`. Les vérifications qui
+  # trouvent leur verdict dans le code (clé de Luhn d'un SIRET, clé ISO 13616
+  # d'un IBAN, format TVA) sont couvertes dans le même mouvement, ainsi que le
+  # refus du HTML fourni par le client dans `generate-pdf` (SSRF, AUD-H03).
+  #
+  # Deno est le runtime des fonctions : le harnais remplace `serve` et le client
+  # Supabase par des `stubs/`, il n'y a donc ni base ni réseau dans ces tests.
+  # ─────────────────────────────────────────────
+  edge-functions:
+    name: Edge Functions (contrat d'entrée)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: 'W6 : un jeton, une réponse (20 fonctions)'
+        run: |
+          deno test --allow-env --allow-read \
+            --import-map=supabase/functions/__tests__/import_map.json \
+            supabase/functions/__tests__/
+
+  # ─────────────────────────────────────────────
   # Job 3: E2E Tests (Playwright)
   # Runs: nightly, manual, or on PR with label
   # ─────────────────────────────────────────────
@@ -878,6 +910,31 @@ jobs:
 
       - name: 'W9 : la chaîne de l''absence, 34 assertions transverses (266)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/266_absence_transverse_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W6 — les fonctions Edge et les écrans placebos. Le scanner W0.2 (colonnes
+      # écrites) trouvait 20 écritures impossibles, toutes dans les fonctions Edge
+      # sauf deux dans le front : les écrans écrivaient des colonnes qui n'existent
+      # pas, `cron-payment-reminders` échouait dès la première facture puis
+      # relançait le client **tous les jours**, le bouton « Synchroniser » ne
+      # synchronisait rien, la facture électronique n'était jamais enregistrée
+      # (double envoi) et l'EDI-TVA n'envoyait rien. La 257 pose les colonnes
+      # réelles avec leurs garanties, la 258 rend la relance idempotente, la 259
+      # interdit à un client de tamponner une transmission. Les deux baselines
+      # gelées par W0 sont à **zéro** dans ce commit.
+      - name: 'W6 : les colonnes réelles des fonctions Edge (257)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/257_edge_columns_and_errors_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W6 : une relance de paiement part une seule fois (258)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/258_payment_reminders_idempotent_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W6 : un écran ne tamponne plus un succès (259)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/259_placebos_removed_or_wired_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

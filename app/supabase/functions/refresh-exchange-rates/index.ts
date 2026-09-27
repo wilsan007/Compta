@@ -57,19 +57,34 @@ serve(async (req) => {
     return handleOptions(corsHeaders)
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+
+  // W6 — CETTE FONCTION LISAIT LE JETON ET NE S'EN SERVAIT PAS (`const _token`,
+  // jamais comparé) : n'importe qui pouvait déclencher la mise à jour des taux
+  // de change — des appels externes et des écritures en base, à volonté.
+  //
+  // Deux jetons sont acceptés, parce que les deux chemins existent :
+  //   * la CLÉ DE SERVICE — c'est ce que `supabase/setup-pg-cron.sql` envoie en
+  //     `Authorization` pour le job `refresh-exchange-rates-daily` ;
+  //   * le SECRET DE CRON (`CRON_SECRET`, en-tête `x-cron-secret`) — le même
+  //     que `cron-payment-reminders`, pour qu'un déclencheur planifié puisse
+  //     l'appeler sans manipuler la clé de service.
+  // Toute autre valeur est refusée, y compris l'absence des deux.
+  const token = (req.headers.get("Authorization") || "").replace("Bearer ", "")
+  const cronSecret = req.headers.get("x-cron-secret")
+  const cronSecretAttendu = Deno.env.get("CRON_SECRET")
+
+  const jetonServiceValide = Boolean(serviceRoleKey) && token === serviceRoleKey
+  const secretCronValide = Boolean(cronSecretAttendu) && cronSecret === cronSecretAttendu
+
+  if (!jetonServiceValide && !secretCronValide) {
+    return new Response(JSON.stringify({ error: "Jeton de service requis" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
+  }
+
   try {
-    // This function can be called by:
-    // 1. Supabase pg_cron (scheduled SQL job)
-    // 2. External scheduler (GitHub Actions, cron-job.org, etc.)
-    // 3. Manual trigger from admin UI
-    //
-    // Auth: accept either a service role key (cron) or a valid JWT (admin manual trigger)
-    const authHeader = req.headers.get("Authorization") || ""
-    const _token = authHeader.replace("Bearer ", "")
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-
     // Use service role client to bypass RLS (this is a system function)
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 

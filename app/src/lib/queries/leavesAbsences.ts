@@ -71,10 +71,13 @@ export async function carryOverLeaveBalances(employeeId: string, fromYear: numbe
     if (existing) {
       await tud(supabase.from('leave_balances').update({ carry_over: carryOver }), 'leave_balances', tid).eq('id', existing.id)
     } else {
-      await supabase.from('leave_balances').insert(ti({
+      // W6 : l'alimentation des soldes de congés ne peut pas échouer en
+      // silence — c'est elle qui décide du report de l'année suivante.
+      const { error: insErr } = await supabase.from('leave_balances').insert(ti({
         employee_id: employeeId, leave_type: bal.leave_type, year: toYear,
         acquired: 0, taken: 0, pending: 0, remaining: carryOver, carry_over: carryOver,
       }, 'leave_balances', tid))
+      if (insErr) throw insErr
     }
   }
 }
@@ -99,10 +102,13 @@ export async function initializeYearLeaveBalances(year: number): Promise<void> {
         .maybeSingle()
       if (error) throw error
       if (!existing) {
-        await supabase.from('leave_balances').insert(ti({
+        // W6 : une société dont les soldes de congés ne s'initialisent pas le
+        // sait désormais (l'erreur montait dans le vide).
+        const { error: initErr } = await supabase.from('leave_balances').insert(ti({
           employee_id: emp.id, leave_type: rule.leave_type, year,
           acquired, taken: 0, pending: 0, remaining: acquired, carry_over: 0,
         }, 'leave_balances', tid))
+        if (initErr) throw initErr
       }
     }
   }

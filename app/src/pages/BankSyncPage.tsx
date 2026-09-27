@@ -53,8 +53,11 @@ export function BankSyncPage() {
   async function handleSync(connectionId: string) {
     setSyncing(connectionId)
     try {
-      await syncBankConnection(connectionId)
-      toast('success', tCommon('common.success'), t('bankSync.syncSuccess'))
+      // W6 / EF-03 : le compte rendu vient de la fonction Edge, pas d'un
+      // « succès » affiché sans qu'aucune opération n'ait été récupérée.
+      const result = await syncBankConnection(connectionId)
+      toast('success', tCommon('common.success'),
+        `${t('bankSync.syncSuccess')} — ${t('bankSync.syncImported', { count: result.synced })}`)
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('common.error'), t('bankSync.syncError') + ': ' + (err.message || ''))

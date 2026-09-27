@@ -1,5 +1,31 @@
 # AGENTS.md — Onusuite/compta
 
+## Reste ouvert — au 26 septembre 2026
+
+**Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
+(ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, les
+deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
+
+* **≈ 147 j restants** : plan correctif **W5 / W7 / W8 + 9 transverses** (≈ 16 j),
+  chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
+* **Deux défauts encore rouges au registre** (`app/sql/ci/expected_failures.sql`) :
+  `231 M-17-01` (la refacturation des temps — **W8**) et `245 T08` (le CA non
+  taxé absent de la CA3 — **W7**). La CI **échoue** si l'un se met à passer : la
+  ligne doit être retirée dans le commit du correctif.
+* **Décisions qui bloquent** : `D-4` (`generate-pdf` : rebrancher ou supprimer —
+  le défaut appliqué est « non déployée »), `D-5` (OCR), `D-7` (contraste),
+  `D-10`, `D-11` (localisation), `D-13`.
+* **Hors du dépôt** : les secrets et la recette des neuf intégrations (Chorus Pro,
+  Yousign, GoCardless, Resend, EFI, SIRENE, VIES, Stripe, Gotenberg) ; la clé
+  `sb_secret_…` à tourner ; les secrets E2E ; l'expert-comptable ; les 14
+  documents djiboutiens ; les pilotes. Ce qui est **prouvé** en attendant est dit
+  dans le tableau B du document.
+* **Recette à l'écran (P0-08)** : 14 parcours à passer — un passage obligé, pas
+  une charge de développement.
+* **Rappel de méthode** : un défaut = un test **rouge avant**, une migration qui
+  se **constate** (un numéro ne se réserve pas), le câblage CI et la preuve dans
+  **le même commit**. Le travail non commité n'existe pas.
+
 ## À faire plus tard (rappels)
 
 ### Stripe — Webhooks et paiements
@@ -192,6 +218,84 @@
   `requires_justification` enfin exposés dans l'écran des règles, et un écran
   **`/hr/absence-anomalies`** (TRV-16) qui lit le contrôle sans rien réparer tout
   seul.
+
+### Vague W6 — les fonctions Edge et les écrans placebos (2026-09-26) ✅
+- **Les deux baselines gelées par W0 sont à ZÉRO** : `check-written-columns`
+  **20 → 0** et `check-unchecked-writes` **25 → 0** (notes réécrites, le plafond
+  ne peut toujours que baisser).
+- **`257` — les colonnes que les fonctions croyaient écrire** : `cron-payment-reminders`
+  écrivait trois colonnes absentes de `collection_reminders` (la relance n'était
+  jamais tracée), `request-signature` cinq absentes de `electronic_signatures`
+  (la demande n'était **jamais enregistrée**), `submit-e-invoice` quatre
+  `e_invoice_*` absentes d'`invoices` (**double envoi**), `sync-bank-transactions`
+  un `provider_transaction_id` absent, `handle-stripe-webhook` un `metadata`
+  absent, et le front `leave_requests.manager_comment` /
+  `bank_transactions.matched_line_id`. La migration pose les colonnes réelles
+  **avec leurs garanties** (unicité `(société, compte)` sur
+  `provider_transaction_id`, clé composite `matched_line_id` →
+  `journal_lines`, énumérations élargies de `collection_reminders` — le niveau 4
+  « procédure de recouvrement » **ne pouvait pas être enregistré**) et aligne le
+  code là où un équivalent existait (`http_status` → `response_code`,
+  `provider_requisition_id` → `provider_connection_id`, `link_url`/`user_id` →
+  `metadata`). 8/8 scénarios, **8 rouges avant**.
+- **`258` — une relance de paiement part une fois** : `.single()` sur une
+  recherche vide interrompait **tout le cron** dès la première facture (`EF-01`),
+  et l'enregistrement raté sans lecture d'erreur faisait **relancer le client
+  tous les jours**, niveaux « mise en demeure » compris (`EF-02`). Reprise des
+  doublons (ramenés à une, `cancelled` avec la raison — aucune suppression),
+  unicité partielle `(société, facture, niveau)`, `claim_collection_reminder()`
+  (prise **avant** l'envoi, `NULL` si déjà prouvé, reprise possible d'un échec) et
+  `finalize_collection_reminder()` (un seul chemin « envoyée »/« en échec »,
+  réservé au `service_role`). 5/5 scénarios.
+- **`259` — un écran ne peut plus tamponner un succès** : `submitEdiTva`
+  fabriquait `EDI-<Date.now()>` et `syncBankConnection` tamponnait
+  `last_sync_at` **sans rien transmettre** ; `EInvoicePage` ne soumettait rien.
+  Les trois écrans passent par les fonctions Edge (et **lèvent** sans
+  confirmation) ; la base refuse à `anon`/`authenticated` tout changement de
+  `vat_returns.edi_status`, `invoices.e_invoice_status` et
+  `bank_connections.last_sync_at`. 3/3 scénarios.
+- **Erreurs lues partout** : les 7 écritures muettes d'`outgoing-webhooks`
+  (dont le journal de livraison qui écrivait `http_status` au lieu de
+  `response_code`), les 5 des fonctions d'e-mail (`try { await } catch {}` ne
+  suffisait pas : PostgREST **ne lève pas**, il rend `{ error }`) et les 13
+  écritures du front attribuées à d'autres vagues — `throw` quand la donnée est
+  indispensable, `console.error` explicite quand l'écriture est réellement
+  best-effort.
+- **Cohérence UI ↔ backend, vérifiée** : nouveau
+  `app/src/lib/__tests__/edge-wiring.test.ts` (8 tests) — chaque écran appelle la
+  fonction Edge attendue, lève sans confirmation, et **aucune écriture directe**
+  de `edi_status`/`e_invoice_status`/`last_sync_at` ne subsiste dans `src/`
+  (miroir statique de la porte SQL). Relevé : 8 fonctions Edge appelées par le
+  front ; restent sans appelant `request-signature`, `validate-vat-vies`,
+  `verify-iban`, `verify-siret`, `generate-pdf` (phase 10 — fonctions sans porte
+  d'entrée, pas placebos).
+- Base neuve **234 migrations, 0 erreur** ; **66/66 suites**, 8/8 contrôles ;
+  `check_plpgsql` **rejoué localement** (0 erreur, 34 avertissements) ;
+  `tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 488**, **32 tests Edge**
+  (`npm run edge:test` — Deno requis, sinon `npx -y deno test …`).
+  [Preuve](doc/audit/VAGUE-W6-2026-09-26.md)
+- **Seconde passe — tout ce qui restait ouvert est fermé** :
+  - **« un jeton, une réponse » exécuté** : harnais Deno
+    (`app/supabase/functions/__tests__/`, `serve` et le client Supabase
+    remplacés, ni base ni réseau) → **30 tests**, dont le contrat d'entrée des
+    **20 fonctions**. Deux **défauts réels** en sont tombés :
+    **`refresh-exchange-rates` lisait le jeton sans jamais le comparer**
+    (n'importe qui déclenchait la mise à jour des taux → la clé de service est
+    désormais exigée, celle que pg_cron envoie déjà) et
+    **`ai-import-mapping` refusait tous les appels du front** (la fonction exige
+    un jeton, `aiImportMapping.ts` n'en envoyait aucun : le repli IA n'a
+    **jamais** pu fonctionner) ;
+  - **les cinq fonctions sans appelant ont une porte d'entrée** :
+    `verify-siret` et `validate-vat-vies` dans **Paramètres → Société**,
+    `verify-iban` dans **Comptes tiers → Banques**, `request-signature` dans
+    **Documents du salarié** — chacune dit ce qu'elle a vérifié et **où** (« à la
+    source » INSEE/VIES, ou « format et clé seulement ») ; `generate-pdf` reste
+    **non déployée** (défaut de la décision `D-4`) et son code est durci (HTML
+    client refusé — SSRF `AUD-H03`, valeurs échappées, 2 tests) ;
+  - **le déploiement cesse d'être tout en `--no-verify-jwt`** :
+    `deploy-all-functions.sh` distingue **13 fonctions à JWT vérifié par la
+    passerelle**, **6 points d'entrée publics** (garde propre) et **1 non
+    déployée**.
 
 ### Bugs corrigés
 ### Bugs corrigés

@@ -346,17 +346,25 @@ export async function deleteBankConnection(id: string) {
   if (error) throw error
 }
 
+// W6 / EF-03 : cette fonction ne synchronisait rien. Elle tamponnait
+// `last_sync_at = new Date()`, forçait `status: 'active'` et **effaçait
+// `error_message`** — l'écran affichait « synchronisé à l'instant » alors
+// qu'aucune opération n'avait été récupérée et que toute panne réelle venait
+// d'être masquée.
+//
+// Elle appelle maintenant la fonction Edge `sync-bank-transactions`, qui seule
+// parle à l'agrégateur et qui seule peut écrire la trace de synchronisation (la
+// porte de la 259 refuse ce tampon à un utilisateur connecté).
 export async function syncBankConnection(connectionId: string): Promise<{ synced: number; error: string | null }> {
-  const tid = await getTenantId()
-  const { error: connErr } = await supabase.from('bank_connections').select('*').eq('id', connectionId).single()
-  if (connErr) throw connErr
-  const now = new Date().toISOString()
-  const { error: updErr } = await tud(
-    supabase.from('bank_connections').update({ last_sync_at: now, status: 'active', error_message: null }),
-    'bank_connections', tid
-  ).eq('id', connectionId)
-  if (updErr) throw updErr
-  return { synced: 0, error: null }
+  const { data: result, error } = await supabase.functions.invoke('sync-bank-transactions', {
+    body: { action: 'sync', bank_connection_id: connectionId },
+  })
+  if (error) throw error
+  const res = result as any
+  if (!res?.success) {
+    throw new Error(res?.error || 'Synchronisation non confirmée — la connexion n\'a pas été interrogée')
+  }
+  return { synced: Number(res.imported || 0), error: null }
 }
 
 

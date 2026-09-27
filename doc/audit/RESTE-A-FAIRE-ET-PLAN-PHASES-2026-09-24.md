@@ -49,7 +49,7 @@ et le **grand chantier des chaînages transverses** (25 lots).
 |---|---:|---:|---|
 | **W4 — Paie et RH** ✅ **faite (256, 26/09)** | 0 (était 6) | 4 j | RH-05 un seul diviseur mensuel par société (paramétré) · RH-06 bornes de période calculées · RH-07 notes de frais en paie pour leur `total_amount` · RH-08 TVA récupérable et écriture D 625x / 421 · RH-09 congé à cheval sur deux mois par intersection · RH-10 index unique par document source ([preuve](VAGUE-W4-2026-09-26.md)) |
 | **W5 — Un seul moteur par grandeur** | 8 (1 🔴) | 2 j | deux moteurs d'amortissement (`generate_depreciation_entry` concurrent de l'écran) ; reste des heures supplémentaires |
-| **W6 — Fonctions Edge et écrans placebos** | 9 (5 🔴) | 3,5 j | EF-01/02 le cron de relances échoue dès la première facture et la **relance part tous les jours** · EF-03/04 le bouton « Synchroniser » n'appelle **jamais** la fonction Edge, et celle-ci écrit une colonne inexistante en disant `success: true` · EF-05/06 la facture électronique n'est jamais enregistrée → **double envoi** · EF-07 signature jamais enregistrée · EF-08 webhooks (mauvais noms de colonnes) · TVA-01 l'EDI-TVA **n'envoie rien** — **plus** les deux baselines gelées par W0 : **20 écritures impossibles** et **29 erreurs non lues**, à ramener à zéro |
+| **W6 — Fonctions Edge et écrans placebos** ✅ **faite (257, 258, 259, 26/09)** | 0 (était 9, dont 5 🔴) | 3,5 j | EF-01/02 le cron de relances échouait dès la première facture et **relançait le client tous les jours** · EF-03/04 le bouton « Synchroniser » n'appelait **jamais** la fonction Edge, et celle-ci écrivait une colonne inexistante en disant `success: true` · EF-05/06 la facture électronique n'était jamais enregistrée → **double envoi** · EF-07 signature jamais enregistrée · EF-08 webhooks (mauvais noms de colonnes) · TVA-01 l'EDI-TVA **n'envoyait rien** — **et les deux baselines gelées par W0 sont à ZÉRO** : **20 → 0 écritures impossibles**, **25 → 0 erreurs non lues** ([preuve](VAGUE-W6-2026-09-26.md)) |
 | **W7 — Comptabilité avancée** | 15 (4 🔴) | 6 j | M01-01→03 le taux de change est saisi, protégé… et **jamais appliqué** · ANA-01→03 (balance analytique sur tout l'historique, section non propagée) · BUD-01→04 (réalisé non borné à l'exercice) · SAGE-01→03 (écritures importées en brouillon, soldes **écrasés**, import partiel non transactionnel) · FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
 | **W8 — Production et projets** | 6 (1 🔴) | 3 j | PROD-01→03 nomenclature à **un seul niveau**, ni rebuts ni écarts, écriture datée du jour de clôture · PROJ-01→03 la **refacturation des temps n'existe pas** (c'est le `M-17-01` encore rouge au registre), avancement en moyenne non pondérée, tâche pouvant être son propre parent |
 | **W9 — Chaînage absence** ✅ **faite (263, 264, 265, 266, 26/09)** | 0 (était 16 contrôles / 34 assertions) | 4 j | registre d'absence (`employee_absence_days`) : une absence approuvée ne produit **aucun effet de paie** par défaut (`leave_rules.affects_pay` jamais posé), `timesheets.absence_type` n'est **jamais alimenté**, `work_stoppages` est une table morte, `sick_leaves` n'atteint aucun bulletin, + le contrôle quotidien ([preuve](VAGUE-W9-2026-09-26.md)) |
@@ -118,7 +118,7 @@ Les 24 tables « logique écrite, jamais traversée » incluent `api_keys` et
 | 👤-5 | Collecter les **14 documents officiels djiboutiens** (CGI, loi de finances, TVA, barème ITS, taux CNSS/AMU, code du travail, plan comptable national…) | 🔴 délai externe le plus long |
 | 👤-6 | Identifier **2 à 3 entreprises pilotes** | 🟠 |
 | **P0-08** | Les **14 parcours à l'écran** — jamais faits depuis V1 ; demande le front déployé sur la base à jour | 🔴 non automatisable |
-| D-4 | `generate-pdf` (SSRF prouvée) : supprimer le paramètre, durcir, ou retirer la fonction (aucun appelant) | ouverte |
+| D-4 | `generate-pdf` (SSRF prouvée) : supprimer le paramètre, durcir, ou retirer la fonction (aucun appelant) | **défaut appliqué le 26/09** : HTML client refusé + valeurs échappées + **retirée du déploiement** ; la décision finale (rebrancher avec un Gotenberg durci, ou supprimer) reste au produit |
 | D-5 | Import OCR via OpenAI : consentement par société, remplacer, ou retirer | ouverte |
 | D-7 | Contraste H2/H3 (18 + 20 usages juste sous 4,5:1) | ouverte |
 | D-10 / D-13 | « Marquer payée » sans banque · périmètre de la séparation des tâches | à confirmer |
@@ -175,14 +175,26 @@ chantier des chaînages, qui **exige** les vagues ; la phase 10 est continue.
 | **Critère de sortie** | 34 assertions vertes, dont : une absence d'un jour apparaît **une fois** dans la paie, la DSN, le coût projet et le plafond ; une absence refusée n'apparaît nulle part |
 | **Preuve attendue** | Les 16 contrôles exécutés sur base neuve, avec le « rouge d'abord » consigné |
 
-### Phase 4 — W6 : fonctions Edge et écrans placebos (3,5 j) — *parallélisable*
+### Phase 4 — W6 : fonctions Edge et écrans placebos (3,5 j) — *parallélisable* ✅ **faite le 26/09 (257, 258, 259)**
 
 | Élément | Détail |
 |---|---|
-| **Défauts** | EF-01/02 (le cron échoue et la relance part tous les jours), EF-03/04 (le bouton ne synchronise rien, la fonction écrit une colonne inexistante et dit `success: true`), EF-05/06 (facture électronique jamais enregistrée → double envoi), EF-07 (signature), EF-08 (webhooks), TVA-01 (l'EDI-TVA n'envoie rien) |
-| **Plus** | Les deux baselines gelées par W0 à **ramener à zéro** : **20 écritures impossibles**, **29 erreurs non lues** (le plafond ne peut que baisser : `--update-baseline` refuse d'ajouter) |
-| **Critère de sortie** | Toute écriture client correspond à une colonne réelle ; toute erreur d'API est **lue** ; aucun écran ne dit « succès » sur une opération qui n'a rien transmis ; les deux baselines sont à **0** |
-| **Preuve attendue** | Le scanner de colonnes écrites et celui des erreurs non lues, réexécutés ; un test par fonction Edge (« un jeton, une réponse ») |
+| **État** | ✅ **Faite le 26/09/2026** — migrations `257` (les 20 colonnes réelles des fonctions Edge, avec leurs garanties : unicité, clé composite, énumérations élargies), `258` (la relance est prise **avant** l'envoi — `claim_` / `finalize_collection_reminder()`, unicité partielle, reprise des doublons) et `259` (le client ne peut plus tamponner `edi_status`, `e_invoice_status`, `last_sync_at`) ; suites `257` (8/8, **8 rouges avant**), `258` (5/5), `259` (3/3, rouges avant) ; **14 tests Vitest** de câblage écran → fonction Edge et **32 tests Edge exécutés** (Deno, `npm run edge:test`, contrat d'entrée des 20 fonctions). **Les deux baselines sont à zéro.** Base neuve **234 migrations, 0 erreur**, batterie **66/66** suites et 8 contrôles verts, `check_plpgsql` rejoué (0 erreur), front `tsc`/`oxlint`/i18n et **1 488 Vitest**. [Preuve](VAGUE-W6-2026-09-26.md) |
+| **Défauts** | EF-01 le cron de relances échoue dès la première facture (`.single()` sur 0 ligne) · EF-02 la relance n'est jamais enregistrée → **renvoyée tous les jours** · EF-03 le bouton « Synchroniser » n'appelle jamais la fonction Edge · EF-04 la fonction écrit une colonne inexistante et dit `success: true` · EF-05 la soumission e-invoice n'est jamais enregistrée → **double envoi** · EF-06 l'écran ne soumet rien · EF-07 la signature n'est jamais enregistrée · EF-08 webhooks (mauvais noms de colonnes) · TVA-01 l'EDI-TVA n'envoie rien |
+| **Livrables** | Les colonnes réelles **et leurs garanties d'idempotence**, la prise atomique de la relance, la porte qui rend un succès tamponné impossible, et **les deux baselines vidées** |
+| **Critère de sortie** | Toute écriture client correspond à une colonne réelle ; toute erreur d'API est **lue** ; aucun écran ne dit « succès » sur une opération qui n'a rien transmis ; les deux baselines à **0** ✅ |
+| **Preuve attendue** | Le scanner de colonnes écrites et celui des erreurs non lues réexécutés (0 constat) ; un test par chemin écran → fonction Edge ✅ |
+
+### Phase 4 bis — W6, ce qui restait ouvert : fermé, sauf ce qui appartient au produit
+
+| Reste | État |
+|---|---|
+| `request-signature`, `validate-vat-vies`, `verify-iban`, `verify-siret` | ✅ **branchées** — Paramètres → Société (SIRET, TVA), Comptes tiers → Banques (IBAN), Documents du salarié (signature). L'écran nomme la source du contrôle et ne dit jamais « vérifié » quand le contrôle est local |
+| « un jeton, une réponse » (20 fonctions) | ✅ **exécuté** — 30 tests Deno (`npm run edge:test`), harnais qui remplace `serve` et le client Supabase. **Deux défauts trouvés et corrigés** : `refresh-exchange-rates` ne comparait pas le jeton (appel anonyme possible), `ai-import-mapping` n'était joignable par aucun écran (front sans jeton) |
+| `generate-pdf` (décision `D-4`) | ✅ **durcie et non déployée** — HTML client refusé (`CLIENT_HTML_REFUSED`), valeurs échappées, 2 tests. **La décision reste au produit** : la rebrancher ou la supprimer ; le défaut appliqué est celui que l'audit prévoyait |
+| Déploiement `--no-verify-jwt` généralisé | ✅ **corrigé** — 13 fonctions à JWT vérifié par la passerelle, 6 points d'entrée publics avec garde propre, 1 non déployée |
+| La recette des intégrations réelles (Chorus Pro, Yousign, GoCardless, Resend, EFI, SIRENE, VIES) | ⏳ **comptes à configurer** — hors du dépôt : ce qui est prouvé ici, c'est l'écriture conforme au schéma, l'erreur lue, l'entrée qui refuse sans identité, et le verdict local des vérifications |
+| Cinq parcours Playwright | ⏳ phase 10 — exigent une application servie avec un jeu de données |
 
 ### Phase 5 — W5, W7, W8 : moteurs uniques, comptabilité avancée, production et projets (11 j)
 

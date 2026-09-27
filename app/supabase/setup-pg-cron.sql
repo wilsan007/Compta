@@ -32,6 +32,10 @@ SELECT cron.schedule(
 );
 
 -- 4. Taux de change — tous les jours à 6h
+--    W6 : la fonction EXIGE désormais une identité (avant, elle lisait le jeton
+--    sans jamais le comparer : n'importe qui pouvait la déclencher). Le job
+--    envoie les deux jetons qu'elle accepte — la clé de service ET le secret de
+--    cron ; remplacez les deux espaces réservés avant d'exécuter ce script.
 SELECT cron.schedule(
   'refresh-exchange-rates-daily',
   '0 6 * * *',
@@ -40,7 +44,8 @@ SELECT cron.schedule(
       url := 'https://ndtaedcgwnaopopugiql.supabase.co/functions/v1/refresh-exchange-rates',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer REMPLACEZ_PAR_VOTRE_SERVICE_ROLE_KEY'
+        'Authorization', 'Bearer REMPLACEZ_PAR_VOTRE_SERVICE_ROLE_KEY',
+        'x-cron-secret', 'REMPLACEZ_PAR_VOTRE_CRON_SECRET'
       ),
       body := '{}'::jsonb
     );

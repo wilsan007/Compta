@@ -73,19 +73,32 @@ serve(async (req) => {
         }
 
         if (!(await isTenantMember(supabase, user.id, body.tenant_id))) return forbidden(corsHeaders)
-        // Stocker la connexion en base
-        const { data: conn, error: _connErr } = await supabase
+        // Stocker la connexion en base.
+        // W6 / EF-04 : `bank_connections` porte `provider_connection_id`, pas
+        // `provider_requisition_id` / `link_url` / `user_id`. L'insertion
+        // échouait à chaque appel — et l'erreur n'était pas lue, la fonction
+        // répondait `success: true` avec un `connection_id` nul.
+        const { data: conn, error: connErr } = await supabase
           .from("bank_connections")
           .insert({
             provider: "gocardless",
-            provider_requisition_id: gcData.id,
-            link_url: gcData.link,
+            provider_connection_id: gcData.id,
             status: "pending",
-            user_id: user.id,
             tenant_id: body.tenant_id,
+            metadata: { link_url: gcData.link, initiated_by: user.id },
           })
           .select()
           .single()
+
+        if (connErr) {
+          console.error("sync-bank-transactions: connexion non enregistrée:", connErr.message)
+          return new Response(JSON.stringify({
+            success: false,
+            code: "CONNECTION_NOT_SAVED",
+            error: "Le lien a été créé chez GoCardless mais la connexion n'a pas pu être enregistrée : " + connErr.message,
+            link_url: gcData.link,
+          }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        }
 
         return new Response(JSON.stringify({
           success: true,
@@ -158,7 +171,27 @@ serve(async (req) => {
 
       if (connection.provider === "gocardless") {
         const gcToken = Deno.env.get("GOCARDLESS_API_TOKEN")
-        const accountId = body.account_id || connection.provider_account_id
+        if (!gcToken) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "NOT_CONFIGURED",
+            error: "GoCardless non configuré : définissez GOCARDLESS_API_TOKEN. Aucune opération n'a été récupérée.",
+          }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        }
+
+        // W6 / EF-04 : `connection.provider_account_id` n'existe pas sur
+        // `bank_connections` (l'URL appelée contenait littéralement
+        // `undefined`). Le compte de la banque est celui du relevé, que le
+        // client fournit ou que la connexion mémorise dans ses métadonnées.
+        const accountId = body.account_id || connection.metadata?.provider_account_id
+
+        if (!accountId) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "ACCOUNT_NOT_LINKED",
+            error: "Aucun compte bancaire rattaché à cette connexion : fournissez `account_id`. Aucune opération n'a été récupérée.",
+          }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        }
 
         // Récupérer les transactions
         const txResponse = await fetch(
@@ -170,17 +203,37 @@ serve(async (req) => {
 
         const txData = await txResponse.json()
         if (!txResponse.ok) {
-          return new Response(JSON.stringify({ error: "Erreur récupération transactions", details: txData }), {
-            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" }
-          })
+          const message = txData?.detail || txData?.summary || "Erreur récupération transactions"
+          console.error("sync-bank-transactions: GoCardless transactions:", message)
+          // La connexion dit maintenant la vérité : elle est en erreur, avec le motif.
+          const { error: errStamp } = await supabase
+            .from("bank_connections")
+            .update({ status: "error", error_message: String(message).slice(0, 500) })
+            .eq("id", bank_connection_id)
+            .eq("tenant_id", connection.tenant_id)
+          if (errStamp) console.error("sync-bank-transactions: statut d'erreur non enregistré:", errStamp.message)
+          return new Response(JSON.stringify({
+            success: false,
+            code: "PROVIDER_ERROR",
+            error: message,
+          }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } })
         }
 
-        // Insérer les transactions en base
+        // Insérer les transactions en base.
+        // W6 / EF-04 : `provider_transaction_id` n'existait pas (257) et
+        // l'erreur d'insertion n'était pas lue (`if (!insertErr) imported++`) :
+        // la fonction répondait `success: true, imported: 0` en n'ayant rien
+        // importé. Le champ rend désormais la synchronisation idempotente —
+        // rejouer la journée ne double plus les opérations.
         let imported = 0
+        let dejaImportees = 0
+        let echecs = 0
+        const details: string[] = []
         const transactions = txData.transactions?.booked || []
         for (const tx of transactions) {
           const amount = parseFloat(tx.transactionAmount?.amount || "0")
           const txDate = tx.bookingDate || tx.valueDate || new Date().toISOString().split("T")[0]
+          const providerTransactionId = tx.transactionId || tx.entryReference || null
 
           const { error: insertErr } = await supabase
             .from("bank_transactions")
@@ -194,26 +247,52 @@ serve(async (req) => {
               reconciled: false,
               matched: false,
               source: "gocardless",
-              provider_transaction_id: tx.transactionId || tx.entryReference,
+              provider_transaction_id: providerTransactionId,
               tenant_id: connection.tenant_id,
             })
 
-          if (!insertErr) imported++
+          if (!insertErr) {
+            imported++
+          } else if (insertErr.code === "23505") {
+            dejaImportees++  // déjà importée : ce n'est pas un échec
+          } else {
+            echecs++
+            details.push(`${providerTransactionId || txDate} : ${insertErr.message}`)
+            console.error("sync-bank-transactions: insertion refusée:", insertErr.message)
+          }
         }
 
-        // Mettre à jour la connexion
-        await supabase
+        // Mettre à jour la connexion — et ne dire « synchronisée à l'instant »
+        // que si la synchronisation a réellement eu lieu.
+        const now = new Date().toISOString()
+        const { error: updErr } = await supabase
           .from("bank_connections")
-          .update({ last_sync_at: new Date().toISOString(), status: "active" })
+          .update(echecs > 0
+            ? { status: "error", error_message: `Import partiel : ${echecs} opération(s) refusée(s)`, last_sync_at: now }
+            : { last_sync_at: now, status: "active", error_message: null })
           .eq("id", bank_connection_id)
           .eq("tenant_id", connection.tenant_id)
 
+        if (updErr) {
+          console.error("sync-bank-transactions: connexion non mise à jour:", updErr.message)
+          return new Response(JSON.stringify({
+            success: false,
+            code: "CONNECTION_NOT_UPDATED",
+            error: "Opérations récupérées mais état de la connexion non enregistré : " + updErr.message,
+            imported, deja_importees: dejaImportees, echecs,
+          }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+        }
+
         return new Response(JSON.stringify({
-          success: true,
+          success: echecs === 0,
           imported,
+          deja_importees: dejaImportees,
+          echecs,
+          details: details.slice(0, 10),
           total: transactions.length,
         }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          status: echecs === 0 ? 200 : 207,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         })
       }
     }

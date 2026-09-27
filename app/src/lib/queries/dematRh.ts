@@ -284,6 +284,9 @@ export async function incrementArticleViews(id: string): Promise<void> {
   const { data: article, error } = await supabase.from('rh_knowledge_base').select('views').eq('id', id).eq('tenant_id', tid || '').single()
   if (error) { console.error('incrementArticleViews:', error); return }
   if (article) {
-    await supabase.from('rh_knowledge_base').update({ views: (article.views || 0) + 1 }).eq('id', id).eq('tenant_id', tid || '')
+    // W6 : compteur de vues best-effort — mais son échec est journalisé, il
+    // n'était lu par personne.
+    const { error: updErr } = await supabase.from('rh_knowledge_base').update({ views: (article.views || 0) + 1 }).eq('id', id).eq('tenant_id', tid || '')
+    if (updErr) console.error('incrementArticleViews (compteur de vues non écrit):', updErr)
   }
 }

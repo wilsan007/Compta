@@ -797,7 +797,13 @@ export async function runMRPCalculation(): Promise<MRPRun> {
 
     // Insert proposals
     for (const p of proposals) {
-      await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))
+      // W6 : une proposition de réappro perdue fait rater un réappro — l'écran
+      // affichait « propositions générées » sans compter les refus.
+      const { error: propErr } = await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))
+      if (propErr) {
+        console.error('generateMrpProposals (proposition non enregistrée):', propErr)
+        throw new Error(`Proposition MRP non enregistrée : ${propErr.message}`)
+      }
     }
 
     // Update run with summary
@@ -875,11 +881,14 @@ export async function importForecastsFromInvoices(period: string, startDate: str
     if (qty <= 0) continue
 
     const num = `PREV-${period}-${String(count + 1).padStart(3, '0')}`
-    await supabase.from('production_forecasts').insert(ti({
+    // W6 : une prévision non enregistrée faussait le compteur `count` rendu à
+    // l'écran — l'erreur est désormais lue.
+    const { error: prevErr } = await supabase.from('production_forecasts').insert(ti({
       forecast_number: num, period, start_date: startDate, end_date: endDate,
       product_id: product.id, forecasted_quantity: qty, actual_quantity: 0,
       reliability_rate: 0, source: 'invoice_import', notes: null,
     }, 'production_forecasts', tid))
+    if (prevErr) throw new Error(`Prévision ${num} non enregistrée : ${prevErr.message}`)
     count++
   }
   return count
@@ -1002,7 +1011,9 @@ export async function autoScheduleMOs() {
       const runTime = Number(op.run_time || 0) * Number(mo.quantity || 1)
       const slotEnd = new Date(slotStart.getTime() + (setupTime + runTime) * 60000)
 
-      await supabase.from('planning_slots').insert(ti({
+      // W6 : un créneau de planning refusé doit être vu — l'ordonnancement
+      // affichait un planning amputé sans le dire.
+      const { error: slotErr } = await supabase.from('planning_slots').insert(ti({
         manufacturing_order_id: mo.id,
         routing_operation_id: op.id,
         machine_id: machine.id,
@@ -1015,6 +1026,7 @@ export async function autoScheduleMOs() {
         material_available: true,
         material_check_date: null,
       }, 'planning_slots', tid))
+      if (slotErr) throw new Error(`Créneau de planning non enregistré (OF ${mo.id}) : ${slotErr.message}`)
 
       slotStart = new Date(slotEnd)
     }

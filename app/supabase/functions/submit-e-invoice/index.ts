@@ -62,6 +62,20 @@ serve(async (req) => {
     }
     if (!(await isTenantMember(supabase, user.id, invoice.tenant_id))) return forbidden(corsHeaders)
 
+    // W6 / EF-05 : une facture déjà déposée ne se redépose pas. Sans cette
+    // garde, un second clic **retransmettait** la facture — l'application ne
+    // gardant aucune trace du premier envoi.
+    if (invoice.e_invoice_status === "submitted" && invoice.e_invoice_id) {
+      return new Response(JSON.stringify({
+        success: true,
+        already_submitted: true,
+        platform: invoice.e_invoice_platform,
+        status: invoice.e_invoice_status,
+        transaction_id: invoice.e_invoice_id,
+        submitted_at: invoice.e_invoice_submitted_at,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
     // Générer le XML Factur-X si non fourni
     const facturXXml = xml_content || generateFacturXXml(invoice)
 
@@ -100,28 +114,52 @@ serve(async (req) => {
 
       const chorusData = await chorusResponse.json()
 
-      if (chorusResponse.ok) {
-        await supabase
-          .from("invoices")
-          .update({
-            e_invoice_status: "submitted",
-            e_invoice_platform: "chorus_pro",
-            e_invoice_submitted_at: new Date().toISOString(),
-            e_invoice_id: chorusData.transaction_id,
-          })
-          .eq("id", invoice_id)
-          .eq("tenant_id", invoice.tenant_id)
+      if (!chorusResponse.ok) {
+        return new Response(JSON.stringify({
+          success: false,
+          platform: "chorus_pro",
+          status: "error",
+          error: chorusData.error || chorusData.message || "Chorus Pro a refusé le dépôt",
+        }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        })
+      }
+
+      // W6 / EF-05 : la trace du dépôt est écrite ET son erreur est lue. Avant,
+      // l'écriture portait sur quatre colonnes `e_invoice_*` inexistantes et
+      // l'erreur n'était pas lue : la facture était transmise puis oubliée, et
+      // un second clic **la retransmettait**.
+      const { error: traceErr } = await supabase
+        .from("invoices")
+        .update({
+          e_invoice_status: "submitted",
+          e_invoice_platform: "chorus_pro",
+          e_invoice_submitted_at: new Date().toISOString(),
+          e_invoice_id: chorusData.transaction_id ?? chorusData.id ?? null,
+        })
+        .eq("id", invoice_id)
+        .eq("tenant_id", invoice.tenant_id)
+
+      if (traceErr) {
+        console.error("submit-e-invoice: trace du dépôt non écrite:", traceErr.message)
+        return new Response(JSON.stringify({
+          success: false,
+          platform: "chorus_pro",
+          status: "submitted_untraced",
+          transaction_id: chorusData.transaction_id ?? chorusData.id ?? null,
+          error: "La facture a été transmise à Chorus Pro mais sa trace n'a pas pu être enregistrée : "
+            + traceErr.message
+            + " — notez l'identifiant de dépôt, ne relancez pas la transmission à l'aveugle.",
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
       }
 
       return new Response(JSON.stringify({
-        success: chorusResponse.ok,
+        success: true,
         platform: "chorus_pro",
-        status: chorusResponse.ok ? "submitted" : "error",
-        transaction_id: chorusData.transaction_id,
-        error: chorusResponse.ok ? null : chorusData.error,
+        status: "submitted",
+        transaction_id: chorusData.transaction_id ?? chorusData.id ?? null,
       }), {
-        status: chorusResponse.ok ? 200 : 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       })
     }
 
@@ -145,12 +183,50 @@ serve(async (req) => {
         body: facturXXml,
       })
 
+      if (!peppolResponse.ok) {
+        return new Response(JSON.stringify({
+          success: false,
+          platform: "peppol",
+          status: "error",
+          error: `PEPPOL a refusé le dépôt (HTTP ${peppolResponse.status})`,
+        }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      }
+
+      // W6 / EF-05 : même exigence de trace que pour Chorus Pro — sans elle, le
+      // réseau PEPPOL ne se souvient pas à notre place.
+      const peppolId = peppolResponse.headers.get("x-transaction-id")
+        || peppolResponse.headers.get("x-message-id")
+        || `PEPPOL-${invoice.number}-${Date.now()}`
+      const { error: peppolTraceErr } = await supabase
+        .from("invoices")
+        .update({
+          e_invoice_status: "submitted",
+          e_invoice_platform: "peppol",
+          e_invoice_submitted_at: new Date().toISOString(),
+          e_invoice_id: peppolId,
+        })
+        .eq("id", invoice_id)
+        .eq("tenant_id", invoice.tenant_id)
+
+      if (peppolTraceErr) {
+        console.error("submit-e-invoice: trace PEPPOL non écrite:", peppolTraceErr.message)
+        return new Response(JSON.stringify({
+          success: false,
+          platform: "peppol",
+          status: "submitted_untraced",
+          transaction_id: peppolId,
+          error: "La facture a été transmise à PEPPOL mais sa trace n'a pas pu être enregistrée : "
+            + peppolTraceErr.message,
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      }
+
       return new Response(JSON.stringify({
-        success: peppolResponse.ok,
+        success: true,
         platform: "peppol",
-        status: peppolResponse.ok ? "sent" : "error",
+        status: "submitted",
+        transaction_id: peppolId,
       }), {
-        status: peppolResponse.ok ? 200 : 502,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       })
     }

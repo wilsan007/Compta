@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEmployeeDocuments, deleteEmployeeDocument, distributePaySlips } from '@/lib/queries/dematRh'
 import { createEmployeeDocument, getEmployees, getPayRuns } from '@/lib/queries/payroll'
+import { requestSignature } from '@/lib/queries/verifications'
 import { formatDate } from '@/lib/utils'
-import { FileText, Plus, Trash2, X, Send } from 'lucide-react'
+import { FileText, Plus, Trash2, X, Send, PenLine, CheckCircle2 } from 'lucide-react'
 import type { Employee, EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
@@ -31,6 +32,7 @@ export function EmployeeDocumentsPage() {
   const [showDistribute, setShowDistribute] = useState(false)
   const [filterEmp, setFilterEmp] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [signingId, setSigningId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -55,6 +57,37 @@ export function EmployeeDocumentsPage() {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteEmployeeDocument(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+  }
+
+  // W6 — demande de signature électronique (Yousign) sur une pièce déjà
+  // hébergée. La fonction Edge enregistre la demande et son erreur ; l'écran
+  // rapporte ce qu'elle a répondu — y compris « non configuré », sans jamais
+  // prétendre que la pièce est signée.
+  async function handleRequestSignature(doc: any) {
+    const employee = employees.find((e) => e.id === doc.employee_id)
+    if (!employee?.email) {
+      toast('error', tCommon('common.error'), t('employeeDocuments.signatureNoEmail'))
+      return
+    }
+    setSigningId(doc.id)
+    try {
+      const result = await requestSignature({
+        documentType: 'employee_document',
+        documentId: doc.id,
+        documentUrl: doc.file_url,
+        signers: [{
+          first_name: employee.name?.split(' ')[0] || '',
+          last_name: employee.name?.split(' ').slice(1).join(' ') || '',
+          email: employee.email,
+        }],
+        tenantId: doc.tenant_id || null,
+      })
+      toast('success', t('employeeDocuments.signatureRequested'), t('employeeDocuments.signatureRequestedDesc', { id: result.signature_id || '—' }))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setSigningId(null)
+    }
   }
 
   const filtered = documents.filter((d) => {
@@ -136,6 +169,27 @@ export function EmployeeDocumentsPage() {
                       <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('employeeDocuments.view')}>
                         <FileText className="w-4 h-4" />
                       </a>
+                    )}
+                    {d.file_url && !d.e_signed && (
+                      // W6 — `request-signature` était déployée sans appelant :
+                      // aucune pièce ne pouvait être envoyée en signature. La
+                      // demande n'est possible que sur un document **hébergé**
+                      // (le prestataire va chercher l'URL) et elle est tracée
+                      // par la fonction ; l'écran n'invente pas un « signé ».
+                      <button
+                        onClick={() => handleRequestSignature(d)}
+                        disabled={signingId === d.id}
+                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)] disabled:opacity-40"
+                        aria-label={t('employeeDocuments.requestSignature')}
+                        title={t('employeeDocuments.requestSignature')}
+                      >
+                        <PenLine className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    )}
+                    {d.e_signed && (
+                      <span className="text-xs text-[var(--color-success)]" title={t('employeeDocuments.signed')}>
+                        <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                      </span>
                     )}
                     <button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
                       <Trash2 className="w-4 h-4" aria-hidden="true" /></button>

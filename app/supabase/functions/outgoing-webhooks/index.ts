@@ -274,11 +274,12 @@ async function processQueue(supabase: any) {
       }
     }
     if (blockReason) {
-      await supabase.from("webhook_delivery_queue").update({
+      const { error: blockErr } = await supabase.from("webhook_delivery_queue").update({
         status: "blocked",
         last_error: blockReason,
         updated_at: new Date().toISOString(),
       }).eq("id", item.id)
+      if (blockErr) console.error(`outgoing-webhooks: entrée ${item.id} non marquée bloquée:`, blockErr.message)
       continue
     }
 
@@ -286,30 +287,35 @@ async function processQueue(supabase: any) {
 
     if (result.ok) {
       // Succès → marquer comme delivered
-      await supabase.from("webhook_delivery_queue").update({
+      const { error: deliveredErr } = await supabase.from("webhook_delivery_queue").update({
         status: "delivered",
         http_status: result.status,
         response_body: result.response_body,
         delivered_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }).eq("id", item.id)
+      if (deliveredErr) console.error(`outgoing-webhooks: entrée ${item.id} non marquée livrée:`, deliveredErr.message)
 
-      // Logger dans webhook_delivery_logs
-      await supabase.from("webhook_delivery_logs").insert({
+      // Logger dans webhook_delivery_logs.
+      // W6 / EF-08 : la colonne s'appelle `response_code`, pas `http_status`.
+      // L'insertion échouait à chaque livraison, sans que l'erreur soit lue :
+      // aucun journal de livraison n'existait.
+      const { error: logErr } = await supabase.from("webhook_delivery_logs").insert({
         tenant_id: item.tenant_id,
         url: item.url,
         event: item.event,
         status: "delivered",
         attempt: item.attempts + 1,
-        http_status: result.status,
+        response_code: result.status,
       })
+      if (logErr) console.error("outgoing-webhooks: livraison non journalisée:", logErr.message)
     } else {
       const newAttempts = item.attempts + 1
       if (newAttempts < MAX_RETRIES) {
         // Retry → programmer le prochain essai
         const retryDelay = RETRY_DELAYS_MS[newAttempts - 1] || 30000
         const nextRetry = new Date(Date.now() + retryDelay).toISOString()
-        await supabase.from("webhook_delivery_queue").update({
+        const { error: retryErr } = await supabase.from("webhook_delivery_queue").update({
           attempts: newAttempts,
           status: "retry",
           next_attempt_at: nextRetry,
@@ -317,33 +323,37 @@ async function processQueue(supabase: any) {
           http_status: result.status,
           updated_at: new Date().toISOString(),
         }).eq("id", item.id)
+        if (retryErr) console.error(`outgoing-webhooks: replanification de ${item.id} non enregistrée:`, retryErr.message)
 
-        await supabase.from("webhook_delivery_logs").insert({
+        const { error: retryLogErr } = await supabase.from("webhook_delivery_logs").insert({
           tenant_id: item.tenant_id,
           url: item.url,
           event: item.event,
           status: "retry",
           attempt: newAttempts,
-          http_status: result.status,
+          response_code: result.status,
         })
+        if (retryLogErr) console.error("outgoing-webhooks: nouvelle tentative non journalisée:", retryLogErr.message)
       } else {
         // Échec définitif
-        await supabase.from("webhook_delivery_queue").update({
+        const { error: failedErr } = await supabase.from("webhook_delivery_queue").update({
           status: "failed",
           attempts: newAttempts,
           last_error: result.response_body,
           http_status: result.status,
           updated_at: new Date().toISOString(),
         }).eq("id", item.id)
+        if (failedErr) console.error(`outgoing-webhooks: entrée ${item.id} non marquée en échec:`, failedErr.message)
 
-        await supabase.from("webhook_delivery_logs").insert({
+        const { error: failedLogErr } = await supabase.from("webhook_delivery_logs").insert({
           tenant_id: item.tenant_id,
           url: item.url,
           event: item.event,
           status: "failed",
           attempt: newAttempts,
-          http_status: result.status,
+          response_code: result.status,
         })
+        if (failedLogErr) console.error("outgoing-webhooks: échec non journalisé:", failedLogErr.message)
       }
     }
     processed++

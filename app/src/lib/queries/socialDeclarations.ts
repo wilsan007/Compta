@@ -442,12 +442,15 @@ export async function importPasRates(file: File): Promise<void> {
   for (const line of lines.slice(1)) {
     const cols = line.split(';')
     if (cols.length >= 3) {
-      await supabase.from('pas_rates').insert(ti({
+      // W6 : une ligne refusée ne peut pas disparaître — un taux PAS faux
+      // produit une paie fausse, et l'écran annonçait l'import réussi.
+      const { error: pasErr } = await supabase.from('pas_rates').insert(ti({
         employee_id: cols[0],
         rate: parseFloat(cols[1]) / 100,
         effective_date: cols[2],
         source: 'import',
       }, 'pas_rates', tid))
+      if (pasErr) throw new Error(`Taux PAS non importé (${cols[0]}) : ${pasErr.message}`)
     }
   }
 }
@@ -476,13 +479,15 @@ export async function importAtRates(file: File): Promise<void> {
   for (const line of lines.slice(1)) {
     const cols = line.split(';')
     if (cols.length >= 3) {
-      await supabase.from('at_rates').insert(ti({
+      // W6 : même exigence que pour les taux PAS — l'erreur est lue et nommée.
+      const { error: atErr } = await supabase.from('at_rates').insert(ti({
         employee_id: cols[0],
         rate: parseFloat(cols[1]) / 100,
         bonus_malus_rate: cols[2] ? parseFloat(cols[2]) / 100 : 0,
         effective_date: cols[3] || new Date().toISOString().split('T')[0],
         risk_category: cols[4] || null,
       }, 'at_rates', tid))
+      if (atErr) throw new Error(`Taux AT non importé (${cols[0]}) : ${atErr.message}`)
     }
   }
 }
@@ -526,7 +531,10 @@ export async function calculateBdesIndicators(year: number): Promise<BdesIndicat
   const femaleAvgSalary = female > 0 ? employees.filter(e => e.gender === 'F').reduce((s, e) => s + (Number(e.gross_salary) || 0), 0) / female : 0
   indicators.push({ tenant_id: tid, year, category: 'egalite_f_h', indicator_name: 'Écart rémunération F/H', indicator_value: maleAvgSalary > 0 ? (maleAvgSalary - femaleAvgSalary) / maleAvgSalary * 100 : 0, indicator_unit: 'percent', breakdown: { male_avg: maleAvgSalary, female_avg: femaleAvgSalary }, target_value: 0, previous_year_value: null, notes: null })
   for (const ind of indicators) {
-    await supabase.from('bdes_indicators').insert(ti(ind, 'bdes_indicators', tid))
+    // W6 : un indicateur BDES perdu = une déclaration légale fausse, annoncée
+    // comme réussie.
+    const { error: indErr } = await supabase.from('bdes_indicators').insert(ti(ind, 'bdes_indicators', tid))
+    if (indErr) throw new Error(`Indicateur BDES non enregistré (${ind.indicator_name}) : ${indErr.message}`)
   }
   return getBdesIndicators(year)
 }

@@ -83,8 +83,11 @@ serve(async (req) => {
         const invoiceNumber = paymentIntent.metadata?.invoice_number
 
         if (tenantId && invoiceNumber) {
-          // Logger l'échec
-          await supabase
+          // Logger l'échec.
+          // W6 : `notification_email_queue` n'avait pas de colonne `metadata`
+          // (257) et l'erreur n'était pas lue — la notification d'échec de
+          // paiement n'était donc jamais mise en file, en silence.
+          const { error: emailQueueErr } = await supabase
             .from("notification_email_queue")
             .insert({
               tenant_id: tenantId,
@@ -98,6 +101,9 @@ serve(async (req) => {
                 error: paymentIntent.last_payment_error?.message,
               },
             })
+          if (emailQueueErr) {
+            console.error("handle-stripe-webhook: notification d'échec non mise en file:", emailQueueErr.message)
+          }
         }
         break
       }

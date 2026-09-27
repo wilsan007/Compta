@@ -24,7 +24,7 @@ serve(async (req) => {
     if (userErr || !user) return new Response(JSON.stringify({ error: "Non authentifié" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
 
     const body = await req.json()
-    const { document_id, document_url, signers, provider = "yousign", tenant_id } = body
+    const { document_id, document_type, document_url, signers, provider = "yousign", tenant_id } = body
 
     if (!document_url || !signers || !Array.isArray(signers) || signers.length === 0) {
       return new Response(JSON.stringify({ error: "document_url et signers requis" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
@@ -74,15 +74,39 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Erreur Yousign", details: yousignData }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } })
       }
 
-      await supabase.from("electronic_signatures").insert({
+      // W6 / EF-07 : la table exige `document_type` et `signer_name` (NOT NULL)
+      // et ne portait ni `provider`, ni `provider_signature_id`, ni `status`, ni
+      // `signers`, ni `initiated_at` (257). L'insertion échouait donc à chaque
+      // demande — et son erreur n'était pas lue : la signature était demandée au
+      // prestataire sans qu'aucune trace n'en soit gardée.
+      const premier = signers[0] || {}
+      const nomSignataire = [premier.first_name, premier.last_name].filter(Boolean).join(" ")
+        || premier.email || "Signataire"
+
+      const { error: sigErr } = await supabase.from("electronic_signatures").insert({
         tenant_id: tenant_id || null,
+        document_type: document_type || "document",
         document_id: document_id || null,
+        signer_name: nomSignataire,
+        signer_email: premier.email || null,
         provider: "yousign",
         provider_signature_id: yousignData.id,
         status: "pending",
         signers: signers,
         initiated_at: new Date().toISOString(),
       })
+
+      if (sigErr) {
+        console.error("request-signature: demande non enregistrée:", sigErr.message)
+        return new Response(JSON.stringify({
+          success: false,
+          code: "NOT_RECORDED",
+          provider: "yousign",
+          signature_id: yousignData.id,
+          error: "La procédure de signature a été créée chez Yousign mais n'a pas pu être enregistrée : "
+            + sigErr.message + " — identifiant à noter : " + yousignData.id,
+        }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      }
 
       return new Response(JSON.stringify({
         success: true,

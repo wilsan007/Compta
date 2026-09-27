@@ -324,6 +324,7 @@
       "connectionFailed": "Connection failed"
     },
     "syncSuccess": "Synchronization complete",
+    "syncImported": "{{count}} transaction(s) imported",
     "syncError": "Synchronization error",
     "autoSynced": "Auto-synced",
     "reconcile": "Reconcile"

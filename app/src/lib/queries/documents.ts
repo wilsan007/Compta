@@ -43,13 +43,17 @@ async function logAccess(
 ): Promise<void> {
   try {
     const userId = await getCurrentTenantUserId()
-    await supabase.from('module_document_access_log').insert(
+    // W6 : journal best-effort — l'erreur est lue et journalisée. Un
+    // `try/catch` ne suffisait pas : PostgREST rend `{ error }` au lieu de
+    // lever, donc la trace pouvait disparaître sans un mot.
+    const { error: logErr } = await supabase.from('module_document_access_log').insert(
       ti({
         document_id: documentId,
         user_id: userId,
         action,
       }, 'module_document_access_log', tid)
     )
+    if (logErr) console.error('logDocumentAccess (trace non écrite):', logErr)
   } catch (err) {
     console.error("catch:", err)
     // Best-effort logging — don't fail the operation
