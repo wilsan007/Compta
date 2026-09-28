@@ -839,6 +839,27 @@ describe('Budget Tracking', () => {
     await getBudgetTracking('fy-1')
     expect(mockChain.eq).toHaveBeenCalledWith('fiscal_year_id', 'fy-1')
   })
+
+  it('borne le réalisé à l’exercice, exclut AN/CL et les brouillons, et ne pagine plus par budget (BUD-01/02/04)', async () => {
+    const budgets = [
+      { id: '1', account_code: '601000', fiscal_year_id: 'fy-1', fiscal_years: { start_date: '2026-01-01', end_date: '2026-12-31' }, period_1: 1000, debit: 100, credit: 0 },
+      { id: '2', account_code: '606000', fiscal_year_id: 'fy-1', fiscal_years: { start_date: '2026-01-01', end_date: '2026-12-31' }, period_1: 500, debit: 0, credit: 0 },
+    ]
+    ;(supabase as any).from = vi.fn(() => mockChain)
+    setMockData(budgets)
+    const { getBudgetTracking } = await import('@/lib/queries')
+    await getBudgetTracking()
+
+    // BUD-01 : le réalisé est borné aux dates de l'exercice du budget
+    expect(mockChain.gte).toHaveBeenCalledWith('journal_entries.date', '2026-01-01')
+    expect(mockChain.lte).toHaveBeenCalledWith('journal_entries.date', '2026-12-31')
+    // BUD-02 : écritures validées seulement, à-nouveaux et clôture exclus
+    expect(mockChain.eq).toHaveBeenCalledWith('journal_entries.status', 'posted')
+    expect(mockChain.not).toHaveBeenCalledWith('journal_entries.journal_code', 'in', '(AN,CL)')
+    // BUD-04 : une seule requête de lignes pour les DEUX budgets (plus de N+1)
+    const appelsLignes = ((supabase as any).from as any).mock.calls.filter((c: string[]) => c[0] === 'journal_lines').length
+    expect(appelsLignes).toBeLessThanOrEqual(1)
+  })
 })
 
 // ============ Budget Commitments ============

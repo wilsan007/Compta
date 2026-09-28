@@ -793,6 +793,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W7 — M-04 budgets : le réalisé n'était borné par **rien** (ni date, ni
+      # statut, ni journal) : il cumulait depuis la création de la société,
+      # comptait les brouillons et les à-nouveaux, et faisait deux requêtes
+      # paginées par budget (N+1). Côté base, BUD-03 : les engagements d'une
+      # commande n'étaient ni créés ni soldés à la facturation (double
+      # déduction). T01 à T04 vus rouges avant la 307 ; le test Vitest vérifie
+      # les bornes, les exclusions et l'absence de N+1.
+      - name: 'AUD : engagements budgétaires d''une commande (307)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/307_budget_commitments_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
