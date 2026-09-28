@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, AutoBreadcrumb } from '@/components/ui'
 import { parseSageFile, type SageParseResult } from '@/lib/sageImport'
 import { parseMaeFile, type MaeParseResult } from '@/lib/maeParser'
-import { createChartAccount, createJournalEntry, createThirdPartyAccount, updateChartAccount, getChartAccounts, getThirdPartyAccounts } from '@/lib/queries'
+import { createChartAccount, createThirdPartyAccount, getThirdPartyAccounts, importFecEntries } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileUp, Database, CheckCircle2, AlertTriangle, RotateCcw } from 'lucide-react'
@@ -98,6 +98,10 @@ export function SageImportPage() {
       let entriesCreated = 0
       let entriesSkipped = 0
       let tiersCreated = 0
+      // Charge utile de l'import : construite par les deux formats, envoyée en
+      // **un seul** appel (308) — l'équilibre, les comptes, la validation et le
+      // cumul des soldes sont tenus par la base, dans une transaction.
+      const payload: any[] = []
       if ('detectedFormat' in result) {
         // FEC format — entries have lines array
 
@@ -150,61 +154,27 @@ export function SageImportPage() {
           }
         }
 
+        // SAGE-01/02 (308) : l'import est un **acte unique** côté base —
+        // contrôle d'équilibre global, comptes créés au besoin, écritures
+        // **validées** par le noyau et soldes de comptes **cumulés**.
         for (const entry of result.entries) {
-          const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
-          const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
-          try {
-            await createJournalEntry({
-              number: entry.number,
-              date: entry.date,
-              description: entry.description,
-              reference: entry.piece_number,
-              status: 'draft',
-              total_debit: totalDebit,
-              total_credit: totalCredit,
-              journal_code: entry.journal_code,
-              piece_number: entry.piece_number,
-              lines: entry.lines.map((l, i) => ({
-                journal_id: '',
-                account_code: l.account_code,
-                account_name: l.account_name,
-                account_general: l.account_code,
-                account_tiers: l.account_tiers || null,
-                debit: l.debit,
-                credit: l.credit,
-                description: l.description,
-                line_order: i,
-                lettrage_code: l.lettrage_code || null,
-              })),
-            } as any)
-            entriesCreated++
-          } catch (err: any) {
-            entriesSkipped++
-            console.error(`[Import] Entry ${entry.journal_code}#${entry.number} failed:`, err?.message || err)
-            importErrors.push(`Écriture ${entry.journal_code}#${entry.number}: ${err?.message || 'erreur'}`)
-          }
-        }
-
-        // Calculate and update chart account balances from all journal lines
-        const balanceMap = new Map<string, number>()
-        for (const entry of result.entries) {
-          for (const line of entry.lines) {
-            const code = line.account_code
-            const current = balanceMap.get(code) || 0
-            balanceMap.set(code, current + line.debit - line.credit)
-          }
-        }
-        const existingAccounts = await getChartAccounts().catch(() => [])
-        const accountByCode = new Map((existingAccounts || []).map((a) => [a.code, a]))
-        for (const [code, balance] of balanceMap) {
-          const acc = accountByCode.get(code)
-          if (acc) {
-            try {
-              await updateChartAccount(acc.id, { balance } as any)
-            } catch (err: any) {
-              console.error(`[Import] Balance update for ${code} failed:`, err?.message || err)
-            }
-          }
+          payload.push({
+            number: entry.number,
+            date: entry.date,
+            description: entry.description,
+            journal_code: entry.journal_code,
+            piece_number: entry.piece_number,
+            lines: entry.lines.map((l, i) => ({
+              account_code: l.account_code,
+              account_name: l.account_name,
+              account_tiers: l.account_tiers || null,
+              debit: l.debit,
+              credit: l.credit,
+              description: l.description,
+              line_order: i,
+              lettrage_code: l.lettrage_code || null,
+            })),
+          })
         }
       } else {
         // MAE format — flat entries, group by journal+number
@@ -219,43 +189,45 @@ export function SageImportPage() {
             grouped.set(key, { entry: e, debit: e.debit, credit: e.credit })
           }
         }
+        // Le même acte unique que pour le FEC (SAGE-01/02/03, 308).
         for (const [, { entry, debit, credit }] of grouped) {
-          try {
-            await createJournalEntry({
-              number: entry.number,
-              date: entry.date,
+          payload.push({
+            number: entry.number,
+            date: entry.date,
+            description: entry.description,
+            journal_code: entry.journal_code,
+            piece_number: entry.piece_number,
+            lines: [{
+              account_code: entry.account_code,
+              account_name: '',
+              account_tiers: null,
+              debit: entry.debit,
+              credit: entry.credit,
               description: entry.description,
-              reference: entry.piece_number,
-              status: 'draft',
-              total_debit: debit,
-              total_credit: credit,
-              journal_code: entry.journal_code,
-              piece_number: entry.piece_number,
-              lines: [{
-                journal_id: '',
-                account_code: entry.account_code,
-                account_name: '',
-                account_general: entry.account_code,
-                account_tiers: null,
-                debit: entry.debit,
-                credit: entry.credit,
-                description: entry.description,
-                line_order: 0,
-                lettrage_code: null,
-              }],
-            } as any)
-            entriesCreated++
-          } catch (err: any) {
-            entriesSkipped++
-            console.error(`[Import] MAE entry ${entry.journal_code}#${entry.number} failed:`, err?.message || err)
-            importErrors.push(`Écriture ${entry.journal_code}#${entry.number}: ${err?.message || 'erreur'}`)
-          }
+              line_order: 0,
+              lettrage_code: null,
+            }],
+          })
+          void debit; void credit
         }
       }
-      if (import.meta.env.DEV) console.debug('[Import] Entries:', entriesCreated, 'created,', entriesSkipped, 'skipped')
+      // SAGE-01/02/03 : **un seul** appel, **une seule** transaction — ou rien.
+      // Un import déséquilibré, un doublon de pièce ou un refus du noyau
+      // n'écrivent pas une seule ligne.
+      if (payload.length > 0) {
+        try {
+          const verdict = await importFecEntries(payload)
+          entriesCreated = Number(verdict?.entries ?? payload.length)
+          if (import.meta.env.DEV) console.debug('[Import] Entries:', entriesCreated, 'validated')
+        } catch (err: any) {
+          entriesSkipped = payload.length
+          console.error('[Import] import_fec_entries failed:', err?.message || err)
+          importErrors.push(`Import: ${err?.message || 'erreur'}`)
+        }
+      }
 
       if (importErrors.length > 0) {
-        toast('error', 'Erreurs d\'import', `${importErrors.length} erreur(s) — voir console (F12). ${accountsCreated} comptes, ${tiersCreated} tiers et ${entriesCreated} écritures importés.`)
+        toast('error', 'Erreurs d\'import', `${importErrors.length} erreur(s) — voir console (F12). ${accountsCreated} comptes, ${tiersCreated} tiers. ${entriesSkipped > 0 ? `Aucune écriture importée : l'import est atomique (${entriesSkipped} refusée(s)).` : `${entriesCreated} écritures importées.`}`)
       } else {
         toast('success', t('sageImport.importSuccess'), `${accountsCreated} comptes, ${tiersCreated} comptes tiers, ${entriesCreated} écritures importés.`)
       }

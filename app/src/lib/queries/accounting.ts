@@ -1179,6 +1179,24 @@ export async function validateJournalEntries(ids: string[]): Promise<JournalVali
   return (data || []) as JournalValidationVerdict[]
 }
 
+// SAGE-01/02/03 (308) : l'import d'écritures (FEC, balance) est un **acte unique**
+// côté base — contrôle d'équilibre global, comptes créés au besoin, écritures
+// **validées** par le noyau et soldes de comptes **cumulés**. Une erreur annule
+// tout : la comptabilité ne peut pas rester à moitié importée.
+export interface FecImportVerdict {
+  entries: number
+  lines: number
+  accounts_created: number
+  total_debit: number
+  total_credit: number
+}
+
+export async function importFecEntries(entries: unknown[]): Promise<FecImportVerdict> {
+  const { data, error } = await supabase.rpc('import_fec_entries', { p_entries: entries })
+  if (error) throw error
+  return data as FecImportVerdict
+}
+
 // « Enregistrer et valider » n'est offert que sans séparation des tâches :
 // avec elle, l'auteur d'une écriture ne peut pas la valider (232).
 export async function isSegregationEnforced(): Promise<boolean> {
