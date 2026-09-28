@@ -1,8 +1,9 @@
-# Ce qui reste ouvert — état au 26 septembre 2026 (mise à jour du 27/09 : W5, W10)
+# Ce qui reste ouvert — état au 26 septembre 2026 (mises à jour : 27/09 W5, W10 ; 28/09 W7/W8 partielles)
 
 > **Objet.** Une seule page, à jour, de **tout ce qui n'est pas fermé** après la
 > vague W6 : ce qui attend une décision, ce qui vit hors du dépôt, ce qui reste
-> à coder, et les deux échecs encore inscrits au registre de la CI.
+> à coder — et, depuis le 28/09, **un registre de CI vide** : les deux échecs qui
+> y étaient inscrits (`231 M-17-01`, `245 T08`) sont fermés.
 > **Règle de lecture.** `MESURÉ` = obtenu par exécution ; `PROPOSÉ` = charge
 > estimée, à valider. Ce document ne remplace pas les plans : il les **résume**.
 > **Sources.** [Plan correctif complet](PLAN-CORRECTIF-COMPLET-ET-VERIFICATION-2026-09-24.md),
@@ -13,7 +14,7 @@
 > [W1](VAGUE-W1-ISO02-04-PERM01-2026-09-24.md), [W2/W3](VAGUE-W2-W3-2026-09-24.md),
 > [W4](VAGUE-W4-2026-09-26.md), [W6](VAGUE-W6-2026-09-26.md),
 > [W9](VAGUE-W9-2026-09-26.md), [W5](VAGUE-W5-2026-09-27.md),
-> [W10](VAGUE-W10-2026-09-27.md)).
+> [W10](VAGUE-W10-2026-09-27.md), [W7/W8 partielles](VAGUE-W7-W8-2026-09-28.md)).
 > **Mémoire.** Ce document est référencé par `AGENTS.md` (section « Reste
 > ouvert ») : c'est le point d'entrée pour reprendre le travail.
 
@@ -32,12 +33,14 @@
 | **W9** | Chaînage de l'absence : registre `employee_absence_days`, gardes en aval, une seule retenue de paie, 34 assertions transverses | [W9](VAGUE-W9-2026-09-26.md) |
 | **W5** | Un seul moteur par grandeur : `calculate_depreciation` supprimée, méthode d'amortissement **lue** (dégressif paramétré, `units_of_production` retirée), exercice **borné**, lot à verdict par immobilisation, heures supplémentaires à **un** seuil / **un** taux / **un** montant | [W5](VAGUE-W5-2026-09-27.md) |
 | **W10** | Le contrat d'appel front ↔ base : le contrôle `check-rpc-contract` (baseline **à zéro**), les **14 appels** que la base ne pouvait pas servir (4 fonctions de déclencheur appelées depuis des écrans vivants, stock compté deux fois, période NF-525 envoyée comme une date, IJSS calculées sur un couple salarié/jours), et la **267** qui rend la clôture NF-525 possible (append-only, elle cesse d'écrire dans le journal inaltérable et remplit `nf525_period_closures`) | [W10](VAGUE-W10-2026-09-27.md) |
+| **W7 (partielle)** | Le **CA non taxé** entre dans la CA3 (`245 T08`, `268`) : la base hors taxe n'est plus reconstituée depuis la TVA, elle se lit sur les comptes de produits (classe 70) | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
+| **W8 (partielle)** | La **refacturation des temps** existe (`231 M-17-01`, `269`) : brouillon de facture par projet, ligne rattachée au temps (unicité société + temps), saisie directe couverte, suppression en chaîne mesurée | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
 
-État mesuré sur base neuve : **236 migrations, 0 erreur** ; **28/28** contrôles et
-suites rejoués sur la base migrée (8 contrôles + 20 suites, dont `267` :
-**6/6**) ; front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar, **Vitest 1 502**,
-**32 tests Edge Deno** ; les **trois** scanners de code (`check-written-columns`,
-`check-unchecked-writes`, `check-rpc-contract`) à **0**, baselines vides.
+État mesuré sur base neuve : **238 migrations, 0 erreur** ; **76/76** contrôles et
+suites rejoués sur la base migrée (8 contrôles + 68 suites) ; front `tsc` 0,
+`oxlint` 0, **Vitest 1 502**, **32 tests Edge Deno** ; les **trois** scanners de
+code (`check-written-columns`, `check-unchecked-writes`, `check-rpc-contract`) à
+**0**, baselines vides.
 
 ---
 
@@ -80,8 +83,8 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 
 | Vague | Défauts | Charge | Contenu |
 |---|---:|---:|---|
-| **W7 — Comptabilité avancée** | 15 (4 🔴) | 6 j | M01-01→03 le taux de change est saisi… et **jamais appliqué** ; ANA-01→03 analytique ; BUD-01→04 réalisé non borné à l'exercice ; SAGE-01→03 import équilibré et transactionnel ; FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
-| **W8 — Production et projets** | 6 (1 🔴) | 3 j | PROD-01→03 nomenclature à **un seul niveau**, ni rebuts ni écarts, écriture datée du jour de clôture ; PROJ-01→03 la **refacturation des temps n'existe pas** (c'est le `M-17-01` encore rouge au registre) |
+| **W7 — Comptabilité avancée** | 14 (3 🔴) | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08` fermé le 28/09 par la `268`, [preuve](VAGUE-W7-W8-2026-09-28.md)) — restent M01-01→03 le taux de change est saisi… et **jamais appliqué** ; ANA-01→03 analytique ; BUD-01→04 réalisé non borné à l'exercice ; SAGE-01→03 import équilibré et transactionnel ; FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
+| **W8 — Production et projets** | 5 | 3 j | ✅ **la refacturation des temps existe** (`231 M-17-01` fermé le 28/09 par la `269`, [preuve](VAGUE-W7-W8-2026-09-28.md)) — restent PROD-01→03 nomenclature à **un seul niveau**, ni rebuts ni écarts, écriture datée du jour de clôture ; PROJ-02 avancement en moyenne non pondérée ; PROJ-03 tâche pouvant être son propre parent |
 | **T1 → T9** | 9 scénarios transverses | 5 j | commande → livraison → facture → encaissement → lettrage → clôture ; achat → réception → qualité → facture → paiement ; temps → projet → facture → marge ; **absence → paie → DSN → coût projet** (fait, `266`) ; caisse → clôture → comptabilité → TVA ; immobilisation → amortissement → cession ; budget → engagement → réalisé ; import → lettrage → états ; **contre-épreuve de falsification** |
 | | **Total** | **≈ 14 j** | |
 
@@ -122,14 +125,15 @@ et W9 a livré la chaîne de l'absence de bout en bout.
 
 ### F. Les deux échecs encore inscrits au registre de la CI
 
-`app/sql/ci/expected_failures.sql` porte **deux lignes** — et la CI **échoue** si
-l'un de ces tests se met à passer : c'est le rappel qui oblige à retirer la ligne
-dans le commit du correctif.
+`app/sql/ci/expected_failures.sql` est **VIDE depuis le 28/09/2026** : les deux
+défauts qui y figuraient sont corrigés, et leurs lignes ont disparu dans le commit
+du correctif — c'est le rappel qui l'exige (la CI **échoue** si un test corrigé
+reste au registre).
 
-| Fichier | Test | Le défaut, en une phrase | Vague qui le ferme |
+| Fichier | Test | Le défaut, en une phrase | Fermé par |
 |---|---|---|---|
-| `231` | `M-17-01` | les heures facturables n'atteignent aucune facture (`create_billable_line_on_timesheet_stop` ne crée qu'une notification) | **W8** |
-| `245` | `T08` | le chiffre d'affaires **non taxé** (exonéré, export, livraison intracommunautaire) n'entre pas dans le CA déclaré : la base de la CA3 est reconstituée depuis la TVA | **W7** |
+| `231` | `M-17-01` | les heures facturables n'atteignent aucune facture (`create_billable_line_on_timesheet_stop` ne crée qu'une notification) | **W8**, `269` (28/09) |
+| `245` | `T08` | le chiffre d'affaires **non taxé** (exonéré, export, livraison intracommunautaire) n'entre pas dans le CA déclaré : la base de la CA3 est reconstituée depuis la TVA | **W7**, `268` (28/09) |
 
 ### G. Ce que W6 laisse explicitement non fermé
 
@@ -163,17 +167,20 @@ dans le commit du correctif.
 
 | Bloc | Charge |
 |---|---:|
-| Plan correctif — phases 5 et 6 (W7, W8 + les 9 transverses) | ≈ 14 j |
+| Plan correctif — phases 5 et 6 (W7 : 14 défauts, W8 : 5 défauts, + les 9 transverses) | ≈ 11 j |
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
-| **Total restant au 27/09/2026** | **≈ 145 j** |
+| **Total restant au 28/09/2026** | **≈ 143 j** |
 | Déjà livré et prouvé (W0 → W10 — dont W5, `260`, et W10, `267` — et chaînages L0) | ≈ 22,5 j |
 
 Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
-(W9, 4 j) et W5 (2 j) en sont sortis — d'où **≈ 145 j** aujourd'hui. **W10
-(≈ 2 j)** s'ajoute aux livraisons sans réduire ce total : elle était **hors
+(W9, 4 j), W5 (2 j) et les deux défauts du registre fermés le 28/09 — le `M-17-01`
+de la refacturation des temps (**W8**, `269`) et le `T08` du CA non taxé dans la
+CA3 (**W7**, `268`), ≈ 2 j à eux deux — l'amènent à **≈ 143 j** aujourd'hui.
+**W10 (≈ 2 j)** s'ajoute aux livraisons sans réduire ce total : elle était **hors
 plan**, découverte par un angle mort (les appels de fonction), pas retirée du
-plan.
+plan. **W7 et W8 restent ouvertes** : le registre ne portait que le défaut
+*prouvé* de chacune.
 
 **Ce que ces chiffres ne comptent pas** : les défauts que l'audit des 16 modules
 restants révélera, les délais externes (les 14 documents djiboutiens,
@@ -236,4 +243,5 @@ DATABASE_URL=… node scripts/check-rpc-contract.mjs       # 0 attendu (W10)
 | `doc/audit/RESTE-A-FAIRE-ET-PLAN-PHASES-2026-09-24.md` | le plan par phases (détail, critères de sortie, décisions) |
 | `doc/audit/VAGUE-W6-2026-09-26.md` | la preuve de la vague W6 (mesures avant/après, « rouge d'abord », limites) |
 | `doc/audit/VAGUE-W5-2026-09-27.md` | la preuve de la vague W5 (moteurs uniques : mesures avant/après, « rouge d'abord », limites dites) |
-| `app/sql/ci/expected_failures.sql` | les deux défauts encore rouges, avec leur raison |
+| `doc/audit/VAGUE-W7-W8-2026-09-28.md` | la preuve des deux défauts du registre fermés (CA non taxé dans la CA3, refacturation des temps : mesures avant/après, limites, et **ce que W7/W8 ne sont pas**) |
+| `app/sql/ci/expected_failures.sql` | le registre des défauts prouvés — **VIDE depuis le 28/09/2026** ; un échec hors registre casse la CI |

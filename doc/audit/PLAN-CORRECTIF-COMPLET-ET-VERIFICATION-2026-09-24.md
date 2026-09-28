@@ -220,8 +220,16 @@ Aucune des 20 fonctions Edge n'a de test (couverture §4). Les huit défauts ci-
 | FEC-01 | FEC (M-11) | Une 2ᵉ implémentation du FEC, à 9 colonnes sur 18 | 🟡 | structure | à écrire | W7 |
 
 \* `scenarios/POS_inalterabilite_nf525.sql` — constat uniquement.
-† `M-17-01` est **déjà au registre** `ci/expected_failures.sql` avec sa raison : le test existe
-(`sql/231_project_time_billing_tests.sql`) et est branché en CI. C'est le seul défaut du registre.
+† `M-17-01` **était** au registre `ci/expected_failures.sql` avec sa raison : le test existe
+(`sql/231_project_time_billing_tests.sql`) et est branché en CI.
+
+> **État au 28/09/2026 — ce document est un constat daté du 24/09.** Les **deux**
+> défauts du registre sont depuis fermés : `M-17-01` (la refacturation des temps,
+> `269`) et `245 T08` (le CA non taxé absent de la CA3, `268`) — `ci/expected_failures.sql`
+> est **vide** et les scénarios `231` (10/10) et `245` (9/9) sont verts.
+> [Preuve](VAGUE-W7-W8-2026-09-28.md). W7 et W8 restent ouvertes pour le reste de
+> leurs défauts (14 et 5) : seul `PROJ-01` (= `M-17-01`) est fermé ; `PROD-01→03`
+> et `SAGE-01→03` restent ouverts.
 
 **Total vérifié** : 13 + 15 + 13 + 8 + 5 + 15 = **69 défauts**, dont **32 bloquants** (🔴).
 Zéro ligne ajoutée, zéro ligne retirée : c'est la somme exacte du tableau du 23/09.

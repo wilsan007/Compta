@@ -14,6 +14,14 @@
 -- Ce fichier confronte les deux aux mêmes écritures et vérifie ce que la
 -- déclaration enregistrée contient réellement, colonne par colonne, par rapport
 -- à ce que VatReturnsPage.tsx en affiche.
+--
+-- W7 (268, 28/09/2026) — T08 est fermé. La base hors taxe de la CA3 était
+-- reconstituée depuis la TVA (montant ÷ taux) : un chiffre d'affaires non taxé —
+-- exonéré, export, livraison intracommunautaire — ne porte aucune TVA et
+-- n'entrait dans aucune base. Le scénario mesure désormais les deux natures
+-- d'opérations non taxées (A2 « exonéré » et E1/E2 « intracommunautaire ») à
+-- côté de la vente taxée, et la 268 tire le CA déclaré des **comptes de
+-- produits** (classe 70) au lieu des comptes de TVA.
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '245', false);
@@ -228,12 +236,11 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN PERFORM _rec('T07', 'synthèse par code : 5 factures au même taux rendent UNE ligne FR20 collectée de 100', false, SQLERRM); END;
 END $$;
 
--- T08 — chiffre d'affaires non taxé. La base hors taxe de la CA3 est
+-- T08 — chiffre d'affaires non taxé. La base hors taxe de la CA3 était
 -- reconstituée depuis la TVA (montant ÷ taux) : une vente exonérée, un export
--- ou une livraison intracommunautaire, qui ne portent aucune TVA, n'y entrent
--- pas. Les cases A2, E1 et E2 de la CA3 réclament pourtant cette base.
--- Défaut connu et ouvert : la corriger demande de tirer la base des comptes de
--- produits par code de TVA, pas des comptes de TVA.
+-- ou une livraison intracommunautaire, qui ne portent aucune TVA, n'y entraient
+-- pas. Les cases A2, E1 et E2 de la CA3 réclament pourtant cette base : la 268
+-- la tire des comptes de produits (classe 70), taxée ou non.
 DO $$
 DECLARE t uuid := _mk_tenant('TVA08'); g jsonb; v record; c uuid;
 BEGIN
@@ -241,14 +248,15 @@ BEGIN
   PERFORM _as_user();
   BEGIN
     SELECT id INTO c FROM customers WHERE tenant_id = t LIMIT 1;
-    PERFORM _tva_invoice(t, c, '2026-06-05', '[{"q":1,"p":1000,"r":20}]');            -- taxée
-    PERFORM _tva_invoice(t, c, '2026-06-08', '[{"q":1,"p":500,"r":0,"c":"EXO"}]');    -- exonérée
+    PERFORM _tva_invoice(t, c, '2026-06-05', '[{"q":1,"p":1000,"r":20}]');             -- taxée (A1)
+    PERFORM _tva_invoice(t, c, '2026-06-08', '[{"q":1,"p":500,"r":0,"c":"EXO"}]');     -- exonérée (A2)
+    PERFORM _tva_invoice(t, c, '2026-06-10', '[{"q":1,"p":250,"r":0,"c":"UE"}]');      -- livraison intracommunautaire (E1/E2)
     g := generate_vat_return('2026-06-01', '2026-06-30');
     SELECT total_sales, box1_output_vat INTO v FROM vat_returns WHERE id = (g->>'id')::uuid;
-    PERFORM _rec('T08', 'chiffre d''affaires déclaré : 1 500 (1 000 taxés + 500 exonérés), TVA 200',
-      v.total_sales = 1500 AND v.box1_output_vat = 200,
-      format('CA déclaré = %s pour 1 500 facturés ; TVA = %s', v.total_sales, v.box1_output_vat));
-  EXCEPTION WHEN OTHERS THEN PERFORM _rec('T08', 'chiffre d''affaires déclaré : 1 500 (1 000 taxés + 500 exonérés), TVA 200', false, SQLERRM); END;
+    PERFORM _rec('T08', 'chiffre d''affaires déclaré : 1 750 (1 000 taxés + 500 exonérés + 250 intracommunautaires), TVA 200',
+      v.total_sales = 1750 AND v.box1_output_vat = 200,
+      format('CA déclaré = %s pour 1 750 facturés (comptes de produits, taxés et non taxés) ; TVA = %s', v.total_sales, v.box1_output_vat));
+  EXCEPTION WHEN OTHERS THEN PERFORM _rec('T08', 'chiffre d''affaires déclaré : 1 750 (1 000 taxés + 500 exonérés + 250 intracommunautaires), TVA 200', false, SQLERRM); END;
 END $$;
 
 -- T09 — une déclaration déposée ne se recalcule pas en silence : relancer

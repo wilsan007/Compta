@@ -15,6 +15,24 @@
 --   T04 ROUGE  — et le nom du projet de A se retrouve dans une notification de B
 --   T05 ROUGE  — le montant est libellé « € » quelle que soit la devise
 --   T06 vert   — aucune écriture comptable n'est générée par un temps passé
+--
+-- W8 (269, 28/09/2026) — la refacturation existe. `M-17-01` est fermé :
+--   • M-17-01 mesure désormais ce que la refacturation doit produire — une
+--     ligne de facture de 240 dans un brouillon du projet — et plus seulement
+--     « au moins une ligne » ;
+--   • T07 ajoute le chemin que le déclencheur ne voyait pas : la **saisie
+--     directe** (formulaire « temps manuel », insertion avec `end_time` du
+--     premier coup) n'arrête aucun chronomètre, donc aucun `UPDATE OF end_time` ;
+--     avant le correctif, ces heures n'atteignaient rien non plus ;
+--   • T08 mesure l'idempotence : un même temps arrêté deux fois n'est facturé
+--     qu'une fois (index unique `(tenant_id, time_entry_id)`).
+-- Les deux nouveaux scénarios sont vus **rouges avant** la 269 (colonne
+-- `time_entry_id` absente, aucune ligne créée).
+--
+-- Ce que la 269 ne fait pas : le brouillon n'est **pas** validé automatiquement
+-- (aucune écriture comptable n'est produite par un temps passé — T06 le tient),
+-- et la ligne est au prix de la feuille de temps, à la TVA par défaut de la
+-- société ; il n'y a pas de régénération ni de note d'honoraires groupée.
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '231', false);
@@ -51,9 +69,22 @@ BEGIN
   RETURN te;
 END $$;
 
+-- Saisie directe (« temps manuel ») : le `end_time` est là dès l'INSERT
+CREATE OR REPLACE FUNCTION _saisie231(p_t uuid, p_pr uuid, p_tk uuid, p_emp uuid,
+  p_taux numeric, p_heures numeric)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE te uuid; v_start timestamptz := now() - make_interval(secs => (p_heures * 3600));
+BEGIN
+  INSERT INTO project_time_entries (tenant_id, project_id, task_id, employee_id, start_time, end_time, duration_seconds, is_billable, hourly_rate)
+  VALUES (p_t, p_pr, p_tk, p_emp, v_start, now(), (p_heures * 3600)::int, true, p_taux)
+  RETURNING id INTO te;
+  RETURN te;
+END $$;
+
 -- T01/T02/T06 : 3 h facturables à 80 — où vont-elles ?
 DO $$
-DECLARE v record; hrs numeric; n_notif int; n_inv int; n_line int; n_je int;
+DECLARE v record; hrs numeric; n_notif int; n_inv int; n_draft int;
+        n_line int; v_qty numeric; v_total numeric; n_je int;
 BEGIN
   v := _mk_projet231('T01');
   PERFORM _as_user();
@@ -63,7 +94,10 @@ BEGIN
   SELECT total_hours_spent INTO hrs FROM projects WHERE id = v.pr;
   SELECT count(*) INTO n_notif FROM project_notifications WHERE tenant_id = v.t;
   SELECT count(*) INTO n_inv FROM invoices WHERE tenant_id = v.t;
-  SELECT count(*) INTO n_line FROM invoice_lines WHERE tenant_id = v.t;
+  SELECT count(*) INTO n_draft FROM invoices
+    WHERE tenant_id = v.t AND status = 'draft' AND validation_status = 'draft';
+  SELECT count(*), COALESCE(sum(quantity), 0), COALESCE(sum(total), 0)
+    INTO n_line, v_qty, v_total FROM invoice_lines WHERE tenant_id = v.t;
   SELECT count(*) INTO n_je FROM journal_entries WHERE tenant_id = v.t;
 
   PERFORM _rec('T01', '3 h pointées remontent dans les heures du projet',
@@ -71,10 +105,12 @@ BEGIN
 
   -- Identifiant porté au registre : le couple (fichier, identifiant). Un « T02 »
   -- inscrit ici ne dispenserait pas le T02 des autres fichiers (AUD-X01).
-  PERFORM _rec('M-17-01', '3 h facturables à 80 atteignent une ligne de facture de 240',
-    n_line >= 1,
-    format('lignes de facture=%s (au moins 1 attendue) factures=%s notifications=%s — la fonction create_billable_line ne crée qu''une notification',
-           n_line, n_inv, n_notif));
+  -- W8 : le scénario mesure la refacturation elle-même — 3 h × 80 = 240 sur une
+  -- ligne rattachée à un brouillon du projet, et non « au moins une ligne ».
+  PERFORM _rec('M-17-01', '3 h facturables à 80 atteignent une ligne de facture de 240, dans un brouillon du projet',
+    n_line >= 1 AND v_qty = 3 AND v_total = 240 AND n_draft >= 1,
+    format('lignes de facture=%s (au moins 1 attendue) dont quantité=%s montant=%s | factures=%s dont brouillons=%s | notifications=%s',
+           n_line, v_qty, v_total, n_inv, n_draft, n_notif));
 
   PERFORM _rec('T06', 'un temps passé ne génère aucune écriture comptable directe',
     n_je = 0, format('écritures=%s (0 attendue)', n_je));
@@ -126,6 +162,103 @@ BEGIN
     format('message=%s', COALESCE(left(msg, 90), '(aucune notification)')));
 END $$;
 
+-- T07 : la saisie directe — le formulaire « temps manuel » insère la feuille avec
+-- son `end_time` du premier coup : il n'y a aucun `UPDATE OF end_time`, donc le
+-- déclencheur branché sur l'arrêt du chronomètre ne la voyait pas. 2 h à 120 = 240.
+DO $$
+DECLARE v record; n_line int; v_tot numeric;
+BEGIN
+  v := _mk_projet231('T07');
+  PERFORM _as_user();
+  BEGIN
+    PERFORM _saisie231(v.t, v.pr, v.tk, v.emp, 120, 2);
+    PERFORM set_config('role', 'postgres', true);
+    SELECT count(*), COALESCE(sum(total), 0) INTO n_line, v_tot
+      FROM invoice_lines WHERE tenant_id = v.t;
+    PERFORM _rec('T07', 'une saisie manuelle facturable de 2 h à 120 atteint une ligne de 240',
+      n_line = 1 AND v_tot = 240, format('lignes=%s montant=%s', n_line, v_tot));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM set_config('role', 'postgres', true);
+    PERFORM _rec('T07', 'une saisie manuelle facturable de 2 h à 120 atteint une ligne de 240', false, SQLERRM);
+  END;
+END $$;
+
+-- T08 : idempotence. Rouvrir un temps (end_time remis à NULL) puis l'arrêter de
+-- nouveau ne doit pas le facturer une seconde fois — c'est la garantie de
+-- l'index unique (tenant_id, time_entry_id), pas une politesse du code.
+DO $$
+DECLARE v record; te uuid; n_line int;
+BEGIN
+  v := _mk_projet231('T08');
+  PERFORM _as_user();
+  BEGIN
+    te := _pointer231(v.t, v.pr, v.tk, v.emp, 90);
+    PERFORM set_config('role', 'postgres', true);
+    UPDATE project_time_entries SET end_time = NULL WHERE id = te;
+    PERFORM _as_user();
+    UPDATE project_time_entries SET end_time = now(), duration_seconds = 7200 WHERE id = te;
+    PERFORM set_config('role', 'postgres', true);
+    SELECT count(*) INTO n_line FROM invoice_lines
+      WHERE tenant_id = v.t AND time_entry_id = te;
+    PERFORM _rec('T08', 'un même temps arrêté deux fois n''est facturé qu''une fois',
+      n_line = 1, format('lignes rattachées à ce temps=%s (1 attendue)', n_line));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM set_config('role', 'postgres', true);
+    PERFORM _rec('T08', 'un même temps arrêté deux fois n''est facturé qu''une fois', false, SQLERRM);
+  END;
+END $$;
+
+-- T09 : la chaîne de la suppression, dans les deux sens. Supprimer une feuille de
+-- temps **en brouillon** retire sa ligne (on ne facture pas une heure qui n'existe
+-- plus) ; une fois la facture **validée**, la même suppression est refusée par la
+-- garde de la 190 (« Facture validée : ses lignes ne peuvent plus être modifiées »)
+-- — la cascade de la clé étrangère ne contourne pas une pièce comptable.
+DO $$
+DECLARE v record; te uuid; n_avant int; n_apres int; n_valides int;
+        refuse boolean := false; err text := '—';
+BEGIN
+  v := _mk_projet231('T09');
+  PERFORM _as_user();
+  BEGIN
+    te := _pointer231(v.t, v.pr, v.tk, v.emp, 100);
+    PERFORM set_config('role', 'postgres', true);
+    SELECT count(*) INTO n_avant FROM invoice_lines WHERE tenant_id = v.t;
+    DELETE FROM project_time_entries WHERE id = te;
+    SELECT count(*) INTO n_apres FROM invoice_lines WHERE tenant_id = v.t;
+    PERFORM _rec('T09', 'supprimer une feuille de temps en brouillon retire sa ligne facturable',
+      n_avant = 1 AND n_apres = 0,
+      format('lignes avant suppression=%s après=%s', n_avant, n_apres));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM set_config('role', 'postgres', true);
+    PERFORM _rec('T09', 'supprimer une feuille de temps en brouillon retire sa ligne facturable', false, SQLERRM);
+  END;
+
+  -- Deuxième temps, puis validation de la facture du projet : la suppression de
+  -- l'heure facturée doit être refusée.
+  BEGIN
+    PERFORM _as_user();
+    te := _pointer231(v.t, v.pr, v.tk, v.emp, 100);
+    PERFORM set_config('role', 'postgres', true);
+    UPDATE invoices SET validation_status = 'validated'
+      WHERE tenant_id = v.t AND project_id = v.pr AND validation_status = 'draft';
+    SELECT count(*) INTO n_valides FROM invoice_lines l
+      JOIN invoices i ON i.id = l.invoice_id AND i.tenant_id = l.tenant_id
+      WHERE l.tenant_id = v.t AND i.validation_status = 'validated';
+    BEGIN
+      DELETE FROM project_time_entries WHERE id = te;
+    EXCEPTION WHEN OTHERS THEN refuse := true; err := SQLERRM;
+    END;
+    PERFORM _rec('T09b', 'une heure facturée ne se supprime plus : la pièce validée est protégée',
+      refuse AND n_valides = 1,
+      format('lignes sur facture validée=%s suppression refusée=%s | %s', n_valides, refuse, left(err, 90)));
+  EXCEPTION WHEN OTHERS THEN
+    PERFORM set_config('role', 'postgres', true);
+    PERFORM _rec('T09b', 'une heure facturée ne se supprime plus : la pièce validée est protégée', false, SQLERRM);
+  END;
+END $$;
+
+
 DROP FUNCTION _pointer231(uuid, uuid, uuid, uuid, numeric);
+DROP FUNCTION _saisie231(uuid, uuid, uuid, uuid, numeric, numeric);
 DROP FUNCTION _mk_projet231(text, text);
 SELECT _audit_assert('231');

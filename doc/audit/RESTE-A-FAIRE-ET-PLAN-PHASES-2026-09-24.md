@@ -202,8 +202,8 @@ chantier des chaînages, qui **exige** les vagues ; la phase 10 est continue.
 | Vague | Défauts | Charge | Critère de sortie |
 |---|---|---:|---|
 | **W5** — un seul moteur par grandeur | 8 (1 🔴) | 2 j | ✅ **exécutée le 27/09** (`260`) — **un seul** chemin d'amortissement (l'écran ne peut plus produire un plan différent du moteur) ; les heures supplémentaires ont une seule source ; `assets` non régressé (`211`, `226` verts). Preuve : `VAGUE-W5-2026-09-27.md` |
-| **W7** — comptabilité avancée | 15 (4 🔴) | 6 j | le taux de change **appliqué** aux écritures en devise (M01-01→03) ; analytique propagée et bornée à l'exercice ; réalisé budgétaire borné ; import Sage **équilibré et transactionnel**, soldes cumulés ; **une seule** implémentation du FEC (18 colonnes) |
-| **W8** — production et projets | 6 (1 🔴) | 3 j | nomenclature **multi-niveaux** explosée ; rebuts et écarts chiffrés ; écriture datée de l'OF ; **refacturation réelle** des temps (le `M-17-01` du registre **doit disparaître** de `ci/expected_failures.sql`) ; anti-cycle des tâches ; avancement pondéré |
+| **W7** — comptabilité avancée | 14 (3 🔴) | 6 j | ⏳ **partielle au 28/09** : ✅ le **CA non taxé entre dans la CA3** (`245 T08` fermé par la `268`, [preuve](VAGUE-W7-W8-2026-09-28.md)) — restent le taux de change **appliqué** aux écritures en devise (M01-01→03) ; analytique propagée et bornée à l'exercice ; réalisé budgétaire borné ; import Sage **équilibré et transactionnel**, soldes cumulés ; **une seule** implémentation du FEC (18 colonnes) |
+| **W8** — production et projets | 5 | 3 j | ⏳ **partielle au 28/09** : ✅ la **refacturation réelle** des temps existe — `M-17-01` a **disparu** de `ci/expected_failures.sql` par la `269` ([preuve](VAGUE-W7-W8-2026-09-28.md)) — restent la nomenclature **multi-niveaux** explosée ; rebuts et écarts chiffrés ; écriture datée de l'OF ; anti-cycle des tâches ; avancement pondéré |
 
 > **Note d'exécution.** W5, W7 et W8 touchent des écrans que W6 vient de
 > nettoyer : **un seul rédacteur par fichier**, et W7 se sérialise avec W3 sur

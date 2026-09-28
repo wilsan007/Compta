@@ -1,13 +1,15 @@
 # AGENTS.md — Onusuite/compta
 
-## Reste ouvert — au 27 septembre 2026
+## Reste ouvert — au 28 septembre 2026
 
 **Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
-(ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, les
-deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
+(ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, et —
+depuis le 28/09 — **un registre de CI vide** : plus aucun défaut prouvé ouvert).
+L'essentiel en sept lignes :
 
-* **≈ 145 j restants** : plan correctif **W7 / W8 + 9 transverses** (≈ 14 j),
-  chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
+* **≈ 143 j restants** : plan correctif **W7 (14 défauts) / W8 (5 défauts) + 9
+  transverses** (≈ 11 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit
+  phase 10 (≈ 15 j).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
   écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
@@ -16,10 +18,15 @@ deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
   période NF-525 envoyée comme une date, les IJSS calculées sur un couple
   salarié/jours). Le contrôle `check-rpc-contract` (baseline **à zéro**) les
   interdit désormais, et la **267** rend la clôture NF-525 possible.
-* **Deux défauts encore rouges au registre** (`app/sql/ci/expected_failures.sql`) :
-  `231 M-17-01` (la refacturation des temps — **W8**) et `245 T08` (le CA non
-  taxé absent de la CA3 — **W7**). La CI **échoue** si l'un se met à passer : la
-  ligne doit être retirée dans le commit du correctif.
+* **Les deux défauts du registre sont FERMÉS (28/09)** — `app/sql/ci/expected_failures.sql`
+  est **vide** : `231 M-17-01` (la refacturation des temps → **W8**, `269` :
+  brouillon de facture par projet, ligne rattachée au temps, unicité
+  `(société, temps)`, saisie directe couverte) et `245 T08` (le CA non taxé absent
+  de la CA3 → **W7**, `268` : le CA se lit sur les comptes de produits).
+  [Preuve](doc/audit/VAGUE-W7-W8-2026-09-28.md) : 10 scénarios `231` et 9 `245`
+  verts, batterie **76/76**, base neuve **238 migrations, 0 erreur**.
+  ⚠️ **W7 et W8 restent ouvertes** : le registre ne portait que le défaut *prouvé*
+  de chacune (14 défauts W7, 5 défauts W8 au plan).
 * **Décisions qui bloquent** : `D-4` (`generate-pdf` : rebrancher ou supprimer —
   le défaut appliqué est « non déployée »), `D-5` (OCR), `D-7` (contraste),
   `D-10`, `D-11` (localisation), `D-13`.
@@ -417,6 +424,41 @@ deux échecs encore inscrits au registre de la CI). L'essentiel en six lignes :
   (l'attestation revérifie la chaîne à la demande) ; le contrôle ne suit pas
   `.rpc(variable)` ni `.schema('x').rpc(…)` ; `calculate_payslip` reste
   « non vérifiable » (objet d'arguments variable).
+### W7 et W8 (partielles) — les deux derniers défauts du registre (2026-09-28) ✅
+- **Le registre de la CI est VIDE.** Les deux seuls défauts qui y figuraient sont
+  fermés, chacun **vu rouge d'abord** sur base neuve (238 migrations, 0 erreur) :
+  - **W7 / `245 T08` — `268` : le CA non taxé entre dans la CA3.** La base hors
+    taxe était **reconstituée depuis la TVA** (`montant ÷ taux`, 246) : 1 000 €
+    taxés + 500 € exonérés + 250 € intracommunautaires déclaraient **1 000** de
+    CA. `calculate_vat_ca3` lit désormais le CA sur les **comptes de produits**
+    (classe 70). Mesure : `1000.00` → **`1750.00`**, TVA inchangée (200).
+  - **W8 / `231 M-17-01` — `269` : les heures facturables atteignent une
+    facture.** `create_billable_line_on_timesheet_stop` ne créait **qu'une
+    notification** (3 h à 80 → 0 ligne de facture). La 269 pose
+    `invoices.project_id` (+ un seul brouillon par projet), une ligne rattachée au
+    temps (`invoice_lines.time_entry_id`, unicité `(société, temps)`) et un
+    déclencheur branché aussi sur l'**INSERT** — la saisie directe du formulaire
+    « temps manuel » n'arrêtait aucun chronomètre et n'atteignait rien (T07).
+    Mesure : `lignes=0` → **`lignes=1 quantité=3 montant=240`**. Le brouillon
+    **n'est pas** validé automatiquement (T06 : aucune écriture comptable ne naît
+    d'un temps passé) ; la suppression suit la chaîne des pièces (T09/T09b :
+    la ligne en brouillon part avec sa feuille de temps, une facture validée la
+    protège).
+- **Batterie** : `231` **10/10**, `245` **9/9**, et **76/76** contrôles et suites
+  rejoués dans l'ordre de la CI sur base neuve (hors `check_plpgsql`, dont
+  l'extension n'est pas dans l'image locale — la CI l'installe) ; `check_composite_fks`
+  **413 clés composites, 0 mono-colonne** (les 2 clés neuves sont composites),
+  `check_anon_grants` vert (la fonction réécrite reste révoquée à `PUBLIC`/`anon`) ;
+  `tsc` 0, `oxlint` 0. [Preuve](doc/audit/VAGUE-W7-W8-2026-09-28.md)
+- **Limites dites** : W7 et W8 **restent ouvertes** (14 et 5 défauts au plan — le
+  registre ne portait que le défaut *prouvé* de chacune) ; la **ventilation par
+  case** de la CA3 (A2/E1/E2) demande les pièces de vente (lot L14) et
+  `total_purchases` reste reconstitué depuis la TVA ; la ligne de temps prend le
+  prix de la feuille de temps et le taux de TVA par défaut de la société (ni
+  position fiscale du client, ni remise), et une durée modifiée après l'arrêt ne
+  met pas la ligne à jour (régénération = lot L20).
+
+
 
 ### Bugs corrigés
 ### Bugs corrigés

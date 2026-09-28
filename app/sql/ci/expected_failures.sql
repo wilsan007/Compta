@@ -17,12 +17,21 @@
 -- 182 — inscription (lot B)
 
 -- 231 — temps passés (M-17)
-INSERT INTO _audit_expected (file, test_id, reason) VALUES
-  ('231', 'M-17-01', 'Les heures facturables n''atteignent aucune facture : create_billable_line_on_timesheet_stop ne crée qu''une notification. Manque de fonction, chiffré 0,5 j à la phase 3 du reste-à-faire.');
-
 -- 245 — déclaration de TVA (M-10)
--- La base hors taxe de la CA3 est reconstituée depuis la TVA (montant ÷ taux).
--- Un chiffre d'affaires non taxé — exonéré, export, livraison
--- intracommunautaire — ne porte aucune TVA et n'entre donc dans aucune base.
-INSERT INTO _audit_expected (file, test_id, reason) VALUES
-  ('245', 'T08', 'Le chiffre d''affaires non taxé (exonéré, export, livraison intracommunautaire) n''entre pas dans le CA déclaré : la base est reconstituée depuis la TVA, et ces ventes n''en portent pas. Cases A2, E1 et E2 de la CA3. Correctif : tirer la base des comptes de produits par code de TVA — chantier à part, chiffré à la phase 3.');
+--
+-- Ces deux lignes portaient les deux derniers défauts ouverts du plan correctif.
+-- Elles sont fermées — le registre est donc **VIDE** :
+--
+--   • `231 M-17-01` — la refacturation des temps n'existait pas
+--     (`create_billable_line_on_timesheet_stop` ne créait qu'une notification).
+--     Fermé le 28/09/2026 par la **269** : brouillon de facture par projet,
+--     ligne rattachée au temps (unicité société + temps), branchement sur
+--     l'INSERT pour la saisie directe et sur l'arrêt du chronomètre.
+--   • `245 T08` — le chiffre d'affaires non taxé (exonéré, export, livraison
+--     intracommunautaire) n'entrait pas dans le CA déclaré, reconstitué depuis
+--     la TVA. Fermé le 28/09/2026 par la **268** : le CA se lit sur les comptes
+--     de produits (classe 70), la TVA reste lue sur les comptes 445x.
+--
+-- Plus aucun scénario n'a le droit d'échouer : un échec hors registre casse la
+-- CI, et un défaut connu doit s'inscrire ici avec sa raison — puis disparaître
+-- avec son correctif.

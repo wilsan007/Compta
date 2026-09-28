@@ -735,8 +735,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # M-17 — temps passés : isolation entre sociétés, devise, et absence d'écriture
-      # directe. M-17-01 reste rouge au registre : les heures n'atteignent pas de facture.
+      # M-17 — temps passés : isolation entre sociétés, devise, refacturation.
+      # M-17-01 est FERMÉ (269, 28/09/2026) : les heures facturables atteignent
+      # une ligne de facture de 240 dans un brouillon du projet, la saisie
+      # directe (« temps manuel », INSERT avec end_time) est couverte (T07),
+      # l'idempotence est tenue par un index unique (T08) et la suppression d'une
+      # feuille de temps suit la chaîne des pièces (T09/T09b).
       - name: 'AUD : temps passés et refacturation projet (231)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/231_project_time_billing_tests.sql
         env:
@@ -786,9 +790,10 @@ jobs:
       # M-10 (TVA) — la base hors taxe de la CA3 était reconstituée depuis la TVA
       # (montant ÷ taux) : un chiffre d'affaires non taxé — exonéré, export,
       # livraison intracommunautaire — n'entrait dans aucune base (cases A2, E1,
-      # E2). La 246 tire la base des comptes de produits par code de TVA. La suite
-      # garde les deux branches : la base reconstituée quand le taux existe, et la
-      # ventilation par code de TVA.
+      # E2). La 268 (W7, 28/09/2026) tire le CA des **comptes de produits**
+      # (classe 70) : T08 est FERMÉ, avec 1 750 déclarés pour 1 000 taxés,
+      # 500 exonérés et 250 intracommunautaires. La ventilation par code de TVA
+      # de la 246 reste en place pour la TVA et la synthèse du formulaire.
       - name: 'AUD : déclaration de TVA, bases de la CA3 (245)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/245_vat_return_tests.sql
         env:
