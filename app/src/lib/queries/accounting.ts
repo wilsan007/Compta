@@ -1527,16 +1527,21 @@ export async function getSIGData(fiscalYearId?: string) {
   }))
 }
 
-// --- Analytic Balance: journal_lines by analytic_section_id ---
-export async function getAnalyticBalance() {
+// --- Analytic Balance: journal_lines by analytic_section_id, bornée à une période ---
+// ANA-03 (304) : la balance porte sur **la période demandée**, plus sur tout
+// l'historique. Le filtre s'appuie sur la date de l'écriture (`journal_entries`
+// en jointure interne), comme les autres états comptables.
+export async function getAnalyticBalance(dateFrom: string, dateTo: string) {
   const tid = await getTenantId()
   let abQ2 = supabase
     .from('journal_lines')
-    .select('analytic_section_id, analytic_amount, debit, credit, account_code, account_general')
+    .select('analytic_section_id, analytic_amount, debit, credit, account_code, account_general, journal_entries!inner(date)')
     .not('analytic_section_id', 'is', null)
+    .gte('journal_entries.date', dateFrom)
+    .lte('journal_entries.date', dateTo)
     .order('id')
   if (tid) abQ2 = abQ2.eq('tenant_id', tid)
-  // LOT7-03 : balance analytique = agrégat par section sur tout l'historique.
+  // LOT7-03 : balance analytique = agrégat par section, borné à la période.
   const lines = await fetchAllRows<any>(abQ2, { label: 'getAnalyticBalance/journal_lines' })
 
   let asQ = supabase.from('analytic_sections').select('*').order('id')

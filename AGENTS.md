@@ -18,9 +18,17 @@ L'essentiel en huit lignes :
   `PROJ-02/03` (avancement **pondéré** par une seule règle, anti-cycle, `303`).
   [Preuve](doc/audit/VAGUE-W8-2026-09-28.md) : `302` **8/8**, `303` **6/6**,
   batterie **82/82**, base neuve **243 migrations, 0 erreur**.
-* **≈ 141 j restants** : plan correctif **W7 (14 défauts) + 9 transverses**
-  (≈ 8 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10
-  (≈ 15 j).
+* **W7 partielle (28/09)** : quatre défauts fermés — `ANA-01/02` (les deux
+  déclencheurs analytiques étaient **vides** et aucune écriture engendrée ne
+  portait de section, `304` : la section circule de la **ligne de document** vers
+  la ligne d'écriture), `ANA-03` (la balance analytique est **bornée à
+  l'exercice**), `FEC-01` (la **2ᵉ** implémentation du FEC, 9 colonnes sur 18, est
+  supprimée, `305`). [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` **5/5**,
+  `305` **2/2**, batterie **84/84**, base neuve **245 migrations, 0 erreur**.
+  Restent `M01-01→03`, `BUD-01→04`, `SAGE-01→03` (10 défauts, ≈ 4 j).
+* **≈ 139 j restants** : plan correctif **W7 (M01, BUD, SAGE : 10 défauts) + 9
+  transverses** (≈ 6 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit
+  phase 10 (≈ 15 j).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
   écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
@@ -539,6 +547,44 @@ L'essentiel en huit lignes :
   (requêtes dans la preuve) — ils ont pu être altérés avant la fermeture.
 - **Limites dites** : un `manager` n'écrit plus les 19 tables (décision D-6) ; pack DJ
   sans taux (D-11) ; même défaut ISO-02 sur `company_settings.legislation_pack_code`.
+
+
+### Vague W7 (partie 1) — analytique qui circule, et un seul FEC (2026-09-28) ✅
+- **Quatre défauts fermés** (sur les 14 de W7), chacun **vu rouge d'abord** :
+  - **`304` — `ANA-01`, `ANA-02`, `ANA-03`.** Les **deux** déclencheurs de
+    `journal_lines` étaient des placebos (`propagate_analytic_section` ne faisait
+    que `RETURN NEW`, `check_analytic_balance` n'avait qu'un `IF` commenté : deux
+    appels par ligne pour zéro effet), et `analytic_section_id` n'était écrit que
+    par la **saisie manuelle** — les lignes de facture n'avaient même pas de
+    colonne pour porter une section. La 304 ajoute le porteur
+    (`invoice_lines`/`purchase_invoice_lines.analytic_section_id`, clés
+    composites), fait **circuler** la section du document vers la ligne
+    d'écriture (appariement par `invoice_ref` **et** par compte), **dérive** la
+    section d'une ventilation multi-axes, et refuse une ventilation qui ne fait
+    pas **100 %** (la règle de l'écran, tenue par la base). Mesures : T01/T02
+    `column does not exist` → 1 ligne qui porte la section ; T03 `∅` → section +
+    200,00 ; T04 `refus=f` → refus nommé. Et la balance analytique de l'écran est
+    **bornée à l'exercice** (`getAnalyticBalance(exercice)`, choix de l'exercice
+    dans l'écran), avec un test Vitest qui vérifie les filtres de date.
+  - **`305` — `FEC-01`.** Une **seconde** implémentation du FEC vivait en base :
+    `fec_export` en deux surcharges, **9 colonnes sur 18**, numéro **provisoire**.
+    Aucune n'était appelée (l'écran bâtit son FEC à 18 colonnes et le remet à son
+    validateur). Les deux surcharges sont **supprimées** ; T01 était rouge
+    (`2 fonction(s) fec_export restante(s)`), il est vert.
+- **Batterie** : `304` **5/5**, `305` **2/2**, et **84/84** contrôles et suites
+  sur base neuve (**245 migrations, 0 erreur** — dont `270`→`272` d'une session
+  parallèle) ; front `tsc` 0, `oxlint` 0, i18n fr/en/ar à parité.
+  [Preuve](doc/audit/VAGUE-W7-2026-09-28.md)
+- **Limites dites** : la **paie, le stock, la caisse et la production** ne portent
+  pas encore de section analytique (aucune de leurs lignes sources n'en porte) —
+  l'égalité « balance analytique = balance générale » n'est tenue que pour les
+  **ventes et les achats** ; les lignes de TVA n'en portent pas ;
+  `analytic_distribution_lines` reste écrit par l'écran.
+- **Reste de W7** : `M01-01→03` (devise des écritures et taux de change jamais
+  appliqué), `BUD-01→04` (réalisé non borné à l'exercice, engagements jamais
+  libérés), `SAGE-01→03` (import en brouillon, soldes écrasés, non
+  transactionnel) — 10 défauts, ≈ 4 j.
+
 
 
 ### Bugs corrigés

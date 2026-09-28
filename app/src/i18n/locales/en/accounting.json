@@ -1271,6 +1271,7 @@
   },
   "analyticBalance": {
     "title": "Analytic balance",
+    "fiscalYear": "Fiscal year",
     "subtitle": "Distribution by analytic section",
     "breadcrumb": "Statements",
     "code": "Code",

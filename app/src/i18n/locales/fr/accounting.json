@@ -1271,6 +1271,7 @@
   },
   "analyticBalance": {
     "title": "Balance analytique",
+    "fiscalYear": "Exercice",
     "subtitle": "Répartition par section analytique",
     "breadcrumb": "États",
     "code": "Code",

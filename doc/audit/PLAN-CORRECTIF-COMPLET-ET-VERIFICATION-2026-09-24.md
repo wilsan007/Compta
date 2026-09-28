@@ -228,11 +228,13 @@ Aucune des 20 fonctions Edge n'a de test (couverture §4). Les huit défauts ci-
 > `301`) et `245 T08` (le CA non taxé absent de la CA3, `300`) — `ci/expected_failures.sql`
 > est **vide** et les scénarios `231` (10/10) et `245` (9/9) sont verts.
 > [Preuve](VAGUE-W7-W8-2026-09-28.md). W7 reste ouverte pour le reste de ses
-> défauts (14) : seul `PROJ-01` (= `M-17-01`) est fermé par ce commit — les cinq
-> autres défauts de W8 (`PROD-01→03`, `PROJ-02/03`) sont fermés le même jour par
-> les migrations `302` et `303` ([preuve](VAGUE-W8-2026-09-28.md)), **W8 est
-> donc fermée**. `SAGE-01→03` et le reste de W7 restent ouverts. Numérotation :
-> une session parallèle prend `270` → `299`, celle-ci prend `300`+.
+> défauts : `PROJ-01` (= `M-17-01`) est fermé par ce commit, les cinq autres
+> défauts de W8 (`PROD-01→03`, `PROJ-02/03`) le sont le même jour par les
+> migrations `302` et `303` ([preuve](VAGUE-W8-2026-09-28.md)), **W8 est donc
+> fermée** ; puis `ANA-01→03` et `FEC-01` par les migrations `304` et `305`
+> ([preuve](VAGUE-W7-2026-09-28.md)) — il reste `M01-01→03`, `BUD-01→04` et
+> `SAGE-01→03` (10 défauts). Numérotation : une session parallèle prend `270` →
+> `299`, celle-ci prend `300`+.
 
 **Total vérifié** : 13 + 15 + 13 + 8 + 5 + 15 = **69 défauts**, dont **32 bloquants** (🔴).
 Zéro ligne ajoutée, zéro ligne retirée : c'est la somme exacte du tableau du 23/09.

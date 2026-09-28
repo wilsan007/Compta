@@ -39,6 +39,7 @@
 | **W7 (partielle)** | Le **CA non taxé** entre dans la CA3 (`245 T08`, `300`) : la base hors taxe n'est plus reconstituée depuis la TVA, elle se lit sur les comptes de produits (classe 70) | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
 | **W8 (partielle)** | La **refacturation des temps** existe (`231 M-17-01`, `301`) : brouillon de facture par projet, ligne rattachée au temps (unicité société + temps), saisie directe couverte, suppression en chaîne mesurée | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
 | **W8 ✅ fermée** | Les 5 défauts restants : **PROD-01→03** (`302` : nomenclature **explosée** sur tous les niveaux, quantité produite **déclarée** respectée, rebuts impossibles refusés, **écart de coût** chiffré, écriture datée de l'OF) et **PROJ-02/03** (`303` : avancement **pondéré** par une seule règle aux deux niveaux, anti-cycle nommé) | [W8](VAGUE-W8-2026-09-28.md) |
+| **W7 (partie 1)** | **`ANA-01/02`** (`304` : les deux déclencheurs analytiques étaient des placebos, la section circule de la **ligne de document** vers la ligne d'écriture) · **`ANA-03`** (la balance analytique est **bornée à l'exercice**) · **`FEC-01`** (`305` : la 2ᵉ implémentation du FEC, 9 colonnes sur 18, est supprimée) | [W7](VAGUE-W7-2026-09-28.md) |
 
 État mesuré sur base neuve : **243 migrations, 0 erreur** (dont `270`→`272` d'une
 session parallèle) ; **82/82** contrôles et suites rejoués sur la base migrée
@@ -88,7 +89,7 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 
 | Vague | Défauts | Charge | Contenu |
 |---|---:|---:|---|
-| **W7 — Comptabilité avancée** | 14 (3 🔴) | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08` fermé le 28/09 par la `300`, [preuve](VAGUE-W7-W8-2026-09-28.md)) — restent M01-01→03 le taux de change est saisi… et **jamais appliqué** ; ANA-01→03 analytique ; BUD-01→04 réalisé non borné à l'exercice ; SAGE-01→03 import équilibré et transactionnel ; FEC-01 **une 2ᵉ implémentation du FEC** à 9 colonnes sur 18, à supprimer |
+| **W7 — Comptabilité avancée** | 10 (3 🔴) | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08`, `300`) · ✅ **analytique** (`304` : les deux déclencheurs cessent d'être des placebos, la section **circule** du document vers l'écriture, la balance de l'écran est **bornée à l'exercice**) · ✅ **un seul FEC** (`305`) — restent `M01-01→03` le taux de change **appliqué** aux écritures en devise, `BUD-01→04` réalisé non borné à l'exercice et engagements jamais libérés, `SAGE-01→03` import en brouillon, soldes écrasés, non transactionnel ([preuve](VAGUE-W7-2026-09-28.md)) |
 | **W8 — Production et projets** ✅ **fermée (302, 303, 28/09)** | 0 (était 5) | 3 j | ✅ la **refacturation des temps** existe (`231 M-17-01` fermé le 28/09 par la `301`) ; `302` : nomenclature **multi-niveaux** explosée par **une** fonction qui sert aussi au coût et aux sorties, quantité produite **déclarée** respectée, rebuts impossibles **refusés**, **écart de coût** chiffré (`cost_variance`), écriture datée de l'OF ; `303` : avancement **pondéré** par une seule règle (parent et projet), **anti-cycle** des tâches ([preuves](VAGUE-W8-2026-09-28.md)) |
 | **T1 → T9** | 9 scénarios transverses | 5 j | commande → livraison → facture → encaissement → lettrage → clôture ; achat → réception → qualité → facture → paiement ; temps → projet → facture → marge ; **absence → paie → DSN → coût projet** (fait, `266`) ; caisse → clôture → comptabilité → TVA ; immobilisation → amortissement → cession ; budget → engagement → réalisé ; import → lettrage → états ; **contre-épreuve de falsification** |
 | | **Total** | **≈ 14 j** | |
@@ -172,20 +173,21 @@ reste au registre).
 
 | Bloc | Charge |
 |---|---:|
-| Plan correctif — phases 5 et 6 (W7 : 14 défauts + les 9 transverses) | ≈ 8 j |
+| Plan correctif — phases 5 et 6 (W7 : 10 défauts + les 9 transverses) | ≈ 6 j |
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
-| **Total restant au 28/09/2026** | **≈ 141 j** |
-| Déjà livré et prouvé (W0 → W10 — dont W5, `260`, W10, `267`, et **W8 fermée**, `302`/`303` — et chaînages L0) | ≈ 24,5 j |
+| **Total restant au 28/09/2026** | **≈ 139 j** |
+| Déjà livré et prouvé (W0 → W10 — dont W5 `260`, W10 `267`, **W8 fermée** `302`/`303`, **W7 analytique et FEC** `304`/`305` — et chaînages L0) | ≈ 26,5 j |
 
 Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
 (W9, 4 j), W5 (2 j), les deux défauts du registre fermés le 28/09 — le `M-17-01`
 de la refacturation des temps (**W8**, `301`) et le `T08` du CA non taxé dans la
-CA3 (**W7**, `300`), ≈ 2 j à eux deux — puis la **fin de W8** (production et
-projets, `302`/`303`, ≈ 2 j) l'amènent à **≈ 141 j** aujourd'hui.
+CA3 (**W7**, `300`), ≈ 2 j à eux deux — la **fin de W8** (production et projets,
+`302`/`303`, ≈ 2 j) et la **première partie de W7** (analytique et FEC,
+`304`/`305`, ≈ 2 j) l'amènent à **≈ 139 j** aujourd'hui.
 **W10 (≈ 2 j)** s'ajoute aux livraisons sans réduire ce total : elle était **hors
 plan**, découverte par un angle mort (les appels de fonction), pas retirée du
-plan. **W7 reste ouverte** : 14 défauts (M01, ANA, BUD, SAGE, FEC).
+plan. **W7 reste ouverte** : 10 défauts (`M01`, `BUD`, `SAGE`).
 
 **Ce que ces chiffres ne comptent pas** : les défauts que l'audit des 16 modules
 restants révélera, les délais externes (les 14 documents djiboutiens,
@@ -250,4 +252,5 @@ DATABASE_URL=… node scripts/check-rpc-contract.mjs       # 0 attendu (W10)
 | `doc/audit/VAGUE-W5-2026-09-27.md` | la preuve de la vague W5 (moteurs uniques : mesures avant/après, « rouge d'abord », limites dites) |
 | `doc/audit/VAGUE-W7-W8-2026-09-28.md` | la preuve des deux défauts du registre fermés (CA non taxé dans la CA3, refacturation des temps : mesures avant/après, limites, et **ce que W7/W8 ne sont pas**) |
 | `doc/audit/VAGUE-W8-2026-09-28.md` | la preuve de la **fin de W8** (production : nomenclature multi-niveaux, écarts chiffrés, date de l'OF ; projets : avancement pondéré, anti-cycle) — et la note de **numérotation 300+** |
+| `doc/audit/VAGUE-W7-2026-09-28.md` | la preuve de la **première partie de W7** (analytique : la section circule des documents vers les écritures, balance bornée à l'exercice ; FEC : une seule implémentation) |
 | `app/sql/ci/expected_failures.sql` | le registre des défauts prouvés — **VIDE depuis le 28/09/2026** ; un échec hors registre casse la CI |

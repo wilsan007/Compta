@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { formatCurrency } from '@/lib/utils'
-import { getAnalyticBalance, getAnalyticPlans } from '@/lib/queries/accounting'
+import { getAnalyticBalance, getAnalyticPlans, getFiscalYears } from '@/lib/queries/accounting'
 import { PieChart } from 'lucide-react'
+
+interface Exercice { id: string; code: string; start_date: string; end_date: string }
 
 export function AnalyticBalancePage() {
   const { t } = useTranslation('accounting')
@@ -12,20 +14,49 @@ export function AnalyticBalancePage() {
   const { toast } = useToast()
   const [data, setData] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
+  const [exercices, setExercices] = useState<Exercice[]>([])
   const [selectedPlan, setSelectedPlan] = useState('')
+  const [selectedExercice, setSelectedExercice] = useState('')
   const [loading, setLoading] = useState(true)
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
-  async function load() {
+  async function load(exerciceId?: string) {
     try {
-      const [res, p] = await Promise.all([
-        getAnalyticBalance(),
+      const [exercicesRes, p] = await Promise.all([
+        getFiscalYears().catch(() => []),
         getAnalyticPlans().catch(() => []),
       ])
-      setData(res)
+      const ex: Exercice[] = (exercicesRes || []) as Exercice[]
       setPlans(p || [])
+      setExercices(ex)
+
+      // ANA-03 : la balance porte sur un exercice, pas sur tout l'historique.
+      const aujourdhui = new Date().toISOString().slice(0, 10)
+      const courant = ex.find((e) => e.start_date <= aujourdhui && e.end_date >= aujourdhui) || ex[0]
+      if (!courant) {
+        setData([])
+        return
+      }
+      setSelectedExercice(exerciceId || courant.id)
+      const res = await getAnalyticBalance(courant.start_date, courant.end_date)
+      setData(res)
+    } catch (err: any) {
+      console.error('Error loading analytic balance:', err)
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function changerExercice(id: string) {
+    const ex = exercices.find((e) => e.id === id)
+    if (!ex) return
+    setSelectedExercice(id)
+    setLoading(true)
+    try {
+      setData(await getAnalyticBalance(ex.start_date, ex.end_date))
     } catch (err: any) {
       console.error('Error loading analytic balance:', err)
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
@@ -44,15 +75,25 @@ export function AnalyticBalancePage() {
       <Breadcrumb items={[{ label: t('title') }, { label: t('analyticBalance.breadcrumb') }, { label: t('analyticBalance.title') }]} />
       <PageHeader title={t('analyticBalance.title')} subtitle={t('analyticBalance.subtitle')} />
 
-      {plans.length > 0 && (
+      {(plans.length > 0 || exercices.length > 0) && (
         <Card className="mb-4">
-          <div className="p-4">
-            <Select
-              label={t('analyticBalance.plan')}
-              value={selectedPlan}
-              onChange={(e) => setSelectedPlan(e.target.value)}
-              options={[{ value: '', label: tCommon('common.all') }, ...plans.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))]}
-            />
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {exercices.length > 0 && (
+              <Select
+                label={t('analyticBalance.fiscalYear')}
+                value={selectedExercice}
+                onChange={(e) => changerExercice(e.target.value)}
+                options={exercices.map((ex) => ({ value: ex.id, label: `${ex.code} (${ex.start_date} → ${ex.end_date})` }))}
+              />
+            )}
+            {plans.length > 0 && (
+              <Select
+                label={t('analyticBalance.plan')}
+                value={selectedPlan}
+                onChange={(e) => setSelectedPlan(e.target.value)}
+                options={[{ value: '', label: tCommon('common.all') }, ...plans.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))]}
+              />
+            )}
           </div>
         </Card>
       )}

@@ -764,6 +764,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W7 — M-05 analytique : les deux déclencheurs de `journal_lines` étaient
+      # **vides** et aucune écriture engendrée ne portait de section. La 304 fait
+      # circuler la section de la **ligne de document** (facture de vente, facture
+      # d'achat) vers la ligne d'écriture, dérive la section d'une ventilation
+      # multi-axes, et refuse une ventilation qui ne fait pas 100 %. T01/T02/T03/
+      # T04 vus rouges avant.
+      - name: 'AUD : propagation analytique des écritures engendrées (304)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/304_analytic_propagation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-11 FEC : une **seconde** implémentation du FEC (9 colonnes sur 18,
+      # numéro provisoire) vivait en base. La 305 la supprime ; T01 rouge avant.
+      - name: 'AUD : une seule implémentation du FEC (305)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/305_single_fec_implementation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

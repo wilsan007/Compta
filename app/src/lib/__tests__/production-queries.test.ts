@@ -669,12 +669,16 @@ describe('SIG Data', () => {
 describe('Analytic Balance', () => {
   beforeEach(() => resetMock())
 
-  it('getAnalyticBalance returns sections with totals', async () => {
+  it('getAnalyticBalance borne la période demandée (ANA-03 : plus tout l’historique)', async () => {
     setMockData([{ analytic_section_id: 's1', analytic_amount: 100, debit: 50, credit: 0, account_code: '701', account_general: '701' }])
     const { getAnalyticBalance } = await import('@/lib/queries')
-    const result = await getAnalyticBalance()
+    const result = await getAnalyticBalance('2026-01-01', '2026-12-31')
     expect(result).toBeDefined()
     expect(Array.isArray(result)).toBe(true)
+    // Avant la 304, la fonction n'avait aucun paramètre : la balance portait sur
+    // tout l'historique et ces filtres n'étaient jamais posés.
+    expect(mockChain.gte).toHaveBeenCalledWith('journal_entries.date', '2026-01-01')
+    expect(mockChain.lte).toHaveBeenCalledWith('journal_entries.date', '2026-12-31')
   })
 })
 

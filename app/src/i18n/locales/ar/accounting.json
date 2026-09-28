@@ -1271,6 +1271,7 @@
   },
   "analyticBalance": {
     "title": "الميزان التحليلي",
+    "fiscalYear": "السنة المالية",
     "subtitle": "التوزيع حسب القسم التحليلي",
     "breadcrumb": "الكشوفات",
     "code": "الرمز",
