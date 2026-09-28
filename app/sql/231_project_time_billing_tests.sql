@@ -16,7 +16,7 @@
 --   T05 ROUGE  — le montant est libellé « € » quelle que soit la devise
 --   T06 vert   — aucune écriture comptable n'est générée par un temps passé
 --
--- W8 (269, 28/09/2026) — la refacturation existe. `M-17-01` est fermé :
+-- W8 (301, 28/09/2026) — la refacturation existe. `M-17-01` est fermé :
 --   • M-17-01 mesure désormais ce que la refacturation doit produire — une
 --     ligne de facture de 240 dans un brouillon du projet — et plus seulement
 --     « au moins une ligne » ;
@@ -26,10 +26,10 @@
 --     avant le correctif, ces heures n'atteignaient rien non plus ;
 --   • T08 mesure l'idempotence : un même temps arrêté deux fois n'est facturé
 --     qu'une fois (index unique `(tenant_id, time_entry_id)`).
--- Les deux nouveaux scénarios sont vus **rouges avant** la 269 (colonne
+-- Les deux nouveaux scénarios sont vus **rouges avant** la 301 (colonne
 -- `time_entry_id` absente, aucune ligne créée).
 --
--- Ce que la 269 ne fait pas : le brouillon n'est **pas** validé automatiquement
+-- Ce que la 301 ne fait pas : le brouillon n'est **pas** validé automatiquement
 -- (aucune écriture comptable n'est produite par un temps passé — T06 le tient),
 -- et la ligne est au prix de la feuille de temps, à la TVA par défaut de la
 -- société ; il n'y a pas de régénération ni de note d'honoraires groupée.

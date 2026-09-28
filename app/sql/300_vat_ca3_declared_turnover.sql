@@ -115,7 +115,7 @@ BEGIN
     'vat_to_pay', GREATEST(v_coll - v_ded, 0),
     'vat_credit', GREATEST(v_ded - v_coll, 0),
     'net_vat', v_coll - v_ded,
-    -- 268 : le CA se lit sur les comptes de produits (taxés et non taxés) ;
+    -- 300 : le CA se lit sur les comptes de produits (taxés et non taxés) ;
     -- la base reconstituée depuis la TVA ne voit pas les opérations exonérées.
     'total_sales', v_total_sales,
     'total_sales_taxed_base', v_base_coll,
@@ -125,4 +125,4 @@ BEGIN
 END $function$;
 
 COMMENT ON FUNCTION public.calculate_vat_ca3(date, date) IS
-  'CA3 de la période : TVA sur les soldes des comptes 445x, chiffre d''affaires sur les comptes de produits (classe 70). 268 : la base du CA n''est plus reconstituée depuis la TVA — un CA exonéré, exporté ou intracommunautaire y entre désormais.';
+  'CA3 de la période : TVA sur les soldes des comptes 445x, chiffre d''affaires sur les comptes de produits (classe 70). 300 : la base du CA n''est plus reconstituée depuis la TVA — un CA exonéré, exporté ou intracommunautaire y entre désormais.';

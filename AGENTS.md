@@ -5,11 +5,22 @@
 **Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
 (ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, et —
 depuis le 28/09 — **un registre de CI vide** : plus aucun défaut prouvé ouvert).
-L'essentiel en sept lignes :
+L'essentiel en huit lignes :
 
-* **≈ 143 j restants** : plan correctif **W7 (14 défauts) / W8 (5 défauts) + 9
-  transverses** (≈ 11 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit
-  phase 10 (≈ 15 j).
+* ⚠️ **Numérotation des migrations** : une **session parallèle** écrit `270` → `272`
+  (défauts de l'audit fonctionnel du 28/09). Cette session-ci prend la plage
+  **300+** : `300` (CA3), `301` (refacturation des temps), `302`, `303`. Les
+  270→299 sont laissés à l'autre session — et un numéro se **constate**, il ne
+  se réserve pas.
+* **W8 fermée (28/09)** : les 6 défauts du plan sont corrigés — `PROJ-01`
+  (refacturation des temps, `301`), `PROD-01→03` (nomenclature multi-niveaux,
+  écarts de quantité et de coût chiffrés, écriture datée de l'OF, `302`),
+  `PROJ-02/03` (avancement **pondéré** par une seule règle, anti-cycle, `303`).
+  [Preuve](doc/audit/VAGUE-W8-2026-09-28.md) : `302` **8/8**, `303` **6/6**,
+  batterie **82/82**, base neuve **243 migrations, 0 erreur**.
+* **≈ 141 j restants** : plan correctif **W7 (14 défauts) + 9 transverses**
+  (≈ 8 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit phase 10
+  (≈ 15 j).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
   écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
@@ -19,14 +30,13 @@ L'essentiel en sept lignes :
   salarié/jours). Le contrôle `check-rpc-contract` (baseline **à zéro**) les
   interdit désormais, et la **267** rend la clôture NF-525 possible.
 * **Les deux défauts du registre sont FERMÉS (28/09)** — `app/sql/ci/expected_failures.sql`
-  est **vide** : `231 M-17-01` (la refacturation des temps → **W8**, `269` :
+  est **vide** : `231 M-17-01` (la refacturation des temps → **W8**, `301` :
   brouillon de facture par projet, ligne rattachée au temps, unicité
   `(société, temps)`, saisie directe couverte) et `245 T08` (le CA non taxé absent
-  de la CA3 → **W7**, `268` : le CA se lit sur les comptes de produits).
+  de la CA3 → **W7**, `300` : le CA se lit sur les comptes de produits).
   [Preuve](doc/audit/VAGUE-W7-W8-2026-09-28.md) : 10 scénarios `231` et 9 `245`
   verts, batterie **76/76**, base neuve **238 migrations, 0 erreur**.
-  ⚠️ **W7 et W8 restent ouvertes** : le registre ne portait que le défaut *prouvé*
-  de chacune (14 défauts W7, 5 défauts W8 au plan).
+  ⚠️ **W7 reste ouverte** : 14 défauts (M01, ANA, BUD, SAGE, FEC).
 * **Décisions qui bloquent** : `D-4` (`generate-pdf` : rebrancher ou supprimer —
   le défaut appliqué est « non déployée »), `D-5` (OCR), `D-7` (contraste),
   `D-10`, `D-11` (localisation), `D-13`.
@@ -427,14 +437,14 @@ L'essentiel en sept lignes :
 ### W7 et W8 (partielles) — les deux derniers défauts du registre (2026-09-28) ✅
 - **Le registre de la CI est VIDE.** Les deux seuls défauts qui y figuraient sont
   fermés, chacun **vu rouge d'abord** sur base neuve (238 migrations, 0 erreur) :
-  - **W7 / `245 T08` — `268` : le CA non taxé entre dans la CA3.** La base hors
+  - **W7 / `245 T08` — `300` : le CA non taxé entre dans la CA3.** La base hors
     taxe était **reconstituée depuis la TVA** (`montant ÷ taux`, 246) : 1 000 €
     taxés + 500 € exonérés + 250 € intracommunautaires déclaraient **1 000** de
     CA. `calculate_vat_ca3` lit désormais le CA sur les **comptes de produits**
     (classe 70). Mesure : `1000.00` → **`1750.00`**, TVA inchangée (200).
-  - **W8 / `231 M-17-01` — `269` : les heures facturables atteignent une
+  - **W8 / `231 M-17-01` — `301` : les heures facturables atteignent une
     facture.** `create_billable_line_on_timesheet_stop` ne créait **qu'une
-    notification** (3 h à 80 → 0 ligne de facture). La 269 pose
+    notification** (3 h à 80 → 0 ligne de facture). La 301 pose
     `invoices.project_id` (+ un seul brouillon par projet), une ligne rattachée au
     temps (`invoice_lines.time_entry_id`, unicité `(société, temps)`) et un
     déclencheur branché aussi sur l'**INSERT** — la saisie directe du formulaire
@@ -457,6 +467,43 @@ L'essentiel en sept lignes :
   prix de la feuille de temps et le taux de TVA par défaut de la société (ni
   position fiscale du client, ni remise), et une durée modifiée après l'arrêt ne
   met pas la ligne à jour (régénération = lot L20).
+### Vague W8 — production et projets : nomenclature, écarts, cycle, avancement (2026-09-28) ✅
+- **W8 est fermée** (6/6 défauts du plan). `PROJ-01` (refacturation des temps) a
+  été livré par la `301` ; les cinq autres le sont ici, chacun **vu rouge
+  d'abord** sur base neuve :
+  - **`302` — production (PROD-01→03).** La nomenclature était lue **à un seul
+    niveau** : un OF de 10 pièces dont le composant est fabriqué échouait sur
+    `Stock insuffisant: disponible=0, demandé=10` (l'atelier consommait le
+    sous-ensemble). `manufacturing_requirements()` **explose** désormais la
+    nomenclature sur tous ses niveaux (mise à l'échelle par `boms.quantity`,
+    arrêt au composant déjà rencontré, 8 niveaux au plus) et sert **les trois**
+    usages : coût matière, sorties de stock, écart de coût. `qty_produced`
+    **déclarée** n'est plus écrasée, un rebut supérieur au lancé est refusé (il
+    était ramené à zéro en silence), l'**écart de coût** est chiffré
+    (`cost_variance` = standard − réel) et l'écriture est datée de l'**OF**, pas
+    du jour de clôture. Mesures : `MP=20` (au lieu de 0), `qty_produced=88` (au
+    lieu de 92), `cost_variance=−10,00`, mouvements et écriture au **15/03**.
+  - **`303` — projets (PROJ-02/03).** Deux calculs concurrents d'avancement, tous
+    deux en **moyenne simple** : 10 h à 100 % + 90 h à 0 % donnaient **50 %**
+    (parent comme projet). `progress_weight()` (heures prévues, à défaut passées,
+    à défaut 1) est désormais **la** règle, appelée aux deux niveaux → **10 %**.
+    Et la garde qui manquait : `check_task_parent_cycle` refuse une tâche
+    **son propre parent** (le refus venait de `stack depth limit exceeded`, la
+    récursion des treize déclencheurs épuisant la pile) et tout **cycle**
+    A → B → A, en le **nommant**.
+- **Batterie** : `302` **8/8**, `303` **6/6**, `229` 6/6, `177` 4/4, et **82/82**
+  contrôles et suites sur base neuve (**243 migrations, 0 erreur** — dont `270`
+  → `272`, écrites par une **session parallèle**) ; aucun fichier de `src/`
+  touché. [Preuve](doc/audit/VAGUE-W8-2026-09-28.md)
+- **Numérotation** : la session parallèle prend `270` → `299` ; cette session
+  prend **`300`+** (`300` = ex-`268`, `301` = ex-`269`, `302`, `303`). La suite
+  prendra `304`, `305`…
+- **Limites dites** : un composant fabriqué est **explosé** (nomenclature
+  fantôme) — **aucun sous-OF** n'est créé (`parent_mo_id` reste inutilisé) ; le
+  jeu de sous-tâches moyenné ne change pas (brouillons et annulées comprises) ;
+  les comptes `601000`/`310000`/`355000`/`713500` restent codés en dur (S-10).
+
+
 
 
 ### Audit fonctionnel exécuté — partie 1 : X1-urgent, X0, X1, X7 (2026-09-28) ✅

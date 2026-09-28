@@ -24,12 +24,12 @@
 --
 --   • `231 M-17-01` — la refacturation des temps n'existait pas
 --     (`create_billable_line_on_timesheet_stop` ne créait qu'une notification).
---     Fermé le 28/09/2026 par la **269** : brouillon de facture par projet,
+--     Fermé le 28/09/2026 par la **301** : brouillon de facture par projet,
 --     ligne rattachée au temps (unicité société + temps), branchement sur
 --     l'INSERT pour la saisie directe et sur l'arrêt du chronomètre.
 --   • `245 T08` — le chiffre d'affaires non taxé (exonéré, export, livraison
 --     intracommunautaire) n'entrait pas dans le CA déclaré, reconstitué depuis
---     la TVA. Fermé le 28/09/2026 par la **268** : le CA se lit sur les comptes
+--     la TVA. Fermé le 28/09/2026 par la **300** : le CA se lit sur les comptes
 --     de produits (classe 70), la TVA reste lue sur les comptes 445x.
 --
 -- Plus aucun scénario n'a le droit d'échouer : un échec hors registre casse la

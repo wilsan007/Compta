@@ -83,9 +83,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_invoice_line_time_entry
   WHERE time_entry_id IS NOT NULL;
 
 COMMENT ON COLUMN public.invoices.project_id IS
-  'Projet refacturé par cette facture. Un seul brouillon par (société, projet) : uniq_invoice_draft_project. 269 (W8).';
+  'Projet refacturé par cette facture. Un seul brouillon par (société, projet) : uniq_invoice_draft_project. 301 (W8).';
 COMMENT ON COLUMN public.invoice_lines.time_entry_id IS
-  'Feuille de temps refacturée par cette ligne. Unique par société : un temps ne se facture qu''une fois. 269 (W8).';
+  'Feuille de temps refacturée par cette ligne. Unique par société : un temps ne se facture qu''une fois. 301 (W8).';
 
 -- ─────────────────────────────────────────────────────────────
 -- 2. Le déclencheur remplit enfin sa promesse : la ligne facturable existe

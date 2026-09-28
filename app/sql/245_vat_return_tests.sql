@@ -15,12 +15,12 @@
 -- déclaration enregistrée contient réellement, colonne par colonne, par rapport
 -- à ce que VatReturnsPage.tsx en affiche.
 --
--- W7 (268, 28/09/2026) — T08 est fermé. La base hors taxe de la CA3 était
+-- W7 (300, 28/09/2026) — T08 est fermé. La base hors taxe de la CA3 était
 -- reconstituée depuis la TVA (montant ÷ taux) : un chiffre d'affaires non taxé —
 -- exonéré, export, livraison intracommunautaire — ne porte aucune TVA et
 -- n'entrait dans aucune base. Le scénario mesure désormais les deux natures
 -- d'opérations non taxées (A2 « exonéré » et E1/E2 « intracommunautaire ») à
--- côté de la vente taxée, et la 268 tire le CA déclaré des **comptes de
+-- côté de la vente taxée, et la 300 tire le CA déclaré des **comptes de
 -- produits** (classe 70) au lieu des comptes de TVA.
 -- ============================================================
 \ir ci/audit_helpers.sql
@@ -239,7 +239,7 @@ END $$;
 -- T08 — chiffre d'affaires non taxé. La base hors taxe de la CA3 était
 -- reconstituée depuis la TVA (montant ÷ taux) : une vente exonérée, un export
 -- ou une livraison intracommunautaire, qui ne portent aucune TVA, n'y entraient
--- pas. Les cases A2, E1 et E2 de la CA3 réclament pourtant cette base : la 268
+-- pas. Les cases A2, E1 et E2 de la CA3 réclament pourtant cette base : la 300
 -- la tire des comptes de produits (classe 70), taxée ou non.
 DO $$
 DECLARE t uuid := _mk_tenant('TVA08'); g jsonb; v record; c uuid;

@@ -744,6 +744,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W8 — PROD-01/02/03 : la nomenclature est explosée sur tous ses niveaux
+      # (un composant fabriqué n'est plus consommé tel quel), la quantité produite
+      # déclarée prime (l'écart n'est plus écrasé), un rebut supérieur au lancé est
+      # refusé, l'écart de coût est chiffré (`cost_variance`) et l'écriture est
+      # datée de l'ordre, pas du jour de clôture. T01 à T07 vus rouges avant la 302.
+      - name: 'AUD : nomenclature multi-niveaux et écarts de production (302)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/302_manufacturing_multilevel_and_variances_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W8 — PROJ-02/03 : l'avancement est **pondéré** par les heures prévues, par
+      # une seule règle appelée aux deux niveaux (parent et projet) — la moyenne
+      # simple donnait 50 % là où 10 % est juste — et une tâche ne peut plus être
+      # son propre parent ni former un cycle (la récursion des treize déclencheurs
+      # épuisait la pile). T01/T02/T04/T05 vus rouges avant la 303.
+      - name: 'AUD : avancement pondéré et anti-cycle des tâches (303)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/303_project_progress_and_cycle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
@@ -752,7 +772,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # M-17 — temps passés : isolation entre sociétés, devise, refacturation.
-      # M-17-01 est FERMÉ (269, 28/09/2026) : les heures facturables atteignent
+      # M-17-01 est FERMÉ (301, 28/09/2026) : les heures facturables atteignent
       # une ligne de facture de 240 dans un brouillon du projet, la saisie
       # directe (« temps manuel », INSERT avec end_time) est couverte (T07),
       # l'idempotence est tenue par un index unique (T08) et la suppression d'une
@@ -806,7 +826,7 @@ jobs:
       # M-10 (TVA) — la base hors taxe de la CA3 était reconstituée depuis la TVA
       # (montant ÷ taux) : un chiffre d'affaires non taxé — exonéré, export,
       # livraison intracommunautaire — n'entrait dans aucune base (cases A2, E1,
-      # E2). La 268 (W7, 28/09/2026) tire le CA des **comptes de produits**
+      # E2). La 300 (W7, 28/09/2026) tire le CA des **comptes de produits**
       # (classe 70) : T08 est FERMÉ, avec 1 750 déclarés pour 1 000 taxés,
       # 500 exonérés et 250 intracommunautaires. La ventilation par code de TVA
       # de la 246 reste en place pour la TVA et la synthèse du formulaire.
