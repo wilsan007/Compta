@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { FileText, Plus, Trash2, Save, Edit3, Eye } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import { confirmSync } from '@/lib/confirm'
 
 interface DocViewProps {
   projectId?: string
@@ -137,7 +138,7 @@ export function DocView({ projectId }: DocViewProps) {
   }, [selectedDoc, title, content, projectId])
 
   const handleDelete = useCallback(async (docId: string) => {
-    if (!confirm(t('doc.deleteConfirm'))) return
+    if (!confirmSync(t('doc.deleteConfirm'))) return
     try {
       if (!docId.startsWith('draft-')) {
         const tid = await getTenantId()

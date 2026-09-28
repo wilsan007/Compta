@@ -5,6 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getTaxRates, createTaxRate, updateTaxRate, deleteTaxRate, getTaxGroups, createTaxGroup, deleteTaxGroup, getTaxRepartitionLines, createTaxRepartitionLine, deleteTaxRepartitionLine } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2, X, Percent, FileText, BookOpen, Layers, Split } from 'lucide-react'
 import type { TaxRate, TaxGroup, TaxRepartitionLine } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 type Tab = 'list' | 'rubrics' | 'accounting' | 'groups' | 'repartition'
 
@@ -152,7 +153,7 @@ export function TaxRatesPage() {
   }
 
   async function handleDeleteGroup(id: string) {
-    if (!confirm(t('taxRates.groupDeleteConfirm'))) return
+    if (!confirmSync(t('taxRates.groupDeleteConfirm'))) return
     try {
       await deleteTaxGroup(id)
       toast('success', t('taxRates.groupsTitle'), t('taxRates.groupDeleteSuccess'))
@@ -185,7 +186,7 @@ export function TaxRatesPage() {
   }
 
   async function handleDeleteRepartition(id: string) {
-    if (!confirm(t('taxRates.repartitionDeleteConfirm'))) return
+    if (!confirmSync(t('taxRates.repartitionDeleteConfirm'))) return
     try {
       await deleteTaxRepartitionLine(id)
       toast('success', t('taxRates.repartitionTitle'), t('taxRates.repartitionDeleteSuccess'))
@@ -194,7 +195,7 @@ export function TaxRatesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('taxRates.deleteConfirm'))) return
+    if (!confirmSync(t('taxRates.deleteConfirm'))) return
     try {
       await deleteTaxRate(id)
       toast('success', t('taxRates.title'), t('taxRates.deleteSuccess'))

@@ -5,6 +5,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, deletePayrollTaxGrid, getCorporateTaxGrids, getCorporateTaxGridLines, createCorporateTaxGrid, deleteCorporateTaxGrid } from '@/lib/queries/accounting'
 import type { PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
 import { Plus, Trash2, FileText, AlertCircle } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
 
 export function TaxGridSettingsPage() {
   const { t } = useTranslation('settings')
@@ -47,7 +48,7 @@ export function TaxGridSettingsPage() {
 
   async function handleDeleteGrid(id: string, isPlatform: boolean) {
     if (isPlatform) return
-    if (!confirm(t('taxGrids.confirmDelete'))) return
+    if (!confirmSync(t('taxGrids.confirmDelete'))) return
     try {
       if (tab === 'payroll') {
         await deletePayrollTaxGrid(id)

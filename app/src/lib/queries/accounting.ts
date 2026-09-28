@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Joined } from '@/types/dbRow'
-import { fetchAllRows, getTenantId, ti, tud } from './core'
+import { blankEmailToNull, fetchAllRows, getTenantId, ti, tud } from './core'
 import { getJournals } from './misc'
 import { getPaymentTermById } from './payroll'
 import type { Invoice, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, DashboardStats, FixedAsset, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, AuditLog, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, RecurringInvoiceTemplate, FutureAccountingMovement, TreasuryTransfer, TreasuryRecurring, ConsolidatedTreasury, AssetDepreciationPlan, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, DashboardWidget, AnalyticJournalCode, BankStatementTemplate, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check } from '@/types'
@@ -27,7 +27,7 @@ export async function getCompanySettings(): Promise<CompanySettings | null> {
 
 export async function updateCompanySettings(id: string, updates: Partial<CompanySettings>) {
   const tid = await getTenantId()
-  const { data, error } = await tud(supabase.from('company_settings').update(updates), 'company_settings', tid).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('company_settings').update(blankEmailToNull(updates)), 'company_settings', tid).eq('id', id).select().single()
   if (error) throw error
   return data as CompanySettings
 }

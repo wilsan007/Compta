@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { getTenantId, ti, tud } from './core';
+import { blankEmailToNull, getTenantId, ti, tud } from './core';
 import type { Employee, PayRun, Timesheet, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, PaymentTerm, PaymentPromise, PaymentTemplateCompta } from '@/types';
 
 // ============ Employees ============
@@ -14,14 +14,14 @@ export async function getEmployees() {
 
 export async function createEmployee(emp: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('employees').insert(ti(emp, 'employees', tid)).select().single()
+  const { data, error } = await supabase.from('employees').insert(ti(blankEmailToNull(emp), 'employees', tid)).select().single()
   if (error) throw error
   return data as Employee
 }
 
 export async function updateEmployee(id: string, updates: Partial<Employee>) {
   const tid = await getTenantId()
-  const { data, error } = await tud(supabase.from('employees').update(updates), 'employees', tid).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('employees').update(blankEmailToNull(updates)), 'employees', tid).eq('id', id).select().single()
   if (error) throw error
   return data as Employee
 }

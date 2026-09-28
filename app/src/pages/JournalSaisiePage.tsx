@@ -505,7 +505,7 @@ function SaisieForm({
     } else {
       // Création de compte volée — offer to create if account doesn't exist
       const code = line.account_general.trim()
-      if (code.length >= 2 && confirm(t('saisie.createAccountPrompt', { code }))) {
+      if (code.length >= 2 && confirmSync(t('saisie.createAccountPrompt', { code }))) {
         try {
           const newAccount = await createChartAccount({
             code,

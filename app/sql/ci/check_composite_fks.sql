@@ -86,11 +86,14 @@ DROP TABLE public.fk_selftest_child;
 DROP TABLE public.fk_selftest_parent;
 
 -- ------------------------------------------------------------
--- 3. Le registre gelé, vide à ce jour
+-- 3. Le registre gelé
 -- ------------------------------------------------------------
 CREATE TEMP TABLE fk_registre (table_name text, colonne text, raison text);
--- Format d'une ligne, si un jour il en fallait une :
+-- Format d'une ligne :
 --   ('enfant', 'colonne', 'pourquoi la clé composite ne peut pas exister ici, daté');
+INSERT INTO fk_registre VALUES
+  ('tax_rates', 'pack_code',
+   '28/09/2026 (272, M13) : legislation_packs est un RÉFÉRENTIEL (clé primaire code) rangé sous la société technique …0001. La clé composite (tenant_id, pack_code) interdisait à toute société réelle un taux rattaché à son pack — une société neuve n''avait aucun taux de TVA.');
 
 -- ------------------------------------------------------------
 -- 4. Le verdict

@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider } from '@/lib/theme'
 import { ToastProvider } from '@/lib/toast'
 import { AuthProvider } from '@/lib/auth'
@@ -298,6 +298,13 @@ const EmployeeProfilePage = lazy(() => import('@/pages/employee/EmployeeProfileP
 const EmployeeLeavesPage = lazy(() => import('@/pages/employee/EmployeeLeavesPage').then(m => ({ default: m.EmployeeLeavesPage })))
 const RhReportsPage = lazy(() => import('@/pages/hr/RhReportsPage').then(m => ({ default: m.RhReportsPage })))
 
+// M11 : une page qui plante ne doit pas condamner les suivantes — la frontière
+// d'erreur des routes s'efface au changement de chemin.
+function RouteErrorBoundary({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  return <AppErrorBoundary resetKey={pathname}>{children}</AppErrorBoundary>
+}
+
 function App() {
   return (
     <AppErrorBoundary>
@@ -307,6 +314,7 @@ function App() {
         <ToastProvider>
           <ConfirmProvider>
           <BrowserRouter>
+            <RouteErrorBoundary>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
             <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -714,6 +722,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
             </Suspense>
+            </RouteErrorBoundary>
         </BrowserRouter>
           </ConfirmProvider>
         </ToastProvider>

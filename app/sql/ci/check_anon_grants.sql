@@ -132,3 +132,53 @@ BEGIN
   RAISE NOTICE 'Droits du visiteur : OK — % fonction(s) examinée(s), % exposée(s), toutes inscrites', v_corpus, v_exposees;
 END;
 $$;
+
+-- ============================================================
+-- SECONDE PARTIE — les TABLES (audit fonctionnel exécuté du 28/09/2026, C1/C2)
+--
+-- Le contrôle ci-dessus ne lisait que les fonctions. Mesuré le 28/09 sur base
+-- neuve : `anon` détenait INSERT, UPDATE, DELETE et TRUNCATE sur 72 tables de
+-- `public` (privilèges par défaut de l'image Supabase). La RLS en arrêtait la
+-- plupart — pas `webhook_event_catalog` (USING true), pas les paramètres
+-- légaux globaux (tenant_id IS NULL) : un visiteur non connecté mettait le
+-- SMIC horaire à 1 € pour toutes les sociétés. Et TRUNCATE ignore la RLS.
+-- La 270 révoque ; cette partie échoue le jour où un droit revient.
+--
+-- LA RÈGLE. Aucune relation de `public` n'est modifiable par `anon`
+-- (INSERT, UPDATE, DELETE, TRUNCATE), et aucune n'est vidable par
+-- `authenticated` (TRUNCATE). Pas de registre : aucune exception n'est
+-- justifiée aujourd'hui — l'inscription passe par une fonction Edge sous
+-- `service_role`.
+-- ============================================================
+DO $$
+DECLARE v_anon text; v_trunc text; v_n int; v_nt int; v_corpus int;
+BEGIN
+  SELECT count(*) INTO v_corpus
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+  WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND c.relname NOT LIKE '\_%';
+  IF v_corpus = 0 THEN
+    RAISE EXCEPTION 'check_anon_grants (tables) : aucune relation examinée — le contrôle ne vérifie rien';
+  END IF;
+
+  SELECT count(*), string_agg(c.relname, ', ' ORDER BY c.relname) INTO v_n, v_anon
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+  WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND c.relname NOT LIKE '\_%'
+    AND (has_table_privilege('anon', c.oid, 'INSERT') OR has_table_privilege('anon', c.oid, 'UPDATE')
+      OR has_table_privilege('anon', c.oid, 'DELETE') OR has_table_privilege('anon', c.oid, 'TRUNCATE'));
+
+  SELECT count(*), string_agg(c.relname, ', ' ORDER BY c.relname) INTO v_nt, v_trunc
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+  WHERE c.relkind IN ('r', 'p') AND c.relname NOT LIKE '\_%'
+    AND has_table_privilege('authenticated', c.oid, 'TRUNCATE');
+
+  RAISE NOTICE 'check_anon_grants (tables) : % relation(s) examinée(s), % modifiable(s) par anon, % vidable(s) par authenticated',
+    v_corpus, v_n, v_nt;
+  IF v_anon IS NOT NULL THEN
+    RAISE EXCEPTION E'check_anon_grants : % relation(s) modifiables par un visiteur non connecté :\n  %\n'
+      '  REVOKE INSERT, UPDATE, DELETE, TRUNCATE … FROM anon dans une migration (voir 270).', v_n, v_anon;
+  END IF;
+  IF v_trunc IS NOT NULL THEN
+    RAISE EXCEPTION E'check_anon_grants : % table(s) vidables (TRUNCATE, hors RLS) par authenticated :\n  %', v_nt, v_trunc;
+  END IF;
+  RAISE NOTICE 'Droits du visiteur sur les tables : OK';
+END $$;

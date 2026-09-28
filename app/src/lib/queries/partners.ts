@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { getTenantId, ti, tud } from './core';
+import { blankEmailToNull, getTenantId, ti, tud } from './core';
 import type { Customer, Supplier, PartnerBankAccount, PartnerContact, PartnerCategory, CustomerPayment, SupplierPayment } from '@/types';
 
 // ============ Customers ============
@@ -14,14 +14,14 @@ export async function getCustomers() {
 
 export async function createCustomer(customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('customers').insert({ ...customer, tenant_id: tid }).select().single()
+  const { data, error } = await supabase.from('customers').insert({ ...blankEmailToNull(customer), tenant_id: tid }).select().single()
   if (error) throw error
   return data as Customer
 }
 
 export async function updateCustomer(id: string, updates: Partial<Customer>) {
   const tid = await getTenantId()
-  const { data, error } = await tud(supabase.from('customers').update(updates), 'customers', tid).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('customers').update(blankEmailToNull(updates)), 'customers', tid).eq('id', id).select().single()
   if (error) throw error
   return data as Customer
 }
@@ -45,14 +45,14 @@ export async function getSuppliers() {
 
 export async function createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('suppliers').insert({ ...supplier, tenant_id: tid }).select().single()
+  const { data, error } = await supabase.from('suppliers').insert({ ...blankEmailToNull(supplier), tenant_id: tid }).select().single()
   if (error) throw error
   return data as Supplier
 }
 
 export async function updateSupplier(id: string, updates: Partial<Supplier>) {
   const tid = await getTenantId()
-  const { data, error } = await tud(supabase.from('suppliers').update(updates), 'suppliers', tid).eq('id', id).select().single()
+  const { data, error } = await tud(supabase.from('suppliers').update(blankEmailToNull(updates)), 'suppliers', tid).eq('id', id).select().single()
   if (error) throw error
   return data as Supplier
 }

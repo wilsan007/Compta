@@ -36,3 +36,6 @@ playwright-report
 !**/config.example.json
 mirror-daemon/config.json
 mirror-daemon/.machine-id
+
+# X0 : banc « chemin de l'écran » — secrets et comptes régénérés à chaque montage
+.screen-rig/

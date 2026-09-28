@@ -94,7 +94,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.entriesNotBalanced'))
       return
     }
-    if (!confirm(t('closure.closeJournalConfirm', { code: journalCode }))) return
+    if (!confirmSync(t('closure.closeJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await closeJournalPeriod(journalCode, periodId)
@@ -107,7 +107,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   }
 
   async function handleReopenJournal(journalCode: string, periodId: string) {
-    if (!confirm(t('closure.reopenJournalConfirm', { code: journalCode }))) return
+    if (!confirmSync(t('closure.reopenJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await reopenJournalPeriod(journalCode, periodId)
@@ -128,7 +128,7 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.allJournalsMustBeClosed'))
       return
     }
-    if (!confirm(t('closure.closePeriodConfirm', { label: period.period_label }))) return
+    if (!confirmSync(t('closure.closePeriodConfirm', { label: period.period_label }))) return
     setActionLoading(`period-${periodId}`)
     try {
       await closeFiscalPeriod(periodId)

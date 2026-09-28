@@ -53,6 +53,12 @@ jobs:
             echo "ERROR: window.confirm is forbidden. Use confirmSync() from '@/lib/confirm' instead."
             exit 1
           fi
+          # X7 (audit du 28/09/2026) : un `confirm(` nu échappait au motif ci-dessus
+          # (19 appels dans 13 écrans). Les tests et le module de confirmation sont exclus.
+          if grep -rnE "(^|[^a-zA-Z_.])confirm\(" src/ --include="*.tsx" --include="*.ts" | grep -v "__tests__" | grep -v "src/lib/confirm"; then
+            echo "ERROR: bare confirm() is forbidden. Use confirmSync() from '@/lib/confirm' instead."
+            exit 1
+          fi
 
       - name: Type check (tsc -b)
         run: npx tsc -b --noEmit --pretty
@@ -348,8 +354,18 @@ jobs:
       # CREATE FUNCTION revient à chaque fonction créée : ce contrôle est le
       # seul garde-fou permanent. Il passe AVANT les suites, qui créent leur
       # propre outillage dans `public`.
-      - name: Droits du visiteur non connecté sur les fonctions
+      - name: Droits du visiteur non connecté sur les fonctions et les tables
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_anon_grants.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # X1-urgent (audit fonctionnel exécuté du 28/09/2026, C1/C2) : trois
+      # politiques d'écriture ne vérifiaient rien (USING true, tenant_id IS NULL,
+      # rôle sans société) — un visiteur non connecté mettait le SMIC global à
+      # 1 €. Toute politique d'écriture passe par current_tenant_id() ou
+      # auth.uid(), et toute lecture d'une table de société aussi (M12).
+      - name: 'X1 : aucune politique n''atteint une ligne globale ou une autre société'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_global_rows_writable.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -799,6 +815,29 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Audit fonctionnel exécuté du 28/09/2026 — partie 1 du plan correctif.
+      # 270 (X1-urgent, C1/C2) : un visiteur non connecté réécrivait le SMIC
+      # global et le catalogue des webhooks ; anon détenait TRUNCATE sur 72 tables.
+      - name: 'X1-urgent : écriture anonyme et lignes globales fermées (270)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/270_anon_and_global_rows_write_closed_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 271 (X1, C3/M8/M9/M12/H10) : un lecteur bloquait la facturation par la
+      # numérotation, modifiait 21 tables, saisissait des écritures ; l'auteur
+      # d'un achat l'approuvait lui-même.
+      - name: 'X1 : ce qu''un lecteur ne peut pas faire, approbation tracée (271)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/271_viewer_writes_and_approval_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 272 (X7, M2/M13) : tiers sans e-mail impossibles, facture DJF en EUR,
+      # société neuve sans taux de TVA.
+      - name: 'X7 : e-mail vide, devise et taux de TVA de la société (272)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/272_master_data_defaults_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
       # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
       # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son
@@ -1090,12 +1129,92 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────
+  # X0 — le chemin de l'écran (audit fonctionnel exécuté du 28/09/2026)
+  # Tout était vert, et 14 défauts critiques existaient : les tests unitaires
+  # simulent Supabase, les suites SQL insèrent en base sans passer par l'écran.
+  # Ce job fait tourner les VRAIES fonctions de requête des écrans, avec leur
+  # charge utile, à travers PostgREST réel et des JWT réels (4 comptes créés par
+  # l'inscription réelle). Les défauts encore ouverts sont inscrits au registre
+  # src/__screen__/expected_failures.json : un rouge hors registre casse la CI,
+  # un vert encore inscrit aussi.
+  # ─────────────────────────────────────────────
+  screen-path:
+    name: Chemin de l'écran (PostgREST réel)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    defaults:
+      run:
+        working-directory: app
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Schéma et migrations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+          node run-sql-migrations.mjs
+
+      - name: 'X0 : colonnes écrites par les écrans à travers les fonctions (baseline gelée)'
+        run: node scripts/check-screen-writes.mjs
+
+      - name: Comptes du banc (inscription réelle) et secrets éphémères
+        run: node scripts/screen-rig/setup.mjs
+
+      - name: PostgREST réel et passerelle JWT
+        run: |
+          SECRET=$(node -e "console.log(require('./.screen-rig/rig.json').jwtSecret)")
+          docker run -d --name pgrst --network host \
+            -e PGRST_DB_URI="postgres://authenticator:screen-rig@localhost:5432/test_compta" \
+            -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon \
+            -e PGRST_JWT_SECRET="$SECRET" -e PGRST_DB_MAX_ROWS=1000 -e PGRST_SERVER_PORT=3399 \
+            postgrest/postgrest:v16.3
+          for i in $(seq 1 30); do curl -sf http://localhost:3399/ >/dev/null && break; sleep 1; done
+          curl -sf http://localhost:3399/ >/dev/null || { docker logs pgrst; exit 1; }
+          nohup node scripts/screen-rig/gateway.mjs > .screen-rig/gateway.out 2>&1 &
+          for i in $(seq 1 15); do curl -s http://localhost:54399/auth/v1/health >/dev/null && break; sleep 1; done
+
+      - name: 'X0 : scénarios s1–s15 par les fonctions des écrans'
+        run: npx vitest run -c vitest.screen.config.ts
+
+      - name: Journal de la passerelle et verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-path
+          path: |
+            app/.screen-rig/out/
+            app/.screen-rig/gateway.log
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
   # Summary job for branch protection
   # ─────────────────────────────────────────────
   ci-success:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [lint-typecheck, i18n-check, unit-tests, db-integration, build]
+    needs: [lint-typecheck, i18n-check, unit-tests, db-integration, screen-path, build]
     if: always()
     steps:
       - name: Check job results
@@ -1104,8 +1223,9 @@ jobs:
           echo "i18n-check: ${{ needs.i18n-check.result }}"
           echo "unit-tests: ${{ needs.unit-tests.result }}"
           echo "db-integration: ${{ needs.db-integration.result }}"
+          echo "screen-path: ${{ needs.screen-path.result }}"
           echo "build: ${{ needs.build.result }}"
-          if [[ "${{ needs.lint-typecheck.result }}" != "success" || "${{ needs.i18n-check.result }}" != "success" || "${{ needs.unit-tests.result }}" != "success" || "${{ needs.db-integration.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
+          if [[ "${{ needs.lint-typecheck.result }}" != "success" || "${{ needs.i18n-check.result }}" != "success" || "${{ needs.unit-tests.result }}" != "success" || "${{ needs.db-integration.result }}" != "success" || "${{ needs.screen-path.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
             echo "CI FAILED — one or more required jobs did not pass"
             exit 1
           fi

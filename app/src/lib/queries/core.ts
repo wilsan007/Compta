@@ -58,6 +58,18 @@ export function tud<T extends { eq: (col: string, val: any) => T }>(q: T, table:
   return q
 }
 
+// M2 (audit fonctionnel du 28/09/2026) : un champ e-mail laissé vide arrive en '' et
+// la contrainte de format n'accepte que NULL ou une adresse — le client, le
+// fournisseur ou le salarié sans e-mail était impossible à créer. La base normalise
+// aussi (272), mais l'écran ne doit pas dépendre d'un déclencheur pour envoyer
+// une donnée juste.
+export function blankEmailToNull<T extends Record<string, any>>(payload: T): T {
+  if (payload && typeof payload.email === 'string' && payload.email.trim() === '') {
+    return { ...payload, email: null } as T
+  }
+  return payload
+}
+
 
 // ============ Pagination (LOT7-03) ============
 // `supabase/config.toml` fixe `max_rows = 1000` : toute requête PostgREST non paginée est

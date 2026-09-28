@@ -459,6 +459,40 @@ L'essentiel en sept lignes :
   met pas la ligne à jour (régénération = lot L20).
 
 
+### Audit fonctionnel exécuté — partie 1 : X1-urgent, X0, X1, X7 (2026-09-28) ✅
+- **Le plan est découpé en trois parties** : **1** = X1-urgent + X0 + X1 + X7 (faite),
+  **2** = X2 + X3 + X6 (compta, paie, trésorerie — décisions D-A, D-C, D-G, D-F),
+  **3** = X4 + X5 + X8 (stock, production/caisse/immobilisations, recette — D-B, D-D, D-E).
+- **`270` — l'écriture anonyme fermée** : un visiteur NON connecté réécrivait le SMIC
+  global et le catalogue des webhooks (C1, C2) ; l'admin d'une société réécrivait le
+  référentiel `banks` ; `anon` détenait INSERT/UPDATE/DELETE/**TRUNCATE** sur 72 tables.
+  Lignes globales réservées à `service_role`, droits d'`anon` révoqués (défauts compris),
+  TRUNCATE retiré à `authenticated`. 8 scénarios, **6 rouges avant**.
+- **`271` — ce qu'un lecteur ne peut pas faire** : numérotation, stock, couches et
+  séquences écrites par leurs seules fonctions (C3) ; périmètre `can_perform` étendu à
+  **19 tables** (M8) ; `post_journal_entry` et `calculate_payslip` vérifient le droit
+  (H10) ; `purchase_invoices.created_by` + `approved_by` + séparation des tâches (M9) ;
+  politiques héritées supprimées (M12). 10 scénarios, **8 rouges avant**.
+- **`272` — données de base** : e-mail vide → NULL (M2), devise des pièces = celle de la
+  société, taux de TVA copiés à l'inscription (M13) — la clé ISO-02 `tax_rates →
+  legislation_packs` l'interdisait (inscrite au registre de `check_composite_fks`).
+- **X0 — le chemin de l'écran est en CI** (job `screen-path`) : banc
+  `app/scripts/screen-rig/` (PostgREST réel, JWT, comptes créés par l'inscription réelle),
+  scénarios `app/src/__screen__/01…15`, registre `expected_failures.json` (**33 rouges**
+  des parties 2 et 3, même contrat que le registre SQL), `check-screen-writes` (baseline
+  **62** gelée). Final : **15/15 fichiers, 79 verts, 33 rouges inscrits**.
+- **Front (X7)** : écran des marges (colonne et coût fictif à 70 %), `<Select>` qui
+  faisait tomber **4** écrans, frontière d'erreur réinitialisée par route, 19 `confirm()`
+  nus → `confirmSync` (UX-03 étendu), `<tbody>` mal imbriqués, `employee_id` vide.
+- Contrôles : `check_anon_grants` couvre les **tables**, nouveau
+  `check_global_rows_writable` (écriture **et** lecture). Base neuve **241 migrations,
+  0 erreur**, batterie SQL **81/81**, `tsc` 0, `oxlint` 0, knip 66/66, Vitest 1 504.
+  [Preuve](doc/audit/VAGUE-X1U-X0-X1-X7-2026-09-28.md)
+- ⚠️ **Production** : relire les paramètres légaux globaux et `banks` après déploiement
+  (requêtes dans la preuve) — ils ont pu être altérés avant la fermeture.
+- **Limites dites** : un `manager` n'écrit plus les 19 tables (décision D-6) ; pack DJ
+  sans taux (D-11) ; même défaut ISO-02 sur `company_settings.legislation_pack_code`.
+
 
 ### Bugs corrigés
 ### Bugs corrigés

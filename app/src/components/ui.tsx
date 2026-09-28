@@ -182,12 +182,16 @@ interface SelectProps {
   label?: string
   value?: string
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void
-  options: { value: string; label: string }[]
+  // M11 (audit du 28/09/2026) : quatre écrans (NF-525, API, webhooks, modèles d'e-mail)
+  // passaient des <option> en enfants et aucun `options` : `options.map` levait et
+  // faisait tomber toute l'application. Les deux formes sont acceptées.
+  options?: { value: string; label: string }[]
+  children?: ReactNode
   required?: boolean
   className?: string
 }
 
-export function Select({ label, value, onChange, options, required, className }: SelectProps) {
+export function Select({ label, value, onChange, options, children, required, className }: SelectProps) {
   const id = useId()
   return (
     <div className={className}>
@@ -197,9 +201,10 @@ export function Select({ label, value, onChange, options, required, className }:
         </label>
       )}
       <select id={id} value={value} onChange={onChange} required={required} aria-required={required || undefined} className="input cursor-pointer">
-        {options.map((opt, i) => (
+        {(options ?? []).map((opt, i) => (
           <option key={`${opt.value}-${i}`} value={opt.value}>{opt.label}</option>
         ))}
+        {children}
       </select>
     </div>
   )

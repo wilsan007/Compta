@@ -5,6 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getReminderLevels, createReminderLevel, updateReminderLevel, deleteReminderLevel } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, Bell } from 'lucide-react'
 import type { ReminderLevel } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function ReminderLevelsPage() {
   const { t } = useTranslation('accounting')
@@ -77,7 +78,7 @@ export function ReminderLevelsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('reminderLevels.deleteConfirm'))) return
+    if (!confirmSync(t('reminderLevels.deleteConfirm'))) return
     try {
       await deleteReminderLevel(id)
       toast('success', t('reminderLevels.title'), t('reminderLevels.deleteSuccess'))

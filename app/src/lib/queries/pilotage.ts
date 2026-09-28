@@ -107,11 +107,11 @@ export async function getMarginAnalysis(
   let q = supabase
     .from('invoice_lines')
     .select(`
-      line_total,
+      total,
       quantity,
       unit_price,
       product_id,
-      product:products(name, category),
+      product:products(name, category, cost_price),
       invoice:invoices!inner(customer_id, date, status, customer:customers(name))
     `)
     .eq('invoice.status', 'paid')
@@ -123,8 +123,12 @@ export async function getMarginAnalysis(
   const groups: Record<string, { revenue: number; cost: number; margin: number; marginPercent: number }> = {}
 
   for (const line of lines as any[]) {
-    const revenue = Number(line.line_total || 0)
-    const cost = Number(line.quantity || 0) * Number(line.unit_price || 0) * 0.7 // estimated cost at 70% of price
+    // M10 (audit du 28/09/2026) : `invoice_lines` porte `total` (HT), pas `line_total` —
+    // l'écran tombait en erreur. Le coût était « estimé à 70 % du prix » : la marge
+    // affichée valait 30 % quoi qu'il arrive. Il vient désormais du coût de revient de
+    // l'article ; une ligne sans article ni coût compte pour 0 de coût.
+    const revenue = Number(line.total || 0)
+    const cost = Number(line.quantity || 0) * Number(line.product?.cost_price || 0)
     const margin = revenue - cost
 
     let key = 'Unknown'

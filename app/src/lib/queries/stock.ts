@@ -102,12 +102,8 @@ export async function getStockQuantities(warehouseId?: string) {
   return data as (StockQuantity & { products: Joined<'products', 'name' | 'sku'>; warehouses: Joined<'warehouses', 'name'> })[]
 }
 
-export async function updateStockQuantity(id: string, updates: Partial<StockQuantity>) {
-  const tid = await getTenantId()
-  const { data, error } = await tud(supabase.from('stock_quantities').update({ ...updates, updated_at: new Date().toISOString() }), 'stock_quantities', tid).eq('id', id).select().single()
-  if (error) throw error
-  return data as StockQuantity
-}
+// `updateStockQuantity` est retirée (271, C3) : les quantités en stock ne s'écrivent
+// que par les mouvements (déclencheurs SECURITY DEFINER), jamais par un écran.
 
 
 // ============ Sprint 6: Price Lists ============

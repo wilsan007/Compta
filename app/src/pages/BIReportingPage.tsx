@@ -133,7 +133,6 @@ export function BIReportingPage() {
       <Card>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileSpreadsheet className="w-5 h-5" /> {t('bi.detailedData')}</h3>
         <Table headers={[t('bi.indicator'), t('bi.value')]}>
-          <tbody>
             <TableRow><TableCell>{t('bi.customers')}</TableCell><TableCell className="text-right font-medium">{data.customerCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.suppliers')}</TableCell><TableCell className="text-right font-medium">{data.supplierCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.products')}</TableCell><TableCell className="text-right font-medium">{data.productCount}</TableCell></TableRow>
@@ -141,7 +140,6 @@ export function BIReportingPage() {
             <TableRow><TableCell>{t('bi.supplierInvoices')}</TableCell><TableCell className="text-right font-medium">{data.purchaseInvoiceCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.journalEntries')}</TableCell><TableCell className="text-right font-medium">{data.journalEntryCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.bankBalance')}</TableCell><TableCell className="text-right font-medium">{formatCurrency(data.bankBalance)}</TableCell></TableRow>
-          </tbody>
         </Table>
       </Card>
     </div>

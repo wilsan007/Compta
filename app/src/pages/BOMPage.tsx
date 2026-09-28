@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { formatCurrency } from '@/lib/utils'
@@ -87,7 +87,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
         <Card>
           <Table headers={['Code', t('bom.name'), t('bom.type'), t('bom.quantity'), t('bom.active'), t('common.actions')]}>
             {boms.filter((b) => !typeFilter || (b as any).bom_type === typeFilter).map((b) => (
-              <div key={b.id}>
+              <Fragment key={b.id}>
                 <TableRow>
                   <TableCell className="font-mono text-xs">
                     <div className="flex items-center gap-1">
@@ -109,6 +109,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
                   </TableCell>
                 </TableRow>
                 {expanded.has(b.id) && (
+                  <tr><td colSpan={6} className="p-0">
                   <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
                     {(lines[b.id] || []).length === 0 ? (
                       <p className="text-xs text-[var(--color-text-secondary)]">{t('bom.noLines')}</p>
@@ -134,8 +135,9 @@ const [boms, setBOMs] = useState<BOM[]>([])
                       </Table>
                     )}
                   </div>
+                  </td></tr>
                 )}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>

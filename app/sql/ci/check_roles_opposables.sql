@@ -48,7 +48,14 @@ INSERT INTO roles_perimetre (table_name) VALUES
   ('employees'), ('pay_runs'), ('pay_slips'), ('timesheets'),
   ('leave_requests'), ('expense_reports'), ('expense_report_lines'),
   ('products'), ('stock_movements'), ('projects'), ('project_tasks'),
-  ('project_time_entries');
+  ('project_time_entries'),
+  -- 271 (X1/M8, audit fonctionnel du 28/09/2026) : un lecteur les modifiait
+  ('fiscal_periods'), ('journals'), ('bank_statement_imports'), ('warehouses'),
+  ('goods_receipts'), ('goods_receipt_lines'), ('boms'), ('bom_lines'),
+  ('manufacturing_orders'), ('pos_terminals'), ('pos_sessions'), ('pos_tickets'),
+  ('pos_ticket_lines'), ('pos_payments'),
+  ('tax_rates'), ('payroll_cumulative'), ('pay_slip_clarified'),
+  ('document_transformations'), ('crm_opportunities');
 
 -- ------------------------------------------------------------
 -- 2. Le détecteur

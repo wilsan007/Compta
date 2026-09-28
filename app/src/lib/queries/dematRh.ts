@@ -6,6 +6,8 @@ import type { EmployeeDocument, DocumentDistributionLog, RhRequest, RhKnowledgeB
 
 // ============ Employee Documents ============
 export async function getEmployeeDocuments(employeeId: string): Promise<EmployeeDocument[]> {
+  // X7 : sans salarié choisi, l'écran envoyait `employee_id=eq.` (400 PostgREST).
+  if (!employeeId) return []
   const tid = await getTenantId()
   let q = supabase.from('employee_documents').select('*').eq('employee_id', employeeId).order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)

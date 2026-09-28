@@ -18,6 +18,42 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+    absence_conflict_log: {
+      Row: {
+        id: string
+        tenant_id: string
+        employee_id: string
+        day: string
+        kept_kind: string
+        kept_origin: string
+        dropped_kind: string
+        dropped_origin: string
+        detected_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        employee_id: string
+        day: string
+        kept_kind: string
+        kept_origin: string
+        dropped_kind: string
+        dropped_origin: string
+        detected_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        employee_id?: string
+        day?: string
+        kept_kind?: string
+        kept_origin?: string
+        dropped_kind?: string
+        dropped_origin?: string
+        detected_at?: string
+      }
+      Relationships: []
+    }
     account_tag_mappings: {
       Row: {
         id: string
@@ -1287,6 +1323,8 @@ export interface Database {
         match_type: string | null
         bank_account_id: string | null
         kind: string
+        matched_line_id: string | null
+        provider_transaction_id: string | null
       }
       Insert: {
         id?: string
@@ -1317,6 +1355,8 @@ export interface Database {
         match_type?: string
         bank_account_id?: string
         kind?: string
+        matched_line_id?: string
+        provider_transaction_id?: string
       }
       Update: {
         id?: string
@@ -1347,6 +1387,8 @@ export interface Database {
         match_type?: string
         bank_account_id?: string
         kind?: string
+        matched_line_id?: string
+        provider_transaction_id?: string
       }
       Relationships: []
     }
@@ -1851,6 +1893,336 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_regeneration_log: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        cause: string
+        avant: Json | null
+        apres: Json | null
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        cause: string
+        avant?: Json
+        apres?: Json
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        cause?: string
+        avant?: Json
+        apres?: Json
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_settings: {
+      Row: {
+        tenant_id: string
+        enforcement: string
+        updated_at: string
+        updated_by: string | null
+      }
+      Insert: {
+        tenant_id: string
+        enforcement?: string
+        updated_at?: string
+        updated_by?: string
+      }
+      Update: {
+        tenant_id?: string
+        enforcement?: string
+        updated_at?: string
+        updated_by?: string
+      }
+      Relationships: []
+    }
+    chain_traces: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_traces_2026_09: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_traces_2026_10: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_traces_2026_11: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_traces_2026_12: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_traces_defaut: {
+      Row: {
+        id: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        duree_ms: number
+        lignes_ecrites: number
+        verrous_attendus_ms: number | null
+        resultat: string
+        message: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        effet: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat: string
+        message?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        effet?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        duree_ms?: number
+        lignes_ecrites?: number
+        verrous_attendus_ms?: number
+        resultat?: string
+        message?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chart_account_templates: {
       Row: {
         id: string
@@ -2215,6 +2587,10 @@ export interface Database {
         reminder_level_id: string | null
         dispute_id: string | null
         promise_id: string | null
+        days_overdue: number | null
+        sent_at: string | null
+        email_sent: boolean | null
+        last_error: string | null
       }
       Insert: {
         id?: string
@@ -2237,6 +2613,10 @@ export interface Database {
         reminder_level_id?: string
         dispute_id?: string
         promise_id?: string
+        days_overdue?: number
+        sent_at?: string
+        email_sent?: boolean
+        last_error?: string
       }
       Update: {
         id?: string
@@ -2259,6 +2639,10 @@ export interface Database {
         reminder_level_id?: string
         dispute_id?: string
         promise_id?: string
+        days_overdue?: number
+        sent_at?: string
+        email_sent?: boolean
+        last_error?: string
       }
       Relationships: []
     }
@@ -4119,6 +4503,105 @@ export interface Database {
       }
       Relationships: []
     }
+    document_effects: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        document_type: string
+        evenement: string
+        effet: string
+        ecrit_comptable: boolean
+        journal_code: string | null
+        touche_stock: boolean
+        touche_paie: boolean
+        reversible: boolean
+        obligatoire: boolean
+        actif: boolean
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        document_type: string
+        evenement: string
+        effet: string
+        ecrit_comptable?: boolean
+        journal_code?: string
+        touche_stock?: boolean
+        touche_paie?: boolean
+        reversible?: boolean
+        obligatoire?: boolean
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        document_type?: string
+        evenement?: string
+        effet?: string
+        ecrit_comptable?: boolean
+        journal_code?: string
+        touche_stock?: boolean
+        touche_paie?: boolean
+        reversible?: boolean
+        obligatoire?: boolean
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    document_links: {
+      Row: {
+        id: string
+        tenant_id: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id: string | null
+        aval_type: string
+        aval_id: string
+        aval_ligne_id: string | null
+        link_type: string
+        effet: string
+        payload: Json
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        amont_type: string
+        amont_id: string
+        amont_ligne_id?: string
+        aval_type: string
+        aval_id: string
+        aval_ligne_id?: string
+        link_type: string
+        effet: string
+        payload?: Json
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        amont_type?: string
+        amont_id?: string
+        amont_ligne_id?: string
+        aval_type?: string
+        aval_id?: string
+        aval_ligne_id?: string
+        link_type?: string
+        effet?: string
+        payload?: Json
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     document_number_sequences: {
       Row: {
         id: string
@@ -4269,6 +4752,204 @@ export interface Database {
       }
       Relationships: []
     }
+    domain_events: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    domain_events_2026_09: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    domain_events_2026_10: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    domain_events_2026_11: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    domain_events_2026_12: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    domain_events_defaut: {
+      Row: {
+        id: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload: Json
+        actor_id: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        event_name: string
+        aggregate_type: string
+        aggregate_id: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        event_name?: string
+        aggregate_type?: string
+        aggregate_id?: string
+        payload?: Json
+        actor_id?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     dpae_records: {
       Row: {
         id: string
@@ -4363,6 +5044,11 @@ export interface Database {
         ip_address: string | null
         signed_at: string | null
         created_at: string | null
+        provider: string | null
+        provider_signature_id: string | null
+        status: string | null
+        signers: Json | null
+        initiated_at: string | null
       }
       Insert: {
         id?: string
@@ -4376,6 +5062,11 @@ export interface Database {
         ip_address?: string
         signed_at?: string
         created_at?: string
+        provider?: string
+        provider_signature_id?: string
+        status?: string
+        signers?: Json
+        initiated_at?: string
       }
       Update: {
         id?: string
@@ -4389,6 +5080,11 @@ export interface Database {
         ip_address?: string
         signed_at?: string
         created_at?: string
+        provider?: string
+        provider_signature_id?: string
+        status?: string
+        signers?: Json
+        initiated_at?: string
       }
       Relationships: []
     }
@@ -4431,6 +5127,54 @@ export interface Database {
         active?: boolean
         created_at?: string
         updated_at?: string
+      }
+      Relationships: []
+    }
+    employee_absence_days: {
+      Row: {
+        tenant_id: string
+        employee_id: string
+        day: string
+        absence_kind: string
+        origin: string
+        origin_id: string | null
+        justification_state: string
+        blocks_work: boolean
+        allows_expenses: boolean
+        paid: boolean
+        pay_rule_code: string | null
+        created_at: string
+        day_uid: string | null
+      }
+      Insert: {
+        tenant_id: string
+        employee_id: string
+        day: string
+        absence_kind: string
+        origin: string
+        origin_id?: string
+        justification_state?: string
+        blocks_work?: boolean
+        allows_expenses?: boolean
+        paid?: boolean
+        pay_rule_code?: string
+        created_at?: string
+        day_uid?: string
+      }
+      Update: {
+        tenant_id?: string
+        employee_id?: string
+        day?: string
+        absence_kind?: string
+        origin?: string
+        origin_id?: string
+        justification_state?: string
+        blocks_work?: boolean
+        allows_expenses?: boolean
+        paid?: boolean
+        pay_rule_code?: string
+        created_at?: string
+        day_uid?: string
       }
       Relationships: []
     }
@@ -5053,6 +5797,8 @@ export interface Database {
         ocr_data: Json | null
         ocr_processed: boolean | null
         ceiling_exceeded: boolean | null
+        mission_absence_day: string | null
+        mission_absence_employee_id: string | null
       }
       Insert: {
         id?: string
@@ -5072,6 +5818,8 @@ export interface Database {
         ocr_data?: Json
         ocr_processed?: boolean
         ceiling_exceeded?: boolean
+        mission_absence_day?: string
+        mission_absence_employee_id?: string
       }
       Update: {
         id?: string
@@ -5091,6 +5839,8 @@ export interface Database {
         ocr_data?: Json
         ocr_processed?: boolean
         ceiling_exceeded?: boolean
+        mission_absence_day?: string
+        mission_absence_employee_id?: string
       }
       Relationships: []
     }
@@ -6172,6 +6922,7 @@ export interface Database {
         vat_code: string | null
         vat_amount: number | null
         advance_invoice_id: string | null
+        time_entry_id: string | null
       }
       Insert: {
         id?: string
@@ -6191,6 +6942,7 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
         advance_invoice_id?: string
+        time_entry_id?: string
       }
       Update: {
         id?: string
@@ -6210,6 +6962,7 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
         advance_invoice_id?: string
+        time_entry_id?: string
       }
       Relationships: []
     }
@@ -6250,6 +7003,10 @@ export interface Database {
         parent_invoice_id: string | null
         transferred_entry_id: string | null
         project_id: string | null
+        e_invoice_status: string | null
+        e_invoice_platform: string | null
+        e_invoice_submitted_at: string | null
+        e_invoice_id: string | null
       }
       Insert: {
         id?: string
@@ -6287,6 +7044,10 @@ export interface Database {
         parent_invoice_id?: string
         transferred_entry_id?: string
         project_id?: string
+        e_invoice_status?: string
+        e_invoice_platform?: string
+        e_invoice_submitted_at?: string
+        e_invoice_id?: string
       }
       Update: {
         id?: string
@@ -6324,6 +7085,10 @@ export interface Database {
         parent_invoice_id?: string
         transferred_entry_id?: string
         project_id?: string
+        e_invoice_status?: string
+        e_invoice_platform?: string
+        e_invoice_submitted_at?: string
+        e_invoice_id?: string
       }
       Relationships: []
     }
@@ -6953,6 +7718,7 @@ export interface Database {
         approved_at: string | null
         created_at: string | null
         tenant_id: string
+        manager_comment: string | null
       }
       Insert: {
         id?: string
@@ -6967,6 +7733,7 @@ export interface Database {
         approved_at?: string
         created_at?: string
         tenant_id: string
+        manager_comment?: string
       }
       Update: {
         id?: string
@@ -6981,6 +7748,7 @@ export interface Database {
         approved_at?: string
         created_at?: string
         tenant_id?: string
+        manager_comment?: string
       }
       Relationships: []
     }
@@ -8179,6 +8947,7 @@ export interface Database {
         error_message: string | null
         sent_at: string | null
         created_at: string | null
+        metadata: Json | null
       }
       Insert: {
         id?: string
@@ -8192,6 +8961,7 @@ export interface Database {
         error_message?: string
         sent_at?: string
         created_at?: string
+        metadata?: Json
       }
       Update: {
         id?: string
@@ -8205,6 +8975,7 @@ export interface Database {
         error_message?: string
         sent_at?: string
         created_at?: string
+        metadata?: Json
       }
       Relationships: []
     }
@@ -10014,6 +10785,8 @@ export interface Database {
         grand_total_yearly: number | null
         grand_total_lifetime: number | null
         is_voided: boolean | null
+        voided_at: string | null
+        void_reason: string | null
       }
       Insert: {
         id?: string
@@ -10041,6 +10814,8 @@ export interface Database {
         grand_total_yearly?: number
         grand_total_lifetime?: number
         is_voided?: boolean
+        voided_at?: string
+        void_reason?: string
       }
       Update: {
         id?: string
@@ -10068,6 +10843,8 @@ export interface Database {
         grand_total_yearly?: number
         grand_total_lifetime?: number
         is_voided?: boolean
+        voided_at?: string
+        void_reason?: string
       }
       Relationships: []
     }
@@ -11761,6 +12538,7 @@ export interface Database {
         match_status: string | null
         match_details: Json | null
         supplier_reference: string | null
+        created_by: string | null
       }
       Insert: {
         id?: string
@@ -11795,6 +12573,7 @@ export interface Database {
         match_status?: string
         match_details?: Json
         supplier_reference?: string
+        created_by?: string
       }
       Update: {
         id?: string
@@ -11829,6 +12608,7 @@ export interface Database {
         match_status?: string
         match_details?: Json
         supplier_reference?: string
+        created_by?: string
       }
       Relationships: []
     }
@@ -12018,6 +12798,8 @@ export interface Database {
         checked_at: string | null
         notes: string | null
         created_at: string | null
+        quantity_checked: number | null
+        quantity_rejected: number | null
       }
       Insert: {
         id?: string
@@ -12030,6 +12812,8 @@ export interface Database {
         checked_at?: string
         notes?: string
         created_at?: string
+        quantity_checked?: number
+        quantity_rejected?: number
       }
       Update: {
         id?: string
@@ -12042,6 +12826,8 @@ export interface Database {
         checked_at?: string
         notes?: string
         created_at?: string
+        quantity_checked?: number
+        quantity_rejected?: number
       }
       Relationships: []
     }

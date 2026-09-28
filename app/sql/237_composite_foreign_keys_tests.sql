@@ -223,7 +223,11 @@ BEGIN
                   AND x.column_name = 'tenant_id')
     AND EXISTS (SELECT 1 FROM information_schema.columns y
                 WHERE y.table_schema = 'public' AND y.table_name = cp.relname
-                  AND y.column_name = 'tenant_id');
+                  AND y.column_name = 'tenant_id')
+    -- Seule exception, inscrite au registre de ci/check_composite_fks.sql (272, M13) :
+    -- legislation_packs est un référentiel (clé primaire `code`) rangé sous la société
+    -- technique ; la clé composite interdisait à toute société un taux de son pack.
+    AND NOT (cc.relname = 'tax_rates' AND a.attname = 'pack_code' AND cp.relname = 'legislation_packs');
 
   SELECT count(*) INTO v_composites
   FROM pg_constraint f
