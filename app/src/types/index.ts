@@ -1005,6 +1005,8 @@ export interface Journal {
   updated_at: string
   numbering_mode?: string | null
   account_attente?: string | null
+  /** 273 : préfixes de comptes admis (« 512, 411 ») — vide = tous */
+  racines_autorisees?: string | null
   is_analytic?: boolean
   analytic_plan_id?: string | null
   currency_code?: string
@@ -1084,29 +1086,6 @@ export interface ThirdPartyAccount {
   payment_term_id?: string | null
   default_bank_account_id?: string | null
   credit_limit?: number
-  siret?: string | null
-  vat_intra?: string | null
-  iban?: string | null
-  bic?: string | null
-  address?: string | null
-  postal_code?: string | null
-  city?: string | null
-  country?: string | null
-  bank_code?: string | null
-  branch_code?: string | null
-  bank_account_number?: string | null
-  bank_key?: string | null
-  echeance_model?: string | null
-  payment_condition?: string | null
-  payment_mode?: string | null
-  encours_autorise?: number | null
-  relance_niveau?: string | null
-  relance_model?: string | null
-  delai_paiement?: string | null
-  escompte?: number | null
-  contact_name?: string | null
-  zone_geo?: string | null
-  categorie?: string | null
 }
 
 // ============ Analytic Sections ============
@@ -1120,6 +1099,8 @@ export interface AnalyticSection {
   active: boolean
   created_at: string
   plan_id?: string | null
+  /** 274 : « section » (imputable) ou « total » (regroupement, jamais imputé) */
+  section_type?: 'section' | 'total'
 }
 
 // ============ Budgets ============

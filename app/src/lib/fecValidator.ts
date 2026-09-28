@@ -38,141 +38,169 @@ export const FEC_COLUMNS = [
   'ValidDate', 'Montantdevise', 'Idevise',
 ] as const
 
-export function validateFECData(entries: any[]): FECValidationResult {
+export type FECColumn = typeof FEC_COLUMNS[number]
+export type FECRow = Record<FECColumn, string>
+
+/** Libellés que l'export lit au plan comptable, aux journaux et aux tiers (A47 A-1) */
+export interface FECReferences {
+  accounts: Record<string, string>
+  journals: Record<string, string>
+  tiers: Record<string, string>
+  functionalCurrency: string
+}
+
+/** Un FEC prêt à contrôler et à écrire : ses lignes et l'identité de la société */
+export interface FECExport {
+  rows: FECRow[]
+  siren: string | null
+  entryCount: number
+}
+
+// A47 A-1 : montants sans séparateur de milliers, séparateur décimal VIRGULE
+export function formatFECAmount(value: unknown): string {
+  const n = Math.round((Number(value) || 0) * 100) / 100
+  return n.toFixed(2).replace('.', ',')
+}
+
+function fecDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10).replace(/-/g, '') : ''
+}
+
+// Le séparateur de champ est « | » : il ne peut pas apparaître dans une valeur
+function fecText(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  return String(value).replace(/[|\r\n\t]+/g, ' ').trim()
+}
+
+/**
+ * M1 (X2) : une ligne de FEC par ligne d'écriture validée, avec les libellés
+ * que l'arrêté exige — CompteLib (plan comptable), JournalLib (journal),
+ * CompAuxLib (tiers), DateLet (date du lettrage), ValidDate (date de
+ * validation), Montantdevise/Idevise quand la pièce n'est pas dans la devise
+ * de la société.
+ */
+export function buildFECRows(entries: any[], refs: FECReferences): FECRow[] {
+  const rows: FECRow[] = []
+  for (const je of entries) {
+    const foreign = je.currency_code && je.currency_code !== refs.functionalCurrency
+    const rate = Number(je.exchange_rate) || 1
+    for (const line of je.journal_lines || []) {
+      const account = line.account_general || line.account_code || ''
+      const aux = line.account_tiers || ''
+      const amount = (Number(line.debit) || 0) + (Number(line.credit) || 0)
+      rows.push({
+        JournalCode: fecText(je.journal_code),
+        JournalLib: fecText(refs.journals[je.journal_code] ?? ''),
+        // AUD-C11 : numéro définitif, continu par journal et par exercice
+        EcritureNum: fecText(je.posting_number || je.number),
+        EcritureDate: fecDate(je.date),
+        CompteNum: fecText(account),
+        CompteLib: fecText(refs.accounts[account] || line.account_name || ''),
+        CompAuxNum: fecText(aux),
+        CompAuxLib: fecText(aux ? refs.tiers[aux] ?? '' : ''),
+        PieceRef: fecText(line.piece_number || je.piece_number || je.number),
+        PieceDate: fecDate(line.line_date || je.date),
+        EcritureLib: fecText(line.description || je.description),
+        Debit: formatFECAmount(line.debit),
+        Credit: formatFECAmount(line.credit),
+        EcritureLet: fecText(line.lettrage_code || ''),
+        DateLet: line.lettrage_code ? fecDate(line.lettrage_date) : '',
+        ValidDate: fecDate(je.validated_at),
+        Montantdevise: foreign ? formatFECAmount(amount * rate) : '',
+        Idevise: foreign ? fecText(je.currency_code) : '',
+      })
+    }
+  }
+  return rows
+}
+
+export function generateFECText(rows: FECRow[]): string {
+  return [FEC_COLUMNS.join('|'), ...rows.map((r) => FEC_COLUMNS.map((c) => r[c]).join('|'))].join('\n')
+}
+
+// SIREN = 9 chiffres ; le SIRET (14) le contient en tête
+export function sirenFrom(value: string | null | undefined): string | null {
+  const digits = (value || '').replace(/\s/g, '')
+  return /^\d{9}(\d{5})?$/.test(digits) ? digits.slice(0, 9) : null
+}
+
+const AMOUNT = /^\d+,\d{2}$/
+const DATE = /^\d{8}$/
+
+export function validateFECData(fec: FECExport): FECValidationResult {
   const errors: FECValidationError[] = []
   const warnings: FECValidationWarning[] = []
   let totalDebit = 0
   let totalCredit = 0
-  let totalLines = 0
   const journalsUsed = new Set<string>()
   let minDate: string | null = null
   let maxDate: string | null = null
-  let lineNum = 1
+  const err = (line: number, field: FECColumn | 'Balance' | 'SIREN', message: string, severity: 'critical' | 'major' = 'major') =>
+    errors.push({ line, field, message, severity })
 
-  for (const entry of entries) {
-    const entryLines = entry.journal_lines || []
-    for (const line of entryLines) {
-      totalLines++
-      const debit = Number(line.debit) || 0
-      const credit = Number(line.credit) || 0
-      totalDebit += debit
-      totalCredit += credit
-
-      // Journal code
-      if (!entry.journal_code) {
-        errors.push({
-          line: lineNum,
-          field: 'JournalCode',
-          message: 'Code journal manquant',
-          severity: 'critical',
-        })
-      }
-      journalsUsed.add(entry.journal_code || '')
-
-      // Account number
-      const accountNum = line.account_general || line.account_code
-      if (!accountNum) {
-        errors.push({
-          line: lineNum,
-          field: 'CompteNum',
-          message: 'Numéro de compte manquant',
-          severity: 'critical',
-        })
-      }
-
-      // Account name
-      if (!line.account_name) {
-        errors.push({
-          line: lineNum,
-          field: 'CompteLib',
-          message: 'Libellé de compte manquant',
-          severity: 'major',
-        })
-      }
-
-      // Entry number
-      if (!entry.number) {
-        errors.push({
-          line: lineNum,
-          field: 'EcritureNum',
-          message: "Numéro d'écriture manquant",
-          severity: 'critical',
-        })
-      }
-
-      // Date
-      if (!entry.date) {
-        errors.push({
-          line: lineNum,
-          field: 'EcritureDate',
-          message: "Date d'écriture manquante",
-          severity: 'critical',
-        })
-      } else {
-        const dateStr = entry.date.replace(/-/g, '')
-        if (!minDate || dateStr < minDate) minDate = dateStr
-        if (!maxDate || dateStr > maxDate) maxDate = dateStr
-      }
-
-      // Debit or Credit must be non-zero (not both zero, not both non-zero)
-      if (debit === 0 && credit === 0) {
-        warnings.push({
-          line: lineNum,
-          field: 'Debit/Credit',
-          message: 'Débit et crédit tous deux à zéro',
-        })
-      }
-      if (debit > 0 && credit > 0) {
-        warnings.push({
-          line: lineNum,
-          field: 'Debit/Credit',
-          message: 'Débit et crédit tous deux non nul (une seule ligne devrait avoir une valeur)',
-        })
-      }
-
-      // Description
-      if (!line.description && !entry.description) {
-        warnings.push({
-          line: lineNum,
-          field: 'EcritureLib',
-          message: 'Libellé manquant',
-        })
-      }
-
-      lineNum++
-    }
+  if (!fec.siren) {
+    err(0, 'SIREN', 'SIREN de la société absent : le fichier ne peut pas être nommé {SIREN}FEC{AAAAMMJJ}.txt (Paramètres → Société)', 'critical')
   }
 
-  const balanceOk = Math.abs(totalDebit - totalCredit) < 0.01
+  fec.rows.forEach((r, i) => {
+    const n = i + 1
+    const debit = Number(r.Debit.replace(',', '.')) || 0
+    const credit = Number(r.Credit.replace(',', '.')) || 0
+    totalDebit += debit
+    totalCredit += credit
+    if (r.JournalCode) journalsUsed.add(r.JournalCode)
+    if (!r.JournalCode) err(n, 'JournalCode', 'Code journal manquant', 'critical')
+    if (!r.JournalLib) err(n, 'JournalLib', `Libellé du journal ${r.JournalCode} manquant`)
+    if (!r.EcritureNum) err(n, 'EcritureNum', "Numéro d'écriture manquant", 'critical')
+    if (!DATE.test(r.EcritureDate)) err(n, 'EcritureDate', "Date d'écriture manquante ou mal formée", 'critical')
+    else {
+      if (!minDate || r.EcritureDate < minDate) minDate = r.EcritureDate
+      if (!maxDate || r.EcritureDate > maxDate) maxDate = r.EcritureDate
+    }
+    if (!r.CompteNum) err(n, 'CompteNum', 'Numéro de compte manquant', 'critical')
+    if (!r.CompteLib) err(n, 'CompteLib', `Libellé du compte ${r.CompteNum} manquant (plan comptable)`)
+    if (r.CompAuxNum && !r.CompAuxLib) err(n, 'CompAuxLib', `Libellé du compte auxiliaire ${r.CompAuxNum} manquant`)
+    if (!r.PieceRef) err(n, 'PieceRef', 'Référence de pièce manquante')
+    if (!DATE.test(r.PieceDate)) err(n, 'PieceDate', 'Date de pièce manquante ou mal formée')
+    if (!AMOUNT.test(r.Debit) || !AMOUNT.test(r.Credit)) err(n, 'Debit', 'Montant mal formé (virgule décimale, sans séparateur de milliers)', 'critical')
+    if (r.EcritureLet && !DATE.test(r.DateLet)) err(n, 'DateLet', `Date du lettrage ${r.EcritureLet} manquante`)
+    if (!DATE.test(r.ValidDate)) err(n, 'ValidDate', 'Date de validation manquante', 'critical')
+    if (Boolean(r.Montantdevise) !== Boolean(r.Idevise)) err(n, 'Idevise', 'Montant en devise et code devise vont ensemble')
+    if (!r.EcritureLib) warnings.push({ line: n, field: 'EcritureLib', message: 'Libellé manquant' })
+    if (debit === 0 && credit === 0) warnings.push({ line: n, field: 'Debit/Credit', message: 'Débit et crédit tous deux à zéro' })
+    if (debit > 0 && credit > 0) warnings.push({ line: n, field: 'Debit/Credit', message: 'Débit et crédit tous deux non nuls' })
+  })
 
+  const balanceOk = Math.abs(totalDebit - totalCredit) < 0.01
   if (!balanceOk) {
-    errors.push({
-      line: 0,
-      field: 'Balance',
-      message: `Déséquilibre: Débit ${totalDebit.toFixed(2)} ≠ Crédit ${totalCredit.toFixed(2)} (écart: ${(totalDebit - totalCredit).toFixed(2)})`,
-      severity: 'critical',
-    })
+    err(0, 'Balance', `Déséquilibre: Débit ${totalDebit.toFixed(2)} ≠ Crédit ${totalCredit.toFixed(2)} (écart: ${(totalDebit - totalCredit).toFixed(2)})`, 'critical')
   }
 
   return {
-    isValid: errors.filter((e) => e.severity === 'critical').length === 0,
+    // M1 : l'export est BLOQUÉ par toute erreur, majeure comprise (un FEC sans
+    // libellé de compte est rejeté par l'administration)
+    isValid: errors.length === 0,
     errors,
     warnings,
     stats: {
-      totalEntries: entries.length,
-      totalLines,
+      totalEntries: fec.entryCount,
+      totalLines: fec.rows.length,
       totalDebit,
       totalCredit,
       balanceOk,
-      journalsUsed: Array.from(journalsUsed).filter(Boolean),
+      journalsUsed: Array.from(journalsUsed),
       dateRange: minDate && maxDate ? { start: minDate, end: maxDate } : null,
     },
   }
 }
 
-export function generateFECFileName(siren: string, endYear: string): string {
-  const sirenClean = siren.replace(/\s/g, '').substring(0, 9) || '000000000'
-  return `FEC_${sirenClean}_${endYear}.txt`
+/** A47 A-1 : `{SIREN}FEC{AAAAMMJJ}.txt` — refusé sans SIREN (plus de « 000000000 ») */
+export function generateFECFileName(siren: string, closingDate: string): string {
+  const s = sirenFrom(siren)
+  const d = closingDate.replace(/-/g, '').slice(0, 8)
+  if (!s) throw new Error('SIREN de la société absent ou invalide : export FEC impossible')
+  if (!DATE.test(d)) throw new Error(`Date de clôture invalide : ${closingDate}`)
+  return `${s}FEC${d}.txt`
 }
 
 export function downloadFEC(content: string, filename: string) {

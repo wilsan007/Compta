@@ -307,7 +307,12 @@
     "freeInfoHint": "حقول مخصصة إضافية.",
     "placeholders": {
       "contactName": "جان دوبون"
-    }
+    },
+    "partnerDataHint": "يُعدَّل العنوان ورقم التسجيل ورقم الضريبة وجهة الاتصال في بطاقة العميل أو المورد: لا يحتفظ الحساب بنسخة منها.",
+    "banksNeedPartner": "اربط أولاً عميلاً أو مورداً: الحسابات البنكية تخص الطرف.",
+    "noPartnerBank": "لا توجد حسابات بنكية مسجلة لهذا الطرف.",
+    "defaultBank": "افتراضي",
+    "paymentTermHint": "يحسب نموذج السداد تاريخ استحقاق القيود المسجلة على هذا الحساب."
   },
   "journals": {
     "title": "رموز اليوميات",
@@ -1323,7 +1328,8 @@
     "typeTotal": "إجمالي",
     "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي.",
     "deleteSuccess": "تم حذف القسم التحليلي",
-    "saveSuccess": "تم حفظ القسم التحليلي"
+    "saveSuccess": "تم حفظ القسم التحليلي",
+    "totalNotImputable": "القسم «الإجمالي» يجمع أقساماً أخرى: لا يستقبل أي توزيع."
   },
   "balanceSheet": {
     "title": "الميزانية",
@@ -2894,5 +2900,15 @@
   },
   "treatment": {
     "breadcrumb": "المعالجة"
+  },
+  "entryValidation": {
+    "validate": "تصديق",
+    "validateSelection": "تصديق المحدد ({{count}})",
+    "validated": "تم تصديق {{count}} قيد",
+    "refused": "{{number}} غير مصدق: {{error}}",
+    "saveAndValidate": "حفظ وتصديق",
+    "draft": "مسودة",
+    "posted": "مصدق",
+    "selectAll": "تحديد الكل"
   }
 }

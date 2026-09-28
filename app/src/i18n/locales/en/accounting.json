@@ -307,7 +307,12 @@
     "freeInfoHint": "Additional custom fields.",
     "placeholders": {
       "contactName": "John Smith"
-    }
+    },
+    "partnerDataHint": "Address, company ID, VAT number and contact are edited on the customer or supplier record: the account keeps no copy.",
+    "banksNeedPartner": "Link a customer or supplier first: bank details belong to the partner.",
+    "noPartnerBank": "No bank details recorded for this partner.",
+    "defaultBank": "default",
+    "paymentTermHint": "The payment term computes the due date of lines entered on this account (days, end of month, discount)."
   },
   "journals": {
     "title": "Journal codes",
@@ -1323,7 +1328,8 @@
     "typeTotal": "Total",
     "complementHint": "Activate or deactivate this section. Inactive sections no longer appear in analytic entry.",
     "deleteSuccess": "Analytic section deleted",
-    "saveSuccess": "Analytic section saved"
+    "saveSuccess": "Analytic section saved",
+    "totalNotImputable": "A \"total\" section groups other sections: it receives no allocation."
   },
   "balanceSheet": {
     "title": "Balance sheet",
@@ -2894,5 +2900,15 @@
   },
   "treatment": {
     "breadcrumb": "Processing"
+  },
+  "entryValidation": {
+    "validate": "Validate",
+    "validateSelection": "Validate selection ({{count}})",
+    "validated": "{{count}} entry(ies) validated",
+    "refused": "{{number}} not validated: {{error}}",
+    "saveAndValidate": "Save and validate",
+    "draft": "Draft",
+    "posted": "Validated",
+    "selectAll": "Select all"
   }
 }

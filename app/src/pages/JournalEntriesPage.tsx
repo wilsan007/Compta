@@ -1,14 +1,15 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne } from '@/lib/queries/accounting'
+import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne, isSegregationEnforced } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
+import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw, CheckCircle } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { usePermission } from '@/hooks/usePermission'
+import { useJournalValidation } from '@/hooks/useJournalValidation'
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -25,6 +26,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const { validate, validating } = useJournalValidation(() => loadData())
 
   useEffect(() => {
     loadData().catch(err => console.error('loadData:', err))
@@ -120,12 +122,17 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {entry.status === 'draft' && canCreate && (
+                        <button onClick={(e) => { e.stopPropagation(); validate([entry.id]) }} disabled={validating} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={t('entryValidation.validate')} title={t('entryValidation.validate')}>
+                          <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      )}
                       {entry.status === 'posted' && (
                         <button onClick={(e) => { e.stopPropagation(); handleExtourne(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('writingsEnhancement.extourneBtn')}>
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       )}
-                      {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      {canDelete && entry.status === 'draft' && <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
                         <Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                     </div>
                   </TableCell>
@@ -184,6 +191,11 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
     { account_code: '', account_name: '', debit: '', credit: '', description: '' },
   ])
   const [saving, setSaving] = useState(false)
+  // D-A : « Enregistrer et valider » seulement sans séparation des tâches (232)
+  const [segregation, setSegregation] = useState(true)
+  useEffect(() => {
+    isSegregationEnforced().then(setSegregation).catch(() => setSegregation(true))
+  }, [])
 
   function addLine() {
     setLines([...lines, { account_code: '', account_name: '', debit: '', credit: '', description: '' }])
@@ -209,8 +221,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
   const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent, validate = false) {
+    e?.preventDefault()
     if (!isBalanced) {
       toast('info', tCommon('common.info'), t('saisie.notBalanced'))
       return
@@ -231,7 +243,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
         date,
         description,
         reference: reference || null,
-        status: 'draft',
+        status: validate ? 'posted' : 'draft',
         total_debit: totalDebit,
         total_credit: totalCredit,
         lines: linesData,
@@ -349,7 +361,10 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('entries.cancel')}</Button>
-            <Button type="submit" disabled={saving || !isBalanced}>{saving ? t('entries.saving') : t('entries.save')}</Button>
+            <Button type="submit" variant={segregation ? 'primary' : 'secondary'} disabled={saving || !isBalanced}>{saving ? t('entries.saving') : t('entries.save')}</Button>
+            {!segregation && (
+              <Button type="button" disabled={saving || !isBalanced} onClick={() => handleSubmit(undefined, true)}>{t('entryValidation.saveAndValidate')}</Button>
+            )}
           </div>
         </form>
       </div>

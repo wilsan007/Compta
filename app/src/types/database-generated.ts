@@ -273,6 +273,7 @@ export interface Database {
         created_at: string | null
         tenant_id: string
         plan_id: string | null
+        section_type: string
       }
       Insert: {
         id?: string
@@ -285,6 +286,7 @@ export interface Database {
         created_at?: string
         tenant_id: string
         plan_id?: string
+        section_type?: string
       }
       Update: {
         id?: string
@@ -297,6 +299,7 @@ export interface Database {
         created_at?: string
         tenant_id?: string
         plan_id?: string
+        section_type?: string
       }
       Relationships: []
     }
@@ -6923,6 +6926,7 @@ export interface Database {
         vat_amount: number | null
         advance_invoice_id: string | null
         time_entry_id: string | null
+        analytic_section_id: string | null
       }
       Insert: {
         id?: string
@@ -6943,6 +6947,7 @@ export interface Database {
         vat_amount?: number
         advance_invoice_id?: string
         time_entry_id?: string
+        analytic_section_id?: string
       }
       Update: {
         id?: string
@@ -6963,6 +6968,7 @@ export interface Database {
         vat_amount?: number
         advance_invoice_id?: string
         time_entry_id?: string
+        analytic_section_id?: string
       }
       Relationships: []
     }
@@ -7390,6 +7396,7 @@ export interface Database {
         currency_code: string | null
         sequence: number | null
         next_number: number | null
+        racines_autorisees: string | null
       }
       Insert: {
         id?: string
@@ -7412,6 +7419,7 @@ export interface Database {
         currency_code?: string
         sequence?: number
         next_number?: number
+        racines_autorisees?: string
       }
       Update: {
         id?: string
@@ -7434,6 +7442,7 @@ export interface Database {
         currency_code?: string
         sequence?: number
         next_number?: number
+        racines_autorisees?: string
       }
       Relationships: []
     }
@@ -8214,6 +8223,7 @@ export interface Database {
         unit_cost: number | null
         qty_produced: number | null
         qty_scrapped: number | null
+        cost_variance: number | null
       }
       Insert: {
         id?: string
@@ -8244,6 +8254,7 @@ export interface Database {
         unit_cost?: number
         qty_produced?: number
         qty_scrapped?: number
+        cost_variance?: number
       }
       Update: {
         id?: string
@@ -8274,6 +8285,7 @@ export interface Database {
         unit_cost?: number
         qty_produced?: number
         qty_scrapped?: number
+        cost_variance?: number
       }
       Relationships: []
     }
@@ -12465,6 +12477,7 @@ export interface Database {
         quantity_received: number | null
         vat_code: string | null
         vat_amount: number | null
+        analytic_section_id: string | null
       }
       Insert: {
         id?: string
@@ -12483,6 +12496,7 @@ export interface Database {
         quantity_received?: number
         vat_code?: string
         vat_amount?: number
+        analytic_section_id?: string
       }
       Update: {
         id?: string
@@ -12501,6 +12515,7 @@ export interface Database {
         quantity_received?: number
         vat_code?: string
         vat_amount?: number
+        analytic_section_id?: string
       }
       Relationships: []
     }

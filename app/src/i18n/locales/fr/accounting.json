@@ -307,7 +307,12 @@
     "freeInfoHint": "Champs personnalisés supplémentaires.",
     "placeholders": {
       "contactName": "Jean Dupont"
-    }
+    },
+    "partnerDataHint": "Adresse, SIRET, TVA et contact se modifient sur la fiche du client ou du fournisseur : le compte tiers n'en garde pas de copie.",
+    "banksNeedPartner": "Liez d'abord un client ou un fournisseur : les RIB sont ceux du tiers.",
+    "noPartnerBank": "Aucun RIB enregistré pour ce tiers.",
+    "defaultBank": "par défaut",
+    "paymentTermHint": "Le modèle de règlement calcule l'échéance des lignes saisies sur ce compte (délais, fin de mois, escompte)."
   },
   "journals": {
     "title": "Codes journaux",
@@ -1323,7 +1328,8 @@
     "typeTotal": "Total",
     "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique.",
     "deleteSuccess": "Section analytique supprimée",
-    "saveSuccess": "Section analytique enregistrée"
+    "saveSuccess": "Section analytique enregistrée",
+    "totalNotImputable": "Une section « total » regroupe d'autres sections : elle ne reçoit pas d'imputation."
   },
   "balanceSheet": {
     "title": "Bilan",
@@ -2894,5 +2900,15 @@
   },
   "treatment": {
     "breadcrumb": "Traitement"
+  },
+  "entryValidation": {
+    "validate": "Valider",
+    "validateSelection": "Valider la sélection ({{count}})",
+    "validated": "{{count}} écriture(s) validée(s)",
+    "refused": "{{number}} non validée : {{error}}",
+    "saveAndValidate": "Enregistrer et valider",
+    "draft": "Brouillon",
+    "posted": "Validée",
+    "selectAll": "Tout sélectionner"
   }
 }

@@ -107,7 +107,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
   const [active, setActive] = useState(section?.active !== false)
   const [parentId, setParentId] = useState(section?.parent_id || '')
   const [level, setLevel] = useState(String(section?.level || 1))
-  const [sectionType, setSectionType] = useState((section as any)?.section_type || 'section')
+  const [sectionType, setSectionType] = useState<'section' | 'total'>(section?.section_type || 'section')
   const [plan, setPlan] = useState((section as any)?.plan_id || '')
   const [saving, setSaving] = useState(false)
 
@@ -188,11 +188,14 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('analyticSections.level')} type="number" value={level} onChange={(e) => setLevel(e.target.value)} placeholder="1" />
-                  <Select label={t('analyticSections.type')} value={sectionType} onChange={(e) => setSectionType(e.target.value)} options={[
+                  <Select label={t('analyticSections.type')} value={sectionType} onChange={(e) => setSectionType(e.target.value as 'section' | 'total')} options={[
                     { value: 'section', label: t('analyticSections.typeSection') },
                     { value: 'total', label: t('analyticSections.typeTotal') },
                   ]} />
                 </div>
+                {sectionType === 'total' && (
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('analyticSections.totalNotImputable')}</p>
+                )}
               </>
             )}
 

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatCurrency, formatDate, evaluateExpression } from '@/lib/utils'
-import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods, createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry, getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber, getJournalPeriodBalance, getAnalyticSections, getTaxRates, calculateVAT, applyAutoLabelRules, calculateEcheance, createChartAccount } from '@/lib/queries/accounting'
+import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods, createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry, getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber, getJournalPeriodBalance, getAnalyticSections, getTaxRates, calculateVAT, applyAutoLabelRules, calculateEcheance, createChartAccount, chartAccountTypeFromCode, isSegregationEnforced } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
@@ -11,6 +11,7 @@ import { useToast } from '@/lib/toast'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
 import { getLatestRate } from '@/lib/currencyRates'
+import { useJournalValidation } from '@/hooks/useJournalValidation'
 import { confirmSync } from '@/lib/confirm'
 
 const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -66,6 +67,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   const [activePeriod, setActivePeriod] = useState<FiscalPeriod | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const { validate, validating } = useJournalValidation(() => loadEntries())
 
   useEffect(() => {
     loadInitial().catch(err => console.error('loadInitial:', err))
@@ -318,14 +320,24 @@ const [journals, setJournals] = useState<Journal[]>([])
                     <TableCell className="font-mono text-xs">{entry.journal_code}</TableCell>
                     <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                     <TableCell>
-                      <Badge variant={statusDetailBadge[entry.status_detail || 'open'] || 'warning'}>
-                        {t(`saisie.statusDetailLabels.${entry.status_detail || 'open'}`, { defaultValue: entry.status_detail || 'open' })}
-                      </Badge>
+                      <div className="flex gap-1">
+                        <Badge variant={entry.status === 'posted' ? 'success' : 'warning'}>
+                          {t(entry.status === 'posted' ? 'entryValidation.posted' : 'entryValidation.draft')}
+                        </Badge>
+                        <Badge variant={statusDetailBadge[entry.status_detail || 'open'] || 'warning'}>
+                          {t(`saisie.statusDetailLabels.${entry.status_detail || 'open'}`, { defaultValue: entry.status_detail || 'open' })}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_debit))}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {entry.status === 'draft' && (
+                          <button onClick={(e) => { e.stopPropagation(); validate([entry.id]) }} disabled={validating} aria-label={t('entryValidation.validate')} title={t('entryValidation.validate')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]">
+                            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        )}
                         {entry.status_detail !== 'closed' && (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} title={t('saisie.print')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
@@ -334,9 +346,11 @@ const [journals, setJournals] = useState<Journal[]>([])
                             <button onClick={(e) => { e.stopPropagation(); handleClose(entry.id) }} title={t('saisie.close')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
                               <Lock className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} title={tCommon('actions.delete')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {entry.status === 'draft' && (
+                              <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} title={tCommon('actions.delete')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -416,6 +430,11 @@ function SaisieForm({
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [lines, setLines] = useState<LineDraft[]>([blankLine(), blankLine()])
   const [saving, setSaving] = useState(false)
+  // D-A : « Enregistrer et valider » seulement sans séparation des tâches (232)
+  const [segregation, setSegregation] = useState(true)
+  useEffect(() => {
+    isSegregationEnforced().then(setSegregation).catch(() => setSegregation(true))
+  }, [])
   const [searchAccount] = useState('')
   const [currencyCode, setCurrencyCode] = useState(journal.currency_code || 'EUR')
   const [exchangeRate, setExchangeRate] = useState(1.0)
@@ -510,9 +529,8 @@ function SaisieForm({
           const newAccount = await createChartAccount({
             code,
             name: code,
-            type: 'general',
-            class: code.charAt(0),
-            active: true,
+            type: chartAccountTypeFromCode(code),
+            classe: code.charAt(0),
           } as any)
           setAccounts((prev) => [...prev, newAccount])
           updateLine(idx, 'account_name', newAccount.name)
@@ -605,7 +623,7 @@ function SaisieForm({
     return accounts.filter((a) => a.code.includes(searchAccount) || a.name.toLowerCase().includes(searchAccount.toLowerCase()))
   }, [accounts, searchAccount])
 
-  async function handleSubmit(e?: React.FormEvent) {
+  async function handleSubmit(e?: React.FormEvent, validate = false) {
     e?.preventDefault()
     if (!isBalanced) {
       toast('info', tCommon('toast.info'), t('saisie.notBalanced'))
@@ -661,6 +679,7 @@ function SaisieForm({
         functional_currency: 'EUR',
         exchange_rate: exchangeRate,
         exchange_rate_date: date,
+        validate,
         lines: linesData,
       })
       onSaved()
@@ -884,7 +903,7 @@ function SaisieForm({
                           onChange={(e) => updateLine(idx, 'analytic_section', e.target.value)}
                         >
                           <option value="">—</option>
-                          {analyticSections.map((s) => (
+                          {analyticSections.filter((s) => s.section_type !== 'total').map((s) => (
                             <option key={s.id} value={s.code}>{s.code} — {s.name}</option>
                           ))}
                         </select>
@@ -964,9 +983,14 @@ function SaisieForm({
 
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button onClick={() => handleSubmit()} disabled={saving || !isBalanced}>
+            <Button variant={segregation ? 'primary' : 'secondary'} onClick={() => handleSubmit()} disabled={saving || !isBalanced}>
               {saving ? t('saisie.saving') : t('saisie.saveEntry')}
             </Button>
+            {!segregation && (
+              <Button onClick={() => handleSubmit(undefined, true)} disabled={saving || !isBalanced}>
+                {t('entryValidation.saveAndValidate')}
+              </Button>
+            )}
           </div>
         </div>
       </Card>

@@ -3,6 +3,7 @@ import type { Joined } from '@/types/dbRow'
 import { blankEmailToNull, fetchAllRows, getTenantId, ti, tud } from './core'
 import { getJournals } from './misc'
 import { getPaymentTermById } from './payroll'
+import { buildFECRows, sirenFrom, type FECExport, type FECReferences } from '@/lib/fecValidator'
 import type { Invoice, JournalEntry, JournalLine, ChartAccount, CompanySettings, Project, VatReturn, DashboardStats, FixedAsset, Currency, Journal, FiscalYear, FiscalPeriod, EntryTemplate, ThirdPartyAccount, AnalyticSection, Budget, BudgetCommitment, BudgetControlResult, StandardLabel, PaymentOrder, AssetDepreciation, CollectionReminder, AuditLog, LegislationPack, TaxRate, RecurringEntry, RegularizationEntry, CurrencyRevaluation, AnalyticPlan, DistributionGrill, DistributionGrillLine, BankReconciliationRule, BankStatementImport, TvsDeclaration, FiscalBackup, RecurringInvoiceTemplate, FutureAccountingMovement, TreasuryTransfer, TreasuryRecurring, ConsolidatedTreasury, AssetDepreciationPlan, AutoLabelRule, ExtourneLog, CarryForwardLog, LettrageDifference, AccountingControlRun, CashControlSession, FECAttestation, TierRIB, IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob, JournalAccessRight, VATOnCollection, BatchEntrySession, DashboardWidget, AnalyticJournalCode, BankStatementTemplate, PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine, TaxGroup, TaxRepartitionLine, TaxCashBasisEntry, ExchangeRate, ExchangeGainLossEntry, CheckBook, Check } from '@/types'
 
 // ============ Company Settings ============
@@ -107,6 +108,20 @@ export async function getChartAccounts() {
   const { data, error } = await q
   if (error) throw error
   return data as ChartAccount[]
+}
+
+// X2/C14 (W05) : un compte créé à la volée prend sa nature de sa classe (PCG) —
+// `chart_accounts.type` n'admet que asset / liability / equity / income / expense.
+export function chartAccountTypeFromCode(code: string): ChartAccount['type'] {
+  const c = code.trim()
+  switch (c.charAt(0)) {
+    case '1': return 'equity'
+    case '2': case '3': case '5': return 'asset'
+    case '4': return c.startsWith('41') ? 'asset' : 'liability'
+    case '6': return 'expense'
+    case '7': return 'income'
+    default: return 'asset'
+  }
 }
 
 export async function createChartAccount(account: Omit<ChartAccount, 'id'>) {
@@ -1092,6 +1107,8 @@ export async function createSaisieEntry(entry: {
   functional_currency?: string
   exchange_rate?: number
   exchange_rate_date?: string | null
+  /** « Enregistrer et valider » : l'écriture est validée dans la même transaction */
+  validate?: boolean
   lines: Array<{
     account_code: string
     account_name: string
@@ -1104,25 +1121,61 @@ export async function createSaisieEntry(entry: {
     reference?: string | null
     line_order: number
     line_date?: string | null
+    vat_code?: string | null
+    vat_amount?: number
+    echeance_date?: string | null
+    lettrage_code?: string | null
+    quantity?: number | null
+    /** code de la section analytique choisie à l'écran */
+    analytic_section?: string | null
   }>
 }) {
-  const tid = await getTenantId()
-  const { lines, ...entryData } = entry
-  const { data: je, error: jeError } = await supabase
-    .from('journal_entries')
-    .insert(ti({
-      ...entryData,
-      status_detail: entryData.status_detail || 'open',
-    }, 'journal_entries', tid))
-    .select()
-    .single()
-  if (jeError) throw jeError
+  const { lines, validate, ...entryData } = entry
+  // X2/C4 (273) : un seul chemin atomique — `post_journal_entry` écrit l'en-tête
+  // et les lignes dans la même transaction (avant : en-tête PUIS lignes, et une
+  // colonne `analytic_section` inexistante qui faisait échouer la saisie).
+  // La section analytique choisie à l'écran est un CODE : la base attend l'id.
+  const codes = [...new Set(lines.map((l) => l.analytic_section).filter(Boolean))] as string[]
+  const sectionIds = new Map<string, string>()
+  if (codes.length) {
+    const tid = await getTenantId()
+    let sq = supabase.from('analytic_sections').select('id, code').in('code', codes)
+    if (tid) sq = sq.eq('tenant_id', tid)
+    const { data: secs, error: secErr } = await sq
+    if (secErr) throw secErr
+    for (const sec of secs || []) sectionIds.set(sec.code, sec.id)
+  }
+  const { data, error } = await supabase.rpc('post_journal_entry', {
+    p_entry: { ...entryData, status: validate ? 'posted' : 'draft' },
+    p_lines: lines.map(({ analytic_section, ...l }) => ({
+      ...l,
+      analytic_section_id: analytic_section ? sectionIds.get(analytic_section) ?? null : null,
+    })),
+  })
+  if (error) throw error
+  const res = data as any
+  if (res && res.success === false) throw new Error(res.error || 'Échec de la création de l\'écriture')
+  return { ...entryData, id: res?.entry_id, number: res?.number } as unknown as JournalEntry
+}
 
-  const linesData = lines.map((l) => ti({ ...l, journal_id: je.id }, 'journal_lines', tid))
-  const { error: linesError } = await supabase.from('journal_lines').insert(linesData)
-  if (linesError) throw linesError
+// --- Validation des écritures saisies (X2/C4, décision D-A) ---
+// Une écriture saisie naît brouillon ; « Valider » la fait passer par le noyau
+// (équilibre, période ouverte, droit, séparation des tâches, numéro définitif).
+// La base rend un verdict PAR écriture : un refus n'empêche pas les autres.
+export type JournalValidationVerdict = { id: string; number?: string; ok: boolean; posting_number?: string; error?: string }
 
-  return je as JournalEntry
+export async function validateJournalEntries(ids: string[]): Promise<JournalValidationVerdict[]> {
+  if (!ids.length) return []
+  const { data, error } = await supabase.rpc('validate_journal_entries', { p_ids: ids })
+  if (error) throw error
+  return (data || []) as JournalValidationVerdict[]
+}
+
+// « Enregistrer et valider » n'est offert que sans séparation des tâches :
+// avec elle, l'auteur d'une écriture ne peut pas la valider (232).
+export async function isSegregationEnforced(): Promise<boolean> {
+  const settings = await getCompanySettings()
+  return Boolean((settings as any)?.enforce_segregation)
 }
 
 // --- Saisie: update entry status_detail (printed/closed) ---
@@ -1503,6 +1556,37 @@ export async function getFECData(fiscalYearId: string) {
   const entries = await fetchAllRows<JournalEntry>(feQ, { label: 'getFECData/journal_entries' })
 
   return entries
+}
+
+// --- FEC complet (M1, A47 A-1) : lignes à 18 colonnes, libellés résolus ---
+// CompteLib vient du plan comptable, JournalLib du journal, CompAuxLib du compte
+// de tiers (à défaut, du client ou du fournisseur dont c'est le compte auxiliaire).
+export async function getFECExport(fiscalYearId: string): Promise<FECExport> {
+  const tid = await getTenantId()
+  const entries = await getFECData(fiscalYearId)
+  const scoped = <T,>(q: T) => (tid ? (q as any).eq('tenant_id', tid) : q)
+  const [accounts, journals, tpa, customers, suppliers, settings] = await Promise.all([
+    fetchAllRows<{ code: string; name: string }>(scoped(supabase.from('chart_accounts').select('code, name').order('id')), { label: 'getFECExport/chart_accounts' }),
+    fetchAllRows<{ code: string; name: string }>(scoped(supabase.from('journals').select('code, name').order('id')), { label: 'getFECExport/journals' }),
+    fetchAllRows<{ code: string; name: string }>(scoped(supabase.from('third_party_accounts').select('code, name').order('id')), { label: 'getFECExport/third_party_accounts' }),
+    fetchAllRows<{ account_tiers: string | null; name: string }>(scoped(supabase.from('customers').select('account_tiers, name').not('account_tiers', 'is', null).order('id')), { label: 'getFECExport/customers' }),
+    fetchAllRows<{ account_tiers: string | null; name: string }>(scoped(supabase.from('suppliers').select('account_tiers, name').not('account_tiers', 'is', null).order('id')), { label: 'getFECExport/suppliers' }),
+    getCompanySettings(),
+  ])
+  const tiers: Record<string, string> = {}
+  for (const p of [...customers, ...suppliers]) if (p.account_tiers) tiers[p.account_tiers] = p.name
+  for (const a of tpa) tiers[a.code] = a.name
+  const refs: FECReferences = {
+    accounts: Object.fromEntries(accounts.map((a) => [a.code, a.name])),
+    journals: Object.fromEntries(journals.map((j) => [j.code, j.name])),
+    tiers,
+    functionalCurrency: (settings as any)?.currency || 'EUR',
+  }
+  return {
+    rows: buildFECRows(entries, refs),
+    siren: sirenFrom((settings as any)?.siret),
+    entryCount: entries.length,
+  }
 }
 
 // --- SIG: balances for class 6/7 accounts ---

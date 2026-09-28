@@ -587,6 +587,27 @@ L'essentiel en huit lignes :
 
 
 
+### Audit fonctionnel exécuté — partie 2, vague X2 : comptabilité (2026-09-28) ✅
+- **Numérotation** : cette session prend **273 → 299** ; la série 300+ est à la session W7/W8.
+- **`273` — valider une écriture saisie (C4, D-A)** : aucun chemin d'écran ne validait
+  (« Clôturer » ne posait que `status_detail`). `validate_journal_entries(uuid[])` rend un verdict
+  **par écriture** en déclenchant le noyau existant ; boutons « Valider » / « Valider la sélection »
+  (écritures, saisie, brouillard), « Enregistrer et valider » **sans** séparation des tâches ;
+  la clôture (journal × période, période fiscale) **refuse** les brouillons en les nommant ;
+  `post_journal_entry` garde l'en-tête de la saisie (la saisie par journal échouait sur
+  `analytic_section`) ; journaux : `racines_autorisees` contrôlées, `account_attente` vérifiée ;
+  `entry_template_id` repointée sur `entry_templates` (toute saisie depuis un modèle était refusée).
+- **`274` — données de base comptables** : `section_type` avec sa règle (une section « total »
+  n'est jamais imputée) ; **9 tables** (tiers, RIB des tiers, conditions, relances, analytique,
+  modèles) sous `can_perform` — un lecteur les écrivait, masqué tant qu'aucune ligne n'existait.
+- **Compte de tiers (D-C)** : plus de colonnes plates — tiers lié, `partner_bank_accounts`,
+  `payment_term_id`, `credit_limit`. **FEC (M1)** : une seule implémentation
+  (`lib/fecValidator.ts` + `getFECExport`), libellés résolus, virgule décimale,
+  `{SIREN}FEC{AAAAMMJJ}.txt`, export refusé sans SIREN ou avec une erreur majeure.
+- Preuves : 273 **9/9**, 274 **5/5**, batterie **86/86** sur base neuve (247 migrations), chemin de
+  l'écran **15/15** avec **21** rouges inscrits (33 → 21), `check-screen-writes` **62 → 4**.
+  [Preuve](doc/audit/VAGUE-X2-2026-09-28.md)
+
 ### Bugs corrigés
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string

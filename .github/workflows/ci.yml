@@ -876,6 +876,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2 du plan correctif — X2 (comptabilité).
+      # 273 (C4, C14 journaux) : une écriture saisie ne pouvait pas être validée
+      # depuis l'interface ; la clôture passait sur des brouillons ; la fiche
+      # journal et la saisie depuis un modèle étaient refusées.
+      - name: 'X2 : valider une écriture saisie, clôture sans brouillon, racines du journal (273)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/273_journal_entry_validation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 274 (C14 sections, M8 masqué) : section analytique non créable ; neuf
+      # tables de données de base comptables (tiers, RIB, sections…) écrites par
+      # un lecteur.
+      - name: 'X2 : type de section analytique et données de base sous le rôle (274)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/274_accounting_master_data_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
       # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
       # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son
