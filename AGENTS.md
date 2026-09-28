@@ -18,17 +18,23 @@ L'essentiel en huit lignes :
   `PROJ-02/03` (avancement **pondéré** par une seule règle, anti-cycle, `303`).
   [Preuve](doc/audit/VAGUE-W8-2026-09-28.md) : `302` **8/8**, `303` **6/6**,
   batterie **82/82**, base neuve **243 migrations, 0 erreur**.
-* **W7 partielle (28/09)** : quatre défauts fermés — `ANA-01/02` (les deux
+* **W7 partielle (28/09)** : **huit** défauts fermés — `ANA-01/02` (les deux
   déclencheurs analytiques étaient **vides** et aucune écriture engendrée ne
   portait de section, `304` : la section circule de la **ligne de document** vers
   la ligne d'écriture), `ANA-03` (la balance analytique est **bornée à
-  l'exercice**), `FEC-01` (la **2ᵉ** implémentation du FEC, 9 colonnes sur 18, est
-  supprimée, `305`). [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` **5/5**,
-  `305` **2/2**, batterie **84/84**, base neuve **245 migrations, 0 erreur**.
-  Restent `M01-01→03`, `BUD-01→04`, `SAGE-01→03` (10 défauts, ≈ 4 j).
-* **≈ 139 j restants** : plan correctif **W7 (M01, BUD, SAGE : 10 défauts) + 9
-  transverses** (≈ 6 j), chaînages **L1 → L24** (≈ 116 j), couverture d'audit
-  phase 10 (≈ 15 j).
+  l'exercice**), `FEC-01` (la **2ᵉ** implémentation du FEC est supprimée, `305`),
+  `M01-01/02` (`306` : **le taux de change s'applique** — la facture en devise
+  entre au grand livre dans la devise de tenue, et la ligne garde devise, montant
+  en devise et taux), `BUD-01→04` (`307` : réalisé **borné à l'exercice**,
+  brouillons et AN/CL exclus, plus de N+1 ; les engagements d'une commande sont
+  **créés** et **consommés** à la facturation).
+  [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` **5/5**, `305` **2/2**,
+  `306` **6/6**, `307` **4/4**, batterie **94/94**, base neuve **0 erreur**.
+  Restent `SAGE-01→03` (import en brouillon, soldes écrasés, non transactionnel)
+  et la moitié de `M01-03` (écart de change au règlement et réévaluation de
+  clôture : le porteur — devise et montant par ligne — est en place).
+* **≈ 136 j restants** : plan correctif **W7 (SAGE + M01-03)** (≈ 3 j), chaînages
+  **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
   écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
@@ -630,7 +636,32 @@ L'essentiel en huit lignes :
 - Registre du chemin de l'écran : **13** rouges, tous de la **partie 3** (X4, X5).
   [Preuve](doc/audit/VAGUE-X6-2026-09-28.md)
 
-### Bugs corrigés
+### Audit fonctionnel — partie 3, vagues X4, X5, X8 : stock, caisse, production, contrôles (2026-09-28) ✅ — plan exécuté
+- **Le registre du chemin de l'écran est VIDE** (`src/__screen__/expected_failures.json` = `[]`) :
+  les 13 derniers rouges (X4, X5) sont fermés, **125/125** verdicts verts, 15/15 fichiers.
+- **`280` (X4)** : un mouvement de stock porte son type (C8 — `type`/`movement_type` alignés,
+  `NOT NULL`, un mouvement enregistré ne se réécrit plus) ; le stock initial est un mouvement
+  `initial` au dépôt et au prix d'achat, `products.stock_quantity` n'est plus écrivable par un écran
+  (M6) ; commandes fournisseur et client **à lignes**, totaux calculés par la base
+  (`create_purchase_order`, `create_sales_order`) ; la réception naît de la commande confirmée au
+  reste à recevoir (`create_goods_receipt_from_order`), le BL de la commande (C9, C10) ; colonnes
+  « Stock : Entré / Sorti / Généré » lues sur les mouvements réels. **D-B** : les fantômes sont
+  inscrits à `stock_movement_phantoms` et décidés un par un (`resolve_stock_movement_phantom`,
+  panneau de l'inventaire) — rien n'est rejoué d'office.
+- **`281` (X5)** : `create_pos_ticket` — ticket, lignes, paiements et **sortie de stock** en un
+  appel, refusé sur session close (C12, M7) ; clôture comptabilisée (attendu = fond + espèces,
+  paiements reconstitués pour les tickets anciens, pas de double sortie) ; `void_pos_ticket` rend le
+  stock ; **D-E** : Espèces 530000, Carte et Chèque 511200 par société, `pos_payments` sans droit
+  d'écriture ; un OF prend l'article de sa nomenclature (C11) ; dérogatoire et subvention retirés de
+  la fiche d'immobilisation (**D-D**, C13).
+- **M8 révélé en chemin** : `stock_reservations`, `budget_commitments`, `fixed_assets`,
+  `pos_payment_methods` étaient modifiables par un lecteur → sous `can_perform`.
+- Preuves : 280 **0/10 → 10/10**, 281 **0/8 → 8/8**, batterie **94/94** sur l'instantané du commit
+  (256 migrations, 0 erreur), `check-screen-writes` **3 → 0**, `check-embeds` 1 518/1 518, Vitest
+  **1 513**. [Preuve](doc/audit/VAGUE-X4-X5-X8-2026-09-28.md)
+- **Reste (hors code)** : re-noter chaque module par une recette complète (avec P0-08) ; balayage des
+  routes à rendre permanent dans le job Playwright (fait ici une fois, dans le navigateur).
+
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string
 - `create-user/index.ts:450` — `otpError` non défini → `emailSent`

@@ -39,7 +39,9 @@
 | **W7 (partielle)** | Le **CA non taxé** entre dans la CA3 (`245 T08`, `300`) : la base hors taxe n'est plus reconstituée depuis la TVA, elle se lit sur les comptes de produits (classe 70) | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
 | **W8 (partielle)** | La **refacturation des temps** existe (`231 M-17-01`, `301`) : brouillon de facture par projet, ligne rattachée au temps (unicité société + temps), saisie directe couverte, suppression en chaîne mesurée | [W7/W8](VAGUE-W7-W8-2026-09-28.md) |
 | **W8 ✅ fermée** | Les 5 défauts restants : **PROD-01→03** (`302` : nomenclature **explosée** sur tous les niveaux, quantité produite **déclarée** respectée, rebuts impossibles refusés, **écart de coût** chiffré, écriture datée de l'OF) et **PROJ-02/03** (`303` : avancement **pondéré** par une seule règle aux deux niveaux, anti-cycle nommé) | [W8](VAGUE-W8-2026-09-28.md) |
+| **Audit fonctionnel exécuté (28/09)** | Parties 1 à 3 du [plan](PLAN-CORRECTIF-AUDIT-FONCTIONNEL-2026-09-28.md) : écriture anonyme fermée, droits, comptabilité, paie (grille 2026 : signature de l'expert en attente), trésorerie, **stock et logistique, caisse, production** (`280`, `281`) — le registre du **chemin de l'écran** est **vide** | [X4/X5/X8](VAGUE-X4-X5-X8-2026-09-28.md) |
 | **W7 (partie 1)** | **`ANA-01/02`** (`304` : les deux déclencheurs analytiques étaient des placebos, la section circule de la **ligne de document** vers la ligne d'écriture) · **`ANA-03`** (la balance analytique est **bornée à l'exercice**) · **`FEC-01`** (`305` : la 2ᵉ implémentation du FEC, 9 colonnes sur 18, est supprimée) | [W7](VAGUE-W7-2026-09-28.md) |
+| **W7 (partie 2)** | **`M01-01/02`** (`306` : **le taux de change s'applique** — 1 000 USD à 0,90 → 900 EUR ; la ligne porte devise, montant en devise et taux ; une pièce en devise **sans taux** est refusée) · **`BUD-01→04`** (`307` : réalisé **borné à l'exercice**, brouillons et AN/CL exclus, **une** requête par exercice au lieu de deux par budget ; les engagements d'une commande sont **créés** puis **consommés** à la facturation) | [W7](VAGUE-W7-2026-09-28.md) |
 
 État mesuré sur base neuve : **243 migrations, 0 erreur** (dont `270`→`272` d'une
 session parallèle) ; **82/82** contrôles et suites rejoués sur la base migrée
@@ -89,7 +91,7 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 
 | Vague | Défauts | Charge | Contenu |
 |---|---:|---:|---|
-| **W7 — Comptabilité avancée** | 10 (3 🔴) | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08`, `300`) · ✅ **analytique** (`304` : les deux déclencheurs cessent d'être des placebos, la section **circule** du document vers l'écriture, la balance de l'écran est **bornée à l'exercice**) · ✅ **un seul FEC** (`305`) — restent `M01-01→03` le taux de change **appliqué** aux écritures en devise, `BUD-01→04` réalisé non borné à l'exercice et engagements jamais libérés, `SAGE-01→03` import en brouillon, soldes écrasés, non transactionnel ([preuve](VAGUE-W7-2026-09-28.md)) |
+| **W7 — Comptabilité avancée** | 3 | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08`, `300`) · ✅ **analytique** (`304`) · ✅ **un seul FEC** (`305`) · ✅ **devises** (`306` : le taux s'applique, la ligne garde sa devise) · ✅ **budgets** (`307` : réalisé borné à l'exercice, engagements créés et consommés) — restent `SAGE-01→03` (import en brouillon, soldes écrasés, non transactionnel) et la **moitié de `M01-03`** (écart de change au règlement 666/766 et réévaluation de clôture ; le porteur — devise et montant par ligne — est en place) ([preuve](VAGUE-W7-2026-09-28.md)) |
 | **W8 — Production et projets** ✅ **fermée (302, 303, 28/09)** | 0 (était 5) | 3 j | ✅ la **refacturation des temps** existe (`231 M-17-01` fermé le 28/09 par la `301`) ; `302` : nomenclature **multi-niveaux** explosée par **une** fonction qui sert aussi au coût et aux sorties, quantité produite **déclarée** respectée, rebuts impossibles **refusés**, **écart de coût** chiffré (`cost_variance`), écriture datée de l'OF ; `303` : avancement **pondéré** par une seule règle (parent et projet), **anti-cycle** des tâches ([preuves](VAGUE-W8-2026-09-28.md)) |
 | **T1 → T9** | 9 scénarios transverses | 5 j | commande → livraison → facture → encaissement → lettrage → clôture ; achat → réception → qualité → facture → paiement ; temps → projet → facture → marge ; **absence → paie → DSN → coût projet** (fait, `266`) ; caisse → clôture → comptabilité → TVA ; immobilisation → amortissement → cession ; budget → engagement → réalisé ; import → lettrage → états ; **contre-épreuve de falsification** |
 | | **Total** | **≈ 14 j** | |
@@ -173,10 +175,10 @@ reste au registre).
 
 | Bloc | Charge |
 |---|---:|
-| Plan correctif — phases 5 et 6 (W7 : 10 défauts + les 9 transverses) | ≈ 6 j |
+| Plan correctif — phases 5 et 6 (W7 : SAGE + la moitié de M01-03) | ≈ 3 j |
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
-| **Total restant au 28/09/2026** | **≈ 139 j** |
+| **Total restant au 28/09/2026** | **≈ 136 j** |
 | Déjà livré et prouvé (W0 → W10 — dont W5 `260`, W10 `267`, **W8 fermée** `302`/`303`, **W7 analytique et FEC** `304`/`305` — et chaînages L0) | ≈ 26,5 j |
 
 Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
