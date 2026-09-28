@@ -67,7 +67,7 @@ AS $$
   LIMIT 1
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.functional_currency(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.functional_currency(uuid) FROM PUBLIC, anon, authenticated;
 
 -- ------------------------------------------------------------
 -- 2. Une seule conversion : la ligne d'écriture d'un document en devise
