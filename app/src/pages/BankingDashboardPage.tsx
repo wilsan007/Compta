@@ -30,7 +30,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
 
   useEffect(() => { loadData() }, [loadData])
 
-  const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0)
+  const totalBalance = accounts.reduce((s, a) => s + Number(a.calculated_balance), 0)
   const totalInflow = transactions.filter(t => t.type === 'credit').reduce((s, t) => s + Number(t.amount), 0)
   const totalOutflow = transactions.filter(t => t.type === 'debit').reduce((s, t) => s + Number(t.amount), 0)
 
@@ -58,7 +58,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   <TableRow key={a.id}>
                     <TableCell className="font-medium text-sm">{a.name}</TableCell>
                     <TableCell className="text-xs">{a.bank_name || '—'}</TableCell>
-                    <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(a.balance))}</TableCell>
+                    <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(a.calculated_balance))}</TableCell>
                     <TableCell className="text-xs">{a.currency || 'EUR'}</TableCell>
                   </TableRow>
                 ))}

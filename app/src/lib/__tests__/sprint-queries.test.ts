@@ -504,7 +504,8 @@ describe('Treasury Forecast', () => {
   beforeEach(() => resetMock())
 
   it('getTreasuryForecast returns timeline with events', async () => {
-    setMockData([{ id: '1', balance: 5000, due_date: '2025-01-15', number: 'INV-001', total: 1000 }])
+    // M3 (277, D-F) : le solde de départ est le solde COMPTABLE du compte
+    setMockData([{ id: '1', calculated_balance: 5000, due_date: '2025-01-15', number: 'INV-001', total: 1000 }])
     const { getTreasuryForecast } = await import('@/lib/queries')
     const result = await getTreasuryForecast(90)
     expect(result).toBeDefined()

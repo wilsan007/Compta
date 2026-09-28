@@ -35,6 +35,10 @@ it('Production et trésorerie', async () => {
   const imp = await attempt(() => banking.importBankStatement(bank.id, 'releve.sta', mt940, 'mt940' as any))
   const tx = await sql(`select date, amount::float, type, description from bank_transactions where bank_account_id=$1 order by date, id`, [bank.id])
   check('B01', 'import MT940 : 3 opérations, dont 2 paiements CB identiques le même jour (légitimes)', imp.ok && tx.length === 3, { err: imp.err, resume: imp.val, lignes: tx })
+  // M4 : réimporter le même relevé n'ajoute rien
+  const imp2 = await attempt(() => banking.importBankStatement(bank.id, 'releve.sta', mt940, 'mt940' as any))
+  const tx2 = await sql(`select count(*)::int n from bank_transactions where bank_account_id=$1`, [bank.id])
+  check('B01b', 'réimport du même relevé : aucune opération ajoutée', imp2.ok && (imp2.val as any).imported === 0 && tx2[0].n === tx.length, { err: imp2.err, resume: imp2.val, lignes: tx2[0].n })
   const acct = (await sql(`select balance::float, statement_balance::float, calculated_balance::float from bank_accounts where id=$1`, [bank.id]))[0]
   check('B02', 'solde de clôture du relevé repris (1 475,00)', acct.statement_balance === 1475, acct)
   const am = await attempt(() => banking.autoMatchBankTransactions(bank.id))

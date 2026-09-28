@@ -19,5 +19,14 @@ it('Tableaux de bord : les chiffres affichés = la comptabilité', async () => {
   check('D02', 'getFinancialDashboard répond', fd.ok, fd.err ?? fd.val)
   check('D03', 'getTreasuryDashboard répond', td.ok, td.err ?? td.val)
   check('D00', 'référence grand livre / pièces', true, { gl, factures: inv, soldes_bancaires_affiches: bankBal })
+  // M5 (278) : chaque indicateur affiché = le grand livre (écritures validées de l'exercice 2026)
+  const eq = (x: number, y: number) => Math.round(x * 100) === Math.round(y * 100)
+  const d: any = ds.val, f: any = fd.val, tr: any = td.val
+  check('D04', 'accueil : CA = 70x, encours clients = 411, fournisseurs = 401, trésorerie = 5x', ds.ok && eq(d.totalRevenue, gl.ca) && eq(d.totalDebtors, gl.clients) && eq(d.outstandingInvoice, gl.clients) && eq(d.totalCreditors, gl.fournisseurs) && eq(d.bankBalance, gl.treso),
+    { ecran: d, gl })
+  check('D05', 'financier : CA = 70x, charges = 6x, trésorerie = 5x', fd.ok && eq(f.revenue, gl.ca) && eq(f.expenses, gl.charges) && eq(f.cashPosition, gl.treso), { ecran: f, gl })
+  check('D06', 'trésorerie : solde = 5x du grand livre', td.ok && eq(tr.totalBalance, gl.treso), { ecran: tr?.totalBalance, gl: gl.treso })
+  const drafts = (await sql(`select count(*)::int n from invoices where tenant_id=$1 and validation_status='validated' and status='draft'`, [A]))[0].n
+  check('D07', 'aucune facture validée ne reste au statut brouillon', drafts === 0, { validees_en_brouillon: drafts })
   save('s9.json', findings)
 })

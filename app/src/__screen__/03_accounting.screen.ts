@@ -35,8 +35,9 @@ it('Comptabilité générale — saisie, états, TVA, FEC, lettrage', async () =
 
   // C04 balance = grand livre
   const tb = await attempt(() => acc.getTrialBalance())
-  const tbD = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.total_debit, 0)) : -1
-  const tbC = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.total_credit, 0)) : -1
+  // la balance présente les à-nouveaux (journal AN) à part des mouvements : les deux font le grand livre
+  const tbD = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.opening_debit + x.total_debit, 0)) : -1
+  const tbC = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.opening_credit + x.total_credit, 0)) : -1
   const gl = (await sql(`select round(sum(l.debit),2)::float d, round(sum(l.credit),2)::float c from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and e.date between '2026-01-01' and '2026-12-31'`, [A]))[0]
   check('C04', 'balance générale (écran) : Σ débits = Σ crédits = grand livre validé', tb.ok && tbD === tbC && tbD === gl.d, { err: tb.err, balance: [tbD, tbC], grand_livre: gl })
 

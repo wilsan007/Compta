@@ -916,6 +916,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # X6 (trésorerie, tableaux de bord). 277 (M3, D-F) : solde initial jamais
+      # comptabilisé, solde affiché figé ; 278 (M5) : trois tableaux de bord, trois
+      # vérités — désormais le grand livre, par get_kpis.
+      - name: 'X6 : solde bancaire comptable et à-nouveau d''ouverture (277)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/277_bank_balance_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X6 : indicateurs lus au grand livre, facture validée émise (278)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/278_kpis_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
       # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
       # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son

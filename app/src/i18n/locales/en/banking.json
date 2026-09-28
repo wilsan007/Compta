@@ -35,7 +35,7 @@
     "name": "Account name",
     "accountName": "Account name",
     "bankName": "Bank name",
-    "initialBalance": "Initial balance",
+    "initialBalance": "Opening balance (posted as opening entry)",
     "accountNamePlaceholder": "Main account",
     "nameRequired": "Account name is required",
     "bank": "Bank",
@@ -336,7 +336,8 @@
     "reconciliationDiff": "Variance",
     "statementDate": "Statement date",
     "noDiff": "No variance",
-    "diffWarning": "Variance detected"
+    "diffWarning": "Variance detected",
+    "bookBalance": "book balance"
   },
   "multiCurrency": {
     "originalAmount": "Original amount",

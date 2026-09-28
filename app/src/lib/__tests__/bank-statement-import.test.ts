@@ -76,10 +76,12 @@ describe('importBankStatement (AUD-G03)', () => {
     expect(inserted.bank_statement_imports).toEqual([expect.objectContaining({ status: 'completed', imported_count: 2, format: 'mt940' })])
   })
 
-  it('écarte une opération déjà importée (même date, montant signé, référence)', async () => {
+  // M4 (X6) : sans référence de banque réelle, l'identité d'une opération est
+  // (date, montant signé, libellé), comparée en NOMBRE d'occurrences — cf. bank-dedup.test.ts
+  it('écarte une opération déjà importée (même date, montant signé, libellé ; sans référence de banque)', async () => {
     const { parseMt940 } = await import('@/lib/bankParsers')
     const first = parseMt940(MT940).transactions[0]
-    existing.push({ date: first.date, amount: Math.abs(first.amount), type: first.type, reference: first.reference || null })
+    existing.push({ date: first.date, amount: Math.abs(first.amount), type: first.type, reference: first.reference || null, description: first.description })
     const { importBankStatement } = await import('@/lib/queries/banking')
     const res = await importBankStatement('bank-1', 'releve.sta', MT940)
     expect(res).toMatchObject({ imported: 1, duplicates: 1 })

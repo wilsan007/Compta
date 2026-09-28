@@ -21,8 +21,9 @@ it('Ventes -> trésorerie -> grand livre, par les fonctions des écrans', async 
   check('S02', 'créer un compte bancaire (BankAccountsPage)', b.ok, b.err ?? (b.val as any)?.id)
   const bank: any = b.val
   const bankRow = (await sql(`select * from bank_accounts where id=$1`, [bank?.id]))[0]
-  const l512 = await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like $2`, [A, (bankRow?.account_code || '512') + '%'])
-  check('S02b', 'solde initial saisi (1000) et solde comptable du compte banque concordent', Number(bankRow?.balance) === Number(l512[0].s), { bank_balance: bankRow?.balance, ledger: l512[0].s, account_code: bankRow?.account_code, gl_account: bankRow?.gl_account_code })
+  const l512 = await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and coalesce(l.account_general, l.account_code) = $2`, [A, bankRow?.account_code])
+  // M3 (277, D-F) : le solde initial est une écriture d'à-nouveau ; l'écran affiche le solde comptable
+  check('S02b', 'solde initial saisi (1000) comptabilisé en à-nouveau : solde affiché = grand livre = 1 000', Number(bankRow?.calculated_balance) === 1000 && Number(l512[0].s) === 1000, { affiche: bankRow?.calculated_balance, ledger: l512[0].s, account_code: bankRow?.account_code })
 
   // S03 facture brouillon : 10 x 100 @20 + 1 x 55.50 @5.5
   const lines = [
@@ -84,8 +85,9 @@ it('Ventes -> trésorerie -> grand livre, par les fonctions des écrans', async 
   const s411 = g.filter((x: any) => x.code.startsWith('411')).reduce((s: number, x: any) => s + x.d - x.c, 0)
   const s512 = g.filter((x: any) => x.code.startsWith('512')).reduce((s: number, x: any) => s + x.d - x.c, 0)
   check('S06d', `grand livre : 411 soldé (0), 512 = +${r2(ht + tva)} d'encaissements`, r2(s411) === 0 && r2(s512) >= r2(ht + tva), { s411: r2(s411), s512: r2(s512), ledger: g })
-  const bankAfter = (await sql(`select balance::float from bank_accounts where id=$1`, [bank.id]))[0]
-  check('S06e', 'le solde affiché du compte bancaire suit les encaissements', bankAfter.balance === r2(1000 + ht + tva) || bankAfter.balance === r2(s512), { balance: bankAfter.balance, s512: r2(s512) })
+  const bankAfter = (await sql(`select calculated_balance::float shown, account_code from bank_accounts where id=$1`, [bank.id]))[0]
+  const bankLedger = (await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and coalesce(l.account_general, l.account_code) = $2`, [A, bankAfter.account_code]))[0].s
+  check('S06e', 'le solde affiché du compte bancaire (comptable) suit les encaissements', r2(bankAfter.shown) === r2(bankLedger) && r2(bankAfter.shown) >= r2(1000 + ht + tva), { affiche: bankAfter.shown, grand_livre: bankLedger, ouverture_plus_facture: r2(1000 + ht + tva) })
 
   // S07 devis -> facture
   const q = await attempt(() => sales.createQuote({ customer_id: cust.id, customer_name: cust.name, date: '2026-09-11', expiry_date: '2026-10-11', status: 'draft', subtotal: 200, vat_total: 40, total: 240, notes: '',

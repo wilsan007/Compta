@@ -46,7 +46,10 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
     }
   }
 
-  const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0)
+  // M3 (277, D-F) : le solde affiché est le solde COMPTABLE (512x au grand livre),
+  // la référence de tous les états ; le relevé et l'écart sont montrés à côté.
+  // `balance` (solde d'ouverture saisi) n'est plus lue.
+  const totalBalance = accounts.reduce((sum, a) => sum + Number(a.calculated_balance || 0), 0)
 
   const accountTypeIcons: Record<string, React.ReactNode> = {
     chequing: <Landmark className="w-5 h-5" />,
@@ -101,9 +104,9 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                     <div>
                       <p className="text-sm font-medium text-[var(--color-text)]">{acc.name}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{acc.bank_name || acc.type}</p>
-                      {acc.statement_balance != null && (
+                      {acc.statement_balance_date && (
                         <div className="mt-1 flex items-center gap-2 text-xs">
-                          <span className="text-[var(--color-text-secondary)]">{t('statementBalances.statementBalance')}:</span>
+                          <span className="text-[var(--color-text-secondary)]">{t('statementBalances.statementBalance')} ({formatDate(acc.statement_balance_date)}):</span>
                           <span className="font-mono">{formatCurrency(Number(acc.statement_balance))}</span>
                           {Number(acc.reconciliation_diff || 0) !== 0 && (
                             <span className="flex items-center gap-0.5 text-[var(--color-danger)]">
@@ -115,7 +118,10 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                       )}
                     </div>
                   </div>
-                  <span className="font-semibold text-[var(--color-text)]">{formatCurrency(Number(acc.balance) || 0)}</span>
+                  <span className="text-right">
+                    <span className="block font-semibold text-[var(--color-text)]">{formatCurrency(Number(acc.calculated_balance) || 0)}</span>
+                    <span className="block text-xs text-[var(--color-text-secondary)]">{t('statementBalances.bookBalance')}</span>
+                  </span>
                 </button>
               ))}
             </div>

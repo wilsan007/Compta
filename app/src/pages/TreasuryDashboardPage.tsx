@@ -95,7 +95,7 @@ export function TreasuryDashboardPage() {
               <TableRow key={acc.id}>
                 <TableCell className="font-medium">{acc.name}</TableCell>
                 <TableCell className="text-xs">{acc.type}</TableCell>
-                <TableCell className="font-mono text-right">{formatCurrency(Number(acc.balance))}</TableCell>
+                <TableCell className="font-mono text-right">{formatCurrency(Number(acc.calculated_balance))}</TableCell>
               </TableRow>
             ))}
           </Table>

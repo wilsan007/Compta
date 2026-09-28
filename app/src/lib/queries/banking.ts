@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { fetchAllRows, getTenantId, ti, tud } from './core';
 import type { BankAccount, BankTransaction, BankRule, BankConnection, Bank } from '@/types';
-import { parseBankStatement, detectBankStatementFormat, type BankStatementFormat } from '@/lib/bankParsers';
+import { parseBankStatement, detectBankStatementFormat, selectNewBankTransactions, type BankStatementFormat } from '@/lib/bankParsers';
 
 // ============ Bank Accounts ============
 export async function getBankAccounts() {
@@ -432,18 +432,16 @@ export async function importBankStatement(bankAccountId: string, filename: strin
     throw new BankStatementCurrencyError(statementCurrency, accountCurrency)
   }
 
-  let q = supabase.from('bank_transactions').select('date, amount, type, reference')
+  let q = supabase.from('bank_transactions').select('date, amount, type, reference, description')
     .eq('source', 'import').or(`bank_account_id.eq.${bankAccountId},account_id.eq.${bankAccountId}`).order('id')
   if (tid) q = q.eq('tenant_id', tid)
-  const existing = await fetchAllRows<{ date: string; amount: number; type: string; reference: string | null }>(q, { label: 'importBankStatement/bank_transactions' })
-  const known = new Set(existing.map(e => `${e.date}|${signed(e).toFixed(2)}|${e.reference || ''}`))
-
-  const fresh = result.transactions.filter(t => {
-    const key = `${t.date}|${signed(t).toFixed(2)}|${t.reference || ''}`
-    if (known.has(key)) return false
-    known.add(key) // une même opération répétée dans le fichier n'est importée qu'une fois
-    return true
-  })
+  const existing = await fetchAllRows<{ date: string; amount: number; type: string; reference: string | null; description: string | null }>(q, { label: 'importBankStatement/bank_transactions' })
+  // M4 : référence de banque réelle si elle existe, sinon comptage des occurrences
+  // (deux paiements identiques le même jour sont deux opérations)
+  const fresh = selectNewBankTransactions(
+    result.transactions.map((t) => ({ ...t, amount: signed(t) })),
+    existing.map((e) => ({ ...e, date: String(e.date).slice(0, 10), amount: signed(e) })),
+  )
 
   if (fresh.length > 0) {
     const { error } = await supabase.from('bank_transactions').insert(fresh.map(t => ti({
@@ -452,7 +450,7 @@ export async function importBankStatement(bankAccountId: string, filename: strin
       date: t.date,
       description: t.description,
       reference: t.reference || null,
-      type: signed(t) < 0 ? 'debit' : 'credit',
+      type: t.amount < 0 ? 'debit' : 'credit',
       amount: Math.abs(t.amount),
       source: 'import',
       // R-07 : une ligne de relevé, par opposition au reflet d'un règlement saisi

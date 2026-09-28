@@ -388,48 +388,56 @@ export async function getProjects() {
 
 
 // ============ Dashboard Aggregates ============
+// M5 (278) : les trois tableaux de bord lisent LE GRAND LIVRE par une seule RPC.
+export type Kpis = { from: string; to: string; revenue: number; expenses: number; receivables: number; payables: number; cash: number; draft_entries: number; posted_entries: number }
+
+async function currentFiscalYearBounds(): Promise<{ from: string; to: string }> {
+  const tid = await getTenantId()
+  let q = supabase.from('fiscal_years').select('start_date, end_date').order('start_date', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  const today = new Date().toISOString().slice(0, 10)
+  const years = (data || []) as Array<{ start_date: string; end_date: string }>
+  const fy = years.find((y) => y.start_date <= today && today <= y.end_date) ?? years.find((y) => y.start_date <= today) ?? years[0]
+  return fy ? { from: fy.start_date, to: fy.end_date } : { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` }
+}
+
+export async function getKpis(from?: string, to?: string): Promise<Kpis> {
+  const bounds = from && to ? { from, to } : await currentFiscalYearBounds()
+  const { data, error } = await supabase.rpc('get_kpis', { p_from: bounds.from, p_to: bounds.to })
+  if (error) throw error
+  const k = (data || {}) as Record<string, unknown>
+  const n = (v: unknown) => Number(v) || 0
+  return { from: bounds.from, to: bounds.to, revenue: n(k.revenue), expenses: n(k.expenses), receivables: n(k.receivables), payables: n(k.payables), cash: n(k.cash), draft_entries: n(k.draft_entries), posted_entries: n(k.posted_entries) }
+}
+
+async function countRows(table: 'invoices' | 'purchase_invoices', filter?: (q: any) => any): Promise<number> {
+  const tid = await getTenantId()
+  let q: any = supabase.from(table).select('id', { count: 'exact', head: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  if (filter) q = filter(q)
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   const tid = await getTenantId()
   if (!tid) return { totalRevenue: 0, outstandingInvoice: 0, outstandingBills: 0, bankBalance: 0, totalDebtors: 0, totalCreditors: 0, invoiceCount: 0, billCount: 0 }
-  // LOT7-03 : ces 5 requêtes agrègent des tables entières. Sans pagination, le chiffre
-  // d'affaires et les encours s'arrêtaient à 1 000 lignes (max_rows) — un tableau de bord
-  // faux, sans message d'erreur.
-  const [invoices, purchaseInvoices, bankAccounts, customers, suppliers] = await Promise.all([
-    fetchAllRows<any>(supabase.from('invoices').select('total, amount_due, status').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/invoices' }),
-    fetchAllRows<any>(supabase.from('purchase_invoices').select('total, amount_due, status').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/purchase_invoices' }),
-    fetchAllRows<any>(supabase.from('bank_accounts').select('balance').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/bank_accounts' }),
-    fetchAllRows<any>(supabase.from('customers').select('balance').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/customers' }),
-    fetchAllRows<any>(supabase.from('suppliers').select('balance').eq('tenant_id', tid).order('id'), { label: 'getDashboardStats/suppliers' }),
-  ])
-
-  // AUD-D09 : chiffre d'affaires = ventes HT comptabilisées de l'exercice en cours (comptes 70),
-  // et non plus le TTC des seules factures payées.
-  let totalRevenue = 0
-  const fyId = await getCurrentFiscalYearId()
-  if (fyId) {
-    const { data: is, error: isErr } = await supabase.rpc('get_income_statement', {
-      p_fiscal_year_id: fyId, p_date_from: null, p_date_to: null,
-    })
-    if (isErr) throw isErr
-    totalRevenue = ((is || []) as any[])
-      .filter((r) => String(r.account_code).startsWith('70'))
-      .reduce((sum, r) => sum + (Number(r.credit) || 0) - (Number(r.debit) || 0), 0)
-  }
-  const outstandingInvoice = invoices.filter((i: any) => i.status === 'sent' || i.status === 'overdue' || i.status === 'viewed').reduce((sum: number, i: any) => sum + Number(i.amount_due), 0)
-  const outstandingBills = purchaseInvoices.filter((i: any) => i.status !== 'paid' && i.status !== 'cancelled' && i.status !== 'draft').reduce((sum: number, i: any) => sum + Number(i.amount_due), 0)
-  const bankBalance = bankAccounts.reduce((sum: number, a: any) => sum + Number(a.balance), 0)
-  const totalDebtors = customers.reduce((sum: number, c: any) => sum + Number(c.balance), 0)
-  const totalCreditors = suppliers.reduce((sum: number, s: any) => sum + Number(s.balance), 0)
-
+  // M5 (278) : une seule vérité — le grand livre. Encours clients et fournisseurs
+  // sont les soldes 411 / 401 (avant : `customers.balance`, que rien ne tient, et
+  // des factures filtrées par un statut qu'une facture validée n'avait pas).
+  const [k, invoiceCount, billCount] = await Promise.all([getKpis(), countRows('invoices'), countRows('purchase_invoices')])
   return {
-    totalRevenue,
-    outstandingInvoice,
-    outstandingBills,
-    bankBalance,
-    totalDebtors,
-    totalCreditors,
-    invoiceCount: invoices.length,
-    billCount: purchaseInvoices.length,
+    totalRevenue: k.revenue,
+    outstandingInvoice: k.receivables,
+    outstandingBills: k.payables,
+    bankBalance: k.cash,
+    totalDebtors: k.receivables,
+    totalCreditors: k.payables,
+    invoiceCount,
+    billCount,
   }
 }
 
@@ -1924,7 +1932,8 @@ export async function getTreasuryDashboard() {
   // LOT7-03 : le solde de trésorerie somme tous les comptes bancaires.
   const accounts = await fetchAllRows<any>(accQ, { label: 'getTreasuryDashboard/bank_accounts' })
 
-  const totalBalance = accounts.reduce((s, a) => s + Number(a.balance), 0)
+  // M5 (278) : la trésorerie est le solde des comptes 5x au grand livre
+  const totalBalance = (await getKpis()).cash
 
   const today = new Date()
   const in30 = new Date(today)
@@ -2019,10 +2028,10 @@ export async function getTreasuryForecast(days: number = 90) {
   if (tid) purQ = purQ.eq('tenant_id', tid)
   const purchaseInvoices = await fetchAllRows<any>(purQ, { label: 'getTreasuryForecast/purchase_invoices' })
 
-  let baQ = supabase.from('bank_accounts').select('balance').order('id')
+  let baQ = supabase.from('bank_accounts').select('calculated_balance').order('id')
   if (tid) baQ = baQ.eq('tenant_id', tid)
   const bankAccounts = await fetchAllRows<any>(baQ, { label: 'getTreasuryForecast/bank_accounts' })
-  const currentBalance = bankAccounts.reduce((s, a) => s + Number(a.balance), 0)
+  const currentBalance = bankAccounts.reduce((s, a) => s + Number(a.calculated_balance), 0)
 
   const events: Array<{ date: string; type: 'in' | 'out'; amount: number; reference: string }> = []
   for (const inv of invoices) {
@@ -2198,49 +2207,78 @@ export async function getBudgetTracking(fiscalYearId?: string) {
   const tid = await getTenantId()
   // AUD-G08 (G20) : budgets.account_code est un code libre, sans clé étrangère vers
   // chart_accounts — le libellé du compte est chargé à part.
-  let q = supabase.from('budgets').select('*, fiscal_years(code)').order('name').order('id')
+  // BUD-01 : l'exercice du budget porte ses bornes — le réalisé s'y borne.
+  let q = supabase.from('budgets').select('*, fiscal_years(code, start_date, end_date)').order('name').order('id')
   if (tid) q = q.eq('tenant_id', tid)
   if (fiscalYearId) q = q.eq('fiscal_year_id', fiscalYearId)
-  // LOT7-03 : suivi budgétaire — le réalisé est une somme sur toutes les lignes du compte.
   const budgets = await fetchAllRows<any>(q, { label: 'getBudgetTracking/budgets' })
   const codes = [...new Set(budgets.map((b: any) => b.account_code).filter(Boolean))]
+  const byCode = new Map<string, any>()
   if (codes.length > 0) {
     let aq = supabase.from('chart_accounts').select('code, name').in('code', codes).order('code')
     if (tid) aq = aq.eq('tenant_id', tid)
     const accounts = await fetchAllRows<{ code: string; name: string }>(aq, { label: 'getBudgetTracking/chart_accounts' })
-    const byCode = new Map(accounts.map(a => [a.code, a]))
-    for (const b of budgets) b.chart_accounts = byCode.get(b.account_code) ?? null
+    for (const a of accounts) byCode.set(a.code, a)
+  }
+
+  // BUD-01/02 : **une** requête de lignes par exercice distinct (et non par
+  // budget — c'est BUD-04), bornée aux dates de l'exercice, aux écritures
+  // **validées** et hors à-nouveaux / clôture (AN, CL) — sans quoi le réalisé
+  // cumule depuis l'origine et les écritures de solde l'annulent après clôture.
+  const parExercice = new Map<string, { debut: string; fin: string; codes: string[] }>()
+  for (const b of budgets) {
+    const fy = b.fiscal_years
+    if (!fy?.start_date || !fy?.end_date || !b.account_code) continue
+    const cle = `${fy.start_date}|${fy.end_date}`
+    if (!parExercice.has(cle)) parExercice.set(cle, { debut: fy.start_date, fin: fy.end_date, codes: [] })
+    parExercice.get(cle)!.codes.push(b.account_code)
+  }
+
+  const realised = new Map<string, number>()
+  for (const grp of parExercice.values()) {
+    let jlQ = supabase
+      .from('journal_lines')
+      .select('debit, credit, account_general, journal_entries!inner(date, status, journal_code)')
+      .in('account_general', grp.codes)
+      .gte('journal_entries.date', grp.debut)
+      .lte('journal_entries.date', grp.fin)
+      .eq('journal_entries.status', 'posted')
+      .not('journal_entries.journal_code', 'in', '(AN,CL)')
+      .order('id')
+    if (tid) jlQ = jlQ.eq('tenant_id', tid)
+    const lignes = await fetchAllRows<any>(jlQ, { label: 'getBudgetTracking/journal_lines' })
+    for (const l of lignes) {
+      const k = l.account_general || l.account_code
+      realised.set(k, (realised.get(k) ?? 0) + (Number(l.debit) || 0) - (Number(l.credit) || 0))
+    }
+  }
+
+  // Engagements : une seule requête pour tous les comptes (BUD-04).
+  const engages = new Map<string, number>()
+  if (codes.length > 0) {
+    let cQ = supabase
+      .from('budget_commitments')
+      .select('amount, account_code')
+      .eq('status', 'active')
+      .in('account_code', codes)
+    if (tid) cQ = cQ.eq('tenant_id', tid)
+    if (fiscalYearId) cQ = cQ.eq('fiscal_year_id', fiscalYearId)
+    const engagements = await fetchAllRows<any>(cQ.order('id'), { label: 'getBudgetTracking/budget_commitments' })
+    for (const c of engagements) engages.set(c.account_code, (engages.get(c.account_code) ?? 0) + (Number(c.amount) || 0))
   }
 
   const results: any[] = []
   for (const b of budgets) {
-    let jlQ = supabase
-      .from('journal_lines')
-      .select('debit, credit')
-      .eq('account_general', b.account_code)
-      .order('id')
-    if (tid) jlQ = jlQ.eq('tenant_id', tid)
-    const lines = await fetchAllRows<any>(jlQ, { label: 'getBudgetTracking/journal_lines' })
-    const realized = lines.reduce((s, l) => s + Number(l.debit) - Number(l.credit), 0)
-
     const budgetTotal = ['period_1','period_2','period_3','period_4','period_5','period_6','period_7','period_8','period_9','period_10','period_11','period_12']
       .reduce((s, k) => s + Number((b as any)[k] || 0), 0)
 
-    let committed = 0
-    let commitQ = supabase
-      .from('budget_commitments')
-      .select('amount')
-      .eq('account_code', b.account_code)
-      .eq('status', 'active')
-    if (tid) commitQ = commitQ.eq('tenant_id', tid)
-    if (b.fiscal_year_id) commitQ = commitQ.eq('fiscal_year_id', b.fiscal_year_id)
-    const commitments = await fetchAllRows<any>(commitQ.order('id'), { label: 'getBudgetTracking/budget_commitments' })
-    committed = commitments.reduce((s, c) => s + Number(c.amount), 0)
-
+    const realized = realised.get(b.account_code) ?? 0
+    const committed = engages.get(b.account_code) ?? 0
     const available = budgetTotal - realized - committed
 
     results.push({
       ...b,
+      chart_accounts: byCode.get(b.account_code) ?? null,
       total: budgetTotal,
       realized,
       committed,
@@ -2336,30 +2374,24 @@ export async function checkBudgetAvailability(accountCode: string, amount: numbe
 export async function getFinancialDashboard() {
   const tid = await getTenantId()
   if (!tid) return { revenue: 0, expenses: 0, margin: 0, marginPct: 0, cashPosition: 0, pendingEntries: 0, totalEntries: 0, invoiceCount: 0, supplierInvoiceCount: 0 }
-  // LOT7-03 : CA, charges et nombre d'écritures étaient plafonnés à 1 000 lignes chacun.
-  const [invoices, purchaseInvoices, bankAccounts, journalEntries] = await Promise.all([
-    fetchAllRows<any>(supabase.from('invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid).order('id'), { label: 'getFinancialDashboard/invoices' }),
-    fetchAllRows<any>(supabase.from('purchase_invoices').select('total, status, date').eq('status', 'paid').eq('tenant_id', tid).order('id'), { label: 'getFinancialDashboard/purchase_invoices' }),
-    fetchAllRows<any>(supabase.from('bank_accounts').select('balance, type').eq('tenant_id', tid).order('id'), { label: 'getFinancialDashboard/bank_accounts' }),
-    fetchAllRows<any>(supabase.from('journal_entries').select('number, date, status').eq('tenant_id', tid).order('id'), { label: 'getFinancialDashboard/journal_entries' }),
+  // M5 (278) : CA (70x) et charges (6x) comptabilisés de l'exercice, trésorerie (5x) :
+  // avant, TTC des seules factures PAYÉES — un CA qui ne correspondait à aucun état.
+  const [k, invoiceCount, supplierInvoiceCount] = await Promise.all([
+    getKpis(),
+    countRows('invoices', (q) => q.eq('validation_status', 'validated')),
+    countRows('purchase_invoices', (q) => q.neq('status', 'draft')),
   ])
-
-  const revenue = invoices.reduce((s, i) => s + Number(i.total), 0)
-  const expenses = purchaseInvoices.reduce((s, i) => s + Number(i.total), 0)
-  const cashPosition = bankAccounts.reduce((s, a) => s + Number(a.balance), 0)
-  const margin = revenue - expenses
-  const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0
-
+  const margin = k.revenue - k.expenses
   return {
-    revenue,
-    expenses,
+    revenue: k.revenue,
+    expenses: k.expenses,
     margin,
-    marginPct,
-    cashPosition,
-    pendingEntries: journalEntries.filter((e) => e.status === 'draft').length,
-    totalEntries: journalEntries.length,
-    invoiceCount: invoices.length,
-    supplierInvoiceCount: purchaseInvoices.length,
+    marginPct: k.revenue > 0 ? (margin / k.revenue) * 100 : 0,
+    cashPosition: k.cash,
+    pendingEntries: k.draft_entries,
+    totalEntries: k.draft_entries + k.posted_entries,
+    invoiceCount,
+    supplierInvoiceCount,
   }
 }
 

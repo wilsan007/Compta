@@ -620,14 +620,46 @@ export function parseBankStatement(
 // ============================================================
 // Détection de doublons
 // ============================================================
+// M4 (X6) : une référence de banque RÉELLE (FITID OFX, référence `:61:` MT940,
+// référence CFONB) identifie l'opération ; « NONREF » ou une référence vide n'en
+// est pas une. Sans référence, deux paiements identiques le même jour sont
+// LÉGITIMES : on compare le NOMBRE d'occurrences de (date, montant, libellé) du
+// fichier à celui déjà importé, et seules les occurrences en plus entrent.
+// Avant : la clé (date, montant, référence) supprimait la seconde carte bancaire
+// comme doublon — et un réimport ne réimportait rien, à raison, mais par hasard.
+type DedupTx = { date: string; amount: number; reference?: string | null; description?: string | null }
+
+export function bankReference(ref: string | null | undefined): string | null {
+  const r = (ref || '').trim()
+  return r && !/^NONREF$/i.test(r) ? r : null
+}
+
+function dedupKey(t: DedupTx): string {
+  const ref = bankReference(t.reference)
+  return ref
+    ? `ref|${ref}`
+    : `occ|${t.date}|${t.amount.toFixed(2)}|${(t.description || '').replace(/\s+/g, ' ').trim().toUpperCase()}`
+}
+
+/** Opérations du fichier qui ne sont pas encore importées (montants signés). */
+export function selectNewBankTransactions<T extends DedupTx>(fileTxs: T[], existingTxs: DedupTx[]): T[] {
+  const already = new Map<string, number>()
+  for (const e of existingTxs) already.set(dedupKey(e), (already.get(dedupKey(e)) || 0) + 1)
+  const seen = new Map<string, number>()
+  return fileTxs.filter((t) => {
+    const k = dedupKey(t)
+    const rank = (seen.get(k) || 0) + 1
+    seen.set(k, rank)
+    // une référence réelle n'entre qu'une fois, même répétée dans le fichier
+    if (k.startsWith('ref|')) return rank === 1 && !already.has(k)
+    return rank > (already.get(k) || 0)
+  })
+}
+
 export function detectDuplicateTransactions(
   newTxs: ParsedBankTransaction[],
   existingTxs: ParsedBankTransaction[]
 ): ParsedBankTransaction[] {
-  const existingKeys = new Set(
-    existingTxs.map(t => `${t.date}|${t.amount.toFixed(2)}|${t.reference || ''}`)
-  )
-  return newTxs.filter(t =>
-    existingKeys.has(`${t.date}|${t.amount.toFixed(2)}|${t.reference || ''}`)
-  )
+  const fresh = new Set(selectNewBankTransactions(newTxs, existingTxs))
+  return newTxs.filter((t) => !fresh.has(t))
 }

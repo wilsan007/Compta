@@ -10,7 +10,8 @@
 --
 -- G12a — le reflet d'un règlement est un mouvement saisi (kind = book)
 -- G12b — la même opération importée du relevé NE double PAS le solde
--- G12c — supprimer un mouvement saisi corrige le solde (recalcul, pas incrément)
+-- G12c — (277, doctrine D-F) le solde est celui du GRAND LIVRE : supprimer le reflet
+--         d'un règlement dans `bank_transactions` ne le change pas (l'écriture subsiste)
 -- G12d — une ligne de relevé non pointée reste pointable à l'insertion (196)
 -- G12e — le solde ne suit pas les lignes de relevé, même créditrices
 -- ============================================================
@@ -73,20 +74,26 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN PERFORM _rec('G12b', 'la même opération saisie PUIS importée ne compte qu''une fois : solde 120 (et non 240)', false, SQLERRM); END;
 END $$;
 
--- G12c — supprimer un mouvement saisi corrige le solde. La suppression vise la
--- source du règlement, pas `kind`, pour que le rouge montre le solde figé (80).
+-- G12c — RÉÉCRIT par la 277 (X6/M3, décision D-F) : `calculated_balance` n'est plus
+-- la somme des mouvements « book » mais le solde du 512x au grand livre. Avant la
+-- 277, ce scénario exigeait que la suppression du reflet ramène le solde à 0 ;
+-- désormais l'écriture du règlement subsiste, donc le solde comptable aussi (80) —
+-- un reflet supprimé ne peut plus fausser le solde, ni dans un sens ni dans l'autre.
 DO $$
-DECLARE t uuid; acc uuid; cli uuid; s numeric;
+DECLARE t uuid; acc uuid; cli uuid; s numeric; gl numeric;
 BEGIN
   BEGIN
     SELECT * INTO t, acc, cli FROM _banque222('B222c');
     INSERT INTO customer_payments (tenant_id, number, customer_id, payment_date, amount, method, bank_account_id, status)
     VALUES (t, 'REG-222C', cli, '2026-03-05', 80, 'transfer', acc, 'recorded');
-    DELETE FROM bank_transactions WHERE tenant_id = t AND source = 'customer_payment';
+    DELETE FROM bank_transactions WHERE tenant_id = t AND source = 'customer_payment';  -- le déclencheur recalcule
     SELECT _solde222(acc) INTO s;
-    PERFORM _rec('G12c', 'mouvement saisi supprimé : le solde revient à 0 (recalculé, jamais incrémenté)',
-      s = 0, format('solde=%s (restait 80 avant la 222)', s));
-  EXCEPTION WHEN OTHERS THEN PERFORM _rec('G12c', 'mouvement saisi supprimé : le solde revient à 0 (recalculé, jamais incrémenté)', false, SQLERRM); END;
+    SELECT coalesce(sum(jl.debit - jl.credit), 0) INTO gl FROM journal_lines jl JOIN journal_entries je ON je.id = jl.journal_id
+     WHERE je.tenant_id = t AND je.status = 'posted'
+       AND coalesce(jl.account_general, jl.account_code) = (SELECT account_code FROM bank_accounts WHERE id = acc);
+    PERFORM _rec('G12c', 'reflet du règlement supprimé : le solde reste celui du grand livre (80)',
+      s = gl AND s = 80, format('solde=%s grand livre=%s', s, gl));
+  EXCEPTION WHEN OTHERS THEN PERFORM _rec('G12c', 'reflet du règlement supprimé : le solde reste celui du grand livre (80)', false, SQLERRM); END;
 END $$;
 
 -- G12d — une ligne de relevé reste pointée contre une écriture du compte (196)

@@ -42,7 +42,7 @@ export function BIReportingPage() {
       ])
       const totalRevenue = (inv || []).filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + Number(i.total), 0)
       const totalExpenses = (pur || []).filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + Number(i.total), 0)
-      const bankBalance = (banks || []).reduce((s: number, a: any) => s + Number(a.balance), 0)
+      const bankBalance = (banks || []).reduce((s: number, a: any) => s + Number(a.calculated_balance), 0)
       setData({
         totalRevenue, totalExpenses, grossMargin: totalRevenue - totalExpenses,
         customerCount: (custs || []).length, supplierCount: (sups || []).length,

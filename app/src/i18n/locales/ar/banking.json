@@ -35,7 +35,7 @@
     "name": "اسم الحساب",
     "accountName": "اسم الحساب",
     "bankName": "اسم البنك",
-    "initialBalance": "الرصيد الافتتاحي",
+    "initialBalance": "الرصيد الافتتاحي (يُقيَّد كقيد افتتاحي)",
     "accountNamePlaceholder": "الحساب الرئيسي",
     "nameRequired": "اسم الحساب مطلوب",
     "bank": "البنك",
@@ -336,7 +336,8 @@
     "reconciliationDiff": "الفرق",
     "statementDate": "تاريخ الكشف",
     "noDiff": "لا يوجد فرق",
-    "diffWarning": "تم اكتشاف فرق"
+    "diffWarning": "تم اكتشاف فرق",
+    "bookBalance": "الرصيد المحاسبي"
   },
   "multiCurrency": {
     "originalAmount": "المبلغ الأصلي",

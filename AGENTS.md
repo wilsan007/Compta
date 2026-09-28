@@ -620,6 +620,16 @@ L'essentiel en huit lignes :
 - Preuves : 275 **5/5**, 276 **6/6**, batterie **88/88** (249 migrations), écran **15/15**, registre
   **16** rouges. [Preuve](doc/audit/VAGUE-X3-2026-09-28.md)
 
+### Audit fonctionnel — partie 2, vague X6 : trésorerie et tableaux de bord (2026-09-28) ✅ — partie 2 terminée
+- **`277` (M3, D-F)** : le solde bancaire affiché est le solde **comptable** (512x au grand livre) ;
+  le solde initial saisi devient un à-nouveau validé AN 512x / 890000 ; `balance` n'est plus lue.
+- **M4** : deux opérations identiques le même jour sont deux opérations (référence de banque réelle,
+  sinon comptage des occurrences) — `selectNewBankTransactions`.
+- **`278` (M5)** : `get_kpis` lit le grand livre pour les **trois** tableaux de bord ; une facture
+  validée passe à « émise ».
+- Registre du chemin de l'écran : **13** rouges, tous de la **partie 3** (X4, X5).
+  [Preuve](doc/audit/VAGUE-X6-2026-09-28.md)
+
 ### Bugs corrigés
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string

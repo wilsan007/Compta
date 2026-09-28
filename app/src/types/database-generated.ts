@@ -7277,6 +7277,9 @@ export interface Database {
         product_uom: string | null
         lettrage_partial: boolean | null
         lettrage_group_id: string | null
+        currency_code: string | null
+        currency_amount: number | null
+        exchange_rate: number | null
       }
       Insert: {
         id?: string
@@ -7315,6 +7318,9 @@ export interface Database {
         product_uom?: string
         lettrage_partial?: boolean
         lettrage_group_id?: string
+        currency_code?: string
+        currency_amount?: number
+        exchange_rate?: number
       }
       Update: {
         id?: string
@@ -7353,6 +7359,9 @@ export interface Database {
         product_uom?: string
         lettrage_partial?: boolean
         lettrage_group_id?: string
+        currency_code?: string
+        currency_amount?: number
+        exchange_rate?: number
       }
       Relationships: []
     }

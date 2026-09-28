@@ -1,6 +1,4 @@
 [
-  { "file": "01_sales", "id": "S02b", "reason": "M3 (X6) : le solde initial saisi d'un compte bancaire n'est jamais comptabilisé" },
-  { "file": "01_sales", "id": "S06e", "reason": "M3 (X6) : bank_accounts.balance n'est mis à jour par rien" },
   { "file": "02_purch_stock", "id": "P06", "reason": "C9 (X4) : commande fournisseur sans lignes" },
   { "file": "02_purch_stock", "id": "ST02", "reason": "M6 (X4) : stock initial sans mouvement ni couche" },
   { "file": "02_purch_stock", "id": "ST03", "reason": "C8 (X4) : mouvement de la fiche article fantôme (type sans movement_type)" },
@@ -13,6 +11,5 @@
   { "file": "07_pos", "id": "K06", "reason": "C12 (X5) : clôture refusée, pos_payments jamais écrits (décision D-E)" },
   { "file": "07_pos", "id": "K07", "reason": "C12 (X5) : la clôture ne comptabilise rien" },
   { "file": "07_pos", "id": "K09", "reason": "C12 (X5) : un ticket sur une session close est accepté (RPC create_pos_ticket atomique)" },
-  { "file": "08_prod_treso", "id": "M04", "reason": "C11 (X5) : OF créé avec product_id null, jamais terminable" },
-  { "file": "08_prod_treso", "id": "B01", "reason": "M4 (X6) : deux opérations identiques légitimes, la seconde supprimée comme doublon" }
+  { "file": "08_prod_treso", "id": "M04", "reason": "C11 (X5) : OF créé avec product_id null, jamais terminable" }
 ]
