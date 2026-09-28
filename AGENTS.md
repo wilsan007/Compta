@@ -18,22 +18,23 @@ L'essentiel en huit lignes :
   `PROJ-02/03` (avancement **pondéré** par une seule règle, anti-cycle, `303`).
   [Preuve](doc/audit/VAGUE-W8-2026-09-28.md) : `302` **8/8**, `303` **6/6**,
   batterie **82/82**, base neuve **243 migrations, 0 erreur**.
-* **W7 partielle (28/09)** : **huit** défauts fermés — `ANA-01/02` (les deux
+* **W7 partielle (28/09)** : **onze** défauts fermés — `ANA-01/02` (les deux
   déclencheurs analytiques étaient **vides** et aucune écriture engendrée ne
   portait de section, `304` : la section circule de la **ligne de document** vers
   la ligne d'écriture), `ANA-03` (la balance analytique est **bornée à
   l'exercice**), `FEC-01` (la **2ᵉ** implémentation du FEC est supprimée, `305`),
-  `M01-01/02` (`306` : **le taux de change s'applique** — la facture en devise
-  entre au grand livre dans la devise de tenue, et la ligne garde devise, montant
-  en devise et taux), `BUD-01→04` (`307` : réalisé **borné à l'exercice**,
-  brouillons et AN/CL exclus, plus de N+1 ; les engagements d'une commande sont
-  **créés** et **consommés** à la facturation).
+  `M01-01/02` (`306` : **le taux de change s'applique**), `BUD-01→04` (`307` :
+  réalisé **borné à l'exercice**, engagements **créés** et **consommés**),
+  `SAGE-01→03` (`308` : l'import d'écritures est **un acte unique** — équilibre
+  global, comptes créés, écritures **validées**, soldes **cumulés**, et rien
+  n'est écrit si une pièce échoue).
   [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` **5/5**, `305` **2/2**,
-  `306` **6/6**, `307` **4/4**, batterie **94/94**, base neuve **0 erreur**.
-  Restent `SAGE-01→03` (import en brouillon, soldes écrasés, non transactionnel)
-  et la moitié de `M01-03` (écart de change au règlement et réévaluation de
-  clôture : le porteur — devise et montant par ligne — est en place).
-* **≈ 136 j restants** : plan correctif **W7 (SAGE + M01-03)** (≈ 3 j), chaînages
+  `306` **6/6**, `307` **4/4**, `308` **5/5**, batterie **94/94**.
+  Reste la **moitié de `M01-03`** : l'écart de change **au règlement** (666/766 +
+  `exchange_gain_loss_entries`) et la **réévaluation de clôture**
+  (`currency_revaluations`) — le porteur (devise, montant en devise et taux par
+  ligne) est en place depuis la `306`.
+* **≈ 135 j restants** : plan correctif **W7 (M01-03)** (≈ 2 j), chaînages
   **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes

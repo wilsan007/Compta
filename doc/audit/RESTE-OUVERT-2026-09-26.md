@@ -91,7 +91,7 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 
 | Vague | Défauts | Charge | Contenu |
 |---|---:|---:|---|
-| **W7 — Comptabilité avancée** | 3 | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08`, `300`) · ✅ **analytique** (`304`) · ✅ **un seul FEC** (`305`) · ✅ **devises** (`306` : le taux s'applique, la ligne garde sa devise) · ✅ **budgets** (`307` : réalisé borné à l'exercice, engagements créés et consommés) — restent `SAGE-01→03` (import en brouillon, soldes écrasés, non transactionnel) et la **moitié de `M01-03`** (écart de change au règlement 666/766 et réévaluation de clôture ; le porteur — devise et montant par ligne — est en place) ([preuve](VAGUE-W7-2026-09-28.md)) |
+| **W7 — Comptabilité avancée** | 1 | 6 j | ✅ **le CA non taxé entre dans la CA3** (`245 T08`, `300`) · ✅ **analytique** (`304`) · ✅ **un seul FEC** (`305`) · ✅ **devises** (`306`) · ✅ **budgets** (`307`) · ✅ **import d'écritures en une transaction** (`308`, SAGE-01→03) — reste la **moitié de `M01-03`** : l'écart de change **au règlement** (666/766 + `exchange_gain_loss_entries`) et la **réévaluation de clôture** (`currency_revaluations`) ; le porteur (devise, montant en devise, taux par ligne) est en place depuis la `306` ([preuve](VAGUE-W7-2026-09-28.md)) |
 | **W8 — Production et projets** ✅ **fermée (302, 303, 28/09)** | 0 (était 5) | 3 j | ✅ la **refacturation des temps** existe (`231 M-17-01` fermé le 28/09 par la `301`) ; `302` : nomenclature **multi-niveaux** explosée par **une** fonction qui sert aussi au coût et aux sorties, quantité produite **déclarée** respectée, rebuts impossibles **refusés**, **écart de coût** chiffré (`cost_variance`), écriture datée de l'OF ; `303` : avancement **pondéré** par une seule règle (parent et projet), **anti-cycle** des tâches ([preuves](VAGUE-W8-2026-09-28.md)) |
 | **T1 → T9** | 9 scénarios transverses | 5 j | commande → livraison → facture → encaissement → lettrage → clôture ; achat → réception → qualité → facture → paiement ; temps → projet → facture → marge ; **absence → paie → DSN → coût projet** (fait, `266`) ; caisse → clôture → comptabilité → TVA ; immobilisation → amortissement → cession ; budget → engagement → réalisé ; import → lettrage → états ; **contre-épreuve de falsification** |
 | | **Total** | **≈ 14 j** | |
@@ -175,10 +175,10 @@ reste au registre).
 
 | Bloc | Charge |
 |---|---:|
-| Plan correctif — phases 5 et 6 (W7 : SAGE + la moitié de M01-03) | ≈ 3 j |
+| Plan correctif — phases 5 et 6 (W7 : la moitié de M01-03) | ≈ 2 j |
 | Chaînages — phases 7 à 9 (L1 → L24) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
-| **Total restant au 28/09/2026** | **≈ 136 j** |
+| **Total restant au 28/09/2026** | **≈ 133 j** |
 | Déjà livré et prouvé (W0 → W10 — dont W5 `260`, W10 `267`, **W8 fermée** `302`/`303`, **W7 analytique et FEC** `304`/`305` — et chaînages L0) | ≈ 26,5 j |
 
 Au 24/09 le total était de ≈ 169 j ; W4 (4 j), W6 (3,5 j), la chaîne de l'absence
