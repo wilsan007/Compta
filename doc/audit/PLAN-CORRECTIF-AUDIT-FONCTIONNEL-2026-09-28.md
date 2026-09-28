@@ -41,7 +41,7 @@ Ordre conseillé : **X1-urgent → X0 → X1 → X7** (rapides, débloquent la s
 | Partie | Vagues | Thème | Charge | Décisions à obtenir avant | État |
 |---|---|---|---:|---|---|
 | **1** | X1-urgent, X0, X1, X7 | Sécurité, outillage « chemin de l'écran », droits, écrans et données de base | ≈ 6 j | aucune (D-11 partielle) | ✅ **faite le 28/09** — [preuve](VAGUE-X1U-X0-X1-X7-2026-09-28.md) |
-| **2** | X2, X3, X6 | Comptabilité (validation, créations, FEC), paie, trésorerie et tableaux de bord | ≈ 11 j + expert | D-A, D-C, D-G, D-F | à faire |
+| **2** | X2, X3, X6 | Comptabilité (validation, créations, FEC), paie, trésorerie et tableaux de bord | ≈ 11 j + expert | D-A, D-C, D-G, D-F **tranchées le 28/09** (§ 2) | à faire |
 | **3** | X4, X5, X8 | Stock et logistique, production / caisse / immobilisations, contrôles durables et recette | ≈ 10,5 j | D-B, D-D, D-E | à faire |
 
 Pourquoi ce découpage : la partie 1 n'attend **aucune** décision et ferme ce qui est
@@ -209,6 +209,75 @@ Test : `s9` exige l'égalité **tableau = grand livre** pour chaque indicateur.
 | **D-F** | Solde bancaire affiché : comptable ou relevé ? | Les deux côte à côte, **comptable** comme référence | X6 |
 | **D-G** | Grille de paie France 2026 | Rédigée par nous, **validée par l'expert-comptable** (tests d'or signés) | X3 |
 | **D-11** | Taux et localisation Djibouti | Décision existante, toujours ouverte | X7 (partiel) |
+
+### Décisions de la partie 2, tranchées le 28/09/2026
+
+Critère retenu : la solution la plus sûre **juridiquement**, qui réutilise ce que la base
+porte déjà plutôt que d'ajouter des colonnes que personne ne lit.
+
+**D-A — Brouillon, puis « Valider » ; « Enregistrer et valider » seulement sans séparation des tâches.**
+- Une écriture saisie naît **brouillon** ; « Valider » (unitaire) et « Valider la
+  sélection » (brouillard) appellent `validate_journal_entries(uuid[])`, qui rend un verdict
+  par écriture.
+- Le raccourci « Enregistrer et valider » reste offert **quand la société n'a pas activé
+  la séparation des tâches** : c'est déjà la règle de la 232 (`post_journal_entry` avec
+  `status = 'posted'` refusé si `enforce_segregation`). Aucune règle nouvelle, un clic de
+  moins pour la petite société.
+- Pourquoi : c'est ce qui alimente `validated_by` / `validated_at` (donc `ValidDate` du FEC,
+  A47 A-1) et garde la séparation des tâches possible ; un brouillon déséquilibré reste
+  **invalidable**. Valider à la création aurait rendu toute correction impossible sans
+  extourne.
+- La clôture de période ou de journal **refuse** s'il reste des brouillons, en les nommant.
+
+**D-C — Aucune colonne plate : chaque donnée va là où la base la porte déjà.**
+Mesuré le 28/09 : `third_party_accounts` a déjà `customer_id` / `supplier_id` /
+`employee_id`, `payment_term_id`, `default_bank_account_id` et `credit_limit` ;
+`customers` / `suppliers` ont adresse, ville, code postal, pays, SIRET et TVA ;
+`partner_bank_accounts` et `reminder_levels` existent.
+
+| Champ de l'écran (23 absents) | Destination |
+|---|---|
+| adresse, code postal, ville, pays, SIRET, TVA intracom., contact | le **tiers** lié (`customers` / `suppliers`) — lus et écrits par la fiche tiers, pas recopiés |
+| IBAN, BIC, code banque, guichet, compte, clé | `partner_bank_accounts` + `third_party_accounts.default_bank_account_id` |
+| conditions, mode, délai, échéance, escompte | `payment_term_id` (la table `payment_terms` porte délais, fin de mois, escompte) |
+| encours autorisé | `credit_limit` (existe) |
+| niveau et modèle de relance | **retirés de la fiche** : la relance est une politique de société (`reminder_levels`), pas une donnée du compte |
+| zone géographique, catégorie | retirés (lus par aucun état) |
+
+Pourquoi : une seule vérité par donnée ; un compte auxiliaire n'est qu'une vue comptable
+du tiers. 23 colonnes recopiées auraient divergé dès la première modification de la fiche
+client. Même principe pour les journaux : `racines_autorisees` et `compte_attente`
+**ajoutées et contrôlées** par `post_journal_entry` (elles ont un effet), `numerotation`
+et `reconciliation_mode` **retirées** de l'écran (aucune règle ne les lirait).
+
+**D-G — Grille France 2026 rédigée par nous, chaque taux sourcé, déploiement conditionné à la signature de l'expert-comptable.**
+- Chaque taux, plafond et assiette est une ligne datée de `payroll_legal_parameters`
+  (`valid_from` / `valid_to`) avec sa **source officielle** (URSSAF, AGIRC-ARRCO, arrêté du
+  PMSS), relevée au moment de l'exécution de X3 — aucune valeur de mémoire.
+- La grille « France 2024-2025 » est **close** (`valid_to`), jamais modifiée : les
+  bulletins déjà calculés restent explicables.
+- Les trois bulletins d'or (SMIC ; 2 500 € non cadre ; 4 500 € cadre au-dessus du PMSS)
+  sont d'abord calculés par nous et comparés au simulateur officiel, puis **signés par
+  l'expert-comptable** ; ils deviennent les tests de non-régression (à 0,01 €).
+- Le code de X3 avance sans attendre ; la **mise en production** de la grille attend la
+  signature. D'ici là, la grille actuelle — fausse de ≈ 335 € de net sur 2 500 € — reste
+  signalée comme telle dans la preuve.
+- Pourquoi : un taux de paie faux engage l'employeur ; ni nous ni un test automatique ne
+  peuvent certifier la conformité, seul un professionnel le peut.
+
+**D-F — Les deux soldes côte à côte, le comptable comme référence ; le solde initial est une écriture d'à-nouveau.**
+Mesuré le 28/09 : `bank_accounts` porte déjà `calculated_balance` (grand livre),
+`statement_balance` / `statement_balance_date` (dernier relevé) et `reconciliation_diff`.
+- Affichés : **solde comptable** (512x, référence de tous les états et tableaux de bord),
+  **solde du dernier relevé** avec sa date, et **l'écart à rapprocher**. La colonne
+  `balance`, que rien ne met à jour, n'est plus affichée ni lue (dépréciée).
+- Le solde initial saisi à la création crée une écriture au journal **AN** :
+  512x / **890 « Bilan d'ouverture »** (compte à ajouter au plan standard — absent le
+  28/09), refusée si l'exercice porte déjà un à-nouveau sur ce compte (pas de double
+  ouverture).
+- Pourquoi : le solde comptable est le seul que la balance, le bilan et le FEC
+  connaissent ; le relevé est la preuve externe ; leur écart est le travail de
+  rapprochement, pas une erreur à masquer.
 
 ## 3. Suivi
 
