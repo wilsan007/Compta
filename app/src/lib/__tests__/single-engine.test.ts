@@ -13,6 +13,7 @@
  *   IMMO-04 `units_of_production` était proposée à l'écran et ignorée en base ;
  *   IMMO-05 les échecs du lot étaient avalés (`console.error`) ;
  *   RH-04  `importTimesheetElements` recalculait les heures sup (seuil 8 h, × 1,25).
+ *   C7     (X3, 275) `PayRunsPage` calculait les totaux du lot avec un barème marocain.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'node:fs'
@@ -65,6 +66,12 @@ const INTERDITS: Array<[string, RegExp, RegExp?]> = [
   ['importTimesheetElements (import qui recalculait, RH-04)', /importTimesheetElements/],
   ['seuil d’heures supplémentaires du front (RH-04)', /hours\s*-\s*8|hours\s*>\s*8/],
   ['écriture automatique d’heures supplémentaires par un écran (RH-04)', /element_type\s*:\s*'overtime'/],
+  // X3 / C7 (275) : PayRunsPage portait un troisième moteur de paie, MAROCAIN
+  // (CNSS 4,48 % plafonnée à 6 000, AMO 2,26 %, part patronale 8,98 %, IR).
+  // Les totaux d'un lot sont l'agrégat de ses bulletins, tenu par la base.
+  // (« MAD » reste une devise légitime des listes de devises : seul le calcul est interdit.)
+  ['taux de cotisation marocains dans un écran (C7)', /0\.0448|0\.0226|0\.0898/],
+  ['calcul CNSS / AMO du front (C7)', /\b(cnss|amo)(Total|Base|Ded)\b/i],
 ]
 
 // Les commentaires CITENT les symboles supprimés pour dire ce qui a changé :

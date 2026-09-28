@@ -41,7 +41,7 @@ Ordre conseillé : **X1-urgent → X0 → X1 → X7** (rapides, débloquent la s
 | Partie | Vagues | Thème | Charge | Décisions à obtenir avant | État |
 |---|---|---|---:|---|---|
 | **1** | X1-urgent, X0, X1, X7 | Sécurité, outillage « chemin de l'écran », droits, écrans et données de base | ≈ 6 j | aucune (D-11 partielle) | ✅ **faite le 28/09** — [preuve](VAGUE-X1U-X0-X1-X7-2026-09-28.md) |
-| **2** | X2, X3, X6 | Comptabilité (validation, créations, FEC), paie, trésorerie et tableaux de bord | ≈ 11 j + expert | D-A, D-C, D-G, D-F **tranchées le 28/09** (§ 2) | en cours — **X2 faite le 28/09** ([preuve](VAGUE-X2-2026-09-28.md), 273, 274) |
+| **2** | X2, X3, X6 | Comptabilité (validation, créations, FEC), paie, trésorerie et tableaux de bord | ≈ 11 j + expert | D-A, D-C, D-G, D-F **tranchées le 28/09** (§ 2) | en cours — **X2** ([preuve](VAGUE-X2-2026-09-28.md), 273, 274) et **X3** ([preuve](VAGUE-X3-2026-09-28.md), 275, 276 — production de la grille : signature de l'expert en attente) faites le 28/09 |
 | **3** | X4, X5, X8 | Stock et logistique, production / caisse / immobilisations, contrôles durables et recette | ≈ 10,5 j | D-B, D-D, D-E | à faire |
 
 Pourquoi ce découpage : la partie 1 n'attend **aucune** décision et ferme ce qui est

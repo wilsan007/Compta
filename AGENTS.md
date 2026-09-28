@@ -608,6 +608,18 @@ L'essentiel en huit lignes :
   l'écran **15/15** avec **21** rouges inscrits (33 → 21), `check-screen-writes` **62 → 4**.
   [Preuve](doc/audit/VAGUE-X2-2026-09-28.md)
 
+### Audit fonctionnel — partie 2, vague X3 : paie (2026-09-28) ✅ (production : signature de l'expert en attente)
+- **`275`** : un lot se crée vide ; ses totaux sont l'agrégat de ses bulletins, tenu par la base (l'écran
+  les calculait avec un barème **marocain**) ; 13 tables de paie sous `can_perform` (un lecteur écrivait le
+  pont paie → grand livre).
+- **`276`** : grille **France 2026**, chaque taux sourcé (URSSAF 01/01/2026, RGDU, Agirc-Arrco 2025-16,
+  décret Smic 2025-1228 et arrêté du 22/05/2026, BOFiP taux par défaut) ; moteur corrigé (CSG comptée une
+  fois, net imposable, PAS en grille, planchers T2, RGDU une fois). Bulletins d'or au centime :
+  SMIC → 1 477,93 ; 2 500 → 1 919,53 ; 4 500 cadre → 3 121,70. ⚠️ **Ne pas déployer la 276 avant la
+  signature des bulletins d'or par l'expert-comptable (D-G).**
+- Preuves : 275 **5/5**, 276 **6/6**, batterie **88/88** (249 migrations), écran **15/15**, registre
+  **16** rouges. [Preuve](doc/audit/VAGUE-X3-2026-09-28.md)
+
 ### Bugs corrigés
 ### Bugs corrigés
 - `auth-signup/index.ts:108` — `APP_URL` non défini → fallback string

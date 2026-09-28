@@ -43,7 +43,8 @@ export async function getPayRuns() {
   return data as PayRun[]
 }
 
-export async function createPayRun(pr: Omit<PayRun, 'id' | 'created_at'>) {
+// C5/C7 (275) : un lot se crée sans totaux — la base les agrège depuis ses bulletins
+export async function createPayRun(pr: Pick<PayRun, 'number' | 'period_start' | 'period_end' | 'pay_date' | 'status'>) {
   const tid = await getTenantId()
   const { data, error } = await supabase.from('pay_runs').insert(ti(pr, 'pay_runs', tid)).select().single()
   if (error) throw error
@@ -769,3 +770,39 @@ export async function deletePaymentTemplateCompta(id: string): Promise<void> {
   if (error) throw error
 }
 
+
+// ============ Paramètres de paie propres à la société (X3/C6, 276) ============
+// Le moteur lit, par date, d'abord la ligne de la société puis la valeur légale
+// (`get_legal_parameter`). Deux paramètres n'ont PAS de valeur légale commune :
+// le taux AT/MP notifié par la Carsat et le franchissement du seuil de 50 salariés
+// (FNAL, RGDU). Une modification prend effet au 1er du mois choisi (AAAA-MM).
+export type CompanyPayrollParameters = { effectif50Plus: boolean; tauxAtmp: number | null }
+
+export async function getCompanyPayrollParameters(date = new Date().toISOString().slice(0, 10)): Promise<CompanyPayrollParameters> {
+  const tid = await getTenantId()
+  let q = supabase.from('payroll_legal_parameters').select('code, value, valid_from, valid_to')
+    .in('code', ['EFFECTIF_50_PLUS', 'TAUX_ATMP']).eq('country_code', 'FR').lte('valid_from', date)
+    .order('valid_from', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  const current = (code: string) => (data || []).find((r: any) => r.code === code && (!r.valid_to || r.valid_to >= date))
+  return {
+    effectif50Plus: Number(current('EFFECTIF_50_PLUS')?.value ?? 0) >= 1,
+    tauxAtmp: current('TAUX_ATMP') ? Number(current('TAUX_ATMP')!.value) : null,
+  }
+}
+
+export async function saveCompanyPayrollParameters(effectif50Plus: boolean, tauxAtmp: number | null, effectiveMonth = new Date().toISOString().slice(0, 7)) {
+  const tid = await getTenantId()
+  if (!/^\d{4}-\d{2}$/.test(effectiveMonth)) throw new Error(`Mois d'effet invalide : ${effectiveMonth}`)
+  const validFrom = `${effectiveMonth}-01`
+  const rows = [{ code: 'EFFECTIF_50_PLUS', value: effectif50Plus ? 1 : 0 }]
+  if (tauxAtmp !== null) rows.push({ code: 'TAUX_ATMP', value: tauxAtmp })
+  const { error } = await supabase.from('payroll_legal_parameters').upsert(
+    // la table porte aussi les lignes légales (tenant_id NULL) : la société est posée explicitement
+    rows.map((r) => ({ ...r, tenant_id: tid, country_code: 'FR', valid_from: validFrom, source: 'Déclaré par la société (Paramètres → Législation)' })),
+    { onConflict: 'tenant_id,country_code,code,valid_from' },
+  )
+  if (error) throw error
+}

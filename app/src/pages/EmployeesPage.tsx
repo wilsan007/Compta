@@ -123,6 +123,8 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [postalCode, setPostalCode] = useState('')
   const [contractType, setContractType] = useState('cdi')
   const [contractEndDate, setContractEndDate] = useState('')
+  // C6 (276) : la catégorie de paie décide des cotisations propres aux cadres (Apec)
+  const [payrollCategory, setPayrollCategory] = useState<'non_cadre' | 'cadre'>('non_cadre')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -139,6 +141,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         postal_code: postalCode || null,
         contract_type: contractType as any,
         contract_end_date: contractEndDate || null,
+        payroll_category: payrollCategory,
       } as any)
       onSaved()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
@@ -184,6 +187,10 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
               { value: 'interim', label: t('employees.contractTypes.interim') as string },
             ]} />
           </div>
+          <Select label={t('employees.payrollCategory')} value={payrollCategory} onChange={(e) => setPayrollCategory(e.target.value as 'non_cadre' | 'cadre')} options={[
+            { value: 'non_cadre', label: t('employees.payrollCategories.non_cadre') as string },
+            { value: 'cadre', label: t('employees.payrollCategories.cadre') as string },
+          ]} />
           {contractType !== 'cdi' && (
             <Input label={t('employees.contractEndDate')} type="date" value={contractEndDate} onChange={(e) => setContractEndDate(e.target.value)} />
           )}

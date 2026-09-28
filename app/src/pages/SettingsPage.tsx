@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CompanyPayrollParameters } from '@/components/CompanyPayrollParameters'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -359,6 +360,8 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
           </div>
         </div>
       </Card>
+
+      <CompanyPayrollParameters />
     </div>
   )
 }

@@ -155,49 +155,16 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
   const [payDate, setPayDate] = useState(today.toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
 
-  // Moroccan payroll calculation
-  const grossTotal = employees.reduce((s, e) => s + Number(e.salary), 0)
-  const cnssTotal = employees.reduce((s, e) => {
-    const sal = Number(e.salary)
-    const cnssBase = Math.min(sal, 6000) // CNSS plafonné à 6000 MAD
-    return s + cnssBase * 0.0448 // 4.48% part salariale
-  }, 0)
-  const amoTotal = grossTotal * 0.0226 // AMO 2.26%
-  const irTotal = employees.reduce((s, e) => {
-    const sal = Number(e.salary)
-    const cnssDed = Math.min(sal, 6000) * 0.0448
-    const amoDed = sal * 0.0226
-    const netImposable = sal - cnssDed - amoDed
-    // Simplified IR barème
-    let ir = 0
-    if (netImposable <= 2500) ir = 0
-    else if (netImposable <= 4166) ir = (netImposable - 2500) * 0.10
-    else if (netImposable <= 5000) ir = 166.6 + (netImposable - 4166) * 0.20
-    else if (netImposable <= 6666) ir = 333.4 + (netImposable - 5000) * 0.30
-    else if (netImposable <= 15000) ir = 833.2 + (netImposable - 6666) * 0.34
-    else ir = 3683.0 + (netImposable - 15000) * 0.38
-    return s + Math.max(0, ir)
-  }, 0)
-  const totalDeductions = cnssTotal + amoTotal + irTotal
-  const netTotal = grossTotal - totalDeductions
-  const employerCnssTotal = employees.reduce((s, e) => {
-    const sal = Number(e.salary)
-    const cnssBase = Math.min(sal, 6000)
-    return s + cnssBase * 0.0898
-  }, 0)
-  const employerAmoTotal = grossTotal * 0.0226
-  const employerContributionsTotal = employerCnssTotal + employerAmoTotal
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
+      // C5/C7 (X3) : un lot naît VIDE. Ses totaux sont ceux de ses bulletins,
+      // agrégés par la base (275) — l'écran ne calcule plus aucune cotisation
+      // (il portait un troisième moteur, marocain, étranger à la paie de la société).
       await createPayRun({
-        number, period_start: periodStart, period_end: periodEnd, pay_date: payDate,
-        status: 'draft', gross_total: grossTotal, tax_total: totalDeductions, net_total: netTotal,
-        employer_contributions_total: employerContributionsTotal,
-        employee_count: employees.length,
-      } as any)
+        number, period_start: periodStart, period_end: periodEnd, pay_date: payDate, status: 'draft',
+      })
       onSaved()
     } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
   }
@@ -218,11 +185,7 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
           </div>
           <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('dashboard.activeEmployees')}:</span><span className="font-bold">{employees.length}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.grossTotal')}:</span><span className="font-mono font-bold">{formatCurrency(grossTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.cnss')} (4.48%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(cnssTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.amo')} (2.26%):</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(amoTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('payRuns.ir')}:</span><span className="font-mono text-[var(--color-danger)]">-{formatCurrency(irTotal)}</span></div>
-            <div className="flex justify-between border-t border-[var(--color-border)] pt-1"><span className="font-semibold">{t('paySlips.netSalary')}:</span><span className="font-mono font-bold text-[var(--color-success)]">{formatCurrency(netTotal)}</span></div>
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('payRuns.totalsFromSlips')}</p>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

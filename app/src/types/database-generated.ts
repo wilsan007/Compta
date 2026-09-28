@@ -5474,6 +5474,7 @@ export interface Database {
         seniority_date: string | null
         auth_user_id: string | null
         gender: string | null
+        payroll_category: string
       }
       Insert: {
         id?: string
@@ -5521,6 +5522,7 @@ export interface Database {
         seniority_date?: string
         auth_user_id?: string
         gender?: string
+        payroll_category?: string
       }
       Update: {
         id?: string
@@ -5568,6 +5570,7 @@ export interface Database {
         seniority_date?: string
         auth_user_id?: string
         gender?: string
+        payroll_category?: string
       }
       Relationships: []
     }
@@ -10197,6 +10200,7 @@ export interface Database {
         value: number
         valid_from: string
         valid_to: string | null
+        source: string | null
       }
       Insert: {
         id?: string
@@ -10206,6 +10210,7 @@ export interface Database {
         value: number
         valid_from: string
         valid_to?: string
+        source?: string
       }
       Update: {
         id?: string
@@ -10215,6 +10220,7 @@ export interface Database {
         value?: number
         valid_from?: string
         valid_to?: string
+        source?: string
       }
       Relationships: []
     }
@@ -10244,6 +10250,11 @@ export interface Database {
         is_csg_crds: boolean | null
         csg_type: string | null
         eligible_reduction_generale: boolean | null
+        applies_to: string
+        company_size: string | null
+        min_gross_pmss: number | null
+        rate_employer_param: string | null
+        source: string | null
       }
       Insert: {
         id?: string
@@ -10270,6 +10281,11 @@ export interface Database {
         is_csg_crds?: boolean
         csg_type?: string
         eligible_reduction_generale?: boolean
+        applies_to?: string
+        company_size?: string
+        min_gross_pmss?: number
+        rate_employer_param?: string
+        source?: string
       }
       Update: {
         id?: string
@@ -10296,6 +10312,11 @@ export interface Database {
         is_csg_crds?: boolean
         csg_type?: string
         eligible_reduction_generale?: boolean
+        applies_to?: string
+        company_size?: string
+        min_gross_pmss?: number
+        rate_employer_param?: string
+        source?: string
       }
       Relationships: []
     }

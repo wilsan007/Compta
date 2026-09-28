@@ -893,6 +893,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # X3 (paie). 275 (C5/C7) : lot non créable, totaux calculés par l'écran
+      # (barème marocain) ; 276 (C6) : grille France 2026 sourcée, bulletins d'or.
+      - name: 'X3 : totaux du lot tenus par la base, tables de paie sous le rôle (275)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/275_pay_run_totals_from_slips_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X3 : grille France 2026 et bulletins d''or (276)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/276_payroll_france_2026_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
       # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
       # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son

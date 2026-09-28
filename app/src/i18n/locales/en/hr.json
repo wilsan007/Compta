@@ -91,6 +91,11 @@
       "notSpecified": "Not specified",
       "F": "Female",
       "M": "Male"
+    },
+    "payrollCategory": "Payroll category",
+    "payrollCategories": {
+      "non_cadre": "Non-executive",
+      "cadre": "Executive (cadre)"
     }
   },
   "workHardship": {
@@ -223,7 +228,8 @@
     "payTitle": "Payroll payment {{number}}",
     "paySubtitle": "Net salaries, social bodies, withheld tax and advances: one treasury entry per kind.",
     "paid": "Payroll paid: {{count}} treasury entry(ies)",
-    "alreadyPaid": "Already paid: nothing to add"
+    "alreadyPaid": "Already paid: nothing to add",
+    "totalsFromSlips": "The run is created empty: then generate the payslips (Payslips screen). Its totals are those of its payslips, computed by the payroll engine."
   },
   "paySlips": {
     "title": "Payslips",

@@ -928,6 +928,8 @@ export interface Employee {
   postal_code?: string | null
   contract_type?: 'CDI' | 'CDD' | 'Apprentissage' | 'Stage' | 'Interim' | null
   contract_end_date?: string | null
+  /** 276 : catégorie de paie (Apec pour les cadres) */
+  payroll_category?: 'non_cadre' | 'cadre'
   withholding_tax_rate?: number | null
   withholding_rate_source?: string | null
   created_at: string

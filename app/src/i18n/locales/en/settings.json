@@ -671,5 +671,13 @@
   },
   "api": {
     "rateLimit": "Rate limiting"
+  },
+  "payrollParameters": {
+    "title": "Company payroll parameters",
+    "hint": "Two parameters the law does not set for everyone: the notified occupational-injury (AT/MP) rate, and a headcount of 50 or more (FNAL, general reduction). Without them, AT/MP is computed at 0%.",
+    "atmpRate": "Notified AT/MP rate (%)",
+    "effectif50Plus": "Headcount of 50 employees or more",
+    "saved": "Payroll parameters saved (effective {{month}})",
+    "effectiveMonth": "Effective from month"
   }
 }

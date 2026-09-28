@@ -13,7 +13,7 @@ it('écritures des écrans rejouées telles quelles', async () => {
     ['W03', 'AnalyticSectionsPage : créer une section analytique', () => acc.createAnalyticSection({ code: 'S' + n, name: 'Section', axis: 'default', active: true, level: 1, parent_id: undefined, plan_id: undefined, section_type: 'section' } as any)],
     ['W04', 'FixedAssetsPage : créer une immobilisation', () => acc.createFixedAsset({ name: 'Ordinateur', code: 'IM' + n, category: 'IT', purchase_date: '2026-09-01', purchase_value: 1200, current_value: 1200, depreciation_method: 'linear', useful_life_years: 3, residual_value: 0, derogatory_depreciation: false, subvention_amount: null, subvention_account: null, account_asset_code: null, account_depreciation_code: null, account_expense_depreciation_code: null, journal_id: null, currency_code: null, status: 'active' } as any)],
     ['W05', 'JournalSaisiePage : créer un compte à la volée', () => acc.createChartAccount({ code: '6' + n, name: '6' + n, type: acc.chartAccountTypeFromCode('6' + n), classe: '6' } as any)],
-    ['W06', 'PayRunsPage : créer un lot de paie', () => pay.createPayRun({ number: 'PAY-' + n, period_start: '2026-09-01', period_end: '2026-09-30', pay_date: '2026-09-30', status: 'draft', gross_total: 0, tax_total: 0, net_total: 0, employer_contributions_total: 0, employee_count: 0 } as any)],
+    ['W06', 'PayRunsPage : créer un lot de paie', () => pay.createPayRun({ number: 'PAY-' + n, period_start: '2026-09-01', period_end: '2026-09-30', pay_date: '2026-09-30', status: 'draft' })],
   ]
   for (const [id, label, fn] of cases) {
     const r = await attempt(fn)
