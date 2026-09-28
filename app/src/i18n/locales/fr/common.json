@@ -565,5 +565,19 @@
     "eventType": "Type",
     "entity": "Entité",
     "date": "Date"
+  },
+  "orderLines": {
+    "title": "Lignes de la commande",
+    "product": "Article",
+    "description": "Libellé",
+    "quantity": "Qté",
+    "unitPrice": "Prix unitaire HT",
+    "vatRate": "TVA %",
+    "total": "Total HT",
+    "add": "Ajouter une ligne",
+    "subtotal": "Total HT",
+    "vat": "TVA",
+    "totalTtc": "Total TTC",
+    "required": "Une commande porte au moins une ligne (article ou libellé, quantité positive)."
   }
 }

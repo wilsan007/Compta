@@ -320,7 +320,10 @@
     },
     "count": "{{count}} أمر",
     "selectWarehouse": "اختر مستودعاً",
-    "selectRouting": "اختر مساراً"
+    "selectRouting": "اختر مساراً",
+    "stock": "المخزون",
+    "stockGenerated": "أُنتج",
+    "stockPending": "قيد الانتظار"
   },
   "subcontracting": {
     "title": "التعهيد",

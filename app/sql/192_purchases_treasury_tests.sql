@@ -251,16 +251,17 @@ BEGIN
     INSERT INTO pos_terminals (tenant_id, name, warehouse_id) VALUES (t, 'Caisse 1', w) RETURNING id INTO term;
     INSERT INTO pos_payment_methods (tenant_id, name, type, account_code) VALUES (t, 'Espèces', 'cash', '530000') RETURNING id INTO pm;
     INSERT INTO pos_sessions (tenant_id, terminal_id, user_email, opening_amount, status) VALUES (t, term, 'caisse@audit.test', 0, 'open') RETURNING id INTO sess;
+    -- 281 : tickets écrits en direct (chemin antérieur à `create_pos_ticket`) —
+    -- sans paiement ventilé, la clôture les reconstitue (`pos_payments` n'est plus
+    -- écrivable par un utilisateur) et fait la sortie de stock qu'ils n'ont pas faite.
     INSERT INTO pos_tickets (tenant_id, number, session_id, terminal_id, subtotal, vat_total, total, payment_method, amount_paid, status)
     VALUES (t, 'T1', sess, term, 10, 2, 12, 'cash', 12, 'completed') RETURNING id INTO k1;
     INSERT INTO pos_ticket_lines (tenant_id, ticket_id, product_id, description, quantity, unit_price, vat_rate, line_total)
     VALUES (t, k1, p, 'Article POS', 1, 10, 20, 10);
-    INSERT INTO pos_payments (tenant_id, ticket_id, payment_method_id, amount) VALUES (t, k1, pm, 12);
     INSERT INTO pos_tickets (tenant_id, number, session_id, terminal_id, subtotal, vat_total, total, payment_method, amount_paid, status)
     VALUES (t, 'T2', sess, term, 10, 2, 12, 'cash', 12, 'completed') RETURNING id INTO k2;
     INSERT INTO pos_ticket_lines (tenant_id, ticket_id, product_id, description, quantity, unit_price, vat_rate, line_total)
     VALUES (t, k2, p, 'Article POS', 1, 10, 20, 10);
-    INSERT INTO pos_payments (tenant_id, ticket_id, payment_method_id, amount) VALUES (t, k2, pm, 12);
     SELECT (SELECT previous_hash FROM pos_tickets WHERE id = k2) = (SELECT ticket_hash FROM pos_tickets WHERE id = k1)
            AND (SELECT ticket_hash FROM pos_tickets WHERE id = k1) IS NOT NULL INTO chain_ok;
 

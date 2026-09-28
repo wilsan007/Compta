@@ -151,7 +151,8 @@
       "draft": "Brouillon",
       "confirmed": "Confirmée",
       "received": "Reçue",
-      "cancelled": "Annulée"
+      "cancelled": "Annulée",
+      "partial": "Partiellement reçue"
     }
   },
   "goodsReceipts": {
@@ -183,7 +184,12 @@
       "partial": "Partiel",
       "cancelled": "Annulé"
     },
-    "purchaseOrder": "Commande fournisseur"
+    "purchaseOrder": "Commande fournisseur",
+    "stock": "Stock",
+    "stockIn": "Entré",
+    "stockPending": "En attente",
+    "warehouse": "Dépôt de réception",
+    "fromOrderHint": "La réception reprend les lignes de la commande confirmée, au reste à recevoir. Passez-la à « Reçue » pour faire entrer la marchandise."
   },
   "payments": {
     "title": "Règlements fournisseurs",

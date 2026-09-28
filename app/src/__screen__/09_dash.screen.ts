@@ -7,7 +7,7 @@ it('Tableaux de bord : les chiffres affichés = la comptabilité', async () => {
   const fd = await attempt(() => acc.getFinancialDashboard())
   const td = await attempt(() => acc.getTreasuryDashboard())
   const gl = (await sql(`select
-     round(sum(case when l.account_code like '7%' then l.credit-l.debit else 0 end),2)::float ca,
+     round(sum(case when l.account_code like '70%' then l.credit-l.debit else 0 end),2)::float ca,
      round(sum(case when l.account_code like '6%' then l.debit-l.credit else 0 end),2)::float charges,
      round(sum(case when l.account_code like '411%' then l.debit-l.credit else 0 end),2)::float clients,
      round(sum(case when l.account_code like '401%' then l.credit-l.debit else 0 end),2)::float fournisseurs,

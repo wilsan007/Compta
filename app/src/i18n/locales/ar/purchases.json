@@ -151,7 +151,8 @@
       "draft": "مسودة",
       "confirmed": "مؤكد",
       "received": "مستلم",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "partial": "مستلم جزئيًا"
     }
   },
   "goodsReceipts": {
@@ -183,7 +184,12 @@
       "partial": "جزئي",
       "cancelled": "ملغى"
     },
-    "purchaseOrder": "أمر الشراء"
+    "purchaseOrder": "أمر الشراء",
+    "stock": "المخزون",
+    "stockIn": "أُدخل",
+    "stockPending": "قيد الانتظار",
+    "warehouse": "مستودع الاستلام",
+    "fromOrderHint": "يأخذ الاستلام بنود الطلب المؤكد بالكمية المتبقية. اجعله «مستلمًا» لإدخال البضاعة إلى المخزون."
   },
   "payments": {
     "title": "مدفوعات الموردين",

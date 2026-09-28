@@ -42,7 +42,7 @@ Ordre conseillé : **X1-urgent → X0 → X1 → X7** (rapides, débloquent la s
 |---|---|---|---:|---|---|
 | **1** | X1-urgent, X0, X1, X7 | Sécurité, outillage « chemin de l'écran », droits, écrans et données de base | ≈ 6 j | aucune (D-11 partielle) | ✅ **faite le 28/09** — [preuve](VAGUE-X1U-X0-X1-X7-2026-09-28.md) |
 | **2** | X2, X3, X6 | Comptabilité (validation, créations, FEC), paie, trésorerie et tableaux de bord | ≈ 11 j + expert | D-A, D-C, D-G, D-F **tranchées le 28/09** (§ 2) | ✅ **faite le 28/09** — X2 ([preuve](VAGUE-X2-2026-09-28.md), 273, 274), X3 ([preuve](VAGUE-X3-2026-09-28.md), 275, 276 — production de la grille : signature de l'expert en attente), X6 ([preuve](VAGUE-X6-2026-09-28.md), 277, 278) |
-| **3** | X4, X5, X8 | Stock et logistique, production / caisse / immobilisations, contrôles durables et recette | ≈ 10,5 j | D-B, D-D, D-E | à faire |
+| **3** | X4, X5, X8 | Stock et logistique, production / caisse / immobilisations, contrôles durables et recette | ≈ 10,5 j | D-B, D-D, D-E **tranchées le 28/09** (§ 2) | ✅ **faite le 28/09** — [preuve](VAGUE-X4-X5-X8-2026-09-28.md) (280, 281) ; registre du chemin de l'écran **vide** ; reste la re-notation des modules (recette) |
 
 Pourquoi ce découpage : la partie 1 n'attend **aucune** décision et ferme ce qui est
 exploitable aujourd'hui (anonyme, lecteur) ; elle pose aussi l'outil qui prouve les deux
@@ -278,6 +278,29 @@ Mesuré le 28/09 : `bank_accounts` porte déjà `calculated_balance` (grand livr
 - Pourquoi : le solde comptable est le seul que la balance, le bilan et le FEC
   connaissent ; le relevé est la preuve externe ; leur écart est le travail de
   rapprochement, pas une erreur à masquer.
+
+### Décisions de la partie 3, tranchées le 28/09/2026
+
+Même critère que la partie 2 : la solution la plus sûre, qui réutilise ce que la base porte.
+
+**D-B — Les mouvements fantômes sont listés, jamais rejoués d'office.**
+La 280 inscrit chaque mouvement enregistré sans effet (`type` sans `movement_type`) à
+`stock_movement_phantoms`, l'aligne **sans rien rejouer** et le marque. L'utilisateur décide, un
+par un, depuis l'inventaire : **rejouer** (un mouvement neuf, daté du jour de la décision — la
+date d'origine ne peut plus être juste pour la valorisation) ou **ignorer**. Un inventaire fantôme
+ne se rejoue pas : une quantité comptée à une autre date ne dit rien du stock d'aujourd'hui.
+Pourquoi : un rejeu automatique aurait modifié des stocks et des écritures ST sans que personne
+ne l'ait vu ; l'inventaire physique reste la seule vérité.
+
+**D-D — Dérogatoire et subvention retirés maintenant, implémentés en phase 6.**
+Le moteur d'amortissement (260) ne les calcule pas et aucune colonne ne les porte : les offrir
+faisait échouer **toute** création d'immobilisation. Ajouter des colonnes que personne ne lit
+aurait fait croire qu'ils étaient gérés.
+
+**D-E — Espèces 530000, carte 511200, chèque 511200.**
+Posés pour chaque société existante et à la création d'une société ; seuls les paiements en
+**espèces** sont attendus en tiroir à la clôture. Les comptes restent modifiables par
+l'administrateur (écran des moyens de paiement), plus par un lecteur.
 
 ## 3. Suivi
 

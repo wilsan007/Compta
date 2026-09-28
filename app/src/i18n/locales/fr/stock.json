@@ -264,11 +264,17 @@
     "movementTypes": {
       "in": "Entrée",
       "out": "Sortie",
-      "adjustment": "Ajustement"
+      "adjustment": "Ajustement",
+      "initial": "Stock initial"
     },
     "product": "Produit",
     "quantity": "Quantité",
-    "recentMovements": "Mouvements récents"
+    "recentMovements": "Mouvements récents",
+    "initialWarehouse": "Dépôt du stock initial",
+    "initialStockHint": "La quantité initiale entre au dépôt choisi, valorisée au prix d'achat (mouvement « initial »).",
+    "warehouse": "Dépôt",
+    "unitCost": "Coût unitaire",
+    "adjustmentHint": "Ajustement : saisissez la quantité COMPTÉE au dépôt ; l'écart devient une entrée ou une sortie."
   },
   "locations": {
     "title": "Emplacements de stock",
@@ -512,5 +518,18 @@
   "status": "Statut",
   "traceability": "Traçabilité des lots",
   "upstream": "Amont",
-  "warehouse": "Dépôt"
+  "warehouse": "Dépôt",
+  "phantoms": {
+    "title": "{{count}} mouvement(s) de stock sans effet à valider",
+    "description": "Enregistrés avant la correction du 28/09/2026, ils n'ont jamais modifié le stock. Rejouer crée un mouvement daté d'aujourd'hui ; ignorer le laisse sans effet. Un inventaire ne se rejoue pas.",
+    "date": "Date",
+    "product": "Article",
+    "type": "Type",
+    "quantity": "Quantité",
+    "reference": "Référence",
+    "replay": "Rejouer",
+    "ignore": "Ignorer",
+    "confirmReplay": "Rejouer ce mouvement aujourd'hui ? Le stock sera modifié.",
+    "confirmIgnore": "Ignorer définitivement ce mouvement ?"
+  }
 }

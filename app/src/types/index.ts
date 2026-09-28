@@ -853,9 +853,6 @@ export interface FixedAsset {
   journal_id?: string | null
   partner_id?: string | null
   currency_code?: string
-  derogatory_depreciation?: boolean
-  subvention_amount?: number | null
-  subvention_account?: string | null
 }
 
 // ============ Sprint 6: Partner Contacts (#62) ============

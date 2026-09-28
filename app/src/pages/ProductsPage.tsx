@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement } from '@/lib/queries/stock'
+import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement, getWarehouses } from '@/lib/queries/stock'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown } from 'lucide-react'
-import type { Product, StockMovement } from '@/types'
+import type { Product, StockMovement, Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { confirmSync } from '@/lib/confirm'
@@ -17,6 +17,7 @@ export function ProductsPage() {
   const { t: tCommon } = useTranslation('common')
 const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<StockMovement[]>([])
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showMovementForm, setShowMovementForm] = useState(false)
@@ -26,9 +27,10 @@ const [products, setProducts] = useState<Product[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [p, m] = await Promise.all([getProducts(), getStockMovements()])
+      const [p, m, w] = await Promise.all([getProducts(), getStockMovements(), getWarehouses()])
       setProducts(p)
       setMovements(m)
+      setWarehouses(w.filter((x) => x.active !== false))
     } catch (err: any) { console.error('Failed to load products:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
@@ -122,17 +124,17 @@ const [products, setProducts] = useState<Product[]>([])
       )}
 
       {showForm && (
-        <ProductForm onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />
+        <ProductForm warehouses={warehouses} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />
       )}
 
       {showMovementForm && (
-        <StockMovementForm products={products} onClose={() => setShowMovementForm(false)} onSaved={() => { setShowMovementForm(false); loadData() }} />
+        <StockMovementForm products={products} warehouses={warehouses} onClose={() => setShowMovementForm(false)} onSaved={() => { setShowMovementForm(false); loadData() }} />
       )}
     </div>
   )
 }
 
-function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState('')
   const { toast } = useToast()
   const { t } = useTranslation('stock')
@@ -144,6 +146,7 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [purchasePrice, setPurchasePrice] = useState(0)
   const [vatRate, setVatRate] = useState(defaultVatRate)
   const [stockQty, setStockQty] = useState(0)
+  const [initialWarehouseId, setInitialWarehouseId] = useState(warehouses[0]?.id ?? '')
   const [reorderLevel, setReorderLevel] = useState(0)
   const [unit, setUnit] = useState('')
   const [category, setCategory] = useState('')
@@ -156,15 +159,19 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
     e.preventDefault()
     setSaving(true)
     try {
+      // M6 (280) : la quantité initiale devient un mouvement `initial` au dépôt
+      // choisi, valorisé au prix d'achat — jamais une quantité posée sur la fiche.
       await createProduct({
         name, sku: sku || undefined, type: type as any,
         sale_price: salePrice, purchase_price: purchasePrice, vat_rate: vatRate,
-        stock_quantity: stockQty, reorder_level: reorderLevel, unit, category,
+        reorder_level: reorderLevel, unit, category,
         active: true, description: '',
         sale_account_code: saleAccountCode || null,
         purchase_account_code: purchaseAccountCode || null,
         stock_account_code: stockAccountCode || null,
-      } as any)
+      } as any, type === 'stock' && stockQty > 0
+        ? { quantity: stockQty, warehouse_id: initialWarehouseId || null, unit_cost: purchasePrice }
+        : undefined)
       onSaved()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
@@ -204,6 +211,15 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
               <Input label={t('products.reorderLevel')} type="number" step="0.01" value={reorderLevel} onChange={(e) => setReorderLevel(Number(e.target.value))} />
             </div>
           )}
+          {type === 'stock' && stockQty > 0 && (
+            <div>
+              <Select label={t('products.initialWarehouse')} required value={initialWarehouseId} onChange={(e) => setInitialWarehouseId(e.target.value)} options={[
+                { value: '', label: tCommon('form.selectOption') },
+                ...warehouses.map((w) => ({ value: w.id, label: w.name })),
+              ]} />
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{t('products.initialStockHint')}</p>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-4">
             <Input label={t('products.saleAccountCode')} value={saleAccountCode} onChange={(e) => setSaleAccountCode(e.target.value)} placeholder="707000" />
             <Input label={t('products.purchaseAccountCode')} value={purchaseAccountCode} onChange={(e) => setPurchaseAccountCode(e.target.value)} placeholder="607000" />
@@ -219,27 +235,43 @@ function ProductForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   )
 }
 
-function StockMovementForm({ products, onClose, onSaved }: { products: Product[]; onClose: () => void; onSaved: () => void }) {
+function StockMovementForm({ products, warehouses, onClose, onSaved }: { products: Product[]; warehouses: Warehouse[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { toast } = useToast()
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [type, setType] = useState('in')
   const [quantity, setQuantity] = useState(0)
+  const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? '')
+  const [unitCost, setUnitCost] = useState(0)
   const [reference, setReference] = useState('')
   const [saving, setSaving] = useState(false)
+
+  function selectProduct(id: string) {
+    setProductId(id)
+    const p = products.find((x) => x.id === id)
+    setUnitCost(Number(p?.purchase_price) || 0)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
+      // C8 (280) : un mouvement porte son type (movement_type), son dépôt et,
+      // pour une entrée, son coût — sinon il ne bouge ni le stock ni la valeur.
+      const today = new Date().toISOString().split('T')[0]
       await createStockMovement({
         product_id: productId,
-        type: type as any,
+        warehouse_id: warehouseId || null,
+        movement_type: type as StockMovement['movement_type'],
         quantity,
-        reference,
-        date: new Date().toISOString().split('T')[0],
-      } as any)
+        unit_cost: type === 'in' ? unitCost : 0,
+        reference: reference || null,
+        reference_type: 'manual',
+        reference_id: null,
+        movement_date: today,
+        notes: null,
+      })
       onSaved()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
@@ -256,7 +288,7 @@ function StockMovementForm({ products, onClose, onSaved }: { products: Product[]
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <Select label={t('products.product')} required value={productId} onChange={(e) => setProductId(e.target.value)} options={[
+          <Select label={t('products.product')} required value={productId} onChange={(e) => selectProduct(e.target.value)} options={[
             { value: '', label: tCommon('form.selectOption') },
             ...products.filter(p => p.type === 'stock').map(p => ({ value: p.id, label: `${p.name} (${tCommon('common.stock')}: ${p.stock_quantity})` })),
           ]} />
@@ -265,7 +297,15 @@ function StockMovementForm({ products, onClose, onSaved }: { products: Product[]
             { value: 'out', label: t('products.movementTypes.out') },
             { value: 'adjustment', label: t('products.movementTypes.adjustment') },
           ]} />
+          <Select label={t('products.warehouse')} required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} options={[
+            { value: '', label: tCommon('form.selectOption') },
+            ...warehouses.map((w) => ({ value: w.id, label: w.name })),
+          ]} />
           <Input label={t('products.quantity')} type="number" step="0.01" required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+          {type === 'in' && (
+            <Input label={t('products.unitCost')} type="number" step="0.01" value={unitCost} onChange={(e) => setUnitCost(Number(e.target.value))} />
+          )}
+          {type === 'adjustment' && <p className="text-xs text-[var(--color-text-secondary)]">{t('products.adjustmentHint')}</p>}
           <Input label={tCommon('common.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={tCommon('form.optional')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

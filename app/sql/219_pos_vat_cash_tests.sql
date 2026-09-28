@@ -36,21 +36,20 @@ BEGIN
     VALUES (t, term, 'caisse@audit.test', 0, 'open') RETURNING id INTO sess;
 END $$;
 
--- Un ticket d'une ligne à un taux donné, réglé par un moyen donné
+-- Un ticket d'une ligne à un taux donné, réglé par un moyen donné — par le
+-- chemin de l'écran depuis la 281 (`create_pos_ticket` : ticket, ligne et
+-- paiement en un appel ; `pos_payments` n'est plus écrivable en direct).
 CREATE OR REPLACE FUNCTION _ticket219(p_t uuid, p_sess uuid, p_num text, p_base numeric, p_rate numeric,
   p_method uuid, p_amount numeric)
 RETURNS void LANGUAGE plpgsql AS $$
-DECLARE k uuid;
 BEGIN
-  INSERT INTO pos_tickets (tenant_id, number, session_id, terminal_id, subtotal, vat_total, total,
-                           amount_paid, status)
-  SELECT p_t, p_num, p_sess, ps.terminal_id, p_base, round(p_base * p_rate / 100, 2),
-         p_base + round(p_base * p_rate / 100, 2), p_amount, 'completed'
-  FROM pos_sessions ps WHERE ps.id = p_sess
-  RETURNING id INTO k;
-  INSERT INTO pos_ticket_lines (tenant_id, ticket_id, description, quantity, unit_price, vat_rate, line_total)
-  VALUES (p_t, k, 'Article ' || p_rate || ' %', 1, p_base, p_rate, p_base);
-  INSERT INTO pos_payments (tenant_id, ticket_id, payment_method_id, amount) VALUES (p_t, k, p_method, p_amount);
+  PERFORM create_pos_ticket(
+    jsonb_build_object('session_id', p_sess, 'number', p_num,
+                       'payment_method', (SELECT type FROM pos_payment_methods WHERE id = p_method),
+                       'amount_paid', p_amount),
+    jsonb_build_array(jsonb_build_object('description', 'Article ' || p_rate || ' %', 'quantity', 1,
+                                         'unit_price', p_base, 'vat_rate', p_rate)),
+    jsonb_build_array(jsonb_build_object('payment_method_id', p_method, 'amount', p_amount)));
 END $$;
 
 -- Clôture la session à la date du dernier jour de l'exercice 2026

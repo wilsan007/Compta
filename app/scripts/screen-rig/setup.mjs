@@ -22,7 +22,7 @@ import pg from 'pg'
 import { signJwt } from './setup-lib.mjs'
 
 const DIR = path.dirname(fileURLToPath(import.meta.url))
-const OUT_DIR = path.resolve(DIR, '../../.screen-rig')
+const OUT_DIR = process.env.SCREEN_RIG_FILE ? path.dirname(process.env.SCREEN_RIG_FILE) : path.resolve(DIR, '../../.screen-rig')
 const url = process.env.DATABASE_URL
 if (!url) { console.error('DATABASE_URL requis'); process.exit(1) }
 if (!/localhost|127\.0\.0\.1/.test(url)) {

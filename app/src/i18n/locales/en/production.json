@@ -320,7 +320,10 @@
     },
     "count": "{{count}} order(s)",
     "selectWarehouse": "Select a warehouse",
-    "selectRouting": "Select a routing"
+    "selectRouting": "Select a routing",
+    "stock": "Stock",
+    "stockGenerated": "Produced",
+    "stockPending": "Pending"
   },
   "subcontracting": {
     "title": "Subcontracting",

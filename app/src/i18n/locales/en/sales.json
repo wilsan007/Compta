@@ -234,7 +234,11 @@
     "invoicePending": "Pending",
     "invoicePartial": "Partial",
     "invoiceInvoiced": "Invoiced",
-    "salesOrder": "Sales order"
+    "salesOrder": "Sales order",
+    "stock": "Stock",
+    "stockOut": "Shipped out",
+    "stockPending": "Pending",
+    "nothingToDeliver": "This order has nothing left to deliver."
   },
   "payments": {
     "title": "Customer payments",

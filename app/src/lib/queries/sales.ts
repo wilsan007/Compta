@@ -383,11 +383,17 @@ export async function getSalesOrders(status?: string) {
   return data as SalesOrder[]
 }
 
-export async function createSalesOrder(so: Omit<SalesOrder, 'id' | 'created_at' | 'updated_at'>) {
-  const tid = await getTenantId()
-  const { data, error } = await supabase.from('sales_orders').insert(ti(so, 'sales_orders', tid)).select().single()
+/**
+ * C10 (280) : une commande client naît AVEC ses lignes (article, quantité, prix,
+ * TVA), en un seul appel atomique ; totaux et TVA calculés par la base.
+ */
+export async function createSalesOrder(
+  so: Pick<SalesOrder, 'number' | 'customer_id' | 'order_date' | 'delivery_date' | 'notes'>,
+  lines: { product_id: string | null; description: string; quantity: number; unit_price: number; vat_rate: number }[],
+) {
+  const { data, error } = await supabase.rpc('create_sales_order', { p_order: so, p_lines: lines })
   if (error) throw error
-  return data as SalesOrder
+  return data as unknown as SalesOrder
 }
 
 export async function updateSalesOrder(id: string, updates: Partial<SalesOrder>) {

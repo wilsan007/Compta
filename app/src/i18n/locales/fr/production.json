@@ -320,7 +320,10 @@
     },
     "count": "{{count}} ordre(s)",
     "selectWarehouse": "Sélectionner un dépôt",
-    "selectRouting": "Sélectionner une gamme"
+    "selectRouting": "Sélectionner une gamme",
+    "stock": "Stock",
+    "stockGenerated": "Généré",
+    "stockPending": "En attente"
   },
   "subcontracting": {
     "title": "Sous-traitance",

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, generateDepreciationEntries, getFiscalYears } from '@/lib/queries/accounting'
@@ -172,7 +172,9 @@ export function FixedAssetsPage() {
               const isExpanded = expanded.has(a.id)
               const assetDeps = depreciations[a.id] || []
               return (
-                <div key={a.id}>
+                // X8 (balayage des routes) : une ligne et son détail dans un fragment —
+                // un <div> entre <tbody> et <tr> faisait un DOM invalide.
+                <Fragment key={a.id}>
                   <TableRow>
                     <TableCell className="font-mono text-xs">
                       <div className="flex items-center gap-1">
@@ -216,6 +218,7 @@ export function FixedAssetsPage() {
                     </TableCell>
                   </TableRow>
                   {isExpanded && (
+                    <tr><td colSpan={9} className="p-0">
                     <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
                       <h4 className="text-xs font-semibold mb-2 text-[var(--color-text-secondary)]">{t('fixedAssets.depreciationHistory')}</h4>
                       {assetDeps.length === 0 ? (
@@ -235,8 +238,9 @@ export function FixedAssetsPage() {
                         </Table>
                       )}
                     </div>
+                    </td></tr>
                   )}
-                </div>
+                </Fragment>
               )
             })}
           </Table>
@@ -322,9 +326,6 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [usefulLife, setUsefulLife] = useState(5)
   const [residualValue, setResidualValue] = useState(0)
   const [depMethod, setDepMethod] = useState('straight_line')
-  const [derogatoryDep, setDerogatoryDep] = useState(false)
-  const [subventionAmount, setSubventionAmount] = useState(0)
-  const [subventionAccount, setSubventionAccount] = useState('')
   const [accountAsset, setAccountAsset] = useState('')
   const [accountDepreciation, setAccountDepreciation] = useState('')
   const [accountExpenseDep, setAccountExpenseDep] = useState('')
@@ -348,9 +349,6 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         depreciation_method: depMethod,
         useful_life_years: usefulLife,
         residual_value: residualValue,
-        derogatory_depreciation: derogatoryDep,
-        subvention_amount: subventionAmount > 0 ? subventionAmount : null,
-        subvention_account: subventionAccount || null,
         account_asset_code: accountAsset || null,
         account_depreciation_code: accountDepreciation || null,
         account_expense_depreciation_code: accountExpenseDep || null,
@@ -393,16 +391,10 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             { value: 'straight_line', label: t('fixedAssets.depMethods.straight_line') },
             { value: 'declining_balance', label: t('fixedAssets.depMethods.declining_balance') },
           ]} />
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={derogatoryDep} onChange={(e) => setDerogatoryDep(e.target.checked)} />
-              {t('fixedAssets.derogatoryDepreciation')}
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label={t('fixedAssets.subventionAmount')} type="number" step="0.01" value={subventionAmount} onChange={(e) => setSubventionAmount(Number(e.target.value))} placeholder="0.00" />
-              <Input label={t('fixedAssets.subventionAccount')} value={subventionAccount} onChange={(e) => setSubventionAccount(e.target.value)} placeholder="131000" />
-            </div>
-          </div>
+          {/* X5 / C13 (décision D-D) : l'amortissement dérogatoire et la subvention
+              d'investissement sont RETIRÉS de la fiche — le moteur d'amortissement
+              (260) ne les calcule pas et aucune colonne ne les porte ; les offrir
+              faisait échouer toute création. Ils seront implémentés en phase 6. */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t('assetAccounts.title')}</h3>
             <div className="grid grid-cols-2 gap-4">

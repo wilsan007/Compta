@@ -91,8 +91,9 @@ export function BudgetCommitmentsPage() {
       ) : (
         <Card>
           <Table headers={[tCommon('common.date'), tCommon('common.description'), t('budgetCommitments.account'), t('budgetCommitments.supplier'), tCommon('common.amount'), t('budgetCommitments.source'), tCommon('common.status'), tCommon('table.actions')]}>
-            <tbody>
-              {commitments.map((c) => {
+            {/* X8 (balayage des routes) : `Table` porte déjà le <tbody> — un second
+                imbriqué faisait un DOM invalide. */}
+            {commitments.map((c) => {
                 const sup = suppliers.find(s => s.id === c.supplier_id)
                 const st = { variant: statusVariants[c.status] || 'neutral' as const, label: t(`budgetCommitments.statusLabels.${c.status}`, { defaultValue: c.status }) }
                 return (
@@ -119,7 +120,6 @@ export function BudgetCommitmentsPage() {
                   </TableRow>
                 )
               })}
-            </tbody>
           </Table>
         </Card>
       )}

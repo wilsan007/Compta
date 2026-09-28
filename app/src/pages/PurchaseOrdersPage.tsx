@@ -3,9 +3,13 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } from '@/lib/queries/purchases'
 import { getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
+import { OrderLinesEditor } from '@/components/OrderLinesEditor'
+import { emptyOrderLine, orderLinesPayload, orderLinesTotals, type OrderLineDraft } from '@/lib/orderLines'
+import { useLegislation } from '@/lib/legislation'
 import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
 import { Plus, Trash2, X, FileText, AlertTriangle } from 'lucide-react'
-import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
+import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
@@ -20,13 +24,15 @@ export function PurchaseOrdersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
 
   const loadData = useCallback(async () => {
     try {
-      const [ords, sups, accs, fys] = await Promise.all([getPurchaseOrders(statusFilter || undefined), getSuppliers(), getChartAccounts(), getFiscalYears()])
+      const [ords, sups, accs, fys, prods] = await Promise.all([getPurchaseOrders(statusFilter || undefined), getSuppliers(), getChartAccounts(), getFiscalYears(), getProducts()])
+      setProducts((prods || []).filter((p) => p.active !== false))
       setOrders(ords || [])
       setSuppliers(sups || [])
       setAccounts(accs || [])
@@ -84,7 +90,7 @@ export function PurchaseOrdersPage() {
                   <TableCell>
                     <select value={o.status} onChange={(e) => handleStatusChange(o.id, e.target.value)}
                       className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                      {['draft', 'confirmed', 'received', 'cancelled'].map((k) => <option key={k} value={k}>{t(`orders.statuses.${k}`) as string}</option>)}
+                      {['draft', 'confirmed', 'partial', 'received', 'cancelled'].map((k) => <option key={k} value={k}>{t(`orders.statuses.${k}`) as string}</option>)}
                     </select>
                   </TableCell>
                   <TableCell>
@@ -98,19 +104,22 @@ export function PurchaseOrdersPage() {
         </Card>
       )}
 
-      {showForm && <POForm suppliers={suppliers} accounts={accounts} years={years} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {showForm && <POForm suppliers={suppliers} products={products} accounts={accounts} years={years} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
     </div>
   )
 }
 
-function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: Supplier[]; accounts: ChartAccount[]; years: FiscalYear[]; onClose: () => void; onSaved: () => void }) {
+function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { suppliers: Supplier[]; products: Product[]; accounts: ChartAccount[]; years: FiscalYear[]; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const [supplierId, setSupplierId] = useState('')
   const { toast } = useToast()
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0])
   const [expectedDate, setExpectedDate] = useState('')
-  const [total, setTotal] = useState(0)
+  const { defaultVatRate } = useLegislation()
+  const [lines, setLines] = useState<OrderLineDraft[]>([emptyOrderLine(defaultVatRate)])
+  // Le budget s'engage sur le montant HT de la commande : la somme de ses lignes.
+  const total = orderLinesTotals(lines).ht
   const [notes, setNotes] = useState('')
   const [accountCode, setAccountCode] = useState('')
   const [fiscalYearId, setFiscalYearId] = useState('')
@@ -147,8 +156,11 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
           return
         }
       }
+      const payload = orderLinesPayload(lines)
+      if (payload.length === 0) { toast('error', tCommon('common.error'), tCommon('orderLines.required')); setSaving(false); return }
       const number = await nextDocumentNumber('CF')
-      const po = await createPurchaseOrder({ number, supplier_id: supplierId || null, order_date: orderDate, expected_date: expectedDate || null, status: 'draft', subtotal: total, vat: 0, total, notes: notes || null } as any)
+      // C9 (280) : en-tête + lignes en un appel ; les totaux sont ceux de la base.
+      const po = await createPurchaseOrder({ number, supplier_id: supplierId || null, order_date: orderDate, expected_date: expectedDate || null, notes: notes || null }, payload)
       if (accountCode) {
         await createBudgetCommitment({
           description: `Commande ${number}`,
@@ -169,8 +181,8 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '56rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('orders.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
@@ -187,7 +199,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
             <Input label={t('orders.orderDate')} type="date" required value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             <Input label={t('orders.expectedDate')} type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
           </div>
-          <Input label={t('orders.totalAmount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(Number(e.target.value))} />
+          <OrderLinesEditor lines={lines} onChange={setLines} products={products} priceField="purchase_price" defaultVatRate={defaultVatRate} />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('orders.budgetAccount')}</label>

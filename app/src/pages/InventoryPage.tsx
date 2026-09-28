@@ -7,6 +7,7 @@ import { ClipboardList, Plus, X, Calculator } from 'lucide-react'
 import type { Warehouse, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { StockPhantomsPanel } from '@/components/StockPhantomsPanel'
 
 interface StockValuationRow {
   product_id: string
@@ -79,6 +80,8 @@ const [movements, setMovements] = useState<any[]>([])
             <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('inventory.newAdjustment')}</Button>
           </div>
         } />
+
+      <StockPhantomsPanel onResolved={loadData} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-56">

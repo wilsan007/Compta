@@ -565,5 +565,19 @@
     "eventType": "Type",
     "entity": "Entity",
     "date": "Date"
+  },
+  "orderLines": {
+    "title": "Order lines",
+    "product": "Product",
+    "description": "Description",
+    "quantity": "Qty",
+    "unitPrice": "Unit price (excl. tax)",
+    "vatRate": "VAT %",
+    "total": "Total (excl. tax)",
+    "add": "Add a line",
+    "subtotal": "Subtotal",
+    "vat": "VAT",
+    "totalTtc": "Total incl. tax",
+    "required": "An order needs at least one line (product or description, positive quantity)."
   }
 }

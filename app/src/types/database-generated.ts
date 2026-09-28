@@ -6410,6 +6410,7 @@ export interface Database {
         tenant_id: string
         lot_id: string | null
         serial_id: string | null
+        purchase_order_line_id: string | null
       }
       Insert: {
         id?: string
@@ -6421,6 +6422,7 @@ export interface Database {
         tenant_id: string
         lot_id?: string
         serial_id?: string
+        purchase_order_line_id?: string
       }
       Update: {
         id?: string
@@ -6432,6 +6434,7 @@ export interface Database {
         tenant_id?: string
         lot_id?: string
         serial_id?: string
+        purchase_order_line_id?: string
       }
       Relationships: []
     }
@@ -14709,17 +14712,71 @@ export interface Database {
       }
       Relationships: []
     }
+    stock_movement_phantoms: {
+      Row: {
+        id: string
+        tenant_id: string
+        movement_id: string
+        product_id: string | null
+        warehouse_id: string | null
+        type: string
+        quantity: number
+        unit_cost: number | null
+        movement_date: string | null
+        reference: string | null
+        detected_at: string
+        decision: string
+        decided_by: string | null
+        decided_at: string | null
+        replay_movement_id: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        movement_id: string
+        product_id?: string
+        warehouse_id?: string
+        type: string
+        quantity: number
+        unit_cost?: number
+        movement_date?: string
+        reference?: string
+        detected_at?: string
+        decision?: string
+        decided_by?: string
+        decided_at?: string
+        replay_movement_id?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        movement_id?: string
+        product_id?: string
+        warehouse_id?: string
+        type?: string
+        quantity?: number
+        unit_cost?: number
+        movement_date?: string
+        reference?: string
+        detected_at?: string
+        decision?: string
+        decided_by?: string
+        decided_at?: string
+        replay_movement_id?: string
+      }
+      Relationships: []
+    }
     stock_movements: {
       Row: {
         id: string
         product_id: string | null
-        type: string | null
+        type: string
         quantity: number
         reference: string | null
         date: string
         created_at: string | null
         warehouse_id: string | null
-        movement_type: string | null
+        movement_type: string
         unit_cost: number | null
         reference_type: string | null
         reference_id: string | null
@@ -14733,13 +14790,13 @@ export interface Database {
       Insert: {
         id?: string
         product_id?: string
-        type?: string
+        type: string
         quantity?: number
         reference?: string
         date?: string
         created_at?: string
         warehouse_id?: string
-        movement_type?: string
+        movement_type: string
         unit_cost?: number
         reference_type?: string
         reference_id?: string

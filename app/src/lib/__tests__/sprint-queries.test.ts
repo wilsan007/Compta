@@ -86,13 +86,11 @@ describe('Sales Orders CRUD', () => {
     expect(mockChain.eq).toHaveBeenCalledWith('status', 'pending')
   })
 
-  it('createSalesOrder inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'SO-001' })
+  it('createSalesOrder crée en-tête et lignes en un appel (C10, 280)', async () => {
     const { createSalesOrder } = await import('@/lib/queries')
-    await createSalesOrder({ number: 'SO-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+    const line = { product_id: 'p1', description: 'A', quantity: 2, unit_price: 10, vat_rate: 20 }
+    await createSalesOrder({ number: 'SO-001' } as any, [line])
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_sales_order', { p_order: { number: 'SO-001' }, p_lines: [line] })
   })
 
   it('deleteSalesOrder calls delete with id', async () => {
@@ -169,13 +167,11 @@ describe('Purchase Orders CRUD', () => {
     expect(result).toHaveLength(1)
   })
 
-  it('createPurchaseOrder inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'PO-001' })
+  it('createPurchaseOrder crée en-tête et lignes en un appel (C9, 280)', async () => {
     const { createPurchaseOrder } = await import('@/lib/queries')
-    await createPurchaseOrder({ number: 'PO-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+    const line = { product_id: 'p1', description: 'A', quantity: 3, unit_price: 12, vat_rate: 20 }
+    await createPurchaseOrder({ number: 'PO-001' } as any, [line])
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_purchase_order', { p_order: { number: 'PO-001' }, p_lines: [line] })
   })
 
   it('deletePurchaseOrder calls delete', async () => {
@@ -199,13 +195,12 @@ describe('Goods Receipts CRUD', () => {
     expect(result).toHaveLength(1)
   })
 
-  it('createGoodsReceipt inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'GR-001' })
-    const { createGoodsReceipt } = await import('@/lib/queries')
-    await createGoodsReceipt({ number: 'GR-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+  it('createGoodsReceiptFromOrder naît de la commande (C9, 280)', async () => {
+    const { createGoodsReceiptFromOrder } = await import('@/lib/queries')
+    await createGoodsReceiptFromOrder('po1', { number: 'GR-001', receipt_date: '2026-09-28', warehouse_id: 'w1' })
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_goods_receipt_from_order', {
+      p_order_id: 'po1', p_number: 'GR-001', p_receipt_date: '2026-09-28', p_warehouse_id: 'w1',
+    })
   })
 })
 

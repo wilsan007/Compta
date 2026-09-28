@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate, translateStatus } from '@/lib/utils'
-import { getDeliveryNotes, createDeliveryNote, updateDeliveryNote, deleteDeliveryNote, getSalesOrders } from '@/lib/queries/sales'
+import { getDeliveryNotes, updateDeliveryNote, deleteDeliveryNote, getSalesOrders } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
-import { getDeliveryNoteLines, transformDeliveryNoteToInvoice } from '@/lib/queries/misc'
+import { getDeliveryNoteLines, transformDeliveryNoteToInvoice, getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries/misc'
+import { getStockPostedReferences } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Truck, FileText } from 'lucide-react'
 import type { DeliveryNote, DeliveryNoteLine, Customer, SalesOrder } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
-import { nextDocumentNumber } from '@/lib/queries/core'
 
 const statusKeys: string[] = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
@@ -19,6 +19,7 @@ export function DeliveryNotesPage() {
   const { t: tCommon } = useTranslation('common')
 const [notes, setNotes] = useState<DeliveryNote[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [shipped, setShipped] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
@@ -31,6 +32,8 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       const [ns, custs] = await Promise.all([getDeliveryNotes(statusFilter || undefined), getCustomers()])
       setNotes(ns || [])
       setCustomers(custs || [])
+      // « Sorti » se lit sur les mouvements de stock réels, pas sur le statut.
+      setShipped(await getStockPostedReferences('delivery_note', (ns || []).map((n) => n.id)))
     } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
@@ -93,7 +96,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('deliveryNotes.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('deliveryNotes.number'), t('deliveryNotes.customer'), t('deliveryNotes.date'), t('deliveryNotes.carrier'), t('deliveryNotes.tracking'), t('deliveryNotes.status'), t('deliveryNotes.invoiceStatus'), 'Stock', tCommon('table.actions')]}>
+          <Table headers={[t('deliveryNotes.number'), t('deliveryNotes.customer'), t('deliveryNotes.date'), t('deliveryNotes.carrier'), t('deliveryNotes.tracking'), t('deliveryNotes.status'), t('deliveryNotes.invoiceStatus'), t('deliveryNotes.stock'), tCommon('table.actions')]}>
             {notes.map((n) => {
               const cust = customers.find((c) => c.id === n.customer_id)
               return (
@@ -114,7 +117,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
                       {n.invoice_status === 'invoiced' ? t('deliveryNotes.invoiceInvoiced') : n.invoice_status === 'partial' ? t('deliveryNotes.invoicePartial') : t('deliveryNotes.invoicePending')}
                     </span>
                   </TableCell>
-                  <TableCell>{(n as any).stock_movement_id || (n as any).stock_out_created ? <Badge variant="success">Sorti</Badge> : <Badge variant="neutral">En attente</Badge>}</TableCell>
+                  <TableCell>{shipped.has(n.id) ? <Badge variant="success">{t('deliveryNotes.stockOut')}</Badge> : <Badge variant="neutral">{t('deliveryNotes.stockPending')}</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {n.status !== 'cancelled' && n.invoice_status !== 'invoiced' && (
@@ -164,8 +167,13 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
     e.preventDefault()
     setSaving(true)
     try {
-      const number = await nextDocumentNumber('BL')
-      await createDeliveryNote({ number, customer_id: customerId || null, sales_order_id: salesOrderId || null, delivery_date: deliveryDate, status: 'pending', carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null } as any)
+      // C10 (280) : un BL naît de sa commande, avec le reste à livrer de chaque
+      // ligne ; l'expédition (« Expédié ») sort le stock (chaîne 230/253).
+      const lines = (await getSalesOrderLines(salesOrderId))
+        .map((l) => ({ sales_order_line_id: l.id, quantity: Number(l.quantity) - Number(l.delivered_quantity || 0) }))
+        .filter((l) => l.quantity > 0)
+      if (lines.length === 0) { toast('error', tCommon('toast.error'), t('deliveryNotes.nothingToDeliver')); setSaving(false); return }
+      await transformSalesOrderToDeliveryNote(salesOrderId, lines, { delivery_date: deliveryDate, carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null })
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
@@ -188,7 +196,7 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('deliveryNotes.salesOrder')}</label>
-            <select className="input" value={salesOrderId} onChange={(e) => setSalesOrderId(e.target.value)} disabled={!customerId}>
+            <select className="input" value={salesOrderId} onChange={(e) => setSalesOrderId(e.target.value)} disabled={!customerId} required>
               <option value="">— {tCommon('form.selectOption')} —</option>
               {salesOrders.map((o) => <option key={o.id} value={o.id}>{o.number}</option>)}
             </select>

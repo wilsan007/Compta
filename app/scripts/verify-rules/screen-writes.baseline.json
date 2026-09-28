@@ -1,25 +1,6 @@
 {
   "frozenAt": "2026-09-28",
   "note": "X0 (audit fonctionnel exécuté du 28/09/2026) — mesure d'entrée, gelée. Plafond qui ne peut que baisser ; objectif ZÉRO (X8). Les corrections relèvent de X2 (C14 : tiers, journaux, sections, compte à la volée), X3 (C5 : lot de paie) et X5 (C13 : immobilisations).",
-  "total": 3,
-  "findings": [
-    {
-      "file": "src/pages/FixedAssetsPage.tsx",
-      "fn": "createFixedAsset",
-      "table": "fixed_assets",
-      "key": "derogatory_depreciation"
-    },
-    {
-      "file": "src/pages/FixedAssetsPage.tsx",
-      "fn": "createFixedAsset",
-      "table": "fixed_assets",
-      "key": "subvention_amount"
-    },
-    {
-      "file": "src/pages/FixedAssetsPage.tsx",
-      "fn": "createFixedAsset",
-      "table": "fixed_assets",
-      "key": "subvention_account"
-    }
-  ]
+  "total": 0,
+  "findings": []
 }

@@ -23,8 +23,11 @@ export async function getMyDocuments(): Promise<EmployeeDocument[]> {
   if (!userData?.user) throw new Error('Not authenticated')
   let empQ = supabase.from('employees').select('id').eq('auth_user_id', userData.user.id)
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: emp, error: empError } = await empQ.single()
-  if (empError || !emp) throw new Error('Employee not found')
+  // X8 (balayage des routes) : un utilisateur sans fiche salarié (un administrateur,
+  // par exemple) n'a pas de documents — `.single()` rendait une 406 à chaque visite.
+  const { data: emp, error: empError } = await empQ.maybeSingle()
+  if (empError) throw empError
+  if (!emp) return []
   return getEmployeeDocuments(emp.id)
 }
 

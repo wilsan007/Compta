@@ -941,6 +941,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 3 du plan d'audit fonctionnel. X4 (280) : un mouvement de stock
+      # porte son type (C8), le stock initial est un mouvement (M6), les
+      # commandes ont des lignes et des totaux de la base, la réception naît de
+      # la commande (C9, C10), les fantômes se décident un par un (D-B).
+      # X5 (281) : encaissement atomique (ticket, lignes, paiements, sortie de
+      # stock), clôture comptabilisée, moyens de paiement par défaut (D-E), OF
+      # avec l'article de sa nomenclature (C11). 280 : 10/10 et 281 : 8/8 rouges
+      # avant leur migration.
+      - name: 'X4 : documents de stock à lignes, mouvement typé, stock initial (280)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/280_stock_documents_with_lines_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X5 : encaissement atomique, clôture de caisse, OF (281)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/281_pos_ticket_atomic_and_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
       # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
       # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son

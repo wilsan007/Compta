@@ -234,7 +234,11 @@
     "invoicePending": "En attente",
     "invoicePartial": "Partiel",
     "invoiceInvoiced": "Facturé",
-    "salesOrder": "Commande client"
+    "salesOrder": "Commande client",
+    "stock": "Stock",
+    "stockOut": "Sorti",
+    "stockPending": "En attente",
+    "nothingToDeliver": "Cette commande n'a plus rien à livrer."
   },
   "payments": {
     "title": "Règlements clients",

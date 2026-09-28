@@ -56,38 +56,22 @@ export async function openPosSession(terminalId: string, openingAmount: number):
   return data as PosSession
 }
 
+/**
+ * C12 (281) : l'écran transmet le comptage du tiroir ; l'ATTENDU (fond de caisse
+ * + paiements en espèces seulement — la carte ne se compte pas dans le tiroir),
+ * l'écart et l'écriture de clôture sont calculés par la base (déclencheur de
+ * clôture). L'écran relit ce que la base a établi.
+ */
 export async function closePosSession(sessionId: string, closingAmount: number): Promise<PosSession> {
   const tid = await getTenantId()
-  let sessionQ = supabase
+  const { data, error } = await tud(supabase
     .from('pos_sessions')
-    .select('opening_amount, pos_tickets(total)')
+    .update({ closing_amount: closingAmount, status: 'closed', closed_at: new Date().toISOString() }), 'pos_sessions', tid)
     .eq('id', sessionId)
-  if (tid) sessionQ = sessionQ.eq('tenant_id', tid)
-  const { data: session } = await sessionQ.single()
-  if (session) {
-    const openingAmount = Number((session as any).opening_amount || 0)
-    const ticketsTotal = ((session as any).pos_tickets || []).reduce(
-      (sum: number, t: any) => sum + Number(t.total || 0), 0
-    )
-    const expected = openingAmount + ticketsTotal
-    const difference = closingAmount - expected
-    const { data, error } = await supabase
-      .from('pos_sessions')
-      .update({
-        closing_amount: closingAmount,
-        expected_amount: expected,
-        difference,
-        status: 'closed',
-        closed_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId)
-      .eq('tenant_id', tid || '')
-      .select()
-      .single()
-    if (error) throw error
-    return data as PosSession
-  }
-  throw new Error('Session not found')
+    .select()
+    .single()
+  if (error) throw error
+  return data as PosSession
 }
 
 export async function getActiveSession(terminalId: string): Promise<PosSession | null> {
@@ -120,30 +104,24 @@ export async function getPosSessions(terminalId?: string): Promise<(PosSession &
 
 // ============ Tickets ============
 
+/**
+ * C12 / M7 (281) : un encaissement est UN appel atomique — ticket (totaux calculés
+ * par la base), lignes, paiements (déduits du moyen du ticket si l'écran n'en
+ * ventile pas) et sortie de stock au dépôt de la caisse. Refusé sur une session
+ * close. Avant, trois écritures séparées, sans paiement : la clôture échouait.
+ */
 export async function createPosTicket(
   ticket: Omit<PosTicket, 'id' | 'created_at'>,
-  lines: Omit<PosTicketLine, 'id' | 'created_at' | 'ticket_id'>[]
+  lines: Omit<PosTicketLine, 'id' | 'created_at' | 'ticket_id'>[],
+  payments?: { type?: string; payment_method_id?: string; amount: number; reference?: string }[],
 ): Promise<PosTicket> {
-  const tid = await getTenantId()
-  const { data: ticketData, error: ticketError } = await supabase
-    .from('pos_tickets')
-    .insert(ti({ ...ticket }, 'pos_tickets', tid))
-    .select()
-    .single()
-  if (ticketError) throw ticketError
-  const createdTicket = ticketData as PosTicket
-
-  const ticketLines = lines.map(l => ti({
-    ...l,
-    ticket_id: createdTicket.id,
-  }, 'pos_ticket_lines', tid))
-
-  const { error: linesError } = await supabase
-    .from('pos_ticket_lines')
-    .insert(ticketLines)
-  if (linesError) throw linesError
-
-  return createdTicket
+  const { data, error } = await supabase.rpc('create_pos_ticket', {
+    p_ticket: ticket,
+    p_lines: lines.map((l) => ({ product_id: l.product_id, description: l.description, quantity: l.quantity, unit_price: l.unit_price, vat_rate: l.vat_rate })),
+    p_payments: payments && payments.length > 0 ? payments : null,
+  })
+  if (error) throw error
+  return data as unknown as PosTicket
 }
 
 export async function getPosTickets(sessionId?: string, date?: string): Promise<(PosTicket & { pos_ticket_lines: PosTicketLine[] })[]> {

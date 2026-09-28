@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
@@ -29,7 +29,8 @@ export function PosPaymentMethodsPage() {
     finally { setLoading(false) }
   }, [toast, tCommon])
 
-  loadData().catch(err => console.error('loadData:', err))
+  // 281 : chargé une fois (l'appel était refait à CHAQUE rendu — boucle de requêtes).
+  useEffect(() => { loadData() }, [loadData])
 
   const typeLabels: Record<string, string> = {
     cash: t('type_cash'), card: t('type_card'), check: t('type_check'),

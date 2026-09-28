@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrders, createManufacturingOrder, updateManufacturingOrder, deleteManufacturingOrder } from '@/lib/queries/production'
-import { getBOMs, getWarehouses, getRoutings } from '@/lib/queries/stock'
+import { getBOMs, getWarehouses, getRoutings, getStockPostedReferences } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import { Plus, Trash2, X, Factory, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -23,6 +23,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
   const [boms, setBOMs] = useState<BOM[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [routings, setRoutings] = useState<Routing[]>([])
+  const [generated, setGenerated] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
@@ -31,6 +32,8 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
     try {
       const [ords, bs, whs, rts] = await Promise.all([getManufacturingOrders(statusFilter || undefined), getBOMs(), getWarehouses(), getRoutings()])
       setOrders(ords || [])
+      // « Généré » se lit sur les mouvements de production réels, pas sur le statut.
+      setGenerated(await getStockPostedReferences('production', (ords || []).map((o) => o.id)))
       setBOMs(bs || [])
       setWarehouses(whs || [])
       setRoutings(rts || [])
@@ -78,7 +81,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('manufacturing.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('manufacturing.number'), t('manufacturing.bom'), t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), 'Stock', t('common.actions')]}>
+          <Table headers={[t('manufacturing.number'), t('manufacturing.bom'), t('manufacturing.quantity'), t('manufacturing.origin'), t('manufacturing.startDate'), t('manufacturing.endDate'), t('manufacturing.status'), t('manufacturing.stock'), t('common.actions')]}>
             {orders.map((o) => {
               const bom = boms.find((b) => b.id === o.bom_id)
               return (
@@ -99,7 +102,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
                       {['planned', 'in_progress', 'completed', 'cancelled'].map((k) => <option key={k} value={k}>{t('manufacturing.statuses.' + k)}</option>)}
                     </select>
                   </TableCell>
-                  <TableCell>{(o as any).stock_movement_id || (o as any).stock_created || o.status === 'completed' ? <Badge variant="success">Généré</Badge> : <Badge variant="neutral">En attente</Badge>}</TableCell>
+                  <TableCell>{generated.has(o.id) ? <Badge variant="success">{t('manufacturing.stockGenerated')}</Badge> : <Badge variant="neutral">{t('manufacturing.stockPending')}</Badge>}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <button onClick={() => handleProductionCost(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title="Calculer le coût de production">
@@ -139,7 +142,10 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
     setSaving(true)
     try {
       const number = await nextDocumentNumber('OF')
-      await createManufacturingOrder({ number, bom_id: bomId || null, product_id: null, quantity, status: 'planned', start_date: startDate || null, end_date: endDate || null, warehouse_id: warehouseId || null, routing_id: routingId || null, notes: notes || null } as any)
+      // C11 (281) : l'OF fabrique l'article de sa nomenclature — sans lui, il n'est
+      // jamais terminable (la base le déduit aussi, et refuse un OF sans article).
+      const productId = boms.find((b) => b.id === bomId)?.product_id ?? null
+      await createManufacturingOrder({ number, bom_id: bomId || null, product_id: productId, quantity, status: 'planned', start_date: startDate || null, end_date: endDate || null, warehouse_id: warehouseId || null, routing_id: routingId || null, notes: notes || null } as any)
       onSaved()
     } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
     finally { setSaving(false) }

@@ -2,7 +2,7 @@ import { supabase, isTenantTable } from '@/lib/supabase'
 import type { Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { createStockMovement } from './stock'
-import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
+import type { Customer, Invoice, CreditNote, BankAccount, JournalEntry, Journal, SalesOrder, SalesOrderLine, DeliveryNote, DeliveryNoteLine, GoodsReceipt, GoodsReceiptLine, SalesRepresentative, Prospect, DeliverySchedule, DocumentTemplate, CreditLine, Investment, ValueDateTracking, AssetFamily, AssetRevaluation, AssetDocument, AssetFreeField, AssetBatchDisposal, AssetSplit, PaymentTerm, MarkingType, ReminderLevel, Dispute, JustificatifSolde, EtatRapprochement, RevisionCycle, ReportingPlan, StatField, FusionLog, CompactionLog, RGPDRequest, GridTemplate, ReimputationLog, BankStatementTemplate, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, DocumentCharge, DocumentTransformation } from '@/types'
 
 // ============ Journals Report ============
 export async function getJournalsReport(startDate?: string, endDate?: string) {
@@ -145,11 +145,26 @@ export async function getGoodsReceipts(status?: string) {
   return data as GoodsReceipt[]
 }
 
-export async function createGoodsReceipt(gr: Omit<GoodsReceipt, 'id' | 'created_at'>) {
-  const tid = await getTenantId()
-  const { data, error } = await supabase.from('goods_receipts').insert(ti(gr, 'goods_receipts', tid)).select().single()
+/**
+ * C9 (280) : une réception naît DE sa commande confirmée — une ligne par ligne
+ * de commande, au reste à recevoir. Passer la réception à « reçue » fait ensuite
+ * entrer la marchandise (chaîne 241/251 : mouvement, couche, écriture ST).
+ */
+export async function createGoodsReceiptFromOrder(orderId: string, opts: { number: string; receipt_date: string; warehouse_id: string | null }) {
+  const { data, error } = await supabase.rpc('create_goods_receipt_from_order', {
+    p_order_id: orderId, p_number: opts.number, p_receipt_date: opts.receipt_date, p_warehouse_id: opts.warehouse_id,
+  })
   if (error) throw error
-  return data as GoodsReceipt
+  return data as unknown as GoodsReceipt
+}
+
+export async function getGoodsReceiptLines(receiptId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('goods_receipt_lines').select('*').eq('goods_receipt_id', receiptId).order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as GoodsReceiptLine[]
 }
 
 export async function updateGoodsReceipt(id: string, updates: Partial<GoodsReceipt>) {
@@ -2426,7 +2441,11 @@ export async function transformQuoteToSalesOrder(quoteId: string) {
 }
 
 // --- Transform Sales Order to Delivery Note ---
-export async function transformSalesOrderToDeliveryNote(orderId: string, lines: { sales_order_line_id: string; quantity: number }[]) {
+export async function transformSalesOrderToDeliveryNote(
+  orderId: string,
+  lines: { sales_order_line_id: string; quantity: number }[],
+  header?: { delivery_date?: string; carrier?: string | null; tracking_number?: string | null; notes?: string | null },
+) {
   const tid = await getTenantId()
   const { data: order, error: oErr } = await supabase.from('sales_orders').select('*, sales_order_lines(*)').eq('id', orderId).single()
   if (oErr) throw oErr
@@ -2434,7 +2453,7 @@ export async function transformSalesOrderToDeliveryNote(orderId: string, lines: 
   const dnNumber = await nextDocumentNumber('BL')
   const { data: dn, error: dErr } = await supabase
     .from('delivery_notes')
-    .insert({ tenant_id: tid, number: dnNumber, customer_id: order.customer_id, sales_order_id: orderId, delivery_date: new Date().toISOString().split('T')[0], status: 'pending', carrier: null, tracking_number: null, notes: null })
+    .insert({ tenant_id: tid, number: dnNumber, customer_id: order.customer_id, sales_order_id: orderId, delivery_date: header?.delivery_date || new Date().toISOString().split('T')[0], status: 'pending', carrier: header?.carrier ?? null, tracking_number: header?.tracking_number ?? null, notes: header?.notes ?? null })
     .select()
     .single()
   if (dErr) throw dErr

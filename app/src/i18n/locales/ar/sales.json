@@ -234,7 +234,11 @@
     "invoicePending": "في الانتظار",
     "invoicePartial": "جزئي",
     "invoiceInvoiced": "تم الفوترة",
-    "salesOrder": "طلبية العميل"
+    "salesOrder": "طلبية العميل",
+    "stock": "المخزون",
+    "stockOut": "أُخرج",
+    "stockPending": "قيد الانتظار",
+    "nothingToDeliver": "لم يعد في هذا الطلب شيء للتسليم."
   },
   "payments": {
     "title": "مدفوعات العملاء",

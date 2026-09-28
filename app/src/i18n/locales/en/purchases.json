@@ -151,7 +151,8 @@
       "draft": "Draft",
       "confirmed": "Confirmed",
       "received": "Received",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "partial": "Partially received"
     }
   },
   "goodsReceipts": {
@@ -183,7 +184,12 @@
       "partial": "Partial",
       "cancelled": "Cancelled"
     },
-    "purchaseOrder": "Purchase order"
+    "purchaseOrder": "Purchase order",
+    "stock": "Stock",
+    "stockIn": "In stock",
+    "stockPending": "Pending",
+    "warehouse": "Receiving warehouse",
+    "fromOrderHint": "The receipt takes the confirmed order's lines, at the remaining quantity. Set it to \"Received\" to bring the goods into stock."
   },
   "payments": {
     "title": "Supplier payments",

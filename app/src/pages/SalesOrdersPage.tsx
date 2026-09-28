@@ -4,9 +4,13 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
+import { OrderLinesEditor } from '@/components/OrderLinesEditor'
+import { emptyOrderLine, orderLinesPayload, type OrderLineDraft } from '@/lib/orderLines'
+import { useLegislation } from '@/lib/legislation'
 import { getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries/misc'
 import { Plus, Trash2, X, FileText, Truck } from 'lucide-react'
-import type { SalesOrder, SalesOrderLine, Customer } from '@/types'
+import type { SalesOrder, SalesOrderLine, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
@@ -19,6 +23,7 @@ export function SalesOrdersPage() {
   const { t: tCommon } = useTranslation('common')
 const [orders, setOrders] = useState<SalesOrder[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
@@ -28,7 +33,8 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
 
   const loadData = useCallback(async () => {
     try {
-      const [ords, custs] = await Promise.all([getSalesOrders(statusFilter || undefined), getCustomers()])
+      const [ords, custs, prods] = await Promise.all([getSalesOrders(statusFilter || undefined), getCustomers(), getProducts()])
+      setProducts((prods || []).filter((p) => p.active !== false))
       setOrders(ords || [])
       setCustomers(custs || [])
     } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
@@ -134,7 +140,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
         </Card>
       )}
 
-      {showForm && <OrderForm customers={customers} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {showForm && <OrderForm customers={customers} products={products} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
 
       {transformOrder && (
         <TransformToDeliveryModal
@@ -148,14 +154,15 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
   )
 }
 
-function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onClose: () => void; onSaved: () => void }) {
+function OrderForm({ customers, products, onClose, onSaved }: { customers: Customer[]; products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [customerId, setCustomerId] = useState('')
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0])
   const [deliveryDate, setDeliveryDate] = useState('')
-  const [total, setTotal] = useState(0)
+  const { defaultVatRate } = useLegislation()
+  const [lines, setLines] = useState<OrderLineDraft[]>([emptyOrderLine(defaultVatRate)])
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -163,16 +170,19 @@ function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onC
     e.preventDefault()
     setSaving(true)
     try {
+      const payload = orderLinesPayload(lines)
+      if (payload.length === 0) { toast('error', tCommon('toast.error'), tCommon('orderLines.required')); setSaving(false); return }
       const number = await nextDocumentNumber('CMD')
-      await createSalesOrder({ number, customer_id: customerId || null, order_date: orderDate, delivery_date: deliveryDate || null, status: 'draft', subtotal: total, vat: 0, total, notes: notes || null } as any)
+      // C10 (280) : en-tête + lignes en un appel ; totaux et TVA calculés par la base.
+      await createSalesOrder({ number, customer_id: customerId || null, order_date: orderDate, delivery_date: deliveryDate || null, notes: notes || null }, payload)
       onSaved()
     } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '56rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('orders.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
@@ -189,7 +199,7 @@ function OrderForm({ customers, onClose, onSaved }: { customers: Customer[]; onC
             <Input label={t('orders.date')} type="date" required value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             <Input label={t('orders.deliveryDate')} type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
           </div>
-          <Input label={t('orders.amount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(Number(e.target.value))} />
+          <OrderLinesEditor lines={lines} onChange={setLines} products={products} priceField="sale_price" defaultVatRate={defaultVatRate} />
           <Input label={t('invoices.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>

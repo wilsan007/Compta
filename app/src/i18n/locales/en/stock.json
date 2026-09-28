@@ -264,11 +264,17 @@
     "movementTypes": {
       "in": "In",
       "out": "Out",
-      "adjustment": "Adjustment"
+      "adjustment": "Adjustment",
+      "initial": "Initial stock"
     },
     "product": "Product",
     "quantity": "Quantity",
-    "recentMovements": "Recent movements"
+    "recentMovements": "Recent movements",
+    "initialWarehouse": "Initial stock warehouse",
+    "initialStockHint": "The initial quantity enters the chosen warehouse, valued at the purchase price (\"initial\" movement).",
+    "warehouse": "Warehouse",
+    "unitCost": "Unit cost",
+    "adjustmentHint": "Adjustment: enter the quantity COUNTED in the warehouse; the difference becomes an entry or an exit."
   },
   "locations": {
     "title": "Warehouse locations",
@@ -512,5 +518,18 @@
   "status": "Status",
   "traceability": "Lot traceability",
   "upstream": "Upstream",
-  "warehouse": "Warehouse"
+  "warehouse": "Warehouse",
+  "phantoms": {
+    "title": "{{count}} stock movement(s) without effect to review",
+    "description": "Recorded before the 28/09/2026 fix, they never changed stock. Replaying creates a movement dated today; ignoring leaves it without effect. A stock count cannot be replayed.",
+    "date": "Date",
+    "product": "Product",
+    "type": "Type",
+    "quantity": "Quantity",
+    "reference": "Reference",
+    "replay": "Replay",
+    "ignore": "Ignore",
+    "confirmReplay": "Replay this movement today? Stock will change.",
+    "confirmIgnore": "Permanently ignore this movement?"
+  }
 }

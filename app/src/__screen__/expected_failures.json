@@ -1,15 +1,1 @@
-[
-  { "file": "02_purch_stock", "id": "P06", "reason": "C9 (X4) : commande fournisseur sans lignes" },
-  { "file": "02_purch_stock", "id": "ST02", "reason": "M6 (X4) : stock initial sans mouvement ni couche" },
-  { "file": "02_purch_stock", "id": "ST03", "reason": "C8 (X4) : mouvement de la fiche article fantôme (type sans movement_type)" },
-  { "file": "02_purch_stock", "id": "ST05", "reason": "C8 (X4) : sortie excédentaire acceptée sans effet" },
-  { "file": "02_purch_stock", "id": "ST06", "reason": "C8 (X4) : sortie de la fiche article sans effet" },
-  { "file": "02_purch_stock", "id": "ST08", "reason": "C9 (X4) : réception sans goods_receipt_lines, rien n'entre" },
-  { "file": "02_purch_stock", "id": "ST09", "reason": "C10 (X4) : commande client sans lignes ni TVA" },
-  { "file": "06_screenwrites", "id": "W04", "reason": "C13 (X5) : immobilisation — dérogatoire et subvention absents (décision D-D)" },
-  { "file": "07_pos", "id": "K04", "reason": "M7 (X5) : la vente en caisse ne sort pas le stock" },
-  { "file": "07_pos", "id": "K06", "reason": "C12 (X5) : clôture refusée, pos_payments jamais écrits (décision D-E)" },
-  { "file": "07_pos", "id": "K07", "reason": "C12 (X5) : la clôture ne comptabilise rien" },
-  { "file": "07_pos", "id": "K09", "reason": "C12 (X5) : un ticket sur une session close est accepté (RPC create_pos_ticket atomique)" },
-  { "file": "08_prod_treso", "id": "M04", "reason": "C11 (X5) : OF créé avec product_id null, jamais terminable" }
-]
+[]

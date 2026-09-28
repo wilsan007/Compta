@@ -13,10 +13,34 @@ export async function getProducts() {
   return await fetchAllRows<Product>(q, { label: 'getProducts' })
 }
 
-export async function createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
+/** Stock initial saisi à la création d'un article (M6, 280) : un mouvement `initial`. */
+export interface InitialStock { quantity: number; warehouse_id: string | null; unit_cost: number }
+
+export async function createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>, initial?: InitialStock) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('products').insert({ ...product, tenant_id: tid }).select().single()
+  // M6 (280) : la base refuse qu'un écran pose `stock_quantity` — le stock d'un
+  // article naît de ses mouvements. La quantité saisie devient un mouvement
+  // `initial` (dépôt + coût), qui crée la couche valorisée.
+  const { stock_quantity: _ignored, ...rest } = product as Product
+  const { data, error } = await supabase.from('products').insert({ ...rest, tenant_id: tid }).select().single()
   if (error) throw error
+  if (initial && Number(initial.quantity) > 0) {
+    try {
+      await createStockMovement({
+        product_id: data.id, warehouse_id: initial.warehouse_id, movement_type: 'initial', quantity: Number(initial.quantity),
+        unit_cost: Number(initial.unit_cost) || 0, reference: 'Stock initial', reference_type: 'inventory', reference_id: null,
+        movement_date: new Date().toISOString().split('T')[0], notes: null,
+      } as Omit<StockMovement, 'id' | 'created_at'>)
+    } catch (err) {
+      // L'article sans son stock initial n'est pas ce que l'utilisateur a saisi : on le retire.
+      const { error: delErr } = await tud(supabase.from('products').delete(), 'products', tid).eq('id', data.id)
+      if (delErr) console.error('createProduct: article créé sans son stock initial, suppression impossible', delErr)
+      throw err
+    }
+    const { data: fresh, error: rErr } = await supabase.from('products').select('*').eq('id', data.id).single()
+    if (rErr) throw rErr
+    return fresh as Product
+  }
   return data as Product
 }
 
@@ -48,7 +72,11 @@ export async function getStockMovements(productId?: string, warehouseId?: string
 
 export async function createStockMovement(sm: Omit<StockMovement, 'id' | 'created_at'>) {
   const tid = await getTenantId()
-  const { data, error } = await supabase.from('stock_movements').insert(ti(sm, 'stock_movements', tid)).select().single()
+  // C8 (280) : `type` et `movement_type` ne font qu'un ; la base aligne l'un sur
+  // l'autre et refuse un mouvement sans type. On envoie les deux.
+  const mt = (sm as any).movement_type ?? (sm as any).type
+  const payload = { ...sm, movement_type: mt, type: mt }
+  const { data, error } = await supabase.from('stock_movements').insert(ti(payload, 'stock_movements', tid)).select().single()
   if (error) throw error
   // W10 : le stock est mis à jour par le DÉCLENCHEUR `update_stock_on_movement`
   // (sur `stock_movements`), qui appelle `_stock_increment` / `_stock_decrement`
@@ -100,6 +128,19 @@ export async function getStockQuantities(warehouseId?: string) {
   const { data, error } = await q
   if (error) throw error
   return data as (StockQuantity & { products: Joined<'products', 'name' | 'sku'>; warehouses: Joined<'warehouses', 'name'> })[]
+}
+
+/**
+ * Documents dont le stock a réellement bougé (colonnes « Stock : Entré / Sorti /
+ * Généré » des écrans) : lu sur les mouvements eux-mêmes, pas sur le statut.
+ */
+export async function getStockPostedReferences(referenceType: string, ids: string[]) {
+  if (ids.length === 0) return new Set<string>()
+  const tid = await getTenantId()
+  let q = supabase.from('stock_movements').select('reference_id').eq('reference_type', referenceType).in('reference_id', ids).order('id')
+  if (tid) q = q.eq('tenant_id', tid)
+  const rows = await fetchAllRows<{ reference_id: string }>(q, { label: 'getStockPostedReferences' })
+  return new Set(rows.map((r) => r.reference_id))
 }
 
 // `updateStockQuantity` est retirée (271, C3) : les quantités en stock ne s'écrivent
