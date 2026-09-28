@@ -782,6 +782,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W7 — M-01 devises : une facture en devise était comptabilisée **au montant
+      # en devise** (1 000 USD au taux 0,90 → 1 000 EUR), `journal_lines` n'avait
+      # aucune colonne de devise, et un taux manquant valait 1 en silence. La 306
+      # convertit dans la devise de tenue, garde le montant d'origine sur la ligne
+      # (devise, montant, taux) et refuse une pièce en devise sans taux. T01 à T06
+      # vus rouges avant.
+      - name: 'AUD : devise des pièces et taux de change appliqué (306)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/306_currency_posting_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
