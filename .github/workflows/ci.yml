@@ -844,6 +844,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # A1 (recette /qa du 29/09) : créer un client ou un fournisseur ne
+      # l'inscrivait pas au plan des tiers (`third_party_accounts` restait vide) —
+      # lettrage sans tiers, plan tiers vide, balance âgée en « other », FEC sans
+      # libellé. Le déclencheur inscrit le compte, le rattrapage couvre les tiers
+      # existants. T01/T02/T03 vus rouges avant (mesuré : 0 compte pour un client
+      # + un fournisseur + un salarié créés par le chemin écran, 3 après).
+      - name: 'QA : un tiers créé a son compte au plan des tiers (312)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/312_third_party_accounts_from_partners_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

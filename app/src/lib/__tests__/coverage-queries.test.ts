@@ -476,6 +476,47 @@ describe('autoMatchBankTransactions', () => {
 describe('getAgedBalance', () => {
   beforeEach(() => resetMock())
 
+  it('le type et le nom du tiers viennent de son compte (ven-014) : « Clients » ne vide plus la balance', async () => {
+    const now = new Date()
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 86400000).toISOString().split('T')[0]
+
+    let callIdx = 0
+    _fromOverride = () => {
+      callIdx++
+      // 1er appel : les lignes de grand livre non lettrées ; 2e : les comptes de tiers
+      const data = callIdx % 2 === 1
+        ? [
+            { account_tiers: 'CLI00002', debit: 162.2, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+            { account_tiers: 'FOU00001', debit: 360, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+            { account_tiers: 'ZZZ999', debit: 99, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+          ]
+        : [
+            { code: 'CLI00002', name: 'Dubois Industrie SAS', type: 'customer' },
+            { code: 'FOU00001', name: 'Gants & Fournitures SA', type: 'supplier' },
+          ]
+      return chainWith(data)
+    }
+
+    const { getAgedBalance } = await import('@/lib/queries')
+
+    const clients = await getAgedBalance('customer')
+    expect(clients).toHaveLength(1)
+    expect(clients[0].code).toBe('CLI00002')
+    expect(clients[0].name).toBe('Dubois Industrie SAS')
+    expect(clients[0].type).toBe('customer')
+    expect(clients[0].total).toBeCloseTo(162.2, 2)
+
+    const fournisseurs = await getAgedBalance('supplier')
+    expect(fournisseurs).toHaveLength(1)
+    expect(fournisseurs[0].code).toBe('FOU00001')
+    expect(fournisseurs[0].name).toBe('Gants & Fournitures SA')
+
+    // sans compte de tiers, un code n'est PAS rangé de force dans les clients
+    const tous = await getAgedBalance()
+    expect(tous.map((b) => b.code).sort()).toEqual(['CLI00002', 'FOU00001', 'ZZZ999'])
+    expect(tous.find((b) => b.code === 'ZZZ999')?.type).toBe('other')
+  })
+
   it('categorizes lines into age buckets', async () => {
     const now = new Date()
     const daysAgo = (d: number) => new Date(now.getTime() - d * 86400000).toISOString().split('T')[0]
