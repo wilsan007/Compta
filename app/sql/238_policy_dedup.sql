@@ -184,6 +184,13 @@ DROP INDEX IF EXISTS public.idx_regularization_tenant;            -- doublon de 
 DROP INDEX IF EXISTS public.idx_stock_movements_product;          -- doublon de idx_stock_movements_product_id
 DROP INDEX IF EXISTS public.idx_tier_ribs_tp;                     -- doublon de idx_tier_ribs_third_party_account_id
 DROP INDEX IF EXISTS public.idx_tvs_tenant;                       -- doublon de idx_tvs_declarations_tenant
+-- Ajout du 29/09/2026 (recette /qa, COORD-008) : même cas que `purchase_orders`,
+-- seul `created_at DESC` diffère de idx_svl_fifo. Le contrôle ci-dessous compare
+-- `indpred::text`, qui porte la position du prédicat dans le source : selon la
+-- version de PostgreSQL les deux index paraissent distincts (CI) ou identiques
+-- (Supabase local) — la migration échouait sur une base Supabase neuve. Sans
+-- effet là où la 238 est déjà passée.
+DROP INDEX IF EXISTS public.idx_svl_lifo;                         -- mêmes colonnes que idx_svl_fifo (seul DESC diffère)
 ALTER TABLE public.pay_slips DROP CONSTRAINT IF EXISTS pay_slips_tenant_number_key;
 
 
