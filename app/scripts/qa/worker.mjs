@@ -207,7 +207,14 @@ async function probeSelects(page, route, vp, push) {
   let empty = 0
   for (let i = 0; i < n; i++) {
     const opts = await selects.nth(i).locator('option').count().catch(() => 0)
-    if (opts <= 1) empty++
+    if (opts === 0) { empty++; continue }
+    // Un seul choix n'est un défaut que dans un FORMULAIRE (un champ réduit à son
+    // placeholder). Un FILTRE qui n'offre que « Tous » est légitime — la première
+    // version de cette règle le comptait à tort (mesuré le 29/09/2026).
+    if (opts === 1) {
+      const inForm = await selects.nth(i).evaluate((el) => !!el.closest('form')).catch(() => false)
+      if (inForm) empty++
+    }
   }
   if (empty) push(finding(route, 'select_vide', `${empty} liste(s) sans option sur ${n} vues`, vp))
   return { selects: n, empty }
