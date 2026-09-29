@@ -17,11 +17,14 @@
 > instructions `INSERT INTO` / `UPDATE` / `DELETE FROM` et du type de retour.
 > Les lignes marquées **lu** ont été lues en entier (corps complet).
 >
-> **État de la tranche** : **6 effets** sont tracés par la migration
-> [310](../../app/sql/310_chain_l1_maillons.sql) et prouvés par la suite
-> [310](../../app/sql/310_chain_l1_maillons_tests.sql) (15 scénarios) —
-> [preuve](VAGUE-L1-2026-09-29.md). **0 / 62 → 6 / 62** pour l'indicateur du
-> plan (§6.1), qui vise 62 / 62 à la fin de L1.
+> **État de la tranche** : **14 effets** sont tracés — **6** par la migration
+> [310](../../app/sql/310_chain_l1_maillons.sql) (tranche 1, cinq déclencheurs
+> compagnons) et **8** par la [311](../../app/sql/311_chain_l1_tranche2.sql)
+> (tranche 2 : quatre maillons réécrits pour lier **par ligne**, trois
+> compagnons) — prouvés par les suites 310 (**15 scénarios**) et 311
+> (**12 scénarios**) : [preuve](VAGUE-L1-2026-09-29.md). Soit **12 maillons sur
+> les 62** mesurés (l'indicateur du plan §6.1 vise 62 / 62 à la fin de L1, et sa
+> définition même devra être tranchée — voir §2).
 
 ---
 
@@ -42,19 +45,31 @@
 | 10 | `st_shipment_stock_out` — `121_subcontracting_and_import.sql:11` **lu** | `stock_movements` (**une par ligne**), `stock_quantities` | `subcontracting.shipment.stock_out` | ⬜ tranche 2 — N lignes |
 | 11 | `st_receipt_stock_in` — `121_subcontracting_and_import.sql:70` **lu** | `stock_movements` (**une par ligne**), `stock_quantities` | `subcontracting.receipt.stock_in` | ⬜ tranche 2 — N lignes |
 
-**Pourquoi ces trois derniers ne sont pas dans la 310, et ce qu'il faudra faire.**
-Leur effet produit **N lignes** (une par ligne de document) pour **un** document
-amont. Le socle porte la granularité qui résout cela — `amont_ligne_id` (M-09,
-inclus dans la clé unique) — mais la correspondance ligne → ligne n'est
-**aujourd'hui pas écrite** par ces maillons : `stock_reservations` ne porte pas
-l'identifiant de la ligne de commande, et le mouvement de stock d'une livraison
-ne porte que `reference_id` (l'en-tête). La tranche 2 doit donc, pour chacun :
-soit lire la correspondance dans ce que le maillon sait déjà (`product_id`, et à
-défaut l'ordre stable des lignes), soit **ajouter la colonne de rattachement**
-que le maillon a le droit d'écrire — la leçon du plan §5 étant qu'on corrige la
-**structure** d'abord quand elle manque (`S-01` : colonne `warehouse_id`
-absente, tout un chaînage rendu inutile). C'est un travail de maillon, pas de
-socle : il est instruit, pas supposé.
+**Où en sont ces onze maillons (29/09)** : les **onze** sont désormais instrumentés
+— six effets par la tranche 1 (`310`, compagnons) et les cinq documents à lignes
+par la tranche 2 (`311`) : **quatre corps réécrits** pour lier **par ligne**
+(`sale.order.reserved`, `sale.delivery.stock_out`,
+`subcontracting.shipment.stock_out`, `subcontracting.receipt.stock_in`) et
+**trois compagnons** (`pos.session.closure`, `treasury.bank_transaction.reconciled`,
+`production.order.generated_entry` + `production.order.stock_in`). Deux
+avertissements mesurés, écrits dans la [preuve](VAGUE-L1-2026-09-29.md) §6 :
+**`post_pos_session_on_close` (187) n'a plus aucun déclencheur** — c'est le
+`_multi` (281) qui clôt les sessions, et c'est lui qui est tracé ; et les
+**sorties de composants d'un OF** comme les **sorties de stock d'une clôture de
+caisse** n'ont pas de ligne amont à désigner (nomenclature calculée, mouvements
+agrégés par produit) — elles sont **comptées au `payload`**, pas liées.
+
+**Pourquoi la tranche 2 a dû les réécrire — et ce que ça a coûté.** Un déclencheur
+compagnon sait lier un document à un document ; il ne peut pas lier **une ligne à
+une ligne** sans connaître la correspondance, et elle n'est pas déductible de
+l'extérieur (`stock_reservations` ne porte pas l'identifiant de la ligne de
+commande ; le mouvement d'une livraison ne porte que `reference_id`, l'en-tête).
+La tranche 2 a donc fait écrire la correspondance **par le maillon lui-même** —
+`RETURNING id` dans sa propre boucle — : la clé `amont_ligne_id` du socle (M-09)
+est remplie au moment où l'aval naît, **aucune colonne n'a été ajoutée**, et le
+test le prouve ligne par ligne (T01, T04, T06, T07 : 8 correspondances justes sur
+8 lignes d'essai). Le prix est dit : quatre corps de maillon réécrits, avec la
+non-régression du dépôt rejouée pour chacun (six suites, 92 scénarios).
 
 ## 2. Les fonctions qui ne sont PAS des maillons — et la raison
 

@@ -1098,6 +1098,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L1, tranche 2 — les effets à N LIGNES et les maillons multi-effets. La
+      # 311 réécrit QUATRE corps de maillon (commande confirmée, BL expédié,
+      # expédition et réception de sous-traitance) parce que la correspondance
+      # ligne → ligne ne se devine pas de l'extérieur — c'est ce que le socle
+      # appelle `amont_ligne_id` (M-09) — et pose TROIS déclencheurs compagnons
+      # pour les maillons dont l'aval est unique (clôture de caisse, rapprochement
+      # bancaire automatique, ordre de fabrication). La suite mesure : un lien par
+      # ligne qui pointe le bon aval, l'annulation/reconfirmation d'une commande
+      # (trouvaille : la clé du socle n'a pas de notion de tour), le refus avant
+      # effet en mode `refuse`, et ce qui n'est PAS lié faute de ligne amont
+      # (composants d'OF calculés, sorties de caisse agrégées par produit) — compté
+      # au payload plutôt qu'inventé. 12 scénarios.
+      - name: 'L1 : les effets à N lignes et les maillons multi-effets sont tracés (311)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_chain_l1_tranche2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

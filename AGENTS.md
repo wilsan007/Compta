@@ -25,25 +25,31 @@ L'essentiel en huit lignes :
   transaction** (`308`) et l'**écart de change au règlement + la réévaluation de
   clôture** (`309`). [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` 5/5,
   `305` 2/2, `306` 6/6, `307` 4/4, `308` 5/5, `309` 5/5.
-* **L1 entamé — tranche 1 livrée (29/09)** : les maillons de la chaîne **ventes →
-  trésorerie → comptabilité** sont **tracés** (migration **310**, 5 déclencheurs
-  compagnons `zz_l1_`, **6 effets** : facture, avoir, décaissement, encaissement,
-  journal et compte de trésorerie). Doctrine : un **déclencheur compagnon**
-  additif — même table, même événement, nom qui trie après le déclencheur métier
-  — plutôt qu'une réécriture des corps : **0 ligne de maillon réécrite**. Ordre
-  prouvé (T10) et `REVOKE` sans effet sur les déclencheurs (T15, mesuré). Preuve :
-  suite **310** (**15 scénarios verts**, rejouable), non-régression 252/180/192/
-  210/213/277, **9 contrôles du dépôt à 0 erreur**, base neuve **258 migrations +
-  310 deux fois, 0 erreur**. Les 30 fonctions de la tranche sont **triées**
-  (11 maillons, **19 non-maillons avec leur raison**) et la méthode des 32
-  chaînages restants est écrite.
+* **L1 entamé — tranches 1 et 2 livrées (29/09)** : **14 effets** de la chaîne
+  ventes → trésorerie → comptabilité sont **tracés** (migrations **310** et
+  **311**) — facture, avoir, décaissement, encaissement, journal et compte de
+  trésorerie, **réservation de commande**, **sortie de BL**, expédition et
+  réception de sous-traitance (ces quatre-là **par ligne**, M-09), clôture de
+  caisse, rapprochement bancaire automatique, écriture et entrée de produit fini
+  d'un OF. Deux doctrines, écrites : **compagnon** `zz_l1_` quand l'aval est unique
+  (8), **réécriture du corps** quand la correspondance ligne → ligne ne se devine
+  pas de l'extérieur (4, et c'est la seule justification). Preuves : suites **310**
+  (15 scénarios) et **311** (12) vertes et rejouables, **non-régression rejouée**
+  sur 17 suites du dépôt (230, 242, 251, 253, 280, 229, 302, 222, 281, 252, 180,
+  192, 210, 213, 277…), **9 contrôles du dépôt à 0 erreur**, migrations rejouables.
   [Preuve](doc/audit/VAGUE-L1-2026-09-29.md) ·
   [Inventaire](doc/audit/INVENTAIRE-CHAINAGES-L1-2026-09-29.md).
-  ⚠️ **Limite dite** : le compagnon protège le **traçage**, pas l'effet du
-  maillon (l'idempotence de l'effet est L3) ; la trace d'un **refus** ne survit
-  pas au rollback (0 ligne `refuse` mesurée) ; les effets à **N lignes**
-  (réservations, mouvements de stock) demandent la granularité ligne et une
-  correspondance ligne → ligne que les maillons n'écrivent pas encore.
+  ⚠️ **Deux trouvailles** : le socle n'a **pas de notion de tour** — `chain_avant`
+  voit le lien de la première confirmation et saute l'effet d'une commande
+  **annulée puis reconfirmée** (mesuré : la suite **230** a rougi, réservé = 0 au
+  lieu de 10) ; il n'est donc posé que sur les maillons **à sens unique**, et le
+  **cycle de vie du lien** est une entrée de **L3**. Et **`post_pos_session_on_close`
+  (187), nommé « artère » au référentiel, n'a plus AUCUN déclencheur** : c'est
+  `_multi` (281) qui vit. Limites dites : la trace d'un refus ne survit pas au
+  rollback (0 ligne `refuse` mesurée) ; les effets à N lignes **sans ligne amont**
+  (composants d'OF calculés, sorties de caisse agrégées par produit) sont
+  **comptés au payload**, pas liés.
+* **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
   **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j), et la recette à
   l'écran (P0-08, hors charge de développement).

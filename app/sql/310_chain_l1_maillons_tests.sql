@@ -293,32 +293,38 @@ END $$;
 --   T01, T04, T07, T08 et T09 prouvent le résultat ; T10 prouve la cause.
 -- ═════════════════════════════════════════════════════════════
 DO $$
-DECLARE v_compagnons int; v_avant int; v_grand int; v_apres int;
+DECLARE v_compagnons int; v_avant int; v_grand int; v_apres int; v_tranche1 int;
 BEGIN
   SELECT count(*) INTO v_compagnons FROM pg_trigger WHERE tgname LIKE 'zz_l1_%' AND NOT tgisinternal;
+  -- Les cinq compagnons de CETTE tranche, nommés : le compte global grandit avec
+  -- les tranches suivantes (la 311 en ajoute trois), il n'est donc pas figé ici.
+  SELECT count(*) INTO v_tranche1 FROM pg_trigger
+  WHERE NOT tgisinternal AND tgname IN ('zz_l1_invoice_entry', 'zz_l1_credit_note_entry',
+        'zz_l1_supplier_payment_entry', 'zz_l1_customer_payment_entry', 'zz_l1_bank_account_ledger');
   -- Tous les compagnons sont des déclencheurs APRÈS (bits : 2 = BEFORE, 1 = ROW).
   SELECT count(*) INTO v_apres FROM pg_trigger
   WHERE tgname LIKE 'zz_l1_%' AND NOT tgisinternal AND (tgtype & 2) = 0 AND (tgtype & 1) = 1;
   -- Chacun a AU MOINS un frère métier de MÊME événement dont le nom trie AVANT
   -- lui (une table peut en porter plusieurs : le compte est un minimum, pas une
   -- égalité).
-  SELECT count(*) INTO v_avant
-  FROM pg_trigger z
-  WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
-    AND EXISTS (SELECT 1 FROM pg_trigger m
-                WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
-                  AND NOT m.tgisinternal AND m.tgname < z.tgname);
+  SELECT count(*) INTO v_avant FROM pg_trigger z
+   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
+     AND EXISTS (SELECT 1 FROM pg_trigger m
+                 WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
+                   AND NOT m.tgisinternal AND m.tgname < z.tgname);
   -- Et aucun frère métier de même événement ne trie APRÈS lui (sinon l'ordre
   -- serait inversé par un nom futur).
-  SELECT count(*) INTO v_grand
-  FROM pg_trigger z
-  JOIN pg_trigger m ON m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype AND NOT m.tgisinternal
-  WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal AND m.tgname > z.tgname;
+  SELECT count(*) INTO v_grand FROM pg_trigger z
+   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
+     AND EXISTS (SELECT 1 FROM pg_trigger m
+                 WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
+                   AND NOT m.tgisinternal AND m.tgname > z.tgname);
 
   PERFORM _rec('T10',
-    'les cinq compagnons sont des déclencheurs APRÈS, et le nom `zz_l1_` trie après le déclencheur métier de même événement',
-    v_compagnons = 5 AND v_apres = 5 AND v_avant = 5 AND v_grand = 0,
-    format('compagnons=%s après=%s frères avant=%s frères après=%s', v_compagnons, v_apres, v_avant, v_grand));
+    'les cinq compagnons de la tranche 1 sont des déclencheurs APRÈS, aucun frère métier de même événement ne trie après eux',
+    v_tranche1 = 5 AND v_compagnons >= 5 AND v_apres = v_compagnons AND v_avant >= 5 AND v_grand = 0,
+    format('compagnons=%s (tranche 1 nommés=%s) après=%s frères avant=%s frères après=%s',
+           v_compagnons, v_tranche1, v_apres, v_avant, v_grand));
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
@@ -474,11 +480,18 @@ END $$;
 --   même quand le rôle appelant n'a pas EXECUTE sur lui).
 -- ═════════════════════════════════════════════════════════════
 DO $$
-DECLARE v_n int; v_mauvais int; v_detail text;
+DECLARE v_n int; v_mauvais int; v_detail text; v_tranche1 int;
 BEGIN
   SELECT count(*) INTO v_n
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname LIKE 'chain_l1_%';
+
+  -- Les cinq de la tranche 1, nommés : la 311 en ajoute trois, qui doivent elles
+  -- aussi être révoquées (mesuré par sa propre suite).
+  SELECT count(*) INTO v_tranche1
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname IN ('chain_l1_invoice_entry', 'chain_l1_credit_note_entry',
+        'chain_l1_supplier_payment_entry', 'chain_l1_customer_payment_entry', 'chain_l1_bank_account_ledger');
 
   SELECT count(*), string_agg(p.proname, ', ') INTO v_mauvais, v_detail
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -490,9 +503,9 @@ BEGIN
          OR has_function_privilege('authenticated', p.oid, 'EXECUTE'));
 
   PERFORM _rec('T15',
-    'les cinq maillons compagnons existent et ne sont exécutables ni par PUBLIC, ni par anon, ni par authenticated',
-    v_n = 5 AND v_mauvais = 0,
-    format('fonctions chain_l1_=%s, exposées=%s %s', v_n, v_mauvais, COALESCE(v_detail, '')));
+    'les cinq maillons compagnons de la tranche 1 existent et AUCUN `chain_l1_` n''est exécutable par PUBLIC, anon ou authenticated',
+    v_tranche1 = 5 AND v_n >= 5 AND v_mauvais = 0,
+    format('fonctions chain_l1_=%s (tranche 1 nommées=%s), exposées=%s %s', v_n, v_tranche1, v_mauvais, COALESCE(v_detail, '')));
 END $$;
 
 SELECT _audit_assert('310');
