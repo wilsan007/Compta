@@ -38,9 +38,9 @@
    **ven-017 fermé aussi** (313, `3155a90`) : le solde dû se lit au grand livre.
 3. ~~**ven-016** — « Contrôle crédit » en boucle infinie (≈ 1 400 requêtes/s, charge la base).~~
    **CORRIGÉ** (`d9197e1`) : l'appel de chargement ne vit plus dans le corps du
-   composant. Mesuré à l'écran : 3 897 GET `/rest/v1/customers` en 5 s et
-   `net::ERR_INSUFFICIENT_RESOURCES` avant ; **2** requêtes en 10 s et 0 erreur
-   après. Le même défaut existait dans l'assistant de paramétrage (voir B10).
+   composant. Mesuré à l'écran : 4 776 GET `/rest/v1/customers` en 5 s et
+   3 435 erreurs console avant ; **2** requêtes en 10 s et 0 erreur après. Le même
+   défaut existait dans l'assistant de paramétrage (voir B10).
 4. **ven-005 / ven-004** — BL « Livré » sans sortie de stock ; BL avec service bloqué.
 5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
 6. **ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.
@@ -74,7 +74,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
-| `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL » : 3 897 GET `/customers` en 5 s + 2 194 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
+| `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL », protocole symétrique : 4 776 GET `/customers` et 10 325 requêtes `/rest/v1` en 5 s + 3 435 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
 | `6409c0e` | **A1 — ven-013** 🔴 / **cpt-005** 🟡 tiers sans compte au plan tiers | migration **312** : déclencheur de rattachement sur `customers`, `suppliers`, `employees` (code auxiliaire, collectif, nom, encart, désactivation) + rattrapage sans écraser un compte saisi | `312_*_tests` **7/7** (T01/T02/T03 rouges avant ; sonde : 0 → 3 comptes) ; **banc écran 15/15** |
 | `3155a90` | **A2 — ven-014** 🟠 balance âgée « other » / **A3 — ven-017** 🟠 solde dû à 0,00 € | migration **313** : vues `customer_balances` (411) et `supplier_balances` (401) en `security_invoker` ; écrans branchés (listes client et fournisseur, contrôle crédit, fiche 360) | `313_*_tests` **6/6** (T01 rouge avant) ; mesuré : GL 540,00 contre 0,00 à l'écran, corrigé ; **banc écran 15/15** ; Vitest **1 514/1 514** |
 | `a7b0570` | **rh-006** 🔴 aucun bulletin ; lot vide approuvable | migration **311** : `generate_pay_run_slips` (le moteur unique appelé par la base, verdict par salarié, refus nommés) + l'approbation exige un bulletin ; écrans branchés (`PayRunsPage`, étape 5 de la préparation, `PaySlipsPage`), boucle cliente retirée | `311_*_tests` **7/7** (T01, T02, T04 rouges avant) ; **banc écran 15/15** (H04 2 bulletins, H05 lot = somme, H06 bulletin d'or) ; Vitest **1 513/1 513** |
@@ -368,11 +368,13 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Test rouge** : `src/pages/__tests__/CreditControlPage.test.tsx` — 26 lectures `/customers`
   avant, **1** après (plus 2 re-rendus) ; côté onboarding 46 → 1. La source simulée se gèle
   au-delà de 50 appels : le rouge échoue en 0,3 s au lieu de tourner jusqu'au `testTimeout`.
-- **Écran** (société « QA Recette SARL », Chrome) : avant, 3 897 GET `/rest/v1/customers` et
-  8 269 requêtes `/rest/v1` en 5 s, **2 194 erreurs console** dont
+- **Écran** (société « QA Recette SARL », Chrome, protocole **identique avant/après** : la
+  fenêtre de mesure couvre toute la vie du document) : avant, **4 776** GET
+  `/rest/v1/customers` et **10 325** requêtes `/rest/v1` en 5 s, **3 435 erreurs console** dont
   `net::ERR_INSUFFICIENT_RESOURCES` ; après, **2** requêtes `/customers` en 10 s et **0** erreur
   (2 = une lecture + le double montage `StrictMode` en dev), capture
-  `qa/screenshots/ven-016-after.png`.
+  `qa/screenshots/ven-016-after.png`. Le relevé « avant » vient du **journal réseau** : le
+  tampon de `performance.getEntriesByType` sature (74 entrées) dès que l'écran boucle.
 - **Garde** : `scripts/verify-rules/15-no-render-body-call.rule` — le motif tombait 2 fois avant
   ce commit, 0 après (cf. § 15).
 
