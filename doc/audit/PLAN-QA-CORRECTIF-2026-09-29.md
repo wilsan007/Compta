@@ -17,12 +17,12 @@
 | Indicateur | Valeur |
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
-| Critiques | **7** — dont **5 déjà corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013) |
+| Critiques | **7** — dont **6 corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016) |
 | Hauts | **23** — dont **4 déjà corrigés** (COORD-003, pil-002, ven-014, ven-017) |
 | Moyens | **24** — dont **1 corrigé** (cpt-005) |
 | Bas | **20** |
-| Déjà corrigés et commités | **15 commits** (§ 2) |
-| **Restant à corriger** | **≈ 57 défauts**, en **8 lots** (§ 4 à § 11) |
+| Déjà corrigés et commités | **16 commits** (§ 2) |
+| **Restant à corriger** | **≈ 56 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
@@ -36,7 +36,11 @@
    **CORRIGÉ** (312, `6409c0e`) : le compte de tiers naît avec le tiers, le
    rattrapage couvre l'existant, et la balance âgée trouve son type et son nom.
    **ven-017 fermé aussi** (313, `3155a90`) : le solde dû se lit au grand livre.
-3. **ven-016** — « Contrôle crédit » en boucle infinie (≈ 1 400 requêtes/s, charge la base).
+3. ~~**ven-016** — « Contrôle crédit » en boucle infinie (≈ 1 400 requêtes/s, charge la base).~~
+   **CORRIGÉ** (`d9197e1`) : l'appel de chargement ne vit plus dans le corps du
+   composant. Mesuré à l'écran : 3 897 GET `/rest/v1/customers` en 5 s et
+   `net::ERR_INSUFFICIENT_RESOURCES` avant ; **2** requêtes en 10 s et 0 erreur
+   après. Le même défaut existait dans l'assistant de paramétrage (voir B10).
 4. **ven-005 / ven-004** — BL « Livré » sans sortie de stock ; BL avec service bloqué.
 5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
 6. **ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.
@@ -70,6 +74,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL » : 3 897 GET `/customers` en 5 s + 2 194 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
 | `6409c0e` | **A1 — ven-013** 🔴 / **cpt-005** 🟡 tiers sans compte au plan tiers | migration **312** : déclencheur de rattachement sur `customers`, `suppliers`, `employees` (code auxiliaire, collectif, nom, encart, désactivation) + rattrapage sans écraser un compte saisi | `312_*_tests` **7/7** (T01/T02/T03 rouges avant ; sonde : 0 → 3 comptes) ; **banc écran 15/15** |
 | `3155a90` | **A2 — ven-014** 🟠 balance âgée « other » / **A3 — ven-017** 🟠 solde dû à 0,00 € | migration **313** : vues `customer_balances` (411) et `supplier_balances` (401) en `security_invoker` ; écrans branchés (listes client et fournisseur, contrôle crédit, fiche 360) | `313_*_tests` **6/6** (T01 rouge avant) ; mesuré : GL 540,00 contre 0,00 à l'écran, corrigé ; **banc écran 15/15** ; Vitest **1 514/1 514** |
 | `a7b0570` | **rh-006** 🔴 aucun bulletin ; lot vide approuvable | migration **311** : `generate_pay_run_slips` (le moteur unique appelé par la base, verdict par salarié, refus nommés) + l'approbation exige un bulletin ; écrans branchés (`PayRunsPage`, étape 5 de la préparation, `PaySlipsPage`), boucle cliente retirée | `311_*_tests` **7/7** (T01, T02, T04 rouges avant) ; **banc écran 15/15** (H04 2 bulletins, H05 lot = somme, H06 bulletin d'or) ; Vitest **1 513/1 513** |
@@ -104,9 +109,24 @@
 ### État d'exécution (session du 29/09, après C1)
 
 Fait : **E1** (le conteneur `supabase_edge_runtime_app` a été relancé), **E4**
-(migration appliquée puis `NOTIFY pgrst, 'reload schema'`). Le serveur Vite du
-worktree n'a pas été relancé (aucune vérification navigateur n'a été faite —
-voir « reste à faire » ci-dessous).
+(migration appliquée puis `NOTIFY pgrst, 'reload schema'`) — puis **E1 mené à
+terme** au lot B10 : le serveur Vite du worktree tourne de nouveau sur le port
+5180 (`npx vite --port 5180 --strictPort`), donc les vérifications navigateur
+sont possibles (elles l'étaient restées à zéro jusqu'ici).
+
+Pour la mesure à l'écran, les mots de passe de `.screen-rig/rig.json` n'étaient
+plus valides : `setup.mjs` crée ses comptes **sans mot de passe GoTrue** (ils
+servent par JWT au banc X0). Un compte de mesure **`b10-recette@screen.test`**
+(rôle `admin`, société « QA Recette SARL » `15702510-…`) a donc été créé par
+l'API d'administration et rattaché à cette société ; le script de mesure est
+`.screen-rig/measure-ven-016.mjs` (hors dépôt, comme le reste du banc). L'ancien
+`rig.json` n'a **pas** été régénéré, pour ne pas casser le banc X0.
+
+⚠ **Garde déjà rouge avant ce lot** : la règle `02-hardcoded-euro` compte **7**
+occurrences du symbole `€` — toutes dans des **commentaires** ajoutés par le lot
+A1-A3 (`CreditControlPage`, `CustomersPage`, `leavesAbsences`, `accounting`) ;
+`npm run verify` échoue donc sur 7 erreurs qui ne viennent pas de B10. À nettoyer
+dans un commit dédié avant la recette finale.
 
 Mode opératoire **vérifié** pour les lots suivants (commandes réellement jouées) :
 
@@ -335,13 +355,26 @@ et les modèles de saisie ne lisent **que** cette table.
   - proposition de relance pour les factures échues.
 - **Test** : Vitest du filtre, et SQL de la vue de relances.
 
-### B10 — ven-016 🔴 — « Contrôle crédit » en boucle infinie
-- **Cause probable** : `useEffect` dont une dépendance est recréée à chaque rendu (objet ou
-  fonction de filtre), avec `setState` qui relance la lecture.
-- **Correctif** : dépendances stables (`useCallback`/`useMemo`) et un seul chargement au montage.
-- **Test rouge** : Vitest avec client Supabase simulé, **1** appel `from('customers')` après
-  montage et 2 rendus.
-- **Écran** : `performance.getEntriesByType('resource')` donne ≤ 2 requêtes en 10 s.
+### B10 — ven-016 🔴 — « Contrôle crédit » en boucle infinie — **✅ CORRIGÉ** (`d9197e1`)
+- **Cause établie** (l'hypothèse d'un `useEffect` à dépendance instable était **fausse** : ce
+  fichier n'en contenait aucun) : `loadData()` était appelé **dans le corps** du composant.
+  Chaque rendu relançait la lecture, `setCustomers` re-rendait, et la boucle n'avait aucune
+  condition d'arrêt. React le nomme lui-même dans la console : « Can't perform a React state
+  update … side-effect in your render function ».
+- **Correctif** : `useEffect(() => { loadData() }, [loadData])` — les dépendances de `loadData`
+  (`toast`, `tCommon`) étaient déjà stables, d'où une seule lecture au montage.
+- **Jumeau** : `OnboardingDashboardPage` portait le motif identique, jamais relevé à la recette
+  parce que l'écran dépend de l'état d'onboarding — corrigé dans le même commit.
+- **Test rouge** : `src/pages/__tests__/CreditControlPage.test.tsx` — 26 lectures `/customers`
+  avant, **1** après (plus 2 re-rendus) ; côté onboarding 46 → 1. La source simulée se gèle
+  au-delà de 50 appels : le rouge échoue en 0,3 s au lieu de tourner jusqu'au `testTimeout`.
+- **Écran** (société « QA Recette SARL », Chrome) : avant, 3 897 GET `/rest/v1/customers` et
+  8 269 requêtes `/rest/v1` en 5 s, **2 194 erreurs console** dont
+  `net::ERR_INSUFFICIENT_RESOURCES` ; après, **2** requêtes `/customers` en 10 s et **0** erreur
+  (2 = une lecture + le double montage `StrictMode` en dev), capture
+  `qa/screenshots/ven-016-after.png`.
+- **Garde** : `scripts/verify-rules/15-no-render-body-call.rule` — le motif tombait 2 fois avant
+  ce commit, 0 après (cf. § 15).
 
 ### B11 — ven-003 🔵 — `<div>` dans `<tbody>` (devis)
 - **Correctif** : `QuotesPage`, remplacer l'enveloppe par un `<Fragment>` ou un `<tr>`.
@@ -693,9 +726,9 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | Ordre | Lot | Contenu | Charge | Dépend de |
 |---|---|---|---|---|
 | 1 | — | Préalables d'environnement (§ 3) | 0,25 j | — |
-| 2 | **C1** | Bulletins de paie (rh-006) | 1,5 j | — |
-| 3 | **A1–A3** | Plan tiers, balance âgée, solde dû | 1,5 j | — |
-| 4 | **B10** | Boucle du contrôle crédit | 0,25 j | — |
+| 2 | **C1** ✅ | Bulletins de paie (rh-006) | 1,5 j | — |
+| 3 | **A1–A3** ✅ | Plan tiers, balance âgée, solde dû | 1,5 j | — |
+| 4 | **B10** ✅ | Boucle du contrôle crédit | 0,25 j | — |
 | 5 | **B1** | Sortie de stock du BL | 0,5 j | — |
 | 6 | **E1** | Fenêtres qui débordent (Modal) | 0,5 j | — |
 | 7 | **D1, D2, D4** | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
@@ -738,7 +771,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | Contrôle statique « **pas de `toISOString()` pour une date métier** » | stk-013, rh-007 |
 | Test Playwright « **toutes les fenêtres tiennent à 1280×720** » | ach-001, stk-015 |
 | Test Playwright « **balayage des routes** » (0 erreur console, 0 requête 4xx/5xx, 0 clé i18n brute) | pil-002, pil-003, ven-003 |
-| Détecteur de **boucle de requêtes** en test (≤ N appels par montage) | ven-016 |
+| Détecteur de **boucle de requêtes** en test (≤ N appels par montage) — **✅ fait** : budget de requêtes dans `CreditControlPage.test.tsx` (la source se gèle au-delà du plafond) + règle statique `15-no-render-body-call.rule` | ven-016 |
 | Contrôle « **aucune colonne dénormalisée lue sans être tenue** » (balance, credit_used, soldes du plan) | ven-017, cpt-001 |
 | Scénario banc écran « **client créé → compte tiers** » | ven-013 |
 
@@ -773,7 +806,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | ven-013 | 🔴 | client sans compte tiers | A1 | ✅ 6409c0e (312) |
 | ven-014 | 🟠 | balance âgée « other » | A2 | ✅ 6409c0e (312) |
 | ven-015 | 🟡 | filtre En retard vide | B9 | ouvert |
-| ven-016 | 🔴 | contrôle crédit en boucle | B10 | ouvert |
+| ven-016 | 🔴 | contrôle crédit en boucle | B10 | ✅ d9197e1 |
 | ven-017 | 🟠 | solde dû à 0 | A3 | ✅ 3155a90 (313) |
 | ven-018 | 🟠 | tableau de bord incohérent | H1 | ouvert |
 | ach-001 | 🟠 | fenêtre fournisseur déborde | E1 | ouvert |
