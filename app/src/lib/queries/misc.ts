@@ -2472,7 +2472,10 @@ export async function transformSalesOrderToDeliveryNote(
     if (newDelivered < Number(ol.quantity)) allDelivered = false
   }
 
-  await tud(supabase.from('sales_orders').update({ delivery_status: allDelivered ? 'delivered' : 'partial', fully_delivered: allDelivered }), 'sales_orders', tid).eq('id', orderId)
+  // B1 (ven-005) : la commande ne se déclare plus livrée ici. Créer le bon n'est
+  // pas expédier la marchandise : `delivery_status` et `fully_delivered` sont
+  // posés par la base, à la sortie réelle du dépôt (migration 314), pour les
+  // livraisons partielles comme complètes. L'écran seul les affiche.
   await recordTransformation('sales_order', orderId, 'delivery_note', dn.id, allDelivered ? 'full' : 'partial')
   return dn as DeliveryNote
 }
