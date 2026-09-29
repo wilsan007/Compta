@@ -1082,6 +1082,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L1, tranche 1 — la rétro-instrumentation : les maillons de la chaîne
+      # ventes → trésorerie → comptabilité sont TRACÉS. Le référentiel avait
+      # mesuré, sur les 62 chaînages existants, idempotence 9/62 (15 %) et trace
+      # 7/62 (11 %) ; le socle (252) était en place et VIDE. La 310 pose cinq
+      # déclencheurs compagnons (`zz_l1_…`, exécutés après le déclencheur métier
+      # par ordre alphabétique) qui appellent le socle — `chain_avant`,
+      # `link_documents`, `emit_domain_event`, `chain_apres` — sans réécrire un
+      # seul corps de maillon : six effets tracés (facture, avoir, décaissement,
+      # encaissement, journal de trésorerie, compte de trésorerie). La suite
+      # mesure le lien, l'événement, la trace, le rejeu sans doublon, le refus
+      # nominatif en mode `refuse` et le cloisonnement. 15 scénarios.
+      - name: 'L1 : les maillons ventes → trésorerie → comptabilité sont tracés (310)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/310_chain_l1_maillons_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
