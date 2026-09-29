@@ -19,7 +19,7 @@ import { render } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { MemoryRouter } from 'react-router-dom'
 
-const { fromSpy, toastSpy, onboardingSpy, completeSpy, BUDGET, PLAFOND, resetBudget } = vi.hoisted(() => {
+const { fromSpy, toastSpy, onboardingSpy, completeSpy, BUDGET, resetBudget } = vi.hoisted(() => {
   const BUDGET = 1
   const PLAFOND = 50
   const etat = { appels: 0, gele: false }
@@ -54,7 +54,6 @@ const { fromSpy, toastSpy, onboardingSpy, completeSpy, BUDGET, PLAFOND, resetBud
     onboardingSpy,
     completeSpy,
     BUDGET,
-    PLAFOND,
     resetBudget: () => { etat.appels = 0; etat.gele = false; onb.appels = 0 },
   }
 })
