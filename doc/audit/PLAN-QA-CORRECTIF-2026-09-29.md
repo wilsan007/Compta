@@ -17,12 +17,12 @@
 | Indicateur | Valeur |
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
-| Critiques | **7** — dont **6 corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016) |
-| Hauts | **23** — dont **4 déjà corrigés** (COORD-003, pil-002, ven-014, ven-017) |
+| Critiques | **7** — **tous corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016, ven-005) |
+| Hauts | **23** — dont **5 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004) |
 | Moyens | **24** — dont **1 corrigé** (cpt-005) |
 | Bas | **20** |
-| Déjà corrigés et commités | **16 commits** (§ 2) |
-| **Restant à corriger** | **≈ 56 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
+| Déjà corrigés et commités | **18 commits** (§ 2) |
+| **Restant à corriger** | **≈ 54 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
@@ -41,7 +41,12 @@
    composant. Mesuré à l'écran : 4 776 GET `/rest/v1/customers` en 5 s et
    3 435 erreurs console avant ; **2** requêtes en 10 s et 0 erreur après. Le même
    défaut existait dans l'assistant de paramétrage (voir B10).
-4. **ven-005 / ven-004** — BL « Livré » sans sortie de stock ; BL avec service bloqué.
+4. ~~**ven-005 / ven-004** — BL « Livré » sans sortie de stock ; BL avec service bloqué.~~
+   **CORRIGÉ** (`9ef26c8`, migration 314) : la sortie suit « Expédié » **comme**
+   « Livré », une seule fois par bon, et ne porte que sur les articles de type
+   `stock`. Mesuré à l'écran : stock 50 → 50 puis 0 mouvement avant ; 50 → **48**
+   avec **1** mouvement (aucun pour la prestation) après. La commande, elle, ne
+   se dit livrée qu'à la sortie réelle.
 5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
 6. **ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.
 
@@ -74,6 +79,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `9ef26c8` | **B1 — ven-005** 🔴 BL livré sans sortie de stock / **ven-004** 🟠 BL avec service bloqué ; complément : la commande se disait livrée dès la **création** du bon | migration **314** : la sortie suit « Expédié » **comme** « Livré » (une fois par bon, gardes `23505` et S-07 conservées) et ne porte que sur les articles `type = 'stock'` ; la commande n'est livrée qu'à la sortie — l'écran n'écrit plus `delivery_status` (règle 16) | `314_*_tests` **6/6** (T01, T02, T05b rouges avant) ; suites voisines 173/230/242/251/253 vertes ; écran : stock 50 → **48**, **1** mouvement (0 pour la prestation), commande `delivered` ; Vitest **1516/1516** |
 | `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL », protocole symétrique : 4 776 GET `/customers` et 10 325 requêtes `/rest/v1` en 5 s + 3 435 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
 | `6409c0e` | **A1 — ven-013** 🔴 / **cpt-005** 🟡 tiers sans compte au plan tiers | migration **312** : déclencheur de rattachement sur `customers`, `suppliers`, `employees` (code auxiliaire, collectif, nom, encart, désactivation) + rattrapage sans écraser un compte saisi | `312_*_tests` **7/7** (T01/T02/T03 rouges avant ; sonde : 0 → 3 comptes) ; **banc écran 15/15** |
 | `3155a90` | **A2 — ven-014** 🟠 balance âgée « other » / **A3 — ven-017** 🟠 solde dû à 0,00 € | migration **313** : vues `customer_balances` (411) et `supplier_balances` (401) en `security_invoker` ; écrans branchés (listes client et fournisseur, contrôle crédit, fiche 360) | `313_*_tests` **6/6** (T01 rouge avant) ; mesuré : GL 540,00 contre 0,00 à l'écran, corrigé ; **banc écran 15/15** ; Vitest **1 514/1 514** |
@@ -88,6 +94,11 @@
 | `db5a00d` | **pil-005** 🔴 création de tâche impossible (colonne fantôme) | `production_order_id` retiré ; échec affiché (toast) | `POST project_tasks` → 201 |
 | `0e8a73d` | **pil-002** 🟠 six vues projet masquées par leur catégorie | catégories en `/project-management/section/*` | six vues vérifiées |
 | `7d4ecb4` | **pil-001** 🔴 création de projet impossible | dates vides → `NULL` | `POST projects` → 201 |
+
+Le test de B10 a reçu un complément `21f7e3e` : `tsc -b --noEmit` (le script
+`typecheck`) refusait un local non lu (`PLAFOND`) — `tsc --noEmit`, celui de
+`verify.sh`, ne voit pas ce cas, d'où deux contrôles qui ne couvrent pas la même
+chose.
 
 **Reste à faire sur ces correctifs** :
 - revérification par l'agent `pil` des cinq vues `/graph`, `/my-tasks`, `/large-screen`, `/mind-map` et `/doc` ;
@@ -264,21 +275,43 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 5. Lot B — Ventes (≈ 4 j)
 
-### B1 — ven-005 🔴 / ven-004 🟠 — sortie de stock du BL
-- **Cause établie** : `create_stock_out_on_delivery()` ne réagit qu'au passage à `shipped`,
-  et sort **toutes** les lignes, services compris.
-- **Correctif** (migration `3xx_delivery_stock_out.sql`) :
+### B1 — ven-005 🔴 / ven-004 🟠 — sortie de stock du BL — **✅ CORRIGÉ** (`9ef26c8`, migration 314)
+- **Cause établie** : `create_stock_out_on_delivery()` ne réagissait qu'au passage à `shipped`
+  (`NEW.status = 'shipped'`, 133) — choisir « Livré » depuis la liste partait donc sans
+  mouvement, en contournant le contrôle de disponibilité — et il sortait **toutes** les
+  lignes, services compris, si bien que le contrôle refusait le bon entier
+  (« Stock insuffisant: disponible=0, demandé=1 », le « 1 » étant la prestation).
+- **Correctif** (migration `314_delivery_stock_out_on_ship_or_deliver.sql`) :
   - condition `OLD.status NOT IN ('shipped','delivered') AND NEW.status IN ('shipped','delivered')` ;
   - sortir seulement les lignes dont `products.type = 'stock'` et `product_id IS NOT NULL` ;
-  - garder le refus de réexpédition (`23505`) et la libération de réservation (S-07).
-- **Test rouge avant** (déjà rédigé : `311_delivery_stock_out_tests.sql`) :
-  - T01 : En attente → Livré sort 2 (100 → 98) ;
-  - T02 : BL bien + service expédié, une seule sortie ;
-  - T03 : expédié puis livré sort une seule fois ;
-  - T04 : réexpédition d'un BL annulé refusée.
-- **Complément** : la commande passait `fully_delivered=true` dès la **création** du BL.
-  Ne la marquer livrée qu'à l'expédition ou la livraison (test T05).
-- **Écran** : colonne « Stock » du BL = « Généré ».
+  - garder le refus de réexpédition (`23505`) et la libération de réservation (S-07, 242) ;
+  - **complément** : c'est la sortie qui pose `delivery_status` / `fully_delivered` de la
+    commande ; l'écran ne les écrit plus (`misc.ts`) et la garde statique
+    `verify-rules/16-no-client-delivery-status.rule` le tient.
+- **Test rouge avant** : `314_delivery_stock_out_on_ship_or_deliver_tests.sql` — le fichier
+  annoncé (`311_delivery_stock_out_tests.sql`) **n'existait pas** (311 était pris par la paie) ;
+  il est écrit ici, sous son propre numéro :
+  - T01 ❌ « En attente » → « Livré » sort 2 (1000 → 998) ;
+  - T02 ❌ article + prestation : l'article sort, la prestation ne bloque rien et ne sort rien ;
+  - T03 ✅ expédié puis livré ne sort qu'une fois (non-régression 230) ;
+  - T04 ✅ réexpédition d'un BL annulé refusée avec un message (non-régression 230) ;
+  - T05a ✅ créer le bon ne déclare pas la commande livrée ; T05b ❌ la livrer la déclare.
+  Après correctif : **6/6 verts**, et les suites voisines 173/230/242/251/253 restent vertes
+  (0 rouge, 0 erreur). Étape CI ajoutée après la 313.
+- **Écran** (société « QA Recette SARL », parcours réel : bon créé par le formulaire de
+  l'écran, puis bascule directe « Livré ») : à la création, commande encore `pending` /
+  `fully_delivered=false` et stock inchangé (50, 0 mouvement) ; après bascule, stock **48**,
+  **1** mouvement (0 pour la prestation), commande `delivered` / `true`, badge « Stock » à
+  « Sorti », aucun message d'erreur. Captures `ven-004-005-1-bon-en-attente.png` et
+  `ven-004-005-2-bon-livre.png`.
+- **Conséquence d'écran à connaître** : sur une commande confirmée dont le bon n'est pas
+  encore expédié, le bouton « Nouveau bon de livraison » reste proposé (c'est
+  `delivery_status` qui le masquait, et il ne bascule plus à la création) ; le formulaire
+  refuse alors avec « rien à livrer », puisque tout est déjà affecté. Gênant, sans gravité —
+  à reprendre avec le reste du lot B (B2/B3).
+- **Hors périmètre, inchangé** : une facture directe d'article stocké, sans BL, ne sort
+  toujours pas le stock — c'est la décision **D-QA-1** (§ 14), à trancher avec B2/B3.
+
 
 ### B2 — ven-008 🟠 — facture directe sans choix d'article : service crédité en 707, stock inchangé
 - **Correctif front** (`InvoicesPage`, formulaire de ligne) :
@@ -731,7 +764,7 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 2 | **C1** ✅ | Bulletins de paie (rh-006) | 1,5 j | — |
 | 3 | **A1–A3** ✅ | Plan tiers, balance âgée, solde dû | 1,5 j | — |
 | 4 | **B10** ✅ | Boucle du contrôle crédit | 0,25 j | — |
-| 5 | **B1** | Sortie de stock du BL | 0,5 j | — |
+| 5 | **B1** ✅ | Sortie de stock du BL | 0,5 j | — |
 | 6 | **E1** | Fenêtres qui débordent (Modal) | 0,5 j | — |
 | 7 | **D1, D2, D4** | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
@@ -774,7 +807,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | Test Playwright « **toutes les fenêtres tiennent à 1280×720** » | ach-001, stk-015 |
 | Test Playwright « **balayage des routes** » (0 erreur console, 0 requête 4xx/5xx, 0 clé i18n brute) | pil-002, pil-003, ven-003 |
 | Détecteur de **boucle de requêtes** en test (≤ N appels par montage) — **✅ fait** : budget de requêtes dans `CreditControlPage.test.tsx` (la source se gèle au-delà du plafond) + règle statique `15-no-render-body-call.rule` | ven-016 |
-| Contrôle « **aucune colonne dénormalisée lue sans être tenue** » (balance, credit_used, soldes du plan) | ven-017, cpt-001 |
+| Contrôle « **aucune colonne dénormalisée lue sans être tenue** » (balance, credit_used, soldes du plan) — **✅ fait pour `delivery_status` / `fully_delivered`** : règle statique `16-no-client-delivery-status.rule` (B1) | ven-017, cpt-001 |
 | Scénario banc écran « **client créé → compte tiers** » | ven-013 |
 
 ---
@@ -796,8 +829,8 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | ven-001 | 🟡 | fiche client incomplète | A4 | ouvert |
 | ven-002 | 🔵 | colonne Total = date | A6 | ouvert |
 | ven-003 | 🔵 | div dans tbody | B11 | ouvert |
-| ven-004 | 🟠 | BL avec service bloqué | B1 | ouvert (test prêt) |
-| ven-005 | 🔴 | BL livré sans sortie | B1 | ouvert (test prêt) |
+| ven-004 | 🟠 | BL avec service bloqué | B1 | ✅ 9ef26c8 (314) |
+| ven-005 | 🔴 | BL livré sans sortie | B1 | ✅ 9ef26c8 (314) |
 | ven-006 | 🟡 | facture de BL sans client | B6 | ouvert |
 | ven-007 | 🟡 | numérotation non chronologique | B7 | ouvert |
 | ven-008 | 🟠 | service en 707 | B2 | ouvert |
