@@ -17,12 +17,12 @@
 | Indicateur | Valeur |
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
-| Critiques | **7** — dont **4 déjà corrigés** (COORD-001, pil-001, pil-005, rh-006) |
-| Hauts | **23** — dont **2 déjà corrigés** (COORD-003, pil-002) |
-| Moyens | **24** |
+| Critiques | **7** — dont **5 déjà corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013) |
+| Hauts | **23** — dont **4 déjà corrigés** (COORD-003, pil-002, ven-014, ven-017) |
+| Moyens | **24** — dont **1 corrigé** (cpt-005) |
 | Bas | **20** |
-| Déjà corrigés et commités | **13 commits** (§ 2) |
-| **Restant à corriger** | **≈ 61 défauts**, en **8 lots** (§ 4 à § 11) |
+| Déjà corrigés et commités | **15 commits** (§ 2) |
+| **Restant à corriger** | **≈ 57 défauts**, en **8 lots** (§ 4 à § 11) |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
@@ -32,8 +32,10 @@
    **CORRIGÉ** (311, `a7b0570`) : un lot se génère par **un appel**, le verdict est
    nommé par salarié, et un lot vide ne s'approuve plus. Reste de cette famille :
    C2 à C6 (simulateur, heures sup, absence).
-2. **ven-013 / cpt-005 / ven-014** — clients et fournisseurs créés à l'écran absents du plan tiers
-   (lettrage manuel impossible, balance âgée filtrée vide).
+2. ~~**ven-013 / cpt-005 / ven-014** — clients et fournisseurs créés à l'écran absents du plan tiers~~
+   **CORRIGÉ** (312, `6409c0e`) : le compte de tiers naît avec le tiers, le
+   rattrapage couvre l'existant, et la balance âgée trouve son type et son nom.
+   **ven-017 fermé aussi** (313, `3155a90`) : le solde dû se lit au grand livre.
 3. **ven-016** — « Contrôle crédit » en boucle infinie (≈ 1 400 requêtes/s, charge la base).
 4. **ven-005 / ven-004** — BL « Livré » sans sortie de stock ; BL avec service bloqué.
 5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
@@ -68,6 +70,8 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `6409c0e` | **A1 — ven-013** 🔴 / **cpt-005** 🟡 tiers sans compte au plan tiers | migration **312** : déclencheur de rattachement sur `customers`, `suppliers`, `employees` (code auxiliaire, collectif, nom, encart, désactivation) + rattrapage sans écraser un compte saisi | `312_*_tests` **7/7** (T01/T02/T03 rouges avant ; sonde : 0 → 3 comptes) ; **banc écran 15/15** |
+| `3155a90` | **A2 — ven-014** 🟠 balance âgée « other » / **A3 — ven-017** 🟠 solde dû à 0,00 € | migration **313** : vues `customer_balances` (411) et `supplier_balances` (401) en `security_invoker` ; écrans branchés (listes client et fournisseur, contrôle crédit, fiche 360) | `313_*_tests` **6/6** (T01 rouge avant) ; mesuré : GL 540,00 contre 0,00 à l'écran, corrigé ; **banc écran 15/15** ; Vitest **1 514/1 514** |
 | `a7b0570` | **rh-006** 🔴 aucun bulletin ; lot vide approuvable | migration **311** : `generate_pay_run_slips` (le moteur unique appelé par la base, verdict par salarié, refus nommés) + l'approbation exige un bulletin ; écrans branchés (`PayRunsPage`, étape 5 de la préparation, `PaySlipsPage`), boucle cliente retirée | `311_*_tests` **7/7** (T01, T02, T04 rouges avant) ; **banc écran 15/15** (H04 2 bulletins, H05 lot = somme, H06 bulletin d'or) ; Vitest **1 513/1 513** |
 | `1699bbd` | **COORD-001** 🔴 inscription bloquée, aucun pays | migration **310** : référentiel `legislation_packs` (société technique `…0001`) lisible, toujours en lecture seule | `310_*_tests` : T01/T02 rouges avant, **4/4** après ; `check_anon_grants`, `check_global_rows_writable`, `check_policy_duplicates` verts |
 | `a8f58ed` | **COORD-002/003** 🟠 « e-mail envoyé » alors que rien ne part ; `<strong>` brut | `signUp()` remonte `email_sent` ; message d'échec `role=alert` ; `<Trans>` | vu à l'écran (fr) |
@@ -148,6 +152,32 @@ Deux points de méthode mesurés pendant cette exécution :
 exigée par la règle 5 (elle demande un navigateur et le serveur Vite du worktree,
 qui n'ont pas été montés ici) ; la preuve retenue est le banc écran + la suite SQL.
 
+### Lot A — A1/A2/A3 livrés (312, 313 ; session du 29/09)
+
+`6409c0e` (312) puis `3155a90` (313) : quatre défauts fermés (ven-013, cpt-005,
+ven-014, ven-017) et un cinquième effet mesuré — les salariés reçoivent enfin leur
+compte 421, donc le FEC n'a plus de « CompAuxLib manquant » sur les matricules.
+
+Trois leçons de méthode, mesurées pendant ce lot :
+
+* **Un test qui DÉSACTIVE un déclencheur doit pouvoir être interrompu sans
+  laisser la base amputée.** Le premier T04 faisait `DISABLE TRIGGER` puis, plus
+  loin, `ENABLE` : le fichier ayant échoué entre les deux, le déclencheur est
+  resté désactivé (mesuré : T01 et T03 rouges, alors que T02 passait). Le test T04
+  ne désactive plus rien : il supprime la ligne de compte du tiers, ce qui mesure
+  la même chose (l'état d'avant) sans risque. Envelopper le couple
+  `DISABLE`/`ENABLE` dans une transaction serait l'autre voie.
+* **Un plafond qui bouge doit être prouvé.** `check-unused-tables` a réécrit son
+  plafond de 76 à 75 en passant. Mesure faite : 75 **avec et sans** ce commit
+  (mêmes 75 noms de tables, listes identiques) — l'écart vient de la base de
+  recette locale, pas du code. Le plafond n'est **pas** commité : la CI mesure une
+  base neuve, et l'abaisser sans preuve aurait pu casser la CI.
+* **Le générateur de types ne lit que les tables** (`table_type = 'BASE TABLE'`) :
+  ajouter une vue ne change pas `src/types/database-generated.ts`. L'avoir lancé
+  sur la base de recette y a fait entrer `_audit_results` / `_audit_expected`
+  (tables de test) — diff annulé.
+
+
 
 ---
 
@@ -157,7 +187,7 @@ Cause commune : la création d'un client ou d'un fournisseur à l'écran n'écri
 ligne dans `third_party_accounts`. Or le plan tiers, le lettrage, la balance âgée par type
 et les modèles de saisie ne lisent **que** cette table.
 
-### A1 — ven-013 🔴 / cpt-005 🟡 — client ou fournisseur sans compte au plan tiers
+### A1 — ven-013 🔴 / cpt-005 🟡 — client ou fournisseur sans compte au plan tiers — **✅ CORRIGÉ** (312, `6409c0e`)
 - **Constat** : 4 clients + 4 fournisseurs, `third_party_accounts` = **0**. Lettrage :
   « Aucun tiers trouvé » ; Plan tiers : « 0 compte(s) ».
 - **Correctif** (migration `3xx_third_party_accounts_from_partners.sql`) :
@@ -176,7 +206,7 @@ et les modèles de saisie ne lisent **que** cette table.
   Lettrage « Clients » liste Dubois avec FAC-2026-000001 540, AV-2026-000001 120,
   RGT-2026-000002 300 → lettrage partiel possible, reste 120.
 
-### A2 — ven-014 🟠 — balance âgée : clients typés « other », filtre « Clients » vide
+### A2 — ven-014 🟠 — balance âgée : clients typés « other », filtre « Clients » vide — **✅ CORRIGÉ** (312, `6409c0e`)
 - **Cause probable** : type de tiers lu depuis `third_party_accounts` (vide) → repli « other ».
 - **Correctif** : après A1, lire le type depuis le compte tiers ; afficher le **nom** et non le code.
 - **Test** : Vitest sur la fonction de construction de la balance âgée (type + nom) +
@@ -184,7 +214,7 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Attendu** : (Clients) CLI00002 [VEN] Dubois Industrie SAS 162,20 ; CLI00003 [VEN] Müller Handels GmbH 250,00 ;
   CLI00004 [PIL] Client Projet 120,00.
 
-### A3 — ven-017 🟠 — « Solde dû » à 0,00 € partout (liste des clients, contrôle crédit)
+### A3 — ven-017 🟠 — « Solde dû » à 0,00 € partout (liste des clients, contrôle crédit) — **✅ CORRIGÉ** (313, `3155a90`)
 - **Constat** : `customers.balance = 0`, `credit_used = 0` alors que 411 porte 532,20.
 - **Correctif** : ne plus lire de colonne dénormalisée jamais tenue. Solde dû calculé
   depuis le grand livre (411 × `account_tiers`), par une vue `customer_balances`
@@ -740,11 +770,11 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | ven-010 | 🟠 | téléchargement texte, pas PDF | B8 | ouvert |
 | ven-011 | 🟡 | « Créer un avoir » inerte | B5 | ouvert |
 | ven-012 | 🟠 | avoir au prorata | B4 | ouvert |
-| ven-013 | 🔴 | client sans compte tiers | A1 | ouvert |
-| ven-014 | 🟠 | balance âgée « other » | A2 | ouvert |
+| ven-013 | 🔴 | client sans compte tiers | A1 | ✅ 6409c0e (312) |
+| ven-014 | 🟠 | balance âgée « other » | A2 | ✅ 6409c0e (312) |
 | ven-015 | 🟡 | filtre En retard vide | B9 | ouvert |
 | ven-016 | 🔴 | contrôle crédit en boucle | B10 | ouvert |
-| ven-017 | 🟠 | solde dû à 0 | A3 | ouvert |
+| ven-017 | 🟠 | solde dû à 0 | A3 | ✅ 3155a90 (313) |
 | ven-018 | 🟠 | tableau de bord incohérent | H1 | ouvert |
 | ach-001 | 🟠 | fenêtre fournisseur déborde | E1 | ouvert |
 | ach-002 | 🟡 | fiche fournisseur incomplète | A4 | ouvert |
@@ -755,7 +785,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | cpt-002 | 🔵 | plan ouvert vide | F3 | ouvert |
 | cpt-003 | 🔵 | message SQL brut | F4 | ouvert |
 | cpt-004 | 🟡 | type de compte faux | F2 | ouvert |
-| cpt-005 | 🟡 | plan tiers vide | A1 | ouvert |
+| cpt-005 | 🟡 | plan tiers vide | A1 | ✅ 6409c0e (312) |
 | cpt-006 | 🔵 | accents manquants | F5 | ouvert |
 | cpt-007 | 🔵 | % recopié en montant | F6 | à reproduire |
 | cpt-008 | 🔵 | date hors période | F7 | ouvert |
