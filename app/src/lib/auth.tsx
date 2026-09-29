@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('users')
         .select('id, email, name, role, active')
         .eq('auth_id', session.user.id)
-        .single()
+        .maybeSingle()   // aucun compte hérité est le cas normal : pas de 406
 
       if (!error && userData) {
         if (!userData.active) {
