@@ -485,7 +485,12 @@
     "invoiceCreated": "Invoice created",
     "invoiceCreatedDesc": "Redirecting to the form...",
     "revenue": "Revenue",
-    "expenses": "Expenses"
+    "expenses": "Expenses",
+    "cashFlowLegend": {
+      "inflow": "Inflows",
+      "outflow": "Outflows",
+      "net": "Net balance"
+    }
   },
   "language": {
     "fr": "Français",

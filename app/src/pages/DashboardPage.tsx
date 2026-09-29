@@ -53,7 +53,7 @@ export function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [bankAccounts, setBankAccounts] = useState<any[]>([])
-  const [chartData, setChartData] = useState<{ monthly: Array<{ month: string; revenus: number; depenses: number }>; cashFlow: Array<{ name: string; value: number; color: string }>; overdueCount: number; overdueTotal: number }>({ monthly: [], cashFlow: [], overdueCount: 0, overdueTotal: 0 })
+  const [chartData, setChartData] = useState<{ monthly: Array<{ month: string; revenus: number; depenses: number }>; cashFlow: Array<{ key: 'inflow' | 'outflow' | 'net'; name: string; value: number; color: string }>; overdueCount: number; overdueTotal: number }>({ monthly: [], cashFlow: [], overdueCount: 0, overdueTotal: 0 })
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [animateKpis, setAnimateKpis] = useState(false)
@@ -86,7 +86,8 @@ export function DashboardPage() {
   }, [t, toast])
 
   const monthlyData = chartData.monthly.length > 0 ? chartData.monthly : []
-  const cashFlowData = chartData.cashFlow
+  // Le libellé suit la langue de l'interface (il était écrit en français en dur).
+  const cashFlowData = chartData.cashFlow.map((c) => ({ ...c, name: t(`dashboard.cashFlowLegend.${c.key}`) }))
 
   const statusMap: Record<string, { variant: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'; label: string }> = {
     draft: { variant: 'neutral', label: t('status.draft') },

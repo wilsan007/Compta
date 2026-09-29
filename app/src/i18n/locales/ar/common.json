@@ -485,7 +485,12 @@
     "invoiceCreated": "تم إنشاء الفاتورة",
     "invoiceCreatedDesc": "إعادة توجيه إلى النموذج...",
     "revenue": "الإيرادات",
-    "expenses": "المصاريف"
+    "expenses": "المصاريف",
+    "cashFlowLegend": {
+      "inflow": "المقبوضات",
+      "outflow": "المدفوعات",
+      "net": "الرصيد الصافي"
+    }
   },
   "language": {
     "fr": "Français",

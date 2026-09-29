@@ -485,7 +485,12 @@
     "invoiceCreated": "Facture créée",
     "invoiceCreatedDesc": "Redirection vers le formulaire...",
     "revenue": "Revenus",
-    "expenses": "Dépenses"
+    "expenses": "Dépenses",
+    "cashFlowLegend": {
+      "inflow": "Encaissements",
+      "outflow": "Décaissements",
+      "net": "Solde net"
+    }
   },
   "language": {
     "fr": "Français",
