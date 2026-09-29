@@ -120,7 +120,6 @@ export async function createSubTask(
     recurring_interval: 1,
     recurring_rule_type: 'weekly',
     linked_action_id: null,
-    production_order_id: null,
   })
 }
 
