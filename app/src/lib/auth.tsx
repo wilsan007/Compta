@@ -21,7 +21,7 @@ interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
+  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean; emailSent?: boolean }>
   signOut: () => Promise<void>
   reloadUser: () => Promise<void>
   hasRole: (...roles: TenantUser['role'][]) => boolean
@@ -281,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean }> => {
+  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean; emailSent?: boolean }> => {
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
       return { error: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 digit.', needsConfirmation: false }
     }
@@ -300,7 +300,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: result.error, needsConfirmation: false }
       }
 
-      return { error: null, needsConfirmation: true }
+      // La fonction dit si l'e-mail de confirmation est réellement parti
+      // (`email_sent`) : sans cette lecture, l'écran annonçait un envoi qui
+      // n'avait pas eu lieu et le compte restait inactivable.
+      return { error: null, needsConfirmation: true, emailSent: result?.email_sent !== false }
     } catch (err: any) {
       return { error: err.message || "Erreur lors de l'inscription", needsConfirmation: false }
     }
