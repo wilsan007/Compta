@@ -579,5 +579,69 @@
     "vat": "TVA",
     "totalTtc": "Total TTC",
     "required": "Une commande porte au moins une ligne (article ou libellé, quantité positive)."
+  },
+  "onboardingTour": {
+    "skip": "Passer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "start": "Commencer",
+    "steps": [
+      {
+        "title": "Bienvenue sur Compta !",
+        "subtitle": "Votre comptabilité, simplifiée et augmentée",
+        "intro": "Nous allons vous guider à travers les fonctionnalités principales en quelques étapes. Vous pourrez revenir à ce guide à tout moment depuis l'aide.",
+        "items": [
+          "Tableau de bord intelligent",
+          "Assistant IA intégré",
+          "Navigation rapide (Cmd+K)",
+          "Mode sombre"
+        ]
+      },
+      {
+        "title": "Configurez votre entreprise",
+        "subtitle": "Étape 1 sur 4",
+        "intro": "Rendez-vous dans Paramètres > Entreprise pour configurer votre société. Ces informations apparaîtront automatiquement sur vos factures et documents.",
+        "items": [
+          "Nom et raison sociale",
+          "Numéro de TVA et SIRET",
+          "Adresse et coordonnées",
+          "Devise et exercice fiscal"
+        ]
+      },
+      {
+        "title": "Ajoutez vos clients et fournisseurs",
+        "subtitle": "Étape 2 sur 4",
+        "intro": "Dans les onglets Ventes et Achats, vous pouvez gérer vos relations commerciales et vos transactions.",
+        "items": [
+          "Créer des fiches clients et fournisseurs",
+          "Envoyer des factures et devis",
+          "Suivre les paiements et relances",
+          "Enregistrer les factures d'achat"
+        ]
+      },
+      {
+        "title": "Connectez votre banque",
+        "subtitle": "Étape 3 sur 4",
+        "intro": "Dans l'onglet Banque, connectez vos comptes pour automatiser votre comptabilité.",
+        "items": [
+          "Importer automatiquement vos transactions",
+          "Catégoriser avec des règles automatiques",
+          "Rapprocher en un clic",
+          "Suivre votre trésorerie en temps réel"
+        ]
+      },
+      {
+        "title": "Utilisez l'Assistant IA",
+        "subtitle": "Étape 4 sur 4",
+        "intro": "Cliquez sur « Assistant IA » en haut à droite pour obtenir de l'aide à tout moment.",
+        "items": [
+          "Analyser votre trésorerie",
+          "Identifier les factures en retard",
+          "Préparer votre déclaration de TVA",
+          "Obtenir des conseils personnalisés"
+        ],
+        "tip": "Astuce : appuyez sur Cmd+K (Mac) ou Ctrl+K (Windows) pour ouvrir la recherche rapide à tout moment !"
+      }
+    ]
   }
 }

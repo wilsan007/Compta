@@ -579,5 +579,69 @@
     "vat": "VAT",
     "totalTtc": "Total incl. tax",
     "required": "An order needs at least one line (product or description, positive quantity)."
+  },
+  "onboardingTour": {
+    "skip": "Skip",
+    "previous": "Previous",
+    "next": "Next",
+    "start": "Get started",
+    "steps": [
+      {
+        "title": "Welcome to Compta!",
+        "subtitle": "Your accounting, simplified and augmented",
+        "intro": "We will guide you through the main features in a few steps. You can come back to this guide at any time from Help.",
+        "items": [
+          "Smart dashboard",
+          "Built-in AI assistant",
+          "Quick navigation (Cmd+K)",
+          "Dark mode"
+        ]
+      },
+      {
+        "title": "Set up your company",
+        "subtitle": "Step 1 of 4",
+        "intro": "Go to Settings > Company to set up your company. This information will appear automatically on your invoices and documents.",
+        "items": [
+          "Company and legal name",
+          "VAT number and SIRET",
+          "Address and contact details",
+          "Currency and fiscal year"
+        ]
+      },
+      {
+        "title": "Add your customers and suppliers",
+        "subtitle": "Step 2 of 4",
+        "intro": "In the Sales and Purchases tabs, you can manage your business relationships and transactions.",
+        "items": [
+          "Create customer and supplier records",
+          "Send invoices and quotes",
+          "Track payments and reminders",
+          "Record purchase invoices"
+        ]
+      },
+      {
+        "title": "Connect your bank",
+        "subtitle": "Step 3 of 4",
+        "intro": "In the Bank tab, connect your accounts to automate your bookkeeping.",
+        "items": [
+          "Import your transactions automatically",
+          "Categorize with automatic rules",
+          "Reconcile in one click",
+          "Track your cash in real time"
+        ]
+      },
+      {
+        "title": "Use the AI Assistant",
+        "subtitle": "Step 4 of 4",
+        "intro": "Click \"AI Assistant\" at the top right to get help at any time.",
+        "items": [
+          "Analyze your cash flow",
+          "Spot overdue invoices",
+          "Prepare your VAT return",
+          "Get personalized advice"
+        ],
+        "tip": "Tip: press Cmd+K (Mac) or Ctrl+K (Windows) to open quick search at any time!"
+      }
+    ]
   }
 }
