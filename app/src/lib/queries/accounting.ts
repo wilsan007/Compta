@@ -14,13 +14,21 @@ export async function getCompanySettings(): Promise<CompanySettings | null> {
   const { data, error } = await q.maybeSingle()
   if (error) throw error
   if (!data && tid) {
-    // No company_settings row for this tenant — auto-create a default one
+    // W-QA (29/09/2026) : cette création « de secours » partait avant que la
+    // société active ne soit établie côté serveur. Or `current_tenant_id()` lit
+    // l'en-tête `x-tenant-id`, et `can_perform()` en dérive : sans société
+    // active, la RLS refuse l'insertion — une erreur console à CHAQUE chargement
+    // d'écran, pour rien. Un refus de portée n'est plus une erreur : l'appelant
+    // retombe sur le pack législatif par défaut, comme prévu.
     const { data: created, error: createErr } = await supabase
       .from('company_settings')
       .insert({ tenant_id: tid, name: 'Mon Entreprise', country: 'France', currency: 'EUR', fiscal_year_start: '01-01' })
       .select('*')
       .single()
-    if (createErr) throw createErr
+    if (createErr) {
+      if (String((createErr as { code?: string }).code ?? '') === '42501' || /row-level security/i.test(createErr.message ?? '')) return null
+      throw createErr
+    }
     return created as CompanySettings
   }
   return data as CompanySettings | null

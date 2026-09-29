@@ -178,7 +178,12 @@ export function FixedAssetsPage() {
                   <TableRow>
                     <TableCell className="font-mono text-xs">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => toggleExpand(a)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
+                        <button
+                          onClick={() => toggleExpand(a)}
+                          aria-label={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
+                          title={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
+                          className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
+                        >
                           {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                         </button>
                         {a.code || '—'}

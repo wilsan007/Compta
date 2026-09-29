@@ -811,7 +811,7 @@ type CreateTenantData = {
 // comptable, journaux, exercice et paramètres dans une seule transaction.
 // L'ancien enchaînement d'insertions côté client était refusé par la RLS de
 // `tenants`, et l'échec de bootstrap_tenant n'était que journalisé.
-async function createTenantViaRpc(payload: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
+async function createTenantViaRpc(payload: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant; tenantId?: string }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { success: false, error: 'Non connecté' }
 
@@ -821,10 +821,12 @@ async function createTenantViaRpc(payload: CreateTenantData): Promise<{ success:
   if (!res || res.success !== true) {
     return { success: false, error: res?.error || 'Création de la société impossible' }
   }
-  return { success: true, tenant: res.tenant }
+  // L'identifiant est rendu à l'appelant : l'écran doit pouvoir rendre la société
+  // créée ACTIVE avant toute lecture (cf. OnboardingPage, W-QA 29/09/2026).
+  return { success: true, tenant: res.tenant, tenantId: res.tenant_id ?? res.tenant?.id }
 }
 
-export async function createTenantForUser(data: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant }> {
+export async function createTenantForUser(data: CreateTenantData): Promise<{ success: boolean; error?: string; tenant?: Tenant; tenantId?: string }> {
   return createTenantViaRpc({
     ...data,
     legal_name: data.legal_name || data.name,

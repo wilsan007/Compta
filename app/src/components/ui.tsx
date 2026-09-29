@@ -325,7 +325,7 @@ export function SortableTable<T extends Record<string, any>>({
                     <button
                       type="button"
                       onClick={() => handleSort(h.key)}
-                      className="inline-flex items-center gap-1 uppercase tracking-wider font-semibold cursor-pointer hover:text-[var(--color-text)] transition-colors"
+                      className="inline-flex items-center gap-1 min-h-6 uppercase tracking-wider font-semibold cursor-pointer hover:text-[var(--color-text)] transition-colors"
                     >
                       {h.label}
                       <span className="flex-shrink-0" aria-hidden="true">

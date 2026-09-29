@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
 import { Building2, Lock, Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 
 export function SignupPage() {
   const { t } = useTranslation('auth')
@@ -60,7 +60,10 @@ export function SignupPage() {
           </div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('signup.verifyEmail')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-            {t('signup.verifyEmailDescription', { email })}
+            {/* Le libellé porte une mise en valeur (« strong ») : sans <Trans>,
+                React affiche les balises telles quelles — défaut mesuré à
+                l'écran le 29/09/2026. */}
+            <Trans i18nKey="signup.verifyEmailDescription" ns="auth" values={{ email }} components={{ strong: <strong /> }} />
           </p>
           <Link to="/login" className="inline-block mt-6 text-sm text-[var(--color-primary)] font-medium">
             {t('password.backToLogin')}

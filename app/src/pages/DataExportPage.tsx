@@ -4,7 +4,7 @@ import { exportAllData, generateSqlDump, generateCsvForTable, preRegisterMirrorS
 import { type ExportResult } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
 import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
@@ -193,7 +193,9 @@ export function DataExportPage() {
           <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
           <div className="text-sm space-y-1">
             <p className="font-medium">{t('dataExport.sovereignty')}</p>
-            <p className="text-[var(--color-text-secondary)]">{t('dataExport.sovereigntyDesc')}</p>
+            <p className="text-[var(--color-text-secondary)]">
+              <Trans i18nKey="dataExport.sovereigntyDesc" ns="settings" components={{ strong: <strong /> }} />
+            </p>
           </div>
         </div>
       </div>

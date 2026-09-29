@@ -292,12 +292,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: { email, password, locale },
       })
 
-      if (fnError) {
-        return { error: fnError.message || "Erreur lors de l'inscription", needsConfirmation: false }
+      if (fnError || result?.error) {
+        // W-QA (29/09/2026) : l'inscription ne doit pas dépendre d'un SEUL
+        // déploiement. La fonction Edge a répondu 503 « name resolution failed »
+        // sur la pile locale — et sans repli, l'écran d'inscription était un
+        // cul-de-sac. On retombe sur l'inscription native de Supabase : elle crée
+        // le compte, et ouvre la session quand la confirmation d'e-mail est
+        // désactivée. L'incident n'est pas tu, il est journalisé.
+        console.warn('auth-signup indisponible — repli sur auth.signUp :', fnError?.message || result?.error)
+        const { data, error } = await supabase.auth.signUp({ email, password })
+        if (error) return { error: error.message, needsConfirmation: false }
+        return { error: null, needsConfirmation: !data.session }
       }
 
-      if (result?.error) {
-        return { error: result.error, needsConfirmation: false }
+      if (result?.email_sent === false) {
+        // Le compte est créé mais l'e-mail n'est PAS parti (clé Resend absente,
+        // cas documenté du dépôt) : dire « vérifiez votre boîte » serait faux —
+        // l'utilisateur attendrait un message qui n'arrivera jamais.
+        return {
+          error: "Compte créé, mais l'e-mail de confirmation n'a pas pu être envoyé. Contactez le support pour activer votre accès.",
+          needsConfirmation: false,
+        }
       }
 
       return { error: null, needsConfirmation: true }

@@ -842,7 +842,10 @@ describe('createTenant', () => {
     const queries = await import('@/lib/queries')
     const result = await queries.createTenantForUser({ name: 'Test Co' })
 
-    expect(result).toEqual({ success: true, tenant: { id: 't1', name: 'Test Co' } })
+    // W-QA (29/09/2026) : la RPC rend aussi `tenantId` — l'écran doit pouvoir
+    // rendre la société créée ACTIVE avant toute lecture, sinon l'assistant reste
+    // bloqué sur « Création… » (défaut mesuré à l'écran).
+    expect(result).toEqual({ success: true, tenant: { id: 't1', name: 'Test Co' }, tenantId: 't1' })
     expect(rpc).toHaveBeenCalledTimes(1)
     expect(rpc).toHaveBeenCalledWith('create_tenant_for_current_user', {
       p_data: expect.objectContaining({ name: 'Test Co', legal_name: 'Test Co', country: 'France', currency: 'EUR' }),
