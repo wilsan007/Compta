@@ -826,6 +826,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # QA-01 (recette /qa du 29/09) : le référentiel `legislation_packs` est rangé
+      # sous la société technique …0001 et n'était lisible par personne —
+      # l'inscription s'arrêtait sur une liste de pays vide. T01, T02 vus rouges avant.
+      - name: 'QA : le référentiel des législations est lisible à l''inscription (310)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/310_legislation_packs_readable_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
