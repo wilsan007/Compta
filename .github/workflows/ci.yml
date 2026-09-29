@@ -816,6 +816,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # W7 — M-01 (fin) : `ExchangeGainLossPage` et `CurrencyRevaluationPage`
+      # lisaient deux tables que **personne** n'écrivait. La 309 constate l'écart
+      # de change au règlement (666/766, `exchange_gain_loss_entries`) et calcule
+      # la réévaluation de clôture (`currency_revaluations` + écriture), sans
+      # inventer de taux. T01 à T05 vus rouges avant.
+      - name: 'AUD : écart de change au règlement et réévaluation de clôture (309)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/309_exchange_gain_loss_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

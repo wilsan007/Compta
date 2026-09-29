@@ -1707,6 +1707,8 @@
   "revaluation": {
     "title": "Currency revaluation",
     "subtitle": "Revalue your foreign currency receivables and payables",
+    "run": "Revalue the period",
+    "runDone": "{{lines}} row(s) revalued, exchange difference {{amount}}",
     "breadcrumb": "Currency revaluation",
     "new": "New revaluation",
     "create": "Create a revaluation",

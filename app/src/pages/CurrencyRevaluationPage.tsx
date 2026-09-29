@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries/accounting'
+import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation, revaluateCurrencyBalances } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
@@ -17,6 +17,10 @@ export function CurrencyRevaluationPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CurrencyRevaluation | null>(null)
+  // M01-03 (309) : la réévaluation se **calcule** (soldes en devise au taux du
+  // jour, écart en 666/766) — l'écran ne se remplit plus à la main seulement.
+  const [periodDate, setPeriodDate] = useState(new Date().toISOString().slice(0, 10))
+  const [running, setRunning] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -31,6 +35,24 @@ export function CurrencyRevaluationPage() {
   }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // M01-03 (309) : le calcul de la réévaluation, à la date choisie.
+  const handleRevaluate = useCallback(async () => {
+    setRunning(true)
+    try {
+      const verdict = await revaluateCurrencyBalances(periodDate)
+      toast('success', tCommon('common.success'),
+        t('revaluation.runDone', {
+          lines: Number(verdict?.lines ?? 0),
+          amount: Number(verdict?.gain_loss ?? 0),
+        }))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setRunning(false)
+    }
+  }, [periodDate, loadData, t, tCommon, toast])
 
   function startEdit(entry: CurrencyRevaluation) {
     setEditing(entry)
@@ -73,7 +95,20 @@ export function CurrencyRevaluationPage() {
       <PageHeader
         title={t('revaluation.title')}
         subtitle={t('revaluation.subtitle')}
-        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
+        action={
+          <div className="flex items-end gap-2">
+            <Input
+              label={t('revaluation.date')}
+              type="date"
+              value={periodDate}
+              onChange={(e) => setPeriodDate(e.target.value)}
+            />
+            <Button onClick={handleRevaluate} disabled={running}>
+              <TrendingUp className="w-4 h-4" /> {t('revaluation.run')}
+            </Button>
+            <Button variant="secondary" onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>
+          </div>
+        }
       />
 
       {loading ? (

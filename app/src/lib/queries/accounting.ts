@@ -2524,6 +2524,24 @@ export async function getCurrencyRevaluations() {
   return data as CurrencyRevaluation[]
 }
 
+// M01-03 (309) : la réévaluation de clôture **se calcule** — soldes en devise des
+// comptes de tiers au taux du jour, écart en 666/766, lignes dans
+// `currency_revaluations` et écriture. Idempotente par période (une période déjà
+// réévaluée est refusée, pas réécrite en silence).
+export interface CurrencyRevaluationVerdict {
+  period_date: string
+  lines: number
+  gain_loss: number
+  without_rate: number
+  entry_id: string | null
+}
+
+export async function revaluateCurrencyBalances(periodDate: string): Promise<CurrencyRevaluationVerdict> {
+  const { data, error } = await supabase.rpc('revaluate_currency_balances', { p_period_date: periodDate })
+  if (error) throw error
+  return data as CurrencyRevaluationVerdict
+}
+
 export async function createCurrencyRevaluation(entry: Omit<CurrencyRevaluation, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'entry_id'>) {
   const tid = await getTenantId()
   const { data, error } = await supabase

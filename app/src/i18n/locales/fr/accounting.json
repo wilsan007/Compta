@@ -1707,6 +1707,8 @@
   "revaluation": {
     "title": "Réévaluation des devises",
     "subtitle": "Réévaluez vos créances et dettes en devises",
+    "run": "Réévaluer la période",
+    "runDone": "{{lines}} ligne(s) réévaluée(s), écart de change {{amount}}",
     "breadcrumb": "Réévaluation devises",
     "new": "Nouvelle réévaluation",
     "create": "Créer une réévaluation",
