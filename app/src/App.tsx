@@ -496,22 +496,30 @@ function App() {
           <Route path="/accounting/projects" element={<ProjectManagementPage />} />
           <Route path="/accounting/projects/legacy" element={<ProjectsPage />} />
           <Route path="/project-management" element={<ModuleHubPage moduleId="projectManagement" />} />
-          <Route path="/project-management/tasks" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={0} />} />
-          <Route path="/project-management/graph" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={1} />} />
+          {/* Les catégories de vues ont leur propre URL : elles partageaient celle de leur
+              première vue (tâches, graphiques…), qui devenait inatteignable. */}
+          <Route path="/project-management/section/views" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={0} />} />
+          <Route path="/project-management/section/analysis" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={1} />} />
+          <Route path="/project-management/section/personal" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={2} />} />
+          <Route path="/project-management/section/display" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={3} />} />
+          <Route path="/project-management/section/visual" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={4} />} />
+          <Route path="/project-management/section/collaboration" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={5} />} />
+          <Route path="/project-management/tasks" element={<ProjectManagementPage initialView="table" />} />
+          <Route path="/project-management/graph" element={<ProjectManagementPage initialView="graph" />} />
           <Route path="/project-management/pivot" element={<ProjectManagementPage initialView="pivot" />} />
           <Route path="/project-management/burndown" element={<ProjectManagementPage initialView="burndown" />} />
-          <Route path="/project-management/my-tasks" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={2} />} />
+          <Route path="/project-management/my-tasks" element={<ProjectManagementPage initialView="my-tasks" />} />
           <Route path="/project-management/calendar" element={<ProjectManagementPage initialView="calendar" />} />
-          <Route path="/project-management/large-screen" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={3} />} />
+          <Route path="/project-management/large-screen" element={<ProjectManagementPage initialView="large-screen" />} />
           <Route path="/project-management/workload" element={<ProjectManagementPage initialView="workload" />} />
           <Route path="/project-management/timeline" element={<ProjectManagementPage initialView="timeline" />} />
           <Route path="/project-management/activity" element={<ProjectManagementPage initialView="activity" />} />
           <Route path="/project-management/notifications" element={<ProjectManagementPage initialView="notifications" />} />
           <Route path="/project-management/kanban" element={<ProjectManagementPage initialView="kanban" />} />
           <Route path="/project-management/gantt" element={<ProjectManagementPage initialView="gantt" />} />
-          <Route path="/project-management/mind-map" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={4} />} />
+          <Route path="/project-management/mind-map" element={<ProjectManagementPage initialView="mind-map" />} />
           <Route path="/project-management/box" element={<ProjectManagementPage initialView="box" />} />
-          <Route path="/project-management/doc" element={<SubGroupHubPage moduleId="projectManagement" sectionIndex={5} />} />
+          <Route path="/project-management/doc" element={<ProjectManagementPage initialView="doc" />} />
           <Route path="/project-management/chat" element={<ProjectManagementPage initialView="chat" />} />
           <Route path="/accounting/fixed-assets" element={<FixedAssetsPage />} />
 

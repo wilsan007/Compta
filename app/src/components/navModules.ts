@@ -400,7 +400,7 @@ export const navModules: NavModule[] = [
     sections: [
       {
         subGroupKey: 'subGroups.pmViews',
-        hubPath: '/project-management',
+        hubPath: '/project-management/section/views',
         items: [
           { labelKey: 'items.pmHome', path: '/project-management' },
           { labelKey: 'items.pmTasks', path: '/project-management/tasks' },
@@ -411,7 +411,7 @@ export const navModules: NavModule[] = [
       },
       {
         subGroupKey: 'subGroups.pmAnalysis',
-        hubPath: '/project-management/graph',
+        hubPath: '/project-management/section/analysis',
         items: [
           { labelKey: 'items.pmGraph', path: '/project-management/graph' },
           { labelKey: 'items.pmPivot', path: '/project-management/pivot' },
@@ -421,7 +421,7 @@ export const navModules: NavModule[] = [
       },
       {
         subGroupKey: 'subGroups.pmPersonal',
-        hubPath: '/project-management/my-tasks',
+        hubPath: '/project-management/section/personal',
         items: [
           { labelKey: 'items.pmMyTasks', path: '/project-management/my-tasks' },
           { labelKey: 'items.pmWorkload', path: '/project-management/workload' },
@@ -431,14 +431,14 @@ export const navModules: NavModule[] = [
       },
       {
         subGroupKey: 'subGroups.pmDisplay',
-        hubPath: '/project-management/large-screen',
+        hubPath: '/project-management/section/display',
         items: [
           { labelKey: 'items.pmLargeScreen', path: '/project-management/large-screen' },
         ],
       },
       {
         subGroupKey: 'subGroups.pmVisual',
-        hubPath: '/project-management/mind-map',
+        hubPath: '/project-management/section/visual',
         items: [
           { labelKey: 'items.pmMindMap', path: '/project-management/mind-map' },
           { labelKey: 'items.pmBox', path: '/project-management/box' },
@@ -446,7 +446,7 @@ export const navModules: NavModule[] = [
       },
       {
         subGroupKey: 'subGroups.pmCollaboration',
-        hubPath: '/project-management/doc',
+        hubPath: '/project-management/section/collaboration',
         items: [
           { labelKey: 'items.pmDoc', path: '/project-management/doc' },
           { labelKey: 'items.pmChat', path: '/project-management/chat' },
