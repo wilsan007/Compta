@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider } from '@/lib/theme'
 import { ToastProvider } from '@/lib/toast'
-import { AuthProvider } from '@/lib/auth'
+import { AuthProvider, useAuth } from '@/lib/auth'
 import { LegislationProvider } from '@/lib/legislation'
 import { ConfirmProvider } from '@/lib/hooks/useConfirm'
 import { ProtectedLayout, AdminRoute, ProtectedRoute } from '@/components/ProtectedRoute'
@@ -305,6 +305,16 @@ function RouteErrorBoundary({ children }: { children: ReactNode }) {
   return <AppErrorBoundary resetKey={pathname}>{children}</AppErrorBoundary>
 }
 
+
+// `/` est la vitrine pour un visiteur ; un utilisateur connecté à une société
+// (fin d'inscription, route inconnue, lien « Accueil ») va à son tableau de
+// bord au lieu de revoir « Essai gratuit / Se connecter ».
+function RootRoute() {
+  const { user, loading } = useAuth()
+  if (!loading && user?.tenantId) return <Navigate to="/dashboard" replace />
+  return <LandingPage />
+}
+
 function App() {
   return (
     <AppErrorBoundary>
@@ -322,7 +332,7 @@ function App() {
           <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
           <Route path="/select-tenant" element={<TenantSelectionPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           {/* SEC-05: Routes publiques hors ProtectedLayout — accessibles sans authentification */}
