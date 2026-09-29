@@ -182,7 +182,7 @@ export function FixedAssetsPage() {
                           onClick={() => toggleExpand(a)}
                           aria-label={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
                           title={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
-                          className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
+                          className="w-6 h-6 shrink-0 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
                         >
                           {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                         </button>

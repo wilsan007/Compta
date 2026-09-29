@@ -38,6 +38,10 @@ function isHarnessCasualty(f) {
   const d = String(f.detail ?? '')
   if (f.id === 'erreur_js' && /has been closed|Target closed/i.test(d)) return true   // navigateur mort en cours de visite
   if (f.id === 'debordement_horizontal' && /^\+0px/.test(d)) return true              // page qui ne défile pas : élément dans un conteneur défilant
+  // Machine en veille pendant la tournée : les ressources échouent en masse et
+  // l'application renvoie vers /login — c'est l'environnement, pas le produit
+  // (constaté le 29/09/2026 : ERR_NETWORK_IO_SUSPENDED).
+  if (/ERR_NETWORK_IO_SUSPENDED|ERR_INTERNET_DISCONNECTED|ERR_NAME_NOT_RESOLVED/.test(d)) return true
   return false
 }
 

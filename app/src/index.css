@@ -167,6 +167,43 @@
     overscroll-behavior-x: contain;
   }
 
+  /* W-QA (29/09/2026) : les boutons d'icône compacts (p-0.5, p-1) et les boutons
+     d'en-tête de tri mesuraient 16 à 22 px — sous le minimum WCAG 2.2 AA
+     (2.5.8 : cible de 24 px). Une seule règle les relève partout, au lieu de
+     vingt correctifs d'écran qui laisseraient le vingt-et-unième aussi petit. */
+  button.p-0\.5,
+  button.p-1,
+  th button {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  /* W-QA (29/09/2026) : douze écrans écrivent leur tableau à la main, sans le
+     conteneur défilant du composant partagé — le tableau dépassait alors la
+     page (mesuré : 1 427 px dans une fenêtre de 1 280). Ils reçoivent le
+     défilement ici, une fois pour toutes. `:has()` est requis
+     (Chrome 105+, Safari 15.4+, Firefox 121+). */
+  div:has(> table.app-table):not(.table-container) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  /* Certains écrans posent le tableau dans un <form>, un <section> ou un <td> :
+     le défilement vaut pour tout parent, pas seulement pour un <div>. */
+  *:has(> table.app-table):not(.table-container) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  /* W-QA (29/09/2026) : les liens et boutons en `text-xs` (pieds de page, filtres
+     compacts) mesuraient 16 px de haut — sous le minimum WCAG 2.2 AA (2.5.8 : 24).
+     On relève la cible sans changer la typographie, donc sans casser les barres
+     d'outils denses. */
+  a.text-xs,
+  button.text-xs {
+    min-height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
   .app-table {
     width: 100%;
     min-width: 760px;

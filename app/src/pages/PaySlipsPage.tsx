@@ -109,7 +109,7 @@ const [slips, setSlips] = useState<any[]>([])
                       onClick={() => toggleExpand(runId)}
                       aria-label={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
                       title={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
+                      className="w-6 h-6 shrink-0 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
                     >
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
@@ -140,7 +140,7 @@ const [slips, setSlips] = useState<any[]>([])
                                   onClick={() => setExpandedSlip(isSlipExpanded ? null : s.id)}
                                   aria-label={tCommon(isSlipExpanded ? 'actions.collapse' : 'actions.expand')}
                                   title={tCommon(isSlipExpanded ? 'actions.collapse' : 'actions.expand')}
-                                  className="w-6 h-6 inline-flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)] mr-1"
+                                  className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)] mr-1"
                                 >
                                   {isSlipExpanded ? <ChevronDown className="w-3 h-3 inline" /> : <ChevronRight className="w-3 h-3 inline" />}
                                 </button>

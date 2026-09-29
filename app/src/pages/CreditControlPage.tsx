@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
@@ -31,7 +31,13 @@ export function CreditControlPage() {
     finally { setLoading(false) }
   }, [toast, tCommon])
 
-  loadData().catch(err => console.error('loadData:', err))
+  // W-QA (29/09/2026) : l'appel partait PENDANT le rendu — React le signalait
+  // (« Can't perform a React state update on a component that hasn't mounted
+  // yet ») et la requête pouvait repartir à chaque rendu. Un effet la déclenche
+  // une fois, proprement.
+  useEffect(() => {
+    loadData().catch((err) => console.error('loadData:', err))
+  }, [loadData])
 
   const getExposure = (c: any) => {
     const used = Number(c.credit_used || 0)

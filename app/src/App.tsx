@@ -7,6 +7,8 @@ import { LegislationProvider } from '@/lib/legislation'
 import { ConfirmProvider } from '@/lib/hooks/useConfirm'
 import { ProtectedLayout, AdminRoute, ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
+import { ModalEscapeGuard } from '@/components/ModalEscapeGuard'
+import { ModalFieldLabelGuard } from '@/components/ModalFieldLabelGuard'
 
 // PRF-02 : Composants de layout lazy-loaded pour réduire le bundle initial
 const ModuleHubPage = lazy(() => import('@/components/ModuleHub').then(m => ({ default: m.ModuleHubPage })))
@@ -313,6 +315,12 @@ function App() {
         <LegislationProvider>
         <ToastProvider>
           <ConfirmProvider>
+          {/* Échap ferme la fenêtre ouverte — l'application écrit ses fenêtres à
+              la main sur chaque écran, et 60 d'entre elles ignoraient le clavier. */}
+          <ModalEscapeGuard />
+          {/* Les champs des mêmes fenêtres reçoivent le nom de leur libellé
+              visible : 43 d'entre eux n'en avaient aucun pour un lecteur d'écran. */}
+          <ModalFieldLabelGuard />
           <BrowserRouter>
             <RouteErrorBoundary>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>

@@ -59,8 +59,10 @@ export function FinancialDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <h3 className="text-lg font-semibold mb-4">{t('financialDashboard.accountingIndicators')}</h3>
+          {/* W-QA (29/09/2026) : le composant Table fournit déjà son <tbody> —
+              le second était imbriqué dans le premier (HTML invalide, signalé
+              par React : « <tbody> cannot be a child of <tbody> »). */}
           <Table headers={[t('financialDashboard.indicator'), t('financialDashboard.value')]}>
-            <tbody>
               <TableRow>
                 <TableCell>{t('financialDashboard.pendingEntries')}</TableCell>
                 <TableCell className="text-right font-medium">{data.pendingEntries}</TableCell>
@@ -77,7 +79,6 @@ export function FinancialDashboardPage() {
                 <TableCell>{t('financialDashboard.paidSupplierInvoices')}</TableCell>
                 <TableCell className="text-right font-medium">{data.supplierInvoiceCount}</TableCell>
               </TableRow>
-            </tbody>
           </Table>
         </Card>
 

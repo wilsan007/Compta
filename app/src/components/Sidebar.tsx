@@ -680,7 +680,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                           <button
                                             onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
                                             className={cn(
-                                              'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded transition-all',
+                                              'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 shrink-0 flex items-center justify-center rounded transition-all',
                                               isPinned
                                                 ? 'opacity-100 text-[var(--color-primary)]'
                                                 : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
@@ -727,7 +727,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                   <button
                                     onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
                                     className={cn(
-                                      'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded transition-all',
+                                      'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 shrink-0 flex items-center justify-center rounded transition-all',
                                       isPinned
                                         ? 'opacity-100 text-[var(--color-primary)]'
                                         : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
@@ -1082,7 +1082,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                                       <button
                                         onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
                                         className={cn(
-                                          'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded transition-all',
+                                          'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 shrink-0 flex items-center justify-center rounded transition-all',
                                           isPinned
                                             ? 'opacity-100 text-[var(--color-primary)]'
                                             : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
@@ -1129,7 +1129,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
                               <button
                                 onClick={(e) => { e.preventDefault(); togglePin(item.path) }}
                                 className={cn(
-                                  'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded transition-all',
+                                  'absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 shrink-0 flex items-center justify-center rounded transition-all',
                                   isPinned
                                     ? 'opacity-100 text-[var(--color-primary)]'
                                     : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'
