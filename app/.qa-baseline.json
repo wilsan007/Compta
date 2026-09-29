@@ -1,0 +1,1502 @@
+[
+  {
+    "fp": "/|desktop|cible_etroite|1 : Essai gratuit 70×16",
+    "id": "cible_etroite",
+    "route": "/",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Essai gratuit 70×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/journal-entries|desktop|modal_champ_sans_nom|« Nouvelle écriture » 6/12 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/journal-entries",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle écriture » 6/12 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/journal-entries|desktop|modal_sans_fermeture|« Nouvelle écriture » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/journal-entries",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle écriture » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/fiscal-year-closure|desktop|select_vide|1 liste(s) sans option sur 2 vues",
+    "id": "select_vide",
+    "route": "/accounting/treatment/fiscal-year-closure",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 2 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/search|desktop|select_vide|1 liste(s) sans option sur 3 vues",
+    "id": "select_vide",
+    "route": "/accounting/treatment/search",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 3 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/accounts|desktop|modal_sans_fermeture|« Nouveau compte bancaire » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/banking/accounts",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau compte bancaire » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/reconciliation-pdf|desktop|select_vide|1 liste(s) sans option sur 3 vues",
+    "id": "select_vide",
+    "route": "/banking/reconciliation-pdf",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 3 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/transactions|desktop|cible_etroite|4 : Non 23×16 ; Oui 35×16 ; Non 23×16 ; Oui 35×16",
+    "id": "cible_etroite",
+    "route": "/banking/transactions",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "4 : Non 23×16 ; Oui 35×16 ; Non 23×16 ; Oui 35×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/contracts|desktop|modal_sans_fermeture|« Nouveau contrat » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/contracts",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau contrat » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/territories|desktop|modal_sans_fermeture|« Nouveau secteur » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/territories",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau secteur » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/customers|desktop|cible_etroite|5 : Nom 47×16 ; Nom du contact 137×16 ; Email 56×16 ; Solde dû 83×16",
+    "id": "cible_etroite",
+    "route": "/dashboard/customers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "5 : Nom 47×16 ; Nom du contact 137×16 ; Email 56×16 ; Solde dû 83×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/customers|desktop|modal_champ_sans_nom|« Nouveau client » 10/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/dashboard/customers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau client » 10/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/customers|desktop|modal_sans_fermeture|« Nouveau client » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/dashboard/customers",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau client » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/products|desktop|modal_sans_fermeture|« Nouveau produit » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/dashboard/products",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau produit » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/expenses|desktop|route_redirigee|/expenses → /",
+    "id": "route_redirigee",
+    "route": "/expenses",
+    "viewport": "desktop",
+    "severity": "bloquant",
+    "label": "Route redirigée (session ou société perdue)",
+    "detail": "/expenses → /",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/expenses|desktop|cible_etroite|1 : Essai gratuit 70×16",
+    "id": "cible_etroite",
+    "route": "/expenses",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Essai gratuit 70×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/declarations|desktop|modal_champ_sans_nom|« Nouvelle déclaration » 5/6 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/declarations",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle déclaration » 5/6 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/declarations|desktop|modal_sans_fermeture|« Nouvelle déclaration » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/declarations",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle déclaration » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/employee-documents|desktop|modal_champ_sans_nom|« Nouveau document » 3/4 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/employee-documents",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau document » 3/4 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/employee-documents|desktop|modal_sans_fermeture|« Nouveau document » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/employee-documents",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau document » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/expense-categories|desktop|modal_champ_sans_nom|« Nouvelle catégorie » 6/8 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/expense-categories",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle catégorie » 6/8 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/expense-categories|desktop|modal_sans_fermeture|« Nouvelle catégorie » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/expense-categories",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle catégorie » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/interview-campaigns|desktop|modal_sans_fermeture|« Nouvelle campagne » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/interview-campaigns",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle campagne » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/payroll-accounting|desktop|modal_champ_sans_nom|« Générer les écritures » 1/2 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/payroll-accounting",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Générer les écritures » 1/2 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/payroll-accounting|desktop|modal_sans_fermeture|« Générer les écritures » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/payroll-accounting",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Générer les écritures » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/pos/terminal|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/pos/terminal",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/pos/terminal|desktop|modal_sans_fermeture|« Ajouter » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/pos/terminal",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Ajouter » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/equivalences|desktop|modal_sans_fermeture|« Nouvelle équivalence » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/equivalences",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle équivalence » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/subcontracting/orders|desktop|modal_sans_fermeture|« Nouvelle commande » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/subcontracting/orders",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle commande » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/activity|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/activity",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/chat|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/chat",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/kanban|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/kanban",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/notifications|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/notifications",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/workload|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/workload",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/credits|desktop|modal_champ_sans_nom|« Nouvel avoir fournisseur » 6/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/credits",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvel avoir fournisseur » 6/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/credits|desktop|modal_sans_fermeture|« Nouvel avoir fournisseur » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/credits",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvel avoir fournisseur » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/orders|desktop|modal_champ_sans_nom|« Nouvelle commande d'achat » 8/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/orders",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle commande d'achat » 8/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/orders|desktop|modal_sans_fermeture|« Nouvelle commande d'achat » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/orders",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle commande d'achat » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/supplier-price-lists|desktop|modal_sans_fermeture|« Nouvelle grille tarifaire » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/supplier-price-lists",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle grille tarifaire » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/reports/balance-sheet|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/reports/balance-sheet",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/credits|desktop|modal_champ_sans_nom|« Nouvel avoir » 5/8 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/sales/credits",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvel avoir » 5/8 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/credits|desktop|modal_sans_fermeture|« Nouvel avoir » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/credits",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvel avoir » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/invoices|desktop|cible_etroite|7 : N° facture 96×16 ; Client 63×16 ; Date 50×16 ; Date d'échéance 139×16",
+    "id": "cible_etroite",
+    "route": "/sales/invoices",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "7 : N° facture 96×16 ; Client 63×16 ; Date 50×16 ; Date d'échéance 139×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/invoices|desktop|element_trop_large|<table.app-table> 1319px > 1280px",
+    "id": "element_trop_large",
+    "route": "/sales/invoices",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Élément plus large que la fenêtre",
+    "detail": "<table.app-table> 1319px > 1280px",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/invoices|desktop|modal_sans_fermeture|« Nouvelle facture » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/invoices",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle facture » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/promotions|desktop|modal_sans_fermeture|« Nouvelle promotion » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/promotions",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle promotion » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/chart-accounts|desktop|modal_champ_sans_nom|« Nouveau compte » 5/10 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/chart-accounts",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau compte » 5/10 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/chart-accounts|desktop|modal_sans_fermeture|« Nouveau compte » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/chart-accounts",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau compte » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/fixed-assets|desktop|bouton_sans_nom|1 : <button.p-0.5> (icône sans libellé)",
+    "id": "bouton_sans_nom",
+    "route": "/accounting/fixed-assets",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Bouton/onglet sans libellé accessible",
+    "detail": "1 : <button.p-0.5> (icône sans libellé)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/fixed-assets|desktop|cible_etroite|1 : <button.p-0.5> 18×18",
+    "id": "cible_etroite",
+    "route": "/accounting/fixed-assets",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : <button.p-0.5> 18×18",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/fixed-assets|desktop|modal_sans_fermeture|« Nouvelle immobilisation » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/fixed-assets",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle immobilisation » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/journals|desktop|modal_champ_sans_nom|« Nouveau journal » 8/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/journals",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau journal » 8/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/journals|desktop|modal_sans_fermeture|« Nouveau journal » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/journals",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau journal » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/partner-categories|desktop|modal_sans_fermeture|« Nouvelle catégorie » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/partner-categories",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle catégorie » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/projects|desktop|cible_etroite|4 : Documents 22×22 ; Commentaires 22×22 ; Documents 22×22 ; Commentaires 22×22",
+    "id": "cible_etroite",
+    "route": "/accounting/projects",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "4 : Documents 22×22 ; Commentaires 22×22 ; Documents 22×22 ; Commentaires 22×22",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/projects|desktop|element_trop_large|<table.w-full> 1406px > 1280px",
+    "id": "element_trop_large",
+    "route": "/accounting/projects",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Élément plus large que la fenêtre",
+    "detail": "<table.w-full> 1406px > 1280px",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/projects|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/projects",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/projects|desktop|modal_champ_sans_nom|« Action Détaillée » 2/4 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/projects",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Action Détaillée » 2/4 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/reports/progressive-balance|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/accounting/reports/progressive-balance",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/structure/budgets|desktop|modal_champ_sans_nom|« Nouveau budget » 2/15 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/structure/budgets",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau budget » 2/15 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/structure/budgets|desktop|modal_sans_fermeture|« Nouveau budget » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/structure/budgets",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau budget » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/third-party|desktop|modal_sans_fermeture|« Nouveau compte tiers » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/third-party",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau compte tiers » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/bank-reconciliation-rules|desktop|modal_sans_fermeture|« Nouvelle règle » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/treatment/bank-reconciliation-rules",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle règle » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/journal-closure|desktop|cible_etroite|16 : Clôturer la période 22×22 ; Clôturer la période 22×22 ; Clôturer la période 22×22 ; Clôturer la période 22×22",
+    "id": "cible_etroite",
+    "route": "/accounting/treatment/journal-closure",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "16 : Clôturer la période 22×22 ; Clôturer la période 22×22 ; Clôturer la période 22×22 ; Clôturer la période 22×22",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/journal-closure|desktop|element_trop_large|<table.app-table> 1408px > 1280px",
+    "id": "element_trop_large",
+    "route": "/accounting/treatment/journal-closure",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Élément plus large que la fenêtre",
+    "detail": "<table.app-table> 1408px > 1280px",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/journal-closure|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/accounting/treatment/journal-closure",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/check-books|desktop|modal_sans_fermeture|« Nouveau chéquier » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/banking/check-books",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau chéquier » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/reconciliation-state|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/banking/reconciliation-state",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/commercial|desktop|modal_champ_sans_nom|« Nouvel avoir » 5/8 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/commercial",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvel avoir » 5/8 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/commercial|desktop|modal_sans_fermeture|« Nouvel avoir » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/commercial",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvel avoir » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/commercial|desktop|modal_champ_sans_nom|« + Ajouter une ligne » 6/12 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/commercial",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« + Ajouter une ligne » 6/12 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/commercial|desktop|modal_sans_fermeture|« + Ajouter une ligne » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/commercial",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« + Ajouter une ligne » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/commercial|desktop|modal_champ_sans_nom|« + Ajouter une ligne » 7/16 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/commercial",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« + Ajouter une ligne » 7/16 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/forecasts|desktop|modal_sans_fermeture|« Nouvelle prévision » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/forecasts",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle prévision » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/tickets|desktop|modal_sans_fermeture|« Nouveau ticket » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/tickets",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau ticket » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/financial|desktop|modal_champ_sans_nom|« Nouvelle écriture » 6/12 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/dashboard/financial",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle écriture » 6/12 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/financial|desktop|modal_sans_fermeture|« Nouvelle écriture » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/dashboard/financial",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle écriture » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/documents|desktop|route_redirigee|/documents → /",
+    "id": "route_redirigee",
+    "route": "/documents",
+    "viewport": "desktop",
+    "severity": "bloquant",
+    "label": "Route redirigée (session ou société perdue)",
+    "detail": "/documents → /",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/documents|desktop|cible_etroite|1 : Essai gratuit 70×16",
+    "id": "cible_etroite",
+    "route": "/documents",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Essai gratuit 70×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/home|desktop|modal_sans_fermeture|« Nouvelle facture » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/home",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle facture » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/career|desktop|modal_champ_sans_nom|« Nouvelle entrée » 7/8 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/career",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle entrée » 7/8 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/career|desktop|modal_sans_fermeture|« Nouvelle entrée » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/career",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle entrée » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/employee-exit|desktop|modal_champ_sans_nom|« Nouveau départ » 2/3 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/employee-exit",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau départ » 2/3 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/employee-exit|desktop|modal_sans_fermeture|« Nouveau départ » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/employee-exit",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau départ » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/manager/approvals|desktop|route_redirigee|/manager/approvals → /",
+    "id": "route_redirigee",
+    "route": "/manager/approvals",
+    "viewport": "desktop",
+    "severity": "bloquant",
+    "label": "Route redirigée (session ou société perdue)",
+    "detail": "/manager/approvals → /",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/manager/approvals|desktop|cible_etroite|1 : Essai gratuit 70×16",
+    "id": "cible_etroite",
+    "route": "/manager/approvals",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Essai gratuit 70×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/forecasts|desktop|modal_sans_fermeture|« Importer factures » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/forecasts",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Importer factures » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/workflows|desktop|modal_sans_fermeture|« Nouveau workflow » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/workflows",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau workflow » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/box|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/box",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/pivot|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/pivot",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/delivery-schedules|desktop|modal_champ_sans_nom|« Nouveau cadencier » 5/12 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/delivery-schedules",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau cadencier » 5/12 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/delivery-schedules|desktop|modal_sans_fermeture|« Nouveau cadencier » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/delivery-schedules",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau cadencier » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/payments|desktop|modal_champ_sans_nom|« Nouveau règlement » 4/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/payments",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau règlement » 4/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/payments|desktop|modal_sans_fermeture|« Nouveau règlement » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/payments",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau règlement » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/suppliers|desktop|cible_etroite|5 : Nom 47×16 ; Contact 79×16 ; Email 56×16 ; Solde 60×16",
+    "id": "cible_etroite",
+    "route": "/purchases/suppliers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "5 : Nom 47×16 ; Contact 79×16 ; Email 56×16 ; Solde 60×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/suppliers|desktop|modal_champ_sans_nom|« Nouveau fournisseur » 10/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/suppliers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau fournisseur » 10/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/suppliers|desktop|modal_sans_fermeture|« Nouveau fournisseur » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/suppliers",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau fournisseur » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/reporting/financial|desktop|erreur_console|In HTML, %s cannot be a child of <%s>.%s\nThis will cause a hydration error.%s <tbody> tbody  \n\n  ...\n    <div className=",
+    "id": "erreur_console",
+    "route": "/reporting/financial",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Erreur écrite en console",
+    "detail": "In HTML, %s cannot be a child of <%s>.%s\nThis will cause a hydration error.%s <tbody> tbody  \n\n  ...\n    <div className=\"flex-1 fle...\">\n      <header>\n      <main className=\"flex-1 p-4...\">\n        <",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/reports/vat|desktop|modal_sans_fermeture|« Nouvelle déclaration » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/reports/vat",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle déclaration » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/customers|desktop|cible_etroite|5 : Nom 47×16 ; Nom du contact 137×16 ; Email 56×16 ; Solde dû 83×16",
+    "id": "cible_etroite",
+    "route": "/sales/customers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "5 : Nom 47×16 ; Nom du contact 137×16 ; Email 56×16 ; Solde dû 83×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/customers|desktop|modal_champ_sans_nom|« Nouveau client » 10/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/sales/customers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau client » 10/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/customers|desktop|modal_sans_fermeture|« Nouveau client » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/customers",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau client » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/quotes|desktop|erreur_console|In HTML, %s cannot be a child of <%s>.%s\nThis will cause a hydration error.%s <tr> div  \n\n  ...\n    <div className=\"flex",
+    "id": "erreur_console",
+    "route": "/sales/quotes",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Erreur écrite en console",
+    "detail": "In HTML, %s cannot be a child of <%s>.%s\nThis will cause a hydration error.%s <tr> div  \n\n  ...\n    <div className=\"flex-1 fle...\">\n      <header>\n      <main className=\"flex-1 p-4...\">\n        <Outle",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/quotes|desktop|element_trop_large|<table.app-table> 1427px > 1280px",
+    "id": "element_trop_large",
+    "route": "/sales/quotes",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Élément plus large que la fenêtre",
+    "detail": "<table.app-table> 1427px > 1280px",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/quotes|desktop|modal_champ_sans_nom|« Nouveau devis » 5/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/sales/quotes",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau devis » 5/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/quotes|desktop|modal_sans_fermeture|« Nouveau devis » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/quotes",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau devis » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/entry-templates|desktop|modal_champ_sans_nom|« Nouveau modèle » 3/13 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/entry-templates",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau modèle » 3/13 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/entry-templates|desktop|modal_sans_fermeture|« Nouveau modèle » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/entry-templates",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau modèle » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/general-ledger|desktop|select_vide|1 liste(s) sans option sur 4 vues",
+    "id": "select_vide",
+    "route": "/accounting/general-ledger",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 4 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/states/analytic-balance|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/accounting/states/analytic-balance",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/states/general-ledger-tiers|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/accounting/states/general-ledger-tiers",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/structure/analytic-plans|desktop|modal_champ_sans_nom|« Nouveau plan » 3/4 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/accounting/structure/analytic-plans",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau plan » 3/4 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/structure/analytic-plans|desktop|modal_sans_fermeture|« Nouveau plan » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/accounting/structure/analytic-plans",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau plan » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/saisie-par-piece|desktop|cible_etroite|4 : Ventilation analytique 22×22 ; Ventilation analytique 22×22 ; Ajouter une ligne 125×20 ; Équilibrer 77×20",
+    "id": "cible_etroite",
+    "route": "/accounting/treatment/saisie-par-piece",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "4 : Ventilation analytique 22×22 ; Ventilation analytique 22×22 ; Ajouter une ligne 125×20 ; Équilibrer 77×20",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/accounting/treatment/saisie-par-piece|desktop|select_vide|2 liste(s) sans option sur 7 vues",
+    "id": "select_vide",
+    "route": "/accounting/treatment/saisie-par-piece",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "2 liste(s) sans option sur 7 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking|desktop|modal_sans_fermeture|« Nouveau compte bancaire » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/banking",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau compte bancaire » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/banking/reconciliation|desktop|cible_etroite|2 : Annuler 60×16 ; Annuler 60×16",
+    "id": "cible_etroite",
+    "route": "/banking/reconciliation",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "2 : Annuler 60×16 ; Annuler 60×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/campaigns|desktop|modal_sans_fermeture|« Nouvelle campagne » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/campaigns",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle campagne » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/opportunities|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/crm/opportunities",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/crm/opportunities|desktop|modal_sans_fermeture|« Nouvelle opportunité » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/crm/opportunities",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle opportunité » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/suppliers|desktop|cible_etroite|5 : Nom 47×16 ; Contact 79×16 ; Email 56×16 ; Solde 60×16",
+    "id": "cible_etroite",
+    "route": "/dashboard/suppliers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "5 : Nom 47×16 ; Contact 79×16 ; Email 56×16 ; Solde 60×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/suppliers|desktop|modal_champ_sans_nom|« Nouveau fournisseur » 10/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/dashboard/suppliers",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau fournisseur » 10/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/dashboard/suppliers|desktop|modal_sans_fermeture|« Nouveau fournisseur » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/dashboard/suppliers",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau fournisseur » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/cpf|desktop|modal_champ_sans_nom|« Nouveau compte » 2/3 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/cpf",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau compte » 2/3 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/cpf|desktop|modal_sans_fermeture|« Nouveau compte » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/cpf",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau compte » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/leave-rules|desktop|modal_champ_sans_nom|« Nouvelle règle » 7/11 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/leave-rules",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle règle » 7/11 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/leave-rules|desktop|modal_sans_fermeture|« Nouvelle règle » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/leave-rules",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle règle » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/my-expenses|desktop|modal_sans_fermeture|« Nouvelle note » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/my-expenses",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle note » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/pay-slips|desktop|bouton_sans_nom|1 : <button.p-0.5> (icône sans libellé)",
+    "id": "bouton_sans_nom",
+    "route": "/hr/pay-slips",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Bouton/onglet sans libellé accessible",
+    "detail": "1 : <button.p-0.5> (icône sans libellé)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/pay-slips|desktop|cible_etroite|1 : <button.p-0.5> 20×20",
+    "id": "cible_etroite",
+    "route": "/hr/pay-slips",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : <button.p-0.5> 20×20",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/rh-requests|desktop|modal_champ_sans_nom|« Nouvelle demande » 3/4 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/hr/rh-requests",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle demande » 3/4 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/rh-requests|desktop|modal_sans_fermeture|« Nouvelle demande » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/rh-requests",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle demande » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/hr/timesheets|desktop|modal_sans_fermeture|« Nouvelle feuille de temps » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/hr/timesheets",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle feuille de temps » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/leaves|desktop|route_redirigee|/leaves → /",
+    "id": "route_redirigee",
+    "route": "/leaves",
+    "viewport": "desktop",
+    "severity": "bloquant",
+    "label": "Route redirigée (session ou société perdue)",
+    "detail": "/leaves → /",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/leaves|desktop|cible_etroite|1 : Essai gratuit 70×16",
+    "id": "cible_etroite",
+    "route": "/leaves",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Essai gratuit 70×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/machines|desktop|modal_sans_fermeture|« Nouvelle machine » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/machines",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle machine » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/of-access|desktop|modal_champ_sans_nom|« Nouvelle règle » 2/5 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/production/of-access",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle règle » 2/5 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/production/of-access|desktop|modal_sans_fermeture|« Nouvelle règle » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/production/of-access",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle règle » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/calendar|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/calendar",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/project-management/timeline|desktop|modal_champ_sans_nom|« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/project-management/timeline",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle Tâche » 2/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/invoices|desktop|cible_etroite|7 : N° interne 93×16 ; Fournisseur 109×16 ; Date 50×16 ; Échéance 87×16",
+    "id": "cible_etroite",
+    "route": "/purchases/invoices",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "7 : N° interne 93×16 ; Fournisseur 109×16 ; Date 50×16 ; Échéance 87×16",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/invoices|desktop|modal_champ_sans_nom|« Nouvelle facture fournisseur » 7/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/purchases/invoices",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouvelle facture fournisseur » 7/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/invoices|desktop|modal_sans_fermeture|« Nouvelle facture fournisseur » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/invoices",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle facture fournisseur » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/purchases/requests|desktop|modal_sans_fermeture|« Nouvelle demande » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/purchases/requests",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouvelle demande » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/reports|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/reports",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/reports/profit-loss|desktop|select_vide|1 liste(s) sans option sur 1 vues",
+    "id": "select_vide",
+    "route": "/reports/profit-loss",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Liste déroulante sans option",
+    "detail": "1 liste(s) sans option sur 1 vues",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/credit-control|desktop|erreur_console|Can't perform a React state update on a component that hasn't mounted yet. This indicates that you have a side-effect in",
+    "id": "erreur_console",
+    "route": "/sales/credit-control",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Erreur écrite en console",
+    "detail": "Can't perform a React state update on a component that hasn't mounted yet. This indicates that you have a side-effect in your render function that asynchronously tries to update the component. Move th",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/payments|desktop|modal_champ_sans_nom|« Nouveau règlement » 4/9 champ(s) nommé(s)",
+    "id": "modal_champ_sans_nom",
+    "route": "/sales/payments",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Champ de formulaire sans libellé",
+    "detail": "« Nouveau règlement » 4/9 champ(s) nommé(s)",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/sales/payments|desktop|modal_sans_fermeture|« Nouveau règlement » : reste ouverte après Échap",
+    "id": "modal_sans_fermeture",
+    "route": "/sales/payments",
+    "viewport": "desktop",
+    "severity": "majeur",
+    "label": "Fenêtre qui ne se ferme pas (Échap)",
+    "detail": "« Nouveau règlement » : reste ouverte après Échap",
+    "notedAt": "2026-09-29"
+  },
+  {
+    "fp": "/settings/api-docs|desktop|cible_etroite|1 : Copier 12×12",
+    "id": "cible_etroite",
+    "route": "/settings/api-docs",
+    "viewport": "desktop",
+    "severity": "mineur",
+    "label": "Cible tactile plus petite que 24 px",
+    "detail": "1 : Copier 12×12",
+    "notedAt": "2026-09-29"
+  }
+]
