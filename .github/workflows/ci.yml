@@ -834,6 +834,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # rh-006 (recette /qa du 29/09) : aucun écran ne produisait de bulletin —
+      # « Générer les bulletins » créait un lot VIDE et « Valider la préparation »
+      # n'émettait aucune requête, donc un lot vide s'approuvait. La 311 génère les
+      # bulletins d'un lot par UN appel (verdict par salarié, refus nommés) et
+      # refuse l'approbation d'un lot sans bulletin. T01, T02, T04 vus rouges avant.
+      - name: 'QA : les bulletins de paie se génèrent, et un lot vide ne s''approuve pas (311)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_pay_run_slip_generation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

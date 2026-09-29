@@ -311,26 +311,22 @@ describe('Pay Slips & Payroll', () => {
     await expect(deletePaySlip('ps1')).resolves.not.toThrow()
   })
 
-  it('generatePaySlipsForRun generates for active employees only', async () => {
-    // LOT4-02 : generatePaySlipsForRun appelle maintenant le RPC calculate_payslip
-    let callIdx = 0
-    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
-      data: { success: true, pay_slip_id: 'ps-' + (++callIdx) },
-      error: null,
-    }))
-    _fromOverride = () => {
-      const c = chainWith({ id: 'ps-' + callIdx, number: 'BS-PR-001-ALI' })
-      c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { id: 'ps-' + callIdx, number: 'BS-PR-001-ALI' }, error: null }))
-      return c
+  it('generatePayRunSlips rend le verdict de la base, refus nommés compris', async () => {
+    // rh-006 (311) : la génération est UN appel — la base appelle le moteur
+    // unique et rend un verdict par salarié ; l'écran ne boucle plus.
+    const verdict = {
+      pay_run_id: 'run1', number: 'PR-001', period: '2026-02', total: 2, generes: 1,
+      echecs: [{ employee_id: 'e2', employee: 'Bob', message: 'contrat absent' }],
+      bulletins: [{ employee_id: 'e1', employee: 'Alice', pay_slip_id: 'ps1', total_gross: 2500, net_salary: 1919.53 }],
     }
+    const rpc = vi.fn(() => Promise.resolve({ data: verdict, error: null }))
+    ;(supabase as any).rpc = rpc
 
-    const { generatePaySlipsForRun } = await import('@/lib/queries')
-    const results = await generatePaySlipsForRun('run1', [
-      { id: 'e1', name: 'Alice', salary: 3000, status: 'active' },
-      { id: 'e2', name: 'Bob', salary: 2500, status: 'inactive' },
-    ] as any, { number: 'PR-001', period_start: '2024-01-01', period_end: '2024-01-31' } as any)
-    expect(results).toHaveLength(1)
+    const { generatePayRunSlips } = await import('@/lib/queries')
+    const res = await generatePayRunSlips('run1')
+    expect(rpc).toHaveBeenCalledWith('generate_pay_run_slips', { p_pay_run_id: 'run1' })
+    expect(res.generes).toBe(1)
+    expect(res.echecs[0].employee).toBe('Bob')
   })
 
   it('getPayrollAccountingEntries fetches entries', async () => {

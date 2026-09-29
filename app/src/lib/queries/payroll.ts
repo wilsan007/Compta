@@ -127,40 +127,28 @@ export async function deletePaySlip(id: string) {
   if (error) throw error
 }
 
-export async function generatePaySlipsForRun(payRunId: string, employees: Employee[], payRun: PayRun) {
-  // LOT4-02 : Moteur unique en SQL — le RPC calculate_payslip fait tout le calcul
-  // légal (PMSS, CSG/CRDS, tranches, cumuls) et crée/met à jour le bulletin.
-  // Le moteur TypeScript (calculatePayroll) n'est plus utilisé pour la génération.
-  const results: PaySlip[] = []
-  const period = String(payRun.period_start).slice(0, 7) // YYYY-MM
+/** Verdict de la génération des bulletins d'un lot (311, rh-006).
+ *  Un verdict par salarié : la base dit qui a été calculé, qui a été refusé, et
+ *  pourquoi. L'écran affiche ce verdict — il ne boucle plus lui-même et
+ *  n'avale plus le premier échec rencontré. */
+export type PayRunSlipsVerdict = {
+  pay_run_id: string
+  number: string
+  period: string
+  total: number
+  generes: number
+  echecs: { employee_id: string; employee: string; message: string }[]
+  bulletins: { employee_id: string; employee: string; pay_slip_id: string; total_gross: number; net_salary: number }[]
+}
 
-  for (const emp of employees) {
-    if (emp.status === 'inactive') continue
-
-    // Appeler le RPC SQL qui calcule et persiste le bulletin
-    const { data, error } = await supabase.rpc('calculate_payslip', {
-      p_employee_id: emp.id,
-      p_period: period,
-      p_pay_run_id: payRunId,
-    })
-    if (error) throw error
-    if (data && data.success === false) {
-      throw new Error(data.error || 'Erreur calcul bulletin')
-    }
-
-    // Recharger le bulletin créé par le RPC
-    if (data && data.pay_slip_id) {
-      const { data: slip, error: slipError } = await supabase
-        .from('pay_slips')
-        .select('*')
-        .eq('id', data.pay_slip_id)
-        .single()
-      if (!slipError && slip) {
-        results.push(slip as PaySlip)
-      }
-    }
-  }
-  return results
+/** rh-006 : la génération des bulletins d'un lot se fait par UN appel. C'est la
+ *  base qui appelle le moteur unique (`calculate_payslip`, 276) pour chaque
+ *  salarié ACTIF de la période, et qui refuse un lot sans droit, un lot d'une
+ *  autre société ou un lot déjà approuvé. */
+export async function generatePayRunSlips(payRunId: string): Promise<PayRunSlipsVerdict> {
+  const { data, error } = await supabase.rpc('generate_pay_run_slips', { p_pay_run_id: payRunId })
+  if (error) throw error
+  return data as PayRunSlipsVerdict
 }
 
 // ============ Sprint 7: Payroll Accounting Entries ============
