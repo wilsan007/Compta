@@ -602,8 +602,8 @@ export interface Project {
   status: 'active' | 'completed' | 'on_hold' | 'cancelled'
   budget: number
   actual_cost: number
-  start_date: string
-  end_date: string
+  start_date: string | null
+  end_date: string | null
   manager_id: string | null
   created_at: string
   updated_at: string
