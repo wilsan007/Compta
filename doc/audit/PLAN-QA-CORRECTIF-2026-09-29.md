@@ -17,18 +17,21 @@
 | Indicateur | Valeur |
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
-| Critiques | **7** — dont **3 déjà corrigés** (COORD-001, pil-001, pil-005) |
+| Critiques | **7** — dont **4 déjà corrigés** (COORD-001, pil-001, pil-005, rh-006) |
 | Hauts | **23** — dont **2 déjà corrigés** (COORD-003, pil-002) |
 | Moyens | **24** |
 | Bas | **20** |
-| Déjà corrigés et commités | **12 commits** (§ 2) |
-| **Restant à corriger** | **≈ 62 défauts**, en **8 lots** (§ 4 à § 11) |
+| Déjà corrigés et commités | **13 commits** (§ 2) |
+| **Restant à corriger** | **≈ 61 défauts**, en **8 lots** (§ 4 à § 11) |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
 **Les six défauts qui bloquent un parcours métier entier**, à traiter en premier :
 
-1. **rh-006** — aucun écran ne produit de bulletin de paie (toute la paie est intestable).
+1. ~~**rh-006** — aucun écran ne produit de bulletin de paie (toute la paie est intestable).~~
+   **CORRIGÉ** (311, `a7b0570`) : un lot se génère par **un appel**, le verdict est
+   nommé par salarié, et un lot vide ne s'approuve plus. Reste de cette famille :
+   C2 à C6 (simulateur, heures sup, absence).
 2. **ven-013 / cpt-005 / ven-014** — clients et fournisseurs créés à l'écran absents du plan tiers
    (lettrage manuel impossible, balance âgée filtrée vide).
 3. **ven-016** — « Contrôle crédit » en boucle infinie (≈ 1 400 requêtes/s, charge la base).
@@ -65,6 +68,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `a7b0570` | **rh-006** 🔴 aucun bulletin ; lot vide approuvable | migration **311** : `generate_pay_run_slips` (le moteur unique appelé par la base, verdict par salarié, refus nommés) + l'approbation exige un bulletin ; écrans branchés (`PayRunsPage`, étape 5 de la préparation, `PaySlipsPage`), boucle cliente retirée | `311_*_tests` **7/7** (T01, T02, T04 rouges avant) ; **banc écran 15/15** (H04 2 bulletins, H05 lot = somme, H06 bulletin d'or) ; Vitest **1 513/1 513** |
 | `1699bbd` | **COORD-001** 🔴 inscription bloquée, aucun pays | migration **310** : référentiel `legislation_packs` (société technique `…0001`) lisible, toujours en lecture seule | `310_*_tests` : T01/T02 rouges avant, **4/4** après ; `check_anon_grants`, `check_global_rows_writable`, `check_policy_duplicates` verts |
 | `a8f58ed` | **COORD-002/003** 🟠 « e-mail envoyé » alors que rien ne part ; `<strong>` brut | `signUp()` remonte `email_sent` ; message d'échec `role=alert` ; `<Trans>` | vu à l'écran (fr) |
 | `bbae422` | **COORD-007** 406 au chargement | `.maybeSingle()` sur `users` | 0 × 406 |
@@ -92,6 +96,58 @@
 | E4 | Recharger la base de recette **après** chaque migration (`run-sql-migrations.mjs` depuis l'arbre de recette) puis `NOTIFY pgrst, 'reload schema'` | sinon PostgREST sert l'ancien schéma |
 | E5 | Écrire dans le brief des agents : `$B viewport 1280x1000` d'office tant que ach-001/stk-015 ne sont pas corrigés | évite les blocages de fenêtre |
 | E6 | Données parasites à ignorer : produits `ACH-FOU`, `ACH-GANTS`, `[STK] Matière A` (prix −10), `[STK] Repro prix négatif`, nomenclatures `STK-BOM-C`/`C2` sans article, projet sonde supprimé | créées par des saisies de test |
+
+### État d'exécution (session du 29/09, après C1)
+
+Fait : **E1** (le conteneur `supabase_edge_runtime_app` a été relancé), **E4**
+(migration appliquée puis `NOTIFY pgrst, 'reload schema'`). Le serveur Vite du
+worktree n'a pas été relancé (aucune vérification navigateur n'a été faite —
+voir « reste à faire » ci-dessous).
+
+Mode opératoire **vérifié** pour les lots suivants (commandes réellement jouées) :
+
+```bash
+# 1. appliquer une migration sur la base de recette (Suivi par sql_migrations_tracker)
+cd ~/qa-worktrees/compta-qa/app
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres node run-sql-migrations.mjs
+#    rejouer un fichier déjà tracké après l'avoir modifié :
+docker cp sql app/sql supabase_db_app:/tmp/qasql   # puis
+docker exec supabase_db_app psql -U postgres -v ON_ERROR_STOP=1 -f /tmp/qasql/<fichier>.sql
+
+# 2. lancer une suite SQL isolée
+docker exec supabase_db_app psql -U postgres -v ON_ERROR_STOP=1 -f /tmp/qasql/<nnn>_*_tests.sql
+
+# 3. le banc « chemin de l'écran » (X0), qui n'exige PAS de navigateur
+cd ~/qa-worktrees/compta-qa/app
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres node scripts/screen-rig/setup.mjs
+#    PostgREST réel sur 3399, avec le secret du banc :
+SECRET=$(node -e "console.log(require('./.screen-rig/rig.json').jwtSecret)")
+docker run --rm -d --name qa-pgrst-rig -p 3399:3000 \
+  -e PGRST_DB_URI="postgres://authenticator:screen-rig@host.docker.internal:54322/postgres" \
+  -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon -e PGRST_JWT_SECRET="$SECRET" \
+  -e PGRST_DB_MAX_ROWS=1000 postgrest/postgrest:v16.3
+nohup node scripts/screen-rig/gateway.mjs > .screen-rig/gateway.out 2>&1 &
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres npx vitest run -c vitest.screen.config.ts
+```
+
+Deux points de méthode mesurés pendant cette exécution :
+
+* **Le banc écran n'est pas idempotent** : les scénarios s'enchaînent (01 → 15) et
+  laissent des données dans la société A. Le rejouer **deux fois sans refaire
+  `setup.mjs`** fait tomber `04_fec` (F01/F04/F07) sur les salariés laissés par
+  `05_payroll` de la passe précédente — rouge de **harnais**, pas de produit.
+  Refaire `setup.mjs` (et redémarrer PostgREST **et** la passerelle, le secret JWT
+  étant regénéré) avant chaque passe complète.
+* **Ce que le banc attrape et que la relecture rate** : la 311 ne refusait aucun
+  bulletin à 0,00 € — l'inscription réelle crée un salarié « Admin » **sans
+  salaire**, donc la première version produisait un bulletin de 0,00 € pour ce
+  compte technique (3 bulletins au lieu de 2, bulletin d'or pris sur la mauvaise
+  ligne). Vu par H04/H05/H06, corrigé par T07.
+
+**Reste à faire pour C1** (dit, non fait) : la capture d'écran `qa/screenshots/rh-006-after.png`
+exigée par la règle 5 (elle demande un navigateur et le serveur Vite du worktree,
+qui n'ont pas été montés ici) ; la preuve retenue est le banc écran + la suite SQL.
+
 
 ---
 
@@ -268,7 +324,7 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 6. Lot C — Paie (≈ 4 j) — **priorité 1 (rh-006)**
 
-### C1 — rh-006 🔴 — aucun écran ne produit de bulletin ; lot vide approuvable
+### C1 — rh-006 🔴 — aucun écran ne produit de bulletin ; lot vide approuvable — **✅ CORRIGÉ** (311, `a7b0570`)
 - **Constat** : « Générer les bulletins » fait seulement `POST pay_runs` ; `pay_slips` = 0 ;
   « Valider la préparation » n'émet **aucune** requête (placebo).
 - **Correctif** :
@@ -708,7 +764,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | rh-003 | 🔵 | base_salary, horaire | C6 | ouvert |
 | rh-004 | 🔵 | « N° CAMPAGNE » | C6 | ouvert |
 | rh-005 | 🟠 | simulateur faux | C2 | ouvert |
-| rh-006 | 🔴 | aucun bulletin | C1 | ouvert |
+| rh-006 | 🔴 | aucun bulletin | C1 | ✅ a7b0570 (311) |
 | rh-007 | 🔵 | dates de campagne décalées | C6 / D4 | ouvert |
 | rh-008 | 🟠 | heures sup à 0 | C3 | ouvert |
 | rh-009 | 🟡 | pointage d'absence impossible | C4 | ouvert |
