@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Breadcrumb, Button, Badge } from '@/components/ui'
 import { getOnboardingState, updateOnboardingStep, isOnboardingComplete } from '@/lib/queries/admin'
 import { CheckCircle, Circle } from 'lucide-react'
@@ -33,7 +33,9 @@ export function OnboardingDashboardPage() {
     } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }, [toast, tCommon])
 
-  loadData().catch(err => console.error('loadData:', err))
+  // Même cause racine que ven-016 (B10) : l'appel au corps du composant bouclait
+  // (rendu → lecture → setState → rendu). Une lecture au montage suffit.
+  useEffect(() => { loadData() }, [loadData])
 
   const handleToggle = async (step: string) => {
     try {

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
@@ -38,7 +38,12 @@ export function CreditControlPage() {
     finally { setLoading(false) }
   }, [toast, tCommon])
 
-  loadData().catch(err => console.error('loadData:', err))
+  // ven-016 (B10) : l'appel vivait dans le CORPS du composant — chaque rendu
+  // relançait la lecture, `setCustomers` re-rendait, et la boucle n'avait aucune
+  // condition d'arrêt (14 301 GET /customers en 10 s à la recette du 29/09).
+  // Une seule lecture au montage ; `toast` et `tCommon` sont stables, donc
+  // `loadData` ne change pas d'identité d'un rendu à l'autre.
+  useEffect(() => { loadData() }, [loadData])
 
   const getExposure = (c: any) => {
     const used = Number(c.credit_used || 0)
