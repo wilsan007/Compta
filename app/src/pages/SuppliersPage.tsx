@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
 import { getSuppliers, deleteSupplier, createSupplier, updateSupplier } from '@/lib/queries/partners'
+import { getSupplierBalances } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Package, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
@@ -29,8 +30,11 @@ export function SuppliersPage() {
 
   async function loadSuppliers() {
     try {
-      const data = await getSuppliers()
-      setSuppliers(data || [])
+      // A3 (313) : le solde dû d'un fournisseur est celui de son 401 au grand
+      // livre — `suppliers.balance` n'est tenue par rien.
+      const [data, balances] = await Promise.all([getSuppliers(), getSupplierBalances()])
+      const parFournisseur = new Map(balances.map((b) => [b.supplier_id, Number(b.balance) || 0]))
+      setSuppliers((data || []).map((s) => ({ ...s, balance: parFournisseur.get(s.id) ?? 0 })))
     } catch (err: any) { console.error('Error loading suppliers:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {

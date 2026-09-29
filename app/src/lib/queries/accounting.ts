@@ -1482,6 +1482,50 @@ export async function getAgedBalance(typeFilter?: string, refDate?: string) {
   return Object.values(byTiers).filter((b) => Math.abs(b.total) > 0.01).sort((a, b) => b.total - a.total)
 }
 
+// --- A3 (313) : le solde des tiers se lit au grand livre --------------------
+// `customers.balance`, `customers.credit_used` et `suppliers.balance` sont trois
+// colonnes dénormalisées que RIEN ne tient : mesuré à l'écran, le 411 portait
+// 540,00 € et la liste des clients affichait 0,00 €. Les vues
+// `customer_balances` / `supplier_balances` rendent le solde du 411 / 401 par
+// tiers (écritures validées seulement), avec la RLS de la société
+// (`security_invoker`). Même doctrine que la 277 pour la banque.
+export interface PartnerBalance {
+  customer_id?: string
+  supplier_id?: string
+  name: string
+  account_tiers: string | null
+  balance: number
+  lines_count: number
+}
+
+export async function getCustomerBalances(): Promise<PartnerBalance[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('customer_balances').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as PartnerBalance[]
+}
+
+export async function getSupplierBalances(): Promise<PartnerBalance[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('supplier_balances').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as PartnerBalance[]
+}
+
+/** Le solde dû d'UN client (411 au grand livre) ; 0,00 € s'il n'a pas bougé. */
+export async function getCustomerBalance(customerId: string): Promise<number> {
+  const tid = await getTenantId()
+  let q = supabase.from('customer_balances').select('balance').eq('customer_id', customerId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.maybeSingle()
+  if (error) throw error
+  return Number((data as { balance?: number } | null)?.balance || 0)
+}
+
 // --- Echeancier: upcoming payments from invoices + purchase invoices ---
 export async function getEcheancier(typeFilter?: string) {
   const results: Array<{

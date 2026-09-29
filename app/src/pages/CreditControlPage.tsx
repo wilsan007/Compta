@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import { getCustomerBalances } from '@/lib/queries/accounting'
 import { calculateLatePaymentPenalties } from '@/lib/queries/businessFunctions'
 import { formatCurrency } from '@/lib/utils'
 import { ShieldCheck } from 'lucide-react'
@@ -20,13 +21,19 @@ export function CreditControlPage() {
   const loadData = useCallback(async () => {
     try {
       const tid = await getTenantId()
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, credit_limit, credit_used, credit_blocked, credit_policy')
-        .eq('tenant_id', tid)
-        .order('name')
+      // A3 (313) : l'encours utilisé n'est pas `customers.credit_used` (jamais
+      // tenue, 0,00 € partout) mais le solde du 411 au grand livre.
+      const [{ data, error }, balances] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('id, name, credit_limit, credit_blocked, credit_policy')
+          .eq('tenant_id', tid)
+          .order('name'),
+        getCustomerBalances(),
+      ])
       if (error) throw error
-      setCustomers(data || [])
+      const parClient = new Map(balances.map((b) => [b.customer_id, Number(b.balance) || 0]))
+      setCustomers((data || []).map((c) => ({ ...c, credit_used: parClient.get(c.id) ?? 0 })))
     } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
