@@ -1012,21 +1012,29 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 * **`db-integration.test.ts` n'a jamais tourné nulle part** (le job CI qui lance
   `vitest run` n'a pas de `DATABASE_URL` ; celui qui en a une ne lance que du
   `psql`). Le SSL y était imposé, et la base locale Supabase le refuse. Une
-  fois rendu exécutable : **11 scénarios passent, 2 sont faux** — tous deux
-  marqués `it.skip` avec leur motif, en attendant :
-  * *« aucune policy `USING (true)` »* : il y en a **5**, mais toutes sur des
+  fois rendu exécutable, il a donné **2 rouges sur 13** — tous deux instruits le
+  30/09, et **tous deux des assertions fausses, pas des défauts** :
+  * *« aucune policy `USING (true)` »* : il y en a 5, mais toutes sur des
     **référentiels globaux** (`banks`, `chart_account_templates`,
     `sql_migrations_tracker`, `v_tenant_id`, `webhook_event_catalog`) — le modèle
-    voulu depuis la 270 (lignes globales lisibles, non écrivables). L'assertion
-    est antérieure à cette décision et doit être réécrite sur les tables de
-    société. **Aucune fuite constatée** ; l'assertion n'a plus de valeur telle
-    quelle.
-  * *« trigger `check_journal_entry_balance` »* : **absent** (mesuré : 0
-    déclencheur non interne sur `journal_entries`). L'équilibre d'une écriture
-    est vérifié par `273_journal_entry_validation` et par le contrôle CI
-    `check_plpgsql` ; mais s'il n'est garanti que par l'application, une
-    écriture déséquilibrée reste possible en base. **À instruire** — c'est le
-    seul point de cette section qui touche la comptabilité.
+    voulu depuis la 270 (lignes globales lisibles, non écritables ; contrôle CI
+    `check_global_rows_writable`). L'assertion les comptait toutes : elle était
+    fausse. **Réécrite** sur les tables de société. Aucune fuite.
+  * *« trigger `check_journal_entry_balance` »* : **ce nom n'a jamais existé**.
+    Le garde-fou réel est une famille de quatre, et il **mord** — mesuré à la
+    main sur la base de recette :
+    - une pièce en brouillon peut être déséquilibrée : **voulu**, sinon la saisie
+      ligne à ligne serait impossible ;
+    - **la pose d'une pièce déséquilibrée est refusée**, avec un motif nommé :
+      « Écriture … non équilibrée : débit 100.00 ≠ crédit 0.00 »
+      (`check_journal_entry_balance_on_post`) ;
+    - **une pièce posée est immuable** : ni ligne ajoutée, ni ligne modifiée
+      (« validée (posted) — immuable ») ;
+    - le comportement est déjà couvert par `273_journal_entry_validation` T02,
+      câblé en CI. **Assertion réécrite** sur les 4 vrais déclencheurs.
+  * **Conclusion : l'équilibre ET l'opposabilité sont garantis par la base**, pas
+    par l'application. **Aucun défaut.** `db-integration.test.ts` est désormais
+    **13/13, sans un seul test neutralisé**.
 * **Le harnais de `verify.sh` accusait à tort** : il cherchait « failed » dans
   toute la sortie de vitest, alors que des tests qui vérifient la gestion
   d'erreur journalisent volontairement « … failed ». Il juge désormais sur le

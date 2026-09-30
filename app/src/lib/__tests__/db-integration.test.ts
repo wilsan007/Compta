@@ -86,23 +86,24 @@ describe('DB Integration — RPC critiques (TEST-01)', () => {
     expect(res.rows.length).toBeGreaterThan(0)
   })
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Deux assertions de ce fichier n'ont jamais été jouées (le job CI qui lance
-  // `vitest run` n'a pas de DATABASE_URL) et sont fausses ou périmées le
-  // 30/09/2026. Elles sont marquées, pas effacées : le constat est dans le
-  // plan de recette, et le prochain qui les arme doit savoir ce qu'il trouve.
+  // Ces deux assertions n'ont jamais été jouées (le job CI qui lance
+  // `vitest run` n'a pas de DATABASE_URL) et visaient, à tort, des noms
+  // inexistants. Elles sont réécrites le 30/09/2026, après instruction.
   //
-  // 1. « aucune policy USING(true) » : il y en a 5, toutes sur des
-  //    RÉFÉRENTIELS GLOBAUX — banks, chart_account_templates,
-  //    sql_migrations_tracker, v_tenant_id, webhook_event_catalog. C'est le
-  //    modèle voulu depuis la 270 (lignes globales lisibles, non écrivables) :
-  //    l'assertion est antérieure à cette décision. À réécrire sur les tables
-  //    de société.
-  it.skip('aucune policy USING(true) sur une table de société (SEC-02) — à réécrire', async () => {
+  // 1. « aucune policy USING(true) » : il y en a 5, mais sur des RÉFÉRENTIELS
+  //    GLOBAUX — le modèle voulu depuis la 270 (lignes globales lisibles, non
+  //    écrivables ; voir `check_global_rows_writable` en CI). L'assertion
+  //    d'origine les comptait toutes et était donc fausse. Elle porte
+  //    maintenant sur les tables de société, qui sont le vrai périmètre.
+  it_db('aucune policy USING(true) sur une table de société (SEC-02)', async () => {
     const res = await pgClient.query(
-      "SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND (qual = 'true' OR with_check = 'true') AND tablename IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('banks','chart_account_templates','sql_migrations_tracker','v_tenant_id','webhook_event_catalog'))"
+      `SELECT tablename, policyname FROM pg_policies
+        WHERE schemaname = 'public'
+          AND (qual = 'true' OR with_check = 'true' OR qual = '(true)' OR with_check = '(true)')
+          AND tablename NOT IN ('banks','chart_account_templates','sql_migrations_tracker',
+                                'v_tenant_id','webhook_event_catalog','legislation_packs')`,
     )
-    expect(res.rows.length).toBe(0)
+    expect(res.rows).toEqual([])
   })
 
   it_db('trigger prevent_posted_entry_modification existe (ACC-01)', async () => {
@@ -112,16 +113,30 @@ describe('DB Integration — RPC critiques (TEST-01)', () => {
     expect(res.rows.length).toBeGreaterThan(0)
   })
 
-  // 2. « trigger check_journal_entry_balance » : mesuré absent sur la base de
-  //    recette (0 déclencheur non interne sur `journal_entries`). L'équilibre
-  //    d'une écriture est aujourd'hui vérifié par `273_journal_entry_validation`
-  //    et par le contrôle CI `check_plpgsql` — mais s'il n'est garanti QUE par
-  //    la base, une écriture déséquilibrée reste possible : à instruire.
-  it.skip('trigger check_journal_entry_balance existe (ACC-01) — absent, à instruire', async () => {
+  // 2. L'équilibre d'une écriture EST garanti par la base — mais pas par un
+  //    trigger qui s'appellerait `check_journal_entry_balance` : ce nom n'a
+  //    jamais existé, et l'assertion d'origine cherchait donc toujours 0.
+  //    Le garde-fou réel est la famille mesurée ci-dessous :
+  //      * à la POSE, `check_journal_entry_balance_on_post` refuse une pièce
+  //        déséquilibrée avec un motif nommé (« Écriture … non équilibrée :
+  //        débit 100.00 ≠ crédit 0.00 ») — vérifié à la main le 30/09 ;
+  //      * sur les lignes, `_ins` / `_upd` / `_del` ;
+  //      * une pièce POSÉE est immuable (`prevent_posted_line_modification`).
+  //    Une pièce en brouillon peut être déséquilibrée : c'est voulu, sinon la
+  //    saisie ligne à ligne serait impossible. Le comportement est prouvé par
+  //    `273_journal_entry_validation_tests.sql` (T02), câblé en CI.
+  it_db('les 4 déclencheurs d’équilibre des écritures existent (ACC-01)', async () => {
     const res = await pgClient.query(
-      "SELECT 1 FROM pg_trigger WHERE tgname = 'check_journal_entry_balance'"
+      `SELECT tgname FROM pg_trigger WHERE tgname IN (
+         'check_journal_entry_balance_on_post','check_journal_entry_balance_ins',
+         'check_journal_entry_balance_upd','check_journal_entry_balance_del')`,
     )
-    expect(res.rows.length).toBeGreaterThan(0)
+    expect(res.rows.map((r: any) => r.tgname).sort()).toEqual([
+      'check_journal_entry_balance_del',
+      'check_journal_entry_balance_ins',
+      'check_journal_entry_balance_on_post',
+      'check_journal_entry_balance_upd',
+    ])
   })
 
   it_db('vue balance_sheet existe (ACC-02)', async () => {
