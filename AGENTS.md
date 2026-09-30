@@ -102,6 +102,27 @@ L'essentiel en huit lignes :
   (lot L3), et les 32 chaînages non nommés n'ont **pas** de contrat — la porte G2
   cassera quand l'un d'eux arrivera sans.
   [Preuve](doc/audit/VAGUE-L7-CONTRATS-DEFFET-2026-09-30.md).
+* **L1 — tranche 4 livrée (30/09) : la chaîne achats et les notes de frais.** La
+  méthode de l'inventaire §3 a été **rejouée** sur le schéma du jour : **99
+  fonctions** touchent ≥ 2 modules (le référentiel en comptait 62 le 24/09),
+  dont **32 ÉCRIVENT dans ≥ 2 modules** — ce sont les effets qui traversent
+  vraiment ; 67 ne font que lire. La migration **314** trace **3 effets** de ce
+  lot par **2 déclencheurs compagnons** (doctrine 310 : maillon `AFTER` + aval
+  identifié par une clé mesurée dans son corps) et **déclare leurs 3 contrats
+  dans le même fichier** — la porte **G2** l'exige depuis L7. Effets :
+  **facture d'achat approuvée → écriture « AC »** (le symétrique exact de la
+  facture de vente, tracée depuis la 310), **note de frais approuvée → écriture
+  « OD » ET élément de paie** (deux effets, un fait métier). Cumul L1 : **17
+  effets tracés, 17 contrats**, 10 compagnons `zz_l1_`, **11 scénarios** de plus
+  (suite **314**). Non-régression : **165 scénarios verts** sur base neuve
+  (**263 migrations**). ⚠️ **Une régression trouvée et corrigée** : la suite
+  **311 T11** comptait 8 compagnons (un **compte** figé sur la tranche 2) —
+  l'assertion est devenue une **propriété** (tous APRÈS, tous sauf la caisse
+  après leur frère par le nom, aucun frère après eux), et le changement est daté
+  dans le fichier. Le classement des 32 (verdict + raison de chacun) et les
+  limites (dont : le vocabulaire de trace n'a pas de valeur pour « exécuté,
+  aucun effet ») sont dans l'
+  [inventaire](doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md).
 
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
@@ -830,6 +851,18 @@ L'essentiel en huit lignes :
   cassant PostgREST. Ces incidents n'ont jamais été imputés aux écrans : la
   tournée **s'arrête** désormais sur un 502/503, et un jeton de tournée empêche
   de juger deux tournées mélangées.
-- Limite dite : `OnboardingModal.tsx` porte ~30 chaînes **codées en dur en
-  français sans accents**, hors i18n (à porter — `D-11`).
+- **Les quatre limites de cette passe sont levées** : le guide de bienvenue est
+  porté en i18n (`common.guide.*`, fr/en/ar, 39 clés vérifiées une par une) ; il
+  est **mesuré** par un scénario dédié (`scripts/qa/guide.mjs`, cinq étapes,
+  Échap, cibles, quatre gabarits — 0 défaut) parce que la tournée le pose comme
+  déjà vu ; les **états vides** sont couverts par une seconde société
+  (`qa:seed --session=session-vide.json`) et une seconde vague
+  (`qa:run --states=remplie,vide`, chacune son jeton et son préfixe de shard) ;
+  les **quatre gabarits** sont balayés (`--viewports=all`). En chemin, deux
+  défauts de harnais trouvés par la mesure : les états de comptes s'écrivaient
+  `accounts/ouvrier-0.json` **sans le nom de la session** (le second banc
+  écrasait le premier, la vague « remplie » mesurait la société vide), et un
+  écran **encore en chargement** (squelette `animate-pulse`) se mesurait comme un
+  écran sans titre ou à liste vide — l'ouvrier attend la fin du squelette et
+  recharge une fois avant d'imputer un « Failed to fetch ».
 

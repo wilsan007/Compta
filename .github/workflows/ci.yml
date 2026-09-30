@@ -1197,6 +1197,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L1, tranche 4 — LA CHAÎNE ACHATS → COMPTABILITÉ ET LES NOTES DE FRAIS. La
+      # méthode de l'inventaire §3 a été rejouée sur la base du 30/09 : 99
+      # fonctions touchent ≥ 2 modules, dont 32 ÉCRIVENT dans ≥ 2 modules. La 314
+      # trace trois de ces effets par déclencheur compagnon (doctrine 310) —
+      # facture d'achat approuvée → écriture « AC », note de frais approuvée →
+      # écriture « OD » ET élément de paie — et déclare leurs trois contrats dans
+      # le même fichier (la porte G2 l'exige depuis L7). Le classement des 32, avec
+      # le verdict et la raison de chacun, est dans
+      # doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md. 10 scénarios.
+      - name: 'L1 : la chaîne achats et les notes de frais sont tracées (314)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/314_chain_l1_achats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

@@ -21,9 +21,10 @@
 --   T09  rapprochement bancaire automatique → lien `created_from` vers l'encaissement ;
 --   T10  OF terminé → deux liens (écriture ET entrée du produit fini) et le
 --        décompte des sorties de composants ; ces sorties ne sont PAS liées ;
---   T11  structure : les trois compagnons `zz_l1_` sont des déclencheurs APRÈS,
---        nommés après le maillon métier, et les quatre déclencheurs réécrits
---        pointent bien leurs fonctions ;
+--   T11  structure : les compagnons `zz_l1_` du dépôt sont tous des déclencheurs
+--        APRÈS, nommés après leur maillon métier (la caisse l'est par la phase),
+--        et les quatre déclencheurs réécrits pointent bien leurs fonctions —
+--        une PROPRIÉTÉ, pas un compte : la tranche 4 en a ajouté deux le 30/09 ;
 --   T12  un document resté en brouillon ne trace rien (le fait est l'état).
 -- ============================================================
 \ir ci/audit_helpers.sql
@@ -545,10 +546,16 @@ BEGIN
      OR (t.tgname = 'st_shipment_stock_out_trigger' AND c.relname = 'st_shipments')
      OR (t.tgname = 'st_receipt_stock_in_trigger' AND c.relname = 'st_receipts'));
 
+  -- ⚠️ Verdict ÉLARGI le 30/09/2026 : les comptes étaient figés sur la tranche 2
+  -- (8 compagnons). La tranche 4 (migration 314) en ajoute deux, avec la même
+  -- doctrine — les comptes deviennent donc des PROPRIÉTÉS : tous les compagnons
+  -- du dépôt sont APRÈS, tous sauf la clôture de caisse ont un frère métier de
+  -- même événement qui trie avant eux (la caisse est garantie par la PHASE), et
+  -- aucun frère ne trie après eux. C'est plus fort qu'un compte, qui vieillit mal.
   PERFORM _rec('T11',
-    'huit compagnons `zz_l1_` tous APRÈS (sept après leur frère par le nom, la caisse par la phase) et les quatre déclencheurs des maillons réécrits en place',
-    v_comp = 8 AND v_apres = 8 AND v_avant = 7 AND v_grand = 0 AND v_metier = 4 AND v_pos_before,
-    format('compagnons=%s après=%s frères avant (nom)=%s frères après=%s caisse BEFORE=%s déclencheurs métier=%s',
+    'les compagnons `zz_l1_` sont tous APRÈS (tous sauf la caisse après leur frère par le nom, la caisse par la phase) et les quatre déclencheurs des maillons réécrits sont en place',
+    v_comp >= 8 AND v_apres = v_comp AND v_avant = v_comp - 1 AND v_grand = 0 AND v_metier = 4 AND v_pos_before,
+    format('compagnons=%s (8 à la tranche 2, +2 à la tranche 4) après=%s frères avant (nom)=%s frères après=%s caisse BEFORE=%s déclencheurs métier=%s',
            v_comp, v_apres, v_avant, v_grand, v_pos_before, v_metier));
 END $$;
 
