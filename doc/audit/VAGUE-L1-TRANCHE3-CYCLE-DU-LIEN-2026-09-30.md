@@ -264,5 +264,85 @@ qui se prend sur une copie de production, pas sur une déduction.
 3. **les contrats d'effet (lot L7)** — la porte **G2** les attend : le registre
    du contrôle porte aujourd'hui les **14 effets** de L1, et il ne peut que
    rétrécir ;
-4. **la réponse à la trouvaille du §6** — deux requêtes, une décision.
+4. **la réponse à la trouvaille du §6** — **MESURÉE et gardée** : voir le **§8**
+   (l'expérience à une seule variable, l'inventaire des 12 tables, et la porte
+   **G7**). Reste la **décision**, qui se prend sur la copie de production.
+
+
+---
+
+## 8. La trouvaille du §6 est MESURÉE, et gardée par une porte (30/09)
+
+### 8.1 L'expérience, à une seule variable
+
+Le §6 posait la question et refusait d'y répondre sans mesure. Elle est faite, sur
+base neuve, avec **une seule variable** : **QUI possède la table**. La phrase
+d'écriture, la société, les politiques — tout le reste est identique.
+
+| # | Propriétaire de `document_links` | `rolsuper` | `rolbypassrls` | Résultat mesuré |
+|---|---|---|---|---|
+| **A** | `zz_owner` | f | f | ❌ **`42501`** — `new row violates row-level security policy for table "document_links"` |
+| **B** | `zz_bypass` | f | **t** | ✅ acceptée |
+| **C** | `postgres` | **t** | t | ✅ acceptée |
+
+**Ce que cela établit.** Le socle n'écrit **que** parce que son propriétaire
+contourne la RLS. Un propriétaire « nu » (ni superutilisateur, ni `BYPASSRLS`)
+est refusé — et il n'y a pas d'échappatoire par les fonctions : `link_documents`
+est `SECURITY DEFINER`, donc elle s'exécute **en tant que son propriétaire**, et
+subit le même refus.
+
+### 8.2 L'inventaire, sur base neuve (30/09/2026)
+
+```
+311 tables sous FORCE ROW LEVEL SECURITY
+ dont  12 sans AUCUNE politique d'écriture   ← c'est l'exposition
+```
+
+Les douze, nommées : `banks`, `chain_regeneration_log`, `chain_settings`,
+`chart_account_templates`, `currencies`, `document_effects`, `document_links`,
+`journal_posting_sequences`, `legislation_packs`, `stock_movement_phantoms`,
+`stock_quantities`, `v_tenant_id`.
+
+**Les six tables du socle en font partie** — c'est le lien direct avec L3.
+
+### 8.3 La porte **G7** — et pourquoi elle a une particularité
+
+`sql/ci/check_forced_rls_writers.sql`, câblée dans la CI :
+
+* elle **publie le verdict de l'environnement** — quel rôle possède ces tables,
+  et contourne-t-il la RLS ? — puis **échoue si l'environnement est muet**, en
+  nommant les tables et les trois issues possibles ;
+* elle **plafonne** les deux nombres (311 et 12) : à la hausse c'est une
+  exposition neuve, à la baisse c'est une amélioration à inscrire dans le même
+  commit (la règle de `G1`) ;
+* elle **s'auto-teste** : table fictive sous `FORCE` sans politique → vue ;
+  son propriétaire nu → refusé en `42501` ; politique d'écriture ajoutée → sortie
+  de l'exposition. Le tout annulé (`ROLLBACK`).
+
+**Sa particularité, et c'est son intérêt** : la CI **ne peut pas** voir le
+défaut, puisque son `postgres` est superutilisateur. Un contrôle qui se
+contenterait de compter les tables serait donc vert partout. Celui-ci dit ce que
+vaut l'environnement **où il tourne** — c'est-à-dire qu'il devient, **sur la
+copie de production, le diagnostic lui-même**, en une commande :
+
+```bash
+psql "$PROD_URL" -v ON_ERROR_STOP=1 -f app/sql/ci/check_forced_rls_writers.sql
+```
+
+### 8.4 Ce qui reste — et pourquoi ce n'est pas tranché ici
+
+Les trois issues sont écrites dans le message d'échec, et **aucune n'est
+choisie** :
+
+1. `NO FORCE ROW LEVEL SECURITY` sur ces tables — le propriétaire écrit,
+   `authenticated` reste filtré : c'est **l'intention déjà écrite** dans l'en-tête
+   de la `252`. ⚠️ Elle fait **baisser** un nombre de `G1` (tables sans RLS
+   forcée), donc elle s'accompagne de la mise à jour du plafond daté de `G1`
+   **dans le même commit** ;
+2. une **politique d'écriture pour le propriétaire** — `FORCE` conservé ;
+3. `BYPASSRLS` accordé au rôle.
+
+Le §6 disait : « ce genre de décision se prend sur une copie de production, pas
+sur une déduction ». C'est toujours vrai — mais la mesure qui la permet ne tient
+plus en deux requêtes à recopier : **elle tient en un contrôle qu'on exécute**.
 

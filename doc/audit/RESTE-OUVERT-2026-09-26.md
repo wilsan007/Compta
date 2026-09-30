@@ -302,6 +302,10 @@ une charge de développement mais un passage obligé.
    écart** ; c'est une **porte du même genre que `G5`**, et elle a parlé le 30/09
    (les 5 colonnes de la `312`, **15 lignes**) jusqu'à ce que `b3eac3b` les
    porte. Ne pas la contourner en relançant la CI : **régénérer et commiter** ;
+3. **ter — régénérer sur une base où les suites n'ont PAS tourné.** Mesuré le
+   30/09 : `_audit_results` et `_audit_expected` (l'outillage de test) entrent
+   dans les types et produisent un **faux écart** de 45 lignes. C'est l'ordre de
+   la CI — `db:types` **avant** les suites — qui le dit ;
 4. **la ligne du registre** `ci/expected_failures.sql` retirée si le défaut y
    figurait (la CI échoue si un test corrigé y reste) ;
 5. **les non-régressions** (`105`, `178`, `181`, `219`, `189` et les suites du
@@ -327,14 +331,20 @@ git diff --stat src/types/database-generated.ts   # doit être VIDE (c'est ce qu
 docker exec pg_w6b psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /work/sql/ci/check_tenant_guard.sql
 #    check_status_writes, check_trigger_reachability, check_composite_fks,
 #    check_policy_duplicates, check_roles_opposables, check_anon_grants,
-#    audit_registry_selftest, check_plpgsql (installer l'extension dans le conteneur)
+#    audit_registry_selftest, check_plpgsql — l'extension n'est PAS dans l'image
+#    `postgres:16` nue : l'y installer comme le fait la CI,
+#      docker exec pg_w6b apt-get update -qq && docker exec pg_w6b apt-get install -y -qq postgresql-16-plpgsql-check
+#      docker exec pg_w6b psql -U postgres -c 'CREATE EXTENSION IF NOT EXISTS plpgsql_check;'
+#    (sans elle, le contrôle est « non exécutable » en local et la CI devient le
+#     seul juge — c'est le piège que ce point ferme)
+#    check_forced_rls_writers — l'exposition du socle au FORCE RLS (30/09)
 
 # 3. Front et fonctions Edge
 cd app
 npx tsc -b --noEmit && npx oxlint --max-warnings=0
 node scripts/check-i18n.mjs && node scripts/check-i18n-usage.mjs
 npx vitest run                     # 1 513 (30/09)
-npm run edge:test                  # 32 (Deno requis ; sinon : npx -y deno test …)
+npm run edge:test                  # 36 (Deno requis ; sinon : npx -y deno test …)
 DATABASE_URL=… node scripts/check-written-columns.mjs   # 0 attendu
 node scripts/check-unchecked-writes.mjs                 # 0 attendu
 DATABASE_URL=… node scripts/check-rpc-contract.mjs       # 0 attendu (W10)

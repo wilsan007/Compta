@@ -454,6 +454,28 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # G7 — « le socle peut-il écrire ? » La trouvaille de L1 tranche 3 :
+      # `FORCE ROW LEVEL SECURITY` s'applique AUSSI au propriétaire, et les tables
+      # du socle n'ont qu'UNE politique (la LECTURE) — donc aucune politique
+      # d'écriture. Si leur propriétaire n'est ni superutilisateur ni BYPASSRLS,
+      # le socle ne peut pas écrire, et `link_documents` non plus (une fonction
+      # SECURITY DEFINER s'exécute en tant que son propriétaire). Mesuré le 30/09
+      # sur base neuve : 311 tables sous FORCE RLS, dont 12 sans aucune politique
+      # d'écriture, dont les six du socle. L'expérience à une seule variable (le
+      # propriétaire) donne 42501 pour un rôle nu, et l'écriture pour un rôle
+      # BYPASSRLS ou superutilisateur.
+      #
+      # CE CONTRÔLE A UNE PARTICULARITÉ : la CI ne peut pas voir le défaut (son
+      # `postgres` est superutilisateur). Il publie donc le VERDICT DE
+      # L'ENVIRONNEMENT et échoue si cet environnement est muet — c'est le
+      # diagnostic de la copie de production, en une commande. Les deux nombres
+      # sont datés : à la hausse c'est une exposition neuve, à la baisse c'est une
+      # amélioration à inscrire dans le même commit (règle du plafond, comme G1).
+      - name: 'L1 : le socle peut-il écrire sous RLS forcée ? (G7)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_forced_rls_writers.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L2 / G6 — le banc des chaînages : 1 000 tours du chemin que tous les
       # maillons partagent (chain_avant, link_documents, emit_domain_event,
       # chain_apres), p95 comparé au budget §3.3 (50 ms pour un maillon simple).

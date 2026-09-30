@@ -65,7 +65,14 @@ L'essentiel en huit lignes :
   (c'est L3), et une trouvaille est ouverte — **le socle écrit sous `FORCE ROW
   LEVEL SECURITY`** sans politique d'écriture : mesuré, un propriétaire **non
   superutilisateur** est refusé, ce que la CI ne peut pas voir (son `postgres` est
-  superutilisateur). Deux requêtes à lancer sur copie de production.
+  superutilisateur). **Mesuré et gardé le 30/09** (§8 de la preuve, porte **G7**
+  `ci/check_forced_rls_writers.sql`) : l'expérience à **une seule variable** donne
+  `42501` pour un propriétaire nu, et l'écriture pour un rôle `BYPASSRLS` ou
+  superutilisateur ; l'inventaire est de **311 tables sous `FORCE` RLS, dont 12
+  sans aucune politique d'écriture** (les six du socle en font partie). La porte
+  publie le **verdict de l'environnement** et échoue s'il est muet : elle est donc
+  le **diagnostic**, exécutable en une commande sur la copie de production — où
+  reste à prendre **la décision** (les trois issues sont dans son message).
   [Preuve](doc/audit/VAGUE-L1-TRANCHE3-CYCLE-DU-LIEN-2026-09-30.md).
 * **L2 livré (30/09) — les six portes CI** : `G1` **grille BT** (`check_bt_grid.sql` :
   RLS activée/forcée et index de société sur les 360 tables cloisonnées, **plafond
