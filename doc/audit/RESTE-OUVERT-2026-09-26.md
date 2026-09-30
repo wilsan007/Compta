@@ -229,6 +229,33 @@ reste au registre).
 
 ---
 
+### I. Ce qui vient **après** les chaînages — propositions, non planifiées
+
+**Rien de ceci n'est commencé, et rien ne doit l'être avant que `L3` → `L4` → `L5`
+soient livrés et prouvés** (et `L6`/`L23`/`L24` pour `P6`) : ces propositions sont
+des **lecteurs de la preuve**, pas des fonctions. Détail, dépendances, charges,
+indicateurs et questions à trancher :
+[**PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md**](PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md).
+
+| # | Proposition | Charge | Ce qu'elle débloque |
+|---|---|---:|---|
+| **P1** | **Certificat d'intégrité** signé et daté | 2-3 j | monétise `L3`/`L4`/`L5` ; ouvre le canal **expert-comptable / banque** |
+| **P2** | Banc d'épreuves exécuté sur les **données du prospect** | 3-4 j | l'arme commerciale : la preuve **avant** la signature |
+| **P3** | **Audit de reprise** à l'import (Sage / FEC) | 2-3 j | l'entrée chez le client : *« votre ancien outil vous mentait »* |
+| **P4** | Remonter le temps (« vos comptes tels qu'au 31/12 à 23 h 59 ») | 3-5 j | contentieux, contrôle, banque — **sans consultant** |
+| **P5** | **Documentation vivante** (le contrat d'effet rendu au client) | 3 j | une doc **qui ne peut pas mentir** (garantie par la porte `G2`) |
+| **P6** | L'**IA qui cite** (refuse de répondre sans preuve) | 5 j | après `L6`/`L23`/`L24` : hallucination **structurellement** impossible |
+| **P7** | Sortie aussi rapide que l'entrée | 2 j | l'anti-enfermement, **dit et mesuré** |
+| **P8** | API « chaîne » + packs de règles par pays | 2 j + pays | l'effet de réseau, à l'échelle des PME |
+
+**Ce qui est déjà au plan — et qu'il ne faut donc pas compter ici** : les **12
+innovations** `I-01` → `I-12` et les lots `L16` → `L24` (voir
+[plan](PLAN-IMPLEMENTATION-CHAINAGES-2026-09-24.md) §Phase F et
+[référentiel](REFERENTIEL-CHAINAGES-TRANSVERSAUX-2026-09-24.md) §D.4).
+**Ordre conseillé** : `P1` → `P3` → `P2` → `P4` → `P5` → (`L6`/`L23`/`L24`) → `P6`.
+
+---
+
 ## 3. Le total restant (chiffres)
 
 | Bloc | Charge |
@@ -332,4 +359,5 @@ cd app && npm run qa:seed -- --workers=4 && npm run qa:amorce \
 | `doc/audit/VAGUE-L7-CONTRATS-DEFFET-2026-09-30.md` | **L7** : les contrats d'effet déclarés (`313`) — l'indicateur passe de 0 % à 100 % de maillons métier tracés **avec** contrat |
 | `doc/audit/QA-ESSAIM-2026-09-29.md` | l'**essaim QA** : 335 écrans, quatre gabarits, deux sociétés, registre et rapport — et les onze points sur lesquels **le harnais lui-même** se trompait |
 | `doc/audit/DECISION-D4-GENERATE-PDF-2026-09-30.md` | la **note d'aide à la décision `D-4`** (rebrancher ou supprimer `generate-pdf`) : ce qui est vrai aujourd'hui, ce que chaque option exige, ce qu'aucune ne change |
+| `doc/audit/PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md` | ce qui viendra **après** les chaînages (`P1` → `P8`) : la preuve, l'explication et la sortie libre — **proposé**, avec son garde-fou d'entrée (§2.I) |
 | `app/sql/ci/expected_failures.sql` | le registre des défauts prouvés — **VIDE depuis le 28/09/2026** ; un échec hors registre casse la CI |

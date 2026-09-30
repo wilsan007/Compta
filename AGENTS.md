@@ -201,6 +201,27 @@ L'essentiel en huit lignes :
 
 ## À faire plus tard (rappels)
 
+### 🔭 Après les chaînages — les propositions de différenciation (`P1` → `P8`)
+- **Statut :** **PROPOSÉ, non planifié** — à exécuter **après** `L3` → `L4` → `L5`
+  (et `L6`/`L23`/`L24` pour `P6`). **Rien avant** : ces propositions sont des
+  **lecteurs de la preuve** — sans les 8 épreuves (`L3`) et l'indice de cohérence
+  (`L4`), il n'y a rien à certifier, ni à rejouer, ni à citer.
+- **Document : [`doc/audit/PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md`](doc/audit/PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md)**
+- **À ouvrir en premier, le jour où `L3` est livré :** `P1` le **certificat
+  d'intégrité** (2-3 j — il monétise l'indice de cohérence, et ouvre le canal
+  **expert-comptable / banque**), puis `P3` l'**audit de reprise** à l'import
+  (2-3 j), puis `P2` le **banc d'épreuves sur les données du prospect** (3-4 j) ;
+  ensuite `P4` remonter le temps, `P5` la documentation vivante, `P7` la sortie
+  intégrale, `P8` l'API + les packs par pays, et `P6` l'**IA qui cite** (après
+  `L24`).
+- **Le principe :** on ne bat pas SAP sur la largeur — on se différencie par
+  **la preuve, l'explication et la sortie libre**. ⚠️ Les **12 innovations
+  `I-01` → `I-12`** sont **déjà au plan** (`L6`, `L22`, `L23`, `L24`) : ce
+  document vient **après**, il ne les remplace pas.
+- **Cinq questions à trancher avant de commencer** (§6 du document) : qui signe
+  le certificat, à qui on le remet en premier, où tournent les données du
+  prospect, empreinte NF-525 ou pas, et **combien de temps on mesure**.
+
 ### Stripe — Webhooks et paiements
 - **Statut:** En attente — l'utilisateur traitera Stripe plus tard
 - **À configurer quand l'utilisateur sera prêt:**
