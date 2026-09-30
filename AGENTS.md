@@ -202,9 +202,14 @@ L'essentiel en huit lignes :
   `CHECK`) : **`npm run db:types` dans le même commit**. La CI régénère
   `src/types/database-generated.ts` depuis une base neuve et **refuse tout
   écart**. Mesuré le 30/09 : les **5 colonnes** du cycle de vie du lien (`312`)
-  ont fait échouer la CI — **15 lignes**, `Row`/`Insert`/`Update` — jusqu'à
+  — `document_links.etat`, `.tour`, `.ferme_le`, `.ferme_par`, `.motif` — ont
+  fait échouer la CI — **15 lignes**, `Row`/`Insert`/`Update` — jusqu'à
   `b3eac3b` ; régénérer sur une base neuve de **265 migrations, 0 erreur**
-  redonne **exactement** le fichier commité.
+  redonne **exactement** le fichier commité. (Le message de `b3eac3b` nomme
+  `chain_traces` : c'est une **étiquette fausse**, la table est `document_links`
+  — mesuré sur la base neuve, `information_schema` ; le contenu du fichier, lui,
+  est le bon. La table est écrite ici pour que la prochaine lecture ne s'y trompe
+  pas.)
 
 ## À faire plus tard (rappels)
 
