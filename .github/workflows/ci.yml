@@ -75,6 +75,17 @@ jobs:
       - name: 'LOT6-04 : Unused tables ceiling'
         run: node scripts/check-unused-tables.mjs
 
+      # L2 / G5 — le câblage des suites. Deux moitiés de la règle du dépôt (« un
+      # défaut = un test rouge avant, le câblage CI dans le même commit ») étaient
+      # gardées — le registre des échecs attendus (AUD-X01) et le refus d'un
+      # fichier sans verdict (_audit_assert) — la troisième ne l'était pas : une
+      # suite peut exister, passer et n'être jouée par PERSONNE. Mesuré le
+      # 30/09/2026 : 89 suites, 89 branchées. Ce contrôle tient l'égalité, et il a
+      # immédiatement trouvé la suite 312 du cycle de vie du lien, pas encore
+      # branchée au moment où il a été écrit.
+      - name: 'L2 : toutes les suites du dépôt sont branchées (G5)'
+        run: node scripts/check-test-suites.mjs
+
   # ─────────────────────────────────────────────
   # Job 2: i18n Key Parity Check
   # ─────────────────────────────────────────────
@@ -413,6 +424,46 @@ jobs:
       # société seule — un état daté, jamais silencieux.
       - name: Rôles opposables sur le périmètre sensible
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_roles_opposables.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G1 — la grille BT (plan d'implémentation des chaînages §4.2). Ce qui
+      # manquait aux contrôles de structure : les DEUX moitiés qui n'étaient
+      # gardées par rien — RLS activée et FORCÉE, et l'index de société sur les
+      # 360 tables qui portent tenant_id. « Une politique par commande » (ISO-03)
+      # et les clés composites (ISO-02) restent tenues par les deux contrôles
+      # ci-dessus : ce fichier ne les rejoue pas. Les nombres sont ceux du
+      # 30/09/2026 sur base neuve (55 sans RLS forcée, 79 sans index de société) :
+      # un nombre qui MONTE casse la CI, un nombre qui BAISSE aussi tant que le
+      # plafond daté n'est pas réinscrit — un plafond qui ne se met pas à jour ment.
+      - name: 'L2 : grille BT — RLS forcée et index de société (G1)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_bt_grid.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G2 — le contrat d'effet, confronté au réel. Le socle est fermé par
+      # défaut (`chain_autorise` rend faux sans déclaration) et AUCUN des 14 effets
+      # tracés par L1 n'était déclaré : chaque exécution traçait donc `tolere` puis
+      # `applique`. Ce contrôle lit `pg_proc` — pas les fichiers — et exige que tout
+      # effet appelé (`chain_avant`, `link_documents`) soit déclaré dans
+      # `document_effects` OU inscrit au registre du fichier, qui ne peut que
+      # rétrécir (lot L7 = celui qui déclarera). Un maillon neuf sans contrat casse
+      # donc la CI, ce que rien ne faisait avant.
+      - name: 'L2 : contrat d''effet confronté au code (G2)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_effects_contract.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G6 — le banc des chaînages : 1 000 tours du chemin que tous les
+      # maillons partagent (chain_avant, link_documents, emit_domain_event,
+      # chain_apres), p95 comparé au budget §3.3 (50 ms pour un maillon simple).
+      # Mesuré le 30/09/2026 : p95 total 1,002 ms — et, index d'arbitrage retiré
+      # pour l'éprouver, le banc échoue immédiatement. Les limites sont écrites
+      # dans l'en-tête (il ne voit pas la perte du seul index d'historique à
+      # N = 1 000 : l'échelle réelle est le banc L4, sur copie de production).
+      # Le banc se déroule dans une transaction ANNULÉE : il ne laisse rien.
+      - name: 'L2 : banc des chaînages — 1 000 tours dans le budget (G6)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_chain_performance.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1112,6 +1163,22 @@ jobs:
       # au payload plutôt qu'inventé. 12 scénarios.
       - name: 'L1 : les effets à N lignes et les maillons multi-effets sont tracés (311)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_chain_l1_tranche2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 3 — LE CYCLE DE VIE DU LIEN (312). La trouvaille de la
+      # tranche 2 est ici levée : la clé d'idempotence du socle ne distinguait pas
+      # « le même effet REJOUÉ » de « le même effet LÉGITIMEMENT REPRODUIT après
+      # annulation » — mesuré par un ROUGE de la suite 230 (T04 : une commande
+      # annulée puis reconfirmée ne réservait plus rien, réservé = 0 au lieu de 10).
+      # La 312 ajoute le cycle (actif → remplace | rompu, avec motif, auteur et
+      # date), rend l'index d'idempotence PARTIEL (seuls les liens actifs sont
+      # uniques), compte les tours, et laisse `chain_avant` rendre VRAI après une
+      # fermeture : c'est le prérequis pour le poser partout. La suite mesure les
+      # 12 propriétés, dont le scénario C12 — le rouge de la 230 rejoué sur le vrai
+      # flux, historique à deux tours compris. 12 scénarios.
+      - name: 'L1 : le cycle de vie du lien — actif, remplacé, rompu (312)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/312_chain_lien_cycle_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

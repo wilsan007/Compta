@@ -25,7 +25,7 @@ L'essentiel en huit lignes :
   transaction** (`308`) et l'**écart de change au règlement + la réévaluation de
   clôture** (`309`). [Preuve](doc/audit/VAGUE-W7-2026-09-28.md) : `304` 5/5,
   `305` 2/2, `306` 6/6, `307` 4/4, `308` 5/5, `309` 5/5.
-* **L1 entamé — tranches 1 et 2 livrées (29/09)** : **14 effets** de la chaîne
+* **L1 — tranches 1, 2 et 3 livrées (29 et 30/09)** : **14 effets** de la chaîne
   ventes → trésorerie → comptabilité sont **tracés** (migrations **310** et
   **311**) — facture, avoir, décaissement, encaissement, journal et compte de
   trésorerie, **réservation de commande**, **sortie de BL**, expédition et
@@ -43,12 +43,45 @@ L'essentiel en huit lignes :
   voit le lien de la première confirmation et saute l'effet d'une commande
   **annulée puis reconfirmée** (mesuré : la suite **230** a rougi, réservé = 0 au
   lieu de 10) ; il n'est donc posé que sur les maillons **à sens unique**, et le
-  **cycle de vie du lien** est une entrée de **L3**. Et **`post_pos_session_on_close`
+  **cycle de vie du lien** est une entrée de **L3** — **livré le 30/09 par la
+  `312`, voir ci-dessous**. Et **`post_pos_session_on_close`
   (187), nommé « artère » au référentiel, n'a plus AUCUN déclencheur** : c'est
   `_multi` (281) qui vit. Limites dites : la trace d'un refus ne survit pas au
   rollback (0 ligne `refuse` mesurée) ; les effets à N lignes **sans ligne amont**
   (composants d'OF calculés, sorties de caisse agrégées par produit) sont
   **comptés au payload**, pas liés.
+* **Le cycle de vie du lien est livré (30/09)** — migration **312**, suite **312**
+  (**12 scénarios**), et c'est la **trouvaille de la tranche 2 qui est levée** : un
+  lien a désormais un cycle (`actif` → `remplace` | `rompu`, daté, motivé, signé),
+  l'index d'idempotence devient **PARTIEL** (seuls les liens actifs sont uniques),
+  `tour` compte les rounds, et `chain_avant` rend **vrai** après une fermeture.
+  C'était **le prérequis pour le poser partout** : un maillon qui se reproduit
+  après annulation ne perd plus son effet (`chain_lien_fermer` /
+  `chain_lien_rompre` / `chain_liens_fermer`). Le scénario **C12** rejoue le rouge
+  de la 230 sur le vrai flux : la réservation est reproduite, l'historique garde
+  **deux tours**. Limites dites : **aucun maillon n'appelle encore le cycle**
+  (c'est L3), et une trouvaille est ouverte — **le socle écrit sous `FORCE ROW
+  LEVEL SECURITY`** sans politique d'écriture : mesuré, un propriétaire **non
+  superutilisateur** est refusé, ce que la CI ne peut pas voir (son `postgres` est
+  superutilisateur). Deux requêtes à lancer sur copie de production.
+  [Preuve](doc/audit/VAGUE-L1-TRANCHE3-CYCLE-DU-LIEN-2026-09-30.md).
+* **L2 livré (30/09) — les six portes CI** : `G1` **grille BT** (`check_bt_grid.sql` :
+  RLS activée/forcée et index de société sur les 360 tables cloisonnées, **plafond
+  daté** — un nombre qui monte **et** un nombre qui baisse cassent la CI) ; `G2`
+  **contrat d'effet** (`check_effects_contract.sql` : lit `pg_proc`, confronte les
+  **25 constats** — 14 effets, 11 couples — au contrat, registre qui ne peut que
+  rétrécir ; **vu rouge** sur un maillon neuf non déclaré **et** sur une
+  déclaration non nettoyée) ; `G3` colonnes et écritures muettes **déjà en place**
+  (mesuré : 465 fichiers, 0 suspect, `supabase/functions` compris) ; `G4` garde de
+  société étendue **déjà en place** (152 fonctions SECURITY DEFINER qui écrivent,
+  **0** sans mention de la société) ; `G5` **câblage des suites**
+  (`check-test-suites.mjs` : 90 suites, 90 branchées — il a trouvé la 312 que
+  personne n'avait branchée) ; `G6` **banc** (`check_chain_performance.sql` :
+  1 000 tours, p95 total **1,002 ms** pour un budget de 50 ms, transaction
+  annulée ; index d'arbitrage retiré, il échoue **immédiatement** — mais il ne voit
+  **pas** la perte du seul index d'historique à N = 1 000, et c'est écrit).
+  [Preuve](doc/audit/VAGUE-L2-PORTES-CI-2026-09-30.md).
+
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
   **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j), et la recette à
