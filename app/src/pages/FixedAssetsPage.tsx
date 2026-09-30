@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
+import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Modal } from '@/components/ui'
 import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, generateDepreciationEntries, getFiscalYears } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
@@ -364,14 +364,25 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     }
   }
 
+  // E1 (stk-015) : conteneur de 781 px pour un écran de 720, aucun ancêtre ne
+  // défilait et « Créer » était hors écran (top = 720 px, clic expiré). Le
+  // `Modal` commun borne la fenêtre à l'écran, garde son pied visible et laisse
+  // le corps défiler.
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('fixedAssets.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <form onSubmit={handleSubmit}>
+      <Modal
+        open
+        onClose={onClose}
+        title={t('fixedAssets.new')}
+        size="lg"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('fixedAssets.name')} required value={name} onChange={(e) => setName(e.target.value)} />
             <Input label={t('fixedAssets.code')} value={code} onChange={(e) => setCode(e.target.value)} placeholder="IMMO-001" />
@@ -405,13 +416,9 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
               <Input label={t('currencyCode')} value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} placeholder="EUR" />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Modal>
+    </form>
   )
 }
 

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
+import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV, Modal } from '@/components/ui'
 import { getSuppliers, deleteSupplier, createSupplier, updateSupplier } from '@/lib/queries/partners'
 import { getSupplierBalances } from '@/lib/queries/accounting'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Package, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
+import { Package, Plus, Search, Trash2, Edit, Mail, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Supplier } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 import { usePermission } from '@/hooks/usePermission'
@@ -225,14 +225,24 @@ function SupplierForm({ supplier, onClose, onSaved }: {
     }
   }
 
+  // E1 (ach-001) : cette fenêtre était plus haute que l'écran et rien ne
+  // défilait — « Créer » finissait à 840 px pour un écran de 720, donc clic
+  // impossible. Elle passe au `Modal` commun : cadre borné à l'écran, pied fixe,
+  // et au passage le piège à focus, Échap et le verrou de défilement.
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{supplier ? t('suppliers.edit') : t('suppliers.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <form onSubmit={handleSubmit}>
+      <Modal
+        open
+        onClose={onClose}
+        title={supplier ? t('suppliers.edit') : t('suppliers.new')}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
           <Input label={t('suppliers.nameLabel')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('suppliers.placeholders.name')} />
           <Input label={t('suppliers.contact')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('suppliers.placeholders.contactName')} />
           <Input label={t('suppliers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('suppliers.placeholders.email')} />
@@ -247,12 +257,8 @@ function SupplierForm({ supplier, onClose, onSaved }: {
           <Input label={t('suppliers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('suppliers.salesRepIdPlaceholder')} />
           <Input label={t('suppliers.accountTiers')} value={accountTiers} onChange={(e) => setAccountTiers(e.target.value)} placeholder="FOU00001" />
           <Input label={t('suppliers.accountCollectif')} value={accountCollectif} onChange={(e) => setAccountCollectif(e.target.value)} placeholder="401000" />
-          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Modal>
+    </form>
   )
 }

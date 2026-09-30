@@ -3,6 +3,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Cible de la suite : 5174 par défaut (CI comprise), surchargeable en local pour
+// viser le serveur de l'arbre de travail courant (`PW_BASE_URL`).
+const BASE_URL = process.env.PW_BASE_URL || 'http://localhost:5174'
+
 // Les tests lisent SUPABASE_KEY / E2E_TEST_* dans l'environnement. En local la
 // clé publiable est déjà dans .env : sans ce chargement, la suite s'abstenait
 // alors que de quoi tourner était sur le disque. Aucune dépendance ajoutée, et
@@ -35,7 +39,11 @@ export default defineConfig({
   expect: { timeout: process.env.CI ? 20_000 : 10_000 },
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5174',
+    // E1 (29/09/2026) : `reuseExistingServer` réutilisait n'importe quel serveur
+    // déjà en écoute sur le port — mesuré : celui d'un AUTRE arbre de travail, qui
+    // servait donc d'autres sources et rendait un test trompeur. `PW_BASE_URL`
+    // permet de viser explicitement le serveur de l'arbre courant.
+    baseURL: BASE_URL,
     // `main.tsx` enregistre un service worker (`public/sw.js`) qui met en cache
     // la coquille de l'application. Un test peut alors recevoir une page servie
     // depuis le cache d'un test précédent. Les tests ne portent pas sur le mode
@@ -52,8 +60,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --port 5174',
-    url: 'http://localhost:5174',
+    command: `npm run dev -- --port ${new URL(BASE_URL).port || 5174}`,
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },
