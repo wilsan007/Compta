@@ -267,7 +267,7 @@ innovations** `I-01` → `I-12` et les lots `L16` → `L24` (voir
 | Couverture d'audit — phase 10 | ≈ 15 j |
 | **Total restant au 30/09/2026** | **≈ 131 j** |
 | Hors charge de développement | **P0-08** (14 parcours à l'écran), la recette des neuf intégrations (tableau B), les décisions du tableau A |
-| Déjà livré et prouvé (W0 → W10, chaînages L0 + L1 tr. 1 à 4 + L2 + L7, essaim QA) | ≈ 37 j |
+| Déjà livré et prouvé (W0 → W10, chaînages L0 + L1 tr. 1 à 5 + L2 + L7, essaim QA) | ≈ 37 j |
 
 Au 24/09 le total était de **≈ 169 j** ; il est passé à **≈ 139 j** le 28/09
 (W4, W6, la chaîne de l'absence W9, W5, les deux défauts du registre, la fin de
@@ -296,6 +296,12 @@ une charge de développement mais un passage obligé.
    données** — et un numéro se **constate** dans le dépôt, il ne se réserve pas
    (`257`, `258`, `259` ont été pris au moment de l'exécution de W6) ;
 3. **le test branché dans `.github/workflows/ci.yml` dans le même commit** ;
+3. **bis — si la migration change le schéma** (colonne, table, vue, valeur d'un
+   `CHECK`) : **`npm run db:types` dans le même commit**. La CI régénère
+   `src/types/database-generated.ts` depuis une base neuve et **refuse tout
+   écart** ; c'est une **porte du même genre que `G5`**, et elle a parlé le 30/09
+   (les 5 colonnes de la `312`, **15 lignes**) jusqu'à ce que `b3eac3b` les
+   porte. Ne pas la contourner en relançant la CI : **régénérer et commiter** ;
 4. **la ligne du registre** `ci/expected_failures.sql` retirée si le défaut y
    figurait (la CI échoue si un test corrigé y reste) ;
 5. **les non-régressions** (`105`, `178`, `181`, `219`, `189` et les suites du
@@ -313,6 +319,9 @@ docker run -d --name pg_w6b -e POSTGRES_PASSWORD=postgres -p 5459:5432 \
 docker exec -w /work pg_w6b psql -U postgres -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
 docker exec -w /work pg_w6b psql -U postgres -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
 cd app && DATABASE_URL=postgresql://postgres:postgres@localhost:5459/postgres node run-sql-migrations.mjs
+#    puis les types générés — ils font partie du commit dès que le schéma change :
+DATABASE_URL=postgresql://postgres:postgres@localhost:5459/postgres node scripts/generate-db-types.mjs
+git diff --stat src/types/database-generated.ts   # doit être VIDE (c'est ce que la CI exige)
 
 # 2. Les contrôles et les suites, dans l'ordre de la CI (voir .github/workflows/ci.yml)
 docker exec pg_w6b psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /work/sql/ci/check_tenant_guard.sql

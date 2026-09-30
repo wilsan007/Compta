@@ -198,6 +198,13 @@ L'essentiel en huit lignes :
 * **Rappel de méthode** : un défaut = un test **rouge avant**, une migration qui
   se **constate** (un numéro ne se réserve pas), le câblage CI et la preuve dans
   **le même commit**. Le travail non commité n'existe pas.
+  ⚠️ **Et si la migration change le schéma** (colonne, table, vue, valeur d'un
+  `CHECK`) : **`npm run db:types` dans le même commit**. La CI régénère
+  `src/types/database-generated.ts` depuis une base neuve et **refuse tout
+  écart**. Mesuré le 30/09 : les **5 colonnes** du cycle de vie du lien (`312`)
+  ont fait échouer la CI — **15 lignes**, `Row`/`Insert`/`Update` — jusqu'à
+  `b3eac3b` ; régénérer sur une base neuve de **265 migrations, 0 erreur**
+  redonne **exactement** le fichier commité.
 
 ## À faire plus tard (rappels)
 
