@@ -91,7 +91,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
                 <TableRow>
                   <TableCell className="font-mono text-xs">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => toggleExpand(b.id)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
+                      <button onClick={() => toggleExpand(b.id)} aria-label={tCommon(expanded.has(b.id) ? 'actions.collapse' : 'actions.expand')} title={tCommon(expanded.has(b.id) ? 'actions.collapse' : 'actions.expand')} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
                         {expanded.has(b.id) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                       </button>
                       {b.code}

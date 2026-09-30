@@ -162,9 +162,9 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('lettrage.title') }]} />
       <PageHeader title={t('lettrage.title')} subtitle={t('lettrage.subtitle')} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Third party selector */}
-        <div className="col-span-1">
+        <div className="lg:col-span-1">
           <Card>
             <div className="p-4 space-y-3">
               <div className="relative">
@@ -201,7 +201,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
         </div>
 
         {/* Right: Lines for selected third party */}
-        <div className="col-span-2">
+        <div className="col-span-2 lg:col-span-2">
           {!selectedTiers ? (
             <EmptyState icon={<Link2 className="w-8 h-8" />} title={t('lettrage.selectThirdParty')}
               description={t('lettrage.selectThirdPartyDescription')} />

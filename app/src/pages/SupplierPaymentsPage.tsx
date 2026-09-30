@@ -168,7 +168,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.exchangeRate')}</label>
               <div className="flex gap-1">
-                <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+                <input aria-label={t('payments.exchangeRate')} className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
                 <button type="button" onClick={handleRefreshRate} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payments.refreshRate')}>
                   <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
                 </button>

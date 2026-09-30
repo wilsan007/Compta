@@ -287,6 +287,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                   <tr key={idx}>
                     <td className="px-3 py-2">
                       <select
+                        aria-label={t('entries.account')}
                         className="input text-sm py-1"
                         value={line.account_code}
                         onChange={(e) => updateLine(idx, 'account_code', e.target.value)}
@@ -307,6 +308,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={t('entries.debit')}
                         type="number"
                         step="0.01"
                         className="input text-sm py-1 text-right font-mono"
@@ -316,6 +318,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={t('entries.credit')}
                         type="number"
                         step="0.01"
                         className="input text-sm py-1 text-right font-mono"
@@ -335,7 +338,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
               <tfoot>
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={2} className="px-3 py-2">
-                    <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
+                    <button type="button" onClick={addLine} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {t('entries.addLine')}
                     </button>
                   </td>

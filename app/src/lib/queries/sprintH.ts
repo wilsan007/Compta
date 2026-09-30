@@ -31,7 +31,7 @@ export async function getMyActivity(limit?: number) {
   if (!userEmail) throw new Error('Not authenticated')
   let q = supabase.from('employees').select('id').eq('email', userEmail)
   if (tid) q = q.eq('tenant_id', tid)
-  const { data: emp } = await q.single()
+  const { data: emp } = await q.maybeSingle()
   if (!emp?.id) throw new Error('Employee not found')
   return getEmployeeActivity(emp.id, limit)
 }
@@ -46,8 +46,12 @@ export async function getEmployeeDashboardData() {
 
   let empQ = supabase.from('employees').select('*').eq('email', userEmail)
   if (tid) empQ = empQ.eq('tenant_id', tid)
-  const { data: emp } = await empQ.single()
-  if (!emp) throw new Error('Employee not found')
+  const { data: emp } = await empQ.maybeSingle()
+  // Un compte connecté n'est pas toujours un salarié (propriétaire, comptable) :
+  // l'absence de fiche n'est pas une erreur, c'est un état. La page le dit
+  // elle-même (mesuré le 29/09/2026 : « Employee not found » en console sur tout
+  // le portail salarié, et l'utilisateur n'avait droit qu'à un écran vide).
+  if (!emp) return null
   const employeeId = emp.id
 
   const [balances, pendingLeaves, pendingExpenses, upcomingInterviews, activity] = await Promise.all([
@@ -77,7 +81,11 @@ export async function getMyProfile() {
   if (!userEmail) throw new Error('Not authenticated')
   let q = supabase.from('employees').select('*').eq('email', userEmail)
   if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q.single()
+  // maybeSingle() : un compte connecté n'est pas forcément un salarié (le
+  // propriétaire, un comptable…). `single()` faisait répondre PostgREST 406
+  // « Cannot coerce the result to a single JSON object » — mesuré le 29/09/2026
+  // sur tout le portail salarié, avec le message brut affiché à l'utilisateur.
+  const { data, error } = await q.maybeSingle()
   if (error) throw error
   return data
 }
@@ -87,7 +95,7 @@ export async function updateMyProfile(updates: Record<string, any>) {
   const { data: { session } } = await supabase.auth.getSession()
   const userEmail = session?.user?.email
   if (!userEmail) throw new Error('Not authenticated')
-  const { data, error } = await tud(supabase.from('employees').update(updates), 'employees', tid).eq('email', userEmail).select().single()
+  const { data, error } = await tud(supabase.from('employees').update(updates), 'employees', tid).eq('email', userEmail).select().maybeSingle()
   if (error) throw error
   return data
 }
@@ -103,14 +111,14 @@ export async function getEmployeeAlerts(employeeId?: string) {
     if (!userEmail) return alerts
     let eq = supabase.from('employees').select('id').eq('email', userEmail)
     if (tid) eq = eq.eq('tenant_id', tid)
-    const { data: emp } = await eq.single()
+    const { data: emp } = await eq.maybeSingle()
     if (!emp?.id) return alerts
     empId = emp.id
   }
 
   let eq2 = supabase.from('employees').select('*').eq('id', empId)
   if (tid) eq2 = eq2.eq('tenant_id', tid)
-  const { data: emp } = await eq2.single()
+  const { data: emp } = await eq2.maybeSingle()
   if (emp?.hire_date && String(emp?.contract_type).toLowerCase() === 'cdd') {
     const hireDate = new Date(emp.hire_date)
     const trialEnd = new Date(hireDate)

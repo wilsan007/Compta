@@ -10,14 +10,19 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { RULES } from './lib/rules.mjs'
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const inv = JSON.parse(fs.readFileSync(path.join(APP, '.qa/inventory.json'), 'utf8'))
 const src = new Map(inv.routes.map((r) => [r.path, r.source]))
 const registry = JSON.parse(fs.readFileSync(path.join(APP, '.qa-baseline.json'), 'utf8'))
 
-// Ordre de traitement : ce qui touche le plus d'écrans d'abord.
-const ORDER = ['modal_sans_fermeture', 'modal_champ_sans_nom', 'cible_etroite', 'select_vide', 'route_redirigee', 'element_trop_large', 'erreur_console', 'bouton_sans_nom', 'erreur_js', 'sans_titre', 'page_blanche']
+// Ordre de traitement : ce qui touche le plus d'écrans d'abord. Le reste du
+// barème vient ensuite — une classe oubliée ici disparaissait de la liste de
+// travail (mesuré le 29/09/2026 : `onglet_inchange` comptait cinq défauts que
+// le fichier ne citait pas).
+const PREFERRED = ['modal_sans_fermeture', 'modal_champ_sans_nom', 'cible_etroite', 'select_vide', 'route_redirigee', 'element_trop_large', 'erreur_console', 'bouton_sans_nom', 'erreur_js', 'sans_titre', 'page_blanche']
+const ORDER = [...PREFERRED, ...Object.keys(RULES).filter((k) => !PREFERRED.includes(k))]
 const L = ['# Travail restant des écrans (essaim QA)', '', `${registry.length} défaut(s) au registre, par classe.`, '']
 for (const id of ORDER) {
   const rows = registry.filter((r) => r.id === id)

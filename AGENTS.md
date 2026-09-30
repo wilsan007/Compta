@@ -732,3 +732,50 @@ L'essentiel en huit lignes :
 - `AppErrorBoundary` capture les erreurs React et envoie à Sentry
 - 35 `console.error` dans les Edge Functions pour le logging
 - Logs Edge Functions visibles via Dashboard Supabase > Functions > Logs
+
+### Essaim QA — deuxième passe : l'outil qui accusait à tort, et les vrais défauts (2026-09-29/30) ✅
+- **Le harnais se trompait sur onze points, chacun mesuré** : l'inventaire
+  **inventait six routes** (il perdait le parent d'une route auto-fermante —
+  `/expenses`, `/documents`, `/manager/approvals` au lieu de `/employee/…`, donc
+  le portail salarié n'était **jamais** visité) ; `oversized` ignorait le
+  conteneur défilant que son propre commentaire annonçait ; une pile de
+  **notifications** (`aria-live`) passait pour une fenêtre ; un clic qui
+  **navigue** attribuait la fenêtre d'un autre écran ; `namedFields` ne créditait
+  pas un champ **dans son `<label>`** (12 fenêtres, 24 verdicts faux) ; un onglet
+  annonçant « (0) » était accusé ; **aucun budget d'interaction** (400 boutons ×
+  2,5 s = 16 min par écran — c'est le gel à 156 visites) ; le dossier de shards
+  n'était pas vidé (« 7 ouvriers » pour 4) ; un **502** local était imputé aux
+  écrans ; l'écran source d'une route était son **enveloppe**
+  (`/settings/api-docs` → `ProtectedRoute.tsx`) ; `worklist` omettait des classes
+  (`onglet_inchange`). Le harnais porte désormais un **jeton de tournée** (le
+  validateur refuse de juger deux tournées mélangées) et un filtre `--routes=`
+  pour rejouer une ligne.
+- **Corrigé côté produit** : champs de lignes (avoirs vente/achat, devis,
+  écritures), **cinq** taux de change, distribution analytique, produit des
+  devis (aria-label) ; cibles tactiles (Oui/Non de la banque 23×24 → 24×24,
+  barres de Gantt ≥ 24 px, cinq « Copier » de la doc d'API, « Ajouter une
+  ligne »/« Équilibrer », boutons « Fermer » partagés, guide de bienvenue) ;
+  lettrage en `grid-cols-1 lg:grid-cols-3` (22 px sur téléphone) ; tableau
+  « saisie par pièce » (1 100 px sous `overflow-hidden`) qui défile ; **portail
+  salarié** : six lectures `employees` en `.single()` → `.maybeSingle()` (un
+  compte connecté n'est pas forcément un salarié) — le 406 `PGRST116` disparaît,
+  et `/employee` et `/employee/profile` **disent** « Aucun dossier de salarié »
+  (fr/en/ar) au lieu de ne rien rendre ; boutons de dépliage nommés ; écran
+  « accès refusé » des packs de plan comptable titré.
+- **Dernière tournée complète** : 668 visites, 334 routes, **47 défauts**
+  (0 bloquant, 14 majeurs, 33 mineurs) — `.qa-out/RAPPORT-QA-2026-09-30.md`.
+  Registre ramené de 25 → **23 entrées** (24 lignes « champ sans libellé »
+  retirées, mesurées vertes) : 7 `cible_etroite`, 5 `onglet_inchange`,
+  4 `erreur_console`, 4 `bouton_sans_nom`, 2 `sans_titre`,
+  1 `element_trop_large` — toutes corrigées, la tournée de confirmation est à
+  rejouer (`qa:seed` → `qa:amorce` → `qa:run` → `qa:validate --baseline`).
+- `tsc` 0 · `oxlint` 0 · parité i18n fr/en/ar ✓ · Vitest **1 513 / 1 513** (38
+  ignorés, 52 fichiers) · plafond de code mort **66/66** ✓.
+- ⚠️ **Environnement** : la pile locale est saturée (PostgREST « Thread killed by
+  timeout manager », semis d'un banc neuf impossible) et une **session parallèle**
+  travaille dans le même dépôt — elle a remis deux fois le mot de passe du rôle
+  `authenticator` à sa valeur de banc, cassant PostgREST. C'est ce qui a empêché
+  la tournée de confirmation, pas le code.
+- Limite dite : `OnboardingModal.tsx` porte ~30 chaînes **codées en dur en
+  français sans accents**, hors i18n (à porter — `D-11`).
+

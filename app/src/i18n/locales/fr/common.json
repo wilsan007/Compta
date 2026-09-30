@@ -323,6 +323,8 @@
     "loading": "Chargement...",
     "noData": "Aucune donnée",
     "noResults": "Aucun résultat",
+    "noEmployeeRecord": "Aucun dossier de salarié n'est rattaché à votre compte",
+    "noEmployeeRecordHint": "Demandez à un administrateur de rattacher votre compte à une fiche salarié.",
     "error": "Erreur",
     "success": "Succès",
     "warning": "Attention",

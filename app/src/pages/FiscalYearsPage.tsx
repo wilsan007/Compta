@@ -115,6 +115,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setExpandedId(expandedId === y.id ? null : y.id)}
+                  aria-label={tCommon(expandedId === y.id ? 'actions.collapse' : 'actions.expand')}
+                  title={tCommon(expandedId === y.id ? 'actions.collapse' : 'actions.expand')}
                   className="p-1 rounded hover:bg-[var(--color-neutral-100)]"
                 >
                   {expandedId === y.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}

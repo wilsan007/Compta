@@ -323,6 +323,8 @@
     "loading": "Loading...",
     "noData": "No data",
     "noResults": "No results",
+    "noEmployeeRecord": "No employee record is linked to your account",
+    "noEmployeeRecordHint": "Ask an administrator to link your account to an employee record.",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",

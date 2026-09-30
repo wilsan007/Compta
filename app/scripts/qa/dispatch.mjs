@@ -66,6 +66,18 @@ async function main() {
   const inv = buildInventory()
   writeInventory(inv)
   fs.mkdirSync(LOG_DIR, { recursive: true })
+  // Les shards d'une tournée PRÉCÉDENTE ne doivent pas se mêler à celle-ci : le
+  // validateur lit TOUS les fichiers du dossier, et une tournée arrêtée en
+  // route laissait des shards orphelins (mesuré le 29/09/2026 : « ouvriers : 7 »
+  // pour trois lancés, et des défauts d'un run mort comptés dans le verdict).
+  const SHARD_DIR = path.join(OUT, 'shards')
+  fs.rmSync(SHARD_DIR, { recursive: true, force: true })
+  fs.mkdirSync(SHARD_DIR, { recursive: true })
+  // Jeton de tournée : chaque shard le porte, le validateur refuse d'en juger
+  // deux d'un coup. Sans lui, deux tournées qui se chevauchent (une session
+  // parallèle, un run oublié) se mélangeaient en silence — mesuré le
+  // 29/09/2026 : un journal annonçait 166 visites quand le shard en portait 69.
+  const RUN = new Date().toISOString()
   const scoped = MODULES ? inv.routes.filter((r) => MODULES.split(',').includes(r.module)) : inv.routes
   console.log(`essaim QA → ${BASE}`)
   console.log(`plan : ${inv.totalRoutes} route(s) au total, ${scoped.length} dans le périmètre, ${WORKERS} ouvrier(s) × ${VIEWPORTS}`)
@@ -75,7 +87,7 @@ async function main() {
   for (let shard = 0; shard < WORKERS; shard++) {
     const logFile = path.join(LOG_DIR, `ouvrier-${shard}.log`)
     const out = fs.openSync(logFile, 'w')
-    const args = [path.join(DIR, 'worker.mjs'), `--shard=${shard}`, `--of=${WORKERS}`, `--viewports=${VIEWPORTS}`]
+    const args = [path.join(DIR, 'worker.mjs'), `--shard=${shard}`, `--of=${WORKERS}`, `--viewports=${VIEWPORTS}`, `--run=${RUN}`]
     if (MODULES) args.push(`--modules=${MODULES}`)
     const limit = argOf('limit', null)
     if (limit) args.push(`--limit=${limit}`)

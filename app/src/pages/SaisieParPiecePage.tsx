@@ -332,7 +332,7 @@ export function SaisieParPiecePage() {
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.exchangeRate')}</label>
             <div className="flex gap-1">
-              <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+              <input aria-label={t('saisie.exchangeRate')} className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
@@ -375,7 +375,10 @@ export function SaisieParPiecePage() {
       {/* Entry grid */}
       <Card>
         <div className="p-4">
-          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+          {/* `overflow-hidden` empêchait tout défilement : le tableau (1 100 px) ne
+              pouvait pas être lu sur téléphone, et l'essaim le disait à raison
+              (mesuré le 29/09/2026 : 1 100 px dans 527). */}
+          <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
             <table className="app-table min-w-[1100px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
@@ -500,12 +503,12 @@ export function SaisieParPiecePage() {
               <tfoot>
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={3} className="px-2 py-2">
-                    <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
+                    <button type="button" onClick={addLine} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {t('saisie.addLine')}
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <button type="button" onClick={equilibrate} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
+                    <button type="button" onClick={equilibrate} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
                       <CheckCircle2 className="w-3 h-3" /> {t('saisie.balanc')}
                     </button>
                   </td>

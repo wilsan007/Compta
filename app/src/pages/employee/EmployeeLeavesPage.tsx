@@ -29,7 +29,7 @@ export function EmployeeLeavesPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
       if (!userEmail) return
-      const { data: emp, error } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error } = await supabase.from('employees').select('id').eq('email', userEmail).maybeSingle()
       if (error) throw error
       if (!emp?.id) return
       const tid = await getTenantId()
@@ -53,7 +53,7 @@ export function EmployeeLeavesPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const userEmail = session?.user?.email
-      const { data: emp, error: empError } = await supabase.from('employees').select('id').eq('email', userEmail).single()
+      const { data: emp, error: empError } = await supabase.from('employees').select('id').eq('email', userEmail).maybeSingle()
       if (empError) throw empError
       if (!emp?.id) return
       const tid = await getTenantId()

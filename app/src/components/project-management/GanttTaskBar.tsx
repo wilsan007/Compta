@@ -44,7 +44,11 @@ export function GanttTaskBar({
       )}
       style={{
         left: `${left}px`,
+        // Un jour fait vingt pixels : la barre restait sous le minimum de cible
+        // tactile (WCAG 2.5.8). Elle part du même jour, elle est simplement
+        // attrapable (mesuré le 29/09/2026 : « Cadrage 20×24 »).
         width: `${width}px`,
+        minWidth: '24px',
         top: '4px',
         height: '24px',
         backgroundColor: color,

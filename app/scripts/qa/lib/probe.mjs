@@ -93,13 +93,25 @@ export function collectDom() {
     }
   }
 
-  // Proportions : un média plus large que la fenêtre et hors conteneur défilant
-  // sera coupé à l'écran — c'est le défaut « mal proportionné ».
+  // Proportions : un média plus large que la fenêtre et **hors conteneur
+  // défilant** sera coupé à l'écran — c'est le défaut « mal proportionné ».
+  // Le conteneur défilant compte : `.table-container` et les douze tableaux
+  // écrits à la main posent `overflow-x: auto` (1 319 px dans 894 px, mesuré le
+  // 29/09/2026) — l'utilisateur atteint chaque colonne, rien n'est coupé. Sans
+  // cette exclusion, l'outil accusait trois écrans qui se comportaient bien, et
+  // son propre commentaire disait déjà « hors conteneur défilant ».
+  const inScroller = (el) => {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX
+      if (ox === 'auto' || ox === 'scroll') return true
+    }
+    return false
+  }
   const oversized = []
   for (const el of document.querySelectorAll('table, img, video, canvas, pre')) {
     if (!vis(el)) continue
     const r = el.getBoundingClientRect()
-    if (r.width > vw + 2) oversized.push(descOf(el) + ' ' + Math.round(r.width) + 'px > ' + vw + 'px')
+    if (r.width > vw + 2 && !inScroller(el)) oversized.push(descOf(el) + ' ' + Math.round(r.width) + 'px > ' + vw + 'px')
   }
 
   const headings = [...document.querySelectorAll('h1,h2')].filter(vis).map(nameOf).filter(Boolean)
@@ -141,6 +153,13 @@ export function dialogInfo() {
   const cands = [
     ...document.querySelectorAll('[role="dialog"], [role="alertdialog"], [aria-modal="true"]'),
     ...[...document.querySelectorAll('div,section')].filter((d) => {
+      // Une région live n'est pas une fenêtre : la pile de notifications a la
+      // taille, le z-index et la position d'une fenêtre, mais rien à fermer ni
+      // de titre. Mesuré le 29/09/2026 : trois verdicts « fenêtre sans titre /
+      // reste ouverte après Échap » désignaient des toasts (« Export en cours »,
+      // « Erreur… ») — l'outil accusait le produit à la place de son message.
+      if (d.hasAttribute('aria-live') || d.closest('[aria-live]')) return false
+      if (['status', 'alert'].includes(d.getAttribute('role'))) return false
       const s = getComputedStyle(d)
       const r = d.getBoundingClientRect()
       return (s.position === 'fixed' || s.position === 'absolute') && r.height > 120 && r.width > 200 && Number(s.zIndex) >= 10
@@ -152,13 +171,24 @@ export function dialogInfo() {
   const title = d.querySelector('h1,h2,h3,[role="heading"]')
   const fields = [...d.querySelectorAll('input,select,textarea')].filter(vis)
   const text = (d.textContent || '').replace(/\s+/g, ' ').trim()
+  // Les champs que la garde n'a PAS pu nommer (aucun libellé visible) : les
+  // nommer ici, dans la mesure, évite de deviner de quel champ parle un
+  // « 11/13 champ(s) nommé(s) » (ajouté le 29/09/2026).
+  const unnamedFields = fields
+    .filter((f) => !(f.getAttribute('aria-label') || f.getAttribute('aria-labelledby') || f.getAttribute('name') || f.id || f.getAttribute('placeholder')) && !f.closest('label'))
+    .map((f) => (f.outerHTML || '').replace(/\s+/g, ' ').slice(0, 130))
   return {
     open: true,
     textLength: text.length,
     textSample: text.slice(0, 160),
     title: title ? named(title).slice(0, 80) : null,
     fields: fields.length,
-    namedFields: fields.filter((f) => f.getAttribute('aria-label') || f.getAttribute('name') || f.id || f.getAttribute('placeholder')).length,
+    // Un champ enveloppé dans son propre <label> PORTE son nom : c'est le
+    // navigateur qui l'associe, et tout lecteur d'écran le lit. La règle ne le
+    // créditait pas et accusait douze fenêtres à tort (mesuré le 29/09/2026 :
+    // les « sans nom » étaient des cases à cocher dans leur <label>).
+    namedFields: fields.filter((f) => f.getAttribute('aria-label') || f.getAttribute('aria-labelledby') || f.getAttribute('name') || f.id || f.getAttribute('placeholder') || f.closest('label')).length,
+    unnamedFields,
     buttons: [...d.querySelectorAll('button')].filter(vis).map((b) => named(b).slice(0, 40)),
     width: Math.round(r.width),
     height: Math.round(r.height),

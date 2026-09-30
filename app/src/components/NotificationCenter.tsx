@@ -135,7 +135,7 @@ export function NotificationCenter() {
                   <Check className="w-3 h-3" /> Tout marquer lu
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+              <button onClick={() => setOpen(false)} className="min-w-6 min-h-6 inline-flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
                 <X className="w-4 h-4" aria-hidden="true" /></button>
             </div>
           </div>

@@ -196,9 +196,12 @@
   /* W-QA (29/09/2026) : les liens et boutons en `text-xs` (pieds de page, filtres
      compacts) mesuraient 16 px de haut — sous le minimum WCAG 2.2 AA (2.5.8 : 24).
      On relève la cible sans changer la typographie, donc sans casser les barres
-     d'outils denses. */
+     d'outils denses. La LARGEUR compte aussi : la bascule « Oui / Non » du
+     rapprochement bancaire mesurait 23×24 après la première règle — un mot de
+     trois lettres ne fait pas 24 px. */
   a.text-xs,
   button.text-xs {
+    min-width: 1.5rem;
     min-height: 1.5rem;
     display: inline-flex;
     align-items: center;

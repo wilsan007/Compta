@@ -86,10 +86,10 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl animate-scale-in overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
+      <div className="card shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto" style={{ width: '100%', maxWidth: '32rem' }}>
         {/* Header */}
         <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-[var(--color-primary)] to-purple-600 text-white">
-          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="absolute top-4 right-4 text-white/80 hover:text-white">
+          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="absolute top-4 right-4 min-w-6 min-h-6 flex items-center justify-center text-white/80 hover:text-white">
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
         <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--color-border)]">
           <button
             onClick={() => (step === 0 ? onClose() : setStep(step - 1))}
-            className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+            className="flex items-center gap-1 min-h-6 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
           >
             {step === 0 ? 'Passer' : (<><ArrowLeft className="w-4 h-4" /> Precedent</>)}
           </button>

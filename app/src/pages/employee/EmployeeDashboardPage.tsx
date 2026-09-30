@@ -31,6 +31,21 @@ export function EmployeeDashboardPage() {
 
   if (loading) return <SkeletonTable rows={6} cols={4} />
 
+  // Pas de fiche salarié : on le dit, au lieu de laisser la console crier.
+  if (!data) {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('dashboard.title') }]} />
+        <PageHeader title={t('dashboard.title')} />
+        <EmptyState
+          icon={<FileText className="w-8 h-8" />}
+          title={tCommon('common.noEmployeeRecord')}
+          description={tCommon('common.noEmployeeRecordHint')}
+        />
+      </div>
+    )
+  }
+
   const emp = data?.employee
   const balances = data?.leaveBalances || []
   const activity = data?.recentActivity || []

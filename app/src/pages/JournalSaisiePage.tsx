@@ -740,7 +740,7 @@ function SaisieForm({
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.exchangeRate')}</label>
             <div className="flex gap-1">
-              <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+              <input aria-label={t('saisie.exchangeRate')} className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
@@ -952,12 +952,12 @@ function SaisieForm({
               <tfoot>
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={7} className="px-2 py-2">
-                    <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
+                    <button type="button" onClick={addLine} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {t('saisie.addLine')}
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <button type="button" onClick={equilibrate} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
+                    <button type="button" onClick={equilibrate} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
                       <CheckCircle2 className="w-3 h-3" /> {t('saisie.balanc')}
                     </button>
                   </td>

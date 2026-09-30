@@ -92,12 +92,17 @@ export function ChartPacksAdminPage() {
 
   if (allowed === null) return null
   if (!allowed) {
+    // L'écran refusé doit porter son titre : sans lui, l'essaim QA (et un lecteur
+    // d'écran) ne trouve rien à annoncer — mesuré le 29/09/2026.
     return (
-      <EmptyState
-        icon={<ShieldAlert className="w-8 h-8" />}
-        title={t('chartPacks.forbiddenTitle')}
-        description={t('chartPacks.forbidden')}
-      />
+      <div>
+        <PageHeader title={t('chartPacks.forbiddenTitle')} />
+        <EmptyState
+          icon={<ShieldAlert className="w-8 h-8" />}
+          title={t('chartPacks.forbiddenTitle')}
+          description={t('chartPacks.forbidden')}
+        />
+      </div>
     )
   }
 

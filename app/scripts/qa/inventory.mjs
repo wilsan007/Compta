@@ -80,17 +80,28 @@ export function buildInventory() {
     if (ev.close) { stack.pop(); continue }
     const attrs = ev.raw.slice(6, -1)
     const p = /path="([^"]*)"/.exec(attrs)
+    // Les ancêtres sont lus AVANT d'empiler la route courante : une route
+    // auto-fermante (le cas courant) n'est jamais empilée, et l'ancien
+    // `stack.slice(0, -1)` lui retirait alors son parent — `<Route path="leaves">`
+    // sous `<Route path="/employee">` donnait `/leaves`, une route qui n'existe
+    // pas. Mesuré le 29/09/2026 : six écrans du portail salarié inventés de
+    // toutes pièces, et six verdicts `route_redirigee`/`cible_etroite` faux.
+    const parents = stack.filter(Boolean)
     if (!ev.selfClosing) stack.push(p ? p[1] : '')
     if (!p) continue
     const raw = p[1]
     if (raw === '*' || raw.includes(':')) continue            // redirection, ou route à identifiant
-    const parents = stack.slice(0, -1).filter(Boolean)
     const full = (raw.startsWith('/') ? raw : [...parents, raw].join('/')).replace(/\/{2,}/g, '/')
     const path = full.startsWith('/') ? full : `/${full}`
     if (seen.has(path)) continue
     seen.add(path)
-    const el = /element=\{<\s*(\w+)/.exec(attrs)
-    const component = el ? el[1] : null
+    // `element={<ProtectedRoute><ApiDocsPage /></ProtectedRoute>}` : l'écran à
+    // ouvrir est la PAGE, pas son enveloppe. La première version prenait le
+    // premier composant venu et envoyait le lecteur vers `ProtectedRoute.tsx`
+    // (mesuré le 29/09/2026 : `/settings/api-docs`). On préfère donc un nom qui
+    // finit par « Page », sinon le dernier composant de l'expression.
+    const names = [...attrs.matchAll(/<\s*([A-Z]\w*)/g)].map((m) => m[1])
+    const component = names.find((n) => /Page$/.test(n)) ?? names[names.length - 1] ?? null
     const importPath = component ? lazyMap.get(component) ?? null : null
     routes.push({
       path,

@@ -348,7 +348,7 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
                 {lines.map((line, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
                     <td className="px-3 py-2">
-                      <select value={line.productId || ""} onChange={(e) => { selectProduct(idx, e.target.value); setLines(prev => prev.map((l, i) => i === idx ? { ...l, productId: e.target.value } : l)) }} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]">
+                      <select aria-label={t('invoices.product')} value={line.productId || ""} onChange={(e) => { selectProduct(idx, e.target.value); setLines(prev => prev.map((l, i) => i === idx ? { ...l, productId: e.target.value } : l)) }} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]">
                         <option value="">—</option>
                         {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
@@ -357,13 +357,13 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
                       <input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder={t('invoices.description')} />
                     </td>
                     <td className="px-3 py-2">
-                      <input type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input aria-label={t('invoices.quantity')} type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2">
-                      <input type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input aria-label={t('invoices.unitPrice')} type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2">
-                      <input type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input aria-label={t('invoices.vatRate')} type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{line.productId ? (stockMap[line.productId] ?? '—') : '—'}</td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>

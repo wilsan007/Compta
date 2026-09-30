@@ -51,7 +51,22 @@ export function EmployeeProfilePage() {
   }
 
   if (loading) return <SkeletonTable rows={6} cols={4} />
-  if (!profile) return null
+  // Un compte connecté n'est pas forcément un salarié : le portail le DISAIT en
+  // ne rendant RIEN (écran vide, sans titre — mesuré le 29/09/2026). Il le dit
+  // maintenant en toutes lettres, et la page garde son titre.
+  if (!profile) {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('profile.title') }]} />
+        <PageHeader title={t('profile.title')} />
+        <EmptyState
+          icon={<User className="w-8 h-8" />}
+          title={tCommon('common.noEmployeeRecord')}
+          description={tCommon('common.noEmployeeRecordHint')}
+        />
+      </div>
+    )
+  }
 
   return (
     <div>

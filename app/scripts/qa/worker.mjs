@@ -55,7 +55,11 @@ if (!VIEWPORT_NAMES.length) {
   process.exit(2)
 }
 const MODULES = (arg('modules', '') || '').split(',').map((s) => s.trim()).filter(Boolean)
+// Rejouer une ligne du registre : `--routes=/a,/b`. Le découpage en shards est
+// alors ignoré — c'est un outil de diagnostic, pas une tournée.
+const ONLY = (arg('routes', '') || '').split(',').map((s) => s.trim()).filter(Boolean)
 const LIMIT = Number(arg('limit', '0')) || 0
+const RUN = arg('run', '')
 const LIGHT = process.argv.includes('--light')
 const SHOTS = arg('shots', 'defects')
 
@@ -67,6 +71,7 @@ function routesForShard() {
   const inv = loadInventory()
   let routes = inv.routes
   if (MODULES.length) routes = routes.filter((r) => MODULES.includes(r.module))
+  if (ONLY.length) return routes.filter((r) => ONLY.includes(r.path))
   // Découpage entrelacé : deux shards voisins ne traitent pas deux écrans du
   // même module, donc un module n'est pas jugé par un seul ouvrier.
   routes = routes.filter((_, i) => i % OF === SHARD)
@@ -154,8 +159,15 @@ function watch(page) {
 }
 
 /** Verdicts tirés de l'état statique de la page (aucun clic). */
+// La pile locale peut tomber en cours de tournée (PostgREST qui redémarre, un
+// 502 en rafale) : ce n'est pas un défaut de l'écran. Mesuré le 29/09/2026 :
+// sans cet arrêt, la tournée accusait trois cents écrans « vides » alors que
+// l'API ne répondait plus.
+let envBroken = false
+
 function verdictsFromDom(route, dom, state, vp, push) {
   const cap = (arr, n = 4) => arr.slice(0, n).join(' ; ')
+  if ([...state.api, ...state.consoleErrors].some((l) => /502 Bad Gateway|503 Service Unavailable/.test(l))) envBroken = true
   if (state.jsErrors.length) push(finding(route, 'erreur_js', cap(state.jsErrors), vp))
   if (dom.errorBoundary) push(finding(route, 'erreur_page', dom.textSample, vp))
   if (dom.isBlank) push(finding(route, 'page_blanche', `${dom.textLength} caractère(s) rendu(s)`, vp))
@@ -180,12 +192,13 @@ function verdictsFromDom(route, dom, state, vp, push) {
 
 
 /** Onglets : chacun doit changer ce qui est affiché. */
-async function probeTabs(page, route, vp, push) {
+async function probeTabs(page, route, vp, push, budget) {
   const tabs = page.getByRole('tab')
   const n = Math.min(await tabs.count().catch(() => 0), 6)
   const readText = () => page.evaluate(() => (document.querySelector('#root')?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 4000))
   let tried = 0
   for (let i = 0; i < n; i++) {
+    if (Date.now() > budget) break
     const tab = tabs.nth(i)
     const label = ((await tab.textContent().catch(() => '')) || '').trim().slice(0, 40)
     if (!label || isDestructive(label)) continue
@@ -195,17 +208,21 @@ async function probeTabs(page, route, vp, push) {
     await page.waitForTimeout(450)
     const after = await readText()
     tried++
-    if (after === before) push(finding(route, 'onglet_inchange', `« ${label} » : panneau identique (${after.length} car.)`, vp))
+    // Un onglet qui annonce « (0) » et laisse le panneau vide a raison : il n'y a
+    // rien à montrer. Sans cette réserve, une société neuve faisait accuser les
+    // cinq onglets de statut d'un projet vide (mesuré le 29/09/2026).
+    if (after === before && !/[（(]\s*0\s*[)）]/.test(label)) push(finding(route, 'onglet_inchange', `« ${label} » : panneau identique (${after.length} car.)`, vp))
   }
   return { tabs: n, tried }
 }
 
 /** Listes déroulantes : une liste sans option ne peut rien sélectionner. */
-async function probeSelects(page, route, vp, push) {
+async function probeSelects(page, route, vp, push, budget) {
   const selects = page.locator('select:visible')
   const n = Math.min(await selects.count().catch(() => 0), 8)
   let empty = 0
   for (let i = 0; i < n; i++) {
+    if (Date.now() > budget) break
     const opts = await selects.nth(i).locator('option').count().catch(() => 0)
     if (opts === 0) { empty++; continue }
     // Un seul choix n'est un défaut que dans un FORMULAIRE (un champ réduit à son
@@ -225,24 +242,49 @@ async function probeSelects(page, route, vp, push) {
  * Le bouton est toujours inventorié ; il n'est cliqué que si son libellé
  * annonce une ouverture ET ne contient aucun verbe destructeur.
  */
-async function probeDialogs(page, route, vp, push) {
+async function probeDialogs(page, route, vp, push, budget) {
   const buttons = page.locator('button:visible, [role="button"]:visible')
   const total = Math.min(await buttons.count().catch(() => 0), 400)
   const opened = []
   let unclosed = 0
+  let attempts = 0
   for (let i = 0; i < total && opened.length < 3; i++) {
+    // Deux bornes, parce qu'un écran peut offrir des centaines de boutons :
+    // le temps (budget partagé avec les onglets et les listes) et le nombre de
+    // clics tentés. Sans elles, un bouton que recouvre une fenêtre restée
+    // ouverte coûtait 2,5 s de délai × 400 = seize minutes PAR ÉCRAN, et la
+    // tournée entière s'arrêtait là (mesuré le 29/09/2026 : quatre ouvriers
+    // figés 15 min sur des écrans `/settings/*`).
+    if (Date.now() > budget || attempts >= 30) break
     const b = buttons.nth(i)
     const label = (((await b.getAttribute('aria-label').catch(() => null)) || (await b.textContent().catch(() => '')) || '')).trim().replace(/\s+/g, ' ').slice(0, 40)
     if (!label || !isOpener(label)) continue
+    attempts++
     const ok = await b.click({ timeout: 2500 }).then(() => true).catch(() => false)
     if (!ok) continue
     await page.waitForTimeout(450)
+    // Un clic peut NAVIGUER : un lien de hub se présente comme un bouton. La
+    // fenêtre trouvée alors appartient à un AUTRE écran. Mesuré le 29/09/2026 :
+    // « Nouvel avoir » attribué à `/commercial`, un hub qui n'a aucune fenêtre —
+    // c'était la fenêtre des avoirs, ouverte après avoir suivi une carte du hub.
+    if (new URL(page.url()).pathname !== route.path) {
+      await page.goto(BASE + route.path, { waitUntil: 'domcontentloaded' }).catch(() => {})
+      await settle(page, 6000)
+      break
+    }
     const dlg = await page.evaluate(dialogInfo)
     if (dlg.open) {
       opened.push(label)
       if (dlg.textLength < 20) push(finding(route, 'modal_vide', `« ${label} » (${dlg.textLength} car.)`, vp))
       if (!dlg.title) push(finding(route, 'modal_sans_titre', `« ${label} » → ${dlg.textSample.slice(0, 60)}`, vp))
-      if (dlg.fields > 0 && dlg.namedFields < dlg.fields) push(finding(route, 'modal_champ_sans_nom', `« ${label} » ${dlg.namedFields}/${dlg.fields} champ(s) nommé(s)`, vp))
+      if (dlg.fields > 0 && dlg.namedFields < dlg.fields) {
+        // Le détail commence par les comptes (empreinte stable) puis NOMME les
+        // champs fautifs : « 11/13 » ne disait pas lequel corriger (ajouté le
+        // 29/09/2026). L'empreinte ne lit que les 120 premiers caractères, donc
+        // l'ajout ne déplace pas une entrée de registre.
+        const which = (dlg.unnamedFields ?? []).slice(0, 2).join(' | ')
+        push(finding(route, 'modal_champ_sans_nom', `« ${label} » ${dlg.namedFields}/${dlg.fields} champ(s) nommé(s) — ${which}`, vp))
+      }
       if (dlg.widerThanViewport || dlg.tallerThanViewport) push(finding(route, 'modal_deborde', `« ${label} » ${dlg.width}×${dlg.height}`, vp))
       await page.keyboard.press('Escape')
       await page.waitForTimeout(350)
@@ -325,9 +367,14 @@ async function visit(page, route, vpName, findings) {
     }
     verdictsFromDom(route, dom, state, vpName, push)
     if (!LIGHT && !dom.errorBoundary && !dom.isBlank) {
-      const t = await probeTabs(page, route, vpName, push)
-      const s = await probeSelects(page, route, vpName, push)
-      const d = await probeDialogs(page, route, vpName, push)
+      // Budget d'interaction : 90 s par écran et par gabarit, partagé entre les
+      // onglets, les listes et les fenêtres. Au-delà, on garde ce qui a été
+      // mesuré : mieux vaut une tournée complète qu'un écran mesuré à fond et
+      // trois cents jamais visités.
+      const budget = Date.now() + 90_000
+      const t = await probeTabs(page, route, vpName, push, budget)
+      const s = await probeSelects(page, route, vpName, push, budget)
+      const d = await probeDialogs(page, route, vpName, push, budget)
       inter = { tabs: `${t.tried}/${t.tabs}`, selects: s.selects, emptySelects: s.empty, buttonsSeen: d.buttonsSeen, opened: d.opened }
     }
     const fresh = findings.slice(before)
@@ -367,7 +414,7 @@ async function main() {
   // chacun, aucun shard écrit).
   const flush = (finishedAt = null) => {
     fs.writeFileSync(shardFile, JSON.stringify({
-      shard: SHARD, of: OF, base: BASE, account: account.email, viewports: VIEWPORT_NAMES,
+      shard: SHARD, of: OF, run: RUN, base: BASE, account: account.email, viewports: VIEWPORT_NAMES,
       startedAt, finishedAt: finishedAt ?? new Date().toISOString(), routesVisited: summaries.length, findings, summaries,
     }, null, 2))
   }
@@ -385,6 +432,12 @@ async function main() {
       serviceWorkers: 'block',
     })
     const page = await context.newPage()
+    // Le guide de bienvenue se garde une fois pour toutes (`compta-onboarded`) et
+    // n'a rien à faire sur les 334 écrans : sans ce drapeau il recouvre chaque
+    // page, et l'émulation tactile ne sait pas atteindre son bouton « Passer »
+    // (mesuré le 29/09/2026 : quarante verdicts faux en gabarit téléphone, tous
+    // à propos du guide). Sa géométrie est vérifiée à part, à la main.
+    await page.addInitScript(() => { try { localStorage.setItem('compta-onboarded', 'true') } catch { /* stockage indisponible */ } })
     // Chaque contexte a son propre stockage : la fenêtre de bienvenue peut
     // légitimement réapparaître ici. Au sein d'un même contexte, non.
     overlayAlreadyDismissed = false
@@ -395,6 +448,11 @@ async function main() {
       const mark = r.sessionLost ? ' (SESSION PERDUE)' : ''
       console.log(`[ouvrier ${SHARD}] ${r.viewport.padEnd(7)} ${r.path} → ${r.findings} défaut(s), ${r.ms} ms${mark}`)
       flush()
+      // L'API ne répond plus : continuer ne mesurerait que des écrans vides.
+      if (envBroken) {
+        console.log(`[ouvrier ${SHARD}] pile locale tombée (502) à la ${summaries.length}ᵉ visite — tournée arrêtée sans rien imputer aux écrans.`)
+        process.exit(3)
+      }
       if (r.sessionLost) { lost = true; break }
       if (browserGone) { console.log(`[ouvrier ${SHARD}] navigateur perdu à la ${summaries.length}ᵉ visite — tournée arrêtée sans rien imputer au produit.`); lost = true; break }
     }

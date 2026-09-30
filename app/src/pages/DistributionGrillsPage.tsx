@@ -175,7 +175,7 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
                     <input className="input text-xs" placeholder="A001" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)} />
                   </TableCell>
                   <TableCell>
-                    <input className="input text-xs text-right w-24" type="number" value={line.percentage} onChange={(e) => updateLine(idx, 'percentage', Number(e.target.value))} />
+                    <input aria-label={t('grills.percentage')} className="input text-xs text-right w-24" type="number" value={line.percentage} onChange={(e) => updateLine(idx, 'percentage', Number(e.target.value))} />
                   </TableCell>
                   <TableCell>
                     {lines.length > 1 && (

@@ -323,6 +323,8 @@
     "loading": "جار التحميل...",
     "noData": "لا توجد بيانات",
     "noResults": "لا توجد نتائج",
+    "noEmployeeRecord": "لا يوجد ملف موظف مرتبط بحسابك",
+    "noEmployeeRecordHint": "اطلب من المسؤول ربط حسابك بملف موظف.",
     "error": "خطأ",
     "success": "نجاح",
     "warning": "تحذير",

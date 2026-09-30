@@ -57,6 +57,14 @@ function main() {
     console.error(`Aucun shard dans ${path.relative(APP, SHARDS)} — lancer d'abord « node scripts/qa/dispatch.mjs ».`)
     process.exit(2)
   }
+  // Intégrité : des shards de deux tournées ne se jugent pas ensemble. Une
+  // session parallèle (ou un run oublié) écrivait dans le même dossier et le
+  // verdict mélangeait deux mesures (constaté le 29/09/2026).
+  const runs = new Set(shards.map((s) => s.run).filter(Boolean))
+  if (runs.size > 1) {
+    console.error(`Refus : ${runs.size} tournées différentes dans .qa-out/shards (${[...runs].join(' · ')}) — relancer la tournée.`)
+    process.exit(2)
+  }
   const findings = []
   const seen = new Set()
   const summaries = []
