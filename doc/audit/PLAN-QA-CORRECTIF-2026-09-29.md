@@ -19,11 +19,11 @@
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
 | Critiques | **7** — **tous corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016, ven-005) |
 | Hauts | **23** — dont **15 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015, stk-012, stk-005, stk-013, ven-008, ven-012, ven-010) |
-| Moyens | **24** — dont **4 corrigés** (cpt-005, ven-006, ven-007, ven-011, ven-015) |
+| Moyens | **24** — dont **6 corrigés** (cpt-005, ven-006, ven-007, ven-011, ven-015, **ven-001, ach-002**) |
 | Bas | **20** — dont **2 corrigés** (ven-003, pil-009) |
-| Déjà corrigés et commités | **25 commits** (§ 2) |
-| **Restant à corriger** | **≈ 40 défauts**, en **8 lots** (§ 4 à § 11) — le lot « reste des ventes » se réduit à **B3** |
-| Charge estimée | **≈ 16 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
+| Déjà corrigés et commités | **26 commits** (§ 2) |
+| **Restant à corriger** | **≈ 39 défauts**, en **8 lots** (§ 4 à § 11) — le lot « reste des ventes » se réduit à **B3**, désormais **débloqué** (A4 livré le 30/09) |
+| Charge estimée | **≈ 15 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
 **Les six défauts qui bloquaient un parcours métier entier — tous fermés** (voir le détail plus bas) :
@@ -86,6 +86,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `318` | **A4 — ven-001 / ach-002** 🟡 fiche client et fournisseur sans SIRET, pays, CP/ville, conditions de paiement | migration **318** : `country` devient un code ISO 3166-1 alpha-2 (existant normalisé, défaut `'France'` retiré, `CHECK … NOT VALID` à deux lettres) ; `payment_term_id` sous clé étrangère **composite** (doctrine 237) ; écran : SIRET + clé de Luhn + « Vérifier », pays ISO, CP, ville, conditions en liste, « Société parente » et « Commercial » en listes | `318_*_tests` **6/6** (rouge avant : 4 rouges / 2 verts) ; `PartnerIdentityForm.test.tsx` **7/7** (rouge avant : 7 rouges, pages revenues à leur état d'avant) ; `siret.test.ts` **8/8** ; **237 8/8** (une régression de clé étrangère mono-colonne attrapée et corrigée dans le commit) ; Vitest **1542/1542** |
 | `4721f49` | **B2** écran, **B4/B5** avoir, **B6** dates de la chaîne, **B8** PDF, **B9** « En retard », **B11** `<div>`/`<tbody>`, **B12** confirmation + échéance | sélecteur d'article et compte de vente par ligne ; avoir pré-rempli depuis la facture ; `/sales/credits?invoice=<id>` ; dates d'origine de la chaîne ; `src/lib/invoicePdf.ts` (PDF 1.4 écrit à la main, sans dépendance) ; statut « En retard » calculé ; `<Fragment>` ; `confirmSync` + échéance par conditions de paiement | `invoicePdf.test.ts` **5/5** ; `DraftDocumentPolicy.test.tsx` (MIME `application/pdf`) ; Vitest **1527/1527** ; `tsc`/`oxlint`/i18n verts |
 | `c3e95b8` | **B2 — ven-008** 🟠 facture directe créditée en 707 ; **D-QA-1** facture directe d'un article stocké qui ne sort rien ; **B4 — ven-012** 🟠 avoir au prorata sans `invoice_ref` ; **B6 — ven-006** 🟡 facture sans nom de client et datée du jour ; **B7 — ven-007** 🟡 numérotation non chronologique | migration **317** : `invoice_lines.account_code` ; comptes article → famille → ligne → 706000/707000 ; sortie de stock à la validation d'une facture directe (garde anti-double, message nommé) ; nom de client recopié + rattrapage ; date du devis conservée ; refus d'une facture antérieure | `317_*_tests` **12/12** (rouge avant : 8 rouges / 3 verts mesurés en restaurant les définitions de la 316) ; `180` **42/42** (E12/E13 alignés) ; `213` **6/6** ; `228` **7/7** (les nouvelles fonctions ne sont pas exécutables par PUBLIC) ; `tsc`/`oxlint`/i18n verts |
 | `d709bf8` | **D1 — stk-012** 🟠 sortie de caisse d'un produit fini en 603/310 | migration **315** : une sortie prend les comptes de l'ENTRÉE qui a nourri la couche consommée (`piece_number = 'STK-…'`, ou `reference = 'JE-OF-…'` pour la production) ; article et famille restent le repli | `315_*_tests` **6/6** (T01 rouge avant) ; familles 173/230/242/251/253/254/281 vertes ; rejeu sur la recette : 713500 D 88 / 355000 C 88, 310000 intouché |
@@ -300,15 +301,64 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Test** : SQL (solde = factures − avoirs − règlements) ; attendus Dubois **162,20**,
   Müller **250,00**, Martin **0,00**.
 
-### A4 — ven-001 🟡 / ach-002 🟡 — fiches client et fournisseur sans SIRET, pays, CP/ville, conditions
-- **Correctif front** (`CustomersPage`, `SuppliersPage`) :
-  - ajouter SIRET (validé par clé de Luhn, et bouton « Vérifier » vers `verify-siret`) ;
-  - ajouter pays (liste ISO), code postal et ville ;
-  - ajouter les conditions de paiement (`payment_term_id`, liste) ;
-  - remplacer « Société parente (ID) » et « Commercial assigné (ID) » par des **listes**
-    (sociétés existantes, utilisateurs) au lieu d'un UUID tapé.
-- **Base** : ne plus forcer `country='France'` ; défaut = pays de la société **seulement si** non saisi.
-- **Test** : Vitest du formulaire (SIRET invalide refusé) ; `check-written-columns`.
+### A4 — ven-001 🟡 / ach-002 🟡 — fiches client et fournisseur sans SIRET, pays, CP/ville, conditions — **✅ CORRIGÉ** (migration 318)
+- **Constat (base de recette, avant)** : 643 clients et 160 fournisseurs, **tous**
+  en `country = 'France'`, **0 SIRET** saisi, aucun code postal ni ville par la
+  fiche, et « Société parente (ID) » / « Commercial assigné (ID) » demandaient un
+  UUID tapé. Un nom de pays n'est pas un code : rien ne distinguait un client
+  français d'un client belge, et le générateur Factur-X écrivait « France » là où
+  EN 16931 attend deux lettres.
+- **Base (migration `318_partner_identity_country.sql`)** :
+  - `country` devient un **code ISO 3166-1 alpha-2** ; l'existant est normalisé
+    (mesuré : 0 client et 0 fournisseur portent encore un nom de pays) ;
+  - le défaut `'France'` est **retiré** — un tiers dont on ne connaît pas le pays
+    n'en porte pas. Le repli « pays de la société seulement si non saisi » est
+    fait par l'écran, à la saisie ;
+  - `payment_term_id` (clé étrangère sur `payment_terms`) : les conditions de
+    paiement deviennent une **liste**. Le texte `payment_terms` reste tenu — il
+    porte le nom du modèle choisi, et l'échéance d'une facture née d'un bon de
+    livraison le lit (`misc.ts`) ;
+  - une **garde** : `country` renseigné = deux lettres, `CHECK … NOT VALID`
+    (l'existant non normalisable reste rélisible, sera corrigé à la main puis
+    `VALIDATE CONSTRAINT`).
+- **Écran** (`CustomersPage`, `SuppliersPage`) : SIRET **avec clé de Luhn** et
+  bouton « Vérifier » vers `verify-siret` (qui ne dit « vérifié à la source »
+  que si l'INSEE a répondu) ; **pays** (liste ISO, repli sur le pays de la
+  société) ; code postal ; ville ; **conditions de paiement** (liste) ;
+  « Société parente » et « Commercial » deviennent des **listes** — le
+  commercial vient de `sales_representatives`, table que vise la clé étrangère
+  existante (le plan parlait d'« utilisateurs » : la clé étrangère dit
+  autrement, c'est elle qui fait foi).
+- **Test rouge avant** : `318_partner_identity_country_tests.sql` — **4 rouges /
+  1 vert** mesurés avant la migration (T01 nom de pays accepté, T03 défaut
+  `France`, T04 colonne `payment_term_id` absente, T05 803 lignes en nom de
+  pays ; T02 est la non-régression voulue). `PartnerIdentityForm.test.tsx` —
+  **7 rouges** mesurés en revenant les deux pages à leur état d'avant.
+- **Après** : `318_*_tests` **6/6** ; `PartnerIdentityForm.test.tsx` **7/7** ;
+  `siret.test.ts` **8/8** ; non-régression **237 (8/8), 312 (7/7), 313 (6/6),
+  317 (12/12), 180 (22/22), 213 (6/6), 228 (7/7), 272 (5/5)** ;
+  Vitest **1542/1542** ; `tsc`/`oxlint`/i18n/`check-written-columns`/
+  `check-unchecked-writes` verts.
+- ⚠️ **Une régression de ma 318, trouvée par le harnais et corrigée dans le même
+  commit** : la première version posait `payment_term_id` en clé étrangère
+  **mono-colonne** sur `payment_terms(id)` — et le test **237 T08** est
+  précisément le garde-fou qui l'interdit (« aucune clé étrangère mono-colonne ne
+  relie deux tables cloisonnées »). C'était une vraie fuite d'isolation : un
+  client de la société A pouvait pointer vers les conditions d'une société B.
+  Corrigé en clé étrangère **composite** `(tenant_id, payment_term_id)` →
+  `payment_terms (tenant_id, id)`, avec `ON DELETE SET NULL (payment_term_id)`
+  (la forme de la 237 : seule la référence se détache, `tenant_id` reste) ; le
+  scénario **T06** de la 318 vérifie maintenant qu'une condition d'une autre
+  société est refusée. 237 est repassé **8/8**.
+  *Leçon* : sur ce dépôt, la clé étrangère d'une nouvelle colonne se pose
+  composite d'emblée, ou elle attend 237.
+- **Ce qu'A4 ne fait pas** : la **capture d'écran** `qa/screenshots/ven-001-after.png`
+  (elle demande un navigateur et le serveur Vite du worktree, non montés ici —
+  même limite que C1, § 3) ; la vérification à l'écran dans le navigateur ;
+  `A5` (IBAN) et `A6` (colonne « Total ») restent ouverts.
+- **Débloque** : **B3** (client UE : autoliquidation, mention, `CategoryCode=AE`),
+  qui attendait le pays du client.
+
 
 ### A5 — ach-003 🟡 — IBAN invalide accepté
 - **Correctif** : validation IBAN (longueur par pays + clé mod 97) côté écran **et** contrainte
@@ -322,9 +372,11 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 5. Lot B — Ventes (≈ 4 j)
 
-> **État au 30/09** : B1, B2, B4, B5, B6, B7, B8, B9, B10, B11, B12 **fermés**
+> **État au 30/09, après A4** : B1, B2, B4, B5, B6, B7, B8, B9, B10, B11, B12 **fermés**
 > (`c3e95b8` la base, `4721f49` l'écran). **B3 reste ouvert** (ven-009, client UE :
-> autoliquidation, mention, Factur-X `AE`) et attend **A4** (pays du client).
+> autoliquidation, mention, Factur-X `AE`) et **n'attend plus rien** : son
+> dépendance, A4 (le pays du client), est livrée par la 318 — le pays est un code
+> ISO à deux lettres, qu'on sait lire et vérifier.
 > Trois points signalés et laissés ouverts : la **relance** de B9, la **fenêtre
 > « Voir »** qui n'affiche pas les lignes d'une facture (B6), et la mention
 > d'autoliquidation du PDF (B3).
@@ -394,7 +446,12 @@ et les modèles de saisie ne lisent **que** cette table.
     ligne 06 « autres opérations non imposables ») ;
   - Factur-X : `CategoryCode=AE` pour une prestation autoliquidée, `K` pour une livraison
     intracommunautaire, avec `ExemptionReason`.
-- **Dépend de** : A4 (pays du client).
+- **Dépend de** : ~~A4 (pays du client)~~ — **délivré le 30/09 par la 318** : le
+  pays du client est un code ISO 3166-1 alpha-2 (`customers.country`), sans nom
+  de pays et sans défaut « France », gardé par une contrainte ; `isEuCountry()`
+  et `EU_COUNTRY_CODES` sont là pour déduire la position fiscale. Le reste de B3
+  (mention, `vat_code`, `CategoryCode=AE`) est écrit contre ce modèle et n'a plus
+  de préalable.
 - **Tests** :
   - SQL : écriture avec `vat_code`, et CA3 qui porte le montant en non imposable ;
   - Vitest : générateur Factur-X, catégorie AE et motif d'exonération.
@@ -913,13 +970,13 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 6 | **E1** ✅ | Fenêtres qui débordent (Modal) | 0,5 j | — |
 | 7 | **D1, D2, D4** ✅ | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
-| 9 | **B2–B9, B11, B12** ✅ (reste **B3**) | Reste des ventes | 3 j (livrés) | A4 pour B3 |
-| 9b | B3 (ven-009) | Client UE : autoliquidation, mention, Factur-X AE | 0,5 j | A4 (pays du client) |
+| 9 | **B2–B9, B11, B12** ✅ (reste **B3**) | Reste des ventes | 3 j (livrés) | — |
+| 9b | B3 (ven-009) | Client UE : autoliquidation, mention, Factur-X AE | 0,5 j | **débloqué** (A4 livré) |
 | 10 | C2–C6 | Reste de la paie | 2,5 j | C1 |
 | 11 | D3, D5–D12 | Reste du stock et de la caisse | 2 j | D1 |
 | 12 | F1–F7 | Comptabilité | 1,5 j | — |
 | 13 | G1–G5 | Analytique, projets | 1,5 j | B2 |
-| 14 | A4–A6 | Fiches tiers | 1 j | — |
+| 14 | **A4** ✅, A5–A6 | Fiches tiers | 1 j (A4 livré) | — |
 | 15 | E2 + § 12 | Recette finale, contrôle croisé, clôture, rapport | 3 j | tout |
 | | | **Total** | **≈ 22 j** | |
 

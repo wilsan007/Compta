@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
+import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV } from '@/components/ui'
 import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries/partners'
-import { getCustomerBalances } from '@/lib/queries/accounting'
+import { getCustomerBalances, getCompanySettings } from '@/lib/queries/accounting'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
+import { verifySiret, type SiretCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
+import { ISO_COUNTRIES, normalizeCountryCode } from '@/lib/countries'
+import { hasSiret, isSiretValid } from '@/lib/siret'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
-import type { Customer } from '@/types'
+import type { Customer, PaymentTerm, SalesRepresentative } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -158,6 +164,7 @@ export function CustomersPage() {
       {showForm && (
         <CustomerForm
           customer={editing}
+          clients={customers}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); loadCustomers() }}
         />
@@ -184,8 +191,10 @@ export function CustomersPage() {
   )
 }
 
-function CustomerForm({ customer, onClose, onSaved }: {
+function CustomerForm({ customer, clients, onClose, onSaved }: {
   customer: Customer | null
+  /** A4 (318) — « Société parente » devient une liste : les clients de la société. */
+  clients: Customer[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -203,14 +212,72 @@ function CustomerForm({ customer, onClose, onSaved }: {
   const [salesRepId, setSalesRepId] = useState(customer?.sales_rep_id || '')
   const [accountTiers, setAccountTiers] = useState(customer?.account_tiers || '')
   const [accountCollectif, setAccountCollectif] = useState(customer?.account_collectif || '411000')
+  // A4 (318) : l'identité et l'adresse du tiers — absentes de la fiche (ven-001).
+  const [siret, setSiret] = useState(customer?.siret || '')
+  const [city, setCity] = useState(customer?.city || '')
+  const [postalCode, setPostalCode] = useState(customer?.postal_code || '')
+  const [country, setCountry] = useState(normalizeCountryCode(customer?.country) || '')
+  const [paymentTermId, setPaymentTermId] = useState(customer?.payment_term_id || '')
+  const [terms, setTerms] = useState<PaymentTerm[]>([])
+  const [reps, setReps] = useState<SalesRepresentative[]>([])
+  const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
+  const [checkingSiret, setCheckingSiret] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Les listes du formulaire : conditions de paiement, commerciaux, et le pays
+  // de la société proposé quand le champ pays est laissé vide.
+  useEffect(() => {
+    getPaymentTerms().then(setTerms).catch(err => console.error('getPaymentTerms:', err))
+    getSalesRepresentatives().then(setReps).catch(err => console.error('getSalesRepresentatives:', err))
+    if (customer) return
+    getCompanySettings()
+      .then(cs => {
+        const code = normalizeCountryCode(cs?.country_code || cs?.country)
+        if (code) setCountry(code)
+      })
+      .catch(err => console.error('getCompanySettings:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement unique a l'ouverture
+  }, [])
+
+  async function handleCheckSiret() {
+    setCheckingSiret(true)
+    try {
+      setSiretCheck(await verifySiret(siret.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } finally {
+      setCheckingSiret(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) { toast('warning', tCommon('form.requiredField'), t('customers.name')); return }
+    // A4 (318) : un SIRET dont la clé de Luhn est fausse n'est pas enregistré.
+    // La clé de contrôle se vérifie au clavier ; la vérification à la source
+    // (INSEE) reste un bouton, jamais une obligation.
+    if (hasSiret(siret) && !isSiretValid(siret)) {
+      toast('warning', tCommon('form.requiredField'), t('customers.siretInvalid'))
+      return
+    }
+    const code = normalizeCountryCode(country)
+    if (country.trim() && !code) {
+      toast('warning', tCommon('toast.warning'), t('customers.countryInvalid'))
+      return
+    }
+    const terme = terms.find((x) => x.id === paymentTermId)
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null, account_tiers: accountTiers || null, account_collectif: accountCollectif || '411000' }
+      const data = {
+        name, contact_name: contactName, email, phone, address, vat_number: vatNumber,
+        is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null,
+        account_tiers: accountTiers || null, account_collectif: accountCollectif || '411000',
+        // A4 (318) — l'identité du tiers. `payment_terms` (texte) reste tenu :
+        // l'échéance d'une facture née d'un bon de livraison le lit.
+        siret: siret.trim() || null, city: city || null, postal_code: postalCode || null,
+        country: code, payment_term_id: paymentTermId || null,
+        payment_terms: terme ? terme.name : '',
+      }
       if (customer) {
         await updateCustomer(customer.id, data)
         toast('success', t('customers.title'), tCommon('toast.updated'))
@@ -239,13 +306,59 @@ function CustomerForm({ customer, onClose, onSaved }: {
           <Input label={t('customers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('customers.placeholders.email')} />
           <Input label={t('customers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('customers.placeholders.phone')} />
           <Input label={t('customers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('customers.placeholders.address')} />
+          <Input label={t('customers.zipCode')} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="75001" />
+          <Input label={t('customers.city')} value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('customers.placeholders.city')} />
+          <Select
+            label={t('customers.country')}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            options={[{ value: '', label: t('customers.countryUnset') }, ...ISO_COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))]}
+          />
+          <Input label={t('customers.siret')} value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="732 829 320 00074" />
+          {hasSiret(siret) && (
+            <VerificationLine
+              busy={checkingSiret}
+              disabled={!siret.trim()}
+              onCheck={handleCheckSiret}
+              result={siretCheck}
+              labels={{
+                check: t('customers.checkSiret'),
+                checking: t('customers.checkingSiret'),
+                atSource: t('customers.siretAtSource'),
+                formatOnly: t('customers.siretFormatOnly'),
+                invalid: t('customers.siretInvalidKey', { reason: '{{reason}}' }),
+              }}
+            />
+          )}
           <Input label={t('customers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder="FR12345678901" />
+          <Select
+            label={t('customers.paymentTerms')}
+            value={paymentTermId}
+            onChange={(e) => setPaymentTermId(e.target.value)}
+            options={[{ value: '', label: t('customers.paymentTermsUnset') }, ...terms.map((x) => ({ value: x.id, label: x.name }))]}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} />
             {t('customers.isCompany')}
           </label>
-          <Input label={t('customers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('customers.parentIdPlaceholder')} />
-          <Input label={t('customers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('customers.salesRepIdPlaceholder')} />
+          <Select
+            label={t('customers.parentId')}
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            options={[
+              { value: '', label: t('customers.parentIdUnset') },
+              ...clients.filter((c) => c.id !== customer?.id).map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+          <Select
+            label={t('customers.salesRepId')}
+            value={salesRepId}
+            onChange={(e) => setSalesRepId(e.target.value)}
+            options={[
+              { value: '', label: t('customers.salesRepIdUnset') },
+              ...reps.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+          />
           <Input label={t('customers.accountTiers')} value={accountTiers} onChange={(e) => setAccountTiers(e.target.value)} placeholder="CLI00001" />
           <Input label={t('customers.accountCollectif')} value={accountCollectif} onChange={(e) => setAccountCollectif(e.target.value)} placeholder="411000" />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">

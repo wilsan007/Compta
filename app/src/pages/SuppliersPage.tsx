@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV, Modal } from '@/components/ui'
+import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV, Modal } from '@/components/ui'
 import { getSuppliers, deleteSupplier, createSupplier, updateSupplier } from '@/lib/queries/partners'
-import { getSupplierBalances } from '@/lib/queries/accounting'
+import { getSupplierBalances, getCompanySettings } from '@/lib/queries/accounting'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
+import { verifySiret, type SiretCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
+import { ISO_COUNTRIES, normalizeCountryCode } from '@/lib/countries'
+import { hasSiret, isSiretValid } from '@/lib/siret'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Package, Plus, Search, Trash2, Edit, Mail, Download, Contact as ContactIcon } from 'lucide-react'
-import type { Supplier } from '@/types'
+import type { Supplier, PaymentTerm, SalesRepresentative } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -157,6 +163,7 @@ export function SuppliersPage() {
       {showForm && (
         <SupplierForm
           supplier={editing}
+          fournisseurs={suppliers}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); loadSuppliers() }}
         />
@@ -183,8 +190,10 @@ export function SuppliersPage() {
   )
 }
 
-function SupplierForm({ supplier, onClose, onSaved }: {
+function SupplierForm({ supplier, fournisseurs, onClose, onSaved }: {
   supplier: Supplier | null
+  /** A4 (318) — « Société parente » devient une liste : les fournisseurs. */
+  fournisseurs: Supplier[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -202,14 +211,67 @@ function SupplierForm({ supplier, onClose, onSaved }: {
   const [salesRepId, setSalesRepId] = useState(supplier?.sales_rep_id || '')
   const [accountTiers, setAccountTiers] = useState(supplier?.account_tiers || '')
   const [accountCollectif, setAccountCollectif] = useState(supplier?.account_collectif || '401000')
+  // A4 (318) : l'identité et l'adresse du tiers — absentes de la fiche (ach-002).
+  const [siret, setSiret] = useState(supplier?.siret || '')
+  const [city, setCity] = useState(supplier?.city || '')
+  const [postalCode, setPostalCode] = useState(supplier?.postal_code || '')
+  const [country, setCountry] = useState(normalizeCountryCode(supplier?.country) || '')
+  const [paymentTermId, setPaymentTermId] = useState(supplier?.payment_term_id || '')
+  const [terms, setTerms] = useState<PaymentTerm[]>([])
+  const [reps, setReps] = useState<SalesRepresentative[]>([])
+  const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
+  const [checkingSiret, setCheckingSiret] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    getPaymentTerms().then(setTerms).catch(err => console.error('getPaymentTerms:', err))
+    getSalesRepresentatives().then(setReps).catch(err => console.error('getSalesRepresentatives:', err))
+    if (supplier) return
+    getCompanySettings()
+      .then(cs => {
+        const code = normalizeCountryCode(cs?.country_code || cs?.country)
+        if (code) setCountry(code)
+      })
+      .catch(err => console.error('getCompanySettings:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement unique a l'ouverture
+  }, [])
+
+  async function handleCheckSiret() {
+    setCheckingSiret(true)
+    try {
+      setSiretCheck(await verifySiret(siret.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } finally {
+      setCheckingSiret(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) { toast('warning', tCommon('toast.warning'), t('suppliers.nameRequired')); return }
+    // A4 (318) : un SIRET dont la clé de Luhn est fausse n'est pas enregistré.
+    if (hasSiret(siret) && !isSiretValid(siret)) {
+      toast('warning', tCommon('toast.warning'), t('suppliers.siretInvalid'))
+      return
+    }
+    const code = normalizeCountryCode(country)
+    if (country.trim() && !code) {
+      toast('warning', tCommon('toast.warning'), t('suppliers.countryInvalid'))
+      return
+    }
+    const terme = terms.find((x) => x.id === paymentTermId)
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null, account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000' }
+      const data = {
+        name, contact_name: contactName, email, phone, address, vat_number: vatNumber,
+        is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null,
+        account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000',
+        // A4 (318) — l'identité du tiers.
+        siret: siret.trim() || null, city: city || null, postal_code: postalCode || null,
+        country: code, payment_term_id: paymentTermId || null,
+        payment_terms: terme ? terme.name : '',
+      }
       if (supplier) {
         await updateSupplier(supplier.id, data)
         toast('success', t('suppliers.updated'))
@@ -248,13 +310,59 @@ function SupplierForm({ supplier, onClose, onSaved }: {
           <Input label={t('suppliers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('suppliers.placeholders.email')} />
           <Input label={t('suppliers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('suppliers.placeholders.phone')} />
           <Input label={t('suppliers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('suppliers.placeholders.address')} />
+          <Input label={t('suppliers.zipCode')} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="75001" />
+          <Input label={t('suppliers.city')} value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('suppliers.placeholders.city')} />
+          <Select
+            label={t('suppliers.country')}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            options={[{ value: '', label: t('suppliers.countryUnset') }, ...ISO_COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))]}
+          />
+          <Input label={t('suppliers.siret')} value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="732 829 320 00074" />
+          {hasSiret(siret) && (
+            <VerificationLine
+              busy={checkingSiret}
+              disabled={!siret.trim()}
+              onCheck={handleCheckSiret}
+              result={siretCheck}
+              labels={{
+                check: t('suppliers.checkSiret'),
+                checking: t('suppliers.checkingSiret'),
+                atSource: t('suppliers.siretAtSource'),
+                formatOnly: t('suppliers.siretFormatOnly'),
+                invalid: t('suppliers.siretInvalidKey', { reason: '{{reason}}' }),
+              }}
+            />
+          )}
           <Input label={t('suppliers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder={t('suppliers.placeholders.vatNumber')} />
+          <Select
+            label={t('suppliers.paymentTerms')}
+            value={paymentTermId}
+            onChange={(e) => setPaymentTermId(e.target.value)}
+            options={[{ value: '', label: t('suppliers.paymentTermsUnset') }, ...terms.map((x) => ({ value: x.id, label: x.name }))]}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} />
             {t('suppliers.isCompany')}
           </label>
-          <Input label={t('suppliers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('suppliers.parentIdPlaceholder')} />
-          <Input label={t('suppliers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('suppliers.salesRepIdPlaceholder')} />
+          <Select
+            label={t('suppliers.parentId')}
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            options={[
+              { value: '', label: t('suppliers.parentIdUnset') },
+              ...fournisseurs.filter((f) => f.id !== supplier?.id).map((f) => ({ value: f.id, label: f.name })),
+            ]}
+          />
+          <Select
+            label={t('suppliers.salesRepId')}
+            value={salesRepId}
+            onChange={(e) => setSalesRepId(e.target.value)}
+            options={[
+              { value: '', label: t('suppliers.salesRepIdUnset') },
+              ...reps.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+          />
           <Input label={t('suppliers.accountTiers')} value={accountTiers} onChange={(e) => setAccountTiers(e.target.value)} placeholder="FOU00001" />
           <Input label={t('suppliers.accountCollectif')} value={accountCollectif} onChange={(e) => setAccountCollectif(e.target.value)} placeholder="401000" />
         </div>

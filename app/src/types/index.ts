@@ -35,6 +35,10 @@ export interface Customer {
   credit_blocked?: boolean
   account_tiers?: string | null
   account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
 }
 
 export interface CustomerContact {
@@ -77,6 +81,10 @@ export interface Supplier {
   email_settings?: Record<string, any> | null
   account_tiers?: string | null
   account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
 }
 
 export interface SupplierContact {

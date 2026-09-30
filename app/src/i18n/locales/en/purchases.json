@@ -283,8 +283,21 @@
       "email": "contact@supplier.com",
       "phone": "0612345678",
       "address": "15 Commerce Street, 75011 Paris",
-      "vatNumber": "FR98765432109"
-    }
+      "vatNumber": "FR98765432109",
+      "city": "Paris"
+    },
+    "checkSiret": "Verify",
+    "checkingSiret": "Verifying…",
+    "siretAtSource": "Verified at source",
+    "siretFormatOnly": "Format and check key valid — source verification not configured",
+    "siretInvalidKey": "Invalid: {{reason}}",
+    "siretInvalid": "Invalid SIRET: 14 digits and a check key (Luhn) are required",
+    "countryUnset": "— not set —",
+    "countryInvalid": "Invalid country: two-letter ISO code (e.g. BE)",
+    "paymentTermsUnset": "— not set —",
+    "parentIdUnset": "— none —",
+    "salesRepIdUnset": "— none —",
+    "cityPlaceholder": "Paris"
   },
   "automation": {
     "title": "Invoice automation",

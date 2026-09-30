@@ -336,8 +336,21 @@
       "contactName": "Jean Dupont",
       "email": "contact@societe.fr",
       "phone": "0612345678",
-      "address": "12 rue de la Paix, 75001 Paris"
-    }
+      "address": "12 rue de la Paix, 75001 Paris",
+      "city": "Paris"
+    },
+    "checkSiret": "Vérifier",
+    "checkingSiret": "Vérification…",
+    "siretAtSource": "Vérifié à la source",
+    "siretFormatOnly": "Format et clé de contrôle valides — vérification à la source non configurée",
+    "siretInvalidKey": "Invalide : {{reason}}",
+    "siretInvalid": "SIRET invalide : 14 chiffres et clé de contrôle (Luhn) exigés",
+    "countryUnset": "— non renseigné —",
+    "countryInvalid": "Pays invalide : deux lettres de code ISO (ex. BE)",
+    "paymentTermsUnset": "— non renseignées —",
+    "parentIdUnset": "— aucune —",
+    "salesRepIdUnset": "— aucun —",
+    "cityPlaceholder": "Paris"
   },
   "prospects": {
     "title": "Prospects",

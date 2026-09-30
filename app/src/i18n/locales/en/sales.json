@@ -336,8 +336,21 @@
       "contactName": "John Smith",
       "email": "contact@company.com",
       "phone": "0612345678",
-      "address": "12 Peace Street, 75001 Paris"
-    }
+      "address": "12 Peace Street, 75001 Paris",
+      "city": "Paris"
+    },
+    "checkSiret": "Verify",
+    "checkingSiret": "Verifying…",
+    "siretAtSource": "Verified at source",
+    "siretFormatOnly": "Format and check key valid — source verification not configured",
+    "siretInvalidKey": "Invalid: {{reason}}",
+    "siretInvalid": "Invalid SIRET: 14 digits and a check key (Luhn) are required",
+    "countryUnset": "— not set —",
+    "countryInvalid": "Invalid country: two-letter ISO code (e.g. BE)",
+    "paymentTermsUnset": "— not set —",
+    "parentIdUnset": "— none —",
+    "salesRepIdUnset": "— none —",
+    "cityPlaceholder": "Paris"
   },
   "prospects": {
     "title": "Prospects",
