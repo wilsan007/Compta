@@ -125,6 +125,35 @@ L'essentiel en huit lignes :
   aucun effet ») sont dans l'
   [inventaire](doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md).
 
+* **L1 — tranche 5 livrée (30/09) : les cinq candidats directs, et le vocabulaire
+  de la trace.** Les **5 effets** que l'inventaire de la tranche 4 avait rangés
+  « candidat direct » sont tracés par la migration **316** : **écart de change au
+  règlement**, **facturation des temps**, **rappels de paie**, **acomptes de
+  paie**, **appariement d'une ligne de relevé**. Trois points de méthode : pour un
+  effet qui intègre **N documents en un passage** (rappels, acomptes), le lien est
+  au niveau du **DOCUMENT** (payload `lien_par_ligne = false`, décompte et
+  identifiants) ; le compagnon **relit** le marqueur du maillon dans la table —
+  jamais dans `NEW`, car le maillon le pose par un `UPDATE` à l'intérieur de SON
+  déclencheur `AFTER`, et la copie `NEW` ne le porte pas (l'écart de change et
+  l'appariement bancaire ne posaient ainsi **aucun** lien, mesuré par la suite) ;
+  et le **cas ordinaire ne se trace pas** (`sans_effet` est réservé au manque, pas
+  au silence normal). La migration **315** ferme la **limite de vocabulaire** de la
+  tranche 4 : `sans_effet` entre dans le `CHECK` de `chain_traces.resultat`, prouvé
+  par **252 T17** (**17/17 verts**). Des trois branches d'anomalie, celle de
+  l'écart de change est exercée (**316 T03**) ; les deux autres sont **publiées
+  comme non couvertes**. Cumul L1 : **22 effets tracés, 22 contrats**,
+  **15 compagnons** `zz_l1_`, et **12 scénarios** de plus (suite **316**, 12/12).
+  Non-régression : **265 migrations**, **689 verdicts verts, 0 rouge** sur base
+  neuve, **93/93 suites branchées** (porte G5), 12 contrôles du dépôt verts
+  (`check_plpgsql` **non exécutable** dans l'image locale — extension absente).
+  ⚠️ **Trois assertions du socle ont été précisées** parce qu'elles mesuraient plus
+  large que leur étiquette — rouges **sur base neuve** uniquement : **310 T10** et
+  **311 T11** (l'ordre ne se compare qu'entre déclencheurs **métier**, tous deux
+  `AFTER` et partageant un événement : un `BEFORE` est avant par la phase, et deux
+  compagnons L1 voisins n'ont entre eux aucun ordre qui compte) et **311 T09** (le
+  scénario mesure **son** effet, pas tous les liens du document). Détail, chiffres
+  et limites : [preuve](doc/audit/VAGUE-L1-TRANCHE5-2026-09-30.md).
+
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 131 j restants** (recompté le 30/09 : le « ≈ 133 j » porté jusqu'ici
   reprenait 2 j de **W7 déjà livrés**) : **plan correctif des vagues W fermé**

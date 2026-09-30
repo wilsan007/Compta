@@ -557,6 +557,71 @@ BEGIN
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
+-- T17 — Le vocabulaire de trace admet `sans_effet` (migration 315)
+--   La valeur qui manquait : « maillon EXÉCUTÉ, effet NON produit » — distincte
+--   de `ignore`, qui dit qu'un rejeu n'a rien eu à faire. La tranche 4 (314) a
+--   rencontré le cas le premier jour (une note de frais à 0 € n'écrit pas
+--   d'écriture) et ses compagnons s'en tiraient en n'écrivant RIEN : honnête,
+--   mais muet — le tableau de bord du lot L5 aurait compté ce maillon comme un
+--   chaînage qui n'a jamais tourné.
+--   Ce scénario mesure les trois choses qui comptent : la contrainte l'accepte
+--   (table ET partitions), la trace se lit avec zéro ligne écrite, et elle reste
+--   distinguable d'un `ignore`.
+-- ═════════════════════════════════════════════════════════════
+DO $$
+DECLARE
+  t uuid := _mk_tenant('A252T17', false);
+  v_relations int; v_avec int; v_sans int;
+  v_ok boolean := false; v_refuse_ignore boolean := false;
+  v_resultat text; v_lignes int;
+BEGIN
+  -- 1. Toutes les relations du socle portent la sixième valeur
+  SELECT count(*) INTO v_relations
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+  WHERE c.relkind IN ('r', 'p')
+    AND (c.relname = 'chain_traces'
+         OR EXISTS (SELECT 1 FROM pg_inherits i
+                    WHERE i.inhrelid = c.oid AND i.inhparent = 'chain_traces'::regclass));
+
+  SELECT count(*) INTO v_avec FROM pg_constraint k
+  WHERE k.conname = 'chain_traces_resultat_check'
+    AND pg_get_constraintdef(k.oid) LIKE '%sans_effet%';
+  v_sans := v_relations - v_avec;
+
+  -- 2. Une trace `sans_effet` s'écrit et se relit, avec zéro ligne écrite
+  PERFORM chain_apres(t, 'test.sans_effet', 'commande', gen_random_uuid(),
+                      clock_timestamp(), 0, 'sans_effet',
+                      'Maillon exécuté, aucun effet produit (scénario du socle).', NULL, NULL);
+
+  -- Le helper `_traces252` ne rend que (resultat, message) : le nombre de lignes
+  -- se lit directement — le premier jet de ce scénario lisait une colonne qui
+  -- n'existe pas dans son type, et l'erreur a fait SAUTER le verdict (16 verts au
+  -- lieu de 17) : d'où le bloc d'exception ajouté en bas.
+  SELECT count(*), max(ct.lignes_ecrites) INTO v_lignes, v_lignes
+  FROM chain_traces ct
+  WHERE ct.tenant_id = t AND ct.effet = 'test.sans_effet' AND ct.resultat = 'sans_effet';
+  SELECT resultat INTO v_resultat FROM _traces252(t, 'test.sans_effet') LIMIT 1;
+  v_ok := v_resultat = 'sans_effet' AND v_lignes = 0;
+
+  -- 3. Une valeur INCONNUE reste refusée : la contrainte n'a pas été ouverte
+  BEGIN
+    PERFORM chain_apres(t, 'test.inconnu', 'commande', gen_random_uuid(),
+                        clock_timestamp(), 0, 'effet_impossible', NULL, NULL, NULL);
+  EXCEPTION WHEN check_violation THEN
+    v_refuse_ignore := true;
+  END;
+
+  PERFORM _rec('T17', 'le vocabulaire de trace admet `sans_effet` (maillon exécuté, aucun effet) sur la table ET ses partitions, se relit avec zéro ligne écrite, et refuse toujours une valeur inconnue',
+    v_sans = 0 AND v_relations >= 2 AND v_ok AND v_refuse_ignore,
+    format('relations=%s (toutes avec la valeur), sans la valeur=%s, trace relue=%s (%s ligne(s)), valeur inconnue refusée=%s',
+           v_relations, v_sans, COALESCE(v_resultat, '—'), COALESCE(v_lignes, -1), v_refuse_ignore));
+EXCEPTION WHEN OTHERS THEN
+  PERFORM _rec('T17', 'le vocabulaire de trace admet `sans_effet` (maillon exécuté, aucun effet) sur la table ET ses partitions, se relit avec zéro ligne écrite, et refuse toujours une valeur inconnue',
+    false, SQLERRM);
+END $$;
+
+
+-- ═════════════════════════════════════════════════════════════
 -- Clôture
 -- ═════════════════════════════════════════════════════════════
 DROP FUNCTION _lien252(uuid, uuid, uuid, text, jsonb, uuid);

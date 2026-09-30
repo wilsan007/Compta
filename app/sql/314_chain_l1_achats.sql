@@ -140,8 +140,16 @@ BEGIN
     AND je.invoice_ref = NEW.number
     AND je.journal_code = 'AC'
   LIMIT 1;
-  -- Rien n'a été produit : il n'y a rien à tracer, et on ne trace pas un vide.
+  -- L'aval est absent : le maillon métier n'a rien produit (compte manquant,
+  -- période fermée, règle métier). On le TRACE — c'est exactement ce que la 315
+  -- a ajouté avec `sans_effet` : la valeur qui manquait pour dire « maillon
+  -- exécuté, aucun effet ». Ni lien ni événement : il n'y a rien à lier.
   IF v_aval IS NULL THEN
+    PERFORM chain_apres(NEW.tenant_id, 'purchase.invoice.generated_entry', 'purchase_invoices', NEW.id,
+                        v_debut, 0, 'sans_effet',
+                        format('Facture achat %s du %s : maillon exécuté, aucune écriture « AC » produite par le métier.',
+                               NEW.number, to_char(NEW.date, 'DD/MM/YYYY')),
+                        NULL, NULL);
     RETURN NULL;
   END IF;
 
@@ -222,8 +230,15 @@ BEGIN
     AND pve.source_id = NEW.id
   LIMIT 1;
 
-  -- Aucun des deux n'existe (note à 0 €, ou annulée avant écriture) : rien à tracer.
+  -- Aucun des deux avals n'existe (note à 0 €, ou écriture non produite par une
+  -- règle métier) : on le TRACE avec la valeur `sans_effet` de la 315 — c'est le
+  -- cas qui l'a fait naître, et il n'est ni un `ignore` (un rejeu) ni un silence.
   IF v_ecriture IS NULL AND v_element IS NULL THEN
+    PERFORM chain_apres(NEW.tenant_id, 'expense.report.integration', 'expense_reports', NEW.id,
+                        v_debut, 0, 'sans_effet',
+                        format('Note de frais %s du %s : maillon exécuté, ni écriture « OD » ni élément de paie produit par le métier.',
+                               NEW.number, to_char(COALESCE(NEW.approved_at, now()), 'DD/MM/YYYY')),
+                        NULL, NULL);
     RETURN NULL;
   END IF;
 

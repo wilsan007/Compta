@@ -435,8 +435,18 @@ BEGIN
     VALUES (t, acc, acc, '2026-03-06', 'VIR ' || num, 'credit', 120, 'import')
     RETURNING id INTO k;
 
-    SELECT * INTO l FROM _l311_liens(t, 'bank_transactions', k) LIMIT 1;
-    SELECT count(*) INTO n_liens FROM _l311_liens(t, 'bank_transactions', k);
+    -- ⚠️ Adapté le 30/09/2026 par la tranche 5 (migration 316) : cette ligne de
+    -- relevé porte désormais DEUX liens légitimes — celui d'ici (vers
+    -- l'encaissement créé, effet `treasury.bank_transaction.reconciled`) et celui
+    -- de la tranche 5 (vers la ligne du grand livre,
+    -- `treasury.statement_line.matched`, car le rapprochement a AUSSI marqué une
+    -- écriture). Le scénario mesure donc SON effet et non « tous les liens du
+    -- document » : compter tous les liens faisait dépendre ce test de la tranche
+    -- suivante, ce qui n'est pas ce qu'il prétend vérifier.
+    SELECT * INTO l FROM _l311_liens(t, 'bank_transactions', k)
+     WHERE effet = 'treasury.bank_transaction.reconciled' LIMIT 1;
+    SELECT count(*) INTO n_liens FROM _l311_liens(t, 'bank_transactions', k)
+     WHERE effet = 'treasury.bank_transaction.reconciled';
     SELECT count(*) INTO n_pay FROM customer_payments WHERE tenant_id = t;
     n_evt := _l311_evt(t, 'bank_transactions.reconciled', k);
     PERFORM _rec('T09',
@@ -523,16 +533,34 @@ BEGIN
   -- métier y est un déclencheur **BEFORE** (`post_pos_session_on_close_multi`,
   -- mesuré), donc l'ordre est garanti par la PHASE et non par le nom. C'est une
   -- différence de nature, pas un défaut : le test la nomme au lieu de la lisser.
+  --
+  -- ⚠️ Mesure PRÉCISÉE le 30/09/2026 par la tranche 5 (migration 316), sur deux
+  -- points — les deux trouvés rouges sur base neuve :
+  --   • la comparaison exigeait un `tgtype` IDENTIQUE. Or un maillon métier peut
+  --     porter sur INSERT *et* UPDATE (`create_billable_line`, mesuré : 21) là où
+  --     le compagnon ne porte que sur INSERT (5) — il le précède pourtant bien à
+  --     l'INSERTION, et `zz_l1_time_entry_billed` était compté « sans frère
+  --     avant » à tort. La propriété qui compte est « **APRÈS tous les deux, et
+  --     au moins un événement en commun** » — un BEFORE n'est pas « avant par le
+  --     nom », il est avant par la phase ;
+  --   • le frère « après » exclut désormais les COMPAGNONS `zz_l1_` : une table
+  --     peut en porter plusieurs (`bank_transactions` : tranche 1 puis tranche 5 ;
+  --     `pay_runs` : rappels puis acomptes) et leur ordre relatif est sans effet,
+  --     chacun ne lisant que les marqueurs de son propre maillon.
   SELECT count(*) INTO v_avant FROM pg_trigger z
-   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
+   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal AND (z.tgtype & 2) = 0
      AND EXISTS (SELECT 1 FROM pg_trigger m
-                 WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
-                   AND NOT m.tgisinternal AND m.tgname < z.tgname);
+                 WHERE m.tgrelid = z.tgrelid AND (m.tgtype & 2) = 0
+                   AND (m.tgtype & z.tgtype & 20) <> 0
+                   AND NOT m.tgisinternal AND m.tgname < z.tgname
+                   AND m.tgname NOT LIKE 'zz_l1\_%');
   SELECT count(*) INTO v_grand FROM pg_trigger z
-   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
+   WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal AND (z.tgtype & 2) = 0
      AND EXISTS (SELECT 1 FROM pg_trigger m
-                 WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
-                   AND NOT m.tgisinternal AND m.tgname > z.tgname);
+                 WHERE m.tgrelid = z.tgrelid AND (m.tgtype & 2) = 0
+                   AND (m.tgtype & z.tgtype & 20) <> 0
+                   AND NOT m.tgisinternal AND m.tgname > z.tgname
+                   AND m.tgname NOT LIKE 'zz_l1\_%');
   SELECT EXISTS (SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
                  WHERE NOT t.tgisinternal AND c.relname = 'pos_sessions'
                    AND t.tgname = 'post_pos_session_on_close_multi_trigger'
@@ -552,10 +580,13 @@ BEGIN
   -- du dépôt sont APRÈS, tous sauf la clôture de caisse ont un frère métier de
   -- même événement qui trie avant eux (la caisse est garantie par la PHASE), et
   -- aucun frère ne trie après eux. C'est plus fort qu'un compte, qui vieillit mal.
+  -- La tranche 5 (migration 316) en ajoute cinq — **15 au total** — sans changer
+  -- la propriété : elle a seulement fallu la PRÉCISER (voir ci-dessus), et elle
+  -- tient alors telle quelle. C'est bien ce qu'on lui demandait.
   PERFORM _rec('T11',
     'les compagnons `zz_l1_` sont tous APRÈS (tous sauf la caisse après leur frère par le nom, la caisse par la phase) et les quatre déclencheurs des maillons réécrits sont en place',
     v_comp >= 8 AND v_apres = v_comp AND v_avant = v_comp - 1 AND v_grand = 0 AND v_metier = 4 AND v_pos_before,
-    format('compagnons=%s (8 à la tranche 2, +2 à la tranche 4) après=%s frères avant (nom)=%s frères après=%s caisse BEFORE=%s déclencheurs métier=%s',
+    format('compagnons=%s (8 à la tranche 2, +2 à la tranche 4, +5 à la tranche 5) après=%s frères avant (nom)=%s frères après=%s caisse BEFORE=%s déclencheurs métier=%s',
            v_comp, v_apres, v_avant, v_grand, v_pos_before, v_metier));
 END $$;
 

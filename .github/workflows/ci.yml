@@ -1211,6 +1211,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L1, tranche 5 — LES CINQ CANDIDATS DIRECTS de l'inventaire §2, ceux qui
+      # remplissent les deux conditions de la doctrine compagnon. La 316 les couvre
+      # par déclencheur compagnon : écart de change au règlement, facturation des
+      # temps, rappels de paie, acomptes de paie, appariement d'une ligne de relevé.
+      # Deux points de méthode, mesurés par la suite au premier passage :
+      #   • le compagnon RELIT le marqueur dans la table, jamais dans `NEW` — le
+      #     maillon métier le pose par un `UPDATE` à l'intérieur de SON déclencheur
+      #     `AFTER`, et la copie `NEW` ne le porte pas (l'écart de change et
+      #     l'appariement bancaire échouaient ainsi) ;
+      #   • `min(uuid)` n'existe pas en PostgreSQL, et l'aval de référence des
+      #     rappels/acomptes est obtenu par tri explicite.
+      # La valeur `sans_effet` ajoutée au vocabulaire par la 315 sert ici au cas
+      # pour lequel elle a été conçue : un effet ATTENDU qui n'existe pas (écart de
+      # change marqué sans écriture, rappel marqué traité sans élément de paie).
+      # 12 scénarios.
+      - name: 'L1 : les cinq candidats directs sont tracés (316)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/316_chain_l1_candidats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

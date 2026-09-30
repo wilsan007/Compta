@@ -98,6 +98,15 @@ font 3 contrats), **10 écartés** avec leur raison, **14 maillons restants** do
 **5 candidats directs** (déclencheur `AFTER` + aval identifiable : écart de
 change, temps → facture, rappels et acomptes de paie, appariement de relevé).
 
+**Mise à jour du même jour — tranche 5 (30/09/2026).** Les **cinq candidats
+directs** de la ligne ci-dessus sont **tracés** : migration **316**,
+suite d'acceptation **316** (**12 scénarios** verts), et la **limite de
+vocabulaire** du §5 est **fermée** — migration **315**, la valeur **`sans_effet`**
+entre dans le `CHECK` de `chain_traces.resultat`, prouvé par **252 T17**.
+Le détail, les chiffres de non-régression et les **trois assertions du socle** que
+la base neuve a fait préciser (310 T10, 311 T09 et T11) sont dans la
+[preuve de la tranche 5](VAGUE-L1-TRANCHE5-2026-09-30.md).
+
 **La requête de la carte de modules** (reproductible, à rejouer après chaque
 tranche) : elle est dans l'en-tête du §2 de ce document — une liste
 `(priorité, motif, module)` appliquée au **premier** motif qui matche, puis
@@ -170,10 +179,20 @@ remplace. Le changement est daté dans le fichier.
   vers rien, ou une trace qui dit `applique` sur un effet absent, serait un
   mensonge que la vue chaîne lirait. **C'est une entrée pour la tranche qui
   ajoutera la valeur manquante** (un `sans_effet`, par exemple), pas un silence.
+  → **Fermée le 30/09/2026** : la valeur **`sans_effet`** existe (migration
+  **315**, prouvée par **252 T17**), donc le vocabulaire sait dire « attendu et
+  absent ». La suite **316** l'emploie là où elle doit (écart de change marqué sans
+  écriture : T03) et **ne l'emploie pas** là où le silence est normal (règlement en
+  devise de tenue : T02 ; temps non facturable : T07 ; relevé sans contrepartie :
+  T09) — c'est cette distinction qui rend la valeur utile plutôt que bruyante.
 * **Cinq candidats directs ne sont pas faits** : écart de change au règlement,
   temps → facture, rappels de paie, acomptes de paie, appariement de relevé. Ils
   remplissent les deux conditions de la doctrine — c'est la prochaine tranche,
   pas un « reste » flou.
+  → **Faits le 30/09/2026** (migration **316**, suite **316** : 12 scénarios).
+  Deux des trois branches d'anomalie que ces effets ouvrent (relevé rapproché sans
+  ligne marquée, rappel marqué traité sans élément de paie) restent **sans
+  scénario** : c'est écrit dans la [preuve](VAGUE-L1-TRANCHE5-2026-09-30.md) §5.
 * **Neuf maillons restants sont des RPC** (caisse, paie, relevé) : un compagnon ne
   peut pas s'y accrocher, il faut les tracer **par leur chemin d'appel**. C'est
   un travail de nature différente (lot **L3**), pas une omission.
@@ -189,7 +208,8 @@ remplace. Le changement est daté dans le fichier.
 
 ## 6. Ce que la suite doit produire
 
-1. **Les cinq candidats directs** (une tranche, avec contrats et suite) ;
+1. **Les cinq candidats directs** (une tranche, avec contrats et suite) —
+   ✅ **fait** le 30/09/2026 ([preuve](VAGUE-L1-TRANCHE5-2026-09-30.md)) ;
 2. **Les neuf maillons RPC** — tracer par le chemin d'appel, ce qui suppose de
    choisir où l'entrée du maillon est posée (lot **L3**) ;
 3. **La réception de marchandise** — réécriture du corps pour lier par ligne ;
@@ -199,5 +219,7 @@ remplace. Le changement est daté dans le fichier.
 5. **Le vocabulaire de trace** (limite §5) : une valeur pour « exécuté, aucun
    effet », sinon le tableau de bord du lot **L5** comptera les notes de frais à
    0 € comme des chaînages qui n'ont rien fait.
+   ✅ **fait** le 30/09/2026 : `sans_effet` (migration **315**, **252 T17**), et
+   employé par la tranche 5 avec la retenue annoncée ici.
 
 

@@ -322,13 +322,26 @@ BEGIN
      AND EXISTS (SELECT 1 FROM pg_trigger m
                  WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
                    AND NOT m.tgisinternal AND m.tgname < z.tgname);
-  -- Et aucun frère métier de même événement ne trie APRÈS lui (sinon l'ordre
+  -- Et aucun frère MÉTIER de même événement ne trie APRÈS lui (sinon l'ordre
   -- serait inversé par un nom futur).
+  -- ⚠️ Adapté le 30/09/2026 par la tranche 5 (migration 316) : la mesure portait
+  -- sur TOUT déclencheur de nom plus grand, compagnons L1 compris. Or une table
+  -- peut légitimement en porter plusieurs — `bank_transactions` porte
+  -- `zz_l1_bank_reconciliation` (tranche 1) puis `zz_l1_statement_line_matched`
+  -- (tranche 5), `pay_runs` porte les rappels puis les acomptes — et leur ordre
+  -- relatif est SANS EFFET : chacun ne lit que les marqueurs de son propre
+  -- maillon. La propriété qui compte, et qui reste exigée, est « après tout
+  -- déclencheur MÉTIER » : c'est elle qui garantit que le compagnon voit l'aval
+  -- (trouvé rouge sur base neuve par la suite 316, qui exige la même chose).
+  -- À noter : l'étiquette de ce scénario disait déjà « frère métier » — c'est la
+  -- MESURE qui était plus large que son étiquette, et qui laissait donc passer une
+  -- contrainte que personne n'avait décidée.
   SELECT count(*) INTO v_grand FROM pg_trigger z
    WHERE z.tgname LIKE 'zz_l1_%' AND NOT z.tgisinternal
      AND EXISTS (SELECT 1 FROM pg_trigger m
                  WHERE m.tgrelid = z.tgrelid AND m.tgtype = z.tgtype
-                   AND NOT m.tgisinternal AND m.tgname > z.tgname);
+                   AND NOT m.tgisinternal AND m.tgname > z.tgname
+                   AND m.tgname NOT LIKE 'zz_l1\_%');
 
   PERFORM _rec('T10',
     'les cinq compagnons de la tranche 1 sont des déclencheurs APRÈS, aucun frère métier de même événement ne trie après eux',
