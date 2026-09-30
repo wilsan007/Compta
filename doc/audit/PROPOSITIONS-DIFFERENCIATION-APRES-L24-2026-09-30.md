@@ -204,15 +204,127 @@ commit).
 
 ---
 
-## 6. Ce qui doit être tranché par le produit, avant de commencer
+## 6. Les cinq questions, et **les réponses proposées** (30/09)
 
-| # | Question | Pourquoi elle bloque |
+> ⚠️ **Statut : PROPOSÉES.** Elles sont argumentées, et appuyées sur ce que le
+> dépôt possède **déjà** (vérifié le 30/09) — mais **la décision appartient au
+> produit**. Le jour où elle est prise, on écrit ici **la date et le choix**,
+> sans effacer la proposition : c'est ainsi que ce document reste utilisable.
+
+**Ce que le dépôt a déjà, et qui a pesé sur ces réponses :**
+
+| Déjà là | Où le constater |
+|---|---|
+| Une **attestation par période** existe déjà | `get_nf525_attestation(p_period)` (`152`) lit `nf525_period_closures` et appelle `verify_nf525_chain` |
+| La **vérification de la chaîne** existe | `verify_nf525_chain(début, fin)` (`134`) |
+| Le **canal vers le comptable existe** | `AccountantPortalPage.tsx` ; rôles **`accountant`** et **`auditor`**, **lecture seule** (`view`), accès auditeur **expirant** (`auto_revoke_expired_auditors`) |
+| ⚠️ L'**expert-comptable référent n'est pas désigné** | `👤-4`, ouvert dans `RESTE-OUVERT` |
+
+### Q1 — Qui signe ? → **proposé : le système émet, la société endosse ; jamais un tiers**
+
+Le certificat est un **fait technique**, pas une opinion : *« au 30/09 à 14 h 02,
+sur la base X, **version de migrations Y**, ces 20 invariants tenaient, ces 62
+chaînes ont été éprouvées, empreinte `a41f…` »*. Seul le **système** peut
+l'affirmer ; ce qui engage quelqu'un, c'est **qui le remet** → la **société**
+(nom + date) l'endosse.
+
+**Pourquoi jamais un tiers :** un audit et une attestation d'expert-comptable
+sont des **missions réglementées** (normes NEP en France) — on ne peut pas les
+produire, et les faire signer par un tiers expose **et** coûte. Surtout, cela
+détruit le différenciateur, qui est d'être **automatique, rejouable et daté**.
+
+**Le mot compte : « attestation d'intégrité technique »**, avec la mention
+écrite une fois pour toutes : *« ne constitue ni un audit, ni une attestation de
+l'expert-comptable, ni une certification légale »* — sinon le premier comptable
+venu la refuse, et il aura raison.
+
+### Q2 — À qui en premier ? → **proposé : l'expert-comptable, et deux lectures pour un seul document**
+
+**Lui d'abord**, parce que c'est **le seul destinataire qui dira non si c'est
+faux** : un certificat validé par quelqu'un qui ne peut pas le vérifier ne vaut
+rien. Et **la distribution existe déjà** (portail comptable ; rôle `auditor`
+**en lecture seule**, dont l'accès **expire tout seul**). La **banque** vient
+deuxième — elle veut un **bilan**, pas une chaîne d'événements ; l'assureur,
+très loin derrière.
+
+⚠️ **Le blocage réel** : `👤-4` n'est pas fait, et en PME djiboutienne
+l'expert-comptable n'existe pas toujours. D'où **un artefact, deux lectures** :
+
+| | Contenu | Pour qui |
 |---|---|---|
-| Q1 | **Qui signe** le certificat (`P1`) : la société, le système, ou un tiers ? | c'est ce qui décide si c'est une attestation interne ou un document opposable |
-| Q2 | **À qui** on le remet **en premier** : expert-comptable, banque, ou assureur ? | le canal de distribution change tout le reste (format, fréquence, contenu) |
-| Q3 | Le banc sur données de prospect (`P2`) : **où** tournent ces données ? | confidentialité : il faut un bac à sable jetable, décidé, pas improvisé |
-| Q4 | Le certificat doit-il porter l'**empreinte** de la chaîne d'événements (`nf525_event_log`) ? | cela engage la revérification (`verify_nf525_chain`) et la conservation |
-| Q5 | Combien de temps **mesure-t-on** avant de conclure ? | sans indicateur, ces propositions sont des opinions |
+| **Page 1** | le **score**, les écarts, en langage simple (« 20/20 invariants, 0 écart ») | le **dirigeant** |
+| **Annexe** | les invariants, les **empreintes**, et **le moyen de re-vérifier** (`verify_nf525_chain`, `audit_chains`) | l'**expert-comptable**, la **banque** |
+
+👉 **Un certificat que le destinataire ne peut pas vérifier est un PDF
+décoratif** : il ne quitte pas le tiroir.
+
+### Q3 — Où tournent les données du prospect ? → **proposé : chez lui si possible ; chez nous, base jetable ; jamais la production**
+
+| # | Où | Pourquoi |
+|---|---|---|
+| **1** | **Il l'exécute lui-même** (une commande, un conteneur documenté) | zéro transfert, zéro exposition — **et c'est plus vendeur** : « voici comment vous vérifiez vous-même » |
+| **2** | **Base jetable chez nous** : conteneur éphémère, **sans sauvegarde**, détruit sous **24-72 h**, NDA signé, on ne garde que **l'agrégat** | le défaut réaliste quand le prospect n'est pas technique |
+| **3** | ❌ **une « société prospect » dans la base de production** | **la faute classique** : elle entre dans les **sauvegardes**, les exports et la **RLS** — et un jour dans un audit. **À exclure par écrit** |
+
+**Règle de conception :** le rapport est **agrégé d'abord** (une page de
+scores) ; les pièces (numéros, montants) **seulement si le prospect le demande**.
+
+### Q4 — L'empreinte NF-525 ? → **proposé : oui, en annexe, comme un mécanisme vérifiable — jamais comme une conformité**
+
+**Oui**, parce que c'est la **meilleure preuve de non-modification** disponible
+aujourd'hui, et qu'elle est **déjà testée** (`nf525_event_log`,
+`verify_nf525_chain`, `get_nf525_attestation`, `nf525_period_closures`).
+
+| ✅ À écrire | ❌ À ne jamais écrire |
+|---|---|
+| *« Empreinte de la chaîne d'événements de caisse (**mécanisme NF-525**), vérifiable par `verify_nf525_chain` »* | *« **Conforme NF-525** »* — règle **française**, **pas la loi à Djibouti** |
+
+**Sans caisse** : la ligne dit **« sans objet »**, jamais « 0 événement » — **une
+absence de preuve n'est pas une preuve**.
+
+**Le vrai idéal est la généralisation** : quand `L23` (registre d'événements
+unifié) arrivera, la chaîne d'empreintes devra couvrir **tous** les événements
+(`domain_events`), pas seulement la caisse. C'est **une décision de conception à
+écrire maintenant**, pas le jour de la livraison.
+
+### Q5 — Combien de temps mesurer ? → **proposé : un trimestre, trois chiffres, un critère d'arrêt écrit d'avance**
+
+**Pas un mois** : le cycle de valeur, c'est **une clôture + une déclaration + un
+passage chez le comptable** — il faut **deux clôtures** pour distinguer « ça
+marche » de « ça n'a pas encore servi ».
+
+| # | Le chiffre | Ce qu'il dit |
+|---|---|---|
+| **1** | certificats **effectivement remis à un tiers par un client** (jamais par nous, en démo) | **le seul signal réel** |
+| **2** | fois où il **change une décision** (prêt, dossier, remarque du comptable, litige évité) | sa valeur en argent |
+| **3** | heures pour le produire, écarts soulevés | son coût |
+
+**Critère d'arrêt, écrit avant de commencer** : si après un trimestre **aucun
+client n'a remis un certificat à un tiers**, ce n'est **pas un produit** mais une
+**fonction de démonstration** → la reclasser en `P2` (outil de vente), ou
+l'arrêter. C'est la doctrine du dépôt (« un lot = un indicateur qui bouge »)
+appliquée à une **idée**, pas à du code.
+
+**Deux exceptions, plus rapides** : `P2`/`P3` se mesurent en **1 mois / 10-15
+démos** — côté vente, le signal est immédiat. Et la production du certificat suit
+l'**horloge du produit** : **à chaque clôture de période** et à la demande, la
+forme de `get_nf525_attestation(p_period)`.
+
+### Les trois pièges à éviter
+
+1. **Laisser croire à une signature d'expert-comptable** → une mission réglementée qu'on ne peut pas rendre.
+2. **Mettre les données d'un prospect dans la base de production** → sauvegardes, exports, RLS : un incident qui attend son heure.
+3. **Promettre une conformité** (NF-525, « audit ») **au lieu d'un mécanisme vérifiable** → le premier professionnel qui lit la phrase disqualifie.
+
+### Ce qu'il reste à décider (proprement)
+
+| # | Question | Réponse proposée | État |
+|---|---|---|---|
+| **Q1** | Qui signe | le **système émet**, la **société endosse** — jamais un tiers | **proposé — à trancher** |
+| **Q2** | À qui en premier | l'**expert-comptable** (deux lectures : dirigeant / comptable-banque) | **proposé — dépend de `👤-4`** |
+| **Q3** | Où tournent les données | chez le prospect / **base jetable** 24-72 h — jamais la production | **proposé — à trancher** |
+| **Q4** | Empreinte NF-525 | **oui, en annexe**, comme mécanisme vérifiable ; « sans objet » sans caisse | **proposé — à trancher** |
+| **Q5** | Durée de mesure | **1 trimestre, 2 clôtures**, 3 chiffres, arrêt si non remis à un tiers | **proposé — à trancher** |
 
 ---
 

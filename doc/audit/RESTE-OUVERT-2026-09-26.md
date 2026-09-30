@@ -234,7 +234,9 @@ reste au registre).
 **Rien de ceci n'est commencé, et rien ne doit l'être avant que `L3` → `L4` → `L5`
 soient livrés et prouvés** (et `L6`/`L23`/`L24` pour `P6`) : ces propositions sont
 des **lecteurs de la preuve**, pas des fonctions. Détail, dépendances, charges,
-indicateurs et questions à trancher :
+indicateurs et questions à trancher — **les cinq questions ont des
+[**réponses proposées**](PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md#6-les-cinq-questions-et-les-réponses-proposées-3009),
+la décision restant au produit :
 [**PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md**](PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md).
 
 | # | Proposition | Charge | Ce qu'elle débloque |
