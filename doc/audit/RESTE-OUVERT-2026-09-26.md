@@ -1,7 +1,7 @@
 # Ce qui reste ouvert — état au 26 septembre 2026
 
 > **Mises à jour.** 27/09 : W5, W10 · 28/09 : W7 partielle, **W8 fermée** ·
-> **30/09 : W7 fermée, L1 (tranches 1 à 4), L2, L7, essaim QA** — voir §0.
+> **30/09 : W7 fermée, L1 (tranches 1 à 5), L2, L7, essaim QA** — voir §0.
 
 > **Objet.** Une seule page, à jour, de **tout ce qui n'est pas fermé** après la
 > vague W6 : ce qui attend une décision, ce qui vit hors du dépôt, ce qui reste
@@ -55,8 +55,9 @@ branchée en CI (étape « AUD : import d'écritures en une transaction (308) »
 > ⚠️ **Numérotation** — un numéro se **constate**, il ne se réserve pas. État
 > constaté le 30/09 : `270` → `272` (session parallèle, audit fonctionnel),
 > `273` → `281` (audit fonctionnel, parties 1 à 3), `300` → `309` (**W7**),
-> `310` → `314` (**L1** tranches 1 à 4, **L2**, **L7**), `315` et au-delà : la
-> **session parallèle en cours** (chaînages).
+> `310` → `314` (**L1** tranches 1 à 4, **L2**, **L7**), `315` → `316` (**L1**
+> tranche 5 : les cinq candidats directs et la valeur `sans_effet`), `317` et
+> au-delà : la **session parallèle en cours** (chaînages).
 
 ---
 
@@ -80,14 +81,16 @@ branchée en CI (étape « AUD : import d'écritures en une transaction (308) »
 | **W7 (partie 1)** | **`ANA-01/02`** (`304` : les deux déclencheurs analytiques étaient des placebos, la section circule de la **ligne de document** vers la ligne d'écriture) · **`ANA-03`** (la balance analytique est **bornée à l'exercice**) · **`FEC-01`** (`305` : la 2ᵉ implémentation du FEC, 9 colonnes sur 18, est supprimée) | [W7](VAGUE-W7-2026-09-28.md) |
 | **W7 (partie 2)** | **`M01-01/02`** (`306` : **le taux de change s'applique** — 1 000 USD à 0,90 → 900 EUR ; la ligne porte devise, montant en devise et taux ; une pièce en devise **sans taux** est refusée) · **`BUD-01→04`** (`307` : réalisé **borné à l'exercice**, brouillons et AN/CL exclus, **une** requête par exercice au lieu de deux par budget ; les engagements d'une commande sont **créés** puis **consommés** à la facturation) | [W7](VAGUE-W7-2026-09-28.md) |
 | **W7 ✅ fermée** | Les **quinze** défauts du plan sont fermés : `300` (CA non taxé dans la CA3), `304` (l'analytique des documents circule jusqu'aux lignes d'écriture), `305` (une seule implémentation du FEC), `306` (le taux de change s'applique), `307` (budgets : réalisé borné, engagements créés et consommés), **`308` — `SAGE-01→03` : l'import d'écritures est un acte unique** (équilibre global contrôlé, écritures **validées** par le noyau, soldes **cumulés**), `309` (écart de change au règlement et réévaluation de clôture) | [W7](VAGUE-W7-2026-09-28.md) |
-| **L1 — tranches 1 à 4** (29 et 30/09) | **17 effets** de la chaîne ventes → trésorerie → comptabilité **tracés** et **17 contrats déclarés** (`310`, `311`, `314`) ; **le lien a un cycle de vie** (`312` : `actif` → `remplace` \| `rompu`, index d'idempotence **partiel**, `chain_avant` rend vrai après fermeture) ; **38 scénarios** d'acceptation ; non-régression **165 scénarios** verts sur base neuve (**263 migrations**) | [L1](VAGUE-L1-2026-09-29.md) · [tr. 3](VAGUE-L1-TRANCHE3-CYCLE-DU-LIEN-2026-09-30.md) · [tr. 4](INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md) |
+| **L1 — tranches 1 à 5** (29 et 30/09) | **22 effets** de la chaîne ventes → trésorerie → comptabilité **tracés** et **22 contrats déclarés** (`310`, `311`, `314`, `316`) ; **le lien a un cycle de vie** (`312` : `actif` → `remplace` \| `rompu`, index d'idempotence **partiel**, `chain_avant` rend vrai après fermeture) ; le vocabulaire de trace gagne **`sans_effet`** (`315`) ; **61 scénarios** d'acceptation (les cinq tranches L1) ; non-régression **689 verdicts verts, 0 rouge** sur base neuve (**265 migrations**) | [L1](VAGUE-L1-2026-09-29.md) · [tr. 3](VAGUE-L1-TRANCHE3-CYCLE-DU-LIEN-2026-09-30.md) · [tr. 4](INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md) · [tr. 5](VAGUE-L1-TRANCHE5-2026-09-30.md) |
 | **L2 — les six portes CI** | `G1` grille BT (RLS et index de société, plafond daté) · `G2` contrat d'effet (vu **rouge** sur un maillon neuf non déclaré) · `G3` colonnes et écritures muettes · `G4` garde de société · `G5` câblage des suites (**90 suites, 90 branchées** — c'est elle qui a trouvé la `312` que personne n'avait branchée) · `G6` banc des chaînages (**p95 1,002 ms** pour 50 ms de budget) | [L2](VAGUE-L2-PORTES-CI-2026-09-30.md) |
 | **L7 — les contrats d'effet** | `313` : les maillons ne tracent plus « sans contrat » — **1 132** traces `tolere` pour 1 117 `applique` **avant**, **5** `tolere` (toutes provoquées par les scénarios qui éteignent un contrat) **après** ; le mode `refuse` devient utilisable | [L7](VAGUE-L7-CONTRATS-DEFFET-2026-09-30.md) |
 | **Essaim QA** | **668 visites, 334 routes, 0 défaut**, quatre gabarits et deux sociétés (remplie et vide) ; le registre `.qa-baseline.json` est **vide** | [QA](QA-ESSAIM-2026-09-29.md) |
 
-État mesuré sur base neuve : **263 migrations, 0 erreur** ; **9 contrôles** du
-dépôt à 0 erreur et **90 suites** branchées (porte `G5`) ; **165 scénarios** de
-non-régression verts ; front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar,
+État mesuré sur base neuve : **265 migrations, 0 erreur** ; **12 contrôles** du
+dépôt à 0 erreur (`check_plpgsql` **non exécutable** dans l'image locale —
+extension `plpgsql_check` absente) et **93 suites** branchées (porte `G5`) ;
+**689 verdicts** de non-régression verts, **0 rouge** (84 fichiers de suite) ;
+front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar,
 **Vitest 1 513**, **32 tests Edge Deno** ; les **trois** scanners de code
 (`check-written-columns`, `check-unchecked-writes`, `check-rpc-contract`) à
 **0**, baselines vides.
@@ -161,10 +164,11 @@ unifiées et l'explicabilité.
 déjà livré : c'est un **plafond**, pas un reste exact (détail :
 `RESTE-A-FAIRE` §3.3 et `PLAN-IMPLEMENTATION-CHAINAGES-2026-09-24.md`).
 
-**Déjà livré sur ce bloc :** le socle `L0` (`252`) ; **L1, tranches 1 à 4** (`310`,
-`311`, `312`, `314` — **17 effets tracés** et **17 contrats déclarés**, 10
-déclencheurs compagnons `zz_l1_`, 4 corps réécrits pour lier **par ligne**, 38
-scénarios d'acceptation) ; **L2** (les six portes `G1` → `G6`) ; **L7** (`313`) ;
+**Déjà livré sur ce bloc :** le socle `L0` (`252`) ; **L1, tranches 1 à 5** (`310`,
+`311`, `312`, `314`, `316` — **22 effets tracés** et **22 contrats déclarés**, 15
+déclencheurs compagnons `zz_l1_`, 4 corps réécrits pour lier **par ligne**, le
+vocabulaire de trace enrichi de **`sans_effet`** (`315`), 61 scénarios
+d'acceptation) ; **L2** (les six portes `G1` → `G6`) ; **L7** (`313`) ;
 et W9 a livré la chaîne de l'absence de bout en bout. La méthode de l'inventaire,
 **rejouée le 30/09**, compte **99 fonctions** transverses (62 au 24/09) dont
 **32 écrivent dans ≥ 2 modules** — classées avec leur verdict et leur raison.
@@ -230,7 +234,7 @@ reste au registre).
 | Bloc | Charge |
 |---|---:|
 | Plan correctif — les vagues W | **0 j** — **toutes fermées** (W0 → W10), les 9 transverses absorbés par L1/L2/L4 |
-| Chaînages — L1 → L24 (**plafond brut** : non déduit de L0, des tranches 1 à 4 de L1, de L2 et de L7) | ≈ 116 j |
+| Chaînages — L1 → L24 (**plafond brut** : non déduit de L0, des tranches 1 à 5 de L1, de L2 et de L7) | ≈ 116 j |
 | Couverture d'audit — phase 10 | ≈ 15 j |
 | **Total restant au 30/09/2026** | **≈ 131 j** |
 | Hors charge de développement | **P0-08** (14 parcours à l'écran), la recette des neuf intégrations (tableau B), les décisions du tableau A |

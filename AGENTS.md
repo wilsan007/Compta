@@ -12,7 +12,8 @@ L'essentiel en huit lignes :
   `273` → `281` (audit fonctionnel, parties 1 à 3), `300` → `309` (**W7** : CA3,
   refacturation des temps, production, projets, analytique, FEC, devises,
   budgets, **import Sage**, écart de change), `310` → `314` (**L1** tranches 1 à 4,
-  **L2**, **L7**), `315` et au-delà : la **session parallèle** (chaînages).
+  **L2**, **L7**), `315` → `316` (**L1** tranche 5 : les cinq candidats directs et
+  la valeur `sans_effet`), `317` et au-delà : la **session parallèle** (chaînages).
 * **W8 fermée (28/09)** : les 6 défauts du plan sont corrigés — `PROJ-01`
   (refacturation des temps, `301`), `PROD-01→03` (nomenclature multi-niveaux,
   écarts de quantité et de coût chiffrés, écriture datée de l'OF, `302`),
@@ -158,7 +159,7 @@ L'essentiel en huit lignes :
 * **≈ 131 j restants** (recompté le 30/09 : le « ≈ 133 j » porté jusqu'ici
   reprenait 2 j de **W7 déjà livrés**) : **plan correctif des vagues W fermé**
   (0 j) ; chaînages **L1 → L24** (≈ 116 j — **plafond brut** du plan, non déduit
-  de L0, des tranches 1 à 4 de L1, de L2 et de L7, déjà livrés), couverture
+  de L0, des tranches 1 à 5 de L1, de L2 et de L7, déjà livrés), couverture
   d'audit phase 10 (≈ 15 j), et la recette à l'écran (P0-08, hors charge de
   développement).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
