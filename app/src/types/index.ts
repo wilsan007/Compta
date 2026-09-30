@@ -651,6 +651,11 @@ export interface CompanySettings {
   saisie_negative?: boolean
   multi_currency?: boolean
   show_quantities?: boolean
+  /** D-5 (318) : consentement à l'envoi de documents à un prestataire d'OCR/IA.
+   *  Faux par défaut ; la date et l'auteur sont écrits par la BASE (déclencheur). */
+  ocr_consent?: boolean
+  ocr_consent_at?: string | null
+  ocr_consent_by?: string | null
   vat_regime?: string | null
   vat_periodicity?: string | null
   iban?: string | null

@@ -2791,6 +2791,9 @@ export interface Database {
         absence_method: string | null
         next_lettrage_seq: number | null
         enforce_segregation: boolean | null
+        ocr_consent: boolean
+        ocr_consent_at: string | null
+        ocr_consent_by: string | null
       }
       Insert: {
         id?: string
@@ -2828,6 +2831,9 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
+        ocr_consent?: boolean
+        ocr_consent_at?: string
+        ocr_consent_by?: string
       }
       Update: {
         id?: string
@@ -2865,6 +2871,9 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
+        ocr_consent?: boolean
+        ocr_consent_at?: string
+        ocr_consent_by?: string
       }
       Relationships: []
     }

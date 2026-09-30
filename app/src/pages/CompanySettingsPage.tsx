@@ -176,6 +176,36 @@ export function CompanySettingsPage() {
             </div>
           </Card>
 
+          {/* D-5 — LE CONSENTEMENT À L'ENVOI DE DOCUMENTS À UN TIERS.
+              Ce n'est pas une préférence d'affichage : c'est une décision sur les
+              données de la société, et c'est la BASE qui la date et la signe (le
+              client ne peut ni l'antidater ni se l'attribuer). Sans elle, la
+              fonction d'OCR refuse — le document ne part pas. */}
+          <Card>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-[var(--color-primary)]" />
+                <h3 className="text-sm font-semibold">{t('companyPrefs.ocrConsent', 'Envoi des documents à un prestataire d’OCR / d’IA')}</h3>
+              </div>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.ocr_consent || false}
+                  onChange={(e) => update('ocr_consent', e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded border-[var(--color-border)]"
+                />
+                <span className="text-[var(--color-text-secondary)]">
+                  {t('companyPrefs.ocrConsentHint', 'Sans ce consentement, la lecture automatique d’une facture fournisseur est refusée : le document ne part pas.')}
+                </span>
+              </label>
+              {settings.ocr_consent && settings.ocr_consent_at && (
+                <p className="text-xs text-[var(--color-text-secondary)] mt-3">
+                  {t('companyPrefs.ocrConsentSince', { date: new Date(settings.ocr_consent_at).toLocaleDateString(), defaultValue: 'Consenti le {{date}}' })}
+                </p>
+              )}
+            </div>
+          </Card>
+
           {/* VAT Parameters */}
           <Card>
             <div className="p-5">

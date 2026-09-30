@@ -1828,7 +1828,10 @@
     "description": "Configuration des options de saisie comptable",
     "saisieNegative": "Autoriser la saisie négative (débit négatif / crédit négatif)",
     "multiCurrency": "Double monnaie (saisie en devise + conversion)",
-    "showQuantities": "Afficher les quantités dans la saisie"
+    "showQuantities": "Afficher les quantités dans la saisie",
+    "ocrConsent": "Envoi des documents à un prestataire d'OCR / d'IA (lecture automatique des factures)",
+    "ocrConsentHint": "Sans ce consentement, la lecture automatique d'une facture fournisseur est REFUSÉE : le document ne part pas, et l'écran le dit. Le consentement est daté et signé par le logiciel.",
+    "ocrConsentSince": "Consenti le {{date}}"
   },
   "vatParams": {
     "title": "Paramètres TVA",

@@ -1828,7 +1828,10 @@
     "description": "Accounting entry options configuration",
     "saisieNegative": "Allow negative entry (negative debit / negative credit)",
     "multiCurrency": "Dual currency (foreign currency entry + conversion)",
-    "showQuantities": "Show quantities in entry"
+    "showQuantities": "Show quantities in entry",
+    "ocrConsent": "Send documents to an OCR / AI provider (automatic invoice reading)",
+    "ocrConsentHint": "Without this consent, automatic reading of a supplier invoice is REFUSED: the document is not sent, and the screen says so. Consent is dated and signed by the software.",
+    "ocrConsentSince": "Consented on {{date}}"
   },
   "vatParams": {
     "title": "VAT parameters",

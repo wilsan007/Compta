@@ -197,7 +197,13 @@ L'essentiel en huit lignes :
   convertisseur injoignable du réseau interne, le secret `GOTENBERG_URL` et un
   appelant — **note d'aide à la décision** :
   [D-4](doc/audit/DECISION-D4-GENERATE-PDF-2026-09-30.md), dont le §9 dit ce qui
-  a été fait), `D-5` (OCR), `D-7` (contraste),
+  a été fait), `D-5` (**tranchée partiellement le 30/09, voie « garder
+  encadré »** : la migration **`318`** pose un consentement **daté et signé par
+  la base** — déclencheur, pas drapeau client —, réglable dans **Paramètres →
+  Société**, et `ocr-invoice-import` **refuse en `409` avant tout envoi** ; suite
+  **`318` 5/5**. ⚠️ **Restent** : le **DPA** (hors dépôt) et **deux fonctions qui
+  parlent au même prestataire sans garde** — `parse-bank-statement` et
+  `ai-import-mapping`, nommées, pas tues), `D-7` (contraste),
   `D-10`, `D-11` (localisation), `D-13`.
 * **Hors du dépôt** : les secrets et la recette des neuf intégrations (Chorus Pro,
   Yousign, GoCardless, Resend, EFI, SIRENE, VIES, Stripe, Gotenberg) ; la clé

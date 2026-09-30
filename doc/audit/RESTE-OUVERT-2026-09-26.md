@@ -104,7 +104,7 @@ front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar,
 | ID | Sujet | Où c'est dit |
 |---|---|---|
 | **D-4** | `generate-pdf` — **défaut appliqué** le 26/09, **voie A ouverte** le 30/09 : la migration **`317`** pose le bucket d'archive (`generated-pdfs`, privé, PDF seulement, lecture bornée à la société ET au module) et la fonction ne ment plus (`503` sans convertisseur au lieu du HTML en `200`, `500` au lieu de `success: true` avec `url: null`, `upsert: false`). Restent : **A1** (convertisseur injoignable du réseau interne), `GOTENBERG_URL`, **un appelant**, le déploiement | [note d'aide à la décision](DECISION-D4-GENERATE-PDF-2026-09-30.md) §9 · `RESTE-A-FAIRE` §3.1 |
-| **D-5** | OCR : périmètre et fournisseur | idem |
+| **D-5** | OCR : périmètre et fournisseur — **tranchée partiellement le 30/09 (voie « garder encadré »)** : migration **`318`** (consentement **daté et signé par la base**, par société), suite **`318`** **5/5**, réglage dans **Paramètres → Société**, et **refus `409 OCR_CONSENT_REQUIRED`** dans `ocr-invoice-import` **avant** tout envoi. **Restent** : le contrat de sous-traitance (DPA) — hors dépôt —, et **deux fonctions** qui parlent au même prestataire sans garde (`parse-bank-statement`, `ai-import-mapping`) | [note](DECISION-D4-GENERATE-PDF-2026-09-30.md) §9 (même famille) · `RESTE-A-FAIRE` §3.1 |
 | **D-7** | Contraste : seuils retenus pour les thèmes | idem |
 | **D-10**, **D-13** | À confirmer | idem |
 | **D-11** | Périmètre de la localisation (les 14 documents djiboutiens) | idem |

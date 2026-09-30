@@ -4,6 +4,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts"
+import { forbidden, isTenantMember } from "../_shared/tenantAccess.ts"
+import { ocrConsent, tenantFromRequest } from "../_shared/ocrConsent.ts"
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
@@ -29,6 +31,35 @@ serve(async (req) => {
 
     if (!file_url && !file_base64) {
       return new Response(JSON.stringify({ error: "file_url ou file_base64 requis" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // D-5 (migration 318) — LE CONSENTEMENT, AVANT TOUTE SORTIE DE DONNÉES.
+    //
+    // L'ordre n'est pas cosmétique : le contrôle doit passer AVANT l'appel au
+    // prestataire, sinon la donnée est déjà partie. C'est aussi pourquoi la
+    // société est lue sur l'en-tête `x-tenant-id` que l'application joint à
+    // chaque requête, et non devinée.
+    // ─────────────────────────────────────────────────────────────
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    const tenantId = tenantFromRequest(req)
+    if (!tenantId) {
+      return new Response(JSON.stringify({
+        error: "Société non précisée (en-tête x-tenant-id absent) : l'OCR ne peut pas savoir à qui appartient le document.",
+        code: "TENANT_REQUIRED",
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    if (!(await isTenantMember(supabase, user.id, tenantId))) return forbidden(corsHeaders)
+
+    const consentement = await ocrConsent(supabase, tenantId)
+    if (!consentement.granted) {
+      return new Response(JSON.stringify({
+        error: "L'envoi à un prestataire d'OCR n'est pas autorisé pour cette société. Donnez votre consentement dans Paramètres → Société ; le document n'a pas été transmis.",
+        code: "OCR_CONSENT_REQUIRED",
+        motif: consentement.motif,
+      }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
     // Si pas de clé OpenAI, retourner une erreur
@@ -85,12 +116,12 @@ serve(async (req) => {
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
-    // Tenter de faire correspondre avec un fournisseur existant
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
-    const { data: memberships } = await supabase
-      .from("tenant_users").select("tenant_id").eq("auth_id", user.id).eq("status", "active")
-    const tenantIds = (memberships || []).map((m) => m.tenant_id)
-    if (extractedData.supplier_name && tenantIds.length > 0) {
+    // Tenter de faire correspondre avec un fournisseur existant — de la SOCIÉTÉ
+    // de l'appelant, celle que le consentement vient de nommer. (Avant D-5, la
+    // recherche balayait TOUTES les sociétés de l'utilisateur : le document
+    // n'était rattaché à aucune d'elles.)
+    const tenantIds = [tenantId]
+    if (extractedData.supplier_name) {
       const { data: supplier, error } = await supabase
         .from("suppliers")
         .select("id, name, siret, vat_number")
