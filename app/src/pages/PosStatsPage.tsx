@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, EmptyState, SkeletonTable, Select, StatCard, PageHeader } from '@/components/ui'
 import { getPosTerminals, getPosTickets } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
+import { localDayRange, type PeriodKey } from '@/lib/dateRange'
 import { formatCurrency } from '@/lib/utils'
 import { BarChart3, TrendingUp, Receipt, DollarSign } from 'lucide-react'
 import type { PosTerminal, PosTicket } from '@/types'
@@ -14,7 +15,7 @@ export function PosStatsPage() {
 
   const [terminals, setTerminals] = useState<PosTerminal[]>([])
   const [selectedTerminal, setSelectedTerminal] = useState('')
-  const [period, setPeriod] = useState('today')
+  const [period, setPeriod] = useState<PeriodKey>('today')
   const [tickets, setTickets] = useState<PosTicket[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -23,12 +24,12 @@ export function PosStatsPage() {
     try {
       const terms = await getPosTerminals()
       setTerminals(terms)
-      const now = new Date()
-      let startDate = new Date(now)
-      if (period === 'today') startDate.setHours(0, 0, 0, 0)
-      else if (period === 'thisWeek') { startDate.setDate(now.getDate() - now.getDay()); startDate.setHours(0, 0, 0, 0) }
-      else if (period === 'thisMonth') { startDate = new Date(now.getFullYear(), now.getMonth(), 1) }
-      const ticks = await getPosTickets(undefined, startDate.toISOString().split('T')[0])
+      // D4 (stk-013) : les bornes de la période sont calculées dans le fuseau de
+      // l'utilisateur et rendues en ISO, la fin EXCLUE. Avant, la borne basse
+      // était le jour UTC de minuit local (la veille à Djibouti) et la borne
+      // haute le même jour à 23:59:59 : la période ne pouvait rien contenir.
+      const range = localDayRange(period)
+      const ticks = await getPosTickets(undefined, range)
       setTickets(ticks)
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message)
@@ -75,7 +76,7 @@ export function PosStatsPage() {
         <div className="flex gap-2">
           <Select value={selectedTerminal} onChange={e => setSelectedTerminal(e.target.value)}
             options={[{ value: '', label: t('sessions.allTerminals') }, ...terminals.map(t => ({ value: t.id, label: t.name }))]} />
-          <Select value={period} onChange={e => setPeriod(e.target.value)}
+          <Select value={period} onChange={e => setPeriod(e.target.value as PeriodKey)}
             options={[
               { value: 'today', label: t('stats.today') },
               { value: 'thisWeek', label: t('stats.thisWeek') },
