@@ -998,6 +998,46 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 
 ---
 
+## 12 bis. Constats hors fiche, apparus en corrigeant les contrôles
+
+* Ces points ne sont pas dans le registre de la recette : ils sont sortis des
+  **contrôles eux-mêmes**, le 30/09/2026, et sont à instruire.
+* **Le contrôle de type n'en était pas un** (corrigé, `7e2968b`). Le
+  `tsconfig.json` racine est une configuration « solution » (`files: []`), donc
+  `npx tsc --noEmit` ne compilait rien et sortait 0 — y compris sur le lot A4,
+  commité avec deux erreurs de type (corrigées au lot C2). Le « Type check » de
+  `.github/workflows/deploy.yml` ne vérifiait rien non plus, et quatre documents
+  prescrivaient la commande aux agents. **Le contrôle réel est
+  `npm run typecheck` (`tsc -b --noEmit`).**
+* **`db-integration.test.ts` n'a jamais tourné nulle part** (le job CI qui lance
+  `vitest run` n'a pas de `DATABASE_URL` ; celui qui en a une ne lance que du
+  `psql`). Le SSL y était imposé, et la base locale Supabase le refuse. Une
+  fois rendu exécutable : **11 scénarios passent, 2 sont faux** — tous deux
+  marqués `it.skip` avec leur motif, en attendant :
+  * *« aucune policy `USING (true)` »* : il y en a **5**, mais toutes sur des
+    **référentiels globaux** (`banks`, `chart_account_templates`,
+    `sql_migrations_tracker`, `v_tenant_id`, `webhook_event_catalog`) — le modèle
+    voulu depuis la 270 (lignes globales lisibles, non écrivables). L'assertion
+    est antérieure à cette décision et doit être réécrite sur les tables de
+    société. **Aucune fuite constatée** ; l'assertion n'a plus de valeur telle
+    quelle.
+  * *« trigger `check_journal_entry_balance` »* : **absent** (mesuré : 0
+    déclencheur non interne sur `journal_entries`). L'équilibre d'une écriture
+    est vérifié par `273_journal_entry_validation` et par le contrôle CI
+    `check_plpgsql` ; mais s'il n'est garanti que par l'application, une
+    écriture déséquilibrée reste possible en base. **À instruire** — c'est le
+    seul point de cette section qui touche la comptabilité.
+* **Le harnais de `verify.sh` accusait à tort** : il cherchait « failed » dans
+  toute la sortie de vitest, alors que des tests qui vérifient la gestion
+  d'erreur journalisent volontairement « … failed ». Il juge désormais sur le
+  code de sortie (doctrine déjà appliquée en `5940f57`).
+* **Sept suites SQL rouges sur la base de recette** (`users_email_partial_key` :
+  220, 232, 270, 271, 273, 274, 275) : le harnais recrée le même
+  `tenant_users.email` à chaque exécution. Pollution de la recette, pas une
+  régression — comme les 250 T06/T11 déjà signalés.
+
+---
+
 ## 13. Ordonnancement et charges
 
 | Ordre | Lot | Contenu | Charge | Dépend de |

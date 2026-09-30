@@ -279,11 +279,21 @@ section "5/5  Tests Vitest"
 if [ "$SKIP_TESTS" = true ]; then
   warn "Tests skippés (--skip-tests)"
 else
-  TEST_OUTPUT=$(npx vitest run 2>&1 || true)
-  if echo "$TEST_OUTPUT" | grep -q "Test Files.*passed" && ! echo "$TEST_OUTPUT" | grep -q "failed"; then
+  # On juge sur le CODE DE SORTIE de vitest, pas sur une recherche de texte.
+  # Mesuré le 30/09/2026 : `grep -q "failed"` sur toute la sortie faisait
+  # échouer le contrôle alors que 1543 tests passaient, parce que des tests qui
+  # vérifient la gestion d'erreur journalisent volontairement « … failed »
+  # (`audit_log query failed: Table missing`). Le contrôle accusait à tort, et au
+  # gré de l'ordre d'exécution des fichiers — ce que la doctrine du dépôt
+  # interdit (cf. 5940f57, « le harnais cesse d'accuser à tort »).
+  TEST_OUTPUT=$(npx vitest run 2>&1)
+  TEST_EXIT=$?
+  if [ "$TEST_EXIT" -eq 0 ]; then
     pass "Vitest: tous les tests passent"
   else
-    TEST_FAIL=$(echo "$TEST_OUTPUT" | grep -c "FAIL\|×" || true)
+    # un test en échec, pas un fichier : le compte sert au résumé, pas au verdict
+    TEST_FAIL=$(echo "$TEST_OUTPUT" | grep -cE '^ +× ' || true)
+    [ "$TEST_FAIL" -eq 0 ] && TEST_FAIL=1
     fail "Vitest: ${TEST_FAIL} tests échouent" "$TEST_FAIL"
     echo "$TEST_OUTPUT" | tail -30 | sed 's/^/    /'
   fi
