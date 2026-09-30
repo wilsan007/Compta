@@ -1182,6 +1182,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L7 — LES CONTRATS D'EFFET DÉCLARÉS. Le socle était fermé par défaut et
+      # AUCUN des 14 effets tracés n'était déclaré : chaque exécution écrivait une
+      # trace `tolere` (« contrat manquant ») PUIS `applique` — mesuré sur la base
+      # de test le 30/09/2026 : 1 132 `tolere` pour 1 117 `applique`. La 313
+      # déclare les 14 contrats standard, drapeaux adossés à la mesure des
+      # écritures réelles de chaque maillon (`ecrit_comptable`, `touche_stock`,
+      # `reversible`, `obligatoire`). Effet immédiat et mesuré : `chain_autorise`
+      # rend vrai, une exécution n'écrit plus qu'UNE trace `applique`, et la porte
+      # G2 (contrat d'effet) voit son registre se vider — ses 25 lignes périmées
+      # ont été refusées puis retirées dans le même commit. 11 scénarios.
+      - name: 'L7 : les contrats d''effet déclarés (313)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/313_chain_effects_contract_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

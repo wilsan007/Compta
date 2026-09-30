@@ -10,10 +10,15 @@
 -- (`document_effects`) et il est **fermé par défaut** : `chain_autorise` rend
 -- faux pour tout ce qui n'est pas déclaré. Conséquence mesurée par le lot L1
 -- (VAGUE-L1 §4 et §6.5) : **0 contrat déclaré**, donc **chaque** exécution des
--- 14 effets tracés écrit une trace `tolere` PUIS `applique`. Rien n'interdit
--- aujourd'hui à un maillon neuf d'arriver avec un effet que PERSONNE n'a
--- déclaré — et c'est exactement ce qui a produit les 62 chaînages notés 3,65/7
--- du référentiel.
+-- 14 effets tracés écrivait une trace `tolere` PUIS `applique` — mesuré sur la
+-- base de test au 30/09/2026 : **1 132 `tolere` pour 1 117 `applique`**. Rien
+-- n'interdisait non plus à un maillon neuf d'arriver avec un effet que PERSONNE
+-- n'avait déclaré — et c'est exactement ce qui a produit les 62 chaînages notés
+-- 3,65/7 du référentiel.
+-- **Fermé le même jour par la migration 313 (lot L7)** : les 14 contrats
+-- standard sont déclarés, `chain_autorise` rend vrai pour eux, et une exécution
+-- de maillon n'écrit plus qu'**une** trace, `applique`. Ce contrôle reste :
+-- c'est lui qui empêche le défaut de revenir avec le 15ᵉ effet.
 --
 -- CE QUE LE CONTRÔLE MESURE, ET COMMENT. Il lit `pg_proc` — pas les fichiers :
 -- ce qui compte est ce qui est COMPILÉ en base. Deux extractions, les seules
@@ -37,12 +42,15 @@
 --      refuser cela interdirait de déclarer avant d'implémenter. Le décompte est
 --      publié pour que l'écart reste visible, il n'est pas caché.
 --
--- LE REGISTRE NE PEUT QUE RÉTRÉCIR. Même contrat que `ci/expected_failures.sql`
--- (AUD-A02) et que `check_tenant_guard.sql` : tant qu'un effet y figure, son
--- absence de déclaration ne casse pas la CI ; dès que le lot **L7** le déclare,
--- la ligne devient **périmée** et la CI échoue jusqu'à ce qu'on la retire — dans
--- le même commit que la déclaration. Sans cette moitié, le registre pourrirait
--- et le contrôle ne voudrait plus rien dire.
+-- LE REGISTRE EST **VIDE depuis le 30/09/2026** — c'est l'état visé, pas un
+-- hasard : il a porté les **25 défauts** de L1 (14 effets + 11 couples) le temps
+-- que le lot **L7** (migration 313) déclare les contrats. Même contrat que
+-- `ci/expected_failures.sql` (AUD-A02) et que `check_tenant_guard.sql` : une
+-- ligne s'inscrit ici quand un effet doit vivre **sans** contrat — avec sa
+-- raison — et se retire dans le commit qui le déclare (ou qui retire l'appel).
+-- Une ligne devenue inutile **casse** la CI : c'est ce qui empêche le registre de
+-- pourrir, et c'est cette moitié qui a été vue à l'œuvre le 30/09 (les 25 lignes
+-- ont été refusées par le contrôle dès la 313 appliquée, puis retirées).
 --
 -- CE QUE LE CONTRÔLE NE PROUVE PAS. Il lit des signatures, pas des
 -- comportements : il ne dit pas que l'effet déclaré EST celui qui est produit
@@ -53,12 +61,12 @@
 -- Le contrôle s'auto-teste (fixtures jouées puis annulées) et échoue s'il n'a
 -- pu décider de rien : un vert doit signifier « vérifié », pas « rien vu ».
 --
--- ⚠️ **À LANCER AVANT LES SUITES** — c'est l'ordre de la CI, et il n'est pas
--- cosmétique : les suites **310** (T12) et **311** (T05) **déclarent elles-mêmes
--- des contrats d'effet** pour éprouver les modes `observe` / `refuse`. Sur une
--- base qui a vu les suites, deux des 14 effets paraissent donc déclarés, et le
--- registre doit disparaître — ce qui est faux : c'est la base de test qui a
--- parlé. Le contrôle le dit dans son message quand il détecte ce cas.
+-- ORDRE D'EXÉCUTION — la note a changé le 30/09/2026 : la CI lance les contrôles
+-- AVANT les suites, et depuis que les 14 contrats sont déclarés par la **313**,
+-- l'ordre ne change plus **aucun verdict** de ce contrôle. Il ne change qu'un
+-- décompte **publié** : des contrats « jamais appelés par un maillon », que les
+-- suites alimentent avec leurs contrats de test (`contrat.standard`,
+-- `gabarit.test`). Un écart publié, jamais un échec.
 -- ============================================================
 
 \set ON_ERROR_STOP on
@@ -78,65 +86,21 @@ INSERT INTO g2_socle (nom) VALUES
   ('chain_lien_remplacer'), ('chain_lien_rompre'), ('chain_liens_fermer');
 
 -- ─────────────────────────────────────────────────────────────
--- 2. Le registre des effets appelés sans contrat — PLAFOND DATÉ DU 30/09/2026
---    Une ligne par défaut connu : on en retire une quand L7 la déclare, sans
---    toucher aux autres (même règle que `ci/expected_failures.sql`).
---    Les 14 effets et les 11 couples ci-dessous sont MESURÉS sur base neuve
---    (261 migrations) — ce ne sont pas des suppositions.
+-- 2. Le registre des effets appelés sans contrat — **VIDE depuis le 30/09/2026**
+--    Il a porté les 25 défauts de L1 (14 effets + 11 couples) le temps que le
+--    lot **L7** déclare les contrats (migration **313**). Il est vide : un effet
+--    appelé sans contrat casse donc la CI **immédiatement**, sans échappatoire
+--    inscrite — c'est l'état visé par la doctrine M-05.
 -- ─────────────────────────────────────────────────────────────
 CREATE TEMP TABLE g2_registre (sens text, cle text, raison text);
 
-INSERT INTO g2_registre (sens, cle, raison) VALUES
-  ('COUPLE', 'bank_accounts / created / treasury.bank_account.account',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'bank_accounts / created / treasury.bank_account.journal',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'bank_transactions / reconciled / treasury.bank_transaction.reconciled',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'credit_notes / validated / sale.credit_note.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'customer_payments / recorded / sale.payment.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'delivery_notes / shipped / sale.delivery.stock_out',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'invoices / validated / sale.invoice.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'manufacturing_orders / completed / production.order.generated_entry',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'manufacturing_orders / completed / production.order.stock_in',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'pos_sessions / closed / pos.session.closure',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('COUPLE', 'supplier_payments / recorded / purchase.payment.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'pos.session.closure',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('EFFET', 'production.order.generated_entry',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('EFFET', 'production.order.stock_in',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('EFFET', 'purchase.payment.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'sale.credit_note.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'sale.delivery.stock_out',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.'),
-  ('EFFET', 'sale.invoice.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'sale.order.reserved',
-   'L1/311 : maillon réécrit (lien par ligne, M-09) — lot L7.'),
-  ('EFFET', 'sale.payment.generated_entry',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'subcontracting.receipt.stock_in',
-   'L1/311 : maillon réécrit (lien par ligne, M-09) — lot L7.'),
-  ('EFFET', 'subcontracting.shipment.stock_out',
-   'L1/311 : maillon réécrit (lien par ligne, M-09) — lot L7.'),
-  ('EFFET', 'treasury.bank_account.account',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'treasury.bank_account.journal',
-   'L1/310 : effet tracé par la 310, contrat non déclaré — lot L7.'),
-  ('EFFET', 'treasury.bank_transaction.reconciled',
-   'L1/311 : effet tracé par la 311, contrat non déclaré — lot L7.');
+-- VIDE depuis le 30/09/2026 : les 14 contrats sont déclarés par la **313**
+-- (lot L7). Une ligne s'inscrit ici quand un effet doit vivre SANS contrat —
+-- avec sa raison — et se retire dans le commit qui le déclare, ou qui retire
+-- l'appel. Même règle que `ci/expected_failures.sql` : un registre qui ne se
+-- nettoie pas pourrit, et un plafond qui ne se met pas à jour ment.
+-- Les 25 lignes qui ont vécu ici (14 effets + 11 couples, du 30/09 au 30/09)
+-- sont l'historique du lot L1 : elles sont citées dans VAGUE-L2-PORTES-CI.
 
 -- ─────────────────────────────────────────────────────────────
 -- 3. L'extraction, écrite UNE fois (le contrôle et son auto-test l'utilisent)
@@ -212,7 +176,7 @@ BEGIN
   WHERE NOT EXISTS (
     SELECT 1 FROM g2_verdicts v WHERE v.sens = r.sens AND v.cle = r.cle AND NOT v.declare);
   IF v_perimes IS NOT NULL THEN
-    RAISE EXCEPTION 'check_effects_contract : % entrée(s) du registre sont périmées (l''effet est déclaré, ou il n''est plus appelé) — retirez-les dans le même commit : %  (Si ce contrôle a tourné APRÈS les suites, ce peut être elles : la 310 et la 311 déclarent des contrats pour éprouver les modes — l''ordre de la CI est contrôles puis suites.)',
+    RAISE EXCEPTION 'check_effects_contract : % entrée(s) du registre sont périmées (l''effet est déclaré, ou il n''est plus appelé) — retirez-les dans le même commit : %  (C''est l''effet attendu d''une déclaration : le lot L7 a vidé les 25 lignes de L1 ainsi, le 30/09/2026.)',
       (SELECT count(*) FROM g2_registre r WHERE NOT EXISTS (
          SELECT 1 FROM g2_verdicts v WHERE v.sens = r.sens AND v.cle = r.cle AND NOT v.declare)),
       v_perimes;
@@ -222,7 +186,7 @@ BEGIN
   SELECT count(*) INTO v_declares_jamais_appeles FROM document_effects e
   WHERE NOT EXISTS (SELECT 1 FROM g2_verdicts v WHERE v.sens = 'EFFET' AND v.cle = e.effet);
 
-  RAISE NOTICE 'Contrat d''effet : % maillon(s) lus, % constat(s) — % déclaré(s), % au registre (plafond du 30/09/2026).',
+  RAISE NOTICE 'Contrat d''effet : % maillon(s) lus, % constat(s) — % déclaré(s), % au registre.',
     v_maillons, v_constats, v_declares, v_inscrits;
   RAISE NOTICE 'Contrats en base : % — dont % déclaré(s) jamais appelé(s) par un maillon (une déclaration peut précéder son maillon : ce n''est pas un échec, c''est un écart publié).',
     v_contrats, v_declares_jamais_appeles;
@@ -261,7 +225,7 @@ END $f$;
 DO $$
 DECLARE
   v_non_vus int; v_non_declares int; v_declares int; v_fuite_socle int; v_fuite_test int;
-  v_registre int; v_constats int; v_msg text;
+  v_registre int; v_constats int; v_msg text; v_orphelins int;
 BEGIN
   -- Z1 : le fixture non déclaré est VU, et jugé non déclaré.
   SELECT count(*), count(*) FILTER (WHERE NOT declare)
@@ -298,6 +262,11 @@ BEGIN
   SELECT count(*) INTO v_fuite_test  FROM g2_constats WHERE proname LIKE '\_%';
   SELECT count(*) INTO v_registre FROM g2_registre;
   SELECT count(DISTINCT (sens, cle)) INTO v_constats FROM g2_constats;
+  -- Un registre est cohérent quand AUCUNE de ses lignes n'est orpheline : une
+  -- entrée qui ne correspond à aucun constat est une ligne morte, et une ligne
+  -- morte est exactement ce qui fait qu'un registre ne veut plus rien dire.
+  SELECT count(*) INTO v_orphelins FROM g2_registre r
+  WHERE NOT EXISTS (SELECT 1 FROM g2_constats c WHERE c.sens = r.sens AND c.cle = r.cle);
 
   -- Les messages sont CONSTRUITS puis remis à RAISE avec un seul placeholder :
   -- plpgsql perd le fil d'une liste d'arguments quand le message est long et
@@ -315,9 +284,8 @@ BEGIN
     v_msg := format('AUTO-TEST Z3 : le corpus fuit — %s nom(s) du socle, %s outillage(s) de test.', v_fuite_socle, v_fuite_test);
     RAISE EXCEPTION '%', v_msg;
   END IF;
-  IF v_registre <> v_constats THEN
-    v_msg := format('AUTO-TEST Z3 : le registre porte %s entrée(s) pour %s constat(s) — écart entre le registre et le code.', v_registre, v_constats);
-    RAISE EXCEPTION '%', v_msg;
+  IF v_orphelins > 0 THEN
+    RAISE EXCEPTION 'AUTO-TEST Z3 : le registre porte % entrée(s) sans constat correspondant — lignes mortes, à retirer.', v_orphelins;
   END IF;
 
   v_msg := format('Auto-test : OK — Z1 non déclaré vu et refusé, Z2 déclaré accepté, Z3 sans fuite : %s constat(s), %s au registre.', v_constats, v_registre);

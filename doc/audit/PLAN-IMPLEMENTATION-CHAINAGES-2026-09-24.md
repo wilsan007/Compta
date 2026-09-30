@@ -443,7 +443,7 @@ Chaque lot a **un indicateur qui bouge** : c'est ce qui prouve qu'il est fait, e
 | L4 | indice de cohérence publié (**≈ 5 / 20** → 20 / 20) | ⬜ |
 | L5 | pages « Robustesse » et « Cohérence » en service | ⬜ |
 | L6 | Vue Chaîne sur 10 écrans | ⬜ |
-| L7 | contrats d'effet déclarés (**0 %** → 100 %) | ⬜ |
+| L7 | contrats d'effet déclarés (**0 %** → 100 %) | ✅ **fait (30/09)** — migration **313** : les **14 contrats standard** déclarés, drapeaux adossés à la mesure des écritures réelles de chaque maillon (`ecrit_comptable`, `touche_stock`, `reversible`, `obligatoire`, `journal_code`) ; suite **313** (**11 scénarios**). Mesures : **1 132 traces `tolere` → 5** (toutes provoquées par les scénarios qui éteignent un contrat), `chain_autorise` vrai pour les 14, **registre de la porte G2 vidé** (25 → 0, la porte l'a exigé), mode **`refuse` devenu utilisable**. Décision écrite : `actif` est le seul drapeau lu par un code ; les six autres déclarent. **Trois assertions de la suite 310 ont changé de verdict attendu** (T01, T11, T12) — plus fortes, et les deux verdicts sont conservés ([preuve](VAGUE-L7-CONTRATS-DEFFET-2026-09-30.md)) |
 | L8 → L15 | règles d'état couvertes (**0 / 62** → 62 / 62) | ⬜ |
 | L16 | chaînages internes manquants (**9 familles** → 0) | ⬜ |
 | L17 → L19 | couples de modules vides (**12 → 0**) | ⬜ |

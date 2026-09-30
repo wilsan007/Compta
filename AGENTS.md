@@ -81,6 +81,27 @@ L'essentiel en huit lignes :
   annulée ; index d'arbitrage retiré, il échoue **immédiatement** — mais il ne voit
   **pas** la perte du seul index d'historique à N = 1 000, et c'est écrit).
   [Preuve](doc/audit/VAGUE-L2-PORTES-CI-2026-09-30.md).
+* **L7 livré (30/09) — les contrats d'effet déclarés** : migration **313**, suite
+  **313** (**11 scénarios**), et c'est **l'indicateur du plan qui passe de 0 % à
+  100 %**. Le défaut mesuré : **1 132 traces `tolere`** (« contrat manquant »)
+  pour 1 117 `applique` — chaque exécution écrivait deux lignes. Après : **5
+  `tolere`**, toutes provoquées par les scénarios qui éteignent un contrat, et
+  **aucun maillon métier** ne trace plus « sans contrat ». Effets de bord mesurés :
+  `chain_autorise` rend vrai pour les 14, le mode **`refuse` devient utilisable**
+  (il bloquait tout, faute de contrats), et le **registre de la porte G2 s'est
+  vidé** (ses 25 entrées ont été refusées par le contrôle puis retirées dans le
+  même commit — la moitié « le registre ne peut que rétrécir » a été vue à
+  l'œuvre). Décision écrite : **`actif` est le seul drapeau lu par un code**
+  (`chain_autorise`) ; les six autres (`ecrit_comptable`, `journal_code`,
+  `touche_stock`, `touche_paie`, `reversible`, `obligatoire`) **déclarent** —
+  mesuré, publié, et le jour où l'un sera lu, le compte changera. **Trois
+  assertions de la suite 310 ont changé de verdict attendu** (T01, T11, T12) parce
+  que le comportement a changé : elles sont plus fortes, pas affaiblies, et les
+  deux verdicts sont conservés en commentaire. Limites dites : douze des
+  quatorze confrontations « réel vs déclaration » attendent leur décor métier
+  (lot L3), et les 32 chaînages non nommés n'ont **pas** de contrat — la porte G2
+  cassera quand l'un d'eux arrivera sans.
+  [Preuve](doc/audit/VAGUE-L7-CONTRATS-DEFFET-2026-09-30.md).
 
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages

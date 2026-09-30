@@ -6,8 +6,9 @@
 -- §4.1, §4.3) ; référentiel, parties A.2 (les 19 artères) et A.3 (les 16
 -- maillons les plus fragiles : idempotence 9/62, trace 7/62).
 --
---   T01  facture validée → UN lien invoices → journal_entries, UN événement,
---        la trace `tolere` (contrat non déclaré, mode observe) et `applique` ;
+--   T01  facture validée → UN lien invoices → journal_entries, UN événement, et
+--        UNE SEULE trace `applique` (depuis L7 le contrat est déclaré ; avant la
+--        313, la même exécution traçait `tolere` PUIS `applique`) ;
 --   T02  le fait générateur ne se rejoue pas : une mise à jour qui ne change pas
 --        l'état ne crée ni second lien ni seconde trace ;
 --   T03  le rejeu EXPLICITE de `chain_avant` sur le même effet rend false et
@@ -22,11 +23,13 @@
 --   T10  l'ordre des déclencheurs est prouvé : le lien existe dans la MÊME
 --        transaction que l'instruction métier, donc le compagnon `zz_` s'exécute
 --        bien après le déclencheur métier ;
---   T11  la mesure existe : `chain_traces` porte durée, lignes écrites, résultat ;
---   T12  le contrat déclaré (L7) change le verdict : déclaré et actif → plus de
---        `tolere`, et `chain_autorise` rend vrai ;
---   T13  en mode `refuse`, un effet NON déclaré bloque l'opération métier, avec
---        un message qui nomme document, date, règle et module ;
+--   T11  la mesure existe : `chain_traces` porte durée, lignes écrites, résultat —
+--        et, l'effet étant ÉTEINT pour la société, le message du contrat manquant ;
+--   T12  le drapeau `actif` du contrat change le verdict : éteint pour la société
+--        → `chain_autorise` faux et la trace dit « sans contrat » ; rallumé →
+--        vrai, et la trace ne le dit plus ;
+--   T13  en mode `refuse`, un effet ÉTEINT (donc non autorisé) bloque l'opération
+--        métier, avec un message qui nomme document, date, règle et module ;
 --   T14  la société voisine ne voit ni le lien ni l'événement (RLS) ;
 --   T15  les maillons compagnons ne sont pas des points d'entrée (aucun EXECUTE).
 --
@@ -89,6 +92,13 @@ $$;
 
 -- ═════════════════════════════════════════════════════════════
 -- T01 — Facture validée : le lien, l'événement, la trace
+--
+-- ⚠️ Verdict attendu CHANGÉ le 30/09/2026 par le lot **L7** (migration 313) :
+-- avant les contrats, l'exécution écrivait DEUX traces — `tolere` (« contrat non
+-- déclaré », mode observe) puis `applique`. Depuis que le contrat standard est
+-- déclaré, il n'en reste qu'UNE : `applique`. L'assertion est donc passée de
+-- `n_tolere = 1` à `n_tolere = 0` — ce n'est pas un test affaibli, c'est un test
+-- qui mesure un comportement qui a changé, et le détail le publie (`tolere=0`).
 -- ═════════════════════════════════════════════════════════════
 DO $$
 DECLARE t uuid := _mk_tenant('L1A'); c uuid; inv uuid; v record; n_lien int; n_evt int;
@@ -106,15 +116,15 @@ BEGIN
            count(*) FILTER (WHERE resultat = 'applique')
       INTO n_tolere, n_applique FROM _l1_traces(t, 'sale.invoice.generated_entry');
     PERFORM _rec('T01',
-      'facture validée → un lien invoices → journal_entries, un événement, les traces `tolere` (contrat non déclaré) et `applique`',
+      'facture validée → un lien invoices → journal_entries, un événement, et UNE SEULE trace `applique` (contrat déclaré par la 313)',
       n_lien = 1 AND n_evt = 1 AND v.aval_type = 'journal_entries'
         AND v.link_type = 'generated_entry' AND v.aval_id IS NOT NULL
-        AND n_tolere = 1 AND n_applique = 1,
+        AND n_tolere = 0 AND n_applique = 1,
       format('liens=%s aval=%s type=%s payload=%s événements=%s tolere=%s applique=%s',
              n_lien, v.aval_type, v.link_type, v.payload, n_evt, n_tolere, n_applique));
   EXCEPTION WHEN OTHERS THEN
     PERFORM _rec('T01',
-      'facture validée → un lien invoices → journal_entries, un événement, les traces `tolere` (contrat non déclaré) et `applique`',
+      'facture validée → un lien invoices → journal_entries, un événement, et UNE SEULE trace `applique` (contrat déclaré par la 313)',
       false, SQLERRM);
   END;
 END $$;
@@ -328,13 +338,21 @@ BEGIN
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
--- T11 — la mesure : durée, lignes écrites, et le message du contrat manquant
+-- T11 — la mesure : durée, lignes écrites, et le message quand le contrat manque
+--
+-- ⚠️ Adapté le 30/09/2026 par le lot **L7** (migration 313) : depuis que le
+-- contrat standard est déclaré, l'absence de contrat ne se montre plus avec un
+-- effet jamais déclaré — elle se montre en **éteignant** l'effet pour une
+-- société (`actif = false`), qui est le geste offert à un client qui refuse un
+-- chaînage. Le message nominatif du maillon reste mesuré mot pour mot.
 -- ═════════════════════════════════════════════════════════════
 DO $$
-DECLARE t uuid := _mk_tenant('L1F'); c uuid; inv uuid; v record; n_complet int; n_msg int;
+DECLARE t uuid := _mk_tenant('L1F'); c uuid; inv uuid; inv2 uuid; v record;
+        n_complet int; n_msg int;
 BEGIN
   INSERT INTO customers (tenant_id, name, account_tiers) VALUES (t, 'Client MS L1', 'L1005') RETURNING id INTO c;
   inv := _l1_facture(t, 'F-L1-MS', c);
+  inv2 := _l1_facture(t, 'F-L1-MS2', c);
   PERFORM _as_user();
   BEGIN
     UPDATE invoices SET validation_status = 'validated' WHERE id = inv;
@@ -342,70 +360,92 @@ BEGIN
     SELECT count(*) INTO n_complet FROM chain_traces ct
     WHERE ct.tenant_id = t AND ct.effet = 'sale.invoice.generated_entry'
       AND ct.resultat = 'applique' AND ct.duree_ms IS NOT NULL AND ct.lignes_ecrites >= 1;
+
+    -- L'effet est éteint pour cette société : le contrat manque à nouveau.
+    EXECUTE 'RESET ROLE';
+    INSERT INTO document_effects (tenant_id, document_type, evenement, effet, actif)
+    VALUES (t, 'invoices', 'validated', 'sale.invoice.generated_entry', false)
+    ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+                 document_type, evenement, effet)
+    DO UPDATE SET actif = false;
+
+    PERFORM _as_user();
+    UPDATE invoices SET validation_status = 'validated' WHERE id = inv2;
     SELECT count(*) INTO n_msg FROM chain_traces ct
     WHERE ct.tenant_id = t AND ct.effet = 'sale.invoice.generated_entry'
-      AND ct.resultat = 'tolere' AND ct.message LIKE '%sale.invoice.generated_entry%'
+      AND ct.amont_id = inv2 AND ct.resultat = 'tolere'
+      AND ct.message LIKE '%sale.invoice.generated_entry%'
       AND ct.message LIKE '%module ventes%';
     PERFORM _rec('T11',
-      'chaque exécution est mesurée (durée, lignes écrites) et le contrat manquant est dit dans un message nominatif',
+      'chaque exécution est mesurée (durée, lignes écrites) et, effet éteint pour la société, le contrat manquant est dit dans un message nominatif',
       n_complet = 1 AND n_msg = 1,
       format('traces complètes=%s messages de contrat=%s première=%s', n_complet, n_msg, v));
   EXCEPTION WHEN OTHERS THEN
-    PERFORM _rec('T11', 'chaque exécution est mesurée (durée, lignes écrites) et le contrat manquant est dit dans un message nominatif', false, SQLERRM);
+    PERFORM _rec('T11', 'chaque exécution est mesurée (durée, lignes écrites) et, effet éteint pour la société, le contrat manquant est dit dans un message nominatif', false, SQLERRM);
   END;
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
--- T12 — le contrat déclaré change le verdict (le lot L7 s'y branche)
---   Sans déclaration : `tolere`. Avec la ligne de `document_effects` :
---   `chain_autorise` rend vrai et la trace ne dit plus « appliqué sans contrat ».
+-- T12 — le drapeau `actif` du contrat change le verdict (L7 s'y branche)
+--
+-- ⚠️ Réécrit le 30/09/2026 par le lot **L7** (migration 313). Avant les contrats,
+-- le cas « sans contrat » se montrait avec l'effet standard jamais déclaré ; il
+-- est maintenant déclaré, donc le cas se montre en **ÉTEIGNANT** le contrat pour
+-- la société — ce qui est aussi le geste offert à un client, et la raison d'être
+-- du drapeau `actif` (le seul de `document_effects` que `chain_autorise` lit).
 -- ═════════════════════════════════════════════════════════════
 DO $$
 DECLARE t uuid := _mk_tenant('L1G'); c uuid; inv1 uuid; inv2 uuid;
-        n_tolere1 int; n_tolere2 int; n_applique2 int; v_autorise boolean;
+        n_tolere1 int; n_tolere2 int; n_applique2 int; v_autorise1 boolean; v_autorise2 boolean;
 BEGIN
   INSERT INTO customers (tenant_id, name, account_tiers) VALUES (t, 'Client CT L1', 'L1006') RETURNING id INTO c;
   inv1 := _l1_facture(t, 'F-L1-CT1', c);
   inv2 := _l1_facture(t, 'F-L1-CT2', c);
+
+  -- Le contrat de CETTE société, ÉTEINT : une ligne de société l'emporte sur le
+  -- contrat standard (mesuré par la suite 252, T06), et `chain_autorise` doit
+  -- rendre faux. Elle est portée par la société du scénario, et non par le
+  -- contrat standard : une suite se rejoue, et aucun autre scénario ne doit
+  -- dépendre de ce que celui-ci laisse derrière lui.
+  EXECUTE 'RESET ROLE';
+  INSERT INTO document_effects (tenant_id, document_type, evenement, effet, actif)
+  VALUES (t, 'invoices', 'validated', 'sale.invoice.generated_entry', false)
+  ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
+               document_type, evenement, effet)
+  DO UPDATE SET actif = false;
+  v_autorise1 := chain_autorise(t, 'invoices', 'validated', 'sale.invoice.generated_entry');
+
+  -- Contrat éteint, mode `observe` (le défaut) : l'effet est produit quand même,
+  -- et la trace dit que le contrat manque.
   PERFORM _as_user();
-  BEGIN
-    -- Avant : aucune déclaration.
-    UPDATE invoices SET validation_status = 'validated' WHERE id = inv1;
-    SELECT count(*) INTO n_tolere1 FROM chain_traces
-    WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
-      AND amont_id = inv1 AND resultat = 'tolere';
+  UPDATE invoices SET validation_status = 'validated' WHERE id = inv1;
+  SELECT count(*) INTO n_tolere1 FROM chain_traces
+  WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
+    AND amont_id = inv1 AND resultat = 'tolere';
 
-    -- Le contrat de CETTE société, posé par le propriétaire (L7 le fera) : une
-    -- ligne de société l'emporte sur le contrat standard (mesuré par la suite
-    -- 252, T06). Il est porté par la société du scénario, et non par le contrat
-    -- standard : une suite se rejoue, et aucun autre scénario ne doit dépendre de
-    -- ce que celui-ci laisse derrière lui.
-    EXECUTE 'RESET ROLE';
-    INSERT INTO document_effects (tenant_id, document_type, evenement, effet,
-                                  ecrit_comptable, journal_code, obligatoire)
-    VALUES (t, 'invoices', 'validated', 'sale.invoice.generated_entry', true, 'VT', true)
-    ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
-                 document_type, evenement, effet)
-    DO UPDATE SET actif = true;
-    v_autorise := chain_autorise(t, 'invoices', 'validated', 'sale.invoice.generated_entry');
+  -- On RALLUME le contrat pour la société : `chain_autorise` rend vrai, et la
+  -- trace ne dit plus « sans contrat ».
+  EXECUTE 'RESET ROLE';
+  UPDATE document_effects SET actif = true
+  WHERE tenant_id = t AND document_type = 'invoices' AND evenement = 'validated'
+    AND effet = 'sale.invoice.generated_entry';
+  v_autorise2 := chain_autorise(t, 'invoices', 'validated', 'sale.invoice.generated_entry');
 
-    -- Après : l'effet est déclaré.
-    PERFORM _as_user();
-    UPDATE invoices SET validation_status = 'validated' WHERE id = inv2;
-    SELECT count(*) INTO n_tolere2 FROM chain_traces
-    WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
-      AND amont_id = inv2 AND resultat = 'tolere';
-    SELECT count(*) INTO n_applique2 FROM chain_traces
-    WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
-      AND amont_id = inv2 AND resultat = 'applique';
-    PERFORM _rec('T12',
-      'contrat déclaré : `chain_autorise` rend vrai, la trace ne dit plus « sans contrat » — sans contrat la trace le dit',
-      n_tolere1 = 1 AND v_autorise AND n_tolere2 = 0 AND n_applique2 = 1,
-      format('sans contrat tolere=%s | autorise=%s | avec contrat tolere=%s applique=%s',
-             n_tolere1, v_autorise, n_tolere2, n_applique2));
-  EXCEPTION WHEN OTHERS THEN
-    PERFORM _rec('T12', 'contrat déclaré : `chain_autorise` rend vrai, la trace ne dit plus « sans contrat » — sans contrat la trace le dit', false, SQLERRM);
-  END;
+  PERFORM _as_user();
+  UPDATE invoices SET validation_status = 'validated' WHERE id = inv2;
+  SELECT count(*) INTO n_tolere2 FROM chain_traces
+  WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
+    AND amont_id = inv2 AND resultat = 'tolere';
+  SELECT count(*) INTO n_applique2 FROM chain_traces
+  WHERE tenant_id = t AND effet = 'sale.invoice.generated_entry'
+    AND amont_id = inv2 AND resultat = 'applique';
+  PERFORM _rec('T12',
+    'contrat éteint pour la société : `chain_autorise` faux et la trace dit « sans contrat » ; rallumé : vrai, et la trace ne le dit plus',
+    NOT v_autorise1 AND n_tolere1 = 1 AND v_autorise2 AND n_tolere2 = 0 AND n_applique2 = 1,
+    format('éteint autorise=%s tolere=%s | rallumé autorise=%s tolere=%s applique=%s',
+           v_autorise1, n_tolere1, v_autorise2, n_tolere2, n_applique2));
+EXCEPTION WHEN OTHERS THEN
+  PERFORM _rec('T12', 'contrat éteint pour la société : `chain_autorise` faux et la trace dit « sans contrat » ; rallumé : vrai, et la trace ne le dit plus', false, SQLERRM);
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
