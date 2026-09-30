@@ -22,20 +22,37 @@ cd app
 npm run dev -- --port 5174          # terminal 1 : l'application (localhost)
 
 npm run qa:inventory                # le plan de tournée
-npm run qa:seed -- --workers=4      # crée la société par l'écran + 4 comptes
+npm run qa:seed -- --workers=4      # société remplie : inscription + assistant + 4 comptes
+npm run qa:amorce                   # …puis les données métier (par l'API du produit)
 npm run qa:run -- --workers=4 --viewports=desktop,mobile
 npm run qa:validate                 # rejoue le jugement seul
 npm run qa:summary                  # les comptes : par règle, par module, par gabarit
 ```
 
+Les deux **états** de société (écrans remplis et écrans vides), les quatre
+gabarits, et le guide — une seule commande :
+
+```bash
+npm run qa:seed -- --session=session-vide.json   # seconde société, JAMAIS remplie
+npm run qa:run -- --states=remplie,vide --viewports=all --workers=5
+```
+
 Utile :
 
 ```bash
-npm run qa:run -- --workers=6 --viewports=all        # 375 / 768 / 1280 / 1920
+npm run qa:run -- --viewports=all                    # 375 / 768 / 1280 / 1920
+npm run qa:run -- --states=remplie --workers=6       # un seul état
 npm run qa:run -- --modules=accounting,hr            # un périmètre
 npm run qa:run -- --light                            # rendu seul (rapide)
 npm run qa:validate -- --baseline                    # inscrire les défauts connus
+node scripts/qa/worker.mjs --shard=0 --of=1 --viewports=desktop \
+     --routes=/sales/invoices,/stock/boms            # rejouer une ligne du registre
+node scripts/qa/guide.mjs --viewports=all            # le guide de bienvenue, seul
 ```
+
+Le **guide de bienvenue** a son scénario (`guide.mjs`) parce que la tournée le
+pose comme déjà vu (`compta-onboarded`) : sans lui, il recouvrirait les 334
+écrans. `dispatch.mjs` le lance après les vagues, sous le même jeton de tournée.
 
 ## Doctrine (à respecter)
 

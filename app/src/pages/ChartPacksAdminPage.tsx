@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, Badge, EmptyState, Breadcrumb } from '@/components/ui'
+import { Card, PageHeader, Button, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { SearchableSelect } from '@/components/SearchableSelect'
 import { useToast } from '@/lib/toast'
 import { confirmDialog } from '@/lib/confirm'
@@ -90,7 +90,17 @@ export function ChartPacksAdminPage() {
     }
   }
 
-  if (allowed === null) return null
+  if (allowed === null) {
+    // Le temps de la vérification, l'écran doit dire ce qu'il est : un
+    // `return null` laissait une page blanche sans titre (mesuré par l'essaim le
+    // 30/09/2026, quatre gabarits confondus).
+    return (
+      <div>
+        <PageHeader title={t('chartPacks.title')} />
+        <SkeletonTable rows={4} cols={3} />
+      </div>
+    )
+  }
   if (!allowed) {
     // L'écran refusé doit porter son titre : sans lui, l'essaim QA (et un lecteur
     // d'écran) ne trouve rien à annoncer — mesuré le 29/09/2026.

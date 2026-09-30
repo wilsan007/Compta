@@ -57,21 +57,38 @@ function main() {
     console.error(`Aucun shard dans ${path.relative(APP, SHARDS)} — lancer d'abord « node scripts/qa/dispatch.mjs ».`)
     process.exit(2)
   }
-  // Intégrité : des shards de deux tournées ne se jugent pas ensemble. Une
-  // session parallèle (ou un run oublié) écrivait dans le même dossier et le
-  // verdict mélangeait deux mesures (constaté le 29/09/2026).
-  const runs = new Set(shards.map((s) => s.run).filter(Boolean))
-  if (runs.size > 1) {
-    console.error(`Refus : ${runs.size} tournées différentes dans .qa-out/shards (${[...runs].join(' · ')}) — relancer la tournée.`)
+  // Intégrité : un shard n'appartient au verdict que s'il vient d'une vague que
+  // le dispatcheur a réellement lancée (dispatch.json porte leurs jetons). Un
+  // shard étranger — session parallèle, run oublié, dossier non vidé — est
+  // REFUSÉ au lieu d'être fondu dans la mesure (constaté le 29/09/2026 : un
+  // journal annonçait 166 visites quand le shard en portait 69).
+  const dispatchFile = path.join(OUT, 'dispatch.json')
+  const allowed = new Set()
+  if (fs.existsSync(dispatchFile)) {
+    const waves = JSON.parse(fs.readFileSync(dispatchFile, 'utf8')).waves ?? []
+    for (const w of waves) if (w.run) allowed.add(w.run)
+  }
+  const tokens = new Set(shards.map((s) => s.run).filter(Boolean))
+  const foreign = [...tokens].filter((t) => !allowed.has(t))
+  if (allowed.size && foreign.length) {
+    console.error(`Refus : ${foreign.length} shard(s) d'une tournée étrangère (${foreign.join(' · ')}) — les vagues lancées portaient ${[...allowed].join(' · ')}. Vider .qa-out/shards ou relancer.`)
+    process.exit(2)
+  }
+  if (!allowed.size && tokens.size > 1) {
+    console.error(`Refus : ${tokens.size} tournées différentes dans .qa-out/shards (${[...tokens].join(' · ')}) — relancer la tournée.`)
     process.exit(2)
   }
   const findings = []
   const seen = new Set()
   const summaries = []
   let casualties = 0
-  const meta = { base: shards[0].base, accounts: [], viewports: shards[0].viewports, routes: 0, shards: shards.length, from: shards[0].startedAt, to: shards[0].finishedAt }
+  const meta = { base: shards[0].base, accounts: [], companies: [], waves: [], viewports: shards[0].viewports, routes: 0, shards: shards.length, from: shards[0].startedAt, to: shards[0].finishedAt }
   for (const s of shards) {
     meta.accounts.push(s.account)
+    // L'état de la société compte : « remplie » et « neuve » ne mesurent pas la
+    // même chose (le rapport doit dire laquelle il juge).
+    if (s.company && !meta.companies.includes(s.company)) meta.companies.push(s.company)
+    if (s.prefix && !meta.waves.includes(s.prefix)) meta.waves.push(s.prefix)
     if (s.finishedAt > meta.to) meta.to = s.finishedAt
     for (const r of s.summaries ?? []) { summaries.push(r); meta.routes += 1 }
     for (const f of s.findings ?? []) {
@@ -105,6 +122,7 @@ function main() {
   L.push(`- tournée : ${meta.from} → ${meta.to}`)
   L.push(`- ouvriers : ${meta.shards} ; comptes : ${[...new Set(meta.accounts)].join(', ')}`)
   L.push(`- gabarits d'écran : ${(meta.viewports || []).join(', ')}`)
+  if (meta.companies.length) L.push(`- société(s) mesurée(s) : ${meta.companies.join(' , ')}${meta.waves.length ? ` (vagues : ${meta.waves.join(', ')})` : ' (société remplie par qa:amorce)'}`)
   L.push(``)
   L.push(`## Mesures`)
   L.push(``)

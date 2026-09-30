@@ -182,11 +182,19 @@ export function BankReconciliationStatePage() {
         )}
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <Select label={t('state.account')} value={accountId} onChange={(e) => setAccountId(e.target.value)}
-          className="max-w-xs" options={accounts.map((a) => ({ value: a.id, label: a.name }))} />
-        <Input label={t('state.date')} type="date" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-xs" />
-      </div>
+      {/* Aucun compte bancaire : une liste déroulante sans option ne dit rien à
+          l'utilisateur (mesuré par l'essaim le 30/09/2026 sur une société
+          neuve — la vague « vide » sert exactement à voir cela). */}
+      {!loading && accounts.length === 0 && (
+        <EmptyState icon={<AlertTriangle className="w-8 h-8" />} title={t('state.noAccount')} description={t('state.noAccountDesc')} />
+      )}
+      {accounts.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <Select label={t('state.account')} value={accountId} onChange={(e) => setAccountId(e.target.value)}
+            className="max-w-xs" options={accounts.map((a) => ({ value: a.id, label: a.name }))} />
+          <Input label={t('state.date')} type="date" value={date} onChange={(e) => setDate(e.target.value)} className="max-w-xs" />
+        </div>
+      )}
 
       {loading ? (
         <SkeletonTable rows={6} cols={5} />

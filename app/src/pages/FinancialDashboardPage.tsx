@@ -42,7 +42,17 @@ export function FinancialDashboardPage() {
   }
 
   if (loading) return <SkeletonTable rows={6} />
-  if (!data) return <EmptyState title={t('financialDashboard.noData')} description={t('financialDashboard.noDataDesc')} />
+  // Échec de chargement : l'écran doit garder son titre (l'essaim mesurait un
+  // « ni h1 ni h2 » sur un écran pourtant nommé — 30/09/2026).
+  if (!data) {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: t('financialDashboard.breadcrumb'), path: '/reporting/financial' }, { label: t('financialDashboard.breadcrumb2') }]} />
+        <PageHeader title={t('financialDashboard.title')} subtitle={t('financialDashboard.subtitle')} />
+        <EmptyState title={t('financialDashboard.noData')} description={t('financialDashboard.noDataDesc')} />
+      </div>
+    )
+  }
 
   return (
     <div>

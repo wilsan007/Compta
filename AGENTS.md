@@ -865,4 +865,15 @@ L'essentiel en huit lignes :
   écran **encore en chargement** (squelette `animate-pulse`) se mesurait comme un
   écran sans titre ou à liste vide — l'ouvrier attend la fin du squelette et
   recharge une fois avant d'imputer un « Failed to fetch ».
+- **Deux défauts trouvés par cette passe large, corrigés** : `/settings/chart-packs`
+  ne rendait **rien** pendant la vérification des droits (page blanche sans titre)
+  et `/reporting/financial` montrait son état vide **sans titre** ; la société
+  neuve a révélé une liste de comptes bancaires **vide** sur
+  `/banking/reconciliation-state` (elle dit maintenant « aucun compte »). Rejoués
+  sur les **quatre gabarits et les deux sociétés** : **0 défaut**. Et un ouvrier
+  qui perd sa session **se reconnecte** (8 reconnexions mesurées sur une passe) ;
+  une visite qui voit la pile tomber (502/503/504, réseau) ou la session
+  s'évaporer **ne juge rien** — elle est écartée et journalisée (39 « pages
+  blanches » de 13 caractères décrivaient la pile, pas les écrans, sous une charge
+  hôte de 20 à 46).
 

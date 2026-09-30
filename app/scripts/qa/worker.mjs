@@ -60,6 +60,10 @@ const MODULES = (arg('modules', '') || '').split(',').map((s) => s.trim()).filte
 const ONLY = (arg('routes', '') || '').split(',').map((s) => s.trim()).filter(Boolean)
 const LIMIT = Number(arg('limit', '0')) || 0
 const RUN = arg('run', '')
+// Deux vagues peuvent cohabiter dans le même dossier de shards : la société
+// REMPLIE et la société VIDE. Le préfixe les sépare (`shard-vide-0-de-4.json`),
+// le jeton de tournée les authentifie.
+const PREFIX = arg('prefix', '')
 const LIGHT = process.argv.includes('--light')
 const SHOTS = arg('shots', 'defects')
 
@@ -167,7 +171,7 @@ let envBroken = false
 
 function verdictsFromDom(route, dom, state, vp, push) {
   const cap = (arr, n = 4) => arr.slice(0, n).join(' ; ')
-  if ([...state.api, ...state.consoleErrors].some((l) => /502 Bad Gateway|503 Service Unavailable/.test(l))) envBroken = true
+  if ([...state.api, ...state.consoleErrors].some((l) => /50[23]/.test(l))) envBroken = true
   if (state.jsErrors.length) push(finding(route, 'erreur_js', cap(state.jsErrors), vp))
   if (dom.errorBoundary) push(finding(route, 'erreur_page', dom.textSample, vp))
   if (dom.isBlank) push(finding(route, 'page_blanche', `${dom.textLength} caractère(s) rendu(s)`, vp))
@@ -365,6 +369,37 @@ async function visit(page, route, vpName, findings) {
       await settle(page, 12000)
       dom = await page.evaluate(collectDom)
     }
+    // Un squelette encore à l'écran : l'écran n'a pas fini. Le mesurer là
+    // donnerait un faux « sans titre » ou une fausse « liste sans option »
+    // (mesuré le 30/09/2026 sur trois écrans). On lui laisse le temps de peindre.
+    if (dom.skeleton && !dom.errorBoundary) {
+      await page.waitForTimeout(2500)
+      await settle(page, 10000)
+      dom = await page.evaluate(collectDom)
+    }
+    // « Failed to fetch » peut être un hoquet de la pile locale, pas un défaut de
+    // l'écran : on recharge une fois, et le verdict ne tient que s'il se reproduit.
+    const fetchFailed = () => [...state.consoleErrors, ...state.jsErrors].some((l) => /Failed to fetch|NetworkError|Load failed/i.test(l))
+    if (fetchFailed()) {
+      state.consoleErrors.length = 0
+      state.jsErrors.length = 0
+      await page.goto(BASE + route.path, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {})
+      await settle(page)
+      dom = await page.evaluate(collectDom)
+    }
+    // Une visite qui a vu la pile tomber (réseau, 502/503/504) ou la session
+    // s'évaporer ne juge RIEN : ses verdicts décriraient l'incident, pas l'écran
+    // (mesuré le 30/09/2026 : une vague entière accusée de « route redirigée
+    // vers /login », de 400 et de timeouts pendant que PostgREST tombait).
+    const stackDown = [...state.api, ...state.consoleErrors].some((l) => /50[234]|ERR_NETWORK|ERR_INTERNET|ERR_NAME_NOT_RESOLVED/i.test(l))
+    if (stackDown || sessionLost) {
+      findings.splice(before, findings.length - before)
+      console.log(`[ouvrier ${SHARD}] ${vpName} ${route.path} — incident de pile/session : visite écartée (aucun verdict imputé à l'écran).`)
+      return {
+        path: route.path, module: route.module, viewport: vpName, ms: Date.now() - started,
+        textLength: dom?.textLength ?? 0, headings: 0, buttons: 0, inter: {}, findings: 0, sessionLost, incident: stackDown ? 'pile' : 'session',
+      }
+    }
     verdictsFromDom(route, dom, state, vpName, push)
     if (!LIGHT && !dom.errorBoundary && !dom.isBlank) {
       // Budget d'interaction : 90 s par écran et par gabarit, partagé entre les
@@ -386,6 +421,13 @@ async function visit(page, route, vpName, findings) {
   } catch (e) {
     const msg = String(e?.message || e)
     if (/has been closed|Target closed|browser has been closed/i.test(msg)) browserGone = true
+    // Une page qui ne répond pas (timeout) ou un réseau qui lâche : incident de
+    // pile, jamais un défaut de l'écran.
+    else if (/Timeout \d+ms exceeded|net::ERR_|NS_ERROR_|Navigation failed/i.test(msg)) {
+      findings.splice(before, findings.length - before)
+      console.log(`[ouvrier ${SHARD}] ${vpName} ${route.path} — pile muette (${msg.slice(0, 60)}) : visite écartée.`)
+      return { path: route.path, module: route.module, viewport: vpName, ms: Date.now() - started, textLength: 0, headings: 0, buttons: 0, inter: {}, findings: 0, sessionLost: false, incident: 'pile' }
+    }
     else push(finding(route, 'erreur_js', `visite interrompue : ${msg.slice(0, 180)}`, vpName))
   } finally {
     state.stop()
@@ -394,6 +436,24 @@ async function visit(page, route, vpName, findings) {
     path: route.path, module: route.module, viewport: vpName, ms: Date.now() - started,
     textLength: dom?.textLength ?? 0, headings: dom?.headings?.length ?? 0, buttons: dom?.interactiveCount ?? 0,
     inter, findings: findings.length - before, sessionLost,
+  }
+}
+
+/** Se reconnecter : une tournée dure plus longtemps que la validité d'un jeton. */
+async function relogin(page, account) {
+  try {
+    await page.goto(BASE + '/login', { waitUntil: 'domcontentloaded', timeout: 30000 })
+    await page.locator('input[type="email"]').waitFor({ state: 'visible', timeout: 20000 })
+    await page.locator('input[type="email"]').fill(account.email)
+    await page.locator('input[type="password"]').fill(account.password ?? '')
+    await page.locator('button[type="submit"]').click()
+    await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 })
+    await page.waitForFunction(() => Object.keys(window.localStorage).some((k) => /^sb-.+-auth-token$/.test(k)), null, { timeout: 20000 }).catch(() => {})
+    await page.waitForTimeout(1000)
+    return true
+  } catch (e) {
+    console.log(`[ouvrier ${SHARD}] reconnexion impossible : ${String(e?.message || e).slice(0, 80)}`)
+    return false
   }
 }
 
@@ -407,14 +467,14 @@ async function main() {
   console.log(`[ouvrier ${SHARD}/${OF}] ${routes.length} route(s) × ${VIEWPORT_NAMES.join('+')}, compte ${account.email}`)
   const findings = []
   const summaries = []
-  const shardFile = path.join(SHARD_DIR, `shard-${SHARD}-de-${OF}.json`)
+  const shardFile = path.join(SHARD_DIR, `shard${PREFIX ? `-${PREFIX}` : ''}-${SHARD}-de-${OF}.json`)
   // Les mesures sont écrites au fur et à mesure : une fermeture de navigateur
   // qui traîne ne doit jamais emporter une tournée déjà faite (constaté le
   // 29/09/2026 : trois ouvriers bloqués sur `browser.close()`, 168 visites
   // chacun, aucun shard écrit).
   const flush = (finishedAt = null) => {
     fs.writeFileSync(shardFile, JSON.stringify({
-      shard: SHARD, of: OF, run: RUN, base: BASE, account: account.email, viewports: VIEWPORT_NAMES,
+      shard: SHARD, of: OF, prefix: PREFIX, run: RUN, base: BASE, account: account.email, company: session.company, viewports: VIEWPORT_NAMES,
       startedAt, finishedAt: finishedAt ?? new Date().toISOString(), routesVisited: summaries.length, findings, summaries,
     }, null, 2))
   }
@@ -453,7 +513,16 @@ async function main() {
         console.log(`[ouvrier ${SHARD}] pile locale tombée (502) à la ${summaries.length}ᵉ visite — tournée arrêtée sans rien imputer aux écrans.`)
         process.exit(3)
       }
-      if (r.sessionLost) { lost = true; break }
+      if (r.sessionLost) {
+        // Une tournée dure plus longtemps qu'un jeton (1 h) et la pile locale peut
+        // être lente au point que le renouvellement échoue : l'ouvrier se
+        // reconnecte avec le compte du banc (ses mots de passe y sont) au lieu
+        // d'abandonner soixante écrans plus loin (mesuré le 30/09/2026).
+        const back = await relogin(page, account)
+        console.log(`[ouvrier ${SHARD}] session expirée à la ${summaries.length}ᵉ visite — reconnexion ${back ? 'réussie' : 'impossible'}.`)
+        if (!back) { lost = true; break }
+        continue
+      }
       if (browserGone) { console.log(`[ouvrier ${SHARD}] navigateur perdu à la ${summaries.length}ᵉ visite — tournée arrêtée sans rien imputer au produit.`); lost = true; break }
     }
     await context.close().catch(() => {})

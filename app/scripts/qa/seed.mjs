@@ -31,6 +31,10 @@ const observations = []
 const STAMP = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
 const COMPANY = argOf('company', `QA Essaim ${STAMP}`)
 const WORKERS = Number(argOf('workers', '4'))
+// Deux bancs peuvent coexister : celui de la tournée sur une société REMPLIE
+// (`session.json`, complété par `qa:amorce`) et celui de la tournée sur une
+// société VIDE (`--session=session-vide.json`), qui montre les états vides.
+const SESSION_FILE = argOf('session', 'session.json')
 
 function argOf(name, def) {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
@@ -257,7 +261,11 @@ async function addWorker(browser, index, tenantId) {
   await page.waitForTimeout(2000)
   const landed = new URL(page.url()).pathname
   if (landed.startsWith('/onboarding')) throw new Error(`l'ouvrier ${email} n'est rattaché à aucune société (${landed})`)
-  const dir = path.join(QA_DIR, 'accounts')
+  // Un dossier par SESSION : deux bancs (société remplie, société vide)
+  // écrivaient `accounts/ouvrier-0.json` et se recouvraient — la vague « remplie »
+  // mesurait alors la société vide sans que rien ne le dise (mesuré le
+  // 30/09/2026 : un compte de la société remplie affichait la société neuve).
+  const dir = path.join(QA_DIR, 'accounts', SESSION_FILE.replace(/\.json$/, ''))
   fs.mkdirSync(dir, { recursive: true })
   const file = path.join(dir, `ouvrier-${index}.json`)
   await ctx.storageState({ path: file })
@@ -280,7 +288,7 @@ async function main() {
     const tenantId = sql(`SELECT id FROM tenants WHERE name = '${safe}' ORDER BY created_at DESC LIMIT 1`)
     if (!tenantId || tenantId.includes(' ')) throw new Error(`société créée mais introuvable en base sous « ${COMPANY} »`)
     console.log(`      société ${tenantId}`)
-    const dir = path.join(QA_DIR, 'accounts')
+    const dir = path.join(QA_DIR, 'accounts', SESSION_FILE.replace(/\.json$/, ''))
     fs.mkdirSync(dir, { recursive: true })
     const ownerState = path.join(dir, 'patron.json')
     await ctx.storageState({ path: ownerState })
@@ -297,12 +305,12 @@ async function main() {
       createdAt: new Date().toISOString(), base: BASE, api: API, company: COMPANY, tenantId,
       owner: { email, password: PASSWORD, storageState: ownerState, role: 'admin' }, workers,
     }
-    fs.writeFileSync(path.join(QA_DIR, 'session.json'), JSON.stringify(session, null, 2))
+    fs.writeFileSync(path.join(QA_DIR, SESSION_FILE), JSON.stringify(session, null, 2))
     const outDir = path.join(APP_DIR, '.qa-out')
     fs.mkdirSync(outDir, { recursive: true })
-    fs.writeFileSync(path.join(outDir, 'seed-observations.json'), JSON.stringify(observations, null, 2))
-    console.log(`\nsession prête : .qa/session.json — société « ${COMPANY} », ${workers.length + 1} compte(s)`)
-    if (observations.length) console.log(`⚠ ${observations.length} blocage(s) constaté(s) à l'amorçage → .qa-out/seed-observations.json`)
+    fs.writeFileSync(path.join(outDir, SESSION_FILE.replace(/\.json$/, '') + '-observations.json'), JSON.stringify(observations, null, 2))
+    console.log(`\nsession prête : .qa/${SESSION_FILE} — société « ${COMPANY} », ${workers.length + 1} compte(s)`)
+    if (observations.length) console.log(`⚠ ${observations.length} blocage(s) constaté(s) à l'amorçage → .qa-out/${SESSION_FILE.replace(/\.json$/, '')}-observations.json`)
   } finally {
     await browser.close()
   }

@@ -36,6 +36,9 @@ export const RULES = {
   modal_sans_titre: { severity: 'mineur', kind: 'modale', label: 'Fenêtre sans titre' },
   modal_champ_sans_nom: { severity: 'mineur', kind: 'modale', label: 'Champ de formulaire sans libellé' },
   modal_vide: { severity: 'majeur', kind: 'modale', label: 'Fenêtre ouverte mais vide' },
+  // Le guide de bienvenue a son propre scénario (scripts/qa/guide.mjs) : la
+  // tournée le pose comme déjà vu, sinon il recouvre les 334 écrans.
+  guide_etape_inchange: { severity: 'majeur', kind: 'modale', label: "Le guide n'avance pas (l'étape ne change pas)" },
 
   // ── Boutons et accessibilité ───────────────────────────────────
   bouton_sans_nom: { severity: 'majeur', kind: 'a11y', label: 'Bouton/onglet sans libellé accessible' },

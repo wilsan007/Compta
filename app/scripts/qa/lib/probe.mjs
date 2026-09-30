@@ -138,6 +138,11 @@ export function collectDom() {
     docScrollOverflow: document.documentElement.scrollWidth - vw,
     clippedText: clipped.slice(0, 12),
     oversized: oversized.slice(0, 12),
+    // Un squelette de chargement (`animate-pulse`) signale un écran qui n'a pas
+    // encore ses données : sans cette marque, la tournée mesurait des titres et
+    // des listes déroulantes pas encore rendus (constaté le 30/09/2026 :
+    // /system/audit-log, /accounting/structure/budget-commitments, /reports).
+    skeleton: document.querySelectorAll('.animate-pulse').length,
     // Coquilles connues : frontière d'erreur React, module désactivé, accès refusé.
     errorBoundary: /Une erreur est survenue|a rencontré une erreur inattendue/.test(text),
     moduleDisabled: /module est désactivé|module désactivé/.test(text),
