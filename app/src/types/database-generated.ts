@@ -4572,6 +4572,11 @@ export interface Database {
         payload: Json
         created_by: string | null
         created_at: string
+        etat: string
+        tour: number
+        ferme_le: string | null
+        ferme_par: string | null
+        motif: string | null
       }
       Insert: {
         id?: string
@@ -4587,6 +4592,11 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
+        etat?: string
+        tour?: number
+        ferme_le?: string
+        ferme_par?: string
+        motif?: string
       }
       Update: {
         id?: string
@@ -4602,6 +4612,11 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
+        etat?: string
+        tour?: number
+        ferme_le?: string
+        ferme_par?: string
+        motif?: string
       }
       Relationships: []
     }
