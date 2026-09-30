@@ -2,7 +2,14 @@ import { it } from 'vitest'
 import fs from 'fs'
 import path from 'path'
 import { login, A, save } from './rig'
-const APP = '/Users/awalehosman/Desktop/Projet Saas/compta/app'
+// ⚠️ Correctif du 30/09/2026 : le chemin de l'application était écrit EN DUR
+// (`/Users/<poste>/…/app`). Sur le runner de la CI, ce chemin n'existe pas, et le
+// balayage mourait sur un `ENOENT: … scandir '/Users/…/app/src/lib/queries'` —
+// mesuré sur le run 36766828782, qui a fait échouer le job « Chemin de l'écran ».
+// Le chemin se déduit maintenant de la position du fichier (ce dossier est
+// `app/src/__screen__`, donc l'application est deux niveaux au-dessus), comme le
+// fait déjà `rig.ts` pour le fichier du banc.
+const APP = path.resolve(__dirname, '../..')
 it('balayage des lecteurs du front', async () => {
   await login(0, A)
   const dir = path.join(APP, 'src/lib/queries')
