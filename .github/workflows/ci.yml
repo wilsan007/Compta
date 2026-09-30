@@ -894,6 +894,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Lot B (recette /qa du 29/09) : facture directe (B2, ven-008), décision
+      # D-QA-1 (une facture directe d'un article stocké sort le stock, avec garde
+      # anti-double), avoir d'article (B4, ven-012), nom du client et date
+      # d'origine (B6, ven-006), numérotation chronologique (B7, ven-007 / D-QA-2).
+      - name: 'QA : facture directe, avoir et chronologie (317)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_invoice_direct_stock_and_line_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

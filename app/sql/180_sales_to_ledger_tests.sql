@@ -214,8 +214,11 @@ BEGIN
     a := _mk_invoice(t, c, '2026-03-01', '[{"q":1,"p":100,"r":20}]', false);
     b := _mk_invoice(t, c, '2026-03-02', '[{"q":1,"p":100,"r":20}]', false);
     SELECT number INTO draft_no FROM invoices WHERE id = a;
-    UPDATE invoices SET validation_status = 'validated' WHERE id = b;
+    -- B7 / D-QA-2 (317) : la validation suit la chronologie — une facture datée
+    -- avant la dernière validée est refusée. On valide donc dans l'ordre des
+    -- dates : a (03-01) puis b (03-02).
     UPDATE invoices SET validation_status = 'validated' WHERE id = a;
+    UPDATE invoices SET validation_status = 'validated' WHERE id = b;
     -- une validation refusée (facture sans ligne) ne consomme pas de numéro
     INSERT INTO invoices (tenant_id, number, customer_id, customer_name, date, due_date, status)
     VALUES (t, 'VIDE', c, 'Client N', '2026-03-03', '2026-03-03', 'draft') RETURNING id INTO v;
@@ -226,11 +229,11 @@ BEGIN
     SELECT number INTO na FROM invoices WHERE id = a;
     SELECT number INTO nd FROM invoices WHERE id = d;
     SELECT number INTO n27s FROM invoices WHERE id = n27;
-    PERFORM _rec('E12', 'numéros FAC-2026-000001/2/3 dans l''ordre de validation, FAC-2027-000001, brouillon provisoire',
-      nb = 'FAC-2026-000001' AND na = 'FAC-2026-000002' AND nd = 'FAC-2026-000003' AND n27s = 'FAC-2027-000001'
+    PERFORM _rec('E12', 'numéros FAC-2026-000001/2/3 dans l''ordre des dates, FAC-2027-000001, brouillon provisoire',
+      na = 'FAC-2026-000001' AND nb = 'FAC-2026-000002' AND nd = 'FAC-2026-000003' AND n27s = 'FAC-2027-000001'
         AND draft_no NOT LIKE 'FAC-%',
-      format('b=%s a=%s d=%s 2027=%s brouillon=%s', nb, na, nd, n27s, draft_no));
-  EXCEPTION WHEN OTHERS THEN PERFORM _rec('E12', 'numéros FAC-2026-000001/2/3 dans l''ordre de validation, FAC-2027-000001, brouillon provisoire', false, SQLERRM); END;
+      format('a=%s b=%s d=%s 2027=%s brouillon=%s', na, nb, nd, n27s, draft_no));
+  EXCEPTION WHEN OTHERS THEN PERFORM _rec('E12', 'numéros FAC-2026-000001/2/3 dans l''ordre des dates, FAC-2027-000001, brouillon provisoire', false, SQLERRM); END;
 END $$;
 
 -- E13 — AUD-E04 : 1 000 validations → 1 000 numéros consécutifs distincts
@@ -240,8 +243,11 @@ BEGIN
   INSERT INTO customers (tenant_id, name) VALUES (t, 'Client M') RETURNING id INTO c;
   PERFORM _as_user();
   BEGIN
+    -- B7 / D-QA-2 (317) : la validation suit la chronologie. Les 1 000 pièces
+    -- gardent donc la même date (des dates décroissantes seraient refusées) ;
+    -- l'objet du scénario reste la continuité des numéros.
     FOR i IN 1..1000 LOOP
-      PERFORM _mk_invoice(t, c, DATE '2026-01-01' + (i % 300), '[{"q":1,"p":10,"r":20}]');
+      PERFORM _mk_invoice(t, c, DATE '2026-06-01', '[{"q":1,"p":10,"r":20}]');
     END LOOP;
     SELECT count(*), count(DISTINCT number), max(substring(number FROM '(\d+)$')::int)
       INTO n, nd, mx FROM invoices WHERE tenant_id = t AND number LIKE 'FAC-2026-%';
