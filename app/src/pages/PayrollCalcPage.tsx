@@ -10,8 +10,8 @@ import type { Employee, LegislationPack } from '@/types'
 
 // C2 (rh-005) — cet écran APPELLE le moteur (`simulate_payslip`, migration 319)
 // et affiche ce qu'il rend. Il ne recalcule plus rien : avant, il avait son
-// propre barème TypeScript, un second moteur, et 2 500 € brut y donnaient
-// 1 798,53 € de net au lieu des 1 919,53 € du moteur de la base.
+// propre barème TypeScript, un second moteur, et 2 500 EUR brut y donnaient
+// 1 798,53 EUR de net au lieu des 1 919,53 EUR du moteur de la base.
 //
 // Les champs retirés (type de contrat, heures par semaine, heures
 // supplémentaires, titres-restaurant, indemnité transport, taux de PAS) ne
@@ -151,7 +151,7 @@ export function PayrollCalcPage() {
                   <h4 className="text-xs font-semibold uppercase text-[var(--color-text-secondary)]">{t('payroll.employerContributions')}</h4>
                   <Row label={t('payroll.employerContributions')} value={formatPayrollAmount(result.employer_contributions)} bold />
                   {/* C2 : la réduction générale était calculée par le moteur et
-                      jamais montrée. Elle vaut jusqu'à 743 € au SMIC : c'est une
+                      jamais montrée. Elle vaut jusqu'à 743 EUR au SMIC : c'est une
                       ligne de résultat, pas un détail. */}
                   <Row label={t('payroll.reductionGenerale')} value={formatPayrollAmount(result.reduction_generale)} bold />
                   {Number(result.rgdu_coefficient) > 0 && (

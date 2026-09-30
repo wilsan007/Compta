@@ -37,8 +37,8 @@ export function CustomersPage() {
   async function loadCustomers() {
     try {
       // A3 (313) : le « Solde dû » est celui du 411 au grand livre. La colonne
-      // `customers.balance` n'est tenue par rien (elle valait 0,00 € partout
-      // pendant que le 411 portait 540,00 €) : on ne la lit plus.
+      // `customers.balance` n'est tenue par rien (elle valait 0,00 EUR partout
+      // pendant que le 411 portait 540,00 EUR) : on ne la lit plus.
       const [data, balances] = await Promise.all([getCustomers(), getCustomerBalances()])
       const parClient = new Map(balances.map((b) => [b.customer_id, Number(b.balance) || 0]))
       setCustomers((data || []).map((c) => ({ ...c, balance: parClient.get(c.id) ?? 0 })))

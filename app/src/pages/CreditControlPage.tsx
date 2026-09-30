@@ -22,7 +22,7 @@ export function CreditControlPage() {
     try {
       const tid = await getTenantId()
       // A3 (313) : l'encours utilisé n'est pas `customers.credit_used` (jamais
-      // tenue, 0,00 € partout) mais le solde du 411 au grand livre.
+      // tenue, 0,00 EUR partout) mais le solde du 411 au grand livre.
       const [{ data, error }, balances] = await Promise.all([
         supabase
           .from('customers')

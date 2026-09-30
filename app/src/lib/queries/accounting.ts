@@ -1485,7 +1485,7 @@ export async function getAgedBalance(typeFilter?: string, refDate?: string) {
 // --- A3 (313) : le solde des tiers se lit au grand livre --------------------
 // `customers.balance`, `customers.credit_used` et `suppliers.balance` sont trois
 // colonnes dénormalisées que RIEN ne tient : mesuré à l'écran, le 411 portait
-// 540,00 € et la liste des clients affichait 0,00 €. Les vues
+// 540,00 EUR et la liste des clients affichait 0,00 EUR. Les vues
 // `customer_balances` / `supplier_balances` rendent le solde du 411 / 401 par
 // tiers (écritures validées seulement), avec la RLS de la société
 // (`security_invoker`). Même doctrine que la 277 pour la banque.
@@ -1516,7 +1516,7 @@ export async function getSupplierBalances(): Promise<PartnerBalance[]> {
   return (data || []) as PartnerBalance[]
 }
 
-/** Le solde dû d'UN client (411 au grand livre) ; 0,00 € s'il n'a pas bougé. */
+/** Le solde dû d'UN client (411 au grand livre) ; 0,00 EUR s'il n'a pas bougé. */
 export async function getCustomerBalance(customerId: string): Promise<number> {
   const tid = await getTenantId()
   let q = supabase.from('customer_balances').select('balance').eq('customer_id', customerId)

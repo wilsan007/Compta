@@ -7,7 +7,7 @@ import type { Employee, PayRun, Timesheet, PaySlip, PayrollAccountingEntry, Leav
 // L'écran « Simuler » appelle le MOTEUR (`simulate_payslip`, migration 319) et
 // affiche ce qu'il rend. Avant, il recalculait tout en TypeScript
 // (`src/lib/payroll.ts`) : c'était un second moteur, avec ses propres taux —
-// 2 500 € brut y donnaient 1 798,53 € de net au lieu des 1 919,53 € du moteur
+// 2 500 EUR brut y donnaient 1 798,53 EUR de net au lieu des 1 919,53 EUR du moteur
 // de la base. La doctrine W5 : un seul moteur par grandeur.
 
 /** Une ligne du détail des cotisations, telle que le moteur la rend. */
