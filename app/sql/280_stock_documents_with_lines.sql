@@ -406,7 +406,18 @@ END $$;
 REVOKE EXECUTE ON FUNCTION public.order_header_totals() FROM PUBLIC, anon, authenticated;
 
 -- Lignes → en-tête
-CREATE OR REPLACE FUNCTION public.order_lines_refresh_totals()
+-- ⚠️ Correctif du 30/09/2026 (trouvé par `plpgsql_check` en CI, 2 erreurs) : la
+-- fonction était PARTAGÉE par deux tables dont les colonnes diffèrent —
+-- `purchase_order_lines.purchase_order_id` et `sales_order_lines.sales_order_id`.
+-- Sur `sales_order_lines`, `OLD.purchase_order_id` n'existe pas (et
+-- réciproquement) : `plpgsql_check` la refuse sur CHACUNE des deux, et l'erreur
+-- aurait été levée à l'exécution dès la première ligne modifiée de la table où le
+-- champ manque — un `record "old" has no field` en pleine écriture métier. Deux
+-- fonctions, une par table : chacune ne nomme que ses propres colonnes, donc le
+-- test statique peut les valider, et le déclencheur de chaque table appelle la
+-- sienne. La fonction générique est supprimée (plus bas) pour ne pas laisser un
+-- corps que personne n'appelle et que le contrôle refuserait toujours.
+CREATE OR REPLACE FUNCTION public.purchase_order_lines_refresh_totals()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -414,29 +425,38 @@ SET search_path TO 'public', 'pg_temp'
 AS $$
 DECLARE v_id uuid; v_tid uuid;
 BEGIN
-  IF TG_TABLE_NAME = 'purchase_order_lines' THEN
-    FOR v_id, v_tid IN
-      SELECT DISTINCT x.id, x.t FROM (VALUES
-        (CASE WHEN TG_OP <> 'INSERT' THEN OLD.purchase_order_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.tenant_id END),
-        (CASE WHEN TG_OP <> 'DELETE' THEN NEW.purchase_order_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.tenant_id END)
-      ) x(id, t) WHERE x.id IS NOT NULL
-    LOOP
-      -- le déclencheur d'en-tête recalcule depuis les lignes
-      UPDATE purchase_orders SET updated_at = now() WHERE id = v_id AND tenant_id = v_tid;
-    END LOOP;
-  ELSE
-    FOR v_id, v_tid IN
-      SELECT DISTINCT x.id, x.t FROM (VALUES
-        (CASE WHEN TG_OP <> 'INSERT' THEN OLD.sales_order_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.tenant_id END),
-        (CASE WHEN TG_OP <> 'DELETE' THEN NEW.sales_order_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.tenant_id END)
-      ) x(id, t) WHERE x.id IS NOT NULL
-    LOOP
-      UPDATE sales_orders SET updated_at = now() WHERE id = v_id AND tenant_id = v_tid;
-    END LOOP;
-  END IF;
+  FOR v_id, v_tid IN
+    SELECT DISTINCT x.id, x.t FROM (VALUES
+      (CASE WHEN TG_OP <> 'INSERT' THEN OLD.purchase_order_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.tenant_id END),
+      (CASE WHEN TG_OP <> 'DELETE' THEN NEW.purchase_order_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.tenant_id END)
+    ) x(id, t) WHERE x.id IS NOT NULL
+  LOOP
+    -- le déclencheur d'en-tête recalcule depuis les lignes
+    UPDATE purchase_orders SET updated_at = now() WHERE id = v_id AND tenant_id = v_tid;
+  END LOOP;
   RETURN NULL;
 END $$;
-REVOKE EXECUTE ON FUNCTION public.order_lines_refresh_totals() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.purchase_order_lines_refresh_totals() FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.sales_order_lines_refresh_totals()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $$
+DECLARE v_id uuid; v_tid uuid;
+BEGIN
+  FOR v_id, v_tid IN
+    SELECT DISTINCT x.id, x.t FROM (VALUES
+      (CASE WHEN TG_OP <> 'INSERT' THEN OLD.sales_order_id END, CASE WHEN TG_OP <> 'INSERT' THEN OLD.tenant_id END),
+      (CASE WHEN TG_OP <> 'DELETE' THEN NEW.sales_order_id END, CASE WHEN TG_OP <> 'DELETE' THEN NEW.tenant_id END)
+    ) x(id, t) WHERE x.id IS NOT NULL
+  LOOP
+    UPDATE sales_orders SET updated_at = now() WHERE id = v_id AND tenant_id = v_tid;
+  END LOOP;
+  RETURN NULL;
+END $$;
+REVOKE EXECUTE ON FUNCTION public.sales_order_lines_refresh_totals() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS tg_po_line_compute ON public.purchase_order_lines;
 CREATE TRIGGER tg_po_line_compute
@@ -445,7 +465,7 @@ CREATE TRIGGER tg_po_line_compute
 DROP TRIGGER IF EXISTS tg_po_lines_refresh_totals ON public.purchase_order_lines;
 CREATE TRIGGER tg_po_lines_refresh_totals
   AFTER INSERT OR UPDATE OR DELETE ON public.purchase_order_lines
-  FOR EACH ROW EXECUTE FUNCTION public.order_lines_refresh_totals();
+  FOR EACH ROW EXECUTE FUNCTION public.purchase_order_lines_refresh_totals();
 DROP TRIGGER IF EXISTS tg_po_header_totals ON public.purchase_orders;
 CREATE TRIGGER tg_po_header_totals
   BEFORE INSERT OR UPDATE ON public.purchase_orders
@@ -458,7 +478,13 @@ CREATE TRIGGER tg_so_line_compute
 DROP TRIGGER IF EXISTS tg_so_lines_refresh_totals ON public.sales_order_lines;
 CREATE TRIGGER tg_so_lines_refresh_totals
   AFTER INSERT OR UPDATE OR DELETE ON public.sales_order_lines
-  FOR EACH ROW EXECUTE FUNCTION public.order_lines_refresh_totals();
+  FOR EACH ROW EXECUTE FUNCTION public.sales_order_lines_refresh_totals();
+
+-- La fonction générique n'a plus aucun appelant (les deux déclencheurs pointent
+-- désormais sur leur fonction par table) : on la retire ICI, après eux — sinon le
+-- DROP se heurte à leurs dépendances, et `check_plpgsql` continuerait de la
+-- refuser sur les deux tables.
+DROP FUNCTION IF EXISTS public.order_lines_refresh_totals();
 DROP TRIGGER IF EXISTS tg_so_header_totals ON public.sales_orders;
 CREATE TRIGGER tg_so_header_totals
   BEFORE INSERT OR UPDATE ON public.sales_orders

@@ -1,9 +1,15 @@
 // LOT7-01 : `playwright` n'est pas déclaré dans package.json — l'import ne marchait
 // que par dépendance transitive de `@playwright/test`, qui ré-exporte `chromium`.
 import { chromium } from '@playwright/test';
+import path from 'path';
 
 const BASE = 'http://localhost:5173';
-const OUT = '/Users/awalehosman/Desktop/Projet Saas/compta/app/public/screenshots';
+// ⚠️ Correctif du 30/09/2026 : le dossier de sortie était écrit EN DUR
+// (`/Users/<poste>/…/app/public/screenshots`) — le même défaut que le balayage
+// d'écran, qui a fait échouer la CI. Ce script n'est pas joué par la CI
+// aujourd'hui, donc il ne cassait rien ; il aurait cassé le jour où on l'y met,
+// ou sur tout autre poste. Il se déduit de la position du fichier (`app/scripts/`).
+const OUT = path.resolve(__dirname, '../public/screenshots');
 
 async function dismissWelcome(page: any) {
   try {
