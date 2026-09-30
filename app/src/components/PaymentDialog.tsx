@@ -65,6 +65,9 @@ export function PaymentDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (showAmount && amount <= 0) return
+    // Le compte de trésorerie est une information d'ÉCRITURE, pas de confort :
+    // sans lui, l'écran enverrait au compte par défaut et ne le dirait pas.
+    if (bankMissing) return
     setSaving(true)
     try {
       await onSubmit({
@@ -80,6 +83,19 @@ export function PaymentDialog({
   }
 
   const overpaid = showAmount && maxAmount !== undefined && amount > maxAmount
+
+  // D-10 (décision recommandée) : un règlement par VIREMENT ou PRÉLÈVEMENT n'a
+  // pas de compte de trésorerie implicite. Espèces (530000) et carte/chèque
+  // (511200) sont déterminés par le MODE (décision D-E) ; les deux autres ont
+  // besoin du compte, sans quoi l'écriture part sur 512000 sans que l'écran le
+  // dise — c'était le défaut de R-08.
+  //
+  // LIMITE DITE : si la société n'a AUCUN compte bancaire, on ne bloque pas — une
+  // société neuve ne doit pas pouvoir enregistrer un règlement. L'écran retombe
+  // alors sur le compte par défaut, et le dit (texte d'aide existant).
+  const bankRequired = (method === 'transfer' || method === 'direct_debit') && banks.length > 0
+  const bankMissing = bankRequired && !bankId
+
 
   return (
     <Modal open onClose={onClose} title={title}>
@@ -103,12 +119,17 @@ export function PaymentDialog({
             onChange={(e) => setMethod(e.target.value as PaymentMethod)}
             options={(['transfer', 'check', 'card', 'cash', 'direct_debit', 'other'] as PaymentMethod[])
               .map(m => ({ value: m, label: t(`payments.methods.${m}`) }))} />
-          <Select label={t('payments.bankAccount')} value={bankId}
+          <Select label={t('payments.bankAccount')} required={bankRequired} value={bankId}
             onChange={(e) => setBankId(e.target.value)}
-            options={[{ value: '', label: t('payments.defaultBankAccount') },
+            options={[bankRequired
+              ? { value: '', label: t('payments.bankAccountPlaceholder') }
+              : { value: '', label: t('payments.defaultBankAccount') },
               ...banks.map(b => ({ value: b.id, label: b.name + (b.bank_name ? ` — ${b.bank_name}` : '') }))]} />
         </div>
-        {method !== 'cash' && !bankId && (
+        {bankMissing && (
+          <p className="text-xs text-[var(--color-danger)]">{t('payments.bankAccountRequired')}</p>
+        )}
+        {method !== 'cash' && !bankId && !bankMissing && (
           <p className="text-xs text-[var(--color-text-secondary)]">{t('payments.defaultBankAccountHint')}</p>
         )}
         <Input label={t('payments.reference')} value={reference} onChange={(e) => setReference(e.target.value)} />

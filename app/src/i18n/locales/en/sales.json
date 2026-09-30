@@ -279,6 +279,8 @@
     "record": "Record payment",
     "defaultBankAccount": "Default account (512000)",
     "defaultBankAccountHint": "With no bank account selected, the payment is posted to account 512000, journal BQ.",
+    "bankAccountPlaceholder": "— Choose the treasury account —",
+    "bankAccountRequired": "Choose the treasury account: it determines the account and the journal of the payment entry (a transfer with no account would be posted to 512000).",
     "overpaidNotice": "Overpayment of {{amount}}: it will be posted as a customer advance (4191)."
   },
   "customers": {
