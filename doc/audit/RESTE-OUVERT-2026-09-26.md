@@ -305,7 +305,11 @@ une charge de développement mais un passage obligé.
 3. **ter — régénérer sur une base où les suites n'ont PAS tourné.** Mesuré le
    30/09 : `_audit_results` et `_audit_expected` (l'outillage de test) entrent
    dans les types et produisent un **faux écart** de 45 lignes. C'est l'ordre de
-   la CI — `db:types` **avant** les suites — qui le dit ;
+   la CI — `db:types` **avant** les suites — qui le dit. **Corollaire, payé le
+   30/09 par la 318 : une suite neuve se câble AVEC LES AUTRES SUITES**, jamais
+   dans la section des contrôles, sinon elle s'exécute avant l'étape « types à
+   jour » et la fait échouer. La CI l'a refusée au premier passage — et c'est
+   ainsi qu'on l'a su ;
 4. **la ligne du registre** `ci/expected_failures.sql` retirée si le défaut y
    figurait (la CI échoue si un test corrigé y reste) ;
 5. **les non-régressions** (`105`, `178`, `181`, `219`, `189` et les suites du

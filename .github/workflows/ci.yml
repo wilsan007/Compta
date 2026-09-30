@@ -454,19 +454,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # D-5 (migration 318) — le consentement à l'envoi de documents à un tiers.
-      # Le défaut (AUD-H04) : l'image d'une facture fournisseur partait chez un
-      # prestataire d'OCR sans consentement — et il n'y avait nulle part où le
-      # donner. La 318 pose la trace (date + auteur), écrite par un DÉCLENCHEUR :
-      # un booléen qu'un client écrit ne prouve rien. La suite mesure les cinq
-      # propriétés qui font qu'elle vaut comme preuve : rien par défaut, la date
-      # et l'auteur imposés par la base (les valeurs du client sont ignorées),
-      # le retrait effectif, la preuve non réécrite par un simple « Enregistrer »
-      # des paramètres, et le cloisonnement par société. 5 scénarios.
-      - name: 'D-5 : le consentement OCR est daté et signé (318)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/318_ocr_consent_tests.sql
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+      # ⚠️ LA SUITE 318 EST CÂBLÉE PLUS BAS, AVEC LES AUTRES SUITES — et pas ici.
+      # Une suite placée dans cette section s'exécuterait **AVANT** l'étape
+      # « Vérifier que les types sont à jour », créerait `_audit_results` (via
+      # `ci/audit_helpers.sql`), et ferait entrer ces tables d'outillage dans les
+      # types générés : la comparaison échoue. C'est mesuré — la CI l'a dit au
+      # premier passage de la 318, le 30/09, avant le merge.
 
       # G7 — « le socle peut-il écrire ? » La trouvaille de L1 tranche 3 :
       # `FORCE ROW LEVEL SECURITY` s'applique AUSSI au propriétaire, et les tables
@@ -1280,6 +1273,25 @@ jobs:
       # scénarios.
       - name: 'D-4 : le bucket d''archive des PDF serveur (317)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_pdf_archive_bucket_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D-5 (migration 318) — le consentement à l'envoi de documents à un tiers.
+      # Le défaut (AUD-H04) : l'image d'une facture fournisseur partait chez un
+      # prestataire d'OCR sans consentement — et il n'y avait nulle part où le
+      # donner. La 318 pose la trace (date + auteur), écrite par un DÉCLENCHEUR :
+      # un booléen qu'un client écrit ne prouve rien. La suite mesure les cinq
+      # propriétés qui font qu'elle vaut comme preuve : rien par défaut, la date
+      # et l'auteur imposés par la base (les valeurs du client sont ignorées),
+      # le retrait effectif, la preuve non réécrite par un simple « Enregistrer »
+      # des paramètres, et le cloisonnement par société. 5 scénarios.
+      #
+      # ⚠️ CETTE ÉTAPE DOIT RESTER ICI, APRÈS « types à jour » : une suite crée
+      # `_audit_results` (via `ci/audit_helpers.sql`), et câblée plus haut elle
+      # ferait entrer ces tables d'outillage dans les types générés. Mesuré le
+      # 30/09 — la CI l'a refusé.
+      - name: 'D-5 : le consentement OCR est daté et signé (318)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/318_ocr_consent_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
