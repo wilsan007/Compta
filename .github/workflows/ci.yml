@@ -885,6 +885,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # D2 (recette /qa du 29/09) : « Valoriser le stock » échouait en 300 — deux
+      # surcharges de `calculate_stock_valuation` — et, avec un dépôt, affichait
+      # une ligne unique valorisée au prix de la FICHE. Une seule fonction
+      # désormais, adossée aux couches de valorisation.
+      - name: 'QA : une seule valorisation de stock, lue sur les couches (316)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/316_stock_valuation_single_function_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
