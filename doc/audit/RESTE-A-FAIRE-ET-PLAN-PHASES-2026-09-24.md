@@ -119,7 +119,7 @@ Les 24 tables « logique écrite, jamais traversée » incluent `api_keys` et
 | 👤-5 | Collecter les **14 documents officiels djiboutiens** (CGI, loi de finances, TVA, barème ITS, taux CNSS/AMU, code du travail, plan comptable national…) | 🔴 délai externe le plus long |
 | 👤-6 | Identifier **2 à 3 entreprises pilotes** | 🟠 |
 | **P0-08** | Les **14 parcours à l'écran** — jamais faits depuis V1 ; demande le front déployé sur la base à jour | 🔴 non automatisable |
-| D-4 | `generate-pdf` (SSRF prouvée) : supprimer le paramètre, durcir, ou retirer la fonction (aucun appelant) | **défaut appliqué le 26/09** : HTML client refusé + valeurs échappées + **retirée du déploiement** ; la décision finale (rebrancher avec un Gotenberg durci, ou supprimer) reste au produit |
+| D-4 | `generate-pdf` (SSRF prouvée) : supprimer le paramètre, durcir, ou retirer la fonction (aucun appelant) | **défaut appliqué le 26/09** : HTML client refusé + valeurs échappées + **retirée du déploiement** ; la décision finale (rebrancher avec un Gotenberg durci, ou supprimer) reste au produit — [note d'aide à la décision](DECISION-D4-GENERATE-PDF-2026-09-30.md) |
 | D-5 | Import OCR via OpenAI : consentement par société, remplacer, ou retirer | ouverte |
 | D-7 | Contraste H2/H3 (18 + 20 usages juste sous 4,5:1) | ouverte |
 | D-10 / D-13 | « Marquer payée » sans banque · périmètre de la séparation des tâches | à confirmer |

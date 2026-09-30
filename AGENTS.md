@@ -1,17 +1,18 @@
 # AGENTS.md — Onusuite/compta
 
-## Reste ouvert — au 28 septembre 2026
+## Reste ouvert — au 30 septembre 2026
 
 **Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
 (ce qui attend une décision, ce qui vit hors du dépôt, les charges restantes, et —
 depuis le 28/09 — **un registre de CI vide** : plus aucun défaut prouvé ouvert).
 L'essentiel en huit lignes :
 
-* ⚠️ **Numérotation des migrations** : une **session parallèle** écrit `270` → `272`
-  (défauts de l'audit fonctionnel du 28/09). Cette session-ci prend la plage
-  **300+** : `300` (CA3), `301` (refacturation des temps), `302`, `303`. Les
-  270→299 sont laissés à l'autre session — et un numéro se **constate**, il ne
-  se réserve pas.
+* ⚠️ **Numérotation des migrations** — un numéro se **constate**, il ne se réserve
+  pas. État au 30/09 : `270` → `272` (session parallèle, audit fonctionnel),
+  `273` → `281` (audit fonctionnel, parties 1 à 3), `300` → `309` (**W7** : CA3,
+  refacturation des temps, production, projets, analytique, FEC, devises,
+  budgets, **import Sage**, écart de change), `310` → `314` (**L1** tranches 1 à 4,
+  **L2**, **L7**), `315` et au-delà : la **session parallèle** (chaînages).
 * **W8 fermée (28/09)** : les 6 défauts du plan sont corrigés — `PROJ-01`
   (refacturation des temps, `301`), `PROD-01→03` (nomenclature multi-niveaux,
   écarts de quantité et de coût chiffrés, écriture datée de l'OF, `302`),
@@ -125,9 +126,12 @@ L'essentiel en huit lignes :
   [inventaire](doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md).
 
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
-* **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
-  **L1 → L24** (≈ 116 j), couverture d'audit phase 10 (≈ 15 j), et la recette à
-  l'écran (P0-08, hors charge de développement).
+* **≈ 131 j restants** (recompté le 30/09 : le « ≈ 133 j » porté jusqu'ici
+  reprenait 2 j de **W7 déjà livrés**) : **plan correctif des vagues W fermé**
+  (0 j) ; chaînages **L1 → L24** (≈ 116 j — **plafond brut** du plan, non déduit
+  de L0, des tranches 1 à 4 de L1, de L2 et de L7, déjà livrés), couverture
+  d'audit phase 10 (≈ 15 j), et la recette à l'écran (P0-08, hors charge de
+  développement).
 * **W10 livrée le 27/09** (≈ 2 j, **hors plan**) : le **contrat d'appel** entre
   l'écran et la base. Trois contrôles regardaient les lectures, les colonnes
   écrites et l'erreur non lue — aucun ne regardait les **appels de fonction**.
@@ -143,9 +147,16 @@ L'essentiel en huit lignes :
   de la CA3 → **W7**, `300` : le CA se lit sur les comptes de produits).
   [Preuve](doc/audit/VAGUE-W7-W8-2026-09-28.md) : 10 scénarios `231` et 9 `245`
   verts, batterie **76/76**, base neuve **238 migrations, 0 erreur**.
-  ⚠️ **W7 reste ouverte** : 14 défauts (M01, ANA, BUD, SAGE, FEC).
+  ⚠️ **Cette ligne, écrite le 28/09, était périmée le soir même** : **W7 est
+  fermée** — ses **quinze** défauts sont corrigés par `300` → `309`, dont
+  **`308`, `SAGE-01→03`** (l'import d'écritures est **une** transaction :
+  équilibré, validé, soldes cumulés). Corrigée le 30/09 ; voir le bullet
+  « W7 fermée (28/09) » en tête de fichier.
 * **Décisions qui bloquent** : `D-4` (`generate-pdf` : rebrancher ou supprimer —
-  le défaut appliqué est « non déployée »), `D-5` (OCR), `D-7` (contraste),
+  le défaut appliqué est « non déployée » ; **note d'aide à la décision** :
+  [D-4](doc/audit/DECISION-D4-GENERATE-PDF-2026-09-30.md) — ce qui est vrai
+  aujourd'hui, les cinq exigences de l'option A, ce que la suppression coûte, et
+  ce qu'aucune des deux ne change), `D-5` (OCR), `D-7` (contraste),
   `D-10`, `D-11` (localisation), `D-13`.
 * **Hors du dépôt** : les secrets et la recette des neuf intégrations (Chorus Pro,
   Yousign, GoCardless, Resend, EFI, SIRENE, VIES, Stripe, Gotenberg) ; la clé
@@ -679,10 +690,15 @@ L'essentiel en huit lignes :
   l'égalité « balance analytique = balance générale » n'est tenue que pour les
   **ventes et les achats** ; les lignes de TVA n'en portent pas ;
   `analytic_distribution_lines` reste écrit par l'écran.
-- **Reste de W7** : `M01-01→03` (devise des écritures et taux de change jamais
-  appliqué), `BUD-01→04` (réalisé non borné à l'exercice, engagements jamais
-  libérés), `SAGE-01→03` (import en brouillon, soldes écrasés, non
-  transactionnel) — 10 défauts, ≈ 4 j.
+- **Reste de W7** — énoncé le 28/09 au matin, **périmé le soir même** :
+  `M01-01→03` (devise des écritures et taux de change jamais appliqué),
+  `BUD-01→04` (réalisé non borné à l'exercice, engagements jamais libérés),
+  `SAGE-01→03` (import en brouillon, soldes écrasés, non transactionnel) —
+  10 défauts. **Tous fermés** par la suite de la journée : `306` (devises),
+  `307` (budgets), **`308` — `SAGE-01→03` : l'import d'écritures est un acte
+  unique, équilibré, validé, transactionnel** — et `309` (écart de change au
+  règlement, réévaluation de clôture). Voir « W7 fermée (28/09) » en tête de
+  fichier et [la preuve](doc/audit/VAGUE-W7-2026-09-28.md).
 
 
 
