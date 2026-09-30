@@ -274,7 +274,7 @@ function CustomerForm({ customer, clients, onClose, onSaved }: {
         account_tiers: accountTiers || null, account_collectif: accountCollectif || '411000',
         // A4 (318) — l'identité du tiers. `payment_terms` (texte) reste tenu :
         // l'échéance d'une facture née d'un bon de livraison le lit.
-        siret: siret.trim() || null, city: city || null, postal_code: postalCode || null,
+        siret: siret.trim() || null, city: city || '', postal_code: postalCode || '',
         country: code, payment_term_id: paymentTermId || null,
         payment_terms: terme ? terme.name : '',
       }

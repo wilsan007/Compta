@@ -268,7 +268,7 @@ function SupplierForm({ supplier, fournisseurs, onClose, onSaved }: {
         is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null,
         account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000',
         // A4 (318) — l'identité du tiers.
-        siret: siret.trim() || null, city: city || null, postal_code: postalCode || null,
+        siret: siret.trim() || null, city: city || '', postal_code: postalCode || '',
         country: code, payment_term_id: paymentTermId || null,
         payment_terms: terme ? terme.name : '',
       }

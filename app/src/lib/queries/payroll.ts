@@ -2,6 +2,72 @@ import { supabase } from '@/lib/supabase';
 import { blankEmailToNull, getTenantId, ti, tud } from './core';
 import type { Employee, PayRun, Timesheet, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, PaymentTerm, PaymentPromise, PaymentTemplateCompta } from '@/types';
 
+// ============ Simulateur de paie (C2, rh-005) ============
+//
+// L'écran « Simuler » appelle le MOTEUR (`simulate_payslip`, migration 319) et
+// affiche ce qu'il rend. Avant, il recalculait tout en TypeScript
+// (`src/lib/payroll.ts`) : c'était un second moteur, avec ses propres taux —
+// 2 500 € brut y donnaient 1 798,53 € de net au lieu des 1 919,53 € du moteur
+// de la base. La doctrine W5 : un seul moteur par grandeur.
+
+/** Une ligne du détail des cotisations, telle que le moteur la rend. */
+export interface PayrollContributionLine {
+  label: string
+  base: number
+  rate_employee: number
+  employee: number
+  rate_employer: number
+  employer: number
+}
+
+/** Le jsonb du moteur, typé pour l'écran. */
+export interface PayslipSimulation {
+  success: boolean
+  simulated?: boolean
+  error?: string
+  gross_salary: number
+  total_gross: number
+  social_security_employee: number
+  csg_deductible: number
+  csg_non_deductible: number
+  crds: number
+  total_deductions: number
+  net_taxable: number
+  income_tax: number
+  net_social: number
+  net_salary: number
+  employer_contributions: number
+  reduction_generale: number
+  rgdu_coefficient?: number
+  pmss?: number
+  grid_version?: string | null
+  country_code?: string | null
+  contributions?: PayrollContributionLine[]
+}
+
+/**
+ * Simule un bulletin. `p_gross` est le brut mensuel simulé ; la période par
+ * défaut est le mois en cours. Ne RIEN n'écrit : c'est le moteur en lecture.
+ */
+export async function simulatePayslip(
+  employeeId: string,
+  gross: number,
+  period?: string,
+): Promise<PayslipSimulation> {
+  const { data, error } = await supabase.rpc('simulate_payslip', {
+    p_employee_id: employeeId,
+    p_gross: gross,
+    ...(period ? { p_period: period } : {}),
+  })
+  if (error) throw error
+  // Le moteur rend toujours un verdict : un échec est un motif nommé, pas une
+  // exception. On ne le laisse pas passer pour un résultat vide.
+  if (!data || data.success !== true) {
+    throw new Error(data?.error || 'Le moteur de paie n’a rien rendu')
+  }
+  return data as PayslipSimulation
+}
+
 // ============ Employees ============
 export async function getEmployees() {
   const tid = await getTenantId()

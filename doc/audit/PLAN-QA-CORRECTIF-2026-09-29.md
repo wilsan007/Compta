@@ -356,6 +356,15 @@ et les modèles de saisie ne lisent **que** cette table.
   (elle demande un navigateur et le serveur Vite du worktree, non montés ici —
   même limite que C1, § 3) ; la vérification à l'écran dans le navigateur ;
   `A5` (IBAN) et `A6` (colonne « Total ») restent ouverts.
+- ⚠️ **Correction après coup, au lot suivant** : `npm run typecheck`
+  (`tsc -b --noEmit`) révèle que **`npx tsc --noEmit`, celui de `verify.sh`, ne
+  vérifie rien** — le `tsconfig.json` racine est une configuration « solution »
+  (`files: []`, `references`). Le contrôle de A4 avait donc été fait avec une
+  commande qui ne compile pas le projet, et deux erreurs de type étaient
+  passées : `city`/`postal_code` écrits `null` là où le type les déclare
+  `string`, et `country` incapable de porter le `null` que la contrainte de la
+  318 exige. Corrigé au lot C2 (`city`/`postal_code` en chaîne vide,
+  `country: string | null`). **Le contrôle à utiliser est `npm run typecheck`.**
 - **Débloque** : **B3** (client UE : autoliquidation, mention, `CategoryCode=AE`),
   qui attendait le pays du client.
 
@@ -597,20 +606,51 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Attendus** (grille France 2026, 276, en attente de signature) :
   SMIC 1 823,03 → net **1 477,93** ; 2 500 → **1 919,53** ; 4 500 cadre → **3 121,70**.
 
-### C2 — rh-005 🟠 — simulateur de paie : autre moteur, nets faux
-- **Constat** :
-  - nets faux : SMIC 1 311,51 (−166,42), 2 500 1 798,53 (−121), cadre 3 237,35 (+115,65) ;
-  - chômage salarial compté ; CRDS absente ; net imposable = net ;
-  - aucun traitement cadre ;
-  - total patronal différent de la somme des rubriques.
-- **Doctrine W5** (« un seul moteur par grandeur ») : le simulateur doit **appeler le moteur
-  de la base** (même grille, mêmes taux) au lieu de recalculer en TypeScript.
-- **Correctif** : RPC en lecture `simulate_payslip(p_employee_id, p_gross, p_options)` qui
-  réutilise le cœur de `calculate_payslip` sans écrire. Le simulateur affiche ce qu'elle rend,
-  et la réduction générale devient une ligne visible.
-- **Test rouge** :
-  - SQL : `simulate_payslip` = `calculate_payslip` au centime, pour les 3 bulletins d'or ;
-  - Vitest (`single-engine.test.ts` étendu) : plus aucun barème en dur dans `PayrollCalcPage`.
+### C2 — rh-005 🟠 — simulateur de paie : autre moteur, nets faux — **✅ CORRIGÉ** (migration 319)
+- **Constat (mesuré par la recette)** : 2 500 € brut → **1 798,53 €** de net au
+  simulateur, contre **1 919,53 €** au moteur de la base (bulletin d'or de la
+  276) — 121,00 € d'écart. Le chômage salarial y était compté, la CRDS absente,
+  le net imposable confondu avec le net, aucun traitement cadre, et le total
+  patronal ne correspondait pas à la somme des rubriques. La cause : l'écran
+  avait son **propre moteur** TypeScript (`src/lib/payroll.ts`).
+- **Doctrine W5** (« un seul moteur par grandeur ») : le simulateur **appelle**
+  le moteur. La 319 crée `simulate_payslip(p_employee_id, p_gross, p_period)`,
+  qui rend exactement le jsonb du calcul — et n'écrit rien.
+- **Comment, sans réécrire 553 lignes de moteur** : le moteur de la 276 devient
+  `payroll_compute_slip(…, p_gross_override, p_dry_run)` — **repris mot pour
+  mot**, à quatre endroits près (nom, deux paramètres par défaut, salaire
+  simulé qui prime, écritures derrière `IF NOT p_dry_run`) ; `calculate_payslip`
+  garde sa signature **exacte** et devient l'appelant mince.
+- **Écran** (`PayrollCalcPage`) : il appelle `simulatePayslip` et affiche ce que
+  le moteur rend. Les champs **type de contrat, heures/semaine, heures sup,
+  titres-restaurant, indemnité transport, taux de PAS ont disparu** : le moteur
+  ne les prenait pas en entrée, ils n'influençaient rien et l'écran laissait
+  croire le contraire. La **réduction générale** (jusqu'à 743 € au SMIC) est
+  devenue une ligne affichée, avec son coefficient RGDU.
+- **Test rouge avant** : `319_payslip_simulation_tests.sql` — **5 rouges**
+  mesurés avant la migration (`simulate_payslip` inexistante ; T05 est un
+  invariant, vert par nature). `single-engine.test.ts` — le scénario C2 est
+  **rouge** avec l'ancien écran (mesuré en le remettant dans son état d'avant).
+- **Après** : `319_*_tests` **6/6** ; `single-engine.test.ts` **6/6** ;
+  non-régression **276 6/6** (les trois bulletins d'or au centime), **243 5/5**,
+  **228 7/7**, **311 7/7**, **181 7/7**, **211 16/16**, **212 9/9**, **247 7/7**,
+  **256 8/8**, **265 10/10** ; Vitest **1543/1543** ; `typecheck`/`oxlint`/
+  i18n/`check-written-columns`/`check-unchecked-writes` verts ; suite 319 câblée
+  dans `.github/workflows/ci.yml`.
+- ⚠️ **Deux garde-fous ont vu une première version, et il a fallu les écouter** :
+  * **243 T03** verrouille la signature publique de `calculate_payslip` (« une
+    seule version, la légale »). Lui ajouter des paramètres déplaçait le
+    verrou : d'où le noyau `payroll_compute_slip`, et `calculate_payslip`
+    intacte. *Aucun test n'a été touché.*
+  * **228 T06** refuse qu'une fonction de `public` soit exécutable par PUBLIC —
+    or `CREATE OR REPLACE` **réinitialise l'ACL** : `calculate_payslip` redevenait
+    exposée. La migration lui rend explicitement ses droits, et les deux
+    nouvelles sont `REVOKE … FROM PUBLIC` + `GRANT`.
+- **Ce que C2 ne fait pas** : `src/lib/payroll.ts` (509 lignes) reste en place
+  parce que quatre fichiers de test l'utilisent encore ; **aucun écran ne
+  l'appelle**. Le supprimer est un chantier à part. La capture
+  `qa/screenshots/rh-005-after.png` n'a pas été prise (même limite que A4 et
+  C1 : pas de navigateur ici).
 
 ### C3 — rh-008 🟠 — heures sup jamais détectées depuis la feuille de temps
 - **Constat** : 12 h approuvées donnent `overtime_minutes = 0` et un élément
@@ -972,7 +1012,7 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
 | 9 | **B2–B9, B11, B12** ✅ (reste **B3**) | Reste des ventes | 3 j (livrés) | — |
 | 9b | B3 (ven-009) | Client UE : autoliquidation, mention, Factur-X AE | 0,5 j | **débloqué** (A4 livré) |
-| 10 | C2–C6 | Reste de la paie | 2,5 j | C1 |
+| 10 | **C2** ✅, C3–C6 | Reste de la paie | 2,5 j (C2 livré) | C1 |
 | 11 | D3, D5–D12 | Reste du stock et de la caisse | 2 j | D1 |
 | 12 | F1–F7 | Comptabilité | 1,5 j | — |
 | 13 | G1–G5 | Analytique, projets | 1,5 j | B2 |

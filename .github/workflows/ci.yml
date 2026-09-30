@@ -912,6 +912,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Lot C (recette /qa du 29/09) : C2 (rh-005) — le simulateur de paie
+      # appelle le moteur (`simulate_payslip`) au lieu de son propre barème :
+      # les trois bulletins d'or de la 276 y sont rejoués au centime, et une
+      # simulation n'écrit aucun bulletin.
+      - name: 'QA : le simulateur appelle le moteur de la paie (319)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/319_payslip_simulation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'

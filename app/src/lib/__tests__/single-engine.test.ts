@@ -145,4 +145,26 @@ describe('W5 — le front n’a plus de moteur à lui', () => {
     // plus aucun taux saisi dans l’écran
     expect(contenu).not.toMatch(/setRate\b/)
   })
+
+  // C2 (rh-005) — le simulateur de paie avait son PROPRE moteur
+  // (`src/lib/payroll.ts`) : 2 500 € brut y donnaient 1 798,53 € de net contre
+  // 1 919,53 € au moteur de la base. Il appelle désormais `simulate_payslip`
+  // (migration 319).
+  it('C2 : le simulateur appelle le moteur, il n’en a plus un à lui', () => {
+    const fichier = path.join(src, 'pages/PayrollCalcPage.tsx')
+    const code = fs
+      .readFileSync(fichier, 'utf8')
+      .split('\n')
+      .map(sansCommentaire)
+      .join('\n')
+
+    expect(code).toMatch(/simulatePayslip/)          // il appelle le moteur
+    expect(code).not.toMatch(/calculatePayroll/)      // et plus son propre barème
+    // les champs que le moteur ne prenait pas en entrée ne sont plus proposés
+    expect(code).not.toMatch(/setContractType/)
+    expect(code).not.toMatch(/setOvertimeHours/)
+    expect(code).not.toMatch(/setTaxRate/)
+    // la réduction générale est une ligne affichée, pas un calcul caché
+    expect(code).toMatch(/reduction_generale/)
+  })
 })

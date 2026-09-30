@@ -14,7 +14,8 @@ export interface Customer {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
   contact_name: string
   balance: number
@@ -63,7 +64,8 @@ export interface Supplier {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
   contact_name: string
   balance: number
