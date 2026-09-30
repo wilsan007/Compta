@@ -18,12 +18,12 @@
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
 | Critiques | **7** — **tous corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016, ven-005) |
-| Hauts | **23** — dont **10 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015, stk-012, stk-005, stk-013) |
-| Moyens | **24** — dont **1 corrigé** (cpt-005) |
-| Bas | **20** |
-| Déjà corrigés et commités | **22 commits** (§ 2) |
-| **Restant à corriger** | **≈ 49 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
-| Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
+| Hauts | **23** — dont **15 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015, stk-012, stk-005, stk-013, ven-008, ven-012, ven-010) |
+| Moyens | **24** — dont **4 corrigés** (cpt-005, ven-006, ven-007, ven-011, ven-015) |
+| Bas | **20** — dont **2 corrigés** (ven-003, pil-009) |
+| Déjà corrigés et commités | **25 commits** (§ 2) |
+| **Restant à corriger** | **≈ 40 défauts**, en **8 lots** (§ 4 à § 11) — le lot « reste des ventes » se réduit à **B3** |
+| Charge estimée | **≈ 16 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
 **Les six défauts qui bloquaient un parcours métier entier — tous fermés** (voir le détail plus bas) :
@@ -86,6 +86,8 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `4721f49` | **B2** écran, **B4/B5** avoir, **B6** dates de la chaîne, **B8** PDF, **B9** « En retard », **B11** `<div>`/`<tbody>`, **B12** confirmation + échéance | sélecteur d'article et compte de vente par ligne ; avoir pré-rempli depuis la facture ; `/sales/credits?invoice=<id>` ; dates d'origine de la chaîne ; `src/lib/invoicePdf.ts` (PDF 1.4 écrit à la main, sans dépendance) ; statut « En retard » calculé ; `<Fragment>` ; `confirmSync` + échéance par conditions de paiement | `invoicePdf.test.ts` **5/5** ; `DraftDocumentPolicy.test.tsx` (MIME `application/pdf`) ; Vitest **1527/1527** ; `tsc`/`oxlint`/i18n verts |
+| `c3e95b8` | **B2 — ven-008** 🟠 facture directe créditée en 707 ; **D-QA-1** facture directe d'un article stocké qui ne sort rien ; **B4 — ven-012** 🟠 avoir au prorata sans `invoice_ref` ; **B6 — ven-006** 🟡 facture sans nom de client et datée du jour ; **B7 — ven-007** 🟡 numérotation non chronologique | migration **317** : `invoice_lines.account_code` ; comptes article → famille → ligne → 706000/707000 ; sortie de stock à la validation d'une facture directe (garde anti-double, message nommé) ; nom de client recopié + rattrapage ; date du devis conservée ; refus d'une facture antérieure | `317_*_tests` **12/12** (rouge avant : 8 rouges / 3 verts mesurés en restaurant les définitions de la 316) ; `180` **42/42** (E12/E13 alignés) ; `213` **6/6** ; `228` **7/7** (les nouvelles fonctions ne sont pas exécutables par PUBLIC) ; `tsc`/`oxlint`/i18n verts |
 | `d709bf8` | **D1 — stk-012** 🟠 sortie de caisse d'un produit fini en 603/310 | migration **315** : une sortie prend les comptes de l'ENTRÉE qui a nourri la couche consommée (`piece_number = 'STK-…'`, ou `reference = 'JE-OF-…'` pour la production) ; article et famille restent le repli | `315_*_tests` **6/6** (T01 rouge avant) ; familles 173/230/242/251/253/254/281 vertes ; rejeu sur la recette : 713500 D 88 / 355000 C 88, 310000 intouché |
 | `d751071` | **D2 — stk-005** 🟠 « Valoriser le stock » ambigu (300) et faux | migration **316** : une seule `calculate_stock_valuation(p_method, p_warehouse_id, p_date)`, adossée à `calculate_stock_valuation_at_date` (couches) ; les deux surcharges supprimées | `316_*_tests` **3/3** (T01/T02/T03 rouges avant) ; recette : 6 lignes, **8 636,00 €** = Σ couches ; 173/254 vertes ; Vitest **1522/1522** |
 | `bf49b03` | **D4 — stk-013** 🟠 statistiques de caisse toujours vides | `src/lib/dateRange.ts` (`localDayRange` en `[from, to)` local, `localDateString`) ; `getPosTickets` prend la période ; date de facture d'un ticket au jour local | `dateRange.test.ts` + `d4-pos-tickets-range.test.ts` (6/6) ; écran recette : **216,00 €** de CA TTC et **36,00 €** de TVA ; le harnais manquait `lt` |
@@ -219,6 +221,40 @@ Trois leçons de méthode, mesurées pendant ce lot :
   sur la base de recette y a fait entrer `_audit_results` / `_audit_expected`
   (tables de test) — diff annulé.
 
+### Lot B — reste des ventes livré (30/09) : 317, puis l'écran
+
+Deux commits (`c3e95b8` base, `4721f49` écran) : B2, B4, B5, B6, B7, B8, B9, B11, B12
+fermés ; **B3 (ven-009, client UE) reste ouvert** et dépend d'A4 (pays du client).
+
+**Décisions tranchées dans ce lot** : D-QA-1 (option a) et D-QA-2 (option a), D-4
+(PDF navigateur, sans service). Les trois sont écrites en § 14.
+
+Quatre leçons de méthode, toutes mesurées :
+
+* **Une décision de règle change des tests qui n'avaient rien à voir.** D-QA-1
+  (la facture directe sort le stock) a fait tomber `213` E23/E23d — des scénarios
+  de ventilation d'avoir, qui facturaient une marchandise **sans stock**. Ce n'est
+  pas une régression : c'est la règle nouvelle. La donnée a été alignée (50 en
+  stock), pas le test affaibli. Même chose pour `180` E12/E13, qui encodaient
+  l'ancienne numérotation « dans l'ordre de validation » : ils valident désormais
+  dans l'ordre des dates (42/42 verts).
+* **Mesurer le rouge avant en restaurant les définitions, pas en croyant le
+  souvenir.** Les anciennes fonctions de la 316 ont été réappliquées sur la base
+  de recette, la suite `317` passée (8 rouges / 3 verts), puis la 317 réappliquée
+  (12/12). Le coût : deux minutes ; la valeur : le fichier de test dit ce qui
+  était faux, avec le chiffre, au lieu d'affirmer que la règle est nouvelle.
+* **Une garde déjà rouge avant le lot se corrige dans le lot.** `228` T06
+  (« aucune fonction de public n'est exécutable par PUBLIC ») était rouge depuis
+  la **316** : `calculate_stock_valuation` était née exposée, sans que le lot D2
+  ne le voie. Les trois REVOKE sont dans la 317 et T06 est vert (7/7).
+* **La base de recette n'est pas la CI.** Rejouer les 70 suites SQL dessus pollue
+  l'« e-mail de test » des helpers (`users_email_partial_key`) et la rend rouge
+  (`250` T06/T11 sont rouges *avec et sans* la 317 — vérifié). La CI, elle, part
+  d'une base neuve. Localement, la base neuve n'a pas pu être reconstruite :
+  `00_schema_dump.sql` crée `tenants` sans clé primaire, donc la migration
+  `multi_tenant_migration` y échoue sur son `ON CONFLICT (id)` — à regarder avec
+  le job `db-integration` avant la recette finale.
+
 
 
 ---
@@ -286,6 +322,13 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 5. Lot B — Ventes (≈ 4 j)
 
+> **État au 30/09** : B1, B2, B4, B5, B6, B7, B8, B9, B10, B11, B12 **fermés**
+> (`c3e95b8` la base, `4721f49` l'écran). **B3 reste ouvert** (ven-009, client UE :
+> autoliquidation, mention, Factur-X `AE`) et attend **A4** (pays du client).
+> Trois points signalés et laissés ouverts : la **relance** de B9, la **fenêtre
+> « Voir »** qui n'affiche pas les lignes d'une facture (B6), et la mention
+> d'autoliquidation du PDF (B3).
+
 ### B1 — ven-005 🔴 / ven-004 🟠 — sortie de stock du BL — **✅ CORRIGÉ** (`9ef26c8`, migration 314)
 - **Cause établie** : `create_stock_out_on_delivery()` ne réagissait qu'au passage à `shipped`
   (`NEW.status = 'shipped'`, 133) — choisir « Livré » depuis la liste partait donc sans
@@ -324,7 +367,7 @@ et les modèles de saisie ne lisent **que** cette table.
   toujours pas le stock — c'est la décision **D-QA-1** (§ 14), à trancher avec B2/B3.
 
 
-### B2 — ven-008 🟠 — facture directe sans choix d'article : service crédité en 707, stock inchangé
+### B2 — ven-008 🟠 — facture directe sans choix d'article : service crédité en 707, stock inchangé — **✅ CORRIGÉ** (317, `c3e95b8`)
 - **Correctif front** (`InvoicesPage`, formulaire de ligne) :
   - sélecteur d'article comme sur le devis, qui pré-remplit description, prix, taux, `product_id` ;
   - saisie libre maintenue, avec un compte de vente choisi (706/707) quand il n'y a pas d'article.
@@ -334,6 +377,13 @@ et les modèles de saisie ne lisent **que** cette table.
   prendre : **D-QA-1**, voir § 14).
 - **Test rouge** : facture 3 × livre 5,5 % + 1 × service donne 707 C 30, **706 C 250**,
   445713 C 1,65, 445711 C 50 et 411 D 331,65.
+- **Fait (317)** : `invoice_lines.account_code` (nouvelle colonne) ; la comptabilisation
+  lit article → famille → ligne → 706000 (prestation) / 707000 (bien) ; l'écran porte
+  un **sélecteur d'article** par ligne et, en saisie libre, le **compte de vente**.
+  Mesuré : `317` T01–T04 verts (706 250 / 707 30 / l'article prime), rouges avant (707 C 280).
+  **D-QA-1 tranchée (option a)** : la facture directe d'un article stocké sort le stock à
+  la validation, une seule fois, et une ligne née d'un BL ne ressort rien (T05, T09) ;
+  une sortie impossible refuse la validation avec un message nommé.
 
 ### B3 — ven-009 🟠 — client UE : ni autoliquidation, ni mention, Factur-X « Z »
 - **Correctif** :
@@ -349,7 +399,7 @@ et les modèles de saisie ne lisent **que** cette table.
   - SQL : écriture avec `vat_code`, et CA3 qui porte le montant en non imposable ;
   - Vitest : générateur Factur-X, catégorie AE et motif d'exonération.
 
-### B4 — ven-012 🟠 — avoir ventilé au prorata (706 55,56 / 707 44,44) au lieu de l'article rendu
+### B4 — ven-012 🟠 — avoir ventilé au prorata (706 55,56 / 707 44,44) au lieu de l'article rendu — **✅ CORRIGÉ** (317, `c3e95b8`)
 - **Correctif** :
   - l'avoir reprend les **lignes de la facture source** (quantités modifiables) avec leur
     `product_id` et leur compte ;
@@ -359,12 +409,19 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Écran** : colonne « Facture source » renseignée ; bouton « Créer un avoir » de la liste
   branché (ven-011).
 - **Test rouge** : avoir de 1 × Bien A donne 707 D 100, 445711 D 20, 411 C 120 ; aucune ligne 706.
+- **Fait (317 + écran)** : l'écran des avoirs **reprend les lignes de la facture source**
+  (client, article, prix, taux, compte, quantités modifiables) — c'est ce qui manquait :
+  la ligne d'avoir saisie à la main n'avait pas d'article, d'où la ventilation au prorata
+  (213 R-05, conservée pour une ligne sans article). L'écriture d'avoir porte
+  `invoice_ref` (T06b, rouge avant : vide), et la liste montre la facture source par son
+  **numéro** (elle affichait huit caractères d'identifiant).
 
-### B5 — ven-011 🟡 — « Créer un avoir » depuis la liste ne fait rien
+### B5 — ven-011 🟡 — « Créer un avoir » depuis la liste ne fait rien — **✅ CORRIGÉ** (écran)
 - **Correctif** : brancher l'action pour ouvrir l'avoir pré-rempli (client, facture source, lignes).
-- **Test** : Vitest (clic → ouverture avec `invoice_id`).
+- **Fait** : l'action ouvre `/sales/credits?invoice=<id>` ; l'écran des avoirs lit le
+  paramètre et ouvre le formulaire pré-rempli (le `window.prompt` sans suite est retiré).
 
-### B6 — ven-006 🟡 — facture née d'un BL : client vide, date du jour imposée
+### B6 — ven-006 🟡 — facture née d'un BL : client vide, date du jour imposée — **✅ CORRIGÉ** (317 + écran)
 - **Correctif** :
   - `customer_name` recopié (ou lu par jointure partout) ;
   - date de la facture choisie à la transformation (par défaut la date du BL) ;
@@ -372,14 +429,24 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Même défaut sur la chaîne** : devis → commande → BL imposent tous la date du jour
   (le devis du 10/09 donne une commande au 29/09). Proposer la date d'origine.
 - **Test** : SQL `create_*_from_*` (client et date recopiés).
+- **Fait (317 + écran)** : déclencheur `invoice_fill_customer_name` (nom recopié à
+  l'écriture) + rattrapage de l'existant ; la facture née d'un devis garde la date du
+  devis (`convert_quote_to_invoice`, T07b rouge avant : 30/09 pour un devis du 10/09) ;
+  la chaîne devis → commande → BL → facture transporte la date d'origine et l'échéance
+  suit les conditions de paiement du client. ⚠️ **La fenêtre « Voir » d'une facture
+  n'affiche toujours pas ses lignes** (reste ouvert, rattaché à B8/restitution).
 
-### B7 — ven-007 🟡 — numérotation non chronologique malgré l'annonce
+### B7 — ven-007 🟡 — numérotation non chronologique malgré l'annonce — **✅ CORRIGÉ** (317)
 - **Correctif** : à la validation, refuser une facture datée **avant** la dernière facture
   numérotée de la série, ou avertir et demander confirmation. Décision **D-QA-2** : refus
   strict ou avertissement ; l'obligation légale française penche pour le refus.
 - **Test rouge** : valider FAC du 12/09 après FAC du 29/09 est refusé, avec un message nommé.
+- **Fait (317, D-QA-2 = option a)** : `invoice_guard` refuse une facture datée avant la
+  dernière validée de la société (T08 : refus + statut `draft` conservé, message nommé).
+  Deux suites portaient l'ancien comportement et ont été alignées : `180` E12 (validation
+  dans l'ordre des dates) et E13 (1 000 pièces à date constante) — **42/42 vertes**.
 
-### B8 — ven-010 🟠 — « Télécharger » produit un texte de 156 octets au lieu d'un PDF
+### B8 — ven-010 🟠 — « Télécharger » produit un texte de 156 octets au lieu d'un PDF — **✅ CORRIGÉ** (écran)
 - **Dépend de la décision D-4** (`generate-pdf` non déployée).
 - **Correctif** : générer le PDF côté navigateur (bibliothèque déjà présente dans le bundle `pdf`) avec :
   - vendeur (raison sociale, SIREN, n° TVA, adresse) et client ;
@@ -389,8 +456,15 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Correction immédiate** « Client: null » (vient de B6).
 - **Test** : Vitest (le document contient le SIREN, les lignes, les mentions ; MIME
   `application/pdf`).
+- **Fait** : `src/lib/invoicePdf.ts` — PDF 1.4 minimal écrit à la main (Helvetica, WinAnsi,
+  xref refermable), **sans dépendance nouvelle** (`pdfjs-dist` ne sait que lire). Vendeur
+  (SIRET/SIREN, TVA, adresse), client, lignes, HT par taux, TVA, TTC, reste dû et mentions ;
+  brouillon en `PRO-FORMA-….pdf`. Preuves : `invoicePdf.test.ts` 5/5 (dont `%PDF-1.4`,
+  `startxref` qui pointe bien sur `xref`, échappement des parenthèses) et
+  `DraftDocumentPolicy.test.tsx` (MIME `application/pdf`). ⚠️ La mention d'autoliquidation
+  (`CategoryCode=AE`) reste à porter avec B3 ; le service Edge `generate-pdf` n'est pas concerné.
 
-### B9 — ven-015 🟡 — filtre « En retard » vide, statut jamais « En retard », aucune relance
+### B9 — ven-015 🟡 — filtre « En retard » vide, statut jamais « En retard », aucune relance — **✅ CORRIGÉ** (écran ; relance reste ouverte)
 - **Correctif** :
   - statut calculé `overdue` quand `due_date < aujourd'hui` et `amount_due > 0` ;
   - filtre sur ce critère ;
@@ -398,6 +472,12 @@ et les modèles de saisie ne lisent **que** cette table.
   - libellés des deux montants de l'en-tête (« Total TTC », « Reste dû ») ;
   - proposition de relance pour les factures échues.
 - **Test** : Vitest du filtre, et SQL de la vue de relances.
+- **Fait** : le statut « En retard » est **calculé** (pièce validée, échéance dépassée,
+  reste dû > 0, ni payée ni annulée) ; le filtre l'utilise et compte les pièces ; l'état
+  vide dit « Aucune facture en retard » ; l'en-tête libelle ses deux montants
+  (« Total TTC » / « Reste dû »). ⚠️ **La proposition de relance** (écran
+  `/accounting/treatment/payment-reminders` vide) **reste ouverte** — elle demande la
+  chaîne de relances, hors de ce correctif.
 
 ### B10 — ven-016 🔴 — « Contrôle crédit » en boucle infinie — **✅ CORRIGÉ** (`d9197e1`)
 - **Cause établie** (l'hypothèse d'un `useEffect` à dépendance instable était **fausse** : ce
@@ -422,12 +502,20 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Garde** : `scripts/verify-rules/15-no-render-body-call.rule` — le motif tombait 2 fois avant
   ce commit, 0 après (cf. § 15).
 
-### B11 — ven-003 🔵 — `<div>` dans `<tbody>` (devis)
+### B11 — ven-003 🔵 — `<div>` dans `<tbody>` (devis) — **✅ CORRIGÉ** (écran)
 - **Correctif** : `QuotesPage`, remplacer l'enveloppe par un `<Fragment>` ou un `<tr>`.
+- **Fait** : `QuotesPage` **et** `CreditNotesPage` (même motif, jamais relevé) passent
+  leurs paires de lignes en `<Fragment>` : plus d'erreur React « `<div>` cannot be a child
+  of `<tbody>` ». Le motif `PurchaseCreditNotesPage` (relevé par les journaux Vitest) reste
+  à traiter avec les achats.
 
-### B12 — pil-009 🔵 — valider une facture en un clic, sans confirmation ; échéance = date
+### B12 — pil-009 🔵 — valider une facture en un clic, sans confirmation ; échéance = date — **✅ CORRIGÉ** (écran)
 - **Correctif** : `confirmSync` avant validation (action irréversible) ; échéance par défaut
   = date + conditions de paiement du client.
+- **Fait** : « Valider » demande confirmation en nommant la pièce et ce qui est irréversible
+  (numéro définitif + écriture) ; l'échéance proposée suit les conditions de paiement du
+  client (premier nombre de `payment_terms`, 30 j par défaut) et se fige dès que
+  l'utilisateur la saisit.
 
 ---
 
@@ -825,7 +913,8 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 6 | **E1** ✅ | Fenêtres qui débordent (Modal) | 0,5 j | — |
 | 7 | **D1, D2, D4** ✅ | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
-| 9 | B2–B9, B11, B12 | Reste des ventes | 3 j | A4 pour B3 ; D-4 pour B8 |
+| 9 | **B2–B9, B11, B12** ✅ (reste **B3**) | Reste des ventes | 3 j (livrés) | A4 pour B3 |
+| 9b | B3 (ven-009) | Client UE : autoliquidation, mention, Factur-X AE | 0,5 j | A4 (pays du client) |
 | 10 | C2–C6 | Reste de la paie | 2,5 j | C1 |
 | 11 | D3, D5–D12 | Reste du stock et de la caisse | 2 j | D1 |
 | 12 | F1–F7 | Comptabilité | 1,5 j | — |
@@ -842,15 +931,15 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 
 ## 14. Décisions à prendre (bloquent un correctif)
 
-| ID | Question | Options | Recommandation |
-|---|---|---|---|
-| **D-QA-1** | Une facture directe d'article stocké, sans BL, sort-elle le stock ? | (a) oui à la validation ; (b) non, BL obligatoire pour un bien | (a) avec garde anti-double sortie si un BL existe |
-| **D-QA-2** | Facture datée avant la dernière numérotée | (a) refus ; (b) avertissement | (a) : chronologie exigée pour la piste d'audit fiable |
-| **D-QA-3** | Articles existants à prix négatif | (a) remis à 0 ; (b) désactivés | (b) : ne pas inventer de prix |
-| **D-QA-4** | Contrepartie comptable du stock initial | (a) AN 3x/890000 ; (b) avertissement seulement | (a), cohérent avec la banque (277) |
-| **D-QA-5** | Transfert entre dépôts | (a) créer l'écran ; (b) hors périmètre | (a) : fonction de base d'un multi-dépôt |
-| **D-4** (existante) | `generate-pdf` | rebrancher ou PDF navigateur | PDF navigateur (B8), sans service externe |
-| **D-G** (existante) | Grille paie 276, arrêt maladie, carence | signature de l'expert-comptable | inchangé : ne pas déployer avant |
+| ID | Question | Options | Recommandation | Décision |
+|---|---|---|---|---|
+| **D-QA-1** | Une facture directe d'article stocké, sans BL, sort-elle le stock ? | (a) oui à la validation ; (b) non, BL obligatoire pour un bien | (a) avec garde anti-double sortie si un BL existe | **TRANCHÉE (30/09, option a)** — 317 : sortie à la validation, une fois par facture, jamais pour une ligne née d'un BL ; sortie impossible = validation refusée avec un message nommé |
+| **D-QA-2** | Facture datée avant la dernière numérotée | (a) refus ; (b) avertissement | (a) : chronologie exigée pour la piste d'audit fiable | **TRANCHÉE (30/09, option a)** — 317 : refus, message nommé ; `180` E12/E13 alignés |
+| **D-QA-3** | Articles existants à prix négatif | (a) remis à 0 ; (b) désactivés | (b) : ne pas inventer de prix | à prendre (lot D) |
+| **D-QA-4** | Contrepartie comptable du stock initial | (a) AN 3x/890000 ; (b) avertissement seulement | (a), cohérent avec la banque (277) | à prendre (lot D) |
+| **D-QA-5** | Transfert entre dépôts | (a) créer l'écran ; (b) hors périmètre | (a) : fonction de base d'un multi-dépôt | à prendre (lot D) |
+| **D-4** (existante) | `generate-pdf` | rebrancher ou PDF navigateur | PDF navigateur (B8), sans service externe | **TRANCHÉE de fait (30/09)** — B8 livre le PDF navigateur, sans service |
+| **D-G** (existante) | Grille paie 276, arrêt maladie, carence | signature de l'expert-comptable | inchangé : ne pas déployer avant | inchangée |
 
 ---
 
