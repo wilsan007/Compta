@@ -606,6 +606,32 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Attendus** (grille France 2026, 276, en attente de signature) :
   SMIC 1 823,03 → net **1 477,93** ; 2 500 → **1 919,53** ; 4 500 cadre → **3 121,70**.
 
+### C2 ter — avantages en nature : titres-restaurant et indemnité de transport hors du bulletin — **🔴 PROUVÉ, à corriger** (suite 321)
+- **Comment ce défaut est sorti** : en portant la couverture des éléments
+  variables du second moteur vers le moteur réel, avant de le supprimer. Quatre
+  types (`bonus`, `meal_vouchers`, `transport_allowance`, `other_deductions`)
+  n'étaient couverts que par le second moteur — qu'aucun écran n'appelait. Ils
+  sont donc rejoués contre `calculate_payslip` (suite **321**).
+- **Constat mesuré** : sur un brut de 2 500 €,
+  * une **prime** de 500 € → brut 3 000,00 € ✅ (le moteur la traite) ;
+  * une **autre déduction** de 120 € → net inférieur de 120,00 € ✅ ;
+  * des **titres-restaurant** de 160 € → brut **2 500,00 €** au lieu de 2 660,00 € ❌ ;
+  * une **indemnité de transport** de 75 € → brut **2 500,00 €** au lieu de 2 575,00 € ❌.
+- **Nature du défaut** : un avantage en nature **est un salaire**. Sa valeur
+  faciale entre dans le brut ; seule la part exonérée (la valeur du titre) échappe
+  aux cotisations. Ici les deux montants **n'arrivent nulle part** : ni brut, ni
+  cotisations, ni net. Un salarié qui a droit à des titres-restaurant ne les
+  reçoit pas. Et la grille 2026 **n'a aucune ligne** pour ces deux postes — il
+  manque le paramétrage, pas seulement la formule.
+- **Pourquoi ce n'est pas corrigé ici** : la valeur faciale du titre-restaurant et
+  le plafond d'exonération de l'indemnité de transport changent chaque année et
+  doivent être **sourcés**. La 276 le fait explicitement (`[URSSAF-PSS]`,
+  `[URSSAF-TAUX]`) ; écrire un taux de mémoire serait précisément le défaut que
+  ce dépôt combat. Chantier à part, avec ses sources.
+- **Suivi** : `321 T02`, `T03` et `T05` sont inscrits au registre des rouges
+  attendus (`ci/expected_failures.sql`) avec leur motif : visibles en CI, sans
+  la casser. Ils disparaîtront **avec leur correctif**, pas avant.
+
 ### C2 bis — le prorata d'entrée / sortie (manque trouvé en retirant le second moteur) — **✅ CORRIGÉ** (migration 320)
 - **Comment ce manque est sorti** : l'inventaire du second moteur de paie
   (`src/lib/payroll.ts`, 509 lignes) face au moteur SQL a montré **une seule**

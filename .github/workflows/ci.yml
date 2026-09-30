@@ -929,6 +929,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Les avantages en nature (titres-restaurant, indemnité de transport) :
+      # 3 scénarios ROUGES ATTENDUS, inscrits au registre — un avantage en nature
+      # est un salaire et son absence de la grille 2026 est un défaut prouvé
+      # (321 T02/T03/T05). Ils se ferment avec le paramétrage sourcé.
+      - name: 'QA : éléments variables — dont les avantages en nature (321)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/321_payroll_variable_elements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
