@@ -606,6 +606,38 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Attendus** (grille France 2026, 276, en attente de signature) :
   SMIC 1 823,03 → net **1 477,93** ; 2 500 → **1 919,53** ; 4 500 cadre → **3 121,70**.
 
+### C2 bis — le prorata d'entrée / sortie (manque trouvé en retirant le second moteur) — **✅ CORRIGÉ** (migration 320)
+- **Comment ce manque est sorti** : l'inventaire du second moteur de paie
+  (`src/lib/payroll.ts`, 509 lignes) face au moteur SQL a montré **une seule**
+  capacité que le vrai moteur n'avait pas : le **prorata d'entrée ou de sortie**.
+  Et comme aucun écran n'appelait le second moteur, la capacité était
+  simplement perdue.
+- **Constat mesuré** : brut 3 000 €, embauche le 30/09/2026 → brut **3 000,00 €**
+  et net **2 244,40 €**. Un mois entier de salaire pour un jour de présence.
+- **La règle retenue** (obligatoire, et celle de tous les produits du marché) :
+  * rapport des **jours de présence dans le mois** au **nombre de jours du
+    mois** — pas un trentième : février a 28 jours (URSSAF, Sage 100 §12,
+    Odoo `hr.payslip`) ;
+  * Code du travail, art. L1234-9 à L1234-13 ;
+  * rapport arrondi à **6 décimales** (il n'a pas de fin), brut au **centime** ;
+  * **ni le rappel, ni les heures supplémentaires, ni les remboursements** ne
+    sont proratisés : ce ne sont pas des salaires dus au prorata du mois.
+- **Test rouge avant** : `320_payroll_prorata_tests.sql` — **4 rouges / 2 verts**
+  (les verts sont les non-régressions), **7/7** après.
+- ⚠️ **Une donnée inventée, corrigée en même temps** : `employees.hire_date`
+  portait `DEFAULT CURRENT_DATE`. Invisible jusqu'ici (le moteur ne lisait pas
+  cette colonne), mais fausse — une date d'embauche est une donnée métier, pas
+  un horodatage de saisie. Le prorata l'a rendu visible : les bulletins d'or de
+  septembre 2026 sont tombés à 1 jour sur 30 (rouge mesuré sur **276** et
+  **319**, avant correction). Défaut retiré (T07).
+- **Reste ouvert, hors de ce commit** : les imports `122`, `153` et `158` font
+  `COALESCE(… ->> 'hire_date', CURRENT_DATE)` — la même invention sur l'import
+  de masse, qui fausse aussi les **droits acquis** (C5). Chantier à part.
+- **Après** : `320_*_tests` **7/7** ; non-régression **276 6/6** (les trois
+  bulletins d'or au centime), **319 6/6**, **243 5/5**, **228 7/7**, **311 7/7**,
+  **181 7/7**, **212 9/9**, **247 7/7**, **256 8/8**, **265 10/10** ; suite 320
+  câblée dans `.github/workflows/ci.yml`.
+
 ### C2 — rh-005 🟠 — simulateur de paie : autre moteur, nets faux — **✅ CORRIGÉ** (migration 319)
 - **Constat (mesuré par la recette)** : 2 500 € brut → **1 798,53 €** de net au
   simulateur, contre **1 919,53 €** au moteur de la base (bulletin d'or de la
