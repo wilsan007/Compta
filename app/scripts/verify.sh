@@ -3,7 +3,7 @@
 # Usage: ./scripts/verify.sh [--skip-tests] [--skip-lint] [--list-rules]
 #
 # Architecture:
-#   1. TypeScript type-check (tsc --noEmit)        — fixe
+#   1. TypeScript type-check (tsc -b)              — fixe
 #   2. Lint (oxlint)                               — fixe
 #   3. i18n key parity (check-i18n.mjs)            — fixe
 #   4. Audit grep rules (scripts/verify-rules/*.rule) — MODULAIRE
@@ -93,15 +93,21 @@ fi
 # ══════════════════════════════════════════════════════════════
 # FIXE 1/5: TypeScript Type-Check
 # ══════════════════════════════════════════════════════════════
-section "1/5  TypeScript Type-Check (tsc --noEmit)"
+# `tsc -b`, pas `tsc --noEmit`. Mesuré le 30/09/2026 : le `tsconfig.json`
+# racine est une configuration « solution » (`files: []`, `references`), donc
+# `npx tsc --noEmit` ne compile RIEN et sort toujours 0 — le contrôle annonçait
+# « 0 erreur de type » sur un code qui en avait. `-b` suit les références et
+# vérifie l'application, les scripts et les tests ; c'est aussi ce que lancent
+# `npm run typecheck`, `npm run build` et `npm run test:full`.
+section "1/5  TypeScript Type-Check (tsc -b)"
 
-TSC_OUTPUT=$(npx tsc --noEmit --pretty 2>&1 || true)
+TSC_OUTPUT=$(npx tsc -b --noEmit --pretty 2>&1 || true)
 TSC_ERRORS=$(echo "$TSC_OUTPUT" | grep -c "error TS" || true)
 
 if [ "$TSC_ERRORS" -eq 0 ]; then
-  pass "tsc --noEmit: 0 erreurs de type"
+  pass "tsc -b: 0 erreurs de type"
 else
-  fail "tsc --noEmit: ${TSC_ERRORS} erreurs de type" "$TSC_ERRORS"
+  fail "tsc -b: ${TSC_ERRORS} erreurs de type" "$TSC_ERRORS"
   echo "$TSC_OUTPUT" | head -80 | sed 's/^/    /'
 fi
 
