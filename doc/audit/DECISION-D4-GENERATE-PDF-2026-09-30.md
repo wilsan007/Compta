@@ -113,6 +113,13 @@ encore** (A1), là où la suppression est immédiate et vérifiable. **Si le pro
 choisit A, ce n'est pas en `--no-verify-jwt`**, et la politique réseau de A1 doit
 être **écrite avant** le déploiement, pas après.
 
+> ⚠️ **Cette lecture est SUPERSÉDÉE par le §9 (30/09)** — et c'est le §9 qui fait
+> foi. Le produit a **ouvert la voie A** : le bucket existe, la fonction ne ment
+> plus, et le « fait 1 » qui pesait contre A (le faux succès) est corrigé. La
+> dernière phrase, elle, reste entièrement vraie : **la politique réseau de A1
+> doit être écrite avant le déploiement, pas après.**
+
+
 ## 8. Après la décision
 
 1. Cocher la ligne dans `RESTE-A-FAIRE` §3.1 (et §3.2 si A) **avec sa date** ;
@@ -127,6 +134,42 @@ choisit A, ce n'est pas en `--no-verify-jwt`**, et la politique réseau de A1 do
 ```bash
 grep -rn 'generate-pdf' app/src app/supabase/deploy-all-functions.sh   # aucun appelant, 1 non déployée
 grep -n 'CLIENT_HTML_REFUSED\|from("documents")\|GOTENBERG_URL' app/supabase/functions/generate-pdf/index.ts
-grep -rln 'INSERT INTO storage.buckets' app/sql/                       # 68_module_documents_storage_rls.sql
-npx -y deno test app/supabase/functions/__tests__/                     # 32 tests, dont generate-pdf
+grep -rln 'INSERT INTO storage.buckets' app/sql/                       # 68_… (sept buckets) et 317 (l'archive)
+npx -y deno test app/supabase/functions/__tests__/                     # 36 tests, dont 4 sur generate-pdf
 ```
+
+---
+
+## 9. Ce qui a été fait le 30/09 — la voie A est ouverte
+
+**Le produit a ouvert A**, non pas en déployant la fonction, mais en faisant
+disparaître les trois défauts qui rendaient le choix impossible. La commande
+était : *« si vous avez besoin d'un bucket, créez-le et reliez-le à cette
+action »*.
+
+| Ce qui a changé | Où | Preuve |
+|---|---|---|
+| Le bucket d'archive **existe** : `generated-pdfs`, privé, PDF seulement, 25 Mo — et **une seule politique**, la LECTURE, bornée à la société ET au module du chemin `{société}/{module}/{type}/{fichier}.pdf` | migration **`317`** | suite **`317`**, **9/9** |
+| La fonction **n'invente plus de succès** : sans archivage elle rend `500 UPLOAD_FAILED`, là où elle annonçait `success: true` avec `url: null` | `generate-pdf/index.ts` | tests Deno (**36/36**) |
+| Sans convertisseur, elle **refuse** en `503 PDF_SERVICE_NOT_CONFIGURED` — et **ne renvoie plus le document** dans le corps de la réponse (l'ancien repli servait le HTML en `200`) | idem | idem — vérifié : aucun `<!DOCTYPE` dans la réponse |
+| Une pièce archivée **ne se réécrit pas** (`upsert: false`) : deux générations sont deux fichiers | idem | idem |
+
+**Décisions de gestion prises avec le bucket** (elles sont dans la migration, et
+la suite les mesure) : le rôle applicatif **n'écrit pas** dans l'archive, **ne la
+réécrit pas** et **ne l'efface pas** — seule la clé de service le peut. Ce n'est
+pas une omission : c'est la purge réservée à l'acte de gestion (fin de
+conservation), et la fabrique d'une pièce d'archive réservée au serveur.
+
+**Ce qui reste de l'option A** — et rien de tout cela n'est dans ce dépôt :
+
+1. **A1** : un convertisseur **injoignable du réseau interne** — l'exigence qui
+   compte, parce que la SSRF n'est pas dans le code mais dans ce que le
+   convertisseur peut atteindre ;
+2. le secret **`GOTENBERG_URL`** ;
+3. **un appelant** : aucun écran n'en a, et c'est toujours vrai ;
+4. le **déploiement** (`deploy-all-functions.sh`).
+
+**Ce que la `317` ne fait pas** : elle ne déploie rien et ne remplit pas le
+bucket. La fonction échoue désormais **fermé** (503 sans convertisseur) : la
+déployer serait sans danger, mais sans effet.
+

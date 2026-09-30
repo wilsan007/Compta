@@ -182,11 +182,15 @@ L'essentiel en huit lignes :
   **`308`, `SAGE-01→03`** (l'import d'écritures est **une** transaction :
   équilibré, validé, soldes cumulés). Corrigée le 30/09 ; voir le bullet
   « W7 fermée (28/09) » en tête de fichier.
-* **Décisions qui bloquent** : `D-4` (`generate-pdf` : rebrancher ou supprimer —
-  le défaut appliqué est « non déployée » ; **note d'aide à la décision** :
-  [D-4](doc/audit/DECISION-D4-GENERATE-PDF-2026-09-30.md) — ce qui est vrai
-  aujourd'hui, les cinq exigences de l'option A, ce que la suppression coûte, et
-  ce qu'aucune des deux ne change), `D-5` (OCR), `D-7` (contraste),
+* **Décisions qui bloquent** : `D-4` (**ouverte, et la voie A est désormais
+  ouverte** : le 30/09 la migration **`317`** a posé le bucket d'archive
+  (`generated-pdfs`, privé, PDF seulement, lecture bornée à la société ET au
+  module) et la fonction ne ment plus — `503` sans convertisseur au lieu du HTML
+  en `200`, `500` au lieu de `success: true` avec `url: null` ; il reste A1, le
+  convertisseur injoignable du réseau interne, le secret `GOTENBERG_URL` et un
+  appelant — **note d'aide à la décision** :
+  [D-4](doc/audit/DECISION-D4-GENERATE-PDF-2026-09-30.md), dont le §9 dit ce qui
+  a été fait), `D-5` (OCR), `D-7` (contraste),
   `D-10`, `D-11` (localisation), `D-13`.
 * **Hors du dépôt** : les secrets et la recette des neuf intégrations (Chorus Pro,
   Yousign, GoCardless, Resend, EFI, SIRENE, VIES, Stripe, Gotenberg) ; la clé

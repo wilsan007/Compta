@@ -61,13 +61,22 @@ FUNCTIONS_SANS_JWT=(
   "refresh-exchange-rates"
 )
 
-# NON DÉPLOYÉE : `generate-pdf`. Décision D-4 — l'audit prévoyait, « à défaut »
-# de décision, de la retirer du déploiement : elle acceptait du HTML fourni par
-# le client (SSRF en lecture prouvée, AUD-H03), n'avait **aucun appelant**, et
-# était déployée `--no-verify-jwt`. Son code est durci dans le même mouvement
-# (le HTML client est refusé, les valeurs sont échappées) et couvert par les
-# tests d'entrée ; la décision de la rebrancher ou de la supprimer reste
-# ouverte.
+# NON DÉPLOYÉE : `generate-pdf`. Décision D-4, ouverte. L'audit prévoyait, « à
+# défaut » de décision, de la retirer du déploiement : elle acceptait du HTML
+# fourni par le client (SSRF en lecture prouvée, AUD-H03), n'avait **aucun
+# appelant**, et était déployée `--no-verify-jwt`.
+#
+# Depuis le 30/09, la voie A est OUVERTE — les trois défauts mesurés sont fermés :
+# son HTML est refusé, son verdict est honnête (sans convertisseur elle rend
+# 503 et ne renvoie plus le document en 200 ; sans archivage elle rend 500 au
+# lieu de `success: true` avec `url: null`), et son bucket d'archive existe
+# (migration **317**, privé, PDF seulement, lecture bornée à la société ET au
+# module). Sa suite (9 scénarios) et ses tests d'entrée la couvrent.
+#
+# Ce qui MANQUE pour la déployer n'est pas dans ce dépôt : l'exigence A1 — un
+# convertisseur **injoignable du réseau interne** — et le secret `GOTENBERG_URL`.
+# La fonction échoue désormais FERMÉ (503) sans lui : la déployer serait sans
+# danger, mais sans effet, et un appelant n'existe toujours pas.
 FUNCTIONS_NON_DEPLOYEES=(
   "generate-pdf"
 )

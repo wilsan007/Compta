@@ -1231,6 +1231,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # D-4 (option A) — le bucket d'ARCHIVE des PDF produits par le serveur. Le
+      # défaut fermé : `generate-pdf` rangeait dans `storage.from("documents")`,
+      # un bucket qui n'existe nulle part ; l'upload échouait, l'erreur n'était
+      # pas lue, et la fonction rendait `success: true` avec `url: null`. La 317
+      # pose le bucket `generated-pdfs` (privé, PDF seulement) et UNE politique :
+      # la LECTURE, bornée à la société ET au module porté par le chemin
+      # `{société}/{module}/{type}/{fichier}.pdf`. L'absence des trois autres
+      # commandes est une DÉCISION (seule la clé de service écrit, ne réécrit pas,
+      # et purge), et c'est ce que la suite mesure — y compris que l'absence est
+      # bien une absence, et que ce qui n'est pas nommé n'est pas permis. 9
+      # scénarios.
+      - name: 'D-4 : le bucket d''archive des PDF serveur (317)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_pdf_archive_bucket_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

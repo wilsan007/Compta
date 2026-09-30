@@ -9,7 +9,19 @@
 //     ligne neutre, ce qui suffit aux lectures de garde.
 // ============================================================
 
-const RESULTAT_NEUTRE = { data: [{ id: "stub" }], error: null }
+// PostgREST rend DEUX formes selon l'appel :
+//   • `.select()` / `.limit()`        → un TABLEAU de lignes ;
+//   • `.single()` / `.maybeSingle()`  → une LIGNE.
+// Le harnais n'a qu'un résultat neutre : il rend donc un TABLEAU qui porte AUSSI
+// les champs de la ligne. Les appelants qui lisent `data[0]` ou
+// `Array.isArray(data)` — comme `isTenantMember` — trouvent le tableau ; ceux
+// qui lisent `doc.tenant_id` après `maybeSingle()` — comme `generate-pdf` —
+// trouvent le champ. Sans ce champ, toute fonction qui vérifie l'appartenance
+// AVANT d'agir s'arrêtait sur `forbidden()` (403), et le chemin situé derrière
+// n'était jamais atteint : ni exécuté, ni testable.
+const LIGNE_NEUTRE = { id: "stub", tenant_id: "00000000-0000-0000-0000-0000000000aa" }
+const RESULTAT_NEUTRE = { data: Object.assign([LIGNE_NEUTRE], LIGNE_NEUTRE), error: null }
+
 
 function chaine(): any {
   const cible = function () {}

@@ -116,3 +116,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
 GRANT SELECT ON auth.users TO authenticated, service_role;
+
+-- Le schéma `storage` de Supabase accorde les privilèges sur ses tables et laisse
+-- la RLS décider. C'est précisément ce que la suite 317 mesure : la POLITIQUE, pas
+-- un refus de privilège. Sans ces GRANT, un test de bucket passerait au rouge pour
+-- la mauvaise raison — `permission denied for table objects` au lieu de « 0 ligne
+-- visible », et un contrôle qui refuse pour la mauvaise raison ne prouve rien.
+GRANT ALL ON storage.objects TO anon, authenticated, service_role;
+GRANT SELECT ON storage.buckets TO anon, authenticated, service_role;
+

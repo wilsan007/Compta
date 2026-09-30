@@ -103,7 +103,7 @@ front `tsc` 0, `oxlint` 0, parité i18n fr/en/ar,
 
 | ID | Sujet | Où c'est dit |
 |---|---|---|
-| **D-4** | `generate-pdf` : **défaut appliqué** le 26/09 (HTML client refusé, valeurs échappées, **retirée du déploiement**). Reste à trancher : la rebrancher derrière un Gotenberg durci, ou la supprimer | [note d'aide à la décision](DECISION-D4-GENERATE-PDF-2026-09-30.md) · `RESTE-A-FAIRE` §3.1 |
+| **D-4** | `generate-pdf` — **défaut appliqué** le 26/09, **voie A ouverte** le 30/09 : la migration **`317`** pose le bucket d'archive (`generated-pdfs`, privé, PDF seulement, lecture bornée à la société ET au module) et la fonction ne ment plus (`503` sans convertisseur au lieu du HTML en `200`, `500` au lieu de `success: true` avec `url: null`, `upsert: false`). Restent : **A1** (convertisseur injoignable du réseau interne), `GOTENBERG_URL`, **un appelant**, le déploiement | [note d'aide à la décision](DECISION-D4-GENERATE-PDF-2026-09-30.md) §9 · `RESTE-A-FAIRE` §3.1 |
 | **D-5** | OCR : périmètre et fournisseur | idem |
 | **D-7** | Contraste : seuils retenus pour les thèmes | idem |
 | **D-10**, **D-13** | À confirmer | idem |
@@ -129,7 +129,7 @@ Ce que W6 **ne peut pas** prouver sans comptes configurés — et ce qui est pro
 | **EFI / impots.gouv** (`submit-vat-return`) | `EFI_API_TOKEN` + une télédéclaration de test | l'écran ne dit « déposée » que sur confirmation |
 | **INSEE SIRENE / VIES** (`verify-siret`, `validate-vat-vies`) | `SIRENE_API_TOKEN` | le verdict **local** (Luhn, longueur, format) est vérifié par test ; l'écran nomme la source (« à la source » ou « format et clé seulement ») |
 | **Stripe** | `STRIPE_WEBHOOK_SECRET` + webhooks pointés sur `handle-stripe-webhook` | sans secret : refus 500 nommé ; sans signature : refus 400 nommé |
-| **Gotenberg** | décision `D-4` | HTML client refusé, valeurs échappées |
+| **Gotenberg** | décision `D-4` (**voie A ouverte** le 30/09) | HTML client refusé, valeurs échappées ; `503` nommé sans `GOTENBERG_URL` ; l'archive est posée (bucket `generated-pdfs`, suite `317` 9/9) — il manque le **convertisseur isolé** (A1) et le secret |
 | **Sentry** | `VITE_SENTRY_DSN` | code prêt (ErrorBoundary) |
 
 ### C. Le plan correctif : les vagues restantes (PROPOSÉ)
