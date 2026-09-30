@@ -18,15 +18,15 @@
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
 | Critiques | **7** — **tous corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016, ven-005) |
-| Hauts | **23** — dont **7 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015) |
+| Hauts | **23** — dont **10 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015, stk-012, stk-005, stk-013) |
 | Moyens | **24** — dont **1 corrigé** (cpt-005) |
 | Bas | **20** |
-| Déjà corrigés et commités | **19 commits** (§ 2) |
-| **Restant à corriger** | **≈ 52 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
+| Déjà corrigés et commités | **22 commits** (§ 2) |
+| **Restant à corriger** | **≈ 49 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
-**Les six défauts qui bloquent un parcours métier entier**, à traiter en premier :
+**Les six défauts qui bloquaient un parcours métier entier — tous fermés** (voir le détail plus bas) :
 
 1. ~~**rh-006** — aucun écran ne produit de bulletin de paie (toute la paie est intestable).~~
    **CORRIGÉ** (311, `a7b0570`) : un lot se génère par **un appel**, le verdict est
@@ -47,7 +47,10 @@
    `stock`. Mesuré à l'écran : stock 50 → 50 puis 0 mouvement avant ; 50 → **48**
    avec **1** mouvement (aucun pour la prestation) après. La commande, elle, ne
    se dit livrée qu'à la sortie réelle.
-5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
+5. ~~**stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.~~
+   **CORRIGÉ** (`d709bf8`, migration 315) : le compte d'une sortie est celui de
+   l'entrée qui a nourri la couche consommée. Rejeu sur la donnée de recette :
+   l'écriture devient 713500 D 88 / 355000 C 88, 310000 intouché.
 6. ~~**ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.~~
    **CORRIGÉ** (`e179882`) : le `Modal` commun borne la fenêtre à l'écran (en-tête et
    pied fixes, corps défilant) et les deux fenêtres y passent. Mesuré : « Créer »
@@ -83,6 +86,9 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `d709bf8` | **D1 — stk-012** 🟠 sortie de caisse d'un produit fini en 603/310 | migration **315** : une sortie prend les comptes de l'ENTRÉE qui a nourri la couche consommée (`piece_number = 'STK-…'`, ou `reference = 'JE-OF-…'` pour la production) ; article et famille restent le repli | `315_*_tests` **6/6** (T01 rouge avant) ; familles 173/230/242/251/253/254/281 vertes ; rejeu sur la recette : 713500 D 88 / 355000 C 88, 310000 intouché |
+| `d751071` | **D2 — stk-005** 🟠 « Valoriser le stock » ambigu (300) et faux | migration **316** : une seule `calculate_stock_valuation(p_method, p_warehouse_id, p_date)`, adossée à `calculate_stock_valuation_at_date` (couches) ; les deux surcharges supprimées | `316_*_tests` **3/3** (T01/T02/T03 rouges avant) ; recette : 6 lignes, **8 636,00 €** = Σ couches ; 173/254 vertes ; Vitest **1522/1522** |
+| `bf49b03` | **D4 — stk-013** 🟠 statistiques de caisse toujours vides | `src/lib/dateRange.ts` (`localDayRange` en `[from, to)` local, `localDateString`) ; `getPosTickets` prend la période ; date de facture d'un ticket au jour local | `dateRange.test.ts` + `d4-pos-tickets-range.test.ts` (6/6) ; écran recette : **216,00 €** de CA TTC et **36,00 €** de TVA ; le harnais manquait `lt` |
 | `e179882` | **E1 — ach-001** 🟠 fenêtre fournisseur débordante / **stk-015** 🟠 fenêtre immobilisation débordante | `Modal` commun borné à l'écran (`max-h-[calc(100vh-2rem)]`, en-tête et pied fixes, corps défilant, emplacement `footer` optionnel) ; les deux fenêtres y passent et gagnent le piège à focus, Échap et le verrou de défilement | `e2e/windows-fit.spec.ts` rouge avant (840 px pour 720) puis **4/4** à 1280×720 et 375×812 ; « Créer » à 652–688 px ; captures `ach-001-after.png`, `stk-015-after.png` ; Vitest **1516/1516** |
 | `9ef26c8` | **B1 — ven-005** 🔴 BL livré sans sortie de stock / **ven-004** 🟠 BL avec service bloqué ; complément : la commande se disait livrée dès la **création** du bon | migration **314** : la sortie suit « Expédié » **comme** « Livré » (une fois par bon, gardes `23505` et S-07 conservées) et ne porte que sur les articles `type = 'stock'` ; la commande n'est livrée qu'à la sortie — l'écran n'écrit plus `delivery_status` (règle 16) | `314_*_tests` **6/6** (T01, T02, T05b rouges avant) ; suites voisines 173/230/242/251/253 vertes ; écran : stock 50 → **48**, **1** mouvement (0 pour la prestation), commande `delivered` ; Vitest **1516/1516** |
 | `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL », protocole symétrique : 4 776 GET `/customers` et 10 325 requêtes `/rest/v1` en 5 s + 3 435 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
@@ -497,22 +503,41 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 7. Lot D — Stock, production, caisse (≈ 3,5 j)
 
-### D1 — stk-012 🟠 — sortie de caisse d'un produit fini en 603/310 au lieu de 7135/355
+### D1 — stk-012 🟠 — sortie de caisse d'un produit fini en 603/310 au lieu de 7135/355 — **✅ CORRIGÉ** (`d709bf8`, migration 315)
 - **Constat** : 355000 reste à 440 alors que le stock de C vaut 308 ; 310000 est diminué à tort de 132.
-- **Correctif** : le compte de stock et la contrepartie d'une sortie viennent de l'**article**
-  (`products.stock_account_code`) ou de la **couche d'entrée**. Produit fini
-  (355/7135), marchandise (37/6037), matière (31/6031). Même règle pour BL, caisse et
-  inventaire. Retirer les comptes codés en dur (dette S-10 de W8).
-- **Test rouge** : vendre 2 C au CUMP 44 donne 7135 D 88 / 355 C 88, et 310 est inchangé.
+- **Cause établie** : `resolve_stock_account` / `resolve_variation_account` lisent l'**article** et sa
+  famille — et l'article porte `stock_account_code = '310000'` (valeur par défaut de la fiche).
+  Juste pour une réception, faux pour un produit fabriqué, dont le compte de stock est décidé par
+  la production (355000/713500) : `products.type` ne distingue ni produit fini ni marchandise.
+- **Correctif** : une **sortie** prend les comptes de l'**entrée qui a nourri la couche consommée**.
+  Le lien vers l'écriture d'entrée est exact, jamais deviné : `piece_number = 'STK-' || mouvement`
+  d'un côté, `reference = 'JE-OF-' || OF` pour la production (302), qui écrit sa propre écriture.
+  L'article et sa famille restent le repli (entrées, couches d'avant la 241). Le déclencheur passe
+  avant la consommation des couches (ordre alphabétique), donc la couche à consommer est connue.
+  Tous les chemins de sortie en bénéficient : BL, caisse, inventaire, production.
+- **Test rouge avant** : `315_*_tests` T01 ❌ (D 603000 88 / C 310000 88, 1 ligne en 310000) ;
+  T02 ✅ (non-régression marchandise). Après : 6/6 verts dans la famille 173/230/242/251/253/254/281.
+  Preuve sur la donnée de recette (transaction annulée) : 713500 D 88 / 355000 C 88, 0 ligne en 310000.
+- **Cas limite inscrit au registre** : si un article a des couches entrées à des comptes différents,
+  la sortie suit la couche la plus ancienne (le CUMP ramène les coûts, pas les comptes).
 
-### D2 — stk-005 🟠 — « Valoriser le stock » : fonction ambiguë, puis total faux
+### D2 — stk-005 🟠 — « Valoriser le stock » : fonction ambiguë, puis total faux — **✅ CORRIGÉ** (`d751071`, migration 316)
 - **Cause établie** : deux surcharges de `calculate_stock_valuation`
-  (`(p_method, p_warehouse_id)` et `(p_tenant_id, p_method, p_date)`), donc PostgREST rend 300.
-  La valorisation sur un dépôt calcule quantité × prix de la fiche, pas les couches.
-- **Correctif** : **une** fonction `calculate_stock_valuation(p_method, p_warehouse_id, p_date)`
-  qui lit les **couches** (CUMP, FIFO) et rend une ligne par article. Supprimer l'autre
-  surcharge (règle W10 : `check-rpc-contract`).
-- **Test rouge** : CUMP total **5 900,00**, A1 1 800,00 ; FIFO pour A1 1 900,00.
+  (`(p_method, p_warehouse_id)` et `(p_tenant_id, p_method, p_date)`), donc PostgREST rend 300 —
+  et, avec un dépôt, la première calcule quantité × prix de la **fiche**, d'où la ligne unique
+  « — | 0 | 0,00 € | 5 600,00 € » (l'écran ne recevait pas un tableau, il en faisait une ligne).
+- **Correctif** : **une** fonction `calculate_stock_valuation(p_method, p_warehouse_id, p_date)`,
+  adossée à `calculate_stock_valuation_at_date` (111) qui lit les **couches** — la vérité unique
+  depuis la 254 — et rejoue les mouvements. Une ligne par article et par dépôt, articles soldés
+  exclus ; les deux surcharges sont supprimées (règle W10 : une fonction, un nom).
+- **Test rouge avant** : `316_*_tests` T01/T02/T03 ❌ — l'appel à trois arguments partait dans la
+  surcharge `(uuid, text, date)` (« invalid input syntax for type uuid: "cump" »), 2 fonctions
+  trouvées. Après : 1 fonction, 2 lignes, total = somme des couches.
+- **Preuve sur la donnée de recette** : 6 lignes, **8 636,00 €** = Σ couches — l'ancre que la
+  recette donne elle-même (« = écran Quantités en stock, = couches de valorisation »).
+- **Note d'attendu** : le « A1 150 × 12 = 1 800 (CUMP) / FIFO 1 900 » de ce plan était
+  approximatif — le CUMP de 50 @ 10 + 100 @ 14 vaut 12,666… (1 900/150) ; les couches et la
+  fonction disent 1 900, et c'est l'égalité avec les couches que le test vérifie.
 
 ### D3 — stk-010 🟠 — OF terminé affiché à 0,00 € et « Aucune consommation »
 - **Correctif écran** : lire `manufacturing_orders.cost_material/cost_total/unit_cost/cost_variance`
@@ -520,13 +545,26 @@ et les modèles de saisie ne lisent **que** cette table.
   `bom_lines.unit_cost`. Afficher l'écart de coût.
 - **Test** : Vitest de la page OF (données simulées), 440 / 44 / écart.
 
-### D4 — stk-013 🟠 — statistiques de caisse vides (période décalée d'un jour, borne de fin = début)
-- **Cause établie** : bornes calculées en UTC depuis minuit local, et fin = même jour.
-- **Correctif** : utilitaire commun `localDayRange(period)` → `[début local, fin exclusive)` en
-  ISO avec fuseau. Le réutiliser partout où `toISOString().slice(0,10)` sert de date
-  (**chasse globale** : grep `toISOString().slice(0, 10)` et `toISOString().split('T')`).
-- **Test rouge** : Vitest avec le fuseau Europe/Paris simulé : « Aujourd'hui » au 29/09 donne
-  `gte 2026-09-29` et `lt 2026-09-30`.
+### D4 — stk-013 🟠 — statistiques de caisse vides (période décalée d'un jour, borne de fin = début) — **✅ CORRIGÉ** (`bf49b03`)
+- **Cause établie** : deux fautes dans la même chaîne — la borne basse venait de
+  `new Date().toISOString().split('T')[0]`, qui lit le jour **UTC** de minuit local (minuit à
+  Djibouti = 21 h la veille en UTC), et `getPosTickets` posait `lt(date, date + 'T23:59:59')`,
+  une fin le **même jour** : la période était vide par construction.
+- **Correctif** : `src/lib/dateRange.ts` — `localDayRange(period)` rend `[from, to)` en ISO, fin
+  **exclue** (lendemain à minuit local), et `localDateString()` rend le jour **local** d'un instant
+  (le remplaçant du motif fautif pour une date métier) ; `getPosTickets` prend `{ from, to }` et
+  pose `gte(from) + lt(to)` ; la date de la facture d'un ticket passe aussi à `localDateString()`.
+- **Test rouge avant** : `dateRange.test.ts` + `d4-pos-tickets-range.test.ts` — le second a
+  révélé un **trou du harnais** (`src/test/setup.ts` n'avait pas `lt` : l'ancien code appelait
+  cette méthode sans qu'aucun test unitaire n'y passe). Après : 6/6 verts, Vitest 1 522/1 522.
+- **Preuve écran (donnée de recette)** : les requêtes portent deux bornes distinctes en heure
+  locale — « Aujourd'hui » `gte=2026-09-29T21:00Z&lt=2026-09-30T21:00Z` (24 h locales),
+  « Ce mois » `gte=2026-08-31T21:00Z` ; « Cette semaine » et « Ce mois » affichent **216,00 € de
+  CA TTC et 36,00 € de TVA** (l'attendu de la recette). « Aujourd'hui » est vide à juste titre :
+  la vérification du 30/09 ne peut pas contenir les tickets du 29/09.
+- **Reste ouvert, inscrit au registre** : la chasse globale des **126** autres
+  `toISOString().split('T')[0]` (chacun demande sa vérification) et la règle statique
+  correspondante du § 15.
 
 ### D5 — stk-014 🟠 — caisse : aucune annulation de ticket ; statut anglais ; « Virement » non paramétré
 - **Correctif** :
@@ -785,7 +823,7 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 4 | **B10** ✅ | Boucle du contrôle crédit | 0,25 j | — |
 | 5 | **B1** ✅ | Sortie de stock du BL | 0,5 j | — |
 | 6 | **E1** ✅ | Fenêtres qui débordent (Modal) | 0,5 j | — |
-| 7 | **D1, D2, D4** | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
+| 7 | **D1, D2, D4** ✅ | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
 | 9 | B2–B9, B11, B12 | Reste des ventes | 3 j | A4 pour B3 ; D-4 pour B8 |
 | 10 | C2–C6 | Reste de la paie | 2,5 j | C1 |
@@ -821,8 +859,8 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | Garde | Ce qu'elle aurait vu |
 |---|---|
 | `check-written-columns` étendu aux **objets construits puis passés** à `.insert()` (suivi de la variable) | pil-005 (colonne fantôme restée verte) |
-| Contrôle « **une fonction, un nom** » : aucune surcharge exposée à PostgREST | stk-005 |
-| Contrôle statique « **pas de `toISOString()` pour une date métier** » | stk-013, rh-007 |
+| Contrôle « **une fonction, un nom** » : aucune surcharge exposée à PostgREST — **✅ fait** (D2 : les deux surcharges de `calculate_stock_valuation` supprimées, et le test T02 compte les fonctions) | stk-005 |
+| Contrôle statique « **pas de `toISOString()` pour une date métier** » — **reste à faire** : l'utilitaire `localDateString` existe (D4) mais le motif tombe encore **126** fois ; règle à baseline comme `check-written-columns` | stk-013, rh-007 |
 | Test Playwright « **toutes les fenêtres tiennent à 1280×720** » — **✅ fait pour les deux fenêtres de la recette** (`e2e/windows-fit.spec.ts`, à 1280×720 et 375×812) ; le balayage des ~150 autres fenêtres bâties sur le motif ad hoc reste à outiller (règle à baseline) | ach-001, stk-015 |
 | Test Playwright « **balayage des routes** » (0 erreur console, 0 requête 4xx/5xx, 0 clé i18n brute) | pil-002, pil-003, ven-003 |
 | Détecteur de **boucle de requêtes** en test (≤ N appels par montage) — **✅ fait** : budget de requêtes dans `CreditControlPage.test.tsx` (la source se gèle au-delà du plafond) + règle statique `15-no-render-body-call.rule` | ven-016 |
@@ -889,15 +927,15 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | stk-002 | 🟡 | pas de fiche article | D6 | ouvert |
 | stk-003 | 🟡 | sortie à 0,00 € | D7 | ouvert |
 | stk-004 | 🟡 | stock initial imposé | D8 | ouvert |
-| stk-005 | 🟠 | valorisation ambiguë et fausse | D2 | ouvert |
+| stk-005 | 🟠 | valorisation ambiguë et fausse | D2 | ✅ d751071 (316) |
 | stk-006 | 🟡 | inventaire trompeur | D9 | ouvert |
 | stk-007 | 🟡 | écarts en JSON brut | D9 | ouvert |
 | stk-008 | 🟡 | nomenclature sans article | D10 | ouvert |
 | stk-009 | 🟡 | coût nomenclature à 0 | D10 | ouvert |
 | stk-010 | 🟠 | OF affiché à 0 | D3 | ouvert |
 | stk-011 | 🔵 | numéro d'OF consommé | D11 | ouvert |
-| stk-012 | 🟠 | sortie caisse en 603/310 | D1 | ouvert |
-| stk-013 | 🟠 | stats caisse vides | D4 | ouvert |
+| stk-012 | 🟠 | sortie caisse en 603/310 | D1 | ✅ d709bf8 (315) |
+| stk-013 | 🟠 | stats caisse vides | D4 | ✅ bf49b03 |
 | stk-014 | 🟠 | pas d'annulation de ticket | D5 | ouvert |
 | stk-015 | 🟠 | fenêtre immobilisation déborde | E1 | ✅ e179882 |
 | pil-001 | 🔴 | pas de création de projet | — | ✅ 7d4ecb4 (vérifié) |
