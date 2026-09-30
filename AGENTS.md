@@ -795,20 +795,20 @@ L'essentiel en huit lignes :
   et `/employee` et `/employee/profile` **disent** « Aucun dossier de salarié »
   (fr/en/ar) au lieu de ne rien rendre ; boutons de dépliage nommés ; écran
   « accès refusé » des packs de plan comptable titré.
-- **Dernière tournée complète** : 668 visites, 334 routes, **47 défauts**
-  (0 bloquant, 14 majeurs, 33 mineurs) — `.qa-out/RAPPORT-QA-2026-09-30.md`.
-  Registre ramené de 25 → **23 entrées** (24 lignes « champ sans libellé »
-  retirées, mesurées vertes) : 7 `cible_etroite`, 5 `onglet_inchange`,
-  4 `erreur_console`, 4 `bouton_sans_nom`, 2 `sans_titre`,
-  1 `element_trop_large` — toutes corrigées, la tournée de confirmation est à
-  rejouer (`qa:seed` → `qa:amorce` → `qa:run` → `qa:validate --baseline`).
+- **Tournée de confirmation (30/09, 05:38Z → 05:57Z)** : société re-semée par
+  l'inscription réelle puis remplie par `qa:amorce` (74 lignes, 0 échec), quatre
+  ouvriers, deux gabarits — **668 visites, 334 routes, 0 défaut**, quatre shards
+  au même jeton. Le registre `.qa-baseline.json` est **VIDE** : les 47 défauts de
+  la tournée du matin, puis les 23 restants, ne se reproduisent plus.
 - `tsc` 0 · `oxlint` 0 · parité i18n fr/en/ar ✓ · Vitest **1 513 / 1 513** (38
   ignorés, 52 fichiers) · plafond de code mort **66/66** ✓.
-- ⚠️ **Environnement** : la pile locale est saturée (PostgREST « Thread killed by
-  timeout manager », semis d'un banc neuf impossible) et une **session parallèle**
-  travaille dans le même dépôt — elle a remis deux fois le mot de passe du rôle
-  `authenticator` à sa valeur de banc, cassant PostgREST. C'est ce qui a empêché
-  la tournée de confirmation, pas le code.
+- ⚠️ **Environnement** : la pile locale a été saturée plusieurs heures
+  (PostgREST « Thread killed by timeout manager », semis d'un banc neuf
+  impossible) et une **session parallèle** travaillait dans le même dépôt — elle
+  a remis deux fois le mot de passe du rôle `authenticator` à sa valeur de banc,
+  cassant PostgREST. Ces incidents n'ont jamais été imputés aux écrans : la
+  tournée **s'arrête** désormais sur un 502/503, et un jeton de tournée empêche
+  de juger deux tournées mélangées.
 - Limite dite : `OnboardingModal.tsx` porte ~30 chaînes **codées en dur en
   français sans accents**, hors i18n (à porter — `D-11`).
 
