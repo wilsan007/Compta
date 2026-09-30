@@ -18,11 +18,11 @@
 |---|---|
 | Défauts relevés | **74** (coordinateur 10, ventes 18, stock 15, paie 9, projets 9, comptabilité 8, achats 5) |
 | Critiques | **7** — **tous corrigés** (COORD-001, pil-001, pil-005, rh-006, ven-013, ven-016, ven-005) |
-| Hauts | **23** — dont **5 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004) |
+| Hauts | **23** — dont **7 corrigés** (COORD-003, pil-002, ven-014, ven-017, ven-004, ach-001, stk-015) |
 | Moyens | **24** — dont **1 corrigé** (cpt-005) |
 | Bas | **20** |
-| Déjà corrigés et commités | **18 commits** (§ 2) |
-| **Restant à corriger** | **≈ 54 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
+| Déjà corrigés et commités | **19 commits** (§ 2) |
+| **Restant à corriger** | **≈ 52 défauts**, en **8 lots** (§ 4 à § 11), dont **6 lots encore ouverts** |
 | Charge estimée | **≈ 19 j** de correctifs + **≈ 3 j** de recette finale (§ 13) |
 | Contrôle croisé global | **NON FAIT** — aucune cohérence inter-modules n'est prouvée (§ 12) |
 
@@ -48,7 +48,11 @@
    avec **1** mouvement (aucun pour la prestation) après. La commande, elle, ne
    se dit livrée qu'à la sortie réelle.
 5. **stk-012** — sortie de caisse d'un produit fini passée en 603/310 au lieu de 7135/355.
-6. **ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.
+6. ~~**ach-001 / stk-015** — fenêtres de création (fournisseur, immobilisation) inatteignables à 1280×720.~~
+   **CORRIGÉ** (`e179882`) : le `Modal` commun borne la fenêtre à l'écran (en-tête et
+   pied fixes, corps défilant) et les deux fenêtres y passent. Mesuré : « Créer »
+   finissait à **840 px** pour 720, il finit à **652–688 px** ; atteignable et
+   cliquable à 1280×720 **et** 375×812.
 
 ---
 
@@ -79,6 +83,7 @@
 
 | Commit | Défaut | Correctif | Preuve |
 |---|---|---|---|
+| `e179882` | **E1 — ach-001** 🟠 fenêtre fournisseur débordante / **stk-015** 🟠 fenêtre immobilisation débordante | `Modal` commun borné à l'écran (`max-h-[calc(100vh-2rem)]`, en-tête et pied fixes, corps défilant, emplacement `footer` optionnel) ; les deux fenêtres y passent et gagnent le piège à focus, Échap et le verrou de défilement | `e2e/windows-fit.spec.ts` rouge avant (840 px pour 720) puis **4/4** à 1280×720 et 375×812 ; « Créer » à 652–688 px ; captures `ach-001-after.png`, `stk-015-after.png` ; Vitest **1516/1516** |
 | `9ef26c8` | **B1 — ven-005** 🔴 BL livré sans sortie de stock / **ven-004** 🟠 BL avec service bloqué ; complément : la commande se disait livrée dès la **création** du bon | migration **314** : la sortie suit « Expédié » **comme** « Livré » (une fois par bon, gardes `23505` et S-07 conservées) et ne porte que sur les articles `type = 'stock'` ; la commande n'est livrée qu'à la sortie — l'écran n'écrit plus `delivery_status` (règle 16) | `314_*_tests` **6/6** (T01, T02, T05b rouges avant) ; suites voisines 173/230/242/251/253 vertes ; écran : stock 50 → **48**, **1** mouvement (0 pour la prestation), commande `delivered` ; Vitest **1516/1516** |
 | `d9197e1` | **B10 — ven-016** 🔴 contrôle crédit en boucle infinie ; jumeau `OnboardingDashboardPage` (jamais relevé) | l'appel de chargement quitte le **corps** du composant pour `useEffect(() => { loadData() }, [loadData])` (dépendances déjà stables) ; garde statique `verify-rules/15-no-render-body-call.rule` | Vitest `CreditControlPage.test.tsx` rouge avant (26 lectures) / vert après (1) ; écran société « QA Recette SARL », protocole symétrique : 4 776 GET `/customers` et 10 325 requêtes `/rest/v1` en 5 s + 3 435 erreurs console → **2 en 10 s**, 0 erreur ; `tsc`, `oxlint`, i18n verts |
 | `6409c0e` | **A1 — ven-013** 🔴 / **cpt-005** 🟡 tiers sans compte au plan tiers | migration **312** : déclencheur de rattachement sur `customers`, `suppliers`, `employees` (code auxiliaire, collectif, nom, encart, désactivation) + rattrapage sans écraser un compte saisi | `312_*_tests` **7/7** (T01/T02/T03 rouges avant ; sonde : 0 → 3 comptes) ; **banc écran 15/15** |
@@ -114,7 +119,7 @@ chose.
 | E2 | Vérifier que le **contrôle automatique des actions** répond (une commande simple) avant de lancer les agents | les 6 agents ont été coupés par l'absence de verdict |
 | E3 | Lancer les agents **en deux vagues de 3** plutôt que 6 d'un coup | la limite d'utilisation du compte a coupé les 6 agents à la première vague |
 | E4 | Recharger la base de recette **après** chaque migration (`run-sql-migrations.mjs` depuis l'arbre de recette) puis `NOTIFY pgrst, 'reload schema'` | sinon PostgREST sert l'ancien schéma |
-| E5 | Écrire dans le brief des agents : `$B viewport 1280x1000` d'office tant que ach-001/stk-015 ne sont pas corrigés | évite les blocages de fenêtre |
+| E5 | Écrire dans le brief des agents : `$B viewport 1280x1000` d'office tant que ach-001/stk-015 ne sont pas corrigés | évite les blocages de fenêtre — **plus nécessaire** : corrigés par `e179882` |
 | E6 | Données parasites à ignorer : produits `ACH-FOU`, `ACH-GANTS`, `[STK] Matière A` (prix −10), `[STK] Repro prix négatif`, nomenclatures `STK-BOM-C`/`C2` sans article, projet sonde supprimé | créées par des saisies de test |
 
 ### État d'exécution (session du 29/09, après C1)
@@ -582,16 +587,30 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 8. Lot E — Immobilisations et fenêtres qui débordent (≈ 1 j)
 
-### E1 — stk-015 🟠 / ach-001 🟠 — fenêtre plus haute que l'écran, sans défilement
-- **Cause probable** : le composant `Modal` commun n'a ni `max-height` ni `overflow-y: auto`
-  sur son corps.
-- **Correctif** (une seule fois, dans `components/ui` Modal) :
-  - `max-h-[calc(100vh-2rem)]`, en-tête et pied fixes, corps défilant ;
-  - vérifier **toutes** les fenêtres à 1280×720 et 375×812.
-- **Test** :
-  - Playwright : à 1280×720, « Créer » est visible et cliquable dans « Nouveau fournisseur »
-    et « Nouvelle immobilisation » ;
-  - balayage des fenêtres principales.
+### E1 — stk-015 🟠 / ach-001 🟠 — fenêtre plus haute que l'écran, sans défilement — **✅ CORRIGÉ** (`e179882`)
+- **Cause établie** (l'hypothèse « le `Modal` commun n'a ni hauteur maximale ni défilement »
+  était **fausse** : le `Modal` commun, lui, était déjà borné) : ces deux fenêtres étaient
+  bâties **à la main**, sur le motif `fixed inset-0` + carte sans `max-height` ni
+  `overflow-y` — motif présent **152 fois dans 115 fichiers**. Aucun ancêtre ne défilait :
+  « Créer » finissait à 840 px pour un écran de 720, et le clic était impossible.
+- **Correctif** :
+  - `components/ui` `Modal` : `max-h-[calc(100vh-2rem)]`, en-tête et pied fixes, corps
+    défilant, et un emplacement `footer` (optionnel — aucun appelant existant n'est touché) ;
+  - `SuppliersPage` (« Nouveau fournisseur ») et `FixedAssetsPage` (« Nouvelle
+    immobilisation ») passent à ce `Modal`, et gagnent le piège à focus, Échap et le
+    verrou de défilement.
+- **Test rouge avant** : `e2e/windows-fit.spec.ts` — à 1280×720 comme à 375×812, le bouton de
+  validation doit être **dans** l'écran et répondre au clic. Rouge avant (mesuré : 840 px pour
+  720), vert après (**4/4** ; 652–688 px). Deux pièges de mesure corrigés au passage : la
+  langue et le guide d'accueil à poser au départ, et surtout `reuseExistingServer` qui
+  réutilisait le serveur d'un **autre arbre de travail** (mesuré : le port 5174 appartenait au
+  checkout principal, qui servait d'autres sources) → `PW_BASE_URL` dans
+  `playwright.config.ts` (le défaut de CI reste 5174).
+- **Preuves** : captures `ach-001-after.png`, `stk-015-after.png`.
+- **Reste ouvert, inscrit au registre** : les **~150 autres fenêtres** bâties sur le même
+  motif ad hoc (mesuré : 152 occurrences dans 115 fichiers) ne sont pas balayées ; seule la
+  garde Playwright couvre les deux fenêtres de la recette. Un balayage outillé (règle à
+  baseline, sur le modèle de `check-written-columns`) est à prévoir avant la recette finale.
 
 ### E2 — Immobilisations (non testées, à dérouler après E1)
 - Linéaire : ordinateur 1 800 € HT au 01/03/2026 sur 3 ans, dotation 2026 **500,00**.
@@ -765,7 +784,7 @@ bilan de clôture 2026 ; écritures postérieures refusées dans la période clo
 | 3 | **A1–A3** ✅ | Plan tiers, balance âgée, solde dû | 1,5 j | — |
 | 4 | **B10** ✅ | Boucle du contrôle crédit | 0,25 j | — |
 | 5 | **B1** ✅ | Sortie de stock du BL | 0,5 j | — |
-| 6 | **E1** | Fenêtres qui débordent (Modal) | 0,5 j | — |
+| 6 | **E1** ✅ | Fenêtres qui débordent (Modal) | 0,5 j | — |
 | 7 | **D1, D2, D4** | Comptes de sortie, valorisation, dates UTC | 1,5 j | — |
 | 8 | **H1** | Tableau de bord sur le grand livre | 0,5 j | — |
 | 9 | B2–B9, B11, B12 | Reste des ventes | 3 j | A4 pour B3 ; D-4 pour B8 |
@@ -804,7 +823,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | `check-written-columns` étendu aux **objets construits puis passés** à `.insert()` (suivi de la variable) | pil-005 (colonne fantôme restée verte) |
 | Contrôle « **une fonction, un nom** » : aucune surcharge exposée à PostgREST | stk-005 |
 | Contrôle statique « **pas de `toISOString()` pour une date métier** » | stk-013, rh-007 |
-| Test Playwright « **toutes les fenêtres tiennent à 1280×720** » | ach-001, stk-015 |
+| Test Playwright « **toutes les fenêtres tiennent à 1280×720** » — **✅ fait pour les deux fenêtres de la recette** (`e2e/windows-fit.spec.ts`, à 1280×720 et 375×812) ; le balayage des ~150 autres fenêtres bâties sur le motif ad hoc reste à outiller (règle à baseline) | ach-001, stk-015 |
 | Test Playwright « **balayage des routes** » (0 erreur console, 0 requête 4xx/5xx, 0 clé i18n brute) | pil-002, pil-003, ven-003 |
 | Détecteur de **boucle de requêtes** en test (≤ N appels par montage) — **✅ fait** : budget de requêtes dans `CreditControlPage.test.tsx` (la source se gèle au-delà du plafond) + règle statique `15-no-render-body-call.rule` | ven-016 |
 | Contrôle « **aucune colonne dénormalisée lue sans être tenue** » (balance, credit_used, soldes du plan) — **✅ fait pour `delivery_status` / `fully_delivered`** : règle statique `16-no-client-delivery-status.rule` (B1) | ven-017, cpt-001 |
@@ -844,7 +863,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | ven-016 | 🔴 | contrôle crédit en boucle | B10 | ✅ d9197e1 |
 | ven-017 | 🟠 | solde dû à 0 | A3 | ✅ 3155a90 (313) |
 | ven-018 | 🟠 | tableau de bord incohérent | H1 | ouvert |
-| ach-001 | 🟠 | fenêtre fournisseur déborde | E1 | ouvert |
+| ach-001 | 🟠 | fenêtre fournisseur déborde | E1 | ✅ e179882 |
 | ach-002 | 🟡 | fiche fournisseur incomplète | A4 | ouvert |
 | ach-003 | 🟡 | IBAN invalide accepté | A5 | ouvert |
 | ach-004 | 🟡 | produit non modifiable | D6 | ouvert |
@@ -880,7 +899,7 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 | stk-012 | 🟠 | sortie caisse en 603/310 | D1 | ouvert |
 | stk-013 | 🟠 | stats caisse vides | D4 | ouvert |
 | stk-014 | 🟠 | pas d'annulation de ticket | D5 | ouvert |
-| stk-015 | 🟠 | fenêtre immobilisation déborde | E1 | ouvert |
+| stk-015 | 🟠 | fenêtre immobilisation déborde | E1 | ✅ e179882 |
 | pil-001 | 🔴 | pas de création de projet | — | ✅ 7d4ecb4 (vérifié) |
 | pil-002 | 🟠 | vues projet masquées | — | ✅ 0e8a73d (1/6 revérifiée) |
 | pil-003 | 🔵 | clé i18n brute | G4 | ouvert |
