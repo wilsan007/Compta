@@ -180,6 +180,8 @@ export interface InvoiceLine {
   vat_amount?: number
   /** Ligne de déduction d'acompte (montant négatif) : facture d'acompte déduite */
   advance_invoice_id?: string | null
+  /** B2 (ven-008) : compte de vente d'une ligne sans article (706000 / 707000) */
+  account_code?: string | null
 }
 
 export interface Invoice {
@@ -256,12 +258,17 @@ export interface Quote {
 export interface CreditNoteLine {
   id: string
   credit_note_id: string
+  product_id?: string | null
   description: string
   quantity: number
   unit_price: number
   vat_rate: number
   total: number
   vat_total: number
+  vat_code?: string | null
+  vat_amount?: number
+  /** B4 (ven-012) : compte de vente d'une ligne sans article */
+  account_code?: string | null
   line_order: number
   created_at: string
 }

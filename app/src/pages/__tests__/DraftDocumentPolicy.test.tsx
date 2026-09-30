@@ -70,9 +70,12 @@ describe('R-11 — téléchargement d’un document provisoire', () => {
     render(<MemoryRouter><InvoicesPage /></MemoryRouter>)
     fireEvent.click(await screen.findByTitle('actions.download'))
     await waitFor(() => expect(blobs).toHaveLength(1))
+    // B8 (ven-010) : le document est un PDF, et le brouillon porte la mention.
+    expect(blobs[0].type).toBe('application/pdf')
     const texte = await blobs[0].text()
+    expect(texte.startsWith('%PDF-1.4')).toBe(true)
     expect(texte).toContain('invoices.proFormaNotice')
-    expect(downloaded).toMatch(/^PRO-FORMA-/)
+    expect(downloaded).toMatch(/^PRO-FORMA-.*\.pdf$/)
   })
 
   it('une facture validée ne porte pas la mention et garde son nom (non-régression)', async () => {
@@ -84,6 +87,7 @@ describe('R-11 — téléchargement d’un document provisoire', () => {
     await waitFor(() => expect(blobs).toHaveLength(1))
     const texte = await blobs[0].text()
     expect(texte).not.toContain('invoices.proFormaNotice')
-    expect(downloaded).toBe('FAC-2026-000001.txt')
+    expect(texte.startsWith('%PDF-1.4')).toBe(true)
+    expect(downloaded).toBe('FAC-2026-000001.pdf')
   })
 })

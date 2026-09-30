@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice } from '@/lib/queries/sales'
@@ -137,7 +137,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         <Card>
           <Table headers={tableHeaders}>
             {filtered.map((quote) => (
-              <div key={quote.id}>
+              <Fragment key={quote.id}>
                 <TableRow onClick={() => toggleExpand(quote.id)}>
                   <TableCell className="w-8">
                     {quote.quote_lines && quote.quote_lines.length > 0
@@ -201,7 +201,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     <TableCell />
                   </tr>
                 ))}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>

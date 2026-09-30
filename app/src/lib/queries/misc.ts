@@ -2421,9 +2421,12 @@ export async function transformQuoteToSalesOrder(quoteId: string) {
   if (qErr) throw qErr
 
   const orderNumber = await nextDocumentNumber('CMD')
+  // B6 (ven-006) : la commande garde la date du devis ; la date du jour faisait
+  // d'un devis du 10/09 une commande du 29/09.
+  const orderDate = (quote.date as string) || new Date().toISOString().split('T')[0]
   const { data: order, error: oErr } = await supabase
     .from('sales_orders')
-    .insert({ tenant_id: tid, number: orderNumber, customer_id: quote.customer_id, order_date: new Date().toISOString().split('T')[0], delivery_date: null, status: 'confirmed', subtotal: Number(quote.subtotal), vat: Number(quote.vat_total), total: Number(quote.total), notes: quote.notes, quote_id: quoteId })
+    .insert({ tenant_id: tid, number: orderNumber, customer_id: quote.customer_id, order_date: orderDate, delivery_date: null, status: 'confirmed', subtotal: Number(quote.subtotal), vat: Number(quote.vat_total), total: Number(quote.total), notes: quote.notes, quote_id: quoteId })
     .select()
     .single()
   if (oErr) throw oErr
@@ -2453,7 +2456,7 @@ export async function transformSalesOrderToDeliveryNote(
   const dnNumber = await nextDocumentNumber('BL')
   const { data: dn, error: dErr } = await supabase
     .from('delivery_notes')
-    .insert({ tenant_id: tid, number: dnNumber, customer_id: order.customer_id, sales_order_id: orderId, delivery_date: header?.delivery_date || new Date().toISOString().split('T')[0], status: 'pending', carrier: header?.carrier ?? null, tracking_number: header?.tracking_number ?? null, notes: header?.notes ?? null })
+    .insert({ tenant_id: tid, number: dnNumber, customer_id: order.customer_id, sales_order_id: orderId, delivery_date: header?.delivery_date || (order.order_date as string) || new Date().toISOString().split('T')[0], status: 'pending', carrier: header?.carrier ?? null, tracking_number: header?.tracking_number ?? null, notes: header?.notes ?? null })
     .select()
     .single()
   if (dErr) throw dErr
@@ -2490,9 +2493,22 @@ export async function transformDeliveryNoteToInvoice(dnId: string, lines: { deli
   let subtotal = 0
   let vatTotal = 0
 
+  // B6 (ven-006) : la facture née d'un BL porte le nom du client (la liste
+  // affichait « — » et la recherche par nom ne la trouvait pas) et la date du
+  // bon ; l'échéance suit les conditions de paiement du client (30 j par défaut).
+  const { data: cust } = await supabase.from('customers').select('name, payment_terms').eq('id', dn.customer_id).maybeSingle()
+  const invoiceDate = (dn.delivery_date as string) || new Date().toISOString().split('T')[0]
+  const termsDays = (() => {
+    const m = /(\d+)/.exec(cust?.payment_terms || '')
+    const days = m ? Number(m[1]) : 30
+    return Number.isFinite(days) && days >= 0 ? days : 30
+  })()
+  const due = new Date(`${invoiceDate}T00:00:00Z`)
+  due.setUTCDate(due.getUTCDate() + termsDays)
+
   const { data: inv, error: iErr } = await supabase
     .from('invoices')
-    .insert({ tenant_id: tid, customer_id: dn.customer_id, customer_name: null, date: new Date().toISOString().split('T')[0], due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0], status: 'draft', subtotal: 0, vat_total: 0, total: 0, amount_paid: 0, amount_due: 0, notes: '', recurring: false, recurring_frequency: null, delivery_note_id: dnId, invoice_type: 'standard' })
+    .insert({ tenant_id: tid, customer_id: dn.customer_id, customer_name: cust?.name || null, date: invoiceDate, due_date: due.toISOString().split('T')[0], status: 'draft', subtotal: 0, vat_total: 0, total: 0, amount_paid: 0, amount_due: 0, notes: '', recurring: false, recurring_frequency: null, delivery_note_id: dnId, invoice_type: 'standard' })
     .select()
     .single()
   if (iErr) throw iErr

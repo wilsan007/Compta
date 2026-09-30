@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
 import { getInvoices, createInvoice, updateInvoice, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
 import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
-import { transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries/misc'
+import { getProducts } from '@/lib/queries/stock'
+import { createAdvanceInvoice } from '@/lib/queries/misc'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
 import { generateFacturX, downloadXML, isDraftDocument } from '@/lib/facturX'
+import { downloadInvoicePdf } from '@/lib/invoicePdf'
 import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
-import type { Invoice, Customer, CompanySettings } from '@/types'
+import type { Invoice, Customer, CompanySettings, Product } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { useLegislation } from '@/lib/legislation'
+import { confirmSync } from '@/lib/confirm'
 
 export function InvoicesPage() {
   const { t: tf } = useTranslation('features')
@@ -23,8 +27,10 @@ export function InvoicesPage() {
   const { canCreate } = usePermission('invoices')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [company, setCompany] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -43,14 +49,16 @@ export function InvoicesPage() {
 
   async function loadInvoices() {
     try {
-      const [inv, cust, comp] = await Promise.all([
+      const [inv, cust, comp, prods] = await Promise.all([
         getInvoices(),
         getCustomers(),
         getCompanySettings().catch(() => null),
+        getProducts().catch(() => [] as Product[]),
       ])
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
+      setProducts(prods || [])
     } catch (err: any) { console.error('Error loading invoices:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
@@ -78,6 +86,10 @@ export function InvoicesPage() {
   }
 
   async function handleValidate(id: string) {
+    // B12 (pil-009) : la validation attribue le numéro définitif et passe
+    // l'écriture — une action irréversible, donc confirmée.
+    const inv = invoices.find(i => i.id === id)
+    if (!confirmSync(t('invoices.confirmValidate', { number: inv?.number ?? '' }))) return
     setActionLoading(id)
     try {
       await updateInvoice(id, { validation_status: 'validated' as any })
@@ -118,15 +130,10 @@ export function InvoicesPage() {
   }
 
   async function handleCreateCreditNote(inv: Invoice) {
-    const reason = window.prompt(t('transformations.creditNoteReason'), '')
-    if (!reason) return
-    try {
-      await transformInvoiceToCreditNote(inv.id, reason)
-      toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
-      await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
-    }
+    // B5 (ven-011) : l'action ouvrait un `window.prompt` sans suite mesurable.
+    // Elle ouvre désormais l'écran des avoirs, pré-rempli de la facture source
+    // (client, lignes, comptes) — c'est la même saisie que « Nouvel avoir ».
+    navigate(`/sales/credits?invoice=${inv.id}`)
   }
 
   function handleExportCSV() {
@@ -145,18 +152,33 @@ export function InvoicesPage() {
   }
 
   function handleDownload(inv: Invoice) {
-    // R-11 : un brouillon se télécharge, mais en disant ce qu'il est — et son
-    // nom de fichier l'annonce, pour qu'il ne circule pas comme une facture.
+    // B8 (ven-010) : un vrai PDF — vendeur, client, lignes, HT par taux, TVA,
+    // TTC et mentions légales — au lieu d'un texte de 156 octets. Un brouillon
+    // se télécharge en « PRO FORMA » et le dit (R-11).
     const provisoire = isDraftDocument(inv)
-    const mention = provisoire ? `${t('invoices.proFormaNotice')}\n\n` : ''
-    const content = `${mention}${t('invoices.title')} ${inv.number}\n${t('invoices.customer')}: ${inv.customer_name}\n${t('invoices.date')}: ${formatDate(inv.date)}\n${t('invoices.dueDate')}: ${formatDate(inv.due_date)}\n${t('invoices.total')}: ${formatCurrency(Number(inv.total))}\n${t('invoices.balance')}: ${formatCurrency(Number(inv.amount_due))}`
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = provisoire ? `PRO-FORMA-${inv.number}.txt` : `${inv.number}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+    const customer = customers.find((c) => c.id === inv.customer_id) || null
+    downloadInvoicePdf(inv, customer, company, {
+      title: t('invoices.title'),
+      proForma: provisoire ? t('invoices.proFormaNotice') : '',
+      seller: t('invoices.pdfSeller'),
+      customer: t('invoices.customer'),
+      date: t('invoices.date'),
+      dueDate: t('invoices.dueDate'),
+      description: t('invoices.description'),
+      quantity: t('invoices.quantity'),
+      unitPrice: t('invoices.unitPrice'),
+      vatRate: t('invoices.vatRate'),
+      lineTotal: t('invoices.total'),
+      subtotal: t('invoices.subtotal'),
+      vatTotal: t('invoices.vatAmount'),
+      total: t('invoices.total'),
+      balance: t('invoices.balance'),
+      mentions: [
+        t('invoices.pdfMentionPenalties'),
+        t('invoices.pdfMentionIndemnity'),
+        t('invoices.pdfMentionDiscount'),
+      ],
+    })
   }
 
   function handleEInvoice(inv: Invoice) {
@@ -182,10 +204,22 @@ export function InvoicesPage() {
     cancelled: { variant: 'neutral', label: tCommon('status.cancelled') },
   }
 
+  // B9 (ven-015) : « En retard » se calcule — échéance dépassée et reste dû
+  // positif — au lieu de dépendre d'un statut que rien ne posait. Un brouillon
+  // ou une pièce annulée n'est jamais « en retard » (elle n'est pas due).
+  const isOverdue = (inv: Invoice) => {
+    if (inv.validation_status !== 'validated' || inv.status === 'cancelled' || inv.status === 'paid') return false
+    if (Number(inv.amount_due || 0) <= 0) return false
+    if (!inv.due_date) return false
+    const today = new Date().toISOString().split('T')[0]
+    return String(inv.due_date).slice(0, 10) < today
+  }
+  const overdueCount = invoices.filter(isOverdue).length
+
   const filtered = invoices.filter((inv) => {
     const matchesSearch = inv.number?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customer_name?.toLowerCase().includes(search.toLowerCase())
-    const matchesFilter = filter === 'all' || inv.status === filter
+    const matchesFilter = filter === 'all' || (filter === 'overdue' ? isOverdue(inv) : inv.status === filter)
     const matchesType = !typeFilter || inv.invoice_type === typeFilter || (!inv.invoice_type && typeFilter === 'standard')
     return matchesSearch && matchesFilter && matchesType
   })
@@ -198,7 +232,7 @@ export function InvoicesPage() {
       <AutoBreadcrumb />
       <PageHeader
         title={t('invoices.title')}
-        subtitle={`${invoices.length} ${t('invoices.title').toLowerCase()} • ${formatCurrency(totalAmount)} • ${formatCurrency(totalDue)}`}
+        subtitle={`${invoices.length} ${t('invoices.title').toLowerCase()} • ${t('invoices.headerTotal')} ${formatCurrency(totalAmount)} • ${t('invoices.balance')} ${formatCurrency(totalDue)}`}
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleExportCSV}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>
@@ -209,7 +243,7 @@ export function InvoicesPage() {
       />
 
       <div className="flex items-center gap-2 mb-4">
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="input max-w-[180px]">
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="input max-w-[180px]" aria-label={t('invoices.filterByType')} title={t('invoices.filterByType')}>
           <option value="">{t('invoices.filterByType')}</option>
           <option value="standard">{t('invoices.invoiceTypeStandard')}</option>
           <option value="advance">{t('invoices.invoiceTypeAdvance')}</option>
@@ -220,7 +254,7 @@ export function InvoicesPage() {
           { value: 'all', label: tCommon('filters.all') },
           { value: 'draft', label: tCommon('status.draft') },
           { value: 'sent', label: tCommon('status.sent') },
-          { value: 'overdue', label: tCommon('status.overdue') },
+          { value: 'overdue', label: `${tCommon('status.overdue')}${overdueCount ? ` (${overdueCount})` : ''}` },
           { value: 'paid', label: tCommon('status.paid') },
         ].map((tab) => (
           <button
@@ -268,7 +302,7 @@ export function InvoicesPage() {
             initialSortKey="date"
             initialSortDir="desc"
             renderRow={(inv: any) => {
-              const st = statusMap[inv.status] || statusMap.draft
+              const st = isOverdue(inv) ? statusMap.overdue : (statusMap[inv.status] || statusMap.draft)
               return (
                 <TableRow key={inv.id}>
                   <TableCell className="font-medium">{inv.number}</TableCell>
@@ -328,15 +362,15 @@ export function InvoicesPage() {
         ) : (
           <EmptyState
             icon={<FileText className="w-8 h-8" />}
-            title={t('invoices.noInvoices')}
-            description={t('invoices.noInvoicesDescription')}
-            action={canCreate ? <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.createFirst')}</Button> : undefined}
+            title={filter === 'overdue' ? t('invoices.noOverdue') : t('invoices.noInvoices')}
+            description={filter === 'overdue' ? t('invoices.noOverdueDescription') : t('invoices.noInvoicesDescription')}
+            action={filter === 'overdue' || !canCreate ? undefined : <Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('invoices.createFirst')}</Button>}
           />
         )}
       </Card>
 
       {showForm && (
-        <InvoiceForm customers={customers} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadInvoices() }} />
+        <InvoiceForm customers={customers} products={products} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadInvoices() }} />
       )}
 
       {showAdvanceForm && (
@@ -361,8 +395,9 @@ export function InvoicesPage() {
   )
 }
 
-function InvoiceForm({ customers, onClose, onSaved }: {
+function InvoiceForm({ customers, products, onClose, onSaved }: {
   customers: Customer[]
+  products: Product[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -376,9 +411,14 @@ function InvoiceForm({ customers, onClose, onSaved }: {
   const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
+  // B12 (pil-009) : l'échéance par défaut suit les conditions de paiement du
+  // client ; une saisie manuelle la fige (`dueTouched`).
+  const [dueTouched, setDueTouched] = useState(false)
   const { defaultVatRate } = useLegislation()
-  const emptyLine = () => ({ description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
-  const [lines, setLines] = useState<{ description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
+  // B2 (ven-008) : la ligne se choisit dans le catalogue (comme sur le devis) ;
+  // une ligne libre porte son propre compte de vente.
+  const emptyLine = () => ({ product_id: '', account_code: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
+  const [lines, setLines] = useState<{ product_id: string; account_code: string; description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
   const [saving, setSaving] = useState(false)
   // R-03 : acomptes validés du client à déduire (ligne négative rattachée à l'acompte)
   const [openAdvances, setOpenAdvances] = useState<OpenAdvanceInvoice[]>([])
@@ -403,14 +443,48 @@ function InvoiceForm({ customers, onClose, onSaved }: {
     description: t('invoices.advanceDeductionLine', { number: a.number }),
     quantity: 1, unit_price: -a.remaining, vat_rate: a.vat_rate, advance_invoice_id: a.id,
   }))
-  const allLines: { description: string; quantity: number; unit_price: number; vat_rate: number; advance_invoice_id?: string }[] =
+  const allLines: { description: string; quantity: number; unit_price: number; vat_rate: number; advance_invoice_id?: string; product_id?: string; account_code?: string }[] =
     [...filledLines, ...deductionLines]
   const subtotal = round2(allLines.reduce((sum, l) => sum + lineHt(l), 0))
   const vatTotal = round2(allLines.reduce((sum, l) => sum + lineVat(l), 0))
   const total = round2(subtotal + vatTotal)
 
-  function updateLine(idx: number, field: 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
+  function updateLine(idx: number, field: 'product_id' | 'account_code' | 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
     setLines(prev => prev.map((l, i) => (i === idx ? { ...l, [field]: value } : l)))
+  }
+
+  // B2 (ven-008) : choisir un article remplit description, prix, taux et le
+  // rattache ; le laisser vide garde la saisie libre et son compte de vente.
+  function selectProduct(idx: number, productId: string) {
+    const product = products.find(p => p.id === productId)
+    setLines(prev => prev.map((l, i) => {
+      if (i !== idx) return l
+      if (!productId || !product) return { ...l, product_id: '' }
+      return {
+        ...l,
+        product_id: productId,
+        description: product.name,
+        unit_price: Number(product.sale_price) || 0,
+        vat_rate: Number(product.vat_rate) || 0,
+      }
+    }))
+  }
+
+  // B12 : échéance proposée = date + conditions de paiement du client (le
+  // premier nombre de « payment_terms », 30 jours par défaut).
+  function paymentTermsDays(id: string): number {
+    const m = /(\d+)/.exec(customers.find(c => c.id === id)?.payment_terms || '')
+    const days = m ? Number(m[1]) : 30
+    return Number.isFinite(days) && days >= 0 ? days : 30
+  }
+  function addDays(iso: string, days: number): string {
+    const d = new Date(`${iso || new Date().toISOString().split('T')[0]}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + days)
+    return d.toISOString().split('T')[0]
+  }
+  function chooseCustomer(id: string) {
+    setCustomerId(id)
+    if (!dueTouched) setDueDate(addDays(date, paymentTermsDays(id)))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -436,7 +510,7 @@ function InvoiceForm({ customers, onClose, onSaved }: {
         recurring: false,
         recurring_frequency: null,
         lines: allLines.map((l, i) => ({
-          product_id: null,
+          product_id: l.product_id || null,
           description: l.description.trim(),
           quantity: Number(l.quantity),
           unit_price: Number(l.unit_price),
@@ -446,6 +520,9 @@ function InvoiceForm({ customers, onClose, onSaved }: {
           vat_amount: lineVat(l),
           line_order: i,
           advance_invoice_id: l.advance_invoice_id ?? null,
+          // B2 : une ligne libre porte le compte de vente choisi (706/707) ;
+          // avec un article, c'est sa fiche qui le donne.
+          account_code: l.product_id ? null : (l.account_code || null),
         })),
       })
       toast('success', t('invoices.title'), t('invoices.draftCreated'))
@@ -469,22 +546,24 @@ function InvoiceForm({ customers, onClose, onSaved }: {
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <p className="text-xs text-[var(--color-text-secondary)]">{t('invoices.numberAssigned')}</p>
-          <Combobox label={t('invoices.customer')} required value={customerId} onChange={(v) => setCustomerId(v)} placeholder={tCommon('form.selectOption')} options={customers.map(c => ({ value: c.id, label: c.name }))} />
+          <Combobox label={t('invoices.customer')} required value={customerId} onChange={chooseCustomer} placeholder={tCommon('form.selectOption')} options={customers.map(c => ({ value: c.id, label: c.name }))} />
           {commercialStrategy === 'inline' && (
             <button type="button" onClick={() => setShowQuickAddCustomer(true)} className="text-xs text-[var(--color-primary)] flex items-center gap-1 hover:underline">
               <UserPlus className="w-3.5 h-3.5" /> {tCross('customer.add')}
             </button>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-            <Input label={t('invoices.dueDate')} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Input label={t('invoices.date')} type="date" required value={date} onChange={(e) => { setDate(e.target.value); if (!dueTouched) setDueDate(addDays(e.target.value, paymentTermsDays(customerId))) }} />
+            <Input label={t('invoices.dueDate')} type="date" value={dueDate} onChange={(e) => { setDueTouched(true); setDueDate(e.target.value) }} />
           </div>
 
           <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
-            <table className="app-table min-w-[640px]">
+            <table className="app-table min-w-[720px]">
               <thead className="bg-[var(--color-neutral-50)]">
                 <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold w-40">{t('invoices.product')}</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold w-28">{t('invoices.saleAccount')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
@@ -493,9 +572,30 @@ function InvoiceForm({ customers, onClose, onSaved }: {
                 </tr>
               </thead>
               <tbody>
-                {lines.map((line, idx) => (
+                {lines.map((line, idx) => {
+                  const product = products.find(p => p.id === line.product_id)
+                  return (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
+                    <td className="px-3 py-2">
+                      <select aria-label={t('invoices.product')} title={t('invoices.product')} value={line.product_id} onChange={(e) => selectProduct(idx, e.target.value)} className={cellInput}>
+                        <option value="">{t('invoices.freeLine')}</option>
+                        {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.description')} value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className={cellInput} placeholder={t('invoices.description')} /></td>
+                    <td className="px-3 py-2">
+                      {line.product_id ? (
+                        <span className="text-xs font-mono text-[var(--color-text-secondary)]" title={t('invoices.saleAccountFromProduct')}>
+                          {product?.sale_account_code || (product?.type === 'service' ? '706000' : '707000')}
+                        </span>
+                      ) : (
+                        <select aria-label={t('invoices.saleAccount')} title={t('invoices.saleAccount')} value={line.account_code} onChange={(e) => updateLine(idx, 'account_code', e.target.value)} className={cellInput}>
+                          <option value="">{t('invoices.saleAccountDefault')}</option>
+                          <option value="706000">{t('invoices.saleAccountService')}</option>
+                          <option value="707000">{t('invoices.saleAccountGoods')}</option>
+                        </select>
+                      )}
+                    </td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.quantity')} type="number" step="0.01" min={0} value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.unitPrice')} type="number" step="0.01" min={0} value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.vatRate')} type="number" step="0.01" min={0} value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
@@ -504,7 +604,8 @@ function InvoiceForm({ customers, onClose, onSaved }: {
                       {lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><X className="w-3 h-3" aria-hidden="true" /></button>}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
             <button type="button" onClick={() => setLines(prev => [...prev, emptyLine()])} className="w-full py-2 text-sm text-[var(--color-primary)] hover:bg-[var(--color-neutral-50)] border-t border-[var(--color-border)]">
