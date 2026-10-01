@@ -78,7 +78,7 @@
     "jsdom": "^29.1.1",
     "knip": "^6.35.1",
     "lint-staged": "^17.2.0",
-    "oxlint": "^1.71.0",
+    "oxlint": "~1.73.0",
     "pg": "^8.22.0",
     "rollup-plugin-visualizer": "^7.1.1",
     "tailwindcss": "^4.0.0",
