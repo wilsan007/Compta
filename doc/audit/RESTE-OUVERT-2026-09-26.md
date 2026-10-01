@@ -312,6 +312,15 @@ une charge de développement mais un passage obligé.
    dans la section des contrôles, sinon elle s'exécute avant l'étape « types à
    jour » et la fait échouer. La CI l'a refusée au premier passage — et c'est
    ainsi qu'on l'a su ;
+3. **quater — le 1ᵉʳ de chaque mois, la CI des types échouait toute seule.**
+   Les types portaient les **partitions mensuelles** du socle
+   (`chain_traces_2026_09`…), dont le nom **change avec le calendrier** : le 30/09
+   le fichier disait `…_2026_09`→`…_2026_12`, le 1ᵉʳ octobre il aurait dit
+   `…_2026_10`→`…_2027_01`. **N'importe quel commit** fait ce jour-là était donc
+   refusé, sans qu'aucun code ait changé — mesuré au run `36829228592`, alors que
+   les vérifications locales de la veille étaient vertes. **Corrigé** :
+   `scripts/generate-db-types.mjs` **exclut les partitions** (`relispartition`),
+   que **rien n'utilise** (le code interroge les parents, PostgreSQL route) ;
 4. **la ligne du registre** `ci/expected_failures.sql` retirée si le défaut y
    figurait (la CI échoue si un test corrigé y reste) ;
 5. **les non-régressions** (`105`, `178`, `181`, `219`, `189` et les suites du

@@ -20,7 +20,23 @@ async function generateTypes() {
   const pool = new Pool({ connectionString: DATABASE_URL })
 
   try {
-    // Récupérer toutes les tables avec leurs colonnes
+    // Récupérer toutes les tables avec leurs colonnes.
+    //
+    // ⚠️ LES PARTITIONS SONT EXCLUES — et ce n'est pas un détail de confort.
+    // Le socle des chaînages partitionne `chain_traces` et `domain_events` par
+    // mois, et la 252 crée les partitions du mois + 3. Leurs NOMS portent la date
+    // (`chain_traces_2026_09`…). Les inclure rendait ce fichier **dépendant du
+    // jour où on le génère** : le 30/09 il portait `…_2026_09` à `…_2026_12`, et
+    // le 1ᵉʳ octobre il aurait porté `…_2026_10` à `…_2027_01` — la CI
+    // « Vérifier que les types sont à jour » **échouait donc le 1ᵉʳ de chaque
+    // mois**, pour n'importe quel commit, sans qu'aucun code ait changé. Mesuré
+    // le 01/10/2026 (run `36829228592`) : la CI a refusé un commit qui ne touchait
+    // ni le schéma ni les types, alors que les vérifications locales de la veille
+    // étaient vertes.
+    //
+    // Rien n'utilise ces partitions : le code interroge les PARENTS
+    // (`chain_traces`, `domain_events`), et PostgreSQL route tout seul. Elles sont
+    // un détail d'implémentation, et `relispartition` le dit.
     const tablesQuery = `
       SELECT
         t.table_name,
@@ -34,6 +50,14 @@ async function generateTypes() {
       JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
       WHERE t.table_schema = 'public'
         AND t.table_type = 'BASE TABLE'
+        AND NOT EXISTS (
+          SELECT 1
+            FROM pg_class k
+            JOIN pg_namespace n ON n.oid = k.relnamespace
+           WHERE n.nspname = 'public'
+             AND k.relname = t.table_name
+             AND k.relispartition
+        )
       ORDER BY t.table_name, c.ordinal_position
     `
 
