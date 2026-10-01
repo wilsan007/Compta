@@ -1295,6 +1295,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 (migration 319) — LA RÉCEPTION DE MARCHANDISE, tracée PAR LIGNE. C'est
+      # le seul maillon de la liste que l'inventaire de L1 rangeait « réécriture du
+      # corps » : N mouvements à partir de N lignes, et la correspondance ligne →
+      # ligne ne se devine pas de l'extérieur (les N mouvements portent le même
+      # `reference_id`, et l'ordre d'insertion n'est pas une garantie) — c'est la
+      # seule justification admise par la doctrine 311.
+      # La suite mesure les sept propriétés qui font que le maillon est PILOTÉ et
+      # pas seulement exécuté : deux liens pour deux lignes, chacun sur SA ligne,
+      # la bonne quantité, la trace `applique` et l'événement, la ligne à zéro qui
+      # n'existe pas, le rejeu qui ne double rien, le contrat déclaré, et le
+      # cloisonnement. La non-régression est mesurée sur la suite 241 (7/7 avant et
+      # après : le corps réécrit garde exactement le comportement de la 241).
+      # 7 scénarios.
+      - name: 'L3 : la réception de marchandise est tracée par ligne (319)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/319_chain_reception_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

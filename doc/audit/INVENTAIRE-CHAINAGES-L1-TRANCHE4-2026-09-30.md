@@ -199,10 +199,18 @@ remplace. Le changement est daté dans le fichier.
 * **La carte de modules est une heuristique** : un chiffre comme « 99 » dépend de
   la liste de motifs. Le document publie la sienne, ce qui la rend **discutable**
   — et c'est le point : le référentiel avait la même limite, il l'avait dit aussi.
-* **La réception de marchandise reste non tracée** (`create_stock_on_goods_receipt`) :
-  N mouvements à partir de N lignes, la correspondance ligne → ligne demande la
-  **réécriture du corps** (doctrine 311). C'est la tranche qui suit les candidats
-  directs, et elle demandera ses propres tests de non-régression.
+* **La réception de marchandise est TRACÉE (30/09, migration `319`, suite `319`)** :
+  l'inventaire la rangeait « réécriture du corps » — N mouvements à partir de N
+  lignes, la correspondance ligne → ligne ne se devine pas de l'extérieur (les N
+  mouvements portent le même `reference_id`, et l'ordre d'insertion n'est pas une
+  garantie). La `319` reprend le corps de la `241` **à l'identique** et y ajoute
+  l'entrée du maillon (`chain_avant`, **par ligne**), le lien **par ligne** et la
+  sortie (`emit_domain_event` + `chain_apres`), avec son contrat d'effet déclaré
+  dans le même fichier (la porte **G2** l'exige). **Non-régression mesurée** : la
+  suite `241` rend **7/7 avant et 7/7 après** le remplacement du corps, et
+  `plpgsql_check` **0 erreur**. 7 scénarios. C'était **le seul maillon** de la
+  liste que la doctrine autorisait à réécrire : les neuf autres sont des **RPC**,
+  et se tracent par leur chemin d'appel.
 
 ---
 
@@ -212,7 +220,9 @@ remplace. Le changement est daté dans le fichier.
    ✅ **fait** le 30/09/2026 ([preuve](VAGUE-L1-TRANCHE5-2026-09-30.md)) ;
 2. **Les neuf maillons RPC** — tracer par le chemin d'appel, ce qui suppose de
    choisir où l'entrée du maillon est posée (lot **L3**) ;
-3. **La réception de marchandise** — réécriture du corps pour lier par ligne ;
+3. **La réception de marchandise** — ✅ **fait le 30/09/2026** (migration **`319`**,
+   suite **`319`**, **7 scénarios**) : liaison **par ligne**, non-régression de la
+   `241` mesurée (7/7 avant et après) ;
 4. **`close_fiscal_year` et `revaluate_currency_balances`** — actes de clôture :
    ils ne sont pas des documents, et le socle n'a pas de notion de « lot de
    clôture » : c'est un choix de modèle (lot **L4**), pas un oubli ;

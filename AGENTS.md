@@ -161,6 +161,32 @@ L'essentiel en huit lignes :
   compagnons L1 voisins n'ont entre eux aucun ordre qui compte) et **311 T09** (le
   scénario mesure **son** effet, pas tous les liens du document). Détail, chiffres
   et limites : [preuve](doc/audit/VAGUE-L1-TRANCHE5-2026-09-30.md).
+* **L3 — premier maillon livré (30/09) : la réception de marchandise, tracée PAR
+  LIGNE.** L'inventaire de L1 en avait fait la seule « réécriture du corps »
+  justifiée : N mouvements à partir de N lignes, et la correspondance ligne → ligne
+  ne se devine **pas** de l'extérieur (les N mouvements portent le même
+  `reference_id`, et l'ordre d'insertion n'est pas une garantie) — la doctrine 311
+  n'admet rien d'autre. La migration **`319`** reprend le corps de la `241`
+  **à l'identique** et y ajoute l'entrée du maillon (`chain_avant`, **par ligne**),
+  le lien **par ligne** (`link_documents` sur la ligne, pas sur l'en-tête) et la
+  sortie (`emit_domain_event` + `chain_apres`), **avec son contrat d'effet déclaré
+  dans le même fichier** — la porte **G2** l'exige, et sans lui chaque réception
+  tracerait « contrat manquant ». **Non-régression mesurée, pas supposée** : la
+  suite **`241`** rend **7/7 avant et 7/7 après** le remplacement du corps, les
+  huit suites de la chaîne (`310`→`314`, `316`) restent vertes, et `plpgsql_check`
+  donne **0 erreur**. Suite **`319`** : **7 scénarios** (deux lignes → deux liens,
+  chacun sur SA ligne ; la bonne quantité et le bon dépôt ; la trace `applique` et
+  l'événement ; la ligne à zéro qui n'existe pas ; le rejeu qui ne double rien ; le
+  contrat actif ; le cloisonnement). Cumul : **23 effets tracés, 23 contrats**.
+  ⚠️ **Ce que ce maillon n'appelle pas encore** : le **cycle du lien**
+  (`chain_lien_fermer`) sur l'annulation — aucun maillon ne le fait, c'est le
+  reste de L3, et c'est écrit dans l'en-tête de la migration pour que la prochaine
+  tranche ne le cherche pas ailleurs. **Restent aussi les neuf maillons RPC**
+  (caisse, paie, relevé), qui se tracent par leur **chemin d'appel** — un
+  compagnon ne peut pas s'y accrocher —, et le **banc des 8 épreuves**
+  (`D1`→`D8`) avec son rapport par maillon.
+
+
 
 * **≈ 133 j restants** : **plan correctif des vagues W fermé** ; chaînages
 * **≈ 131 j restants** (recompté le 30/09 : le « ≈ 133 j » porté jusqu'ici

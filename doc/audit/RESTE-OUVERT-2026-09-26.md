@@ -168,7 +168,9 @@ déjà livré : c'est un **plafond**, pas un reste exact (détail :
 `311`, `312`, `314`, `316` — **22 effets tracés** et **22 contrats déclarés**, 15
 déclencheurs compagnons `zz_l1_`, 4 corps réécrits pour lier **par ligne**, le
 vocabulaire de trace enrichi de **`sans_effet`** (`315`), 61 scénarios
-d'acceptation) ; **L2** (les six portes `G1` → `G6`) ; **L7** (`313`) ;
+d'acceptation) ; **L3, premier maillon** (`319` — la **réception de marchandise**
+tracée **par ligne**, 7 scénarios, soit **23 effets tracés, 23 contrats**) ;
+**L2** (les six portes `G1` → `G6`) ; **L7** (`313`) ;
 et W9 a livré la chaîne de l'absence de bout en bout. La méthode de l'inventaire,
 **rejouée le 30/09**, compte **99 fonctions** transverses (62 au 24/09) dont
 **32 écrivent dans ≥ 2 modules** — classées avec leur verdict et leur raison.
