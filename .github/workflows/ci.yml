@@ -75,6 +75,18 @@ jobs:
       - name: 'LOT6-04 : Unused tables ceiling'
         run: node scripts/check-unused-tables.mjs
 
+      # Dette de types et d'erreurs avalées — gelée le 2026-10-01, mesurée :
+      # 1811 `any` en production (+ 796 dans les tests) et 486 `console.error` en
+      # production. Les cibles de remplacement existent déjà (`Row<'table'>` de
+      # @/types/dbRow, et `toast()` / `reportSilentFailure()`). Comme pour knip,
+      # une hausse casse la CI et une baisse abaisse le plafond automatiquement :
+      # le compteur ne peut que descendre.
+      - name: 'Dette : plafond des `any` explicites'
+        run: node scripts/check-any-ceiling.mjs
+
+      - name: 'Dette : plafond des `console.error`'
+        run: node scripts/check-console-error-ceiling.mjs
+
       # L2 / G5 — le câblage des suites. Deux moitiés de la règle du dépôt (« un
       # défaut = un test rouge avant, le câblage CI dans le même commit ») étaient
       # gardées — le registre des échecs attendus (AUD-X01) et le refus d'un

@@ -21,6 +21,8 @@
     "db:embeds": "node scripts/check-embeds.mjs",
     "db:written-columns": "node scripts/check-written-columns.mjs",
     "audit:unchecked-writes": "node scripts/check-unchecked-writes.mjs",
+    "audit:any-ceiling": "node scripts/check-any-ceiling.mjs",
+    "audit:console-error-ceiling": "node scripts/check-console-error-ceiling.mjs",
     "a11y:icon-buttons": "node scripts/check-a11y-icon-buttons.mjs",
     "a11y:contrast": "node scripts/check-contrast.mjs",
     "verify": "bash scripts/verify.sh",
