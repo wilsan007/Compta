@@ -7,9 +7,14 @@
 --
 --   T01  commande confirmée, 2 lignes → 2 réservations, **2 liens par ligne**,
 --        chacun pointant la réservation du bon article ; 1 événement, 1 mesure ;
---   T02  annulée puis reconfirmée : l'effet est REPRODUIT (la clé du socle n'a
---        pas de notion de tour — trouvaille du lot, née d'un rouge de la suite
---        230) ET les liens restent deux, mis à jour vers la réservation courante ;
+--   T02  annulée puis reconfirmée : l'effet est REPRODUIT (2 réservations
+--        actives), les 2 liens du tour 1 sont **rompus** et **remplacés** par 2
+--        liens actifs du tour 2 pointant la réservation courante. ⚠️ Verdict
+--        PRÉCISÉ le 02/10/2026 (L3, 320) : avant le cycle de vie du lien (312) et
+--        la fermeture à l'annulation (320), l'assertion portait sur « deux liens
+--        mis à jour » ; la même propriété est désormais mesurée SUR L'ÉTAT. La
+--        trouvaille du lot (la clé du socle n'a pas de notion de tour) est née
+--        d'un rouge de la suite 230 ;
 --   T03  la société voisine ne voit ni les liens ni l'événement ;
 --   T04  BL expédié, 2 lignes → 2 mouvements, 2 liens par ligne, le bon produit ;
 --   T05  mode `refuse` : la sortie est BLOQUÉE avant tout effet, message nominatif,
@@ -80,14 +85,20 @@ BEGIN
   RETURN bl;
 END $$;
 
--- Les liens d'un document, avec la ligne amont et l'aval.
+-- Les liens d'un document, avec la ligne amont, l'aval, l'ÉTAT et le TOUR.
+-- ⚠️ `etat` et `tour` ont été AJOUTÉS le 02/10/2026 (L3, 320) : depuis la 312
+-- un lien a un cycle de vie, et depuis la 320 l'annulation d'une commande FERME
+-- ses liens au lieu de les réécrire. Un scénario qui lit les liens sans dire
+-- lesquels sont actifs mesure le passé et le présent confondus. `DROP` avant
+-- `CREATE` : une signature qui change ne se remplace pas, elle se recrée.
+DROP FUNCTION IF EXISTS _l311_liens(uuid, text, uuid);
 CREATE OR REPLACE FUNCTION _l311_liens(p_t uuid, p_amont_type text, p_amont_id uuid)
-RETURNS TABLE(effet text, amont_ligne_id uuid, aval_type text, aval_id uuid, link_type text, payload jsonb, created_at timestamptz)
+RETURNS TABLE(effet text, amont_ligne_id uuid, aval_type text, aval_id uuid, link_type text, payload jsonb, created_at timestamptz, etat text, tour integer)
 LANGUAGE sql AS $$
-  SELECT dl.effet, dl.amont_ligne_id, dl.aval_type, dl.aval_id, dl.link_type, dl.payload, dl.created_at
+  SELECT dl.effet, dl.amont_ligne_id, dl.aval_type, dl.aval_id, dl.link_type, dl.payload, dl.created_at, dl.etat, dl.tour
   FROM document_links dl
   WHERE dl.tenant_id = p_t AND dl.amont_type = p_amont_type AND dl.amont_id = p_amont_id
-  ORDER BY dl.effet, dl.amont_ligne_id
+  ORDER BY dl.effet, dl.amont_ligne_id, dl.tour
 $$;
 
 CREATE OR REPLACE FUNCTION _l311_evt(p_t uuid, p_nom text, p_agregat uuid)
@@ -131,17 +142,29 @@ BEGIN
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
--- T02 — Annulée puis reconfirmée : l'effet revient, les liens ne s'empilent pas
+-- T02 — Annulée puis reconfirmée : l'effet revient, l'historique garde les tours
 --   Ce scénario est né d'un ROUGE : la première version du lot appelait
 --   `chain_avant` en tête de boucle, et la suite 230 (T04) a prouvé que la
 --   re-confirmation d'une commande annulée ne réservait plus rien (la clé du
---   socle n'a pas de notion de « tour »). La propriété qui compte est donc
---   double : l'effet est bien REPRODUIT, et le lien est MIS À JOUR — il reste
---   unique par ligne, et pointe la réservation courante.
+--   socle n'a pas de notion de « tour »).
+--
+--   ⚠️ LE VERDICT A CHANGÉ LE 02/10/2026 (L3, migration 320), ET IL EST PLUS
+--   FORT. Le monde autour n'est plus le même : la 312 a donné au lien un CYCLE
+--   DE VIE (`actif` → `remplace` | `rompu`) et la 320 fait FERMER — par le
+--   maillon d'annulation lui-même — les liens de la commande que le métier vient
+--   de libérer. Le lien n'est donc plus MIS À JOUR, il est REMPLACÉ : l'ancien
+--   reste (`rompu`, daté, motivé), et un NOUVEAU naît au tour suivant.
+--   Ce que le scénario mesure aujourd'hui : l'effet est reproduit (2
+--   réservations ACTIVES), l'historique garde les DEUX tours (2 rompus + 2
+--   actifs), et le lien ACTIF pointe la réservation COURANTE — l'assertion porte
+--   donc sur le lien actif, parce que c'est lui qui décrit le présent.
+--   Les deux verdicts sont conservés : « deux liens actifs » était vrai avant
+--   par réécriture, il l'est après par remplacement — c'est la même propriété,
+--   et elle est désormais prouvée sur l'état, pas sur un compte de lignes.
 -- ═════════════════════════════════════════════════════════════
 DO $$
-DECLARE v record; so uuid; ligne1 uuid; n_liens int; n_actives int;
-        v_avant uuid; v_apres uuid; n_total int;
+DECLARE v record; so uuid; ligne1 uuid; n_liens int; n_actifs int; n_rompus int; n_tours int;
+        n_actives int; n_total int; v_avant uuid; v_apres uuid;
 BEGIN
   v := _l311_vente('L2B');
   so := _l311_cmd(v.t, v.c, v.p1, v.p2, 'L2B');
@@ -150,28 +173,35 @@ BEGIN
     SELECT id INTO ligne1 FROM sales_order_lines
      WHERE sales_order_id = so AND product_id = v.p1;
     SELECT aval_id INTO v_avant FROM _l311_liens(v.t, 'sales_orders', so)
-     WHERE amont_ligne_id = ligne1 LIMIT 1;
+     WHERE amont_ligne_id = ligne1 AND etat = 'actif' LIMIT 1;
 
-    -- Annulation : le maillon de libération consomme la réservation.
+    -- Annulation : le maillon de libération consomme la réservation, et le
+    -- maillon compagnon de la 320 ROMPT les liens qui décrivaient l'effet.
     UPDATE sales_orders SET status = 'cancelled' WHERE id = so;
-    -- Reconformation : la réservation doit REVENIR (sans quoi le métier refuse).
+    -- Reconformation : la réservation doit REVENIR (sans quoi le métier refuse),
+    -- et l'entrée du maillon — vraie depuis que le lien est fermé — autorise la
+    -- reproduction au tour suivant.
     UPDATE sales_orders SET status = 'confirmed' WHERE id = so;
 
-    SELECT count(*) INTO n_liens FROM _l311_liens(v.t, 'sales_orders', so);
+    SELECT count(*), count(*) FILTER (WHERE etat = 'actif'),
+           count(*) FILTER (WHERE etat = 'rompu'), count(DISTINCT tour)
+      INTO n_liens, n_actifs, n_rompus, n_tours
+      FROM _l311_liens(v.t, 'sales_orders', so);
     SELECT count(*) INTO n_total FROM stock_reservations
      WHERE tenant_id = v.t AND reference_id = so;
     SELECT count(*) INTO n_actives FROM stock_reservations
      WHERE tenant_id = v.t AND reference_id = so AND status = 'active';
     SELECT aval_id INTO v_apres FROM _l311_liens(v.t, 'sales_orders', so)
-     WHERE amont_ligne_id = ligne1 LIMIT 1;
+     WHERE amont_ligne_id = ligne1 AND etat = 'actif' LIMIT 1;
 
     PERFORM _rec('T02',
-      'commande annulée puis reconfirmée : l''effet est reproduit (2 réservations actives) ET les liens restent AU NOMBRE DE DEUX, mis à jour vers la réservation courante',
-      n_liens = 2 AND n_actives = 2 AND n_total >= 3 AND v_apres IS DISTINCT FROM v_avant,
-      format('liens=%s réservations actives=%s (total=%s) aval avant=%s aval après=%s',
-             n_liens, n_actives, n_total, v_avant, v_apres));
+      'commande annulée puis reconfirmée : l''effet est reproduit (2 réservations actives), les 2 liens du tour 1 sont ROMpus et remplacés par 2 liens actifs (tour 2) pointant la réservation courante',
+      n_actifs = 2 AND n_rompus = 2 AND n_tours = 2 AND n_actives = 2 AND n_total >= 3
+        AND v_apres IS DISTINCT FROM v_avant,
+      format('liens=%s dont actifs=%s rompus=%s tours=%s réservations actives=%s (total=%s) aval actif avant=%s après=%s',
+             n_liens, n_actifs, n_rompus, n_tours, n_actives, n_total, v_avant, v_apres));
   EXCEPTION WHEN OTHERS THEN
-    PERFORM _rec('T02', 'commande annulée puis reconfirmée : l''effet est reproduit (2 réservations actives) ET les liens restent AU NOMBRE DE DEUX, mis à jour vers la réservation courante', false, SQLERRM);
+    PERFORM _rec('T02', 'commande annulée puis reconfirmée : l''effet est reproduit (2 réservations actives), les 2 liens du tour 1 sont ROMpus et remplacés par 2 liens actifs (tour 2) pointant la réservation courante', false, SQLERRM);
   END;
 END $$;
 

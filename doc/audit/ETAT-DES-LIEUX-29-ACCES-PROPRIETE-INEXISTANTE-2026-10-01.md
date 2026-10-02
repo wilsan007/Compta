@@ -59,6 +59,14 @@ fausse**, `filtered` devient **vide** et l'écran affiche **des totaux à zéro*
 un filtre qui vide au lieu de filtrer. La colonne « plan » (`L129`) reste vide
 pour la même raison.
 
+> **Livré par `dbede1a`** (commit postérieur à la publication de ce document, qui
+> annonçait déjà le correctif — l'ordre est dit ici pour que la trace soit exacte) :
+> l'agrégat de `getAnalyticBalance()` porte désormais `planId`, lu sur
+> `analytic_sections.plan_id` (colonne vérifiée dans `information_schema`), l'écran
+> ne filtre plus que sur cette propriété, et ses états sont nommés depuis leur
+> fonction de requête. Garde : `src/lib/__tests__/analytic-balance-plan-filter.test.ts`
+> (3 scénarios, **vus rouges** avec le défaut remis en place — 2 échecs sur 3).
+
 ### 2.2 `EmployeeExpensesPage` — 2 accès : un indicateur qui ne passe jamais au vert
 
 ```
@@ -114,7 +122,7 @@ ne le compte pas comme un défaut produit.
 
 | # | Cible | Nature | État |
 |---|---|---|---|
-| 1 | `AnalyticBalancePage` — que le filtre par plan filtre | **donnée absente** | **corrigé le 2026-10-01** |
+| 1 | `AnalyticBalancePage` — que le filtre par plan filtre | **donnée absente** | **corrigé le 2026-10-01** (`dbede1a`) |
 | 2 | `EmployeeExpensesPage` — un indicateur qui dit la vérité | **donnée absente** | à faire |
 | 3 | `Phase7DInquiryPages` — lire le tiers sur la ligne | **donnée absente** | à faire |
 | 4 | `Phase7DInquiryPages` — déclarer le type complet de l'en-tête | dette de types | à faire |

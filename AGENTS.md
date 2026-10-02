@@ -210,6 +210,33 @@ L'essentiel en huit lignes :
   (caisse, paie, relevé), qui se tracent par leur **chemin d'appel** — un
   compagnon ne peut pas s'y accrocher —, et le **banc des 8 épreuves**
   (`D1`→`D8`) avec son rapport par maillon.
+* **L3, tranche 1 livrée (02/10) : les chemins d'annulation FERMENT leurs liens
+  (`320`), et le maillon des réservations regagne son entrée.** C'est le reste
+  que la 319 nommait (« aucun maillon n'appelle le cycle du lien sur
+  l'annulation ») et le geste que la 312 écrivait à l'avance. Mesuré avant : le
+  socle comptait **2 appelants** de `chain_lien_fermer` — les deux portes de la
+  312 elle-même — donc une commande annulée gardait ses liens `actif` alors que
+  ses réservations sont **libérées** (STK-02c), un BL annulé aussi (la 253
+  contrepasse), une réception aussi (la 251) : `chain_integrity_ok` (M-03)
+  disait « intact » sur un effet retiré. La `320` pose **trois compagnons
+  `zz_l3_`** (un par chemin qui CONTRÉPASSE un effet tracé — compagnon, car la
+  fermeture CONSTATE, elle ne décide pas ; fermeture GLOBALE, car zéro lien à
+  l'annulation est un état LÉGITIME, suite 320 T06) et **une seule réécriture
+  de corps** : `reserve_stock_on_sales_order_confirm` regagne `chain_avant`
+  **par ligne** — l'entrée que la 311 avait dû retirer (rouge de la 230 T04).
+  Amélioration mesurée (T05) : le rejeu ne **double plus la réservation** (2,
+  pas 4 — l'ancien `ON CONFLICT` masquait la fuite). Suite **320 : 8
+  scénarios** ; **311 T02 précisée** (datée : le lien est REMPLACÉ, pas
+  réécrit — assertion plus forte, les deux verdicts conservés), **312 C12
+  inchangée et verte**. Non-régression : **270 migrations, 0 erreur** sur base
+  neuve, **12 contrôles verts** (G1 : la grille n'a pas bougé ; G2 : 46
+  constats, 0 au registre ; `plpgsql_check` : 0 erreur), **98 suites, 0 rouge**.
+  [Preuve](doc/audit/VAGUE-L3-FERMETURES-2026-10-02.md).
+  ⚠️ **Restent pour L3** : les **9 maillons RPC** (caisse, paie versée, relevé)
+  — par leur chemin d'appel — et le **banc D1→D8** avec son rapport par
+  maillon.
+
+
 
 
 
