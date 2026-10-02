@@ -131,12 +131,14 @@ BEGIN
     SELECT code FROM chain_invariants WHERE tenant_id IS NULL
      GROUP BY code HAVING count(*) > 1) d;
 
-  PERFORM _rec('T01', 'le registre est exhaustif et honnête : 20 invariants standard, tous distincts, 13 mesurables et 7 non mesurables — chacun des 7 porte une raison non vide',
-    n_total = 20 AND n_mes = 13 AND n_non = 7 AND n_sans_raison = 0 AND n_doublon = 0,
-    format('inscrits=%s (20 attendus) mesurables=%s (13) non mesurables=%s (7) sans raison=%s doublons=%s',
+  PERFORM _rec('T01', 'le registre est exhaustif et honnête : 20 invariants standard, tous distincts, 14 mesurables et 6 non mesurables — chacun des 6 porte une raison non vide',
+    -- 02/10/2026 (Partie 5, 455) : INV-19 devient mesurable par le registre 450.
+    -- Verdict précédent : n_mes = 13 AND n_non = 7.
+    n_total = 20 AND n_mes = 14 AND n_non = 6 AND n_sans_raison = 0 AND n_doublon = 0,
+    format('inscrits=%s (20 attendus) mesurables=%s (14) non mesurables=%s (6) sans raison=%s doublons=%s',
            n_total, n_mes, n_non, n_sans_raison, n_doublon));
 EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T01', 'le registre est exhaustif et honnête : 20 invariants standard, tous distincts, 13 mesurables et 7 non mesurables — chacun des 7 porte une raison non vide', false, SQLERRM);
+  PERFORM _rec('T01', 'le registre est exhaustif et honnête : 20 invariants standard, tous distincts, 14 mesurables et 6 non mesurables — chacun des 6 porte une raison non vide', false, SQLERRM);
 END $$;
 
 -- ═════════════════════════════════════════════════════════════
@@ -163,19 +165,20 @@ BEGIN
      WHERE tenant_id = t AND verdict = 'non_mesure'
        AND btrim(COALESCE(detail->>'raison', '')) <> '';
 
-    PERFORM _rec('T02', 'l''indice est le score SUR CE QUI EST MESURÉ : société neuve = 13/13 tenus, indice 1.0000, et les 7 non mesurables sont publiés à côté avec leur raison (jamais « 13/20 »)',
+    PERFORM _rec('T02', 'l''indice est le score SUR CE QUI EST MESURÉ : société neuve = 14/14 tenus, indice 1.0000, et les 6 non mesurables sont publiés à côté avec leur raison (jamais « 13/20 »)',
       (res->>'inscrits')::int = 20
-        AND (res->>'mesures')::int = 13
-        AND (res->>'tenus')::int = 13
+        -- 02/10/2026 (Partie 5, 455) : 13 → 14 (INV-19 mesuré). Verdict précédent : mesures = 13, tenus = 13.
+        AND (res->>'mesures')::int = 14
+        AND (res->>'tenus')::int = 14
         AND (res->>'rompus')::int = 0
-        AND (res->>'non_mesurables')::int = 7
+        AND (res->>'non_mesurables')::int = 6
         AND (res->>'indice')::numeric = 1.0000
-        AND n_lignes = 20 AND n_non_mesure = 7,
-      format('inscrits=%s mesures=%s tenus=%s rompus=%s non_mesurables=%s indice=%s | lignes écrites=%s non_mesure AVEC raison=%s/7',
+        AND n_lignes = 20 AND n_non_mesure = 6,
+      format('inscrits=%s mesures=%s tenus=%s rompus=%s non_mesurables=%s indice=%s | lignes écrites=%s non_mesure AVEC raison=%s/6',
              res->>'inscrits', res->>'mesures', res->>'tenus', res->>'rompus',
              res->>'non_mesurables', res->>'indice', n_lignes, n_non_mesure));
   EXCEPTION WHEN OTHERS THEN
-    PERFORM _rec('T02', 'l''indice est le score SUR CE QUI EST MESURÉ : société neuve = 13/13 tenus, indice 1.0000, et les 7 non mesurables sont publiés à côté avec leur raison (jamais « 13/20 »)', false, SQLERRM);
+    PERFORM _rec('T02', 'l''indice est le score SUR CE QUI EST MESURÉ : société neuve = 14/14 tenus, indice 1.0000, et les 6 non mesurables sont publiés à côté avec leur raison (jamais « 13/20 »)', false, SQLERRM);
   END;
 END $$;
 -- ═════════════════════════════════════════════════════════════
@@ -215,8 +218,9 @@ BEGIN
         AND (v.detail->>'prime')::int = 1
         AND n_rompus = 1
         AND (res->>'rompus')::int = 1
-        AND (res->>'tenus')::int = 12
-        AND (res->>'mesures')::int = 13
+        -- 02/10/2026 (Partie 5, 455) : verdict précédent tenus = 12, mesures = 13.
+        AND (res->>'tenus')::int = 13
+        AND (res->>'mesures')::int = 14
         AND (res->>'indice')::numeric < 1.0000,
       format('INV-20 : %s, %s ligne(s) en écart, détail=%s | rompus=%s tenus=%s indice=%s (mesures=%s)',
              v.verdict, v.lignes_en_ecart, v.detail, res->>'rompus', res->>'tenus',
@@ -327,7 +331,8 @@ BEGIN
     PERFORM _rec('T05', 'la ligne de société l''emporte sur le standard : A désactive INV-20 et son relevé ne le contient plus (19 lignes, indice 1.0000 malgré la faute), tandis que la voisine B le mesure toujours',
       n_inv20_a = 0 AND n_lignes_a = 19
         AND (res_a->>'inscrits')::int = 19
-        AND (res_a->>'mesures')::int = 12
+        -- 02/10/2026 (Partie 5, 455) : verdict précédent mesures = 12.
+        AND (res_a->>'mesures')::int = 13
         AND (res_a->>'rompus')::int = 0
         AND (res_a->>'indice')::numeric = 1.0000
         AND n_inv20_b = 1,

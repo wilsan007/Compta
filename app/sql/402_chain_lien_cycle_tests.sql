@@ -48,12 +48,43 @@ DELETE FROM _audit_results WHERE file = '312';
 -- Poser un lien de test, avec sa ligne amont si besoin.
 -- `DROP` avant `CREATE` : le dépôt le fait partout (`audit_helpers.sql`) — une
 -- signature qui change ne se remplace pas, elle se recrée.
+-- Partie 5 (450/451) : link_documents exige désormais que l'amont, l'aval et la
+-- ligne amont EXISTENT. Les scénarios tirent leurs identifiants au hasard : cette
+-- aide crée le vrai document (commande en brouillon, bon de livraison en attente,
+-- ligne de commande) qui porte cet identifiant, s'il n'existe pas encore.
+-- Société NULL ou identifiant NULL : rien n'est créé (le scénario teste justement
+-- le refus de link_documents sur ces valeurs).
+DROP FUNCTION IF EXISTS _p5_doc(uuid, text, uuid, uuid);
+CREATE OR REPLACE FUNCTION _p5_doc(p_t uuid, p_type text, p_id uuid, p_ligne uuid DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql AS $p5$
+BEGIN
+  IF p_t IS NULL OR p_id IS NULL THEN
+    RETURN;
+  END IF;
+  IF p_type = 'sales_orders' THEN
+    INSERT INTO sales_orders (id, tenant_id, number, status)
+    VALUES (p_id, p_t, 'P5-' || p_id::text, 'draft')
+    ON CONFLICT (id) DO NOTHING;
+    IF p_ligne IS NOT NULL THEN
+      INSERT INTO sales_order_lines (id, tenant_id, sales_order_id, description, quantity, unit_price)
+      VALUES (p_ligne, p_t, p_id, 'Ligne P5', 1, 0)
+      ON CONFLICT (id) DO NOTHING;
+    END IF;
+  ELSIF p_type = 'delivery_notes' THEN
+    INSERT INTO delivery_notes (id, tenant_id, number, status)
+    VALUES (p_id, p_t, 'P5-' || p_id::text, 'pending')
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+END $p5$;
+
 DROP FUNCTION IF EXISTS _l312_lien(uuid, uuid, uuid, text, uuid, jsonb);
 CREATE OR REPLACE FUNCTION _l312_lien(p_t uuid, p_amont uuid, p_aval uuid, p_effet text,
   p_ligne uuid DEFAULT NULL, p_payload jsonb DEFAULT '{}'::jsonb)
 RETURNS uuid LANGUAGE plpgsql AS $$
 BEGIN
-  RETURN link_documents(p_t, 'commande', p_amont, 'livraison', p_aval, p_effet,
+  PERFORM _p5_doc(p_t, 'sales_orders', p_amont, p_ligne);
+  PERFORM _p5_doc(p_t, 'delivery_notes', p_aval);
+  RETURN link_documents(p_t, 'sales_orders', p_amont, 'delivery_notes', p_aval, p_effet,
                         'delivered_by', p_payload, p_ligne, NULL);
 END $$;
 
@@ -65,7 +96,7 @@ RETURNS TABLE(tour integer, etat text, motif text, aval_id uuid, ferme_le timest
 LANGUAGE sql AS $$
   SELECT dl.tour, dl.etat, dl.motif, dl.aval_id, dl.ferme_le, dl.ferme_par
   FROM document_links dl
-  WHERE dl.tenant_id = p_t AND dl.amont_type = 'commande'
+  WHERE dl.tenant_id = p_t AND dl.amont_type = 'sales_orders'
     AND dl.amont_id = p_amont AND dl.effet = p_effet
   ORDER BY dl.tour
 $$;
@@ -121,10 +152,10 @@ BEGIN
 
   SELECT count(*), max(tour), max(etat) INTO n, v_tour, v_etat
   FROM document_links
-  WHERE tenant_id = t AND amont_type = 'commande' AND amont_id = a AND effet = 'cycle.rejeu';
+  WHERE tenant_id = t AND amont_type = 'sales_orders' AND amont_id = a AND effet = 'cycle.rejeu';
   -- Le payload, tel qu'il est fusionné (aucun agrégat jsonb n'existe).
   SELECT payload INTO v FROM document_links
-  WHERE tenant_id = t AND amont_type = 'commande' AND amont_id = a AND effet = 'cycle.rejeu'
+  WHERE tenant_id = t AND amont_type = 'sales_orders' AND amont_id = a AND effet = 'cycle.rejeu'
   ORDER BY tour LIMIT 1;
 
   PERFORM _rec('C02', 'le rejeu d''un effet ACTIF ne double rien, fusionne le payload et reste au tour 1',
@@ -144,14 +175,14 @@ BEGIN
   a := gen_random_uuid(); b := gen_random_uuid();
   PERFORM _l312_lien(t, a, b, 'cycle.rompu');
 
-  n := chain_lien_rompre(t, 'commande', a, 'cycle.rompu',
+  n := chain_lien_rompre(t, 'sales_orders', a, 'cycle.rompu',
         'Commande C-312-0001 du 30/09/2026 annulée : l''effet tracé est retiré (règle cycle.rompu).');
 
   SELECT etat, motif, ferme_le, ferme_par INTO v_etat, v_motif, v_ferme, v_par
   FROM _l312_cycle(t, a, 'cycle.rompu') LIMIT 1;
 
-  v_deja   := chain_deja_fait(t, 'commande', a, 'cycle.rompu');
-  v_intact := chain_integrity_ok(t, 'commande', a, 'livraison', b);
+  v_deja   := chain_deja_fait(t, 'sales_orders', a, 'cycle.rompu');
+  v_intact := chain_integrity_ok(t, 'sales_orders', a, 'delivery_notes', b);
 
   SELECT count(*) INTO n_evt FROM _l312_evenements(t, 'chain.link_broken', a);
 
@@ -174,7 +205,7 @@ BEGIN
   t := _mk_tenant('A312C04', false);
   a := gen_random_uuid(); b := gen_random_uuid(); c := gen_random_uuid();
   PERFORM _l312_lien(t, a, b, 'cycle.tour');
-  PERFORM chain_lien_remplacer(t, 'commande', a, 'cycle.tour',
+  PERFORM chain_lien_remplacer(t, 'sales_orders', a, 'cycle.tour',
     'Commande reconfirmée : la réservation est reproduite.');
   PERFORM _l312_lien(t, a, c, 'cycle.tour');
 
@@ -206,11 +237,11 @@ BEGIN
   PERFORM _l312_lien(t, a, b, 'cycle.avant');
 
   -- Le maillon rejoué voit son effet déjà posé : il ne fait rien (et le trace).
-  v_avant := chain_avant(t, 'commande', 'confirmee', 'cycle.avant', 'commande', a);
+  v_avant := chain_avant(t, 'sales_orders', 'confirmee', 'cycle.avant', 'sales_orders', a);
 
   -- Le maillon d'annulation ferme le lien, puis le maillon reprend.
-  PERFORM chain_lien_remplacer(t, 'commande', a, 'cycle.avant', 'Reprise après annulation.');
-  v_apres := chain_avant(t, 'commande', 'confirmee', 'cycle.avant', 'commande', a);
+  PERFORM chain_lien_remplacer(t, 'sales_orders', a, 'cycle.avant', 'Reprise après annulation.');
+  v_apres := chain_avant(t, 'sales_orders', 'confirmee', 'cycle.avant', 'sales_orders', a);
 
   SELECT count(*) INTO n_ignore FROM chain_traces
   WHERE tenant_id = t AND effet = 'cycle.avant' AND resultat = 'ignore';
@@ -235,7 +266,7 @@ BEGIN
 
   -- 1. Motif absent : la base refuse une fermeture muette.
   BEGIN
-    PERFORM chain_lien_rompre(t, 'commande', a, 'cycle.refus', '   ');
+    PERFORM chain_lien_rompre(t, 'sales_orders', a, 'cycle.refus', '   ');
     v_dits := v_dits || 'motif vide : accepté';
   EXCEPTION WHEN check_violation THEN
     v_ok := v_ok + 1; v_dits := v_dits || ('motif vide : ' || left(SQLERRM, 50));
@@ -243,7 +274,7 @@ BEGIN
 
   -- 2. État inconnu : ce n'est pas un état de fermeture.
   BEGIN
-    PERFORM chain_lien_fermer(t, 'commande', a, 'cycle.refus', NULL, 'efface', 'motif');
+    PERFORM chain_lien_fermer(t, 'sales_orders', a, 'cycle.refus', NULL, 'efface', 'motif');
     v_dits := v_dits || 'état inconnu : accepté';
   EXCEPTION WHEN invalid_parameter_value THEN
     v_ok := v_ok + 1; v_dits := v_dits || ('état inconnu : ' || left(SQLERRM, 50));
@@ -251,11 +282,11 @@ BEGIN
 
   -- 3. Aucun lien actif : le ciblé REFUSE, et le message nomme l'effet et le document.
   BEGIN
-    PERFORM chain_lien_rompre(t, 'commande', a, 'cycle.jamais.produit', 'Annulation.');
+    PERFORM chain_lien_rompre(t, 'sales_orders', a, 'cycle.jamais.produit', 'Annulation.');
     v_dits := v_dits || 'sans lien : accepté';
   EXCEPTION WHEN check_violation THEN
     v_msg := SQLERRM;
-    IF v_msg LIKE '%cycle.jamais.produit%' AND v_msg LIKE '%commande%' THEN
+    IF v_msg LIKE '%cycle.jamais.produit%' AND v_msg LIKE '%sales_orders%' THEN
       v_ok := v_ok + 1; v_dits := array_append(v_dits, 'sans lien : nominatif');
     END IF;
   END;
@@ -278,19 +309,19 @@ BEGIN
   PERFORM _l312_lien(t, a, gen_random_uuid(), 'cycle.global.ecriture');
   PERFORM _l312_lien(t, a, gen_random_uuid(), 'cycle.global.stock');
 
-  n1 := chain_liens_fermer(t, 'commande', a, 'rompu',
+  n1 := chain_liens_fermer(t, 'sales_orders', a, 'rompu',
         'Commande annulée : les effets tracés sont retirés.');
 
   SELECT count(*) FILTER (WHERE etat = 'actif'), count(*) FILTER (WHERE etat = 'rompu')
     INTO n_actifs, n_rompus FROM document_links
-  WHERE tenant_id = t AND amont_type = 'commande' AND amont_id = a;
+  WHERE tenant_id = t AND amont_type = 'sales_orders' AND amont_id = a;
 
   SELECT count(*) INTO n_evt FROM domain_events
   WHERE tenant_id = t AND event_name = 'chain.link_broken' AND aggregate_id = a;
 
   -- Le second appel RAPPORTE 0 : un document sans effet actif se ferme « pour
   -- rien », et c'est légitime — contrairement au fermé ciblé, qui refuse.
-  n2 := chain_liens_fermer(t, 'commande', a, 'rompu', 'Deuxième annulation (rejeu).');
+  n2 := chain_liens_fermer(t, 'sales_orders', a, 'rompu', 'Deuxième annulation (rejeu).');
 
   PERFORM _rec('C07', 'la fermeture globale ferme les deux effets du document en un acte, journalise un événement par lien, et le rejeu rapporte 0 sans lever',
     n1 = 2 AND n_actifs = 0 AND n_rompus = 2 AND n_evt = 2 AND n2 = 0,
@@ -313,7 +344,7 @@ BEGIN
 
   -- Fermer tous les liens de la société A : la clause de société porte sur
   -- l'ÉCRITURE (le lien de B doit rester actif), pas seulement sur la lecture.
-  n := chain_liens_fermer(ta, 'commande', a, 'rompu', 'Annulation chez A seulement.');
+  n := chain_liens_fermer(ta, 'sales_orders', a, 'rompu', 'Annulation chez A seulement.');
 
   SELECT count(*) INTO vus_b FROM document_links
    WHERE tenant_id = tb AND amont_id = b AND etat = 'actif';
@@ -334,16 +365,16 @@ BEGIN
   a := gen_random_uuid(); b := gen_random_uuid();
 
   -- Avant tout : aucun lien actif, aucun tour.
-  l0 := chain_lien_actif(t, 'commande', a, 'cycle.lecture');
-  t0 := chain_lien_tour(t, 'commande', a, 'cycle.lecture');
+  l0 := chain_lien_actif(t, 'sales_orders', a, 'cycle.lecture');
+  t0 := chain_lien_tour(t, 'sales_orders', a, 'cycle.lecture');
 
   v_av := _l312_lien(t, a, b, 'cycle.lecture');
-  l1 := chain_lien_actif(t, 'commande', a, 'cycle.lecture');
-  t1 := chain_lien_tour(t, 'commande', a, 'cycle.lecture');
+  l1 := chain_lien_actif(t, 'sales_orders', a, 'cycle.lecture');
+  t1 := chain_lien_tour(t, 'sales_orders', a, 'cycle.lecture');
 
-  PERFORM chain_lien_rompre(t, 'commande', a, 'cycle.lecture', 'Annulation.');
-  l2 := chain_lien_actif(t, 'commande', a, 'cycle.lecture');
-  t2 := chain_lien_tour(t, 'commande', a, 'cycle.lecture');
+  PERFORM chain_lien_rompre(t, 'sales_orders', a, 'cycle.lecture', 'Annulation.');
+  l2 := chain_lien_actif(t, 'sales_orders', a, 'cycle.lecture');
+  t2 := chain_lien_tour(t, 'sales_orders', a, 'cycle.lecture');
 
   PERFORM _rec('C09', 'chain_lien_actif rend le lien vivant (NULL après fermeture) et chain_lien_tour le plus haut tour atteint',
     l0 IS NULL AND t0 = 0 AND l1 = v_av AND t1 = 1 AND l2 IS NULL AND t2 = 1,
@@ -375,7 +406,7 @@ BEGIN
   BEGIN
     INSERT INTO document_links (tenant_id, amont_type, amont_id, aval_type, aval_id,
                                 link_type, effet, etat, ferme_le)
-    VALUES (t, 'commande', gen_random_uuid(), 'livraison', gen_random_uuid(),
+    VALUES (t, 'sales_orders', gen_random_uuid(), 'delivery_notes', gen_random_uuid(),
             'delivered_by', 'cycle.garde', 'rompu', now());
     v_dits := array_append(v_dits, 'insertion fermée sans motif : acceptée');
   EXCEPTION WHEN check_violation THEN
@@ -386,7 +417,7 @@ BEGIN
   BEGIN
     INSERT INTO document_links (tenant_id, amont_type, amont_id, aval_type, aval_id,
                                 link_type, effet, tour)
-    VALUES (t, 'commande', a, 'livraison', gen_random_uuid(), 'delivered_by', 'cycle.garde', 2);
+    VALUES (t, 'sales_orders', a, 'delivery_notes', gen_random_uuid(), 'delivered_by', 'cycle.garde', 2);
     v_dits := array_append(v_dits, 'second lien actif : accepté');
   EXCEPTION WHEN unique_violation THEN
     v_ok := v_ok + 1; v_dits := array_append(v_dits, 'second actif : refusé');
@@ -410,7 +441,7 @@ BEGIN
   a := gen_random_uuid(); b := gen_random_uuid();
   v_id := _l312_lien(t, a, b, 'cycle.evenement');
 
-  PERFORM chain_lien_remplacer(t, 'commande', a, 'cycle.evenement',
+  PERFORM chain_lien_remplacer(t, 'sales_orders', a, 'cycle.evenement',
     'Commande reconfirmée le 30/09/2026.');
 
   SELECT payload INTO p FROM _l312_evenements(t, 'chain.link_superseded', a) LIMIT 1;

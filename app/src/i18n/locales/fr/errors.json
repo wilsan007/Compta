@@ -98,5 +98,37 @@
     "operationCancelled": "Opération annulée",
     "tryAgain": "Veuillez réessayer",
     "contactSupport": "Si le problème persiste, contactez le support"
+  },
+  "chain": {
+    "deleteRefused": "Suppression refusée : ce document ({{document}}) est relié à {{count}} document(s) par la chaîne ({{vers}}). Annulez-le d’abord : l’annulation ferme ces liens.",
+    "types": {
+      "bank_accounts": "Compte bancaire",
+      "bank_transactions": "Opération bancaire",
+      "chart_accounts": "Compte comptable",
+      "credit_notes": "Avoir client",
+      "customer_payments": "Règlement client",
+      "delivery_notes": "Bon de livraison",
+      "expense_reports": "Note de frais",
+      "goods_receipts": "Réception de marchandise",
+      "invoice_lines": "Ligne de facture",
+      "invoices": "Facture client",
+      "journal_entries": "Écriture comptable",
+      "journal_lines": "Ligne d'écriture",
+      "journals": "Journal comptable",
+      "manufacturing_orders": "Ordre de fabrication",
+      "payroll_variable_elements": "Élément variable de paie",
+      "pay_runs": "Lot de paie",
+      "pos_payments": "Paiement de caisse",
+      "pos_sessions": "Session de caisse",
+      "pos_tickets": "Ticket de caisse",
+      "project_time_entries": "Temps passé sur projet",
+      "purchase_invoices": "Facture fournisseur",
+      "sales_orders": "Commande client",
+      "stock_movements": "Mouvement de stock",
+      "stock_reservations": "Réservation de stock",
+      "st_receipts": "Réception de sous-traitance",
+      "st_shipments": "Expédition de sous-traitance",
+      "supplier_payments": "Règlement fournisseur"
+    }
   }
 }

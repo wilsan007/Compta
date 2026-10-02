@@ -1452,6 +1452,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
+      # se pose que vers des documents qui existent (registre des types + contrôle
+      # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
+      # réservation se libère sans être supprimée, et INV-19 se mesure.
+      - name: 'Partie 5 : intégrité référentielle des chaînages (450)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/450_chain_integrite_referentielle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

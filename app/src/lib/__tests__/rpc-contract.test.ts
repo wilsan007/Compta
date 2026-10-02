@@ -146,7 +146,13 @@ describe('W10 — le front ne rappelle pas ce qui ne peut pas aboutir', () => {
       .split('\n')
       .map(sansCommentaire)
       .join('\n')
-    expect(code).not.toMatch(/\.rpc\(/)
+    // 2026-10-02 (Partie 5, 454) : assertion PRÉCISÉE. Elle interdisait tout
+    // `.rpc(` dans stock.ts ; son objet est que le front ne recalcule pas la
+    // QUANTITÉ en stock (W10 : increment_stock / decrement_stock appelés après
+    // l'insertion du mouvement). `release_stock_reservation` (454) laisse la
+    // base rendre la quantité réservée : c'est le moteur unique, pas un second.
+    // Verdict précédent : expect(code).not.toMatch(/\.rpc\(/)
+    expect(code).not.toMatch(/\.rpc\(\s*['"](increment_stock|decrement_stock|update_stock[a-z_]*|adjust_stock[a-z_]*)['"]/)
   })
 })
 

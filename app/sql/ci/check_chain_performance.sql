@@ -54,7 +54,7 @@ INSERT INTO tenants (id, name, plan, status, currency, created_at)
 VALUES ('00000000-0000-0000-0000-0000000003a2'::uuid, 'A312PERF', 'pro', 'active', 'EUR', now());
 
 INSERT INTO document_effects (tenant_id, document_type, evenement, effet, ecrit_comptable, touche_stock)
-VALUES (NULL, 'zz_doc', 'zz_confirme', 'perf.maillon.declare', false, false);
+VALUES (NULL, 'sales_orders', 'zz_confirme', 'perf.maillon.declare', false, false);
 
 -- La boucle de mesure : 1 000 tours, chacun sur un document distinct (donc un
 -- INSERT réel dans les trois tables du socle, jamais un rejeu). Chaque appel est
@@ -79,28 +79,31 @@ DECLARE
 BEGIN
   FOR v_i IN 1..v_n LOOP
     v_amont := gen_random_uuid();          -- un document DISTINCT par tour
+    -- Partie 5 (451) : link_documents exige un document RÉEL. Créé hors chronomètre.
+    INSERT INTO sales_orders (id, tenant_id, number, status)
+    VALUES (v_amont, v_tenant, 'P5-PERF-' || v_i, 'draft');
     v_t0 := clock_timestamp();
 
     -- (a) l'entrée du maillon : idempotence + contrat
-    v_ok := chain_avant(v_tenant, 'zz_doc', 'zz_confirme', 'perf.maillon.declare',
-                        'zz_doc', v_amont);
+    v_ok := chain_avant(v_tenant, 'sales_orders', 'zz_confirme', 'perf.maillon.declare',
+                        'sales_orders', v_amont);
     IF NOT v_ok THEN
       RAISE EXCEPTION 'Le banc n''a pas produit son effet au tour % : chain_avant a rendu faux — le décor est faux.', v_i;
     END IF;
     v_t1 := clock_timestamp();
 
     -- (b) le lien (c'est lui qui écrit dans document_links et fait vivre l'index)
-    v_lien := link_documents(v_tenant, 'zz_doc', v_amont, 'zz_aval', v_amont,
+    v_lien := link_documents(v_tenant, 'sales_orders', v_amont, 'sales_orders', v_amont,
                              'perf.maillon.declare', 'created_from',
                              jsonb_build_object('tour', v_i));
     v_t2 := clock_timestamp();
 
     -- (c) l'événement du journal, puis (d) la trace du maillon (§3.4)
-    PERFORM emit_domain_event(v_tenant, 'zz_doc.confirme', 'zz_doc', v_amont,
+    PERFORM emit_domain_event(v_tenant, 'sales_orders.perf', 'sales_orders', v_amont,
                               jsonb_build_object('tour', v_i), NULL);
     v_t3 := clock_timestamp();
 
-    PERFORM chain_apres(v_tenant, 'perf.maillon.declare', 'zz_doc', v_amont,
+    PERFORM chain_apres(v_tenant, 'perf.maillon.declare', 'sales_orders', v_amont,
                         v_t0, 1, 'applique', NULL);
     v_t := clock_timestamp();
 

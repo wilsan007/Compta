@@ -1896,6 +1896,30 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_document_types: {
+      Row: {
+        code: string
+        table_name: string
+        ligne_table: string | null
+        libelle_fr: string
+        created_at: string
+      }
+      Insert: {
+        code: string
+        table_name: string
+        ligne_table?: string
+        libelle_fr: string
+        created_at?: string
+      }
+      Update: {
+        code?: string
+        table_name?: string
+        ligne_table?: string
+        libelle_fr?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chain_invariant_results: {
       Row: {
         id: number

@@ -16,7 +16,36 @@ export function cn(...inputs: ClassValue[]) {
  * Le comportement est identique : `err.message` quand la valeur en porte un,
  * `String(err)` sinon (au lieu de `undefined` affiché à l'utilisateur).
  */
+/**
+ * Partie 5 (migration 453) : la base refuse de supprimer un document qu'un lien
+ * de chaînage ACTIF relie à un autre (message `CHAIN_DELETE_REFUSED`, code
+ * 23503, détail JSON `{ type, mode, id, liens: [{ effet, vers, vers_id }] }`).
+ * Rend la phrase traduite, ou `null` si l'erreur n'est pas ce refus.
+ */
+export function chainDeleteRefusalMessage(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null
+  const e = err as { message?: unknown; details?: unknown }
+  if (e.message !== 'CHAIN_DELETE_REFUSED') return null
+  let detail: { type?: string; liens?: { vers?: string }[] } = {}
+  try {
+    detail = typeof e.details === 'string' ? JSON.parse(e.details) : {}
+  } catch {
+    detail = {}
+  }
+  const libelle = (code?: string) =>
+    code ? i18n.t(`errors:chain.types.${code}`, { defaultValue: code }) : ''
+  const liens = Array.isArray(detail.liens) ? detail.liens : []
+  const vers = Array.from(new Set(liens.map((l) => libelle(l.vers)))).join(', ')
+  return i18n.t('errors:chain.deleteRefused', {
+    document: libelle(detail.type),
+    count: liens.length,
+    vers,
+  })
+}
+
 export function errorMessage(err: unknown): string {
+  const refus = chainDeleteRefusalMessage(err)
+  if (refus) return refus
   if (err instanceof Error) return err.message
   if (err && typeof err === 'object' && 'message' in err) {
     const m = (err as { message?: unknown }).message

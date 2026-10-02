@@ -1392,9 +1392,12 @@ export async function getStockReservations() {
   return data || []
 }
 
+// Partie 5 (454) : une réservation se LIBÈRE, elle ne se supprime pas. La
+// fonction rend la quantité réservée au dépôt, passe la réservation à
+// `released` et ferme le lien commande → réservation. L'ancien DELETE ne
+// rendait pas `reserved_quantity` et laissait un lien actif vers rien.
 export async function releaseStockReservation(id: string) {
-  const tid = await getTenantId()
-  const { error } = await supabase.from('stock_reservations').delete().eq('id', id).eq('tenant_id', tid || '')
+  const { error } = await supabase.rpc('release_stock_reservation', { p_reservation_id: id })
   if (error) throw error
 }
 

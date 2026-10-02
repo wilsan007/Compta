@@ -42,11 +42,42 @@ DELETE FROM _audit_results WHERE file = '252';
 -- ─────────────────────────────────────────────────────────────
 
 -- Un lien posé par le maillon type de ces scénarios (commande → livraison).
+-- Partie 5 (450/451) : link_documents exige désormais que l'amont, l'aval et la
+-- ligne amont EXISTENT. Les scénarios tirent leurs identifiants au hasard : cette
+-- aide crée le vrai document (commande en brouillon, bon de livraison en attente,
+-- ligne de commande) qui porte cet identifiant, s'il n'existe pas encore.
+-- Société NULL ou identifiant NULL : rien n'est créé (le scénario teste justement
+-- le refus de link_documents sur ces valeurs).
+DROP FUNCTION IF EXISTS _p5_doc(uuid, text, uuid, uuid);
+CREATE OR REPLACE FUNCTION _p5_doc(p_t uuid, p_type text, p_id uuid, p_ligne uuid DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql AS $p5$
+BEGIN
+  IF p_t IS NULL OR p_id IS NULL THEN
+    RETURN;
+  END IF;
+  IF p_type = 'sales_orders' THEN
+    INSERT INTO sales_orders (id, tenant_id, number, status)
+    VALUES (p_id, p_t, 'P5-' || p_id::text, 'draft')
+    ON CONFLICT (id) DO NOTHING;
+    IF p_ligne IS NOT NULL THEN
+      INSERT INTO sales_order_lines (id, tenant_id, sales_order_id, description, quantity, unit_price)
+      VALUES (p_ligne, p_t, p_id, 'Ligne P5', 1, 0)
+      ON CONFLICT (id) DO NOTHING;
+    END IF;
+  ELSIF p_type = 'delivery_notes' THEN
+    INSERT INTO delivery_notes (id, tenant_id, number, status)
+    VALUES (p_id, p_t, 'P5-' || p_id::text, 'pending')
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+END $p5$;
+
 CREATE OR REPLACE FUNCTION _lien252(p_t uuid, p_amont uuid, p_aval uuid, p_effet text,
   p_payload jsonb DEFAULT '{}'::jsonb, p_ligne uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql AS $$
 BEGIN
-  RETURN link_documents(p_t, 'commande', p_amont, 'livraison', p_aval, p_effet,
+  PERFORM _p5_doc(p_t, 'sales_orders', p_amont, p_ligne);
+  PERFORM _p5_doc(p_t, 'delivery_notes', p_aval);
+  RETURN link_documents(p_t, 'sales_orders', p_amont, 'delivery_notes', p_aval, p_effet,
                         'delivered_by', p_payload, p_ligne, NULL);
 END $$;
 
@@ -186,11 +217,11 @@ BEGIN
   PERFORM _lien252(t, a, b, 'integrite.test', '{}'::jsonb, v_ligne);
 
   PERFORM _rec('T04', 'chain_deja_fait connaît la ligne, chain_integrity_ok distingue l''aval réel du voisin',
-    chain_deja_fait(t, 'commande', a, 'integrite.test', v_ligne)
-    AND NOT chain_deja_fait(t, 'commande', a, 'integrite.test', NULL)
-    AND NOT chain_deja_fait(t, 'commande', b, 'integrite.test', v_ligne)
-    AND chain_integrity_ok(t, 'commande', a, 'livraison', b)
-    AND NOT chain_integrity_ok(t, 'commande', a, 'livraison', c),
+    chain_deja_fait(t, 'sales_orders', a, 'integrite.test', v_ligne)
+    AND NOT chain_deja_fait(t, 'sales_orders', a, 'integrite.test', NULL)
+    AND NOT chain_deja_fait(t, 'sales_orders', b, 'integrite.test', v_ligne)
+    AND chain_integrity_ok(t, 'sales_orders', a, 'delivery_notes', b)
+    AND NOT chain_integrity_ok(t, 'sales_orders', a, 'delivery_notes', c),
     format('ligne=oui, sans ligne=non, autre amont=non ; aval réel=oui, aval étranger=non (ligne %s)', v_ligne));
 END $$;
 
@@ -242,13 +273,13 @@ BEGIN
   tb := _mk_tenant('A252T06b', false);
 
   -- Contrat standard (tenant_id NULL) : lisible par toute société.
-  PERFORM _contrat252(NULL, 'commande', 'confirmee', 'contrat.standard', true);
+  PERFORM _contrat252(NULL, 'sales_orders', 'confirmee', 'contrat.standard', true);
   -- La société B éteint explicitement cet effet standard.
-  PERFORM _contrat252(tb, 'commande', 'confirmee', 'contrat.standard', false);
+  PERFORM _contrat252(tb, 'sales_orders', 'confirmee', 'contrat.standard', false);
 
-  v_std := chain_autorise(ta, 'commande', 'confirmee', 'contrat.standard');
-  v_tb  := chain_autorise(tb, 'commande', 'confirmee', 'contrat.standard');
-  v_off := chain_autorise(tb, 'commande', 'confirmee', 'jamais.declare');
+  v_std := chain_autorise(ta, 'sales_orders', 'confirmee', 'contrat.standard');
+  v_tb  := chain_autorise(tb, 'sales_orders', 'confirmee', 'contrat.standard');
+  v_off := chain_autorise(tb, 'sales_orders', 'confirmee', 'jamais.declare');
   v_inconnu := chain_autorise(ta, 'document.inconnu', 'peu.importe', 'contrat.standard');
 
   PERFORM _rec('T06', 'chain_autorise : standard lu par tous, la ligne de société l''emporte (même pour éteindre), rien de déclaré = faux',
@@ -267,7 +298,7 @@ BEGIN
   t := _mk_tenant('A252T07', false);
   a := gen_random_uuid();
 
-  v_continue := chain_avant(t, 'commande', 'confirmee', 'effet.non.declare', 'commande', a);
+  v_continue := chain_avant(t, 'sales_orders', 'confirmee', 'effet.non.declare', 'sales_orders', a);
   SELECT * INTO v_trace FROM _traces252(t, 'effet.non.declare') LIMIT 1;
 
   PERFORM _rec('T07', 'mode observe (défaut) : un effet non déclaré s''applique et se trace `tolere`',
@@ -292,7 +323,7 @@ BEGIN
   PERFORM _mode252(t, 'refuse');
 
   BEGIN
-    PERFORM chain_avant(t, 'commande', 'confirmee', 'effet.non.declare', 'commande', a, NULL,
+    PERFORM chain_avant(t, 'sales_orders', 'confirmee', 'effet.non.declare', 'sales_orders', a, NULL,
       'Commande C-2026-0007 du 24/09/2026 : l''écriture de vente est obligatoire (règle sale.ledger.entry) — module commercial.');
   EXCEPTION WHEN check_violation THEN
     v_leve := true; v_msg := SQLERRM;
@@ -319,7 +350,7 @@ BEGIN
   a := gen_random_uuid();
   PERFORM _mode252(t, 'avertit');
 
-  v_continue := chain_avant(t, 'commande', 'confirmee', 'effet.non.declare', 'commande', a);
+  v_continue := chain_avant(t, 'sales_orders', 'confirmee', 'effet.non.declare', 'sales_orders', a);
   SELECT * INTO v_trace FROM _traces252(t, 'effet.non.declare') LIMIT 1;
 
   PERFORM _rec('T09', 'mode avertit : l''effet non déclaré s''applique, la trace dit tolere et porte le mode',
@@ -336,18 +367,18 @@ DECLARE t uuid; a uuid; b uuid; v1 boolean; v2 boolean; v_trace record;
 BEGIN
   t := _mk_tenant('A252T10', false);
   a := gen_random_uuid(); b := gen_random_uuid();
-  PERFORM _contrat252(t, 'commande', 'confirmee', 'gabarit.test', true);
+  PERFORM _contrat252(t, 'sales_orders', 'confirmee', 'gabarit.test', true);
 
-  v1 := chain_avant(t, 'commande', 'confirmee', 'gabarit.test', 'commande', a);
+  v1 := chain_avant(t, 'sales_orders', 'confirmee', 'gabarit.test', 'sales_orders', a);
   PERFORM _lien252(t, a, b, 'gabarit.test');                 -- l'effet est produit
-  PERFORM chain_apres(t, 'gabarit.test', 'commande', a, clock_timestamp(), 1, 'applique', NULL);
+  PERFORM chain_apres(t, 'gabarit.test', 'sales_orders', a, clock_timestamp(), 1, 'applique', NULL);
 
-  v2 := chain_avant(t, 'commande', 'confirmee', 'gabarit.test', 'commande', a);
+  v2 := chain_avant(t, 'sales_orders', 'confirmee', 'gabarit.test', 'sales_orders', a);
   SELECT * INTO v_trace FROM chain_traces ct
    WHERE ct.tenant_id = t AND ct.effet = 'gabarit.test' AND ct.resultat = 'ignore' ORDER BY ct.id LIMIT 1;
 
   PERFORM _rec('T10', 'le gabarit ne rejoue pas : premier passage vrai, second faux, trace `ignore`',
-    v1 AND NOT v2 AND v_trace.resultat = 'ignore' AND chain_deja_fait(t, 'commande', a, 'gabarit.test'),
+    v1 AND NOT v2 AND v_trace.resultat = 'ignore' AND chain_deja_fait(t, 'sales_orders', a, 'gabarit.test'),
     format('premier=%s, second=%s, trace ignore=%s', v1, v2, COALESCE(v_trace.resultat, 'absente')));
 END $$;
 
@@ -361,12 +392,12 @@ BEGIN
   t := _mk_tenant('A252T11', false);
   a := gen_random_uuid();
 
-  v_duree := chain_apres(t, 'mesure.test', 'commande', a, clock_timestamp(), 3, 'applique', 'trois lignes');
+  v_duree := chain_apres(t, 'mesure.test', 'sales_orders', a, clock_timestamp(), 3, 'applique', 'trois lignes');
 
   SELECT ct.lignes_ecrites, ct.resultat INTO v_lignes, v_res
   FROM chain_traces ct WHERE ct.tenant_id = t AND ct.effet = 'mesure.test' ORDER BY ct.id LIMIT 1;
 
-  BEGIN PERFORM chain_apres(t, 'mesure.test', 'commande', a, NULL);
+  BEGIN PERFORM chain_apres(t, 'mesure.test', 'sales_orders', a, NULL);
   EXCEPTION WHEN check_violation THEN v_refus := true; END;
 
   PERFORM _rec('T11', 'chain_apres écrit la trace (durée, lignes, résultat) et refuse une trace sans instant de début',
@@ -383,13 +414,13 @@ BEGIN
   t := _mk_tenant('A252T12', false);
   a := gen_random_uuid();
 
-  BEGIN PERFORM chain_trace(NULL, 'x.test', 'commande', a, 0, 0, NULL, 'applique', NULL);
+  BEGIN PERFORM chain_trace(NULL, 'x.test', 'sales_orders', a, 0, 0, NULL, 'applique', NULL);
   EXCEPTION WHEN check_violation THEN v_ok := v_ok + 1; v_dits := v_dits || 'société : ' || left(SQLERRM, 40) || ' ; '; END;
 
-  BEGIN PERFORM chain_trace(t, 'x.test', 'commande', a, -1, 0, NULL, 'applique', NULL);
+  BEGIN PERFORM chain_trace(t, 'x.test', 'sales_orders', a, -1, 0, NULL, 'applique', NULL);
   EXCEPTION WHEN check_violation THEN v_ok := v_ok + 1; v_dits := v_dits || 'durée : ' || left(SQLERRM, 50) || ' ; '; END;
 
-  BEGIN PERFORM chain_trace(t, 'x.test', 'commande', a, 0, 0, NULL, 'hors.vocabulaire', NULL);
+  BEGIN PERFORM chain_trace(t, 'x.test', 'sales_orders', a, 0, 0, NULL, 'hors.vocabulaire', NULL);
   EXCEPTION WHEN check_violation THEN v_ok := v_ok + 1; v_dits := v_dits || 'résultat : contrainte ; '; END;
 
   PERFORM _rec('T12', 'chain_trace refuse une société absente, une durée négative et un résultat hors vocabulaire',
@@ -407,11 +438,11 @@ BEGIN
   t := _mk_tenant('A252T13', false);
   a := gen_random_uuid(); b := gen_random_uuid();
 
-  BEGIN PERFORM chain_regenerate(t, 'jamais.applique', 'commande', a, 'test');
+  BEGIN PERFORM chain_regenerate(t, 'jamais.applique', 'sales_orders', a, 'test');
   EXCEPTION WHEN check_violation THEN v_refus := true; v_msg := SQLERRM; END;
 
   PERFORM _lien252(t, a, b, 'regen.test', '{"prix": 10}'::jsonb);
-  v_log := chain_regenerate(t, 'regen.test', 'commande', a, 'prix de revient corrigé', '{"prix": 12}'::jsonb);
+  v_log := chain_regenerate(t, 'regen.test', 'sales_orders', a, 'prix de revient corrigé', '{"prix": 12}'::jsonb);
 
   SELECT crl.avant, crl.apres, crl.cause INTO v_avant, v_apres, v_cause
   FROM chain_regeneration_log crl WHERE crl.id = v_log;
@@ -439,7 +470,7 @@ BEGIN
   t := _mk_tenant('A252T14', false);
   a := gen_random_uuid();
 
-  v_id := emit_domain_event(t, 'commande.confirmee', 'commande', a, '{"total": 1200}'::jsonb, NULL);
+  v_id := emit_domain_event(t, 'commande.confirmee', 'sales_orders', a, '{"total": 1200}'::jsonb, NULL);
 
   SELECT c.relname INTO v_part
   FROM domain_events de JOIN pg_class c ON c.oid = de.tableoid
@@ -535,7 +566,7 @@ BEGIN
 
   -- Une ligne dans la partition par défaut, pour ce mois resté sans partition.
   INSERT INTO domain_events (tenant_id, event_name, aggregate_type, aggregate_id, created_at)
-  VALUES (t, 'partition.test', 'commande', a, v_mois + interval '1 day');
+  VALUES (t, 'partition.test', 'sales_orders', a, v_mois + interval '1 day');
 
   BEGIN
     PERFORM chain_ensure_partitions(v_ecart::int);
@@ -589,7 +620,7 @@ BEGIN
   v_sans := v_relations - v_avec;
 
   -- 2. Une trace `sans_effet` s'écrit et se relit, avec zéro ligne écrite
-  PERFORM chain_apres(t, 'test.sans_effet', 'commande', gen_random_uuid(),
+  PERFORM chain_apres(t, 'test.sans_effet', 'sales_orders', gen_random_uuid(),
                       clock_timestamp(), 0, 'sans_effet',
                       'Maillon exécuté, aucun effet produit (scénario du socle).', NULL, NULL);
 
@@ -605,7 +636,7 @@ BEGIN
 
   -- 3. Une valeur INCONNUE reste refusée : la contrainte n'a pas été ouverte
   BEGIN
-    PERFORM chain_apres(t, 'test.inconnu', 'commande', gen_random_uuid(),
+    PERFORM chain_apres(t, 'test.inconnu', 'sales_orders', gen_random_uuid(),
                         clock_timestamp(), 0, 'effet_impossible', NULL, NULL, NULL);
   EXCEPTION WHEN check_violation THEN
     v_refuse_ignore := true;
