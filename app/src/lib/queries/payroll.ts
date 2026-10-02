@@ -2,6 +2,36 @@ import { supabase } from '@/lib/supabase';
 import { blankEmailToNull, getTenantId, ti, tud } from './core';
 import type { Employee, PayRun, Timesheet, PaySlip, PayrollAccountingEntry, LeaveRequest, Contract, LegalDeclaration, PayrollComponent, PayrollTemplate, SalaryAdvance, PayRecall, DsnDeclaration, DpaeRecord, WorkHardship, CareerHistory, CpfAccount, PayrollArchive, LegalWatch, EmployeeDocument, ExpenseReport, Interview, PaymentTerm, PaymentPromise, PaymentTemplateCompta } from '@/types';
 
+/**
+ * AUD-JOINTURE : une ligne augmentée de sa ressource jointe.
+ *
+ * `select('*, employees(first_name, last_name)')` fait PostgREST renvoyer la
+ * ressource imbriquée sous la clé `employees` — ou `null` si elle est absente,
+ * ce que l'appelant doit donc tester. `K` nomme **exactement** les colonnes
+ * demandées : si le `select` change, `tsc` refuse désormais la ligne, ce qui est
+ * le but.
+ *
+ * ⚠️ `Employee` déclare `name`, `position`, `department`, mais **PAS**
+ * `first_name` / `last_name` — qui existent pourtant **en base**
+ * (`information_schema` : `first_name`, `last_name`, `name`) et que **14 écrans
+ * de paie lisent** sur la ressource jointe. C'est une **dette de type** : le type
+ * du dépôt est en retard sur le schéma sur ce point, et la corriger ici
+ * (`interface EmployeJoint`) est plus sûr que d'élargir `Employee` en silence,
+ * parce qu'elle reste **côté requête** : une ressource qui n'est pas un employé
+ * complet n'a pas à être un `Employee`.
+ */
+interface EmployeJoint {
+  first_name?: string | null
+  last_name?: string | null
+  name?: string | null
+  position?: string | null
+  department?: string | null
+}
+/** Ligne augmentée de son employé joint — ou `null` s'il est absent. */
+type AvecEmploye<T> = T & { employees: EmployeJoint | null }
+/** Même chose pour une ressource jointe qui n'est pas `employees`. */
+type Avec<T, C extends string, E> = T & { [K in C]: E | null }
+
 // ============ Employees ============
 export async function getEmployees() {
   const tid = await getTenantId()
@@ -72,7 +102,7 @@ export async function getTimesheets() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<Timesheet>[]
 }
 
 export async function createTimesheet(ts: Omit<Timesheet, 'id' | 'created_at'>) {
@@ -104,7 +134,7 @@ export async function getPaySlips(payRunId?: string) {
   if (payRunId) q = q.eq('pay_run_id', payRunId)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<PaySlip>[]
 }
 
 export async function createPaySlip(ps: Omit<PaySlip, 'id' | 'created_at'>) {
@@ -170,7 +200,7 @@ export async function getPayrollAccountingEntries() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as Avec<PayrollAccountingEntry, 'pay_runs', Pick<PayRun, 'number'>>[]
 }
 
 export async function createPayrollAccountingEntry(pae: Omit<PayrollAccountingEntry, 'id' | 'created_at'>) {
@@ -227,7 +257,7 @@ export async function getLeaveRequests(status?: string) {
   if (status) q = q.eq('status', status)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<LeaveRequest>[]
 }
 
 export async function createLeaveRequest(lr: Omit<LeaveRequest, 'id' | 'created_at' | 'approved_by' | 'approved_at'>) {
@@ -258,7 +288,7 @@ export async function getContracts() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<Contract>[]
 }
 
 export async function createContract(c: Omit<Contract, 'id' | 'created_at'>) {
@@ -394,7 +424,7 @@ export async function getSalaryAdvances() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<SalaryAdvance>[]
 }
 export async function createSalaryAdvance(s: Omit<SalaryAdvance, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -417,7 +447,7 @@ export async function getPayRecalls() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<PayRecall>[]
 }
 export async function createPayRecall(r: Omit<PayRecall, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -457,7 +487,7 @@ export async function getDpaeRecords() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<DpaeRecord>[]
 }
 export async function createDpaeRecord(d: Omit<DpaeRecord, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -475,7 +505,7 @@ export async function getWorkHardship(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<WorkHardship>[]
 }
 export async function createWorkHardship(w: Omit<WorkHardship, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -504,7 +534,7 @@ export async function getCareerHistory(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<CareerHistory>[]
 }
 export async function createCareerHistory(c: Omit<CareerHistory, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -533,7 +563,7 @@ export async function getCpfAccounts(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<CpfAccount>[]
 }
 export async function createCpfAccount(c: Omit<CpfAccount, 'id' | 'created_at' | 'updated_at'>) {
   const tid = await getTenantId()
@@ -561,7 +591,7 @@ export async function getPayrollArchives() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<PayrollArchive>[]
 }
 export async function createPayrollArchive(a: Omit<PayrollArchive, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -614,7 +644,7 @@ export async function getExpenseReports() {
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<ExpenseReport>[]
 }
 export async function createExpenseReport(e: Omit<ExpenseReport, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -638,7 +668,7 @@ export async function getInterviews(employeeId?: string) {
   if (employeeId) q = q.eq('employee_id', employeeId)
   const { data, error } = await q
   if (error) throw error
-  return data as Record<string, unknown>[]
+  return data as AvecEmploye<Interview>[]
 }
 export async function createInterview(i: Omit<Interview, 'id' | 'created_at'>) {
   const tid = await getTenantId()

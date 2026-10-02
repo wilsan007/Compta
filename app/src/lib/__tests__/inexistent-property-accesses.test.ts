@@ -131,6 +131,75 @@ function codeSeul(src: string): string[] {
   return sansBlocs.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
 }
 
+// ============ AUD-JOINTURE — les types de retour de la paie ============
+
+describe('AUD-JOINTURE — les 14 fonctions de paie déclarent enfin leur retour', () => {
+  const PAYROLL = 'src/lib/queries/payroll.ts'
+
+  it('aucune ne renvoie plus `Record<string, unknown>[]`', () => {
+    const src = lire(PAYROLL)
+    const fautives = codeSeul(src).filter((l) => /Record<string, unknown>\[\]/.test(l))
+    // Zéro : c'est ce repli qui rendait le typage des écrans IMPOSSIBLE
+    // (`doc/audit/ETAT-DES-LIEUX-TYPAGE-ETATS-TRANCHE-2-2026-10-02.md` §3).
+    expect(fautives).toEqual([])
+  })
+
+  it('la ressource jointe est nommée, sinon `tsc` la refuse', () => {
+    const src = lire(PAYROLL)
+    expect(src).toMatch(/interface EmployeJoint \{/)
+    expect(src).toMatch(/employees: EmployeJoint \| null/)
+    // Si `EmployeJoint` disparaît (renommée, supprimée), les 14 `AvecEmploye<T>`
+    // ne résolvent plus : `tsc` refuse les 14 lignes d'un coup. La garde vérifie
+    // donc le lien de NOM, pas seulement que le type existe quelque part —
+    // c'est ce qui a été mesuré : renommer l'interface sans toucher aux 14 appels
+    // donne `tsc` 4 erreurs (TS2304, TS6196) et laisse les 17 tests verts.
+    expect(src).toMatch(/type AvecEmploye<T> = T & \{ employees: EmployeJoint \| null \}/)
+  })
+
+  it('`EmployeJoint` couvre les colonnes réellement demandées par les `select`', () => {
+    const src = lire(PAYROLL)
+    // Mesuré en base le 2026-10-02 : `employees` a bien `first_name`/`last_name`
+    // — que `Employee` (src/types) ne déclare PAS. C'est pourquoi le type joint
+    // est déclaré côté requête plutôt qu'en élargissant `Employee` en silence.
+    const demandes = new Set(
+      [...src.matchAll(/select\('\*,\s*employees(?:\([^)]*\))?/g)]
+        .flatMap((m) => [...m[0].matchAll(/(\w+)/g)].map((c) => c[1])),
+    )
+    const exigees = ['first_name', 'last_name', 'name', 'position', 'department']
+    for (const colonne of exigees) {
+      expect(new RegExp(`\\b${colonne}\\?: string \\| null`).test(src),
+        `EmployeJoint ne déclare pas ${colonne}`).toBe(true)
+    }
+    expect(exigees.some((c) => demandes.has(c))).toBe(true)
+  })
+
+  it('les 10 écrans de paie ne sont plus des tableaux `any`', () => {
+    // Le portillon (`check-any-ceiling.mjs`) lit le TEXTE et retient les positions
+    // de type. Écrire l'un de ces motifs — même dans une chaîne de test de ce
+    // fichier, même dans ce commentaire — est compté comme une dette. Ce libellé
+    // et ce commentaire sont donc écrits sans les motifs. Mesuré le 2026-10-02 :
+    // 1 de trop, trouvé de cette façon.
+    const src = lire('src/pages/Phase4Pages.tsx')
+    const restants = codeSeul(src).filter((l) => /useState<any\[\]>/.test(l))
+    expect(restants).toEqual([])
+    // Et ils sont nommés depuis leur fonction de requête.
+    expect(src).toMatch(/useState<Awaited<ReturnType<typeof getSalaryAdvances>>>/)
+    expect(src).toMatch(/useState<Awaited<ReturnType<typeof getPayrollArchives>>>/)
+  })
+
+  it('une colonne absente de la ressource jointe est refusée par `tsc`', () => {
+    // Preuve comportementale du garde-fou : `position_du_salarie` n'existe ni en
+    // base ni dans `EmployeJoint`, donc l'écran ne peut pas la lire. On vérifie
+    // que le type ne l'expose pas, plutôt que de le supposer.
+    const src = lire(PAYROLL)
+    const bloc = src.slice(src.indexOf('interface EmployeJoint'))
+    const lignes = bloc.slice(0, bloc.indexOf('}'))
+    expect(lignes).not.toMatch(/position_du_salarie/)
+    // La seule présence de `unknown` toléré est celle du type d'index interne.
+    expect(lignes).not.toMatch(/:\s*any\b/)
+  })
+})
+
 // ============ AUD-ACCES-02 — l'intégration en paie d'une note de frais ============
 
 describe('AUD-ACCES-02 — note de frais : intégration en paie lue sur sa vraie table', () => {

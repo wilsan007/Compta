@@ -111,13 +111,83 @@ le type : soit la fonction renvoie `Record<string, unknown>[]`, soit elle renvoi
 un type d'en-tête qui **ne déclare pas la ressource jointe** — et l'écran lit
 alors `x.employees.first_name` sous le `any` que le repli laisse passer.
 
+## 6. La voie C, appliquée : les 14 types de retour de la paie sont posés
+
+**Ce qui est livré (2026-10-02).** Les 14 fonctions de `queries/payroll.ts` déclarent leur type
+de retour, et la ressource jointe avec :
+
+```ts
+interface EmployeJoint { first_name?: string | null; … }
+type AvecEmploye<T> = T & { employees: EmployeJoint | null }
+type Avec<T, C extends string, E> = T & { [K in C]: E | null }
+return data as AvecEmploye<SalaryAdvance>[]
+```
+
+Puis les **10 états** de `Phase4Pages.tsx` sont nommés depuis leur fonction de
+requête (`useState<Awaited<ReturnType<typeof getSalaryAdvances>>>`) — c'est
+exactement le lot que le §2 disait non mesurable. Mesuré : **`tsc` 0 erreur**,
+où il en comptait **32** avant. Le gain est de **10 `any` retirés de la
+production** (998 → 988) ; le portillon a donc abaissé son plafond tout seul.
+
+### Trois choses trouvées en route, et qu'il fallait dire
+
+1. **`Employee` ne déclare pas `first_name`/`last_name`, qui existent en base.**
+   Mesuré : `information_schema` renvoie les trois colonnes (`first_name`,
+   `last_name`, `name`), et **14 écrans de paie** lisent les deux premières sur
+   la ressource jointe. Contraindre `K extends keyof Employee` rendait donc le
+   type correct **incapable de décrire la donnée réelle** — `tsc` l'a refusé
+   (18 erreurs `TS2344`). C'est pourquoi le type joint est déclaré **côté
+   requête** : une ressource qui n'est pas un employé complet n'a pas à être un
+   `Employee`.
+2. **`Employees: EmployeJoint | null` — le `null` n'est pas décoratif.**
+   PostgREST rend `null` quand la relation est vide ; c'est exactement ce que les
+   écrans testent (`a.employees ? … : '-'`). Une `interface` complète aurait
+   supprimé ce test et laissé afficher `undefined`.
+3. **Le portillon lit le TEXTE, pas les types.** Un libellé de test contenant le
+   motif `any[]` a été compté comme **1 dette** et a fait rouge la porte. Le
+   libellé est réécrit sans le motif — et le garde en garde, parce que c'est
+   exactement le genre de piège qui se reproduira.
+
+### Rouge mesuré, les trois nouveaux défauts
+
+| Défaut rejoué | Garde | `tsc` |
+|---|---|---|
+| repli `Record<string, unknown>[]` sur **une** fonction | 1 failed / 16 passed | 6 erreurs |
+| ressource jointe renommée (les 14 appels orphelins) | 1 failed / 16 passed | 4 erreurs |
+| un état d'écran retombe en tableau non typé | 1 failed / 16 passed | **0 erreur** |
+| **restauré** | **17 passed** | **0 erreur** |
+
+⚠️ La troisième ligne est la plus instructive : **remettre un seul des dix états
+en `any[]` ne casse pas `tsc` du tout** — le compilateur n'a rien à dire sur un
+tableau non typé. Seule la garde le voit. C'est la preuve que les deux signaux
+sont complémentaires, et qu'un garde de régression n'est pas redondant du
+compilateur.
+
+### Limites dites
+
+1. **Le fond n'est pas traité.** `Joined<>` reste inutilisable (§4) et les **139**
+   sites de jointure restent non typés : on a traité **14** d'entre eux, ceux
+   d'un module. La voie **A** reste ouverte et n'est pas tranchée.
+2. **La décision de §5 n'est pas prise.** Cet arbitrage est la **voie C** —
+   celle à faible risque — parce qu'elle débloque la mesure ; elle ne préjuge pas
+   de A ou B.
+3. **Les 10 états sont nommés, pas revus.** `tsc` ne dit plus rien sur leurs
+   accès, ce qui est le but, mais la **logique** de ces écrans (filtres,
+   totaux, tris) reste hors de ce que cette passe mesure.
+4. `Employee` reste faux sur `first_name`/`last_name`. Corriger l'interface
+   serait un travail **séparé**, à faire contre le type généré — pas ici, où il
+   aurait étouffé les 14 fonctions sous un second sujet.
+
 ## 5. Ce qu'il faut décider
+
+*(Arbitrage rendu en §6 : la voie **C** a été appliquée pour débloquer la mesure.
+Les voies **A** et **B** restent ouvertes, et **A** reste le correctif de fond.)*
 
 | Voie | Portée | Risque CI |
 |---|---|---|
 | **A** — le générateur décrit les relations (FK → `Relationships`), et `Joined` redevient utilisable | 363 tables, puis les 139 sites | **élevé** : la CI régénère les types sur base neuve et refuse tout écart ; générateur et fichier généré changent ensemble |
 | **B** — nommer à la main les colonnes jointes, site par site | 139 sites, indépendamment | faible : `src/lib` seul |
-| **C** — ne déclarer que les **14** fonctions de paie, puis typer les états de `Phase4Pages` | 14 lignes + ~10 états | faible |
+| **C** — ne déclarer que les **14** fonctions de paie, puis typer les états de `Phase4Pages` | 14 lignes + ~10 états | faible | **FAITE le 2026-10-02** (§6) |
 
 ⚠️ **Limites dites.**
 
