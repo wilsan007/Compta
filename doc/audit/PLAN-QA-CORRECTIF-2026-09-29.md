@@ -873,11 +873,41 @@ et les modèles de saisie ne lisent **que** cette table.
   approximatif — le CUMP de 50 @ 10 + 100 @ 14 vaut 12,666… (1 900/150) ; les couches et la
   fonction disent 1 900, et c'est l'égalité avec les couches que le test vérifie.
 
-### D3 — stk-010 🟠 — OF terminé affiché à 0,00 € et « Aucune consommation »
+### D3 — stk-010 🟠 — OF terminé affiché à 0,00 € et « Aucune consommation » — **✅ CORRIGÉ** (écran + requête)
 - **Correctif écran** : lire `manufacturing_orders.cost_material/cost_total/unit_cost/cost_variance`
   et les mouvements `reference_type='manufacturing_order'`, au lieu de recalculer depuis
   `bom_lines.unit_cost`. Afficher l'écart de coût.
 - **Test** : Vitest de la page OF (données simulées), 440 / 44 / écart.
+- **Cause établie (deux, mesurées)** — l'hypothèse « recalcul depuis `bom_lines` » du
+  plan était **fausse**, je l'ai vérifiée avant de corriger :
+  1. **le coût existait, l'écran ne le lisait pas**. La clôture (migration 302,
+     `update_manufacturing_order_costs`) écrit `cost_material`, `cost_labor`,
+     `cost_overhead`, `cost_total`, `unit_cost` et `cost_variance` sur l'OF, et
+     `getManufacturingOrder` fait `select('*')` : tout était déjà dans la charge
+     utile. L'écran n'affichait un coût qu'après un clic sur « Calculer le coût »,
+     qui appelle `calculate_production_cost` — **une autre définition** (10 % de
+     frais généraux en dur, entrées de projet), capable de contredire la clôture.
+     L'écran lit désormais le coût de clôture ; le recalcul manuel reste pour un OF
+     en cours, et n'est affiché que s'il n'y a pas de coût de clôture. L'écart de
+     coût (standard moins réel) est affiché, ce qu'aucune des deux définitions ne
+     montrait ;
+  2. **les consommations sont ailleurs**. La clôture sort les composants dans
+     `stock_movements` avec `reference_type = 'production'` et `reference_id` = l'OF
+     (migration 302) — **jamais** dans `of_consumptions`, que seul le formulaire
+     manuel écrit. L'onglet ne lisait que cette table : vide par construction sur
+     tout OF terminé. `getOFConsumptions` renvoie les deux sources, chacune marquée
+     par son `origin`.
+- **Preuves** : `ManufacturingOrderDetailPage.test.tsx` **3/3** (rouges avant : aucun
+  coût, aucun écart — la page ne les lisait pas) ; `production-queries.test.ts`
+  **86/86**, dont le nouveau cas **rouge vérifié** en remettant `stock.ts` à son
+  état d'avant (1 échec). i18n et oxlint verts.
+- ⚠️ **Deux choses à savoir** : (a) j'ai **corrigé ma propre hypothèse** en cours de
+  route — je croyais `productionCost` jamais alimenté, or `setProductionCost` est
+  appelé ; c'est la **lecture** qui manquait, pas l'écriture ; (b) l'embarquement
+  PostgREST `products(name, unit)` sur `stock_movements` n'a pas pu être re-vérifié
+  en direct, le conteneur `pgrst` étant arrêté à ce moment-là ; la clé étrangère est
+  pourtant de **la forme exacte** de celle prouvée fonctionnelle pour les relances
+  (`(tenant_id, product_id) → products(tenant_id, id)`).
 
 ### D4 — stk-013 🟠 — statistiques de caisse vides (période décalée d'un jour, borne de fin = début) — **✅ CORRIGÉ** (`bf49b03`)
 - **Cause établie** : deux fautes dans la même chaîne — la borne basse venait de
