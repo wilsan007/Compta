@@ -119,11 +119,11 @@ Les cinq défauts D1 → D5 sont mesurés, pas déduits :
 
 ## 6. Ce que cette partie ne fait pas, et ce qui reste à mesurer
 
-* **Le test Vitest `db-integration.test.ts` échoue** (1 567 verts, 1 rouge).
-  Il demande une connexion **SSL** à la base locale, que le conteneur de test
-  n'offre pas. **Vérifié préexistant** : le même fichier échoue à l'identique sur
-  l'arbre propre, sans aucun de mes changements (`git stash` puis rejeu). Ce n'est
-  pas un rouge de la partie 5.
+* ~~**Le test Vitest `db-integration.test.ts` échoue** (1 567 verts, 1 rouge).~~
+  **CORRIGÉ le 02/10 — voir § 8.3.** Ce fichier était vert en CI **sans jamais
+  rien vérifier** (sans `DATABASE_URL`, ses 13 scénarios sont *sautés*) ; dès
+  qu'on lui donne une base, il échouait sur le SSL, et ce défaut en masquait
+  **deux autres**, également corrigés. Il est aujourd'hui **13/13 vert**.
 * **Le registre `ci/expected_failures.sql` n'a pas eu à être touché.** La suite
   450 passe **14/14** après la pose des six migrations : les états rouges
   intermédiaires que le plan prévoyait aux commits 2 et 3 (T06 → T12 et T14
@@ -196,5 +196,91 @@ puisqu'aucun n'a été nécessaire.
 | T10 | un lecteur (viewer) ne libère pas une réservation (`42501`) | ❌ | ✅ |
 | T11 | structure : **32** gardes posées, fonctions internes non exposées | ❌ | ✅ |
 | T12 | INV-19 mesurable : orphelin → `rompu`, fermeture (1 puis 0), puis `tenu` | ❌ | ✅ |
+| T14 | **D5** : journal et compte comptable d'une banque (aval) → `refusé (chaîne)` | ❌ | ✅ |
+
+## 8. Vérification finale (reprise du 02/10, après livraison)
+
+### 8.1 Les 32 contrôles de présence — tous verts
+
+Un script a vérifié **un par un** les 9 livrables du § 1 (A → I) et les critères
+du § 7 : les 6 migrations et la suite sont présentes, les 4 adaptations sont
+posées, les 6 changements d'écran sont en place (`chain_document_types` dans la
+porte, `chainDeleteRefusalMessage` appelé **en premier** par `errorMessage`,
+`release_stock_reservation` au lieu du `DELETE`, les 3 langues avec **27** types
+chacune, le test du refus, la garde W10 précisée), la plage est inscrite dans les
+deux registres, la suite est câblée dans la CI, les deux sorties sont archivées,
+les 4 en-têtes sont à jour, la tâche 4.8 porte `chain_fermer_orphelins`, et
+**aucun fichier d'une autre session n'entre dans les commits de la partie 5**.
+
+**32 vérifications vertes, 0 en échec.**
+
+### 8.2 Rejeu intégral sur base neuve, fichiers d'autres sessions isolés
+
+Base neuve reconstruite, puis l'intégralité du job `db-integration` rejouée :
+
+```
+📊 RÉSULTAT FINAL: 279 succès, 0 erreurs sur 279 migrations
+   types au registre (27)     : 27
+   gardes posées (32)         : 32
+   FK type validées (2)       : 2
+   INV-19 mesurable           : t
+   orphelins actifs (0)       : 0
+[450] 14 scénario(s) : 14 vert(s)
+   les 115 suites de la CI : 115 vertes, 0 en échec
+```
+
+### 8.3 Deux défauts que l'erreur SSL cachait — corrigés
+
+`db-integration.test.ts` était **vert en CI sans jamais rien vérifier** : sans
+`DATABASE_URL`, `it_db` vaut `it.skip` et les 13 scénarios sont *sautés*. Le
+§ 5.11 l'avait donc signalé à tort comme un rouge de la partie 5.
+
+Dès qu'on lui donne une base — ce que le fichier prétend faire — il échouait :
+il imposait `ssl`, que ni un Postgres local ni le service `postgres:16` de la CI
+ne gèrent. `connect()` levait **dans `beforeAll`** : les 13 scénarios étaient
+rapportés « skippés » alors que le *fichier* échouait. Corrigé (SSL, puis repli
+sans SSL ; erreur claire si les deux échouent).
+
+Ce correctif a débusqué **deux défauts réels** que l'erreur masquait :
+
+1. « aucune policy `USING(true)` restante » exigeait zéro. Mesuré : les **6**
+   politiques concernées portent sur des tables **sans `tenant_id`** (l'annuaire
+   `banks`, `chart_account_templates`, `webhook_event_catalog`,
+   `sql_migrations_tracker`, la vue `v_tenant_id`, et le registre
+   `chain_document_types` de la 450). L'assertion confondait un **référentiel
+   global**, normal à laisser lire, avec une **table de société** lue par tous,
+   qui est une fuite. Elle vérifie désormais la propriété réelle — aucune
+   politique en blanc sur une table portant `tenant_id`.
+2. « trigger `check_journal_entry_balance` existe » cherchait un nom exact qui
+   n'existe plus. Le contrôle d'équilibre est **là**, décliné en quatre
+   déclencheurs (`_ins`/`_upd`/`_del` sur `journal_lines`, `_on_post` sur
+   `journal_entries`). Le test affirmait un contrôle **absent** alors qu'il est
+   présent : un faux rouge qui masquait le contrôle qu'il devait garder.
+
+Les deux assertions changent de **portée**, pas de nature : chacune est datée et
+son verdict précédent est conservé en commentaire.
+
+**Vitest avec `DATABASE_URL` : 59 fichiers, 1580 verts, 0 échec** (les 13
+scénarios ne sont plus comptés « skipped »).
+
+### 8.4 La suite 450 a fait son travail
+
+Rejouée avec les fichiers **non suivis** d'une session voisine présents, la
+suite 450 affiche **13/14** — et l'unique rouge est **T01** :
+
+> `types de maillon non inscrits = employee_absence_days, planning_slots`
+
+C'est exactement la règle du § 5.2 : *« si vous ajoutez un jour un maillon qui
+relie un nouveau type, inscrivez-le dans la même migration que le maillon […] la
+suite 450 (T01 et T11) échoue sinon, et c'est voulu. »* La session voisine a bien
+reçu l'avertissement que la partie 5 avait prévu de lui donner. **La partie 5
+n'est pas en cause** : ces fichiers ne sont pas dans sa branche, et son état
+commité est 14/14 (ci-dessus).
+
+### 8.5 La base de mesure n'a pas de risque de fusion
+
+Vérifié : `partie-5-integrite-chainages` fusionne **sans conflit** dans
+`commercial-hr-paie` **et** dans `main`. L'écart au § 2.3 (parti de
+`partie-1-stabiliser`) ne coûte donc rien à la livraison.
 | T13 | supprimer une société entière passe (cascade) | ✅ | ✅ |
 | T14 | **D5** : journal et compte comptable d'une banque (aval) → `refusé (chaîne)` | ❌ | ✅ |
