@@ -89,9 +89,9 @@
 | 1.3 | Garde anti-faux-vert dans `check-test-suites.mjs` | ✅ | `317c0a6` | — |
 | 1.4 | CI sur `qa/**` et `partie-*` | ✅ | `b5a02dc` | — |
 | 1.5 | Réparer la branche QA avant fusion | 🔶 | `4065d10` sur `qa/recette-2026-09-29`, pas encore sur la ligne principale | — |
-| 1.6 | Fusionner la recette (QA `310→324`, chaînages `400→413`) | ⬜ | — | ALR-03 |
+| 1.6 | Fusionner la recette (QA `310→324`, chaînages `400→413`) | 🔶 | **en cours** dans le worktree `p1-fusion` (branche `fusion-1.6`) : 4 conflits restants à 22:35 le 02/10, fichiers modifiés à 22:29 — une session y travaille | ALR-03 |
 | 1.7 | Correctif TVA 198 sous `325` | ⬜ | `get_vat_codes` absent (mesure §0) | — |
-| 1.8 | Vrai dialogue de confirmation | ⬜ | `confirmSync` dans 97 fichiers (mesure §0) | AUD-I01, UX-03 |
+| 1.8 | Vrai dialogue de confirmation | ⬜ **bloquée** | attend la fin de 1.6 : la fusion touche les mêmes écrans (`SuppliersPage`, `QuotesPage`, `CustomersPage`…) ; `confirmSync` dans 97 fichiers (mesure §0) | AUD-I01, UX-03 |
 | 1.9 | Ménage des worktrees et des documents | ⬜ | — | ALR-02 |
 | 1.10 | Champs factices du plan comptable | ✅ | `7a99dae` sur `partie-1-stabiliser` : les **six** contrôles retirés (3 sans colonne, 3 dont la colonne n'est lue par rien) ; test rouge avant | AUD-I02 |
 | 1.11 | D-5 côté code : 2 fonctions sans garde | ✅ | `0002ce6` sur `partie-1-stabiliser` : 409 sans consentement, 400 sans société (plus devinée), écrans joignent `x-tenant-id` ; 6 tests Edge + 2 Vitest rouges avant | AUD-H04, D-5 |
@@ -421,6 +421,7 @@ du chantier 9,5 correspondant.***
 
 | Date | Qui | Ce qui a changé |
 |---|---|---|
+| 02/10/2026 22:35 | partie 1 | 1.6 en cours dans `p1-fusion` (4 conflits) ⇒ 1.8 bloquée ; `340` pris par essai puis rendu ; `partie-1-stabiliser` et `partie-5-integrite-chainages` poussées |
 | 02/10/2026 soir | partie 1 | 1.10 et 1.11 livrées sur `partie-1-stabiliser` (la mesure §0 lit la copie principale, qui ne les porte pas encore) |
 | 02/10/2026 soir | numérotation | ALR-01 fermée (`430`→`432`), ALR-04 et ALR-05 ouvertes, partie 5 livrée, SOC-06 ✅ |
 | 02/10/2026 | création | recoupement de tous les plans ; ALR-01 (collision `415`) trouvée par la mesure ; ORPH-01 → 04 ouverts ; première passe du 9,5 |
