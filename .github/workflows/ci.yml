@@ -87,15 +87,18 @@ jobs:
       - name: 'Dette : plafond des `console.error`'
         run: node scripts/check-console-error-ceiling.mjs
 
-      # L2 / G5 — le câblage des suites. Deux moitiés de la règle du dépôt (« un
-      # défaut = un test rouge avant, le câblage CI dans le même commit ») étaient
-      # gardées — le registre des échecs attendus (AUD-X01) et le refus d'un
-      # fichier sans verdict (_audit_assert) — la troisième ne l'était pas : une
-      # suite peut exister, passer et n'être jouée par PERSONNE. Mesuré le
-      # 30/09/2026 : 89 suites, 89 branchées. Ce contrôle tient l'égalité, et il a
-      # immédiatement trouvé la suite 312 du cycle de vie du lien, pas encore
-      # branchée au moment où il a été écrit.
-      - name: 'L2 : toutes les suites du dépôt sont branchées (G5)'
+      # L2 / G5 — le câblage ET le verdict des suites. Trois moitiés de la règle
+      # du dépôt (« un défaut = un test rouge avant, le câblage CI dans le même
+      # commit ») : le registre des échecs attendus (AUD-X01), le refus d'un
+      # fichier sans verdict, et le refus d'une suite que PERSONNE ne joue.
+      # Mesuré le 30/09/2026 : 89 suites, 89 branchées.
+      #
+      # La troisième moitié a été comblée le 02/10/2026, après la mesure du
+      # faux vert de la 412 : cette suite écrivait 8 scénarios, les lisait en
+      # base (8/8) et ne les relisait jamais — rejouée avec T03 en échec, elle
+      # ressortait en 0. Le contrôle refuse désormais une suite qui ne peut
+      # JAMAIS échouer (ni `_audit_assert`, ni `RAISE EXCEPTION` de verdict).
+      - name: 'L2 : toutes les suites sont branchées ET peuvent échouer (G5)'
         run: node scripts/check-test-suites.mjs
 
   # ─────────────────────────────────────────────

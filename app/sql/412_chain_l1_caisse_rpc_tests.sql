@@ -1,5 +1,5 @@
 -- ============================================================
--- 322_chain_l1_caisse_rpc_tests.sql — L3 : la caisse, TRACÉE PAR SON CHEMIN
+-- 412_chain_l1_caisse_rpc_tests.sql — L3 : la caisse, TRACÉE PAR SON CHEMIN
 --   D'APPEL — ce que les wrappers garantissent
 --
 -- Source : inventaire de la tranche 4 §2, lignes 3 et 14 (`pos_refund_ticket`,
@@ -37,8 +37,8 @@
 -- ============================================================
 \ir ci/audit_helpers.sql
 \ir ci/ledger_fixture.sql
-SELECT set_config('audit.file', '322', false);
-DELETE FROM _audit_results WHERE file = '322';
+SELECT set_config('audit.file', '412', false);
+DELETE FROM _audit_results WHERE file = '412';
 
 -- ─────────────────────────────────────────────────────────────
 -- Outillage propre à ce fichier (préfixé `_`, hors contrôle des droits)
@@ -46,8 +46,8 @@ DELETE FROM _audit_results WHERE file = '322';
 
 -- Une caisse : dépôt, client, article de stock, article de service, terminal,
 -- session ouverte (fond 100). Les comptes du POS et des avoirs sont posés.
-DROP FUNCTION IF EXISTS _l322_caisse(text);
-CREATE OR REPLACE FUNCTION _l322_caisse(p_nom text,
+DROP FUNCTION IF EXISTS _l412_caisse(text);
+CREATE OR REPLACE FUNCTION _l412_caisse(p_nom text,
   OUT t uuid, OUT wh uuid, OUT cli uuid, OUT prod uuid, OUT serv uuid, OUT term uuid, OUT sess uuid)
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -69,8 +69,8 @@ BEGIN
 END $$;
 
 -- Un ticket par l'appel RPC — le chemin que l'écran prend.
-DROP FUNCTION IF EXISTS _l322_ticket(uuid, uuid, numeric, uuid);
-CREATE OR REPLACE FUNCTION _l322_ticket(p_sess uuid, p_prod uuid, p_qty numeric, p_cli uuid DEFAULT NULL)
+DROP FUNCTION IF EXISTS _l412_ticket(uuid, uuid, numeric, uuid);
+CREATE OR REPLACE FUNCTION _l412_ticket(p_sess uuid, p_prod uuid, p_qty numeric, p_cli uuid DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql AS $$
 DECLARE k public.pos_tickets;
 BEGIN
@@ -83,8 +83,8 @@ BEGIN
 END $$;
 
 -- Les liens d'un document, avec l'état et le tour (le même outillage que la 320).
-DROP FUNCTION IF EXISTS _l322_liens(uuid, text, uuid);
-CREATE OR REPLACE FUNCTION _l322_liens(p_t uuid, p_amont_type text, p_amont_id uuid)
+DROP FUNCTION IF EXISTS _l412_liens(uuid, text, uuid);
+CREATE OR REPLACE FUNCTION _l412_liens(p_t uuid, p_amont_type text, p_amont_id uuid)
 RETURNS TABLE(effet text, aval_type text, aval_id uuid, link_type text, payload jsonb,
               etat text, tour integer, motif text)
 LANGUAGE sql AS $$
@@ -101,12 +101,12 @@ DO $$
 DECLARE v record; k uuid; n_liens int; n_stock int; n_pay int; n_applique int; n_evt int;
         v_stock record; v_pay record; p_stock jsonb; ok_aval boolean;
 BEGIN
-  v := _l322_caisse('R322A');
+  v := _l412_caisse('R412A');
   PERFORM _as_user();
-  k := _l322_ticket(v.sess, v.prod, 3);
+  k := _l412_ticket(v.sess, v.prod, 3);
   PERFORM set_config('role', 'none', true);
 
-  SELECT count(*) INTO n_liens FROM _l322_liens(v.t, 'pos_tickets', k);
+  SELECT count(*) INTO n_liens FROM _l412_liens(v.t, 'pos_tickets', k);
   SELECT count(*) INTO n_applique FROM chain_traces
    WHERE tenant_id = v.t AND amont_id = k AND resultat = 'applique';
   SELECT count(*) INTO n_evt FROM domain_events
@@ -118,9 +118,9 @@ BEGIN
     format('liens=%s (2 attendus) traces applique=%s (2 attendues) événements=%s', n_liens, n_applique, n_evt));
 
   -- T02 : les AVALS sont exacts, et le payload porte ce que le lien ne peut pas.
-  SELECT * INTO v_stock FROM _l322_liens(v.t, 'pos_tickets', k)
+  SELECT * INTO v_stock FROM _l412_liens(v.t, 'pos_tickets', k)
    WHERE effet = 'pos.ticket.stock_out';
-  SELECT * INTO v_pay FROM _l322_liens(v.t, 'pos_tickets', k)
+  SELECT * INTO v_pay FROM _l412_liens(v.t, 'pos_tickets', k)
    WHERE effet = 'pos.ticket.payment';
   p_stock := v_stock.payload;
   SELECT count(*) INTO n_stock FROM stock_movements
@@ -145,16 +145,16 @@ END $$;
 DO $$
 DECLARE v record; k uuid; n_liens int; n_traces int; n_pay int;
 BEGIN
-  v := _l322_caisse('R322B');
+  v := _l412_caisse('R412B');
   PERFORM _as_user();
-  k := _l322_ticket(v.sess, v.serv, 1);
+  k := _l412_ticket(v.sess, v.serv, 1);
   PERFORM set_config('role', 'none', true);
 
-  SELECT count(*) INTO n_liens FROM _l322_liens(v.t, 'pos_tickets', k)
+  SELECT count(*) INTO n_liens FROM _l412_liens(v.t, 'pos_tickets', k)
    WHERE effet = 'pos.ticket.stock_out';
   SELECT count(*) INTO n_traces FROM chain_traces
    WHERE tenant_id = v.t AND amont_id = k AND effet = 'pos.ticket.stock_out';
-  SELECT count(*) INTO n_pay FROM _l322_liens(v.t, 'pos_tickets', k)
+  SELECT count(*) INTO n_pay FROM _l412_liens(v.t, 'pos_tickets', k)
    WHERE effet = 'pos.ticket.payment';
 
   PERFORM _rec('T03',
@@ -170,19 +170,19 @@ DO $$
 DECLARE v record; k uuid; av uuid; l_av record; l_in record; l_out record; l_pay record;
         n_applique int; n_evt int; n_rentrees int; ok_ids boolean;
 BEGIN
-  v := _l322_caisse('R322C');
+  v := _l412_caisse('R412C');
   PERFORM _as_user();
-  k := _l322_ticket(v.sess, v.prod, 3, v.cli);
+  k := _l412_ticket(v.sess, v.prod, 3, v.cli);
   -- La session se clôt : l'avoir est la seule voie (250), et le client est
   -- nominatif (255) — le décor du ticket vendu et comptabilisé.
   UPDATE pos_sessions SET status = 'closed', closing_amount = 136, closed_at = now() WHERE id = v.sess;
   av := pos_refund_ticket(k, 'Retour client');
   PERFORM set_config('role', 'none', true);
 
-  SELECT * INTO l_av FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.refunded';
-  SELECT * INTO l_in FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_in';
-  SELECT * INTO l_out FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_out';
-  SELECT * INTO l_pay FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.payment';
+  SELECT * INTO l_av FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.refunded';
+  SELECT * INTO l_in FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_in';
+  SELECT * INTO l_out FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_out';
+  SELECT * INTO l_pay FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.payment';
 
   SELECT count(*) INTO n_applique FROM chain_traces
    WHERE tenant_id = v.t AND amont_id = k AND effet IN ('pos.ticket.refunded', 'pos.ticket.stock_in')
@@ -212,14 +212,14 @@ END $$;
 DO $$
 DECLARE v record; k uuid; l_out record; l_pay record; n_traces int; n_rentrees int; n_evt int;
 BEGIN
-  v := _l322_caisse('R322D');
+  v := _l412_caisse('R412D');
   PERFORM _as_user();
-  k := _l322_ticket(v.sess, v.prod, 2);
+  k := _l412_ticket(v.sess, v.prod, 2);
   PERFORM void_pos_ticket(k, 'Erreur de saisie');
   PERFORM set_config('role', 'none', true);
 
-  SELECT * INTO l_out FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_out';
-  SELECT * INTO l_pay FROM _l322_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.payment';
+  SELECT * INTO l_out FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.stock_out';
+  SELECT * INTO l_pay FROM _l412_liens(v.t, 'pos_tickets', k) WHERE effet = 'pos.ticket.payment';
   SELECT count(*) INTO n_traces FROM chain_traces
    WHERE tenant_id = v.t AND amont_id = k AND resultat = 'applique';
   SELECT count(*) INTO n_rentrees FROM stock_movements
@@ -246,7 +246,7 @@ DO $$
 DECLARE v record; k uuid := NULL; refuse boolean := false; msg text := '—';
         n_tk int; n_mv int; n_pay int; n_lignes int; n_liens int; n_evt int;
 BEGIN
-  v := _l322_caisse('R322E');
+  v := _l412_caisse('R412E');
   -- L'effet est ÉTEINT pour cette société, et elle demande le mode `refuse`.
   INSERT INTO document_effects (tenant_id, document_type, evenement, effet, actif)
   VALUES (v.t, 'pos_tickets', 'created', 'pos.ticket.stock_out', false);
@@ -254,7 +254,7 @@ BEGIN
 
   PERFORM _as_user();
   BEGIN
-    k := _l322_ticket(v.sess, v.prod, 3);
+    k := _l412_ticket(v.sess, v.prod, 3);
   EXCEPTION WHEN OTHERS THEN
     refuse := true; msg := SQLERRM;
   END;
@@ -354,8 +354,8 @@ DECLARE va record; vb record; ka uuid; kb uuid; ua uuid; ub uuid;
         n_liens_a int; n_tr_a int; n_ev_a int;
         n_liens_voisin int; n_tr_voisin int; n_ev_voisin int; n_liens_b int;
 BEGIN
-  va := _l322_caisse('R322F');
-  vb := _l322_caisse('R322G');
+  va := _l412_caisse('R412F');
+  vb := _l412_caisse('R412G');
 
   SELECT auth_id INTO ua FROM tenant_users WHERE tenant_id = va.t AND status = 'active' LIMIT 1;
   SELECT auth_id INTO ub FROM tenant_users WHERE tenant_id = vb.t AND status = 'active' LIMIT 1;
@@ -370,9 +370,9 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', ua, 'role', 'authenticated')::text, false);
   PERFORM set_config('app.active_tenant_id', va.t::text, false);
   PERFORM _as_user();
-  ka := _l322_ticket(va.sess, va.prod, 2);
+  ka := _l412_ticket(va.sess, va.prod, 2);
 
-  SELECT count(*) INTO n_liens_a FROM _l322_liens(va.t, 'pos_tickets', ka);
+  SELECT count(*) INTO n_liens_a FROM _l412_liens(va.t, 'pos_tickets', ka);
   SELECT count(*) INTO n_tr_a   FROM chain_traces WHERE tenant_id = va.t AND amont_id = ka;
   SELECT count(*) INTO n_ev_a   FROM domain_events WHERE tenant_id = va.t AND aggregate_id = ka;
 
@@ -381,10 +381,10 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', ub, 'role', 'authenticated')::text, false);
   PERFORM set_config('app.active_tenant_id', vb.t::text, false);
   PERFORM _as_user();
-  kb := _l322_ticket(vb.sess, vb.prod, 1);
+  kb := _l412_ticket(vb.sess, vb.prod, 1);
 
   -- Le contrôle POSITIF : B a bien ses deux liens.
-  SELECT count(*) INTO n_liens_b FROM _l322_liens(vb.t, 'pos_tickets', kb);
+  SELECT count(*) INTO n_liens_b FROM _l412_liens(vb.t, 'pos_tickets', kb);
 
   SELECT count(*) INTO n_liens_voisin FROM document_links WHERE amont_id = ka;
   SELECT count(*) INTO n_tr_voisin   FROM chain_traces  WHERE tenant_id = va.t AND amont_id = ka;
@@ -400,3 +400,16 @@ BEGIN
            n_liens_a, n_tr_a, n_ev_a, n_liens_b,
            n_liens_voisin, n_tr_voisin, n_ev_voisin));
 END $$;
+
+-- ⚠️ SANS CETTE LIGNE, LA SUITE NE PEUT PAS ÉCHOUER.
+--
+-- Elle efface ses propres verdicts (ligne 42), écrit 8 scénarios via `_rec`,
+-- et **ne les relit jamais**. Mesuré le 02/10/2026 : avec le scénario T03
+-- mis en échec à la main, la suite ressortait quand même avec le code de
+-- sortie 0 — un « ✅ » de CI qui ne vérifiait rien.
+--
+-- `_audit_assert('412')` lit les 8 lignes, lève si l'une est fausse, et
+-- n'affiche rien si la suite n'a rien écrit : c'est ce qui distingue
+-- « 8/8 verts » de « 8 verdicts jamais produits ». Elle est le SEUL motif
+-- pour lequel cette suite peut faire échouer la CI.
+SELECT _audit_assert('412');
