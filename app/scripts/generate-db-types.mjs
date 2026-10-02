@@ -34,6 +34,42 @@ async function generateTypes() {
       JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
       WHERE t.table_schema = 'public'
         AND t.table_type = 'BASE TABLE'
+        -- Les tables D'OUTILLAGE D'AUDIT sont exclues, comme le sont déjà les
+        -- partitions (voir le commentaire sur les partitions ci-dessus).
+        --
+        -- Elles sont créées par le fichier de test sql/ci/audit_helpers.sql,
+        -- que le job db-integration charge APRÈS l'étape « Vérifier que les
+        -- types sont à jour ». Un fichier de types généré sur une base où elles
+        -- existent ne peut donc pas être reproduite par cette étape — et la
+        -- porte échoue sur un écart qui ne décrit aucun produit.
+        --
+        -- C'est exactement le piège que le commentaire du ci.yml (ligne 491)
+        -- décrit déjà pour la suite 318 : « une suite placée avant cette étape
+        -- créerait _audit_results et ferait entrer ces tables d'outillage dans
+        -- les types générés : la comparaison échoue ». Le piège n'était pas
+        -- seulement l'ordre des étapes : c'est aussi qu'un type produit ne
+        -- doit pas décrire de l'outillage de test. Aucune table _audit_*
+        -- n'est lue par l'application — les suites lisent le REGISTRE
+        -- (ci/expected_failures.sql), pas ces tables de-results.
+        AND t.table_name NOT LIKE '_audit!_%' ESCAPE '!'
+        -- Les PARTITIONS mensuelles sont exclues, elles aussi. Le socle des
+        -- chaînages partitionne chain_traces et domain_events par mois, et
+        -- la 252 crée les partitions du mois + 3 : leurs noms portent la date
+        -- (chain_traces_2026_10…). Les inclure rendrait ce fichier
+        -- **dépendant du jour où on le génère** — et une base rejouée peut
+        -- porter une partition de plus qu'une autre (_2027_02 ci-dessus), ce
+        -- qui suffit à faire échouer la porte des types.
+        --
+        -- Rien n'utilise ces partitions : le code interroge les PARENTS
+        -- (chain_traces, domain_events) et PostgreSQL route tout seul. C'est
+        -- le correctif 216d9ff, absent de cette branche (tâche 1.5d).
+        AND NOT EXISTS (
+          SELECT 1 FROM pg_class k
+            JOIN pg_namespace n ON n.oid = k.relnamespace
+           WHERE n.nspname = 'public'
+             AND k.relname = t.table_name
+             AND k.relispartition
+        )
       ORDER BY t.table_name, c.ordinal_position
     `
 

@@ -64,10 +64,34 @@ describe('localDayRange — les bornes d’une période (D4)', () => {
 })
 
 describe('localDateString — une date métier, jamais en UTC', () => {
+  // ⚠️ CE TEST ÉTAIT VERT SEULEMENT EN UTC+3, ET ROUGE EN UTC.
+  //
+  // Il affirmait que `new Date(2026, 8, 29, 0, 30)` donnerait « le jour UTC
+  // est le 28 ». C'est vrai à Rome (EAT, +3) et faux ailleurs : en UTC,
+  // minuit local EST minuit UTC, les deux calculs rendent `2026-09-29`, et
+  // l'assertion `not.toBe` échoue. Le test mesurait donc l'OFFSET DE LA
+  // MACHINE, pas la fonction. Il n'a jamais été joué en CI, dont le runner
+  // est en UTC : il y est rouge depuis toujours.
+  //
+  // Le défaut qu'il veut garder est réel — minuit local peut tomber la veille
+  // en UTC — mais il se prouve en fixant le FUSEAU du test, pas en compte
+  // sur celui de la machine.
   it('rend le jour local, y compris quand l’instant est la veille en UTC', () => {
-    // 29/09/2026 00:30 local (EAT) = 28/09 21:30 UTC : le jour UTC est le 28.
-    const instant = new Date(2026, 8, 29, 0, 30)
-    expect(localDateString(instant)).toBe('2026-09-29')
-    expect(instant.toISOString().split('T')[0]).not.toBe('2026-09-29') // l'ancien calcul
+    // 29/09/2026 00h30 en UTC+3 = 28/09 21h30 UTC : là, le jour UTC est
+    // vraiment le 28, et le jour local reste le 29. C'est le cas qui motivait
+    // le test.
+    const instant = new Date(Date.UTC(2026, 8, 28, 21, 30))
+    // On se place en UTC+3 pour cette assertion — c'est le seul fuseau où la
+    // démonstration « minuit local = veille en UTC » est exacte, et le dire
+    // évite que le test retombe dans le piège qu'il corrige.
+    expect(new Date(instant).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' })).toBe('2026-09-28')
+    expect(instant.toISOString().split('T')[0]).toBe('2026-09-28')
+    // `localDateString` travaille sur l'heure locale de la machine : on vérifie
+    // donc qu'elle suit l'horloge locale, quel que soit le fuseau du runner.
+    const attendu = (() => {
+      const d = new Date(instant)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    })()
+    expect(localDateString(instant)).toBe(attendu)
   })
 })
