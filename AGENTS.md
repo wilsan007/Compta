@@ -1,5 +1,12 @@
 # AGENTS.md — Onusuite/compta
 
+> ## ⚡ Session qui démarre ici, ou qui va écrire une migration : lisez d'abord
+> **[`doc/audit/NUMEROTATION-MIGRATIONS.md`](doc/audit/NUMEROTATION-MIGRATIONS.md)**
+> — la règle de numérotation, les plages prises par chaque session, et
+> l'histoire du 02 octobre où deux sessions se sont marchées dessus. Une
+> session qui écrit une migration sans l'avoir lu a déjà cassé le dépôt
+> une fois.
+
 ## Reste ouvert — au 30 septembre 2026
 
 **Le point d'entrée pour reprendre : [`doc/audit/RESTE-OUVERT-2026-09-26.md`](doc/audit/RESTE-OUVERT-2026-09-26.md)**
@@ -7,13 +14,39 @@
 depuis le 28/09 — **un registre de CI vide** : plus aucun défaut prouvé ouvert).
 L'essentiel en huit lignes :
 
-* ⚠️ **Numérotation des migrations** — un numéro se **constate**, il ne se réserve
-  pas. État au 30/09 : `270` → `272` (session parallèle, audit fonctionnel),
-  `273` → `281` (audit fonctionnel, parties 1 à 3), `300` → `309` (**W7** : CA3,
-  refacturation des temps, production, projets, analytique, FEC, devises,
-  budgets, **import Sage**, écart de change), `310` → `314` (**L1** tranches 1 à 4,
-  **L2**, **L7**), `315` → `316` (**L1** tranche 5 : les cinq candidats directs et
-  la valeur `sans_effet`), `317` et au-delà : la **session parallèle** (chaînages).
+> ⚠️ **Numérotation des migrations** — un numéro se **constate**, il ne se réserve
+> pas. **Mais il se CONSTATE : l'inscription dans le présent paragraphe est
+> obligatoire, et elle est datée.** Une session qui prend des numéros sans les
+> inscrire ici les vole à la session suivante, qui les avait inscrits.
+>
+> 🔴 **Le 02/10, les chaînages ont été renumérotés en `400` → `413`** et la
+> **session recette** (`qa/recette-2026-09-29`) s'est attribué **`310` → `324`**
+> **sans l'inscrire ici**. Les deux series se chevauchaient : après fusion,
+> `run-sql-migrations.mjs` aurait refusé de démarrer (doublon de numéro =
+> `exit(1)`, porte SOC-06). Les **douze** tests de la recette
+> (`310`→`321`) portant des noms HOMONYMES mais des contenus DIFFÉRENTS —
+> `310_chain_l1_maillons` ≠ `310_legislation_packs_readable` — l'ordre de
+> fusion aurait en plus appliqué les deux au même rang. **Le chaînage a
+> été déplacé**, parce que c'est lui qui était inscrit ici depuis le
+> 30/09. *Les sessions en cours au moment de ce déplacement : votre
+> migration était en `3xx` et porte maintenant un `4xx`. Reprenez le
+> numéro depuis cette table.*
+>
+> | Plage | Session | Inscrite le |
+> |---|---|---|
+> | `100` → `129` | fondations produit | — |
+> | `130` → `197` | sessions fonctionnelles | 2026-09 |
+> | `200` → `209` | socles | — |
+> | `210` → `299` | audits fonctionnels, W7/W8, L7 | 2026-09-28 |
+> | **`300` → `309`** | **W7** : CA3, temps, production, projets, analytique, FEC, devises, budgets, import Sage, écart de change | 2026-09-28 |
+> | **`310` → `324`** | **session recette** (`qa/recette-2026-09-29`) : paquets lisibles, bulletin de paie, tiers, soldes clients, livraison, sorties de stock, valorisation, facture directe, identité tiers, simulateur, prorata, autoliquidation UE, IBAN | **2026-10-02** |
+> | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) — les 14 chaînages et leurs suites | **2026-10-02** |
+> | `325` → `399` | **libre** | — |
+>
+> *Règle de coexistence : une session qui travaille sur une série déjà
+> occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue
+> déjà sur un doublon (SOC-06) — c'est un garde-fou, pas un plan.*
+
 * **W8 fermée (28/09)** : les 6 défauts du plan sont corrigés — `PROJ-01`
   (refacturation des temps, `301`), `PROD-01→03` (nomenclature multi-niveaux,
   écarts de quantité et de coût chiffrés, écriture datée de l'OF, `302`),

@@ -1186,7 +1186,7 @@ jobs:
       # mesure le lien, l'événement, la trace, le rejeu sans doublon, le refus
       # nominatif en mode `refuse` et le cloisonnement. 15 scénarios.
       - name: 'L1 : les maillons ventes → trésorerie → comptabilité sont tracés (310)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/310_chain_l1_maillons_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/400_chain_l1_maillons_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1203,7 +1203,7 @@ jobs:
       # (composants d'OF calculés, sorties de caisse agrégées par produit) — compté
       # au payload plutôt qu'inventé. 12 scénarios.
       - name: 'L1 : les effets à N lignes et les maillons multi-effets sont tracés (311)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_chain_l1_tranche2_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/401_chain_l1_tranche2_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1219,7 +1219,7 @@ jobs:
       # 12 propriétés, dont le scénario C12 — le rouge de la 230 rejoué sur le vrai
       # flux, historique à deux tours compris. 12 scénarios.
       - name: 'L1 : le cycle de vie du lien — actif, remplacé, rompu (312)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/312_chain_lien_cycle_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/402_chain_lien_cycle_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1234,7 +1234,7 @@ jobs:
       # G2 (contrat d'effet) voit son registre se vider — ses 25 lignes périmées
       # ont été refusées puis retirées dans le même commit. 11 scénarios.
       - name: 'L7 : les contrats d''effet déclarés (313)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/313_chain_effects_contract_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/403_chain_effects_contract_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1248,7 +1248,7 @@ jobs:
       # le verdict et la raison de chacun, est dans
       # doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md. 10 scénarios.
       - name: 'L1 : la chaîne achats et les notes de frais sont tracées (314)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/314_chain_l1_achats_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/404_chain_l1_achats_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1268,7 +1268,7 @@ jobs:
       # change marqué sans écriture, rappel marqué traité sans élément de paie).
       # 12 scénarios.
       - name: 'L1 : les cinq candidats directs sont tracés (316)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/316_chain_l1_candidats_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/406_chain_l1_candidats_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1284,7 +1284,7 @@ jobs:
       # bien une absence, et que ce qui n'est pas nommé n'est pas permis. 9
       # scénarios.
       - name: 'D-4 : le bucket d''archive des PDF serveur (317)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_pdf_archive_bucket_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/407_pdf_archive_bucket_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1303,7 +1303,7 @@ jobs:
       # ferait entrer ces tables d'outillage dans les types générés. Mesuré le
       # 30/09 — la CI l'a refusé.
       - name: 'D-5 : le consentement OCR est daté et signé (318)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/318_ocr_consent_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/408_ocr_consent_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1321,7 +1321,7 @@ jobs:
       # après : le corps réécrit garde exactement le comportement de la 241).
       # 7 scénarios.
       - name: 'L3 : la réception de marchandise est tracée par ligne (319)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/319_chain_reception_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/409_chain_reception_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1353,7 +1353,7 @@ jobs:
       # le cloisonnement ; et la structure (trois compagnons APRÈS leur maillon,
       # jamais exposés). 8 scénarios.
       - name: 'L3 : les chemins d''annulation ferment leurs liens (320)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/320_chain_lien_fermetures_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/410_chain_lien_fermetures_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -1372,7 +1372,30 @@ jobs:
       # 6 scénarios (T01 le lien, T02 le cas ordinaire, T03 l'anomalie, T04 le
       # rejeu, T05 la structure, T06 l'isolation).
       - name: 'L1 : la contrepassation de paie est tracée (321)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/321_chain_l1_paie_contrepassation_tests.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/411_chain_l1_paie_contrepassation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 2 — LA CAISSE TRACÉE PAR SON CHEMIN D'APPEL (412). Les tranches
+      # précédentes n'ont tracé que des maillons que DEUX VOISINS peuvent voir. La
+      # caisse n'a pas de voisin : `create_pos_ticket`, `pos_refund_ticket` et
+      # `void_pos_ticket` sont appelées par des écrans, et rien d'observable ne
+      # subsiste entre l'appel et les tables — un compagnon ne peut pas s'y
+      # accrocher. Les trois corps sont donc RENOMMÉS en `_inner` et trois
+      # wrappers SECURITY DEFINER portent les noms d'écran : le wrapper est le
+      # seul chemin, et c'est lui qui tisse la chaîne.
+      # 8 scénarios : T01 deux liens et deux traces `applique` (le maillon est
+      # PILOTÉ, pas seulement exécuté) ; T02 les avals sont exacts et le payload
+      # porte les identifiants (agrégation par produit dite, pas cachée) ; T03 le
+      # cas ORDINAIRE ne se trace pas (un ticket de services ne sort rien) ; T04
+      # l'avoir lie le ticket (`adjusted_by`) et ses rentrées, et ROMPT le lien de
+      # sa sortie d'origine tout en laissant le PAIEMENT actif (limite de la 255) ;
+      # T05 l'annulation rend le stock et la fermeture n'écrit AUCUNE trace
+      # (doctrine 312) ; T06 le mode `refuse` ne laisse RIEN persister ; T07
+      # STRUCTURE — les corps ne sont exécutables par PERSONNE (leçon R-17) ;
+      # T08 CLOISONNEMENT, avec contrôle POSITIF.
+      - name: 'L3 : la caisse est tracée par son chemin d''appel (412)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/412_chain_l1_caisse_rpc_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
