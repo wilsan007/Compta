@@ -231,7 +231,9 @@ L'essentiel en huit lignes :
   inchangée et verte**. Non-régression : **270 migrations, 0 erreur** sur base
   neuve, **12 contrôles verts** (G1 : la grille n'a pas bougé ; G2 : 46
   constats, 0 au registre ; `plpgsql_check` : 0 erreur), **98 suites, 0 rouge**.
-  [Preuve](doc/audit/VAGUE-L3-FERMETURES-2026-10-02.md).
+  [Preuve](doc/audit/VAGUE-L3-FERMETURES-2026-10-02.md)
+  *(portée par le commit `e5bb05a`, dont le message décrit le correctif voisin —
+  la preuve le dit).*
   ⚠️ **Restent pour L3** : les **9 maillons RPC** (caisse, paie versée, relevé)
   — par leur chemin d'appel — et le **banc D1→D8** avec son rapport par
   maillon.

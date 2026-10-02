@@ -15,6 +15,10 @@
 > [320](../../app/sql/320_chain_lien_fermetures_tests.sql) : **8 scénarios**.
 > Câblage CI, et **une assertion de la suite 311 précisée** (T02), datée et
 > motivée — la doctrine du dépôt pour un verdict que le monde a rendu plus fort.
+> ⚠️ **Historique, dit** : cette tranche a été portée par le commit `e5bb05a`,
+> dont le message décrit le correctif voisin (le filtre analytique) — l'entrée
+> est ici, datée, comme le dépôt l'exige d'une trace qui ne dit que ce qui était
+> vrai au moment de sa publication.
 
 ---
 
