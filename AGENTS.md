@@ -42,7 +42,8 @@ L'essentiel en huit lignes :
 > | **`310` → `324`** | **session recette** (`qa/recette-2026-09-29`) : paquets lisibles, bulletin de paie, tiers, soldes clients, livraison, sorties de stock, valorisation, facture directe, identité tiers, simulateur, prorata, autoliquidation UE, IBAN | **2026-10-02** |
 > | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) — les 14 chaînages et leurs suites | **2026-10-02** |
 > | **`415` → `429`** | **L16 → L24** (événements unifiés, capacité ↔ absence, régénération, chaînages internes, stock ↔ projets, dérivés du lettrage, reporting, moteur de règles, explicabilité). `414` reste à la **partie 3** (alerte de dégradation, en vol sur `partie-3-chainages`) | **2026-10-02** |
-> | `325` → `399` | **libre** | — |
+> | **`450` → `459`** | **Partie 5** — intégrité référentielle des chaînages (registre des types, existence, garde de suppression, INV-19) | **2026-10-02** |
+> | `325` → `399`, `430` → `449` | **libre** | — |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue

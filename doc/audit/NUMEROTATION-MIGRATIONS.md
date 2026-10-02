@@ -26,7 +26,9 @@ préjudice est fait, dans un pipeline, après que deux sessions ont travaillé.
 | `300` → `309` | **W7** | 2026-09-28 |
 | `310` → `324` | **session recette** (`qa/recette-2026-09-29`) | 2026-10-02 |
 | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) | 2026-10-02 |
-| `325` → `399` | **LIBRE** | — |
+| `415` → `429` | **L16 → L24** | 2026-10-02 |
+| **`450` → `459`** | **Partie 5 — intégrité référentielle des chaînages** | **2026-10-02** |
+| `325` → `399`, `430` → `449` | **LIBRE** | — |
 
 ## Ce qui s'est passé le 02 octobre — lisez cette histoire
 
