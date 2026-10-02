@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, exportToCSV } from '@/components/ui'
+import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, Modal, exportToCSV } from '@/components/ui'
 import { getInvoices, createInvoice, updateInvoice, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
 import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
@@ -698,31 +698,83 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
   )
 }
 
+// B6 (ven-006, restitution) : la fenêtre « Voir » n'affichait que l'en-tête et
+// trois montants — pas une ligne, pas le HT ni la TVA par taux, alors que la
+// liste charge déjà `invoice_lines(*)`. Elle passe au `Modal` commun (E1 :
+// corps défilant, piège à focus, Échap) et montre les lignes puis la
+// ventilation HT / TVA par taux, comme sur le PDF.
 function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
   const { t } = useTranslation('sales')
   const { t: tAcc } = useTranslation('accounting')
-  const { t: tCommon } = useTranslation('common')
+  const lines = (invoice.invoice_lines || [])
+    .slice()
+    .sort((a, b) => (a.line_order ?? 0) - (b.line_order ?? 0))
+  // HT et TVA par taux — la déduction d'acompte (ligne négative) participe
+  // à la base, et une ligne autoliquidée (B3) porte son code à côté du taux.
+  const vatByRate = new Map<number, { base: number; vat: number; code: string | null }>()
+  for (const l of lines) {
+    const rate = Number(l.vat_rate) || 0
+    const e = vatByRate.get(rate) ?? { base: 0, vat: 0, code: l.vat_code ?? null }
+    e.base += Number(l.total) || 0
+    e.vat += Number(l.vat_total) || 0
+    vatByRate.set(rate, e)
+  }
+  const rates = [...vatByRate.entries()].sort((a, b) => a[0] - b[0])
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('invoices.title')} {invoice.number}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
-        </div>
-        <div className="p-6 space-y-3">
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.customer')}</span><span className="font-medium">{invoice.customer_name || '—'}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.date')}</span><span>{formatDate(invoice.date)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.dueDate')}</span><span>{formatDate(invoice.due_date)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.status')}</span><Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(invoice.status)}</Badge></div>
+    <Modal open onClose={onClose} title={`${t('invoices.title')} ${invoice.number}`} size="lg">
+      <div className="space-y-4 text-sm">
+        <div className="space-y-2">
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.customer')}</span><span className="font-medium">{invoice.customer_name || '—'}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.date')}</span><span>{formatDate(invoice.date)}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.dueDate')}</span><span>{formatDate(invoice.due_date)}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.status')}</span><Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'overdue' ? 'danger' : 'neutral'}>{translateStatus(invoice.status)}</Badge></div>
           {invoice.payment_state && (
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</span><Badge variant={invoice.payment_state === 'paid' ? 'success' : invoice.payment_state === 'partial' ? 'warning' : 'neutral'}>{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</Badge></div>
+            <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</span><Badge variant={invoice.payment_state === 'paid' ? 'success' : invoice.payment_state === 'partial' ? 'warning' : 'neutral'}>{tAcc('writingsEnhancement.paymentState.' + invoice.payment_state, { defaultValue: invoice.payment_state })}</Badge></div>
           )}
-          <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.paidAmount')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
+        </div>
+        {lines.length > 0 && (
+          <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
+            <table className="app-table w-full">
+              <thead className="bg-[var(--color-neutral-50)]">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-24">{t('invoices.vatRate')}</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map(l => (
+                  <tr key={l.id} className="border-t border-[var(--color-border)]">
+                    <td className="px-3 py-2">{l.description || '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono">{Number(l.quantity)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatCurrency(Number(l.unit_price) || 0)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{Number(l.vat_rate) || 0} %{l.vat_code ? ` (${l.vat_code})` : ''}</td>
+                    <td className="px-3 py-2 text-right font-mono">{formatCurrency(Number(l.total) || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="space-y-1.5 border-t border-[var(--color-border)] pt-3">
+          {rates.map(([rate, e]) => (
+            <div key={rate} className="space-y-1.5">
+              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.subtotal')} {rate} %{e.code ? ` (${e.code})` : ''}</span><span className="font-mono">{formatCurrency(e.base)}</span></div>
+              <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.vatAmount')} {rate} %</span><span className="font-mono">{formatCurrency(e.vat)}</span></div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1.5 border-t border-[var(--color-border)] pt-3">
+          <div className="flex justify-between font-semibold"><span>{t('invoices.subtotal')}</span><span className="font-mono">{formatCurrency(Number(invoice.subtotal) || 0)}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.vatAmount')}</span><span className="font-mono">{formatCurrency(Number(invoice.vat_total) || 0)}</span></div>
+          <div className="flex justify-between border-t border-[var(--color-border)] pt-2 font-bold"><span>{t('invoices.total')}</span><span className="font-mono">{formatCurrency(Number(invoice.total) || 0)}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.paidAmount')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid) || 0)}</span></div>
+          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(Number(invoice.amount_due) || 0)}</span></div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 

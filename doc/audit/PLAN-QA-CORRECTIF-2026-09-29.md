@@ -382,14 +382,14 @@ et les modèles de saisie ne lisent **que** cette table.
 
 ## 5. Lot B — Ventes (≈ 4 j)
 
-> **État au 30/09, après A4** : B1, B2, B4, B5, B6, B7, B8, B9, B10, B11, B12 **fermés**
-> (`c3e95b8` la base, `4721f49` l'écran). **B3 reste ouvert** (ven-009, client UE :
-> autoliquidation, mention, Factur-X `AE`) et **n'attend plus rien** : son
-> dépendance, A4 (le pays du client), est livrée par la 318 — le pays est un code
-> ISO à deux lettres, qu'on sait lire et vérifier.
-> Trois points signalés et laissés ouverts : la **relance** de B9, la **fenêtre
-> « Voir »** qui n'affiche pas les lignes d'une facture (B6), et la mention
-> d'autoliquidation du PDF (B3).
+> **État au 30/09, après A4** : B1, B2, B3, B4, B5, B6, B7, B8, B10, B11, B12
+> **fermés** (`c3e95b8` la base, `4721f49` l'écran, `64f4fe5` B3/UE, puis la
+> fenêtre « Voir »). B3 est livré : régime déduit du pays (318) et du n° de TVA,
+> `vat_code` UE/EXO posé avant le calcul, mention à l'écran et au PDF, Factur-X
+> `AE`/`K` ; la fenêtre « Voir » montre lignes et HT/TVA par taux.
+> **Reste ouvert** : la **relance** de B9 (chaîne de relances d'écran
+> `/accounting/treatment/payment-reminders`) et la ventilation de la CA3 par
+> **cases** (E1/E2/ligne 06) — le `vat_code` est posé pour elle.
 
 ### B1 — ven-005 🔴 / ven-004 🟠 — sortie de stock du BL — **✅ CORRIGÉ** (`9ef26c8`, migration 314)
 - **Cause établie** : `create_stock_out_on_delivery()` ne réagissait qu'au passage à `shipped`
@@ -522,8 +522,10 @@ et les modèles de saisie ne lisent **que** cette table.
   l'écriture) + rattrapage de l'existant ; la facture née d'un devis garde la date du
   devis (`convert_quote_to_invoice`, T07b rouge avant : 30/09 pour un devis du 10/09) ;
   la chaîne devis → commande → BL → facture transporte la date d'origine et l'échéance
-  suit les conditions de paiement du client. ⚠️ **La fenêtre « Voir » d'une facture
-  n'affiche toujours pas ses lignes** (reste ouvert, rattaché à B8/restitution).
+  suit les conditions de paiement du client. La fenêtre « Voir » d'une facture
+  affiche désormais ses **lignes** (description, quantité, prix unitaire, taux,
+  total HT) et la ventilation **HT / TVA par taux**, sur le `Modal` commun
+  (correction du dernier point ouvert de restitution, cf. journal).
 
 ### B7 — ven-007 🟡 — numérotation non chronologique malgré l'annonce — **✅ CORRIGÉ** (317)
 - **Correctif** : à la validation, refuser une facture datée **avant** la dernière facture
