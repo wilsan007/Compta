@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { supabase } from '@/lib/supabase'
+import { type Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId } from '../core'
 import { buildFECRows, sirenFrom, type FECExport, type FECReferences } from '@/lib/fecValidator'
 import { type JournalEntry, type FiscalYear } from '@/types'
@@ -45,7 +46,7 @@ export async function getAgedBalance(typeFilter?: string, refDate?: string) {
 
   let tpQ = supabase.from('third_party_accounts').select('*').order('id')
   if (tid) tpQ = tpQ.eq('tenant_id', tid)
-  const tiers = await fetchAllRows<any>(tpQ, { label: 'getAgedBalance/third_party_accounts' })
+  const tiers = await fetchAllRows<Row<'third_party_accounts'>>(tpQ, { label: 'getAgedBalance/third_party_accounts' })
 
   const tiersMap = new Map(tiers.map((t) => [t.code, t]))
   const referenceDate = refDate ? new Date(refDate) : new Date()
@@ -258,7 +259,7 @@ export async function getAnalyticBalance(dateFrom: string, dateTo: string) {
 
   let asQ = supabase.from('analytic_sections').select('*').order('id')
   if (tid) asQ = asQ.eq('tenant_id', tid)
-  const sections = await fetchAllRows<any>(asQ, { label: 'getAnalyticBalance/analytic_sections' })
+  const sections = await fetchAllRows<Row<'analytic_sections'>>(asQ, { label: 'getAnalyticBalance/analytic_sections' })
 
   const sectionMap = new Map(sections.map((s) => [s.id, s]))
 

@@ -1,8 +1,25 @@
 import { supabase } from '@/lib/supabase'
-import type { Joined } from '@/types/dbRow'
+import type { Joined, Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
+
+// PRD-05 : `purchase_order_lines` est lu en select PARTIEL et inclut
+// `quantity_received`, qui n'est PAS une colonne de la table mais une **colonne
+// calculée PostgREST** (fonction `quantity_received(purchase_order_lines)`,
+// migration 195) — sélectionnable, mais absente des types générés (`Row` ne
+// porte que les vraies colonnes). D'où ce type dédié : les vraies colonnes
+// viennent du schéma, la calculée est déclarée ici. Renommer `product_id`,
+// `quantity` ou `purchase_order_id` en base fera donc échouer la compilation.
+type OpenPurchaseLine = Pick<
+  Row<'purchase_order_lines'>,
+  'product_id' | 'quantity'
+> & {
+  /** Colonne CALCULÉE PostgREST — cf. `sql/195_purchase_order_line_received.sql`. */
+  quantity_received: number
+  /** Embed `purchase_orders!inner(status)` — PostgREST renvoie un tableau. */
+  purchase_orders: Pick<Row<'purchase_orders'>, 'status'>[]
+}
 
 // ============ Products ============
 export async function getProducts() {
@@ -736,11 +753,11 @@ export async function runMRPCalculation(): Promise<MRPRun> {
     const [products, boms, bomLines, stockQtys, openMOs, openPOLines] = await Promise.all([
       getProducts(),
       getBOMs(),
-      fetchAllRows<any>(supabase.from('bom_lines').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/bom_lines' }),
-      fetchAllRows<any>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
-      fetchAllRows<any>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
+      fetchAllRows<Row<'bom_lines'>>(supabase.from('bom_lines').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/bom_lines' }),
+      fetchAllRows<Row<'stock_quantities'>>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
+      fetchAllRows<Row<'manufacturing_orders'>>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
       // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
-      fetchAllRows<any>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'confirmed', 'partial']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
+      fetchAllRows<OpenPurchaseLine>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'confirmed', 'partial']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
     ])
 
     // Build stock map: product_id -> total quantity
@@ -1020,9 +1037,9 @@ export async function autoScheduleMOs() {
   // gamme absente de la page 1 faisait sauter l'OF (`if (!routing) continue`).
   const [mos, machines, routings, routingOps] = await Promise.all([
     getManufacturingOrders('planned'),
-    fetchAllRows<any>(supabase.from('machines').select('*').eq('status', 'active').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/machines' }),
-    fetchAllRows<any>(supabase.from('routings').select('*').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/routings' }),
-    fetchAllRows<any>(supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).order('id'), { label: 'autoScheduleMOs/routing_operations' }),
+    fetchAllRows<Row<'machines'>>(supabase.from('machines').select('*').eq('status', 'active').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/machines' }),
+    fetchAllRows<Row<'routings'>>(supabase.from('routings').select('*').eq('tenant_id', tid).order('id'), { label: 'autoScheduleMOs/routings' }),
+    fetchAllRows<Row<'routing_operations'>>(supabase.from('routing_operations').select('*').eq('tenant_id', tid).order('sequence', { ascending: true }).order('id'), { label: 'autoScheduleMOs/routing_operations' }),
   ])
 
   let scheduled = 0

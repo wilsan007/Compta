@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { supabase } from '@/lib/supabase'
-import { type Joined } from '@/types/dbRow'
+import { type Row, type Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, ti, tud } from '../core'
 import { type PaymentOrder, type CollectionReminder, type CurrencyRevaluation, type FutureAccountingMovement, type TreasuryTransfer, type TreasuryRecurring, type ConsolidatedTreasury, type ExchangeRate, type ExchangeGainLossEntry, type CheckBook, type Check } from '@/types'
 import { getKpis } from './pilotage'
@@ -82,7 +82,7 @@ export async function getTreasuryDashboard() {
   let accQ = supabase.from('bank_accounts').select('*').order('name').order('id')
   if (tid) accQ = accQ.eq('tenant_id', tid)
   // LOT7-03 : le solde de trésorerie somme tous les comptes bancaires.
-  const accounts = await fetchAllRows<any>(accQ, { label: 'getTreasuryDashboard/bank_accounts' })
+  const accounts = await fetchAllRows<Row<'bank_accounts'>>(accQ, { label: 'getTreasuryDashboard/bank_accounts' })
 
   // M5 (278) : la trésorerie est le solde des comptes 5x au grand livre
   const totalBalance = (await getKpis()).cash
@@ -139,7 +139,7 @@ export async function getTreasuryDashboard() {
 
   let ppQ = supabase.from('payment_orders').select('*').in('status', ['draft', 'approved']).order('id')
   if (tid) ppQ = ppQ.eq('tenant_id', tid)
-  const pendingPayments = await fetchAllRows<any>(ppQ, { label: 'getTreasuryDashboard/payment_orders' })
+  const pendingPayments = await fetchAllRows<Row<'payment_orders'>>(ppQ, { label: 'getTreasuryDashboard/payment_orders' })
 
   return {
     accounts,

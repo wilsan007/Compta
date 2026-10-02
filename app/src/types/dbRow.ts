@@ -17,7 +17,7 @@ type Tables = Database['public']['Tables']
 type TableName = keyof Tables
 
 /** Ligne complète d'une table, telle que PostgREST la renvoie. */
-type Row<T extends TableName> = Tables[T]['Row']
+export type Row<T extends TableName> = Tables[T]['Row']
 
 /**
  * Colonnes d'une ressource jointe (`select('*, employees(first_name, last_name)')`).
