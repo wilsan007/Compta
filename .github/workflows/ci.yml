@@ -1417,6 +1417,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 tranche 3 — LA PAIE TRACÉE PAR SON CHEMIN D'APPEL (415). La 415 a
+      # choisi le POINT DE CONVERGENCE de la comptabilisation : `payroll_post_run`
+      # est appelé par la porte R-17, par le versement, et par un déclencheur au
+      # passage du lot à `paid`. T04 éprouve les TROIS chemins séparément — c'est
+      # la promesse que seule une façade n'aurait pas tenue.
+      # 11 scénarios : le lien et la trace de la comptabilisation, le refus d'un
+      # lot en brouillon (sans trace : un refus est une absence), le rejeu, les
+      # trois chemins, le versement N:1 (lien au lot, aval de référence, payload),
+      # le versement PARTIEL (le lien désigne SA écriture, pas celle de paie), le
+      # mode refuse (rien ne persiste), la structure (corps `_inner` non exposés)
+      # et le cloisonnement.
+      - name: 'L3 : la paie est tracée par son chemin d''appel (415)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/415_chain_l3_paie_rpc_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4
