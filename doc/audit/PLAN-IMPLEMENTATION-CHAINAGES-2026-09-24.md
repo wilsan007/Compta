@@ -447,7 +447,7 @@ Chaque lot a **un indicateur qui bouge** : c'est ce qui prouve qu'il est fait, e
 | L8 → L15 | règles d'état couvertes (**0 / 62** → 62 / 62) | ⬜ |
 | L16 | chaînages internes manquants (**9 familles** → 0) | ⬜ |
 | L17 → L19 | couples de modules vides (**12 → 0**) | ⬜ |
-| L20 → L24 | innovations livrées (I-01 → I-12) | ⬜ |
+| L20 → L24 | innovations livrées (I-01 → I-12) | 🟡 **L23 entamé (02/10, tranche 1)** — migration **415** : LE JOURNAL D'ÉVÉNEMENTS UNIFIÉ. Mesuré avant : **27** événements du socle n'atteignaient **jamais** la file de livraison (0 pont), les 2 déclencheurs historiques écrivaient dans le journal des envois (pas la file), et **13 des 15** événements promis au catalogue n'avaient **aucun producteur**. La 415 pose le pont (`chain_l23_enfiler` + déclencheur sur `domain_events`, idempotence structurelle par clé `(tenant, point, source)`), fait parler les 2 déclencheurs historiques le même langage (`emit_domain_event`, noms conservés), rend le catalogue **vrai** (29 actifs tous produits, 13 promesses mortes éteintes avec raison écrite), refuse l'abonnement à un événement inexistant, et force la RLS de la file. Suite **415** : **8/8** (**7 rouges avant**). Non-régression : **273 migrations, 0 erreur**, 17 suites vertes (dont 234/236/257/270 et les 400 → 413), G1/G7 réinscrits **datés** (54, 78, 314), G5 **102/102**, types **sans écart**. [Preuve](VAGUE-L23-TRANCHE1-EVENEMENTS-UNIFIES-2026-10-02.md). **Restent** : L23-b (automatisations), L23-c (lecture écran) — les autres lots sont bloqués par leurs dépendances (L5, L6, L8 → L15, L20, L21) |
 
 ### 6.2 Ce qu'on mesure **chaque semaine** (le rendez-vous de pilotage)
 

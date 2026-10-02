@@ -1436,6 +1436,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L23 tranche 1 (415) : le journal d'événements UNIFIÉ — lot L23 du plan des
+      # chaînages (« journal unique + webhooks branchés sur les MÊMES événements »,
+      # dépendances L0 + L2 livrées). Mesuré avant : 27 événements du socle
+      # n'atteignaient JAMAIS la file de livraison (0 pont), les 2 seuls
+      # déclencheurs historiques écrivaient dans le journal des envois (pas la
+      # file), et 13 des 15 événements promis au catalogue n'avaient AUCUN
+      # producteur. 8 scénarios : le chemin réel (T01), le rejeu borné par une
+      # clé (T02), la non-réversibilité déclarée (T03), l'isolation par
+      # l'événement (T04), le catalogue vrai dans les DEUX sens (T05), le refus
+      # nommé d'un abonnement inexistant (T06), le p95 mesuré (T07), la file
+      # RLS forcée (T08).
+      - name: 'L23 : le journal d''événements unifié (415)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/415_chain_l23_evenements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
