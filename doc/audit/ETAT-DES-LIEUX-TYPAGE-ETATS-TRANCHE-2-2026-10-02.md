@@ -168,6 +168,11 @@ compilateur.
 1. **Le fond n'est pas traité.** `Joined<>` reste inutilisable (§4) et les **139**
    sites de jointure restent non typés : on a traité **14** d'entre eux, ceux
    d'un module. La voie **A** reste ouverte et n'est pas tranchée.
+
+   > **Périmé le 2026-10-02, livré en §8** : la voie A a été appliquée — le
+   > générateur décrit désormais les **692** clés étrangères, et `Joined<>` vérifie
+   > enfin la cible. Ce qui reste ouvert ici est la voie **B** (nommer les colonnes
+   > site par site), et non `Joined<>` lui-même.
 2. **La décision de §8 n'est pas prise.** Cet arbitrage est la **voie C** —
    celle à faible risque — parce qu'elle débloque la mesure ; elle ne préjuge pas
    de A ou B.
@@ -225,16 +230,96 @@ Les motifs sont désormais assemblés à l'exécution (`` `r: ${'an'}y` ``), ce 
 exprime la même vérification sans comptée comme dette. C'est la **deuxième fois**
 que ce portillon compte du texte ; c'est écrit dans le test.
 
-## 8. Ce qu'il faut décider (lu après les §6 et §7)
+## 8. Voie A, appliquée : le générateur décrit les relations, `Joined<>` sert enfin
+
+**Le blocage du §4 est levé.** `generate-db-types.mjs` interroge désormais les
+**692** clés étrangères et écrit un `Relationships` par relation, dans la forme
+attendue par supabase-js (`foreignKeyName`, `columns`, `isOneToOne`,
+`referencedRelation`, `referencedColumns`). Mesuré : **363** `Relationships: []`
+→ **0**, et 674 relations émises sur 364 tables.
+
+Trois choix, tous mesurés :
+
+| Choix | Pourquoi |
+|---|---|
+| colonnes résolues par `attnum`, `conkey`/`confkey` appariés par `WITH ORDINALITY` | l'ordre de `conkey` suit la **déclaration de la contrainte**, pas l'ordre des colonnes ; apparier par position aurait produit des paires fausses |
+| seules les relations **résolvables par PostgREST** sont émises (`uc.conkey @> c.confkey`) | déclarer une jointure que PostgREST refuse à l'exécution serait un type qui promet l'impossible. Mesuré : **692/692** sont résolvables, le filtre ne retire rien aujourd'hui |
+| les tables `_audit_*` sont exclues (`left(table_name,1) <> '_'`) | elles naissent quand les suites SQL tournent : les inclure ferait échouer la CI sur base neuve. **Même piège que les partitions** (l. 25-39) |
+
+⚠️ Le prédicat par défaut a d'abord été `NOT LIKE '_%'` : il renvoyait **0 table**,
+car `_` est un joker qui matche n'importe quel caractère — `'salary_advances'
+LIKE '_%'` est **vrai** (mesuré). Le `left(…, 1) <> '_'` ne dépend d'aucun joker
+ni de `standard_conforming_strings`.
+
+### Ce que `Joined<>` vérifie désormais — et ce qu'il ne vérifie pas
+
+Le dépôt utilisait **déjà** `Joined<>` partout (mesuré : **34** appels dans
+`stock.ts`, 22 dans `sprintDE.ts`, 8 dans `socialDeclarations.ts`…). La
+convention en place est `Joined<'table_cible', 'colonne | …'>` — le premier
+paramètre est la **cible**, le second les colonnes sélectionnées.
+
+⚠️ **Une correction de mesure, ici.** Le §4 affirmait « 0 usage hors de sa
+définition ». C'était **faux** : il y en a **109**. La conclusion « inutilisable »
+était juste — aucune relation n'était nommée — mais « inutilisé » était une
+erreur de mesure, et il fallait le dire : on cherchait l'absence d'un type
+supposé mort, alors qu'il était massivement employé. Ces 109 appels
+compilaient parce que le type **ne contrôlait rien**.
+
+La garantie neuve, prouvée par sonde :
+
+| Sonde | Avant | Après |
+|---|---|---|
+| `Joined<'products', 'prenom_fantaisiste'>` | accepté | **`TS2344`**, contrainte = les vraies colonnes de `products` |
+| `Joined<'table_inexistante', 'name'>` | accepté | **`TS2344`**, contrainte = les vraies tables |
+| `Joined<'products', 'name' \| 'sku'>` | accepté | accepté (et vérifié) |
+
+Et **les 109 appels existants sont inchangés** : on a rendu la convention
+*vérifiée*, pas réécrit. Une garde échoue s'ils disparaissent — c'est la preuve
+que le correctif est dans le type, pas dans les appelants.
+
+### Rouge mesuré, les 3 nouveaux défauts
+
+| Défaut rejoué | Garde | `tsc` |
+|---|---|---|
+| le bloc `Relationships` redevient vide | 1 failed / 26 passed | 0 erreur |
+| le générateur n'interroge plus les FK | 1 failed / 26 passed | 0 erreur |
+| `Joined` accepte une colonne fantôme | 1 failed / 26 passed | **2 erreurs** (TS2344) |
+
+Les deux premières lignes disent la même chose : **retirer les relations ne casse
+ni `tsc` ni l'exécution** — seul le garde-fou s'en aperçoit. C'est cohérent avec
+la ligne « état d'écran en `any[]` » du §6, et c'est la raison pour laquelle ces
+portes sont des tests de source, pas des tests de comportement.
+
+### Limites dites
+
+1. **`Joined<>` vérifie la cible, pas le chemin.** Il dit ce que contient la
+   ressource jointe ; il ne dit pas que `products` est bien une clé étrangère de
+   `stock_movements`. Cette seconde garantie vient de **PostgREST**, pas du type —
+   et il existe un contrôle dédié dans la CI (« LOT7-04 — Vérifier les colonnes et
+   jointures contre PostgREST », `ci.yml` l. 528). Les deux sont complémentaires.
+2. **Le fichier généré dépend d'une base migrée.** Il a été régénéré sur la base
+   de développement. Une base neuve reproduit l'écart **inverse** (mesuré : la
+   238 échoue en local et bloque les migrations suivantes), ce qui confirme que
+   seule la CI, sur base neuve complète, peut garantir l'exactitude du fichier.
+3. **Les 139 sites de jointure ne sont pas tous convertis** : la voie A rend le
+   type *capable* de les décrire ; elle ne convertit pas les 30 qui restent en
+   `Record<string, unknown>[]` ou sous `any`. C'est le travail de la voie **B**.
+
+## 9. Ce qu'il faut décider (lu après les §6, §7 et §8)
 
 *(Arbitrage rendu en §6 : la voie **C** a été appliquée pour débloquer la mesure.
 Les voies **A** et **B** restent ouvertes, et **A** reste le correctif de fond.)*
 
-| Voie | Portée | Risque CI |
-|---|---|---|
-| **A** — le générateur décrit les relations (FK → `Relationships`), et `Joined` redevient utilisable | 363 tables, puis les 139 sites | **élevé** : la CI régénère les types sur base neuve et refuse tout écart ; générateur et fichier généré changent ensemble |
-| **B** — nommer à la main les colonnes jointes, site par site | 139 sites, indépendamment | faible : `src/lib` seul |
-| **C** — ne déclarer que les **14** fonctions de paie, puis typer les états de `Phase4Pages` | 14 lignes + ~10 états | faible | **FAITE le 2026-10-02** (§6) |
+## 5. Ce qu’il fallait décider — et ce qu’on en a fait
+
+*Ce tableau est la décision prise le 2026-10-02, avant son exécution. Le verdict
+de chaque voie est en fin de ligne ; les sections §6 à §8 racontent l’exécution.*
+
+| Voie | Portée | Risque CI | Verdict |
+|---|---|---|---|
+| **A** — le générateur décrit les relations (FK → `Relationships`), et `Joined` redevient utilisable | 363 tables, puis les 139 sites | **élevé** : la CI régénère les types sur base neuve et refuse tout écart | **FAITE** (§8) — le risque était réel : le fichier dépend de la base, donc seule la CI sur base neuve peut certifier son exactitude |
+| **B** — nommer à la main les colonnes jointes, site par site | 139 sites, indépendamment | faible : `src/lib` seul | **OUVERTE** — c'est le reste du travail |
+| **C** — ne déclarer que les **14** fonctions de paie, puis typer les états de `Phase4Pages` | 14 lignes + ~10 états | faible | **FAITE** (§6) |
 
 ⚠️ **Limites dites.**
 
