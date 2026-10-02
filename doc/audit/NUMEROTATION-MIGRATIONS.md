@@ -16,9 +16,14 @@ Remplacez le **nom** (minuscules, chiffres, `_`) et la **session**, recopiée
 **exactement** depuis `node scripts/migration-numero.mjs plages`. ⚠️ N'écrivez
 jamais de chevrons `<…>` dans le terminal : zsh les lit comme une redirection
 (`zsh: no such file or directory`). La commande **crée vraiment** le fichier et
-prend le numéro : on ne la lance que pour une migration qu'on va écrire. Un
-numéro pris par erreur se rend en supprimant le fichier **et** sa ligne du
-registre.
+prend le numéro : on ne la lance que pour une migration qu'on va écrire.
+
+**Annuler une erreur** (jamais à la main dans le registre) :
+
+```bash
+node scripts/migration-numero.mjs rendre sql/340_titres_restaurant_au_bulletin.sql   # rend le numéro (fichier sans SQL seulement)
+node scripts/migration-numero.mjs liberer 370-399                                     # retire une plage (refusé si un numéro y est pris)
+```
 
 L'outil (`app/scripts/migration-numero.mjs`) fait, sous un verrou partagé par
 **tous** les worktrees du dépôt :
@@ -47,7 +52,7 @@ Un fichier créé à la main avant ce jour se rattache par
 `node app/scripts/migration-numero.mjs inscrire app/sql/417_chain_banc_moteur.sql --session "partie 3 (L3, L4)"` —
 **refusé** si le numéro est dans la plage d'une autre ligne. Une nouvelle ligne
 de travail inscrit d'abord sa plage :
-`node app/scripts/migration-numero.mjs plage 370-399 --session "ma nouvelle ligne"` — **refusée**
+`node app/scripts/migration-numero.mjs plage 370-399 --session "<nom réel de la ligne>"` (à adapter : le libellé devient la session) — **refusée**
 si elle chevauche une plage existante ou contient un numéro déjà pris.
 
 Puis, **dans le même commit** que la première migration : la ligne de la plage dans

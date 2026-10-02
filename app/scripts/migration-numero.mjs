@@ -40,6 +40,10 @@
  *                                            aussi être inscrites — crochet
  *                                            pre-commit ; --ci : branches
  *                                            distantes seulement)
+ *   rendre app/sql/NNN_<nom>.sql            rendre un numéro pris par erreur (supprime
+ *                                            le fichier s'il est vide de SQL, et la prise)
+ *   liberer NNN-MMM                          retirer une plage inscrite par erreur
+ *                                            (refusé si un numéro y est déjà pris)
  *   liste [--toutes]                         registre + collisions visibles
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, rmdirSync, statSync, unlinkSync } from 'node:fs'
@@ -303,6 +307,47 @@ function inscrire(file, session) {
   })
 }
 
+// Un numéro pris par erreur se REND : la prise quitte le registre et le fichier
+// part avec elle — mais seulement s'il ne contient encore que l'en-tête posé par
+// `prendre` (un fichier où quelqu'un a écrit du SQL n'est jamais supprimé ici).
+function rendre(file) {
+  const p = parse(file || '')
+  if (!p) throw new Error('usage : rendre app/sql/NNN_<nom>.sql')
+  return sousVerrou(() => {
+    const ledger = readLedger()
+    const avant = ledger.prises.length
+    ledger.prises = ledger.prises.filter((x) => !(x.num === p.num && x.nom === p.name))
+    if (ledger.prises.length === avant) throw new Error(`${p.num}_${p.name} n'est pas au registre`)
+    const chemin = join(sqlDir, `${p.num}_${p.name}.sql`)
+    if (existsSync(chemin)) {
+      const sql = readFileSync(chemin, 'utf8').split('\n').filter((l) => l.trim() && !l.trim().startsWith('--'))
+      if (sql.length) throw new Error(`${chemin} contient du SQL : rien n'est rendu (retirez-le vous-même si c'est voulu)`)
+      unlinkSync(chemin)
+    }
+    writeLedger(ledger)
+    console.log(`✅ ${p.num}_${p.name} rendu : le numéro ${p.num} est de nouveau libre.`)
+  })
+}
+
+// Une plage inscrite par erreur se LIBÈRE — refusé dès qu'un numéro y est pris
+// quelque part (worktree, branche ou registre) : on ne retire pas le sol sous
+// une migration qui existe.
+function liberer(spec) {
+  const m = /^(\d{3})-(\d{3})$/.exec(spec || '')
+  if (!m) throw new Error('usage : liberer NNN-MMM (exactement une plage inscrite)')
+  const [de, a] = [Number(m[1]), Number(m[2])]
+  return sousVerrou(() => {
+    const ledger = readLedger()
+    const cible = ledger.plages.find((p) => p.de === de && p.a === a)
+    if (!cible) throw new Error(`aucune plage inscrite exactement ${spec}. Plages :\n${listePlages(ledger)}`)
+    const pris = [...inventory().keys()].filter((n) => Number(n) >= de && Number(n) <= a)
+    if (pris.length) throw new Error(`la plage ${spec} porte déjà des numéros (${pris.join(', ')}) : elle ne se libère pas`)
+    ledger.plages = ledger.plages.filter((p) => p !== cible)
+    writeLedger(ledger)
+    console.log(`✅ Plage ${spec} (« ${cible.session} ») libérée.`)
+  })
+}
+
 function verifier({ staged = false, ci = false }) {
   const errors = []
   const ledger = ci ? null : readLedger()
@@ -353,6 +398,8 @@ try {
   if (cmd === 'prendre') prendre(rest[0], opt('--session'))
   else if (cmd === 'inscrire') inscrire(rest[0], opt('--session'))
   else if (cmd === 'plage') plage(rest[0], opt('--session'))
+  else if (cmd === 'rendre') rendre(rest[0])
+  else if (cmd === 'liberer') liberer(rest[0])
   else if (cmd === 'plages') console.log(listePlages(readLedger()))
   else if (cmd === 'verifier') process.exit(verifier({ staged: rest.includes('--staged'), ci: rest.includes('--ci') }))
   else if (cmd === 'liste') {
@@ -363,7 +410,7 @@ try {
     const c = collisions(inventory({ all: rest.includes('--toutes') }))
     console.log(c.length ? `\nCollisions visibles (${c.length}) :\n${c.map(fmt).join('\n')}` : '\nAucune collision visible.')
   } else {
-    console.error(`commande inconnue « ${cmd} » (plages | plage | prendre | inscrire | verifier | liste)`)
+    console.error(`commande inconnue « ${cmd} » (plages | plage | liberer | prendre | inscrire | rendre | verifier | liste)`)
     process.exit(2)
   }
 } catch (e) {
