@@ -153,12 +153,6 @@
       "expense": "Charge"
     },
     "defaultTaxCode": "Code taxe par défaut",
-    "nbLines": "Nb lignes",
-    "pageBreak": "Saut lignes/page",
-    "regrouping": "Regroupement",
-    "analyticEntry": "Saisie analytique",
-    "echeanceEntry": "Saisie échéance",
-    "tiersEntry": "Saisie compte tiers",
     "debitN1": "Débit N-1",
     "creditN1": "Crédit N-1",
     "exerciseHint": "Les reports à nouveaux génèrent des écritures dans le journal d'OD.",

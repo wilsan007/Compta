@@ -153,12 +153,6 @@
       "expense": "Expense"
     },
     "defaultTaxCode": "Default tax code",
-    "nbLines": "Number of lines",
-    "pageBreak": "Lines per page break",
-    "regrouping": "Grouping",
-    "analyticEntry": "Analytic entry",
-    "echeanceEntry": "Due date entry",
-    "tiersEntry": "Third-party entry",
     "debitN1": "Debit N-1",
     "creditN1": "Credit N-1",
     "exerciseHint": "Carry-forward entries generate postings in the OD journal.",
