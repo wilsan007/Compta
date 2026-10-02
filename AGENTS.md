@@ -3,9 +3,14 @@
 > ## ⚡ Session qui démarre ici, ou qui va écrire une migration : lisez d'abord
 > **[`doc/audit/NUMEROTATION-MIGRATIONS.md`](doc/audit/NUMEROTATION-MIGRATIONS.md)**
 > — la règle de numérotation, les plages prises par chaque session, et
-> l'histoire du 02 octobre où deux sessions se sont marchées dessus. Une
-> session qui écrit une migration sans l'avoir lu a déjà cassé le dépôt
-> une fois.
+> l'histoire du 02 octobre où des sessions se sont marchées dessus **deux
+> fois** (`310`→`321` le matin ; `415`, puis `416` **trois fois** le soir).
+>
+> **Depuis le 02/10 au soir, un numéro se PREND par l'outil, jamais à la main :**
+> `cd app && npm run migration:prendre -- <nom> --session "<votre ligne>"`
+> (contrôle avant → création → contrôle juste après → inscrit PRIS au registre
+> commun à tous les worktrees). Le crochet `pre-commit` (`npm run hooks:install`)
+> et la CI (`SOC-06`) refusent tout numéro en collision ou jamais pris.
 
 ## Reste ouvert — au 30 septembre 2026
 
@@ -41,9 +46,11 @@ L'essentiel en huit lignes :
 > | **`300` → `309`** | **W7** : CA3, temps, production, projets, analytique, FEC, devises, budgets, import Sage, écart de change | 2026-09-28 |
 > | **`310` → `324`** | **session recette** (`qa/recette-2026-09-29`) : paquets lisibles, bulletin de paie, tiers, soldes clients, livraison, sorties de stock, valorisation, facture directe, identité tiers, simulateur, prorata, autoliquidation UE, IBAN | **2026-10-02** |
 > | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) — les 14 chaînages et leurs suites | **2026-10-02** |
-> | **`415` → `429`** | **L16 → L24** (événements unifiés, capacité ↔ absence, régénération, chaînages internes, stock ↔ projets, dérivés du lettrage, reporting, moteur de règles, explicabilité). `414` reste à la **partie 3** (alerte de dégradation, en vol sur `partie-3-chainages`) | **2026-10-02** |
+> | **`415` → `429`** | **L16 → L24** (événements unifiés, capacité ↔ absence, régénération, chaînages internes, stock ↔ projets, dérivés du lettrage, reporting, moteur de règles, explicabilité) — `415` L23, `416` L17 | **2026-10-02** |
+> | **`414`, `430` → `449`** | **partie 3** (L3, L4) : `414` alerte de dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé bancaire — **déplacés de `415`/`416` le 02/10 au soir** (`0cd347c`, `9e0f33d`) | **2026-10-02** |
 > | **`450` → `459`** | **Partie 5** — intégrité référentielle des chaînages (registre des types, existence, garde de suppression, INV-19) | **2026-10-02** |
-> | `325` → `399`, `430` → `449` | **libre** | — |
+> | `325` · `340` → `369` | **partie 1** (TVA 198, tâche 1.7) · **partie 2** (défauts métier) | **2026-10-02** |
+> | `326` → `339`, `370` → `399`, `460` → … | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue

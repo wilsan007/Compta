@@ -61,6 +61,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SOC-06, avant la fusion : un numéro de migration de cette branche ne
+      # doit porter AUCUN autre nom sur une autre branche distante. Le runner
+      # ne voit le doublon qu'après la fusion ; le 02/10, 310→321, puis 415,
+      # puis 416 (trois fois) ont été pris deux fois par des sessions parallèles.
+      # En local, le crochet pre-commit (npm run hooks:install) fait le même
+      # contrôle, plus les fichiers non suivis des worktrees et le registre.
+      - name: 'SOC-06 : numéros de migration uniques sur toutes les branches'
+        run: |
+          git fetch --no-tags --depth=1 origin '+refs/heads/*:refs/remotes/origin/*'
+          node scripts/migration-numero.mjs verifier --ci
+
       - name: Lint (oxlint)
         run: npx oxlint --max-warnings=0
 
