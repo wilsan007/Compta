@@ -1896,6 +1896,156 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_invariant_alertes: {
+      Row: {
+        id: number
+        tenant_id: string
+        code: string
+        mesure_le: string
+        verdict_avant: string
+        verdict_apres: string
+        mesure_avant: number | null
+        mesure_apres: number | null
+        lignes_avant: number
+        lignes_apres: number
+        delta: number | null
+        motif: string
+        notifiee: boolean
+        created_at: string
+        releve_id: number | null
+        releve_avant_id: number | null
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        code: string
+        mesure_le: string
+        verdict_avant: string
+        verdict_apres: string
+        mesure_avant?: number
+        mesure_apres?: number
+        lignes_avant?: number
+        lignes_apres?: number
+        delta?: number
+        motif: string
+        notifiee?: boolean
+        created_at?: string
+        releve_id?: number
+        releve_avant_id?: number
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        code?: string
+        mesure_le?: string
+        verdict_avant?: string
+        verdict_apres?: string
+        mesure_avant?: number
+        mesure_apres?: number
+        lignes_avant?: number
+        lignes_apres?: number
+        delta?: number
+        motif?: string
+        notifiee?: boolean
+        created_at?: string
+        releve_id?: number
+        releve_avant_id?: number
+      }
+      Relationships: []
+    }
+    chain_invariant_results: {
+      Row: {
+        id: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a: number | null
+        mesure_b: number | null
+        ecart: number | null
+        lignes_en_ecart: number
+        duree_ms: number
+        detail: Json | null
+        mesure_le: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        code?: string
+        verdict?: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Relationships: []
+    }
+    chain_invariants: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        code: string
+        libelle: string
+        modules: string[]
+        source_a: string
+        source_b: string
+        sens: string
+        tolerance: number
+        mesurable: boolean
+        raison_non_mesurable: string | null
+        actif: boolean
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        code: string
+        libelle: string
+        modules?: string[]
+        source_a: string
+        source_b: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        code?: string
+        libelle?: string
+        modules?: string[]
+        source_a?: string
+        source_b?: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chain_regeneration_log: {
       Row: {
         id: number

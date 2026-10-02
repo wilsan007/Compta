@@ -1416,6 +1416,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L4, tranche 2 — L'ALERTE EN CAS DE DÉGRADATION (414). La 413 produit un
+      # historique que personne ne regarde : l'indice peut tomber en silence et
+      # l'éditeur découvre le lendemain qu'un maillon s'est cassé. La 414 compare
+      # le relevé du jour au relevé PRÉCÉDENT et alerte sur une perte, un
+      # agravement, ou un invariant redevenu mesurable et rompu. Elle n'alerte
+      # PAS sur une amélioration (alerter sur une bonne nouvelle est un défaut de
+      # conception), ni sur un écart déjà rompu et stationnaire.
+      # 7 scénarios : le premier passage n'alerte pas, la perte est détectée,
+      # écrite et notifiée, le rejeu est sans effet (unicité posée en BASE),
+      # l'aggravation d'un écart déjà signalé est notifiée, les fonctions et
+      # les index sont en place, et le job nocturne est inscrit quand pg_cron
+      # existe. Sans ce branchement (G5), la suite passerait et ne protégerait
+      # rien.
+      - name: 'L4 : l''alerte en cas de dégradation (414)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/414_chain_l4_alerte_degradation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

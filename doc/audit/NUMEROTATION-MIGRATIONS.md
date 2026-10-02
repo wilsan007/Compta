@@ -25,6 +25,7 @@ préjudice est fait, dans un pipeline, après que deux sessions ont travaillé.
 | `210` → `299` | audits fonctionnels, W7/W8, L7 | 2026-09-28 |
 | `300` → `309` | **W7** | 2026-09-28 |
 | `310` → `324` | **session recette** (`qa/recette-2026-09-29`) | 2026-10-02 |
+| **`414` → `449`** | **partie 3 du plan** (`partie-3-chainages`) : maillons RPC restants (L3), banc D1→D8 (L3), indice de cohérence (L4) | 2026-10-02 |
 | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) | 2026-10-02 |
 | `325` → `399` | **LIBRE** | — |
 

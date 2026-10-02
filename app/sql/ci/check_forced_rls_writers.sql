@@ -31,8 +31,8 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **313** tables sous `FORCE ROW LEVEL SECURITY` ;
---     * dont **14** sans AUCUNE politique d'écriture — c'est l'exposition : leur
+--     * **314** tables sous `FORCE ROW LEVEL SECURITY` ;
+--     * dont **15** sans AUCUNE politique d'écriture — c'est l'exposition : leur
 --       propriétaire ne peut pas écrire dès qu'il n'est ni super ni bypass ;
 --     * les **six** tables du socle en font partie, et c'est le lien avec L3.
 --     * +2 et +2 pour la **413** (L4, invariants) : `chain_invariants` et
@@ -40,6 +40,8 @@
 --       registre et le relevé ne s'écrivent que par `audit_chains`
 --       (SECURITY DEFINER), jamais par le client : c'est un choix de
 --       sécurité assumé, la raison est écrite dans la migration.
+--     * +1 et +1 pour la **414** : `chain_invariant_alertes`, même raison
+--       (`chain_alertes_lancer`, `service_role`).
 -- Ces deux nombres sont DATÉS. S'ils **montent**, c'est une régression. S'ils
 -- **baissent**, c'est une amélioration — et elle s'inscrit dans le même commit
 -- (la règle du dépôt : un plafond qui ne se met pas à jour ment).
@@ -79,10 +81,15 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
          WHERE politiques_ecriture = 0 AND NOT environnement_ecrit) AS muettes_ici;
 
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
+-- Mesuré le 02/10/2026 sur base neuve (273 migrations) : 314 tables sous FORCE
+-- RLS, dont 15 sans AUCUNE politique d'écriture. Le +1/+1 vient de la 414
+-- (`chain_invariant_alertes`), qui est volontairement MUETTE — elle ne s'écrit
+-- que par `chain_alertes_lancer` (SECURITY DEFINER, rôle `service_role`), jamais
+-- par le client. C'est la même raison que les deux tables de la 413.
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 313),
-  ('muettes',         14);
+  ('tables_forcees', 314),
+  ('muettes',         15);
 
 DO $$
 DECLARE
