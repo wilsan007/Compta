@@ -126,6 +126,7 @@
       "beneficiary": "Beneficiary (third party)",
       "iban": "IBAN (optional)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "Invalid IBAN: the check digits do not match. The payment order was not saved.",
       "amount": "Amount",
       "paymentDate": "Payment date",
       "reference": "Reference",

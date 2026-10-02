@@ -9,6 +9,7 @@ import type { PaymentOrder, BankAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { isIbanRejected } from '@/lib/iban'
 
 
 export function PaymentOrdersPage() {
@@ -160,6 +161,13 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // A5 (ach-003) : un IBAN faux sur un ordre de paiement finit en virement.
+    // Même décision que le compte bancaire du tiers (`isIbanRejected`), même
+    // refus nommé ; un numéro de compte ordinaire n'est pas un IBAN et passe.
+    if (isIbanRejected(thirdPartyIban)) {
+      toast('warning', tCommon('form.requiredField'), t('paymentOrders.form.ibanRefused'))
+      return
+    }
     setSaving(true)
     try {
       const number = await nextDocumentNumber('PAY')

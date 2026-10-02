@@ -126,6 +126,7 @@
       "beneficiary": "Bénéficiaire (tiers)",
       "iban": "IBAN (optionnel)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "IBAN invalide : la clé de contrôle ne correspond pas. L’ordre de paiement n’est pas enregistré.",
       "amount": "Montant",
       "paymentDate": "Date de paiement",
       "reference": "Référence",

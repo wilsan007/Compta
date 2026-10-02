@@ -371,10 +371,37 @@ et les modèles de saisie ne lisent **que** cette table.
   qui attendait le pays du client.
 
 
-### A5 — ach-003 🟡 — IBAN invalide accepté
+### A5 — ach-003 🟡 — IBAN invalide accepté — **✅ CORRIGÉ** (324 + écran)
 - **Correctif** : validation IBAN (longueur par pays + clé mod 97) côté écran **et** contrainte
   ou déclencheur côté base sur `partner_bank_accounts.account_number` (quand `type='iban'`).
 - **Test rouge** : `FR7612345` refusé ; un IBAN valide accepté.
+- **Fait (324 + écran)** — l'**hypothèse du plan était fausse** : `partner_bank_accounts`
+  n'a **aucune colonne `type`** ; elle porte `bank_code` / `sort_code` / `account_key`,
+  les champs d'un compte **américain**. Un déclencheur `type = 'iban'` aurait donc
+  bloqué des comptes parfaitement légitimes. La règle écrite distingue les deux
+  questions : la **forme** (`^[A-Z]{2}[0-9]{2}`) décide de ce qui est un IBAN, la
+  **clé** (mod 97-10) décide de sa justesse.
+  - écran : `src/lib/iban.ts` (validateur pur, comme `src/lib/siret.ts` d'A4) —
+    `cleanIban`, `looksLikeIBAN`, `validateIBAN`, et `isIbanRejected`, la décision
+    partagée par les **trois** écritures d'un IBAN : compte bancaire du tiers,
+    ordre de paiement (`third_party_iban`, le chemin qui finit en virement), RIB du
+    salarié (`bank_iban`, qui part en paie). Refus nommé + bouton désactivé, comme
+    le SIRET d'A4 ;
+  - base : migration **324** — `is_valid_iban(text)` IMMUTABLE (mod 97-10, boucle
+    chiffre par chiffre, pas de débordement) et un déclencheur `BEFORE INSERT OR
+    UPDATE` qui refuse avec le message nommé. Un appel d'API, un import ou un
+    script ne peuvent donc plus écrire un faux IBAN.
+  - ⚠️ **Choix explicite** : la 324 ne rattrape **pas** l'existant. Corriger une
+    ligne déjà fausse échouerait (l'`UPDATE` passe par le même déclencheur) ; le
+    plan ne demandait pas de reprise de données, et un rattrapage automatique en
+    silence serait pire qu'un refus visible. Le nettoyage éventuel est une
+    opération ponctuelle, à faire sur les lignes concernées.
+- **Preuves** : `324_*_tests` **6/6** (rouge avant mesuré : T01 en erreur de
+  compilation — la fonction n'existe pas ; **T02 le IBAN faux était accepté**
+  (`refusé=f`) ; T06 la modification laissait `FR…0180` en base) ; voisines 180 /
+  197 / 245 / 300 / 312 / 313 / 323 vertes ; `iban.test.ts` **5/5**,
+  `PartnerBankAccountsModal.test.tsx` **3/3** (rouges avant : le bouton n'était pas
+  désactivé et `createPartnerBankAccount` était appelé) ; Vitest **1541/1541**.
 
 ### A6 — ven-002 🔵 — colonne « Total » de la liste des clients = date de création
 - **Correctif** : colonne « Total facturé » (somme HT validée) ou en-tête « Créé le ».
