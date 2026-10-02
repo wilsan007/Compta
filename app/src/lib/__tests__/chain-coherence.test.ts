@@ -4,18 +4,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Deux tables lues par deux requêtes distinctes : `from('chain_invariants')`
 // et `from('chain_invariant_results')` ne rendent pas la même chose. Le mock
 // répond donc par TABLE, pas par un chain unique partagé.
-function makeChain(resolved: { data: unknown; error: unknown }) {
-  const chain: any = {
+//
+// Le chain est typé par une interface minimaliste — pas par `any`. La dette de
+// `any` est un plafond qui ne peut QUE descendre (garde `check-any-ceiling`),
+// et un mock non typé la ferait monter à chaque test ajouté.
+interface MockChain {
+  select: ReturnType<typeof vi.fn>
+  eq: ReturnType<typeof vi.fn>
+  order: ReturnType<typeof vi.fn>
+  limit: ReturnType<typeof vi.fn>
+  then: (resolve: (value: { data: unknown; error: unknown }) => unknown) => Promise<unknown>
+}
+
+interface Resolved {
+  data: unknown
+  error: unknown
+}
+
+function makeChain(resolved: Resolved): MockChain {
+  const chain: MockChain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(() => chain),
-    then: vi.fn((resolve: any) => Promise.resolve(resolved).then(resolve)),
+    then: (resolve) => Promise.resolve(resolved).then(resolve),
   }
   return chain
 }
 
-const parTable: Record<string, any> = {}
+const parTable: Record<string, MockChain> = {}
 function setMockData(table: string, data: unknown, error: unknown = null) {
   parTable[table] = makeChain({ data, error })
 }
