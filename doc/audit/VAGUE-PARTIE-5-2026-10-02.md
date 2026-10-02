@@ -171,8 +171,15 @@ Le plan autorise (§ 6) **un seul commit** pour 2 → 4 s'il est fait dans la
 journée ; c'est ce qui a été fait. Aucun commit intermédiaire rouge n'a existé,
 puisqu'aucun n'a été nécessaire.
 
-> **Lien GitHub** : à compléter une fois le premier passage vert de la branche
-> (`gh run list --branch partie-5-integrite-chainages`).
+> **Passage GitHub vert** : [run 37046835384](https://github.com/wilsan007/Compta/actions/runs/37046835384),
+> 6 min 23 s, sur le commit `b1e830f`. Les sept jobs joués sont **verts** —
+> `DB Integration Tests` (**135 étapes, 0 échec**), `Chemin de l'écran
+> (PostgREST réel)`, `Unit Tests`, `i18n`, `Lint & Type Check`,
+> `Edge Functions`, `Production Build`, `CI Summary`. (`E2E Tests` et
+> `Security Audit` sont `skipped` par la condition existante du workflow.)
+>
+> Rappel : le run porte aussi le commit `99bc04e` d'une session voisine, qui
+> s'est posé sur cette branche pendant le travail (voir § 6).
 | i18n fr/en/ar | **parité** sur les 9 espaces, dont `errors` |
 | portes `check-i18n`, `check-i18n-usage`, `check-unused-tables`, `check-knip-ceiling`, `check-any-ceiling`, `check-console-error-ceiling`, `check-rpc-contract`, `check-written-columns`, `check-unchecked-writes` | **toutes vertes** |
 | `plpgsql_check` | **0 erreur** (porte `sql/ci/check_plpgsql.sql`, dans les 115) |
