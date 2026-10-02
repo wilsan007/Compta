@@ -1225,6 +1225,15 @@ export interface CollectionReminder {
   status: 'draft' | 'sent' | 'paid' | 'cancelled'
   notes: string | null
   created_at: string
+  /** B9 (ven-015) : la table ne porte ni le nom du client ni le numéro de la
+   *  facture — ils viennent des jointures demandées par `getCollectionReminders`. */
+  customers?: { name: string } | null
+  invoices?: { number: string } | null
+  payment_status?: 'unpaid' | 'pending' | 'paid' | null
+  payment_link_url?: string | null
+  payment_link_expires_at?: string | null
+  reminder_level_id?: string | null
+  dispute_id?: string | null
 }
 
 // ============ Sprint A: Commercial Transformations ============

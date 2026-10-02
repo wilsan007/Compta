@@ -46,6 +46,7 @@ export function PaymentRemindersPage() {
   }
 
   const tableHeaders = [
+    t('reminders.reminder'),
     t('reminders.customer'),
     t('reminders.invoice'),
     t('reminders.amount'),
@@ -75,10 +76,15 @@ export function PaymentRemindersPage() {
       ) : (
         <Card>
           <Table headers={tableHeaders}>
-            {reminders.map((reminder: any) => (
+            {reminders.map((reminder) => {
+              // la constante évite que le rétrécissement de type ne se perde dans
+              // le closure du bouton (TS ne retient pas le filtrage sur une propriété)
+              const lien = reminder.payment_link_url ?? null
+              return (
               <TableRow key={reminder.id}>
-                <TableCell className="text-sm">{reminder.customer_name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs">{reminder.invoice_number || '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{reminder.number}</TableCell>
+                <TableCell className="text-sm">{reminder.customers?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{reminder.invoices?.number || '—'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(reminder.amount || 0))}</TableCell>
                 <TableCell className="text-xs">{reminder.due_date ? formatDate(reminder.due_date) : '—'}</TableCell>
                 <TableCell>
@@ -92,15 +98,15 @@ export function PaymentRemindersPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs">
-                  {reminder.payment_link_url ? (
-                    <span className="text-[var(--color-primary)] truncate max-w-[150px] inline-block">{reminder.payment_link_url}</span>
+                  {lien ? (
+                    <span className="text-[var(--color-primary)] truncate max-w-[150px] inline-block">{lien}</span>
                   ) : (
                     <span className="text-[var(--color-text-tertiary)]">—</span>
                   )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    {!reminder.payment_link_url && (
+                    {!lien && (
                       <button
                         onClick={() => handleGenerateLink(reminder.id)}
                         className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"
@@ -109,9 +115,9 @@ export function PaymentRemindersPage() {
                         <Link2 className="w-4 h-4" />
                       </button>
                     )}
-                    {reminder.payment_link_url && (
+                    {lien && (
                       <button
-                        onClick={() => handleCopyLink(reminder.payment_link_url)}
+                        onClick={() => handleCopyLink(lien)}
                         className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
                         title={t('reminders.copyLink')}
                       >
@@ -121,7 +127,8 @@ export function PaymentRemindersPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              )
+            })}
           </Table>
         </Card>
       )}

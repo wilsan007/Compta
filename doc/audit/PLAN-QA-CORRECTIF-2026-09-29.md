@@ -437,9 +437,11 @@ et les modèles de saisie ne lisent **que** cette table.
 > fenêtre « Voir »). B3 est livré : régime déduit du pays (318) et du n° de TVA,
 > `vat_code` UE/EXO posé avant le calcul, mention à l'écran et au PDF, Factur-X
 > `AE`/`K` ; la fenêtre « Voir » montre lignes et HT/TVA par taux.
-> **Reste ouvert** : la **relance** de B9 (chaîne de relances d'écran
-> `/accounting/treatment/payment-reminders`) et la ventilation de la CA3 par
-> **cases** (E1/E2/ligne 06) — le `vat_code` est posé pour elle.
+> **Reste ouvert** : la ventilation de la CA3 par **cases** (E1/E2/ligne 06) —
+> le `vat_code` est posé pour elle, mais `journal_lines` ne porte aucun lien vers
+> la pièce d'origine (ni `source_id`, ni `source_type` : seulement
+> `piece_number`/`reference` en texte), donc la case « non imposable » est
+> inaccessible depuis le grand livre sans un nouveau lien. Chantier à part.
 
 ### B1 — ven-005 🔴 / ven-004 🟠 — sortie de stock du BL — **✅ CORRIGÉ** (`9ef26c8`, migration 314)
 - **Cause établie** : `create_stock_out_on_delivery()` ne réagissait qu'au passage à `shipped`
@@ -616,9 +618,22 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Fait** : le statut « En retard » est **calculé** (pièce validée, échéance dépassée,
   reste dû > 0, ni payée ni annulée) ; le filtre l'utilise et compte les pièces ; l'état
   vide dit « Aucune facture en retard » ; l'en-tête libelle ses deux montants
-  (« Total TTC » / « Reste dû »). ⚠️ **La proposition de relance** (écran
-  `/accounting/treatment/payment-reminders` vide) **reste ouverte** — elle demande la
-  chaîne de relances, hors de ce correctif.
+  (« Total TTC » / « Reste dû »). La relance elle-même n'était pas produite :
+  `claim_collection_reminder()` n'était appelé que par les tests, et le cron
+  `cron-payment-reminders` (planifié à 9 h, vérifié dans `cron.job`) fait bien
+  le travail depuis 258.
+- **Dernier point, fermé (écran)** : l'écran des relances ne disait **ni à qui ni
+  à quoi**. `collection_reminders` ne porte que son propre `number` — ni
+  `customer_name`, ni `invoice_number` — et le tableau lisait ces deux colonnes :
+  il affichait **« — » sur chaque ligne**, et ne montrait jamais le numéro de la
+  relance. `getCollectionReminders()` demande désormais les jointures
+  (`customers(name), invoices(number)`), vérifiées **vivantes** contre PostgREST
+  sur la base locale (HTTP 200, clés étrangères composites
+  `(tenant_id, customer_id)` correctement détectées), et l'écran affiche le n° de
+  relance, le client et la facture. Plus de `any` : `CollectionReminder` porte
+  ses jointures et les colonnes de lien de paiement qu'il lisait déjà.
+  Preuve : `PaymentRemindersPage.test.tsx` **2/2** (rouges avant : « Client Un »
+  et « REL-2026-000007 » introuvables).
 
 ### B10 — ven-016 🔴 — « Contrôle crédit » en boucle infinie — **✅ CORRIGÉ** (`d9197e1`)
 - **Cause établie** (l'hypothèse d'un `useEffect` à dépendance instable était **fausse** : ce
