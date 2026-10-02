@@ -228,6 +228,56 @@ describe('W6 — les écrans passent par les fonctions Edge', () => {
       globalThis.fetch = vraiFetch
     }
   })
+
+  // D-5 (tâche 1.11) : les deux fonctions qui parlent au prestataire d'IA lisent
+  // le consentement de LA société désignée par `x-tenant-id`, et refusent (400)
+  // de la deviner. Ces deux `fetch` directs ne passent pas par celui du client
+  // Supabase : sans l'en-tête posé à la main, l'import ne marchait plus du tout.
+  it('D-5 : le repli IA de l’import et l’analyse IA d’un relevé désignent la société (x-tenant-id)', async () => {
+    const vraiFetch = globalThis.fetch
+    const entetes: Record<string, string>[] = []
+    const fetchMock = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      entetes.push((init?.headers || {}) as Record<string, string>)
+      return new Response(
+        JSON.stringify({ mapping: {}, confidence: 0.5, reasoning: {}, transactions: [], template: {}, warnings: [] }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )
+    })
+    globalThis.fetch = fetchMock as unknown as typeof fetch
+    try {
+      getSession.mockResolvedValue({ data: { session: { access_token: 'jeton-123' } } })
+      const { aiFallbackMapping } = await import('@/lib/aiImportMapping')
+      const { parseWithAI } = await import('@/lib/pdfBankParser')
+
+      await aiFallbackMapping(['A'], [{ A: 'x' }], [{ key: 'a', label: 'A', required: false }], 'M', 'https://e.test/functions/v1/ai-import-mapping')
+      await parseWithAI('01/09/2026 VIREMENT 10,00', 'Banque')
+
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      for (const h of entetes) expect(h).toMatchObject({ 'x-tenant-id': 'test-tenant-id' })
+    } finally {
+      globalThis.fetch = vraiFetch
+    }
+  })
+
+  it('D-5 : un refus de consentement (409) atteint l’écran avec sa phrase, pas « IA indisponible »', async () => {
+    const vraiFetch = globalThis.fetch
+    const phrase = "L'envoi à un prestataire d'IA n'est pas autorisé pour cette société."
+    globalThis.fetch = vi.fn(async () => new Response(
+      JSON.stringify({ error: phrase, code: 'OCR_CONSENT_REQUIRED' }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } },
+    )) as unknown as typeof fetch
+    try {
+      getSession.mockResolvedValue({ data: { session: { access_token: 'jeton-123' } } })
+      const { aiFallbackMapping } = await import('@/lib/aiImportMapping')
+      const { parseWithAI } = await import('@/lib/pdfBankParser')
+
+      await expect(aiFallbackMapping(['A'], [{ A: 'x' }], [{ key: 'a', label: 'A', required: false }], 'M', 'https://e.test/x'))
+        .rejects.toThrow(phrase)
+      await expect(parseWithAI('texte', 'Banque')).rejects.toThrow(phrase)
+    } finally {
+      globalThis.fetch = vraiFetch
+    }
+  })
 })
 
 describe('W6 — aucun écran n’écrit la trace d’une transmission', () => {

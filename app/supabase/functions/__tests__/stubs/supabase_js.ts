@@ -19,8 +19,15 @@
 // trouvent le champ. Sans ce champ, toute fonction qui vérifie l'appartenance
 // AVANT d'agir s'arrêtait sur `forbidden()` (403), et le chemin situé derrière
 // n'était jamais atteint : ni exécuté, ni testable.
+//
+// Un test peut COMPLÉTER cette ligne (`globalThis.__stubLigne`) : un rôle pour
+// passer une garde de rôle, `ocr_consent` pour la garde de consentement (D-5).
+// Sans complément, la ligne n'a ni rôle ni consentement — le cas qui refuse.
 const LIGNE_NEUTRE = { id: "stub", tenant_id: "00000000-0000-0000-0000-0000000000aa" }
-const RESULTAT_NEUTRE = { data: Object.assign([LIGNE_NEUTRE], LIGNE_NEUTRE), error: null }
+function resultatNeutre() {
+  const ligne = { ...LIGNE_NEUTRE, ...((globalThis as any).__stubLigne || {}) }
+  return { data: Object.assign([ligne], ligne), error: null }
+}
 
 
 function chaine(): any {
@@ -28,7 +35,7 @@ function chaine(): any {
   const proxy: any = new Proxy(cible, {
     get(_t, prop) {
       if (prop === "then") {
-        return (resolve: (v: unknown) => unknown) => Promise.resolve(RESULTAT_NEUTRE).then(resolve)
+        return (resolve: (v: unknown) => unknown) => Promise.resolve(resultatNeutre()).then(resolve)
       }
       if (prop === "auth") {
         return {

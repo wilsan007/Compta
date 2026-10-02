@@ -6,7 +6,7 @@
 // W6 : ce module appelle la fonction Edge `ai-import-mapping`, qui exige un
 // jeton depuis toujours — il faut donc le client Supabase ici (le repli IA
 // n'a jamais fonctionné sans lui).
-import { supabase } from '@/lib/supabase'
+import { getCachedTenantId, supabase } from '@/lib/supabase'
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -841,6 +841,14 @@ export interface AIFallbackResult {
   reasoning: Record<string, string>
 }
 
+/**
+ * D-5 (tâche 1.11) : un refus de CONSENTEMENT n'est pas une panne — il doit
+ * atteindre l'écran avec sa phrase (« donnez votre consentement dans
+ * Paramètres → Société »), pas se perdre dans « IA indisponible » comme les
+ * autres échecs, que `aiFallbackMapping` rend en `null`.
+ */
+export class ConsentementRequis extends Error {}
+
 export async function aiFallbackMapping(
   sourceHeaders: string[],
   sampleRows: Record<string, any>[],
@@ -865,6 +873,10 @@ export async function aiFallbackMapping(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+        // D-5 : la fonction refuse (400) de deviner la société, et lit son
+        // consentement. Ce `fetch` direct ne passe pas par celui du client
+        // Supabase, qui joint l'en-tête à toutes ses requêtes.
+        ...(getCachedTenantId() ? { 'x-tenant-id': getCachedTenantId() as string } : {}),
       },
       body: JSON.stringify({
         sourceHeaders,
@@ -875,6 +887,10 @@ export async function aiFallbackMapping(
     })
 
     if (!response.ok) {
+      if (response.status === 409) {
+        const refus = await response.json().catch(() => null)
+        if (refus?.code === 'OCR_CONSENT_REQUIRED') throw new ConsentementRequis(refus.error)
+      }
       console.error('AI fallback HTTP error:', response.status)
       return null
     }
@@ -891,6 +907,7 @@ export async function aiFallbackMapping(
       reasoning: data.reasoning || {},
     }
   } catch (err) {
+    if (err instanceof ConsentementRequis) throw err
     console.error('AI fallback network error:', err)
     return null
   }

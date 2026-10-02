@@ -1,5 +1,5 @@
 // PRF-02 : pdfjs-dist chargé dynamiquement pour réduire le bundle initial
-import { supabase } from '@/lib/supabase'
+import { getCachedTenantId, supabase } from '@/lib/supabase'
 
 export interface ParsedBankTransaction {
   date: string
@@ -401,6 +401,10 @@ export async function parseWithAI(
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
+      // D-5 (tâche 1.11) : la fonction lit le consentement de CETTE société et
+      // refuse (400) de la deviner. Ce `fetch` direct ne passe pas par celui du
+      // client Supabase, qui joint l'en-tête à toutes ses requêtes.
+      ...(getCachedTenantId() ? { 'x-tenant-id': getCachedTenantId() as string } : {}),
     },
     body: JSON.stringify({ rawText, bankName, bankId, previousTemplate, correctionNotes, attemptCount }),
   })
