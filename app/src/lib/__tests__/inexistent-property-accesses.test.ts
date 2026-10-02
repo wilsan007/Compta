@@ -1,8 +1,8 @@
 /**
  * Les accès à une propriété inexistante — gardes de régression (2026-10-02).
  *
- * Quatre défauts de la même famille, trouvés en typant des états `any[]` depuis
- * leur fonction de requête (état des lieux :
+ * Quatre défauts de la même famille, trouvés en nommant le type d'un tableau
+ * d'état depuis sa fonction de requête (état des lieux :
  * `doc/audit/ETAT-DES-LIEUX-29-ACCES-PROPRIETE-INEXISTANTE-2026-10-01.md`) :
  *
  *  - AUD-ACCES-02 `EmployeeExpensesPage` : l'indicateur d'intégration en paie
@@ -28,8 +28,28 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 // ============ Mock Infrastructure (même harnais que production-queries) ============
-function createMockChain(resolvedValue: { data: any; error: any } = { data: [], error: null }) {
-  const chain: any = {
+
+/** Ce que le faux PostgREST rend : la donnée est `unknown`, jamais `any` — un `any`
+ *  ici rendrait la garde incapable de dire quoi que ce soit. */
+type ReponseSimulee = { data: unknown; error: unknown }
+/** Rôle du `then` qu'on passe à `Promise` : reçoit la réponse résolue. */
+type Resolveur = (reponse: ReponseSimulee) => void
+type Simulateur = ReturnType<typeof vi.fn>
+/** Une chaîne : chaque méthode se renvoie elle-même, `single`/`rpc`/`then` résolvent. */
+interface ChaineSimulee {
+  select: Simulateur; insert: Simulateur; update: Simulateur; delete: Simulateur
+  eq: Simulateur; neq: Simulateur; order: Simulateur; single: Simulateur
+  maybeSingle: Simulateur; limit: Simulateur; range: Simulateur; in: Simulateur
+  gte: Simulateur; lte: Simulateur; like: Simulateur; ilike: Simulateur
+  or: Simulateur; not: Simulateur; is: Simulateur; count: Simulateur
+  rpc: Simulateur
+  // Le thenable rend ce que `Promise` lui rend : le resolveur renvoie `void`,
+  // donc le résultat est `unknown` — la forme exacte n'a pas d'importance ici.
+  then: (resolve: Resolveur) => Promise<unknown>
+}
+
+function createMockChain(resolvedValue: ReponseSimulee = { data: [], error: null }): ChaineSimulee {
+  const chain: ChaineSimulee = {
     select: vi.fn(() => chain),
     insert: vi.fn(() => chain),
     update: vi.fn(() => chain),
@@ -51,7 +71,7 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     is: vi.fn(() => chain),
     count: vi.fn(() => chain),
     rpc: vi.fn(() => Promise.resolve(resolvedValue)),
-    then: vi.fn((resolve: any) => Promise.resolve(resolvedValue).then(resolve)),
+    then: (resolve: Resolveur) => Promise.resolve(resolvedValue).then(resolve),
   }
   return chain
 }
@@ -76,16 +96,16 @@ vi.mock('@/lib/supabase', () => ({
 
 import { supabase } from '@/lib/supabase'
 
-function setMockData(data: any, error: any = null) {
+function setMockData(data: unknown, error: unknown = null) {
   mockChain.single = vi.fn(() => Promise.resolve({ data, error }))
   mockChain.maybeSingle = vi.fn(() => Promise.resolve({ data, error }))
-  mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data, error }).then(resolve))
+  mockChain.then = (resolve: Resolveur) => Promise.resolve({ data, error }).then(resolve)
 }
 
 function resetMock() {
   mockChain.single = vi.fn(() => Promise.resolve({ data: null, error: null }))
   mockChain.maybeSingle = vi.fn(() => Promise.resolve({ data: null, error: null }))
-  mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [], error: null }).then(resolve))
+  mockChain.then = (resolve: Resolveur) => Promise.resolve({ data: [], error: null }).then(resolve)
   vi.clearAllMocks()
 }
 
