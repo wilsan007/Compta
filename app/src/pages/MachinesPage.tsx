@@ -8,6 +8,7 @@ import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function MachinesPage() {
   const { t } = useTranslation('production')
@@ -25,7 +26,7 @@ export function MachinesPage() {
       const [macs, wcs] = await Promise.all([getMachines(), getWorkCenters()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -34,13 +35,13 @@ export function MachinesPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(t('machines.confirmDelete'))) return
     try { await deleteMachine(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDeleteWc(id: string) {
     if (!confirmSync(t('machines.confirmDeleteWorkCenter'))) return
     try { await deleteWorkCenter(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   function handleExport() {
@@ -57,7 +58,7 @@ export function MachinesPage() {
     try {
       const rows = await importFromExcel(file)
       toast('success', t('machines.import'), t('routings.importSuccess', { count: rows.length }))
-    } catch (err: any) { toast('error', t('routings.importError'), err.message) }
+    } catch (err) { toast('error', t('routings.importError'), errorMessage(err)) }
   }
 
   return (
@@ -145,7 +146,7 @@ function MachineFormModal({ workCenters, onClose, onSaved }: { workCenters: Work
     try {
       await createMachine({ code, name, work_center_id: workCenterId || null, capacity_per_hour: capacity, status: status as any, purchase_date: purchaseDate || null, notes })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (
@@ -184,7 +185,7 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
     try {
       await createWorkCenter({ code, name, capacity_hours_per_day: capacity, cost_per_hour: costPerHour, active: true })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (

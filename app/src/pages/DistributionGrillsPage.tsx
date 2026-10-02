@@ -6,6 +6,7 @@ import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function DistributionGrillsPage() {
   const { t } = useTranslation('accounting')
@@ -20,8 +21,8 @@ export function DistributionGrillsPage() {
     try {
       const data = await getDistributionGrills()
       setGrills(data || [])
-    } catch (err: any) { console.error('Failed to load distribution grills:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load distribution grills:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -35,8 +36,8 @@ export function DistributionGrillsPage() {
       await deleteDistributionGrill(id)
       toast('success', tCommon('common.success'), t('grills.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -136,8 +137,8 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       })
       toast('success', tCommon('common.success'), t('grills.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

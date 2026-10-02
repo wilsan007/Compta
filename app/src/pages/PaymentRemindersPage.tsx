@@ -7,6 +7,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Link2, Copy, Mail } from 'lucide-react'
 import type { CollectionReminder } from '@/types'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function PaymentRemindersPage() {
   const { t } = useTranslation('accounting')
@@ -21,8 +22,8 @@ export function PaymentRemindersPage() {
     try {
       const data = await getCollectionReminders()
       setReminders(data || [])
-    } catch (err: any) { console.error('Failed to load reminders:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load reminders:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -35,8 +36,8 @@ export function PaymentRemindersPage() {
       await generatePaymentLink(id)
       toast('success', tCommon('common.success'), t('reminders.linkGenerated'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

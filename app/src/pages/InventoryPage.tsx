@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button, Select } from '@/components/ui'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { getStockMovements, getWarehouses, createStockMovement, getProducts } from '@/lib/queries/stock'
 import { calculateStockValuation, calculateInventoryVariance } from '@/lib/queries/businessFunctions'
 import { ClipboardList, Plus, X, Calculator } from 'lucide-react'
@@ -41,7 +41,7 @@ const [movements, setMovements] = useState<any[]>([])
       setMovements(movs || [])
       setWarehouses(whs || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -56,7 +56,7 @@ const [movements, setMovements] = useState<any[]>([])
       setValuationRows(rows)
       const total = rows.reduce((sum, r) => sum + Number(r.total_value || 0), 0)
       toast('success', t('inventory.title'), `${rows.length} produits — ${formatCurrency(total)}`)
-    } catch (err: any) { toast('error', t('inventory.title'), err.message || 'Erreur') }
+    } catch (err) { toast('error', t('inventory.title'), errorMessage(err) || 'Erreur') }
     finally { setValuationLoading(false) }
   }
 
@@ -64,7 +64,7 @@ const [movements, setMovements] = useState<any[]>([])
     try {
       const res = await calculateInventoryVariance(selectedWarehouse || undefined)
       toast('success', t('inventory.title'), JSON.stringify(res))
-    } catch (err: any) { toast('error', t('inventory.title'), err.message || 'Erreur') }
+    } catch (err) { toast('error', t('inventory.title'), errorMessage(err) || 'Erreur') }
   }
 
   const adjustments = movements.filter((m) => m.movement_type === 'adjustment' || m.movement_type === 'initial')
@@ -186,7 +186,7 @@ const [productId, setProductId] = useState('')
         movement_date: movementDate, notes: notes || null,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

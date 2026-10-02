@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne, isSegregationEnforced } from '@/lib/queries/accounting'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw, CheckCircle } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -41,8 +41,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       ])
       setEntries(je || [])
       setAccounts(accs || [])
-    } catch (err: any) { console.error('Error loading journal entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading journal entries:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -73,8 +73,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       await generateExtourne(id, 'Extourne manuelle')
       toast('success', tCommon('toast.success'), t('writingsEnhancement.extourneSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('writingsEnhancement.extourneError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('writingsEnhancement.extourneError'))
     }
   }
 
@@ -249,8 +249,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
         lines: linesData,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }

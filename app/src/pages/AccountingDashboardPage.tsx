@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, Breadcrumb, SkeletonTable, StatCard } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getJournalEntries, getChartAccounts, getTrialBalance } from '@/lib/queries/accounting'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { CalendarDays, FileText, TrendingUp, AlertTriangle, Plus, BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { JournalEntry, ChartAccount } from '@/types'
@@ -33,9 +33,9 @@ export function AccountingDashboardPage() {
       setEntries(je || [])
       setAccounts(accs || [])
       setTrialBalance(tb || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading accounting dashboard:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

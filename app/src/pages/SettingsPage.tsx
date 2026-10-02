@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth'
 import { useTenantModules } from '@/lib/useTenantModules'
 import { useLocale } from '@/hooks/useLocale'
 import { CURRENCIES, COUNTRIES } from '@/lib/countries'
+import { errorMessage } from '@/lib/utils'
 
 const routeToTab: Record<string, 'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'> = {
   '/settings/company': 'company',
@@ -63,7 +64,7 @@ export function SettingsPage() {
       setAccounts(a || [])
       setUsers(u || [])
       setPacks(p || [])
-    } catch (err: any) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -272,9 +273,9 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
       } as any)
       refresh()
       onSaved()
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to update legislation pack:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }
@@ -556,8 +557,8 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
     setCheckingSiret(true)
     try {
       setSiretCheck(await verifySiret(form.siret.trim()))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setCheckingSiret(false)
     }
@@ -567,8 +568,8 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
     setCheckingVat(true)
     try {
       setVatCheck(await validateVatVies(form.vat_number.trim(), form.vat_number.trim()))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setCheckingVat(false)
     }
@@ -594,7 +595,7 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       } as any)
       setSaved(true)
       onSaved()
-    } catch (err: any) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }

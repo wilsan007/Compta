@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Input } from '@/c
 import { getPaymentOrders, getCompanySettings } from '@/lib/queries/accounting'
 import { generateSEPAXML, downloadSEPAXML, type SEPAPaymentInfo, type SEPAInitiator } from '@/lib/sepa'
 import { useToast } from '@/lib/toast'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { FileCode, Download, CheckSquare, Square, CheckCircle2 } from 'lucide-react'
 import type { PaymentOrder, CompanySettings } from '@/types'
 
@@ -33,9 +33,9 @@ export function SepaTransferPage() {
       ])
       setPayments((pays || []).filter((p) => p.type === 'sepa_transfer' && p.status !== 'cancelled' && p.status !== 'draft'))
       setCompany(comp)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading SEPA data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

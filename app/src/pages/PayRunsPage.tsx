@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees } from '@/lib/queries/payroll'
 import { generatePayrollJournal, payPayrollRun } from '@/lib/queries/misc'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Calendar, Plus, Trash2, X, FileText, Banknote } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -38,12 +38,12 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleStatusChange(id: string, status: string) {
-  try { await updatePayRun(id, { status: status as any }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+  try { await updatePayRun(id, { status: status as any }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
-    try { await deletePayRun(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await deletePayRun(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleGenerateJournal(id: string) {
@@ -51,8 +51,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
       await generatePayrollJournal(id)
       toast('success', tCommon('common.success'), t('payrollAccounting.generatedEntries'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -70,8 +70,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
         toast('success', t('payRuns.pay'), t('payRuns.payDone'))
       }
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setPaying(null)
     }
@@ -166,7 +166,7 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
         number, period_start: periodStart, period_end: periodEnd, pay_date: payDate, status: 'draft',
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getSepaPaymentOrders, transmitSepaOrder } from '@/lib/queries/leavesAbsences'
 import { getPayRuns } from '@/lib/queries/payroll'
 import type { SepaPaymentOrder, PayRun } from '@/types'
@@ -23,7 +23,7 @@ export function SepaPaymentsPage() {
       const [ords, runs] = await Promise.all([getSepaPaymentOrders(), getPayRuns()])
       setOrders(ords || [])
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -35,7 +35,7 @@ export function SepaPaymentsPage() {
       await transmitSepaOrder(id)
       toast('success', tCommon('common.success'), t('sepa.transmitted'))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   function handleDownload(order: SepaPaymentOrder) {

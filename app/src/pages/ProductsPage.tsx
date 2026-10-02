@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement, getWarehouses } from '@/lib/queries/stock'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown } from 'lucide-react'
 import type { Product, StockMovement, Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -31,8 +31,8 @@ const [products, setProducts] = useState<Product[]>([])
       setProducts(p)
       setMovements(m)
       setWarehouses(w.filter((x) => x.active !== false))
-    } catch (err: any) { console.error('Failed to load products:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load products:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -45,8 +45,8 @@ const [products, setProducts] = useState<Product[]>([])
     try {
       await deleteProduct(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -173,8 +173,8 @@ function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]
         ? { quantity: stockQty, warehouse_id: initialWarehouseId || null, unit_cost: purchasePrice }
         : undefined)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -273,8 +273,8 @@ function StockMovementForm({ products, warehouses, onClose, onSaved }: { product
         notes: null,
       })
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

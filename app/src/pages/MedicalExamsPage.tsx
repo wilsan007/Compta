@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { getMedicalExams, createMedicalExam, updateMedicalExam } from '@/lib/queries/sprintDE'
 import { getEmployees } from '@/lib/queries/payroll'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { Stethoscope, Plus, X, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -32,9 +32,9 @@ export function MedicalExamsPage() {
       const [exams, emps] = await Promise.all([getMedicalExams(), getEmployees()])
       setRecords(exams || [])
       setEmployees(emps || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -47,7 +47,7 @@ export function MedicalExamsPage() {
       await updateMedicalExam(id, { result: result as any, completed_date: new Date().toISOString().split('T')[0] })
       await loadData()
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   const filtered = filterEmp ? records.filter((r) => r.employee_id === filterEmp) : records
@@ -156,8 +156,8 @@ function MedicalExamForm({ employees, onClose, onSaved }: { employees: Employee[
       } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

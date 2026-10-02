@@ -8,6 +8,7 @@ import { getStandardLabels, createStandardLabel, deleteStandardLabel, getAnalyti
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import type { GridTemplate, PaymentTemplateCompta, StandardLabel, AnalyticJournalCode } from '@/types'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Grid Templates Page (Modèles de grille) ============
 export function GridTemplatesPage() {
@@ -58,8 +59,8 @@ export function GridTemplatesPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -68,8 +69,8 @@ export function GridTemplatesPage() {
     try {
       await deleteGridTemplate(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -163,8 +164,8 @@ export function PaymentTemplatesComptaPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -173,8 +174,8 @@ export function PaymentTemplatesComptaPage() {
     try {
       await deletePaymentTemplateCompta(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -260,8 +261,8 @@ export function StandardLabelsPage() {
       toast('success', tCommon('common.success'), tCommon('toast.created'))
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -270,8 +271,8 @@ export function StandardLabelsPage() {
     try {
       await deleteStandardLabel(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -360,8 +361,8 @@ export function AnalyticJournalCodesPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -370,8 +371,8 @@ export function AnalyticJournalCodesPage() {
     try {
       await deleteAnalyticJournalCode(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 

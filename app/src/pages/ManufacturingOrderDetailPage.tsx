@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
@@ -44,7 +44,7 @@ export function ManufacturingOrderDetailPage() {
         const prod = (prods || []).find((p: any) => p.id === moData.product_id)
         if ((prod as any)?.units_per_carton) setLabelQty((prod as any).units_per_carton)
       }
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [id, tCommon, toast])
 
@@ -53,16 +53,16 @@ export function ManufacturingOrderDetailPage() {
   async function loadTabData(tab: string) {
     if (!id) return
     if (tab === 'labels' && labels.length === 0) {
-      try { setLabels(await getOFLabels(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      try { setLabels(await getOFLabels(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'lots' && lots.length === 0) {
-      try { setLots(await getOFLots(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      try { setLots(await getOFLots(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'consumptions' && consumptions.length === 0) {
-      try { setConsumptions(await getOFConsumptions(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
-      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
   }
 
@@ -72,7 +72,7 @@ export function ManufacturingOrderDetailPage() {
       await generateOFLabels(id, labelCount, labelQty, mo?.product_id || null)
       setLabels(await getOFLabels(id))
       toast('success', t('manufacturing.detail.labels.generated'), t('manufacturing.detail.labels.generatedMsg', { count: labelCount }))
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeclareLabel(labelId: string) {
@@ -80,22 +80,22 @@ export function ManufacturingOrderDetailPage() {
       await updateOFLabel(labelId, { is_declared: true, is_complete: true })
       setLabels(await getOFLabels(id!))
       toast('success', t('manufacturing.detail.labels.declaredSuccess'), t('manufacturing.detail.labels.declaredSuccessMsg'))
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteLabel(labelId: string) {
     try { await deleteOFLabel(labelId); setLabels(await getOFLabels(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteLot(lotId: string) {
     try { await deleteOFLot(lotId); setLots(await getOFLots(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteCons(consId: string) {
     try { await deleteOFConsumption(consId); setConsumptions(await getOFConsumptions(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleProductionCost() {
@@ -106,7 +106,7 @@ export function ManufacturingOrderDetailPage() {
       setProductionCost(res)
       const total = (res as any)?.total_cost ?? res
       toast('success', t('manufacturing.detail.info.cost'), formatCurrency(Number(total ?? 0)))
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
     finally { setCostLoading(false) }
   }
 
@@ -375,7 +375,7 @@ function LotFormModal({ moId, products, onClose, onSaved }: { moId: string; prod
         expiry_type: (expiryType as any) || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -418,7 +418,7 @@ function ConsumptionFormModal({ moId, products, isDeferred, onClose, onSaved }: 
         is_deferred: isDeferred, notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   return (

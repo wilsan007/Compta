@@ -5,6 +5,7 @@ import { getMyDocuments, acknowledgeDocument } from '@/lib/queries/dematRh'
 import type { EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Download, CheckCircle, PenTool, Lock } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function EmployeeDocumentsPage() {
   const { t } = useTranslation('employee')
@@ -20,8 +21,8 @@ export function EmployeeDocumentsPage() {
     try {
       const docs = await getMyDocuments()
       setDocuments(typeFilter ? docs.filter(d => d.document_type === typeFilter) : docs)
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -34,8 +35,8 @@ export function EmployeeDocumentsPage() {
       await acknowledgeDocument(id)
       toast('success', t('documents.acknowledge'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 

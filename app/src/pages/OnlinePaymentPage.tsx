@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, EmptyState, SkeletonTable } from '@/components/ui'
 import { getOnlinePaymentByToken, updateOnlinePaymentStatus } from '@/lib/queries/dematerialisation'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { CreditCard, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import type { OnlinePayment } from '@/types'
 
@@ -26,8 +26,8 @@ export function OnlinePaymentPage() {
         const p = await getOnlinePaymentByToken(token)
         setPayment(p)
         if (p?.status === 'completed') setPaid(true)
-      } catch (err: any) {
-        toast('error', tCommon('toast.error'), err.message)
+      } catch (err) {
+        toast('error', tCommon('toast.error'), errorMessage(err))
       } finally {
         setLoading(false)
       }

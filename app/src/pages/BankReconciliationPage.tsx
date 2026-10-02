@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries/banking'
 import { smartBankReconciliation } from '@/lib/queries/businessFunctions'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowRight, CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -25,8 +25,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(selectedAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err: any) { console.error('Failed to load:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -38,8 +38,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   try {
       await updateBankTransaction(id, { reconciled: !current, matched: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -48,8 +48,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const result = await autoMatchBankTransactions(selectedAccount || undefined)
       toast('success', tCommon('common.success'), t('reconciliation.autoMatchResult', { matched: result.matched, unmatched: result.unmatched }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -63,8 +63,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const matched = result?.matched ?? result?.match_count ?? result ?? 0
       toast('success', tCommon('common.success'), t('reconciliation.smartResult', { matched: typeof matched === 'number' ? matched : 0 }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

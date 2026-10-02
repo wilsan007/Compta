@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getContracts, createContract, updateContract, deleteContract, getEmployees } from '@/lib/queries/payroll'
 import { FileSignature, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
@@ -29,7 +29,7 @@ const [contracts, setContracts] = useState<any[]>([])
       const [cs, emps] = await Promise.all([getContracts(), getEmployees()])
       setContracts(cs || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -37,13 +37,13 @@ const [contracts, setContracts] = useState<any[]>([])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updateContract(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteContract(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const filtered = typeFilter ? contracts.filter((c) => c.contract_type === typeFilter) : contracts
@@ -127,7 +127,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
         trial_period_days: trialPeriodDays, status: 'active', notes: notes || null,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

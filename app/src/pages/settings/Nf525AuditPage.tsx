@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { closeNf525Period, getNf525Attestation } from '@/lib/queries/businessFunctions'
 import { useToast } from '@/lib/toast'
 import { Shield, CheckCircle, AlertTriangle, RefreshCw, Lock, Download } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 interface Nf525Event {
   id: string
@@ -57,8 +58,8 @@ export function Nf525AuditPage() {
       const { data, error } = await q
       if (error) throw error
       setEvents((data || []) as Nf525Event[])
-    } catch (err: any) {
-      toast('error', t('common.error'), err.message)
+    } catch (err) {
+      toast('error', t('common.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -86,10 +87,10 @@ export function Nf525AuditPage() {
         setIntegrityMessage(msg)
         toast('error', t('nf525.integrityFailed'), msg)
       }
-    } catch (err: any) {
+    } catch (err) {
       setIntegrityStatus('corrupted')
-      setIntegrityMessage(err.message)
-      toast('error', t('common.error'), err.message)
+      setIntegrityMessage(errorMessage(err))
+      toast('error', t('common.error'), errorMessage(err))
     }
   }
 
@@ -106,8 +107,8 @@ export function Nf525AuditPage() {
       toast('success', 'Période clôturée', `${result?.event_count ?? 0} événement(s) figé(s) — empreinte ${String(result?.closing_hash ?? '').slice(0, 12)}…`)
       setPeriod('')
       await loadEvents()
-    } catch (err: any) {
-      toast('error', t('common.error'), err.message)
+    } catch (err) {
+      toast('error', t('common.error'), errorMessage(err))
     } finally { setClosingPeriod(false) }
   }
 
@@ -125,8 +126,8 @@ export function Nf525AuditPage() {
       a.click()
       URL.revokeObjectURL(url)
       toast('success', 'Attestation générée', `Téléchargement de l'attestation NF525 ${attestationPeriod}`)
-    } catch (err: any) {
-      toast('error', t('common.error'), err.message)
+    } catch (err) {
+      toast('error', t('common.error'), errorMessage(err))
     } finally { setDownloadingAttestation(false) }
   }
 

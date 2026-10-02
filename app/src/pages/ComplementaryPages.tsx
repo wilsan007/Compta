@@ -5,7 +5,7 @@ import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, Pa
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries/stock'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
 import { confirmSync } from '@/lib/confirm'
 
@@ -21,7 +21,7 @@ export function WorkflowsPage() {
 
   const loadData = useCallback(async () => {
     try { setWorkflows(await getWorkflows() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -30,12 +30,12 @@ export function WorkflowsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteWorkflow(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleToggle(id: string, currentStatus: string) {
     try { await updateWorkflow(id, { status: currentStatus === 'active' ? 'inactive' : 'active' }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -119,7 +119,7 @@ function WorkflowFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
     try {
       await createWorkflow({ name, description: description || null, workflow_type: workflowType as any, schedule: schedule || null, last_run: null, status: 'active' })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -159,7 +159,7 @@ export function EquivalencesPage() {
       const [eqs, prods] = await Promise.all([getProductEquivalences(), getProducts()])
       setEquivalences(eqs || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -167,7 +167,7 @@ export function EquivalencesPage() {
 
   async function handleDelete(id: string) {
     try { await deleteProductEquivalence(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -212,7 +212,7 @@ function EquivalenceFormModal({ products, onClose, onSaved }: { products: Produc
     if (!productId || !equivalentId) { toast('error', tCommon('toast.error'), t('equivalences.selectTwoProducts')); return }
     if (productId === equivalentId) { toast('error', tCommon('toast.error'), t('equivalences.cannotBeSame')); return }
     try { await createProductEquivalence({ product_id: productId, equivalent_product_id: equivalentId, conversion_ratio: ratio }); onSaved() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -245,7 +245,7 @@ export function OFDocumentAccessPage() {
 
   const loadData = useCallback(async () => {
     try { setAccessList(await getOFDocumentAccess() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -253,12 +253,12 @@ export function OFDocumentAccessPage() {
 
   async function handleDelete(id: string) {
     try { await deleteOFDocumentAccess(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleToggle(id: string, field: 'can_view' | 'can_print' | 'can_export', current: boolean) {
     try { await updateOFDocumentAccess(id, { [field]: !current } as any); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -306,7 +306,7 @@ function OFDocAccessFormModal({ onClose, onSaved }: { onClose: () => void; onSav
     e.preventDefault()
     if (!userId) { toast('error', tCommon('toast.error'), t('ofDocAccess.userRequired')); return }
     try { await createOFDocumentAccess({ user_id: userId, document_type: documentType, can_view: canView, can_print: canPrint, can_export: canExport }); onSaved() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (

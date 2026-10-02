@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast'
 import { Secret, TOTP } from 'otpauth'
 import { Shield, ShieldCheck, ShieldAlert, Key, Smartphone, Copy } from 'lucide-react'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function TwoFactorPage() {
   const { t } = useTranslation()
@@ -52,8 +53,8 @@ export function TwoFactorPage() {
       setQrUrl(`otpauth://totp/${encodeURIComponent(label)}?secret=${s}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`)
       setSetupMode(true)
       setToken('')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -97,8 +98,8 @@ export function TwoFactorPage() {
       setEnabled(true)
       setSetupMode(false)
       toast('success', '2FA activé', 'Conservez vos codes de récupération en lieu sûr.')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -109,8 +110,8 @@ export function TwoFactorPage() {
       if (error) throw error
       setEnabled(false)
       toast('success', '2FA désactivé', '')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 

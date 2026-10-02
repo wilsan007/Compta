@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { getWorkStoppages, createWorkStoppage, closeWorkStoppage, importBpij, regularizeIjss } from '@/lib/queries/sprintDE'
 import { getEmployees } from '@/lib/queries/payroll'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { HeartPulse, Plus, X, Upload, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -32,9 +32,9 @@ export function WorkStoppagesPage() {
       const [ws, emps] = await Promise.all([getWorkStoppages(), getEmployees()])
       setRecords(ws || [])
       setEmployees(emps || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -45,7 +45,7 @@ export function WorkStoppagesPage() {
     if (!repriseDate) return
     const repriseType = window.prompt(t('workStoppages.repriseType'), 'plein_temps') || 'plein_temps'
     try { await closeWorkStoppage(id, repriseDate, repriseType); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleImportBpij(id: string) {
@@ -54,14 +54,14 @@ export function WorkStoppagesPage() {
     const amountStr = window.prompt(t('workStoppages.ijssNet'))
     if (!amountStr) return
     try { await importBpij(id, bpijNumber, Number(amountStr)); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleRegularize(id: string) {
     const amountStr = window.prompt(t('workStoppages.regularizationAmount'))
     if (!amountStr) return
     try { await regularizeIjss(id, Number(amountStr)); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   const filtered = records.filter(r => {
@@ -214,8 +214,8 @@ function WorkStoppageForm({ employees, onClose, onSaved }: { employees: Employee
       } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

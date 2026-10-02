@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries/payroll'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Users, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -31,11 +31,11 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
   async function handleDelete(id: string) {
   if (!confirmSync(tCommon('form.confirmDelete'))) return
-    try { await deleteEmployee(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await deleteEmployee(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleStatusChange(id: string, status: string) {
-    try { await updateEmployee(id, { status: status as any }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await updateEmployee(id, { status: status as any }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))]
@@ -144,7 +144,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         payroll_category: payrollCategory,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (

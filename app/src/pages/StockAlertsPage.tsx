@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getStockAlerts, acknowledgeStockAlert, resolveStockAlert, checkStockThresholds } from '@/lib/queries/catalogAdvanced'
 import { useToast } from '@/lib/toast'
 import { AlertTriangle, CheckCircle, Bell, ShieldCheck } from 'lucide-react'
@@ -24,8 +24,8 @@ export function StockAlertsPage() {
     try {
       const data = await getStockAlerts(filterStatus === 'all' ? undefined : filterStatus as any)
       setAlerts(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -40,8 +40,8 @@ export function StockAlertsPage() {
       await acknowledgeStockAlert(id)
       toast('success', tCommon('toast.success'), t('alerts.acknowledged'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -50,8 +50,8 @@ export function StockAlertsPage() {
       await resolveStockAlert(id)
       toast('success', tCommon('toast.success'), t('alerts.resolved'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -61,8 +61,8 @@ export function StockAlertsPage() {
       const created = await checkStockThresholds()
       toast('success', tCommon('toast.success'), t('alerts.alertsCreated', { count: created.length }))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setChecking(false)
     }

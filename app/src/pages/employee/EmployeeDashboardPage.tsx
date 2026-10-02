@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, EmptyState, SkeletonTable, Breadcrumb } from '@/components/ui'
 import { Calendar, Receipt, MessageSquare, Plus, Clock, CheckCircle, XCircle, FileText, TrendingUp } from 'lucide-react'
 import { getEmployeeDashboardData } from '@/lib/queries/sprintH'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
 export function EmployeeDashboardPage() {
@@ -21,9 +21,9 @@ export function EmployeeDashboardPage() {
     try {
       const d = await getEmployeeDashboardData()
       setData(d)
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 

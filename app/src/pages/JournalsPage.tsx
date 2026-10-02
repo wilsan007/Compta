@@ -6,6 +6,7 @@ import { BookCopy, Plus, Pencil, Trash2, X, Search, Lock } from 'lucide-react'
 import type { Journal, BankAccount, EntryTemplate, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 const journalTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   purchase: 'warning',
@@ -239,8 +240,8 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
         await createJournal(data as any)
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

@@ -6,6 +6,7 @@ import { getEmployees } from '@/lib/queries/payroll'
 import type { SocialDeclaration, CiceConfig, HonorariumRecord, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { FileText, Send, AlertTriangle, Download, Calculator, Upload, Plus } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 type Tab = 'dsn' | 'dadsu' | 'ducs' | 'aed' | 'dpae' | 'btp' | 'msa' | 'cice' | 'pasrau' | 'other' | 'rates' | 'honorarium'
 
@@ -59,8 +60,8 @@ export function SocialDeclarationsPage() {
         const hon = await getHonorariumRecords()
         setHonorariums(hon)
       }
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -74,8 +75,8 @@ export function SocialDeclarationsPage() {
       setAnomalies(anoms)
       setDsnStep(2)
       if (anoms.length === 0) toast('success', t('socialDecl.noAnomalies'))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -85,8 +86,8 @@ export function SocialDeclarationsPage() {
       setDsnStep(3)
       toast('success', t('socialDecl.generated'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -104,8 +105,8 @@ export function SocialDeclarationsPage() {
         }
         loadData().catch(err => console.error('loadData:', err))
       }
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -114,8 +115,8 @@ export function SocialDeclarationsPage() {
       await fn()
       toast('success', label)
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -124,8 +125,8 @@ export function SocialDeclarationsPage() {
       const results = await calculateCice(year)
       setCiceResults(results)
       toast('success', t('socialDecl.ciceCalculated'))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -373,7 +374,7 @@ export function SocialDeclarationsPage() {
                   <label className="cursor-pointer">
                     <span className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded text-sm"><Upload className="w-4 h-4 mr-2" />{t('socialDecl.importPas')}</span>
                     <input type="file" accept=".csv" className="hidden" onChange={async (e) => {
-                      if (e.target.files?.[0]) { try { await importPasRates(e.target.files[0]); toast('success', t('socialDecl.imported')); loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message) } }
+                      if (e.target.files?.[0]) { try { await importPasRates(e.target.files[0]); toast('success', t('socialDecl.imported')); loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) } }
                     }} />
                   </label>
                 </div>
@@ -395,7 +396,7 @@ export function SocialDeclarationsPage() {
                   <label className="cursor-pointer">
                     <span className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded text-sm"><Upload className="w-4 h-4 mr-2" />{t('socialDecl.importAt')}</span>
                     <input type="file" accept=".csv" className="hidden" onChange={async (e) => {
-                      if (e.target.files?.[0]) { try { await importAtRates(e.target.files[0]); toast('success', t('socialDecl.imported')); loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message) } }
+                      if (e.target.files?.[0]) { try { await importAtRates(e.target.files[0]); toast('success', t('socialDecl.imported')); loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) } }
                     }} />
                   </label>
                 </div>
@@ -431,8 +432,8 @@ export function SocialDeclarationsPage() {
                       <TableCell className="font-mono text-xs">{h.amount.toFixed(2)}</TableCell>
                       <TableCell><Badge variant={h.status === 'accounted' ? 'success' : h.status === 'paid' ? 'primary' : 'neutral'}>{t(`socialDecl.honorariumStatuses.${h.status}`)}</Badge></TableCell>
                       <TableCell>
-                        {h.status === 'pending' && <Button size="sm" variant="secondary" onClick={async () => { try { await updateHonorariumRecord(h.id, { status: 'paid' }); toast('success', tCommon('common.saved')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }}>{t('socialDecl.markPaid')}</Button>}
-                        {h.status === 'paid' && <Button size="sm" variant="secondary" onClick={async () => { try { await generateHonorariumAccounting(h.id); toast('success', t('socialDecl.accounted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }}>{t('socialDecl.generateAccounting')}</Button>}
+                        {h.status === 'pending' && <Button size="sm" variant="secondary" onClick={async () => { try { await updateHonorariumRecord(h.id, { status: 'paid' }); toast('success', tCommon('common.saved')); loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }}>{t('socialDecl.markPaid')}</Button>}
+                        {h.status === 'paid' && <Button size="sm" variant="secondary" onClick={async () => { try { await generateHonorariumAccounting(h.id); toast('success', t('socialDecl.accounted')); loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }}>{t('socialDecl.generateAccounting')}</Button>}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -474,7 +475,7 @@ export function SocialDeclarationsPage() {
                   setShowHonorariumForm(false)
                   setHonName(''); setHonPeriod(''); setHonAmount(''); setHonDesc('')
                   loadData().catch(err => console.error('loadData:', err))
-                } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+                } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
               }} disabled={!honName || !honAmount}>{tCommon('actions.save')}</Button>
               <Button variant="secondary" onClick={() => setShowHonorariumForm(false)}>{tCommon('actions.cancel')}</Button>
             </div>

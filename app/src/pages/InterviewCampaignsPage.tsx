@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { getInterviewCampaigns, createInterviewCampaign, launchInterviewCampaign, closeCampaign } from '@/lib/queries/sprintDE'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { Users, Plus, X, Play, Lock } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 
@@ -26,9 +26,9 @@ export function InterviewCampaignsPage() {
     try {
       const data = await getInterviewCampaigns()
       setCampaigns(data || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -36,12 +36,12 @@ export function InterviewCampaignsPage() {
 
   async function handleLaunch(id: string) {
     try { await launchInterviewCampaign(id); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleClose(id: string) {
     try { await closeCampaign(id); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -135,8 +135,8 @@ function CampaignForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

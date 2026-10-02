@@ -5,6 +5,7 @@ import { X, Plus, Trash2, Edit2, Users, Building } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { getPartnerContacts, createPartnerContact, updatePartnerContact, deletePartnerContact, getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount } from '@/lib/queries/partners'
 import type { PartnerContact, PartnerBankAccount } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 interface Props {
   partnerType: 'customer' | 'supplier'
@@ -34,7 +35,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       ])
       setContacts(c || [])
       setBankAccounts(b || [])
-    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
+    } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
@@ -48,7 +49,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       await deletePartnerContact(id)
       toast('success', tCommon('common.success'), t('partnerContacts.deleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDeleteBank(id: string) {
@@ -56,7 +57,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       await deletePartnerBankAccount(id)
       toast('success', tCommon('common.success'), t('partnerContacts.bankDeleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -238,8 +239,8 @@ function ContactForm({ partnerType, partnerId, contact, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('partnerContacts.created'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 
@@ -319,8 +320,8 @@ function BankAccountForm({ partnerType, partnerId, bankAccount, onClose, onSaved
         toast('success', tCommon('common.success'), t('partnerContacts.bankCreated'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 

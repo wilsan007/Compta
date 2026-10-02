@@ -5,7 +5,7 @@ import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice
 import { transformQuoteToSalesOrder } from '@/lib/queries/misc'
 import { getCustomers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
-import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package, FileSignature } from 'lucide-react'
 import type { Quote, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -45,8 +45,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         sMap[prod.id] = (stockEntries[i] as any[] || []).reduce((sum, s) => sum + Number(s.quantity || 0), 0)
       })
       setStockMap(sMap)
-    } catch (err: any) { console.error('Failed to load quotes:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load quotes:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -68,8 +68,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
     try {
       await deleteQuote(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -79,8 +79,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       await convertQuoteToInvoice(id)
       toast('success', tCommon('toast.success'), t('quotes.convertToInvoice'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     }
   }
 
@@ -90,8 +90,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       await transformQuoteToSalesOrder(id)
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     }
   }
 
@@ -99,8 +99,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
     try {
       await updateQuote(id, { status: status as any })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -305,8 +305,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
         })),
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
 import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries/accounting'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -99,8 +99,8 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
       const [accs, tp] = await Promise.all([getChartAccounts(), getThirdPartyAccounts()])
       setAccounts(accs || [])
       setTiers(tp || [])
-    } catch (err: any) { console.error('Error loading chart accounts:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading chart accounts:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -274,7 +274,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
     try {
       await deleteChartAccount(id)
       await loadAccounts()
-    } catch (err: any) { console.error('Error deleting account:', err)
+    } catch (err) { console.error('Error deleting account:', err)
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
@@ -504,8 +504,8 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
         await createChartAccount(data as any)
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }

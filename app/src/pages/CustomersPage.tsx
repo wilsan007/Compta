@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
 import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries/partners'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
 import type { Customer } from '@/types'
@@ -31,8 +31,8 @@ export function CustomersPage() {
     try {
       const data = await getCustomers()
       setCustomers(data || [])
-    } catch (err: any) { console.error('Error loading customers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading customers:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -43,8 +43,8 @@ export function CustomersPage() {
       await deleteCustomer(id)
       setCustomers(customers.filter((c) => c.id !== id))
       toast('success', t('customers.title'), tCommon('toast.deleted'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -214,8 +214,8 @@ function CustomerForm({ customer, onClose, onSaved }: {
         toast('success', t('customers.title'), tCommon('toast.created'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

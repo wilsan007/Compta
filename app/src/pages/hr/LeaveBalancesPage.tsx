@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getLeaveBalances, initializeYearLeaveBalances, carryOverLeaveBalances, getLeaveProvisions, calculateLeaveProvisions, postLeaveProvisions } from '@/lib/queries/leavesAbsences'
 import { getEmployees } from '@/lib/queries/payroll'
 import { calculateLeaveAcquisition } from '@/lib/queries/businessFunctions'
@@ -33,7 +33,7 @@ export function LeaveBalancesPage() {
         const provs = await getLeaveProvisions(period || undefined)
         setProvisions(provs || [])
       }
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, tab, period, toast, tCommon])
 
@@ -44,7 +44,7 @@ export function LeaveBalancesPage() {
       await initializeYearLeaveBalances(year)
       toast('success', tCommon('common.success'), t('leaveBalances.yearInitialized'))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleCarryOver() {
@@ -54,7 +54,7 @@ export function LeaveBalancesPage() {
       }
       toast('success', tCommon('common.success'), t('leaveBalances.carryOverDone'))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleCalcProvisions() {
@@ -63,7 +63,7 @@ export function LeaveBalancesPage() {
       const results = await calculateLeaveProvisions(period)
       setProvisions(results)
       toast('success', tCommon('common.success'), t('leaveBalances.provisionsCalculated'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handlePostProvisions() {
@@ -71,7 +71,7 @@ export function LeaveBalancesPage() {
       await postLeaveProvisions(period)
       toast('success', tCommon('common.success'), t('leaveBalances.provisionsPosted'))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleCalcAcquisition() {
@@ -85,7 +85,7 @@ export function LeaveBalancesPage() {
       }
       toast('success', tCommon('common.success'), `${'Droits acquis calculés'} — ${totalDays.toFixed(2)} j (2,5/mois)`)
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   const empName = (id: string) => employees.find((e) => e.id === id)?.name || '—'

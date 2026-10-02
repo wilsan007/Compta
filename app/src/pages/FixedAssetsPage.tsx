@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getFixedAssets, createFixedAsset, updateFixedAsset, deleteFixedAsset, getAssetDepreciations, disposeFixedAsset, generateDepreciationEntry, generateDepreciationEntries, getFiscalYears } from '@/lib/queries/accounting'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Building, Plus, Trash2, X, Calculator, ChevronDown, ChevronRight, TrendingDown, PackageX, BookOpen } from 'lucide-react'
 import type { FixedAsset, AssetDepreciation, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -33,8 +33,8 @@ export function FixedAssetsPage() {
       const [assets, years] = await Promise.all([getFixedAssets(), getFiscalYears()])
       setAssets(assets)
       setFiscalYears(years || [])
-    } catch (err: any) { console.error('Failed to load fixed assets:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load fixed assets:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -52,7 +52,7 @@ export function FixedAssetsPage() {
         try {
           const deps = await getAssetDepreciations(asset.id)
           setDepreciations((prev) => ({ ...prev, [asset.id]: deps }))
-        } catch (err: any) { console.error('Error loading depreciations:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+        } catch (err) { console.error('Error loading depreciations:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
@@ -63,8 +63,8 @@ export function FixedAssetsPage() {
     try {
       await deleteFixedAsset(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -72,8 +72,8 @@ export function FixedAssetsPage() {
     try {
       await updateFixedAsset(id, { status: status as any })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -90,8 +90,8 @@ export function FixedAssetsPage() {
       const deps = await getAssetDepreciations(id)
       setDepreciations((prev) => ({ ...prev, [id]: deps }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -116,8 +116,8 @@ export function FixedAssetsPage() {
           t('fixedAssets.recalcCompleteMsg', { count: verdict.comptabilisees }))
       }
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -283,8 +283,8 @@ function DisposalForm({ asset, onClose, onSaved }: { asset: FixedAsset; onClose:
     try {
       await disposeFixedAsset(asset.id, disposalValue, disposalDate)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -362,8 +362,8 @@ function AssetForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         status: 'active',
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -448,8 +448,8 @@ function AssetAccountingModal({ asset, onClose, onSaved }: { asset: FixedAsset; 
       await generateDepreciationEntry(asset.id, openYear.id)
       toast('success', t('assetAccounts.title'), t('assetAccounts.entryGenerated'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('assetAccounts.entryError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('assetAccounts.entryError'))
     } finally {
       setGenerating(false)
     }
@@ -467,8 +467,8 @@ function AssetAccountingModal({ asset, onClose, onSaved }: { asset: FixedAsset; 
       } as any)
       toast('success', t('assetAccounts.title'), t('assetAccounts.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }

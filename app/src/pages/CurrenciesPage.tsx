@@ -6,6 +6,7 @@ import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function CurrenciesPage() {
   const { t } = useTranslation('settings')
@@ -24,7 +25,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
 
   async function handleDelete(id: string) {
   if (!confirmSync(t('currencies.deleteConfirm'))) return
-    try { await deleteCurrency(id); await loadData() } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) }
+    try { await deleteCurrency(id); await loadData() } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) }
   }
 
   async function handleSetBase(id: string) {
@@ -33,7 +34,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
         await updateCurrency(c.id, { is_base: c.id === id })
       }
       await loadData()
-    } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) }
+    } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) }
   }
 
   return (
@@ -103,7 +104,7 @@ function CurrencyForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     try {
       await createCurrency({ code: code.toUpperCase(), name, symbol, exchange_rate: exchangeRate, is_base: isBase, decimal_places: decimalPlaces, position, active } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) } finally { setSaving(false) }
+    } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) } finally { setSaving(false) }
   }
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCpfAccounts, createCpfAccount, deleteCpfAccount, getEmployees } from '@/lib/queries/payroll'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Wallet, Plus, Trash2, X } from 'lucide-react'
 import type { Employee, CpfAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -25,9 +25,9 @@ export function CPFPage() {
       const [cpfs, emps] = await Promise.all([getCpfAccounts(), getEmployees()])
       setAccounts(cpfs || [])
       setEmployees(emps || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -36,7 +36,7 @@ export function CPFPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteCpfAccount(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const filtered = filterEmp ? accounts.filter((a) => a.employee_id === filterEmp) : accounts
@@ -129,8 +129,8 @@ function CpfForm({ employees, onClose, onSaved }: { employees: Employee[]; onClo
       } as unknown as Omit<CpfAccount, 'id' | 'created_at' | 'updated_at'>)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

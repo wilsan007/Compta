@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries/accounting'
 import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react'
 import type { JournalEntry } from '@/types'
@@ -29,8 +29,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       const data = await getBrouillard()
       setEntries(data || [])
-    } catch (err: any) { console.error('Error loading brouillard:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading brouillard:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -49,8 +49,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       await updateEntryStatusDetail(id, 'printed')
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -59,8 +59,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       await deleteJournalEntry(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 

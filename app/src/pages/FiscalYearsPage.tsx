@@ -7,6 +7,7 @@ import { Calendar, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Lock, Unl
 import type { FiscalYear, FiscalPeriod } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function FiscalYearsPage() {
   const { toast } = useToast()
@@ -37,8 +38,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
         } catch { periodsMap[y.id] = [] }
       }
       setPeriods(periodsMap)
-    } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -201,8 +202,8 @@ function FiscalYearForm({ year, onClose, onSaved }: {
         }
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getActivities, createActivity, completeActivity } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Calendar, CheckCircle } from 'lucide-react'
@@ -24,8 +24,8 @@ export function ActivitiesPage() {
     try {
       const data = await getActivities()
       setActivities(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -44,8 +44,8 @@ export function ActivitiesPage() {
       await completeActivity(id)
       toast('success', tCommon('toast.success'), tCommon('toast.updated'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -148,8 +148,8 @@ function ActivityForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Layers, ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
 import type { BOM, Product } from '@/types'
@@ -34,7 +34,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
       setBOMs(bs || [])
       setProducts(prods || [])
       setRoutings(rts || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -49,7 +49,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
         try {
           const lns = await getBOMLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+        } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
@@ -58,12 +58,12 @@ const [boms, setBOMs] = useState<BOM[]>([])
   async function handleDelete(id: string) {
   if (!confirmSync(t('bom.confirmDelete'))) return
     try { await deleteBOM(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDeleteLine(lineId: string, bomId: string) {
     try { await deleteBOMLine(lineId); const lns = await getBOMLines(bomId); setLines((prev) => ({ ...prev, [bomId]: lns })) }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (
@@ -169,7 +169,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
     try {
       await createBOM({ code, name, product_id: productId || null, quantity, unit, active: true, bom_type: bomType, routing_id: routingId || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -231,7 +231,7 @@ function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; pro
     try {
       await createBOMLine({ bom_id: bomId, product_id: productId, quantity, unit_cost: unitCost, position } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
     finally { setSaving(false) }
   }
 

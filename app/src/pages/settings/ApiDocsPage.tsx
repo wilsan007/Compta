@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Input, Select, Badge, Breadcrumb, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableRow, TableCell } from '@/components/ui'
 import { BookOpen, Code, Terminal, Copy, ChevronDown, ChevronRight,  Globe } from 'lucide-react'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 interface Endpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -170,8 +171,8 @@ export function ApiDocsPage() {
       const res = await fetch(url, opts)
       const data = await res.text()
       setTestResult(`Status: ${res.status}\n\n${JSON.stringify(JSON.parse(data), null, 2)}`)
-    } catch (err: any) {
-      setTestResult(`Error: ${err.message}`)
+    } catch (err) {
+      setTestResult(`Error: ${errorMessage(err)}`)
     } finally {
       setTesting(false)
     }

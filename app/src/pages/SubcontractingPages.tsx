@@ -6,7 +6,7 @@ import { useToast } from '@/lib/toast'
 import { getSTOrders, createSTOrder, deleteSTOrder, updateSTOrder, getSTShipments, deleteSTShipment, getSTReceipts, deleteSTReceipt, getSTSupervisorData, getProducts } from '@/lib/queries/stock'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getManufacturingOrders } from '@/lib/queries/production'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import type { Supplier, Product } from '@/types'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
@@ -29,7 +29,7 @@ export function SubcontractingOrdersPage() {
       setSuppliers(sups || [])
       setProducts(prods || [])
       setMOs(moList || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -38,12 +38,12 @@ export function SubcontractingOrdersPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTOrder(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleStatusChange(id: string, status: string) {
     try { await updateSTOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -112,7 +112,7 @@ function STOrderFormModal({ suppliers, products, mos, onClose, onSaved }: { supp
         expected_date: expectedDate || null, notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -151,7 +151,7 @@ export function SubcontractingShipmentsPage() {
 
   const loadData = useCallback(async () => {
     try { setShipments(await getSTShipments() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -160,7 +160,7 @@ export function SubcontractingShipmentsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTShipment(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const shipStatusVariants: Record<string, 'neutral' | 'warning' | 'success'> = { pending: 'neutral', shipped: 'warning', returned: 'success' }
@@ -203,7 +203,7 @@ export function SubcontractingReceiptsPage() {
 
   const loadData = useCallback(async () => {
     try { setReceipts(await getSTReceipts() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -212,7 +212,7 @@ export function SubcontractingReceiptsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTReceipt(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const receiptStatusVariants: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'neutral', received: 'success', partial: 'warning', cancelled: 'danger' }
@@ -256,7 +256,7 @@ export function SubcontractingSupervisorPage() {
 
   const loadData = useCallback(async () => {
     try { setData(await getSTSupervisorData() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 

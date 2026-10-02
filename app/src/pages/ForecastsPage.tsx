@@ -7,6 +7,7 @@ import { getProductionForecasts, createProductionForecast, deleteProductionForec
 import type { Product } from '@/types'
 import { confirmSync } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { errorMessage } from '@/lib/utils'
 
 export function ForecastsPage() {
   const { toast } = useToast()
@@ -23,7 +24,7 @@ export function ForecastsPage() {
       const [f, p] = await Promise.all([getProductionForecasts(), getProducts()])
       setForecasts(f || [])
       setProducts(p || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -32,12 +33,12 @@ export function ForecastsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteProductionForecast(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleReliability(id: string) {
     try { await calculateForecastReliability(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   function getReliabilityVariant(rate: number): 'success' | 'warning' | 'danger' {
@@ -118,7 +119,7 @@ function ForecastFormModal({ products, onClose, onSaved }: { products: Product[]
         reliability_rate: 0, source: 'manual', notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -161,7 +162,7 @@ function ImportFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
       const count = await importForecastsFromInvoices(period, startDate, endDate)
       toast('success', t('forecasts.importComplete'), t('forecasts.importCompleteMsg', { count }))
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
     finally { setImporting(false) }
   }
 

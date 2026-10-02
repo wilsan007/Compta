@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getCampaigns, createCampaign, launchCampaign, getCampaignStats } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Plus, X, Megaphone, Rocket } from 'lucide-react'
@@ -24,8 +24,8 @@ export function CampaignsPage() {
     try {
       const data = await getCampaigns()
       setCampaigns(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -38,8 +38,8 @@ export function CampaignsPage() {
       await launchCampaign(id)
       toast('success', tCommon('toast.success'), t('campaigns.launch'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -48,8 +48,8 @@ export function CampaignsPage() {
       const s = await getCampaignStats(id)
       setStatsFor(id)
       setStats(s)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -164,8 +164,8 @@ function CampaignForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

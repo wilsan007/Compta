@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { getCompactionLogs, createCompactionLog, updateCompactionLog } from '@/lib/queries/misc'
 import { getFiscalYears } from '@/lib/queries/accounting'
@@ -53,8 +53,8 @@ export function CompactionPage() {
       toast('success', t('compaction.title'), t('compaction.compactSuccess'))
       setSelectedFY('')
       await load()
-    } catch (err: any) {
-      toast('error', t('compaction.title'), err.message || t('compaction.compactError'))
+    } catch (err) {
+      toast('error', t('compaction.title'), errorMessage(err) || t('compaction.compactError'))
     } finally {
       setCompacting(false)
     }

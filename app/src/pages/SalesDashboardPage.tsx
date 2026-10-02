@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge, Button } from '@/components/ui'
 import { getInvoices, getQuotes, getCreditNotes } from '@/lib/queries/sales'
 import { calculateSalesCommissions } from '@/lib/queries/businessFunctions'
-import { formatCurrency, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, translateStatus } from '@/lib/utils'
 import type { Invoice, Quote, CreditNote } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Calculator } from 'lucide-react'
@@ -27,8 +27,8 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
         ? result.map((r: any) => `${r.rep_name || r.name || r.rep_id}: ${formatCurrency(r.commission || r.amount || 0)}`).join(' | ')
         : JSON.stringify(result)
       toast('success', tCommon('common.success'), `Commissions: ${summary}`)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setCalculatingCommissions(false)
     }

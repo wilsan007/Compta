@@ -5,6 +5,7 @@ import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { getEcheancier } from '@/lib/queries/accounting'
 import { CalendarClock, AlertTriangle } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function EcheancierPage() {
   const { t } = useTranslation('accounting')
@@ -23,9 +24,9 @@ export function EcheancierPage() {
     try {
       const res = await getEcheancier(typeFilter || undefined)
       setData(res)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading echeancier:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

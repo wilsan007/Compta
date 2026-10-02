@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getServiceContracts, createServiceContract, deleteServiceContract } from '@/lib/queries/crmAdvanced'
 import { getCustomers } from '@/lib/queries/partners'
 import { useToast } from '@/lib/toast'
@@ -28,8 +28,8 @@ export function ServiceContractsPage() {
       const [cData, custs] = await Promise.all([getServiceContracts(), getCustomers()])
       setContracts(cData || [])
       setCustomers(custs || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -42,8 +42,8 @@ export function ServiceContractsPage() {
       await deleteServiceContract(id)
       toast('success', tCommon('toast.success'), tCommon('toast.deleted'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -140,8 +140,8 @@ function ContractForm({ customers, onClose, onSaved }: { customers: Customer[]; 
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

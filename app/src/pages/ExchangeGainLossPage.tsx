@@ -5,6 +5,7 @@ import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, AutoBr
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { getExchangeGainLossEntries } from '@/lib/queries/accounting'
 import type { ExchangeGainLossEntry } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function ExchangeGainLossPage() {
   const { t } = useTranslation('banking')
@@ -18,7 +19,7 @@ export function ExchangeGainLossPage() {
     try {
       const data = await getExchangeGainLossEntries()
       setEntries(data || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])

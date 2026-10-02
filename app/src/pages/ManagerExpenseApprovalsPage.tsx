@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { getPendingExpenseReports, approveExpenseReport, rejectExpenseReport, getExpenseReportLines } from '@/lib/queries/sprintDE'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { CheckCircle, XCircle, ChevronRight, Receipt } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 
@@ -21,9 +21,9 @@ export function ManagerExpenseApprovalsPage() {
     try {
       const data = await getPendingExpenseReports()
       setReports(data || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -32,13 +32,13 @@ export function ManagerExpenseApprovalsPage() {
   async function handleApprove(id: string) {
     const comment = window.prompt(t('expenses.approvalComment'), '') || ''
     try { await approveExpenseReport(id, 'current-manager', comment); await loadData(); toast('success', tCommon('common.success'), t('expenses.approved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleReject(id: string) {
     const comment = window.prompt(t('expenses.rejectionReason'), '') || ''
     try { await rejectExpenseReport(id, 'current-manager', comment); await loadData(); toast('success', tCommon('common.success'), t('expenses.rejected')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleSelectReport(r: any) {
@@ -46,7 +46,7 @@ export function ManagerExpenseApprovalsPage() {
     try {
       const l = await getExpenseReportLines(r.id)
       setLines(l || [])
-    } catch (e: any) { console.error(e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
+    } catch (e) { console.error(e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
   }
 
   if (selectedReport) {

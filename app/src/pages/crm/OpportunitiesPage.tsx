@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getOpportunities, createOpportunity, updateOpportunityStage } from '@/lib/queries/crmAdvanced'
 import { getCustomers } from '@/lib/queries/partners'
 import { getSalesRepresentatives } from '@/lib/queries/misc'
@@ -34,8 +34,8 @@ export function OpportunitiesPage() {
       setOpportunities(opps || [])
       setCustomers(custs || [])
       setReps(repsData || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -54,8 +54,8 @@ export function OpportunitiesPage() {
       await updateOpportunityStage(id, stage)
       toast('success', tCommon('toast.success'), tCommon('toast.updated'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -200,8 +200,8 @@ function OpportunityForm({ customers, reps, onClose, onSaved }: { customers: Cus
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

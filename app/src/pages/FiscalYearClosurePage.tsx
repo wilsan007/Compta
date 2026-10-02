@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { getFiscalYears, closeFiscalYear, allocateResult, pendingResultAllocations, type ResultAllocationLine } from '@/lib/queries/accounting'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { Lock, AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -39,8 +39,8 @@ function ResultAllocationCard({ year, nextYear, onDone }: { year: FiscalYear; ne
       await allocateResult(year.id, lines.filter((l) => Number(l.amount) > 0), date || null)
       toast('success', tCommon('common.success'), t('fiscalYearClosure.allocation.done', { code: year.code }))
       await onDone()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -119,8 +119,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
       setYears(data || [])
       const openYears = (data || []).filter((y) => y.status === 'open')
       if (openYears.length > 0) setSelectedYear(openYears[0].id)
-    } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -145,8 +145,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
         amount: formatCurrency(Number(result?.result) || 0),
       }))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setClosing(false)
     }

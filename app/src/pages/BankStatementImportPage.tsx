@@ -9,6 +9,7 @@ import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText } from 'lucide-react'
 import type { BankStatementImport, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function BankStatementImportPage() {
   const { t } = useTranslation('accounting')
@@ -28,8 +29,8 @@ export function BankStatementImportPage() {
       const [imps, accs] = await Promise.all([getBankStatementImports(), getBankAccounts()])
       setImports(imps || [])
       setAccounts(accs || [])
-    } catch (err: any) { console.error('Failed to load bank statement imports:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load bank statement imports:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

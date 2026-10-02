@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPayRuns, getEmployees, getPayrollComponents } from '@/lib/queries/payroll'
 import { getVariableElements, createVariableElement, deleteVariableElement, attachTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet, getSickLeaves } from '@/lib/queries/leavesAbsences'
 import type { SickLeave } from '@/lib/queries/leavesAbsences'
@@ -36,7 +36,7 @@ export function PayrollPreparationPage() {
       setPayRuns(runs || [])
       setEmployees(emps || [])
       setComponents(comps || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -47,7 +47,7 @@ export function PayrollPreparationPage() {
     try {
       const els = await getVariableElements(selectedPayRun)
       setVariableElements(els || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }, [selectedPayRun, tCommon, toast])
 
   useEffect(() => { loadVariableElements() }, [loadVariableElements])
@@ -80,13 +80,13 @@ export function PayrollPreparationPage() {
       }
       await loadVariableElements()
       toast('success', tCommon('common.success'), t('preparation.imported'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteElement(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteVariableElement(id); await loadVariableElements() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   const totalVariable = variableElements.reduce((s, e) => s + Number(e.amount), 0)
@@ -309,7 +309,7 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
         amount: Number(amount), source: 'manual', source_id: null, integrated: false,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -438,7 +438,7 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
         taux: Number(res?.taux_horaire_majore || 0),
         source: String(res?.source || 'parametre'),
       })
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setLoading(false) }
   }
 
@@ -512,7 +512,7 @@ function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onC
         carence: Number(res?.waiting_days ?? 0),
       })
       toast('success', tCommon('common.success'), `IJSS: ${formatCurrency(Number(res?.ijss_amount ?? 0))}`)
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setLoading(false) }
   }
 

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/lib/toast'
 import { Mail, Plus, Trash2, Edit, Eye, Code } from 'lucide-react'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 interface EmailTemplate {
   id: string
@@ -58,8 +59,8 @@ export function EmailTemplatesPage() {
       const { data, error } = await supabase.from('email_templates').select('*').order('template_key', { ascending: true })
       if (error) throw error
       setTemplates(data || [])
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -120,8 +121,8 @@ export function EmailTemplatesPage() {
       }
       setShowModal(false)
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -131,8 +132,8 @@ export function EmailTemplatesPage() {
       const { error } = await supabase.from('email_templates').delete().eq('id', id)
       if (error) throw error
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -141,8 +142,8 @@ export function EmailTemplatesPage() {
       const { error } = await supabase.from('email_templates').update({ active: !tpl.active }).eq('id', tpl.id)
       if (error) throw error
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 

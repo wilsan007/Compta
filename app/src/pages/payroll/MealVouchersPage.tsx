@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getMealVoucherConfig, updateMealVoucherConfig, calculateMealVouchers, generateMealVoucherElements } from '@/lib/queries/leavesAbsences'
 import { getPayRuns } from '@/lib/queries/payroll'
 import type { MealVoucherConfig, PayRun } from '@/types'
@@ -28,7 +28,7 @@ export function MealVouchersPage() {
       const [cfg, runs] = await Promise.all([getMealVoucherConfig(), getPayRuns()])
       setConfig(cfg)
       setPayRuns(runs || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -39,7 +39,7 @@ export function MealVouchersPage() {
       const results = await calculateMealVouchers(month, year)
       setCalculations(results)
       toast('success', tCommon('common.success'), t('mealVouchers.calculated'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleGenerate() {
@@ -48,7 +48,7 @@ export function MealVouchersPage() {
       setSaving(true)
       await generateMealVoucherElements(selectedPayRun, month, year)
       toast('success', tCommon('common.success'), t('mealVouchers.generated'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -180,7 +180,7 @@ function ConfigModal({ config, onClose, onSaved }: { config: MealVoucherConfig; 
         max_per_month: Number(maxPerMonth),
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 

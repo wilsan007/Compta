@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, deleteLeaveRequest, getEmployees } from '@/lib/queries/payroll'
 import { CalendarDays, Plus, Trash2, X, Check, XCircle } from 'lucide-react'
 import type { Employee } from '@/types'
@@ -26,7 +26,7 @@ const [requests, setRequests] = useState<any[]>([])
       const [reqs, emps] = await Promise.all([getLeaveRequests(statusFilter || undefined), getEmployees()])
       setRequests(reqs || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, tCommon, toast])
 
@@ -34,18 +34,18 @@ const [requests, setRequests] = useState<any[]>([])
 
   async function handleApprove(id: string) {
   try { await updateLeaveRequest(id, { status: 'approved', approved_at: new Date().toISOString() } as any); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleReject(id: string) {
     try { await updateLeaveRequest(id, { status: 'rejected' }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLeaveRequest(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
@@ -119,7 +119,7 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
     try {
       await createLeaveRequest({ employee_id: employeeId, leave_type: leaveType as any, start_date: startDate, end_date: endDate, days, status: 'pending', reason: reason || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getEmployees } from '@/lib/queries/payroll'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Plus, Pencil, Trash2, X, GraduationCap } from 'lucide-react'
 import type { Employee } from '@/types'
 
@@ -41,9 +41,9 @@ export function TrainingPage() {
       const emps = await getEmployees()
       setEmployees(emps || [])
       setTrainings([])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading training data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

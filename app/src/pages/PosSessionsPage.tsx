@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, SortableTable, Badge, EmptyState, SkeletonTable, Select, PageHeader } from '@/components/ui'
 import { getPosSessions, getPosTickets, getPosStats, getPosTerminals, closePosSession } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Clock, Eye } from 'lucide-react'
 import type { PosSession, PosTicket, PosTerminal } from '@/types'
 
@@ -34,8 +34,8 @@ export function PosSessionsPage() {
       ])
       setSessions(data)
       setTerminals(terms)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -50,8 +50,8 @@ export function PosSessionsPage() {
       setTickets(ticks)
       const s = await getPosStats(session.id)
       setStats(s)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -64,8 +64,8 @@ export function PosSessionsPage() {
       setClosingSession(null)
       setClosingAmount(0)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(false)
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getBudgetCommitments, createBudgetCommitment, updateBudgetCommitment, deleteBudgetCommitment, getChartAccounts, getFiscalYears } from '@/lib/queries/accounting'
 import { getSuppliers } from '@/lib/queries/partners'
 import { Plus, Trash2, X, FileText } from 'lucide-react'
@@ -42,8 +42,8 @@ export function BudgetCommitmentsPage() {
       setAccounts(accs || [])
       setYears(fys || [])
       setSuppliers(sups || [])
-    } catch (err: any) { console.error('Error loading commitments:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading commitments:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -57,12 +57,12 @@ export function BudgetCommitmentsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(t('budgetCommitments.deleteConfirm'))) return
     try { await deleteBudgetCommitment(id); await load() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleCancel(id: string) {
     try { await updateBudgetCommitment(id, { status: 'cancelled' }); await load() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   const totalActive = commitments.filter(c => c.status === 'active').reduce((s, c) => s + Number(c.amount), 0)
@@ -173,8 +173,8 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
         notes: notes || null,
       })
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

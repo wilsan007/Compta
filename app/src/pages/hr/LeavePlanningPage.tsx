@@ -7,6 +7,7 @@ import { getPublicHolidays, getLeaveRules } from '@/lib/queries/leavesAbsences'
 import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
 import type { Employee, LeaveRule, PublicHoliday } from '@/types'
 import { CalendarDays } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function LeavePlanningPage() {
   const { t } = useTranslation('hr')
@@ -34,7 +35,7 @@ export function LeavePlanningPage() {
       setEmployees(emps || [])
       setRules(rls || [])
       setHolidays(hols || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, toast, tCommon])
 

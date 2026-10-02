@@ -7,6 +7,7 @@ import { Plus, Trash2, Archive, Download } from 'lucide-react'
 import type { FiscalBackup } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function FiscalBackupPage() {
   const { t } = useTranslation('accounting')
@@ -21,8 +22,8 @@ export function FiscalBackupPage() {
     try {
       const data = await getFiscalBackups()
       setBackups(data || [])
-    } catch (err: any) { console.error('Failed to load fiscal backups:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load fiscal backups:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -42,8 +43,8 @@ export function FiscalBackupPage() {
       })
       toast('success', tCommon('common.success'), t('fiscalBackup.create'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -53,8 +54,8 @@ export function FiscalBackupPage() {
       await deleteFiscalBackup(id)
       toast('success', tCommon('common.success'), tCommon('toast.deleted'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

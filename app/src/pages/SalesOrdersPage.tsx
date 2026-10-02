@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { getSalesOrders, createSalesOrder, updateSalesOrder, deleteSalesOrder } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
@@ -37,7 +37,7 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       setProducts((prods || []).filter((p) => p.active !== false))
       setOrders(ords || [])
       setCustomers(custs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -45,13 +45,13 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updateSalesOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSalesOrder(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleTransformToDelivery(order: SalesOrder) {
@@ -60,8 +60,8 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       const lines = await getSalesOrderLines(order.id)
       setOrderLines(lines)
       setTransformOrder(order)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     } finally {
       setTransformLoading(false)
     }
@@ -74,8 +74,8 @@ const [orders, setOrders] = useState<SalesOrder[]>([])
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
       setTransformOrder(null)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     }
   }
 
@@ -176,7 +176,7 @@ function OrderForm({ customers, products, onClose, onSaved }: { customers: Custo
       // C10 (280) : en-tête + lignes en un appel ; totaux et TVA calculés par la base.
       await createSalesOrder({ number, customer_id: customerId || null, order_date: orderDate, delivery_date: deliveryDate || null, notes: notes || null }, payload)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 

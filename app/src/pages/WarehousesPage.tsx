@@ -6,6 +6,7 @@ import type { Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function WarehousesPage() {
   const { t } = useTranslation('stock')
@@ -18,7 +19,7 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   const loadData = useCallback(async () => {
     try { setWarehouses(await getWarehouses()) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -26,13 +27,13 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   async function handleToggleActive(w: Warehouse) {
   try { await updateWarehouse(w.id, { active: !w.active }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('warehouses.deleteConfirm'))) return
     try { await deleteWarehouse(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
@@ -90,7 +91,7 @@ function WarehouseForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     try {
       await createWarehouse({ code, name, address: address || null, city: city || null, postal_code: postalCode || null, country: 'France', active: true } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

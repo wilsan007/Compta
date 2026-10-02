@@ -7,6 +7,7 @@ import { exportToExcel } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { BookOpen, RotateCcw, Download } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function GrandLivreTiersPage() {
   const { t } = useTranslation('accounting')
@@ -32,8 +33,8 @@ export function GrandLivreTiersPage() {
     try {
       const data = await getThirdPartyAccounts()
       setTiers(data || [])
-    } catch (err: any) { console.error('Error loading tiers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading tiers:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingTiers(false)
     }
@@ -45,8 +46,8 @@ export function GrandLivreTiersPage() {
     try {
       const data = await getGrandLivreTiers(selectedTiers, dateFrom || undefined, dateTo || undefined)
       setMovements(data || [])
-    } catch (err: any) { console.error('Error loading grand livre tiers:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading grand livre tiers:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -65,7 +66,7 @@ export function GrandLivreTiersPage() {
       toast('success', tCommon('common.success'), t('extourne.generated'))
       setShowExtourne(false); setExtourneEntryId(''); setExtourneReason('')
       await loadMovements()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) } finally { setExtourneLoading(false) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setExtourneLoading(false) }
   }
 
   function handleExport() {

@@ -5,7 +5,7 @@ import { Factory, Clock, CheckCircle2, AlertTriangle, Truck, ClipboardList, Arro
 import { Card, StatCard, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { getManufacturingOrders } from '@/lib/queries/production'
 import { getSTOrders, getMRPProposals, getMRPRuns } from '@/lib/queries/stock'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { Link } from 'react-router-dom'
 
 const statusVariants: Record<string, 'neutral' | 'warning' | 'success' | 'danger'> = {
@@ -35,7 +35,7 @@ export function ProductionDashboardPage() {
       if (latestRun) {
         try { setMRPProposals(await getMRPProposals(latestRun.id)) } catch { setMRPProposals([]) }
       }
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

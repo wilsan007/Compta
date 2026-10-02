@@ -6,6 +6,7 @@ import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-re
 import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function EntryTemplatesPage() {
   const { t } = useTranslation('accounting')
@@ -213,8 +214,8 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('templates.createSuccess'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }

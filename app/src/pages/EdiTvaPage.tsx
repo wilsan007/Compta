@@ -8,6 +8,7 @@ import { Send, FileCheck } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function EdiTvaPage() {
   const { t } = useTranslation('accounting')
@@ -22,8 +23,8 @@ export function EdiTvaPage() {
     try {
       const data = await getVatReturns()
       setReturns(data || [])
-    } catch (err: any) { console.error('Failed to load VAT returns:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load VAT returns:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -37,8 +38,8 @@ export function EdiTvaPage() {
       await submitEdiTva(id)
       toast('success', tCommon('common.success'), t('ediTva.submitSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

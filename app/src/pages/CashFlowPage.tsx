@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getCashFlow } from '@/lib/queries/accounting'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 
 export function CashFlowPage() {
   const { t } = useTranslation('accounting')
@@ -16,9 +16,9 @@ export function CashFlowPage() {
     setLoading(true)
     try {
       setData(await getCashFlow())
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load cash flow:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

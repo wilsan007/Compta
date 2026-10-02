@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { getEmployeeDocuments, deleteEmployeeDocument, distributePaySlips } from '@/lib/queries/dematRh'
 import { createEmployeeDocument, getEmployees, getPayRuns } from '@/lib/queries/payroll'
 import { requestSignature } from '@/lib/queries/verifications'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, Send, PenLine, CheckCircle2 } from 'lucide-react'
 import type { Employee, EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -45,9 +45,9 @@ export function EmployeeDocumentsPage() {
       setDocuments(docs || [])
       setEmployees(emps || [])
       setPayRuns(prs || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -56,7 +56,7 @@ export function EmployeeDocumentsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteEmployeeDocument(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   // W6 — demande de signature électronique (Yousign) sur une pièce déjà
@@ -83,8 +83,8 @@ export function EmployeeDocumentsPage() {
         tenantId: doc.tenant_id || null,
       })
       toast('success', t('employeeDocuments.signatureRequested'), t('employeeDocuments.signatureRequestedDesc', { id: result.signature_id || '—' }))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSigningId(null)
     }
@@ -245,8 +245,8 @@ function DocumentForm({ employees, onClose, onSaved }: { employees: Employee[]; 
       } as Omit<EmployeeDocument, 'id' | 'created_at'>)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -300,8 +300,8 @@ function DistributeForm({ payRuns, onClose, onSaved }: { payRuns: any[]; onClose
       const result = await distributePaySlips(payRunId)
       toast('success', tCommon('common.success'), t('employeeDocuments.distributed', { count: Array.isArray(result) ? result.length : 0 }))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setDistributing(false) }
   }
 

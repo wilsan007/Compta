@@ -7,6 +7,7 @@ import { RefreshCw, Plus, Trash2, Pencil, Play, Pause, Zap, X } from 'lucide-rea
 import type { RecurringEntry, RecurringEntryLine, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function RecurringEntriesPage() {
   const { t } = useTranslation('accounting')
@@ -41,8 +42,8 @@ export function RecurringEntriesPage() {
       await deleteRecurringEntry(id)
       toast('success', tCommon('toast.success'), t('recurring.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     }
   }
 
@@ -53,8 +54,8 @@ export function RecurringEntriesPage() {
       await generateRecurringEntry(id)
       toast('success', tCommon('toast.success'), t('recurring.generateSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     } finally {
       setGeneratingId(null)
     }
@@ -65,8 +66,8 @@ export function RecurringEntriesPage() {
     try {
       await updateRecurringEntry(entry.id, { status: newStatus })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     }
   }
 
@@ -239,8 +240,8 @@ function RecurringEntryForm({ journals, editing, onClose, onSaved }: {
       }
       toast('success', tCommon('toast.success'), t('recurring.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     } finally {
       setSaving(false)
     }

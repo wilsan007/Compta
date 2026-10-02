@@ -8,6 +8,7 @@ import { Plus, Trash2, Pencil, Zap, X } from 'lucide-react'
 import type { RegularizationEntry, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function RegularizationPage() {
   const { t } = useTranslation('accounting')
@@ -36,8 +37,8 @@ export function RegularizationPage() {
     try {
       const data = await getRegularizationEntries(filterType || undefined)
       setEntries(data || [])
-    } catch (err: any) { console.error('Failed to load regularization entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load regularization entries:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -51,8 +52,8 @@ export function RegularizationPage() {
       await deleteRegularizationEntry(id)
       toast('success', tCommon('common.success'), t('regularization.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -73,8 +74,8 @@ export function RegularizationPage() {
       await generateAdjustingEntries(selectedYear)
       toast('success', tCommon('common.success'), t('regularization.adjustingGenerated'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }
@@ -87,8 +88,8 @@ export function RegularizationPage() {
       await calculateProvisions(selectedYear)
       toast('success', tCommon('common.success'), t('regularization.provisionsCalculated'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }
@@ -100,8 +101,8 @@ export function RegularizationPage() {
       await postDeferredCharge(entry.id, entry.type === 'CCA' ? 'cca' : 'pca', Number(entry.remaining_amount))
       toast('success', tCommon('common.success'), t('regularization.deferredPosted'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }
@@ -293,8 +294,8 @@ function RegularizationForm({ editing, onClose, onSaved }: {
       }
       toast('success', tCommon('common.success'), t('regularization.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

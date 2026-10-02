@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getForecasts, createForecast } from '@/lib/queries/crmAdvanced'
 import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
@@ -24,8 +24,8 @@ export function SalesForecastPage() {
       const [fcData, repsData] = await Promise.all([getForecasts(), getSalesRepresentatives()])
       setForecasts(fcData || [])
       setReps(repsData || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -120,8 +120,8 @@ function ForecastForm({ reps, onClose, onSaved }: { reps: SalesRepresentative[];
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, Em
 import { getSupplierDeliverySchedules, createSupplierDeliverySchedule, deleteSupplierDeliverySchedule, generatePurchaseFromSchedule } from '@/lib/queries/purchaseAdvanced'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Calendar, Plus, Search, Trash2, X, Zap } from 'lucide-react'
 import type { SupplierDeliverySchedule, Supplier, Product } from '@/types'
@@ -29,8 +29,8 @@ export function SupplierDeliverySchedulePage() {
     try {
       const data = await getSupplierDeliverySchedules()
       setSchedules(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -41,15 +41,15 @@ export function SupplierDeliverySchedulePage() {
       const [s, p] = await Promise.all([getSuppliers(), getProducts()])
       setSuppliers(s || [])
       setProducts(p || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleGenerate() {
     try {
       const orders = await generatePurchaseFromSchedule(generateDate)
       toast('success', t('deliverySchedule.title'), t('deliverySchedule.ordersGenerated', { count: orders.length }))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -58,8 +58,8 @@ export function SupplierDeliverySchedulePage() {
       await deleteSupplierDeliverySchedule(id)
       setSchedules(schedules.filter(s => s.id !== id))
       toast('success', t('deliverySchedule.title'), tCommon('toast.deleted'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -177,8 +177,8 @@ function ScheduleForm({ suppliers, products, onClose, onSaved }: {
       } as any)
       toast('success', t('deliverySchedule.title'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

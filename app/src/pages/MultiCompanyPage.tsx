@@ -4,6 +4,7 @@ import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input } f
 import { getCompanySettings } from '@/lib/queries/accounting'
 import { useToast } from '@/lib/toast'
 import { Building2, Plus, Check } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 interface Entity {
   id: string
@@ -48,8 +49,8 @@ export function MultiCompanyPage() {
         setEntities([primary])
         setActiveEntity(comp.id)
       }
-    } catch (err: any) { console.error('Error loading company data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading company data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } from '@/lib/queries/purchases'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
@@ -37,7 +37,7 @@ export function PurchaseOrdersPage() {
       setSuppliers(sups || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -45,13 +45,13 @@ export function PurchaseOrdersPage() {
 
   async function handleStatusChange(id: string, status: string) {
   try { await updatePurchaseOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('orders.deleteConfirm'))) return
     try { await deletePurchaseOrder(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.total), 0)
@@ -140,7 +140,7 @@ function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { su
       try {
         const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
         setBudgetCheck(result)
-      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      } catch (err) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       finally { setChecking(false) }
     }, 300)
     return () => clearTimeout(t)
@@ -176,7 +176,7 @@ function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { su
         })
       }
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

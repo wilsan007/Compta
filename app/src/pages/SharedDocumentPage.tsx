@@ -6,6 +6,7 @@ import { getDocumentShare } from '@/lib/queries/dematerialisation'
 import { useToast } from '@/lib/toast'
 import { FileText, Download, Eye, Clock } from 'lucide-react'
 import type { DocumentShare } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function SharedDocumentPage() {
   const { token } = useParams<{ token: string }>()
@@ -26,8 +27,8 @@ export function SharedDocumentPage() {
         if (s?.expires_at && new Date(s.expires_at) < new Date()) {
           setExpired(true)
         }
-      } catch (err: any) {
-        toast('error', tCommon('toast.error'), err.message)
+      } catch (err) {
+        toast('error', tCommon('toast.error'), errorMessage(err))
       } finally {
         setLoading(false)
       }

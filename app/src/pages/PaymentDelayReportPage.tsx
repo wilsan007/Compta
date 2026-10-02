@@ -6,6 +6,7 @@ import { getCustomers } from '@/lib/queries/partners'
 import { getInvoices } from '@/lib/queries/sales'
 import { useLocale } from '@/hooks/useLocale'
 import type { Customer, Invoice } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function PaymentDelayReportPage() {
   const { t } = useTranslation('accounting')
@@ -23,9 +24,9 @@ export function PaymentDelayReportPage() {
       const [custs, invs] = await Promise.all([getCustomers(), getInvoices()])
       setCustomers(custs || [])
       setInvoices(invs || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load payment delay data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

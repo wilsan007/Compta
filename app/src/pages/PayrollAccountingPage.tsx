@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries/payroll'
 import { Calculator, Plus, Trash2, X, ArrowRightLeft, CheckCircle2 } from 'lucide-react'
 import type { PayRun, PayrollAccountingEntry } from '@/types'
@@ -27,7 +27,7 @@ const [entries, setEntries] = useState<any[]>([])
       const [es, prs] = await Promise.all([getPayrollAccountingEntries(), getPayRuns()])
       setEntries(es || [])
       setPayRuns(prs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -39,14 +39,14 @@ const [entries, setEntries] = useState<any[]>([])
       await transferPayrollToAccounting(entry.id, entry)
       await loadData()
       toast('success', tCommon('common.success'), t('payrollAccounting.generatedEntries'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setTransferring(null) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePayrollAccountingEntry(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
@@ -117,7 +117,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
         journal_entry_id: null, status: 'draft',
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

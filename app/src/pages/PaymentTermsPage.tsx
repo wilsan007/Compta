@@ -7,6 +7,7 @@ import { calculatePaymentDueDates } from '@/lib/queries/businessFunctions'
 import { Plus, Trash2, Edit2, X, CalendarDays, Calculator } from 'lucide-react'
 import type { PaymentTerm } from '@/types'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function PaymentTermsPage() {
   const { t } = useTranslation('accounting')
@@ -25,8 +26,8 @@ export function PaymentTermsPage() {
       const result = await calculatePaymentDueDates(invoiceDate, termId)
       const dates = Array.isArray(result) ? result.map((d: any) => d.due_date || d.date).join(', ') : JSON.stringify(result)
       toast('success', t('paymentTerms.title'), `Échéances: ${dates}`)
-    } catch (err: any) {
-      toast('error', t('paymentTerms.title'), err.message || t('paymentTerms.saveError'))
+    } catch (err) {
+      toast('error', t('paymentTerms.title'), errorMessage(err) || t('paymentTerms.saveError'))
     } finally {
       setCalculatingId(null)
     }

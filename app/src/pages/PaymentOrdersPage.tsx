@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPaymentOrders, createPaymentOrder, updatePaymentOrder, deletePaymentOrder, getThirdPartyAccounts } from '@/lib/queries/accounting'
 import { getBankAccounts } from '@/lib/queries/banking'
 import { Plus, Trash2, X, CheckCircle2, Ban, FileText } from 'lucide-react'
@@ -27,8 +27,8 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
   try {
       const data = await getPaymentOrders(statusFilter || undefined)
       setOrders(data || [])
-    } catch (err: any) { console.error('Error loading payment orders:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading payment orders:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -36,13 +36,13 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaymentOrder(id, { status: status as any }); await load() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('paymentOrders.deleteConfirm'))) return
     try { await deletePaymentOrder(id); await load() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.amount), 0)
@@ -155,7 +155,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       const [ba, tp] = await Promise.all([getBankAccounts(), getThirdPartyAccounts()])
       setBankAccounts(ba || [])
       setTiers(tp || [])
-    } catch (err: any) { console.error('Error loading ref:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error loading ref:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -175,8 +175,8 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
         remise_number: null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

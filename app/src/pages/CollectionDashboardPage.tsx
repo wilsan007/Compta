@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getCollectionDashboard, createCollectionReminder } from '@/lib/queries/accounting'
 import { getCustomers } from '@/lib/queries/partners'
 import { AlertTriangle, Plus, X, Mail } from 'lucide-react'
@@ -26,7 +26,7 @@ const [data, setData] = useState<any>(null)
       const [res, custs] = await Promise.all([getCollectionDashboard(), getCustomers()])
       setData(res)
       setCustomers(custs || [])
-    } catch (err: any) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -181,8 +181,8 @@ const [customerId, setCustomerId] = useState('')
         due_date: dueDate || null, amount, status: 'draft', notes: notes || null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

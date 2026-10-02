@@ -8,6 +8,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
 import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -43,9 +44,9 @@ export function DataExportPage() {
     try {
       const status = await getMirrorServerStatus(user.tenantId)
       setMirrorStatus(status)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading mirror status:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setMirrorLoading(false)
     }
@@ -96,8 +97,8 @@ export function DataExportPage() {
 
       toast('success', t('dataExport.installerDownloaded'), t('dataExport.executeOnServer', { filename, platform: platform === 'mac' ? 'Mac' : 'Windows' }))
       await loadMirrorStatus()
-    } catch (err: any) {
-      toast('error', t('common:toast.error'), err.message || t('common:toast.error'))
+    } catch (err) {
+      toast('error', t('common:toast.error'), errorMessage(err) || t('common:toast.error'))
     } finally {
       setInstalling(false)
     }
@@ -118,8 +119,8 @@ export function DataExportPage() {
       setExportedAt(exportedAt)
       setTotalRows(totalRows)
       toast('success', t('dataExport.exportDone'), t('dataExport.rowsRetrieved', { rows: totalRows, tables: tables.filter(t => t.rowCount > 0).length }))
-    } catch (err: any) {
-      toast('error', t('dataExport.exportError'), err.message || t('common:toast.error'))
+    } catch (err) {
+      toast('error', t('dataExport.exportError'), errorMessage(err) || t('common:toast.error'))
     } finally {
       setLoading(false)
     }

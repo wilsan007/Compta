@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRateHistory, saveRate, refreshRatesFromECB, type ExchangeRate } from '@/lib/currencyRates'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getCurrencies } from '@/lib/queries/accounting'
 import { RefreshCw, Plus, X, TrendingUp, TrendingDown, Calendar } from 'lucide-react'
 import type { Currency } from '@/types'
@@ -29,8 +29,8 @@ export function ExchangeRatesPage() {
       ])
       setRates(history)
       setCurrencies(curs || [])
-    } catch (err: any) { console.error('Error loading exchange rates:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading exchange rates:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -44,8 +44,8 @@ export function ExchangeRatesPage() {
       const saved = await refreshRatesFromECB('EUR')
       toast('success', tCommon('toast.success'), t('exchangeRates.refreshed', { count: saved }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('exchangeRates.refreshError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('exchangeRates.refreshError'))
     } finally {
       setRefreshing(false)
     }
@@ -178,8 +178,8 @@ function ManualRateForm({ currencies, onClose, onSaved }: { currencies: Currency
     try {
       await saveRate(base, quote, rate, rateDate, 'manual')
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

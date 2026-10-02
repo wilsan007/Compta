@@ -6,6 +6,7 @@ import { useToast } from '@/lib/toast'
 import { searchEntries, getJournals, getChartAccounts, getThirdPartyAccounts, markLineBAP, markLineWithCode, getMarkingTypes } from '@/lib/queries'
 import { Search, ChevronDown, ChevronRight, ChevronLeft, Filter, X, Download, CheckCircle2 } from 'lucide-react'
 import type { JournalEntry, Journal, ChartAccount, ThirdPartyAccount, MarkingType } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 const PAGE_SIZE = 100
 
@@ -110,11 +111,11 @@ export function SearchEntriesPage() {
       setResults(res?.data || [])
       setTotalCount(res?.count ?? 0)
       setPage(targetPage)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error searching entries:', err)
       setResults([])
       setTotalCount(0)
-      toast('error', t('search.title'), err?.message || t('search.searchError', { defaultValue: 'Échec de la recherche' }))
+      toast('error', t('search.title'), errorMessage(err) || t('search.searchError', { defaultValue: 'Échec de la recherche' }))
     } finally {
       setLoading(false)
     }

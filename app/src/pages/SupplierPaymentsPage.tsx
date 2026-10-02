@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getSupplierPayments, createSupplierPayment, deleteSupplierPayment, getSuppliers } from '@/lib/queries/partners'
 import { getBankAccounts } from '@/lib/queries/banking'
 import { getPurchaseInvoices } from '@/lib/queries/sales'
@@ -30,7 +30,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
       setPayments(pays || [])
       setSuppliers(sups || [])
       setBanks(bks || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -39,7 +39,7 @@ const [payments, setPayments] = useState<SupplierPayment[]>([])
   async function handleDelete(id: string) {
   if (!confirmSync(t('payments.deleteConfirm'))) return
     try { await deleteSupplierPayment(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
   }
 
   const totalAmount = payments.reduce((s, p) => s + Number(p.amount), 0)
@@ -130,7 +130,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
       const number = await nextDocumentNumber('RSF')
       await createSupplierPayment({ number, supplier_id: supplierId || null, purchase_invoice_id: purchaseInvoiceId || null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 

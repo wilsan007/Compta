@@ -7,6 +7,7 @@ import type { BankRule } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function BankRulesPage() {
   const { toast } = useToast()
@@ -20,8 +21,8 @@ const [rules, setRules] = useState<BankRule[]>([])
     setLoading(true)
     try {
       setRules(await getBankRules())
-    } catch (err: any) { console.error('Failed to load rules:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load rules:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -33,8 +34,8 @@ const [rules, setRules] = useState<BankRule[]>([])
   try {
       await updateBankRule(id, { active: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -43,8 +44,8 @@ const [rules, setRules] = useState<BankRule[]>([])
     try {
       await deleteBankRule(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -130,8 +131,8 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
         priority, active: true,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

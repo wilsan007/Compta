@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getGoodsReceipts, createGoodsReceiptFromOrder, updateGoodsReceipt, deleteGoodsReceipt } from '@/lib/queries/misc'
 import { getStockPostedReferences, getWarehouses } from '@/lib/queries/stock'
 import { getSuppliers } from '@/lib/queries/partners'
@@ -33,7 +33,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
       setWarehouses((whs || []).filter((w) => w.active !== false))
       // « Entré » se lit sur les mouvements de stock réels, pas sur le statut.
       setPosted(await getStockPostedReferences('goods_receipt', (rcpts || []).map((r) => r.id)))
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -41,13 +41,13 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updateGoodsReceipt(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('goodsReceipts.deleteConfirm'))) return
     try { await deleteGoodsReceipt(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
@@ -122,7 +122,7 @@ function GRForm({ suppliers, warehouses, onClose, onSaved }: { suppliers: Suppli
       const number = await nextDocumentNumber('BR')
       await createGoodsReceiptFromOrder(purchaseOrderId, { number, receipt_date: receiptDate, warehouse_id: warehouseId || null })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

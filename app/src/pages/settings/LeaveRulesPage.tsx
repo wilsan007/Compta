@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { DEFAULT_LEAVE_COLOR } from '@/lib/constants'
 import { getLeaveRules, createLeaveRule, updateLeaveRule, deleteLeaveRule, getPublicHolidays, createPublicHoliday, deletePublicHoliday, getApprovalWorkflows, createApprovalWorkflow, getStaffRequirements, createStaffRequirement, updateStaffRequirement } from '@/lib/queries/leavesAbsences'
 import type { LeaveRule, PublicHoliday, ApprovalWorkflow, StaffRequirement } from '@/types'
@@ -64,7 +64,7 @@ function RulesTab() {
     try {
       const data = await getLeaveRules()
       setRules(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -73,7 +73,7 @@ function RulesTab() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLeaveRule(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -144,7 +144,7 @@ function RuleForm({ rule, onClose, onSaved }: { rule: LeaveRule | null; onClose:
       if (rule) await updateLeaveRule(rule.id, data)
       else await createLeaveRule(data as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -218,7 +218,7 @@ function HolidaysTab() {
     try {
       const data = await getPublicHolidays(year)
       setHolidays(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [year, tCommon, toast])
 
@@ -227,7 +227,7 @@ function HolidaysTab() {
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePublicHoliday(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -277,7 +277,7 @@ function HolidayForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
     try {
       await createPublicHoliday({ name, holiday_date: date, region, country, is_working_day: false } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -320,7 +320,7 @@ function WorkflowsTab() {
     try {
       const data = await getApprovalWorkflows()
       setWorkflows(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -367,7 +367,7 @@ function WorkflowForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       const steps = JSON.parse(stepsJson)
       await createApprovalWorkflow({ name, entity_type: entityType as any, steps, active: true } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -411,7 +411,7 @@ function StaffTab() {
     try {
       const data = await getStaffRequirements()
       setReqs(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -419,7 +419,7 @@ function StaffTab() {
 
   async function handleToggle(id: string, active: boolean) {
     try { await updateStaffRequirement(id, { active: !active }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -465,7 +465,7 @@ function StaffForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
     try {
       await createStaffRequirement({ department, min_staff: Number(minStaff), days_of_week: daysOfWeek.split(','), active: true } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
     finally { setSaving(false) }
   }
 

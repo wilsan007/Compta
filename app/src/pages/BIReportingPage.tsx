@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getInvoices, getPurchaseInvoices } from '@/lib/queries/sales'
 import { getBankAccounts } from '@/lib/queries/banking'
 import { getJournalEntries } from '@/lib/queries/accounting'
@@ -50,9 +50,9 @@ export function BIReportingPage() {
         purchaseInvoiceCount: (pur || []).length, journalEntryCount: (journals || []).length,
         bankBalance,
       })
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading BI report:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

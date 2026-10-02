@@ -6,6 +6,7 @@ import { Lock, Unlock, AlertTriangle } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 interface ClosureEntry {
   id: string
@@ -39,8 +40,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       const fy = await getFiscalYears()
       setFiscalYears(fy || [])
       if (fy && fy.length > 0) setSelectedYear(fy[0].id)
-    } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -58,8 +59,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       setJournals(data.journals)
       setPeriods(data.periods)
       setEntries(data.entries as ClosureEntry[])
-    } catch (err: any) { console.error('Error loading closure matrix:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading closure matrix:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingMatrix(false)
     }
@@ -99,8 +100,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
     try {
       await closeJournalPeriod(journalCode, periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -112,8 +113,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
     try {
       await reopenJournalPeriod(journalCode, periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -133,8 +134,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
     try {
       await closeFiscalPeriod(periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -146,8 +147,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
     try {
       await reopenFiscalPeriod(periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Button, Select } from '@/components/ui'
 import { getBalanceSheet, getFiscalYears } from '@/lib/queries/accounting'
 import { generateBalanceSheet } from '@/lib/queries/businessFunctions'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import type { FiscalYear } from '@/types'
 
@@ -40,8 +40,8 @@ export function BalanceSheetPage() {
     setLoading(true)
     try {
       setData(await getBalanceSheet({ fiscalYearId: selectedYear }))
-    } catch (err: any) { console.error('Failed to load balance sheet:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load balance sheet:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -56,8 +56,8 @@ export function BalanceSheetPage() {
       await generateBalanceSheet(selectedYear)
       toast('success', tCommon('common.success'), t('balanceSheet.generated'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }

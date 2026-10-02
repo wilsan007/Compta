@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast'
 import { getTenantId } from '@/lib/queries/core'
 import { Key, Webhook, Plus, Trash2, Copy, RefreshCw,  X, AlertTriangle, Activity } from 'lucide-react'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 // LOT5-05 (durci) : Validation SSRF côté client — source unique dans @/lib/security/ssrfGuard,
 // alignée avec is_allowed_webhook_url (SQL, migration 167) et la garde de la Edge Function.
@@ -86,8 +87,8 @@ export function ApiWebhooksPage() {
       ])
       if (keysRes.data) setApiKeys(keysRes.data as ApiKey[])
       if (whRes.data) setWebhooks(whRes.data as WebhookEndpoint[])
-    } catch (err: any) {
-      toast('error', 'Error', err.message)
+    } catch (err) {
+      toast('error', 'Error', errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -119,8 +120,8 @@ export function ApiWebhooksPage() {
       setNewKeyLimit(100)
       await loadData()
       toast('success', 'Clé API créée', 'Copiez la clé maintenant, elle ne sera plus affichée.')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -131,8 +132,8 @@ export function ApiWebhooksPage() {
       if (error) throw error
       await loadData()
       toast('success', 'Clé révoquée', '')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -142,8 +143,8 @@ export function ApiWebhooksPage() {
       const { error } = await supabase.from('api_keys').delete().eq('id', id)
       if (error) throw error
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -170,8 +171,8 @@ export function ApiWebhooksPage() {
       setShowWebhookModal(false)
       await loadData()
       toast('success', 'Webhook créé', '')
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -180,8 +181,8 @@ export function ApiWebhooksPage() {
       const { error } = await supabase.from('webhook_endpoints').update({ active: !wh.active }).eq('id', wh.id)
       if (error) throw error
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 
@@ -191,8 +192,8 @@ export function ApiWebhooksPage() {
       const { error } = await supabase.from('webhook_endpoints').delete().eq('id', id)
       if (error) throw error
       await loadData()
-    } catch (err: any) {
-      toast('error', 'Erreur', err.message)
+    } catch (err) {
+      toast('error', 'Erreur', errorMessage(err))
     }
   }
 

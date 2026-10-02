@@ -6,6 +6,7 @@ import { Plus, Trash2, Pencil, Layers, X } from 'lucide-react'
 import type { AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function AnalyticPlansPage() {
   const { t } = useTranslation('accounting')
@@ -21,8 +22,8 @@ export function AnalyticPlansPage() {
     try {
       const data = await getAnalyticPlans()
       setPlans(data || [])
-    } catch (err: any) { console.error('Failed to load analytic plans:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load analytic plans:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -46,8 +47,8 @@ export function AnalyticPlansPage() {
       await deleteAnalyticPlan(id)
       toast('success', tCommon('common.success'), t('analyticPlans.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -125,8 +126,8 @@ function PlanForm({ plan, onClose, onSaved }: { plan: AnalyticPlan | null; onClo
         toast('success', tCommon('common.success'), t('analyticPlans.saveSuccess'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

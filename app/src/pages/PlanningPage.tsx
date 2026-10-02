@@ -6,6 +6,7 @@ import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Bread
 import { useToast } from '@/lib/toast'
 import { getPlanningSlots, deletePlanningSlot, checkMaterialAvailability, autoScheduleMOs } from '@/lib/queries/stock'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 const statusVariants: Record<string, 'neutral' | 'warning' | 'success'> = { planned: 'neutral', scheduled: 'warning', in_progress: 'warning', completed: 'success' }
 
@@ -20,7 +21,7 @@ export function PlanningPage() {
 
   const loadData = useCallback(async () => {
     try { setSlots(await getPlanningSlots() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -29,7 +30,7 @@ export function PlanningPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(t('planning.confirmDelete'))) return
     try { await deletePlanningSlot(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleMaterialCheck(id: string) {
@@ -38,7 +39,7 @@ export function PlanningPage() {
       if (result.available) { toast('success', t('planning.materialsAvailable'), t('planning.allComponentsInStock')) }
       else { toast('warning', t('planning.materialsMissing'), t('planning.componentsMissing', { count: result.missing.length })) }
       await loadData()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleAutoSchedule() {
@@ -47,7 +48,7 @@ export function PlanningPage() {
       const count = await autoScheduleMOs()
       toast('success', t('planning.schedulingDone'), t('planning.ofScheduled', { count }))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
     finally { setScheduling(false) }
   }
 

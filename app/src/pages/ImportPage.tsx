@@ -18,6 +18,7 @@ import {
   AlertCircle, Loader2, ListOrdered, Sparkles, Eye, Columns3, Brain,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { errorMessage } from '@/lib/utils'
 
 type Step = 'select' | 'upload' | 'map' | 'result'
 
@@ -128,8 +129,8 @@ export function ImportPage() {
           toast('warning', t('import.manualMappingRequired'), t('import.manualMappingRequired'))
         }
         setStep('map')
-      } catch (err: any) {
-        toast('error', t('import.readError'), err.message || t('import.readError'))
+      } catch (err) {
+        toast('error', t('import.readError'), errorMessage(err) || t('import.readError'))
       }
     }
     reader.readAsArrayBuffer(file)
@@ -250,8 +251,8 @@ export function ImportPage() {
         unmappedColumns: headers.filter((h) => !Object.values(mergedMapping).includes(h)),
       })
       toast('success', t('import.aiDone'), `${Object.keys(result.mapping).length}`)
-    } catch (err: any) {
-      toast('error', t('import.aiError'), err.message || t('import.aiError'))
+    } catch (err) {
+      toast('error', t('import.aiError'), errorMessage(err) || t('import.aiError'))
     }
     setAiLoading(false)
   }

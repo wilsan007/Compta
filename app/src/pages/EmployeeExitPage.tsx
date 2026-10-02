@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { getExitProcesses, createExitProcess } from '@/lib/queries/sprintDE'
 import { getEmployees } from '@/lib/queries/payroll'
 import { calculateSeverancePay, calculateNoticeCompensation } from '@/lib/queries/businessFunctions'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { LogOut, Plus, X, ChevronRight, FileText, Send, CheckCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -32,9 +32,9 @@ export function EmployeeExitPage() {
       const [procs, emps] = await Promise.all([getExitProcesses(), getEmployees()])
       setProcesses(procs || [])
       setEmployees(emps || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -124,8 +124,8 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
       const amount = Number(res) || 0
       setSeverance(amount)
       toast('success', tCommon('common.success'), `${'Indemnité de rupture'}: ${formatCurrency(amount)}`)
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setCalcLoading(false) }
   }
 
@@ -137,8 +137,8 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
       const amount = Number(res?.amount ?? res?.notice_compensation ?? res ?? 0)
       setNoticeComp(amount)
       toast('success', tCommon('common.success'), `Indemnité de préavis: ${formatCurrency(amount)}`)
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setNoticeLoading(false) }
   }
 
@@ -150,8 +150,8 @@ function ExitStartForm({ employees, onClose, onSaved }: { employees: Employee[];
       await createExitProcess(employeeId, exitDate, exitReason)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -268,7 +268,7 @@ function ExitWizard({ process, onClose }: { process: any; onClose: () => void })
           )}
           {currentStep === 4 && (
             <div className="space-y-3">
-              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.generateExitDocuments(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
+              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.generateExitDocuments(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setWorking(false) } }} disabled={working}>
                 <FileText className="w-4 h-4" /> {t('exit.generateDocuments')}
               </Button>
               <Button onClick={() => setCurrentStep(5)}>{tCommon('actions.next')}</Button>
@@ -276,10 +276,10 @@ function ExitWizard({ process, onClose }: { process: any; onClose: () => void })
           )}
           {currentStep === 5 && (
             <div className="space-y-3">
-              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.markDsnExitGenerated(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
+              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.markDsnExitGenerated(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setWorking(false) } }} disabled={working}>
                 <FileText className="w-4 h-4" /> {t('exit.generateDsnExit')}
               </Button>
-              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.transmitDsnExit(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
+              <Button variant="secondary" onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.transmitDsnExit(process.id)); toast('success', tCommon('common.success'), tCommon('common.saved')); } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setWorking(false) } }} disabled={working}>
                 <Send className="w-4 h-4" /> {t('exit.transmitDsnExit')}
               </Button>
               <Button onClick={() => setCurrentStep(6)}>{tCommon('actions.next')}</Button>
@@ -288,7 +288,7 @@ function ExitWizard({ process, onClose }: { process: any; onClose: () => void })
           {currentStep === 6 && (
             <div className="space-y-3">
               <p className="text-sm text-[var(--color-text-secondary)]">{t('exit.step6Description')}</p>
-              <Button onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.completeExitProcess(process.id)); toast('success', tCommon('common.success'), t('exit.complete')); onClose(); } catch(e:any) { toast('error', tCommon('common.error'), e.message) } finally { setWorking(false) } }} disabled={working}>
+              <Button onClick={async () => { setWorking(true); try { await import('@/lib/queries').then(m => m.completeExitProcess(process.id)); toast('success', tCommon('common.success'), t('exit.complete')); onClose(); } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setWorking(false) } }} disabled={working}>
                 <CheckCircle className="w-4 h-4" /> {t('exit.validate')}
               </Button>
             </div>

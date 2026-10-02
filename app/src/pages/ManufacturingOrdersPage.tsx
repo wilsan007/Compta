@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrders, createManufacturingOrder, updateManufacturingOrder, deleteManufacturingOrder } from '@/lib/queries/production'
 import { getBOMs, getWarehouses, getRoutings, getStockPostedReferences } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
@@ -37,7 +37,7 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
       setBOMs(bs || [])
       setWarehouses(whs || [])
       setRoutings(rts || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, tCommon, toast])
 
@@ -45,20 +45,20 @@ const [orders, setOrders] = useState<ManufacturingOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updateManufacturingOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('manufacturing.confirmDelete'))) return
     try { await deleteManufacturingOrder(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleProductionCost(id: string) {
     try {
       const res = await calculateProductionCost(id)
       toast('success', t('manufacturing.title'), formatCurrency(Number(res?.total_cost ?? res ?? 0)))
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (
@@ -147,7 +147,7 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
       const productId = boms.find((b) => b.id === bomId)?.product_id ?? null
       await createManufacturingOrder({ number, bom_id: bomId || null, product_id: productId, quantity, status: 'planned', start_date: startDate || null, end_date: endDate || null, warehouse_id: warehouseId || null, routing_id: routingId || null, notes: notes || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
     finally { setSaving(false) }
   }
 

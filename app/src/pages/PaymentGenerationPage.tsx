@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { getThirdPartyAccounts } from '@/lib/queries/accounting'
 import { getInvoices, getPurchaseInvoices, updateInvoice, updatePurchaseInvoice } from '@/lib/queries/sales'
@@ -62,8 +62,8 @@ export function PaymentGenerationPage() {
       setThirdParties(tp || [])
       setBanks(ba || [])
       setPaymentTerms(pt || [])
-    } catch (err: any) { console.error('Error loading reference data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading reference data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -81,8 +81,8 @@ export function PaymentGenerationPage() {
         const data = await getInvoices()
         setInvoices(data || [])
       }
-    } catch (err: any) { console.error('Error loading invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -206,8 +206,8 @@ export function PaymentGenerationPage() {
       }
       toast('success', t('paymentGeneration.generated'), t('paymentGeneration.generatedDesc', { count: selectedRows.length }))
       await handleSearch()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || t('paymentGeneration.generateError'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || t('paymentGeneration.generateError'))
     } finally {
       setGenerating(false)
     }

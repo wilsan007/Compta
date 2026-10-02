@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, Em
 import { getInvoices, createInvoice, updateInvoice, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
 import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
 import { transformInvoiceToCreditNote, createAdvanceInvoice } from '@/lib/queries/misc'
-import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
 import { generateFacturX, downloadXML, isDraftDocument } from '@/lib/facturX'
@@ -51,8 +51,8 @@ export function InvoicesPage() {
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
-    } catch (err: any) { console.error('Error loading invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -70,8 +70,8 @@ export function InvoicesPage() {
       await updateInvoice(id, { status: 'sent' })
       toast('success', t('invoices.title'), tCommon('toast.sent'))
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.sendError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.sendError'))
     } finally {
       setActionLoading(null)
     }
@@ -83,8 +83,8 @@ export function InvoicesPage() {
       await updateInvoice(id, { validation_status: 'validated' as any })
       toast('success', t('invoices.title'), tCommon('toast.saved'))
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -110,8 +110,8 @@ export function InvoicesPage() {
       setPaying(null)
       toast('success', t('invoices.title'), tCommon('toast.updated'))
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -124,8 +124,8 @@ export function InvoicesPage() {
       await transformInvoiceToCreditNote(inv.id, reason)
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     }
   }
 
@@ -450,8 +450,8 @@ function InvoiceForm({ customers, onClose, onSaved }: {
       })
       toast('success', t('invoices.title'), t('invoices.draftCreated'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -602,8 +602,8 @@ function AdvanceInvoiceForm({ customers, onClose, onSaved }: {
       await createAdvanceInvoice(customerId, amount, vatRate)
       toast('success', tCommon('toast.success'), t('invoices.advanceInvoiceCreated'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

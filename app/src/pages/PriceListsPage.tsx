@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Tag, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PriceList, Product } from '@/types'
@@ -25,7 +25,7 @@ const [lists, setLists] = useState<PriceList[]>([])
       const [pls, prods] = await Promise.all([getPriceLists(), getProducts()])
       setLists(pls || [])
       setProducts(prods || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -40,7 +40,7 @@ const [lists, setLists] = useState<PriceList[]>([])
         try {
           const lns = await getPriceListLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+        } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
@@ -49,12 +49,12 @@ const [lists, setLists] = useState<PriceList[]>([])
   async function handleDelete(id: string) {
   if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePriceList(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleDeleteLine(lineId: string, listId: string) {
     try { await deletePriceListLine(lineId); const lns = await getPriceListLines(listId); setLines((prev) => ({ ...prev, [listId]: lns })) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   return (
@@ -144,7 +144,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     try {
       await createPriceList({ name, code: code || null, type: type as any, currency: 'EUR', valid_from: validFrom || null, valid_to: validTo || null, active: true, is_default: false } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
@@ -191,7 +191,7 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
     try {
       await createPriceListLine({ price_list_id: priceListId, product_id: productId, unit_price: unitPrice, min_quantity: minQuantity, discount_percent: discountPercent } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 

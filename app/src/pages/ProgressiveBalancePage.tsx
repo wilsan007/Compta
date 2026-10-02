@@ -5,6 +5,7 @@ import { useToast } from '@/lib/toast'
 import { getThirdPartyAccounts, getJournalEntries } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import type { ThirdPartyAccount, JournalEntry } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function ProgressiveBalancePage() {
   const { t } = useTranslation('accounting')
@@ -30,9 +31,9 @@ export function ProgressiveBalancePage() {
       } else {
         setEntries([])
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load progressive balance:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

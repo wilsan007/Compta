@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, updatePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -29,8 +29,8 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
       setCreditNotes(cn)
       setSuppliers(s)
       setInvoices(inv)
-    } catch (err: any) { console.error('Failed to load:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -44,12 +44,12 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
 
   async function handleDelete(id: string) {
     if (!confirmSync(t('creditNotes.deleteConfirm'))) return
-    try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await deletePurchaseCreditNote(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   // AUD-G01 : la validation passe l'écriture d'avoir (journal AC) et impute la facture d'origine
   async function handleValidate(id: string) {
-    try { await updatePurchaseCreditNote(id, { status: 'validated' }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await updatePurchaseCreditNote(id, { status: 'validated' }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
@@ -161,7 +161,7 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
         })),
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (

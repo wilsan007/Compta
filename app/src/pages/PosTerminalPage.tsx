@@ -5,7 +5,7 @@ import { Button, Card, Input, Select, Badge, EmptyState, SkeletonTable, PageHead
 import { getPosTerminals, createPosTerminal, openPosSession, closePosSession, getActiveSession, createPosTicket } from '@/lib/queries/posAdvanced'
 import { getProducts } from '@/lib/queries/stock'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { Monitor, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Lock } from 'lucide-react'
 import type { PosTerminal, PosSession, Product } from '@/types'
 
@@ -42,8 +42,8 @@ export function PosTerminalPage() {
       try {
         const prods = await getProducts()
         setProducts(prods as any)
-      } catch (err: any) {
-        toast('error', tCommon('toast.error'), err.message)
+      } catch (err) {
+        toast('error', tCommon('toast.error'), errorMessage(err))
       }
     })()
   }, [toast, tCommon])
@@ -71,8 +71,8 @@ export function PosTerminalPage() {
         const session = await getActiveSession(terms[0].id)
         setActiveSession(session)
       }
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -87,8 +87,8 @@ export function PosTerminalPage() {
       setActiveSession(session)
       setShowOpenSession(false)
       toast('success', tCommon('toast.success'), t('terminal.openSession'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -100,8 +100,8 @@ export function PosTerminalPage() {
       setShowCloseSession(false)
       setCart([])
       toast('success', tCommon('toast.success'), t('terminal.closeSession'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -119,8 +119,8 @@ export function PosTerminalPage() {
       setNewTerminalName('')
       setNewTerminalLocation('')
       toast('success', tCommon('toast.success'), t('terminal.newTerminal'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -198,8 +198,8 @@ export function PosTerminalPage() {
       setCart([])
       setShowPayment(false)
       setAmountReceived('0')
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 

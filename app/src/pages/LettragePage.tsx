@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getThirdPartyAccounts, getUnletteredLines, getLetteredLines, applyLettrage, removeLettrage, getNextLettrageCode } from '@/lib/queries/accounting'
 import { Link2, Unlink, Search, Wand2 } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
@@ -30,8 +30,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
     try {
       const tp = await getThirdPartyAccounts()
       setThirdParties(tp || [])
-    } catch (err: any) { console.error('Error loading third parties:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading third parties:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -53,8 +53,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       ])
       setUnlettered(ul || [])
       setLettered(l || [])
-    } catch (err: any) { console.error('Error loading lines:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading lines:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingLines(false)
     }
@@ -82,8 +82,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       const code = await getNextLettrageCode()
       await applyLettrage(Array.from(selected), code)
       await loadLines()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -92,8 +92,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
     try {
       await removeLettrage(lineIds)
       await loadLines()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, EmptyState, SkeletonTable, Select, StatCard, PageHeader } from '@/components/ui'
 import { getPosTerminals, getPosTickets } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { BarChart3, TrendingUp, Receipt, DollarSign } from 'lucide-react'
 import type { PosTerminal, PosTicket } from '@/types'
 
@@ -30,8 +30,8 @@ export function PosStatsPage() {
       else if (period === 'thisMonth') { startDate = new Date(now.getFullYear(), now.getMonth(), 1) }
       const ticks = await getPosTickets(undefined, startDate.toISOString().split('T')[0])
       setTickets(ticks)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }

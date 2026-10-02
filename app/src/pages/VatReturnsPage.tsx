@@ -8,6 +8,7 @@ import { FileText, Plus, Trash2, X, Calculator, Zap } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function VatReturnsPage() {
   const { toast } = useToast()
@@ -28,8 +29,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
     try {
       const result = await calculateVatCa3(periodStart, periodEnd)
       toast('success', tCommon('common.success'), `TVA collectée: ${formatCurrency(result.vat_collected ?? 0)} | Déductible: ${formatCurrency(result.vat_deductible ?? 0)} | À payer: ${formatCurrency(result.vat_to_pay ?? 0)}`)
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setCalculatingCa3(false)
     }
@@ -44,8 +45,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       await generateVatReturn(periodStart, periodEnd)
       toast('success', tCommon('common.success'), t('vat.generated'))
       await loadData()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }
@@ -55,8 +56,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
     setLoading(true)
     try {
       setVatReturns(await getVatReturns())
-    } catch (err: any) { console.error('Failed to load VAT returns:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load VAT returns:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -70,8 +71,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       if (status === 'submitted') updates.submitted_date = new Date().toISOString().split('T')[0]
       await updateVatReturn(id, updates)
       await loadData()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -80,8 +81,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
     try {
       await deleteVatReturn(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -180,8 +181,8 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       setInputVat(result.inputVat)
       setTotalSales(result.totalSales)
       setTotalPurchases(result.totalPurchases)
-    } catch (err: any) {
-      toast('error', t('vat.calcError'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.calcError'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setCalculating(false)
     }
@@ -204,8 +205,8 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
         total_purchases: totalPurchases,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

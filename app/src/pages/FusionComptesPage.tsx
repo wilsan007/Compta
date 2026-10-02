@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { getChartAccounts } from '@/lib/queries/accounting'
 import { getFusionLogs, fuseAccounts } from '@/lib/queries/misc'
@@ -53,8 +53,8 @@ export function FusionComptesPage() {
       setSourceCode('')
       setTargetCode('')
       await load()
-    } catch (err: any) {
-      toast('error', t('fusionComptes.title'), err.message || t('fusionComptes.fuseError'))
+    } catch (err) {
+      toast('error', t('fusionComptes.title'), errorMessage(err) || t('fusionComptes.fuseError'))
     } finally {
       setFusing(false)
     }

@@ -7,6 +7,7 @@ import { createChartAccount, createThirdPartyAccount, getThirdPartyAccounts, imp
 import { useToast } from '@/lib/toast'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileUp, Database, CheckCircle2, AlertTriangle, RotateCcw } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 type UnifiedResult = SageParseResult | MaeParseResult
 
@@ -87,10 +88,10 @@ export function SageImportPage() {
             parent_id: null,
           } as any)
           accountsCreated++
-        } catch (err: any) {
+        } catch (err) {
           accountsSkipped++
-          console.error(`[Import] Account ${acc.code} failed:`, err?.message || err)
-          importErrors.push(`Compte ${acc.code}: ${err?.message || 'erreur'}`)
+          console.error(`[Import] Account ${acc.code} failed:`, errorMessage(err) || err)
+          importErrors.push(`Compte ${acc.code}: ${errorMessage(err) || 'erreur'}`)
         }
       }
       if (import.meta.env.DEV) console.debug('[Import] Accounts:', accountsCreated, 'created,', accountsSkipped, 'skipped')
@@ -148,9 +149,9 @@ export function SageImportPage() {
               active: true,
             } as any)
             tiersCreated++
-          } catch (err: any) {
-            console.error(`[Import] Third party ${tier.code} failed:`, err?.message || err)
-            importErrors.push(`Tiers ${tier.code}: ${err?.message || 'erreur'}`)
+          } catch (err) {
+            console.error(`[Import] Third party ${tier.code} failed:`, errorMessage(err) || err)
+            importErrors.push(`Tiers ${tier.code}: ${errorMessage(err) || 'erreur'}`)
           }
         }
 
@@ -219,10 +220,10 @@ export function SageImportPage() {
           const verdict = await importFecEntries(payload)
           entriesCreated = Number(verdict?.entries ?? payload.length)
           if (import.meta.env.DEV) console.debug('[Import] Entries:', entriesCreated, 'validated')
-        } catch (err: any) {
+        } catch (err) {
           entriesSkipped = payload.length
-          console.error('[Import] import_fec_entries failed:', err?.message || err)
-          importErrors.push(`Import: ${err?.message || 'erreur'}`)
+          console.error('[Import] import_fec_entries failed:', errorMessage(err) || err)
+          importErrors.push(`Import: ${errorMessage(err) || 'erreur'}`)
         }
       }
 
@@ -233,8 +234,8 @@ export function SageImportPage() {
       }
 
       setImported(true)
-    } catch (err: any) {
-      toast('error', t('sageImport.importError'), err.message)
+    } catch (err) {
+      toast('error', t('sageImport.importError'), errorMessage(err))
     } finally {
       setImporting(false)
     }

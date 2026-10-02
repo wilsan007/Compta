@@ -7,6 +7,7 @@ import { getReimputationLogs, createReimputationLog } from '@/lib/queries/misc'
 import { getJournalEntries, getChartAccounts, getAnalyticSections, getAnalyticLedgerLines } from '@/lib/queries/accounting'
 import { Plus, Search } from 'lucide-react'
 import type { ReimputationLog } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Analytic OD Entry Page (Saisie OD analytiques) ============
 export function AnalyticODEntryPage() {
@@ -216,8 +217,8 @@ export function ReimputationPage() {
       toast('success', tCommon('common.success'), tCommon('toast.created'))
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 

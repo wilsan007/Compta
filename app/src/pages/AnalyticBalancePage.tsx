@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getAnalyticBalance, getAnalyticPlans, getFiscalYears } from '@/lib/queries/accounting'
 import { PieChart } from 'lucide-react'
 
@@ -42,9 +42,9 @@ export function AnalyticBalancePage() {
       setSelectedExercice(exerciceId || courant.id)
       const res = await getAnalyticBalance(courant.start_date, courant.end_date)
       setData(res)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading analytic balance:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -57,9 +57,9 @@ export function AnalyticBalancePage() {
     setLoading(true)
     try {
       setData(await getAnalyticBalance(ex.start_date, ex.end_date))
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading analytic balance:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -5,6 +5,7 @@ import { getRhKnowledgeBase, createRhKnowledgeBaseArticle, updateRhKnowledgeBase
 import type { RhKnowledgeBaseArticle } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function RhKnowledgeBasePage() {
   const { t } = useTranslation('hr')
@@ -28,8 +29,8 @@ export function RhKnowledgeBasePage() {
     try {
       const data = await getRhKnowledgeBase(category || undefined, search || undefined)
       setArticles(data)
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -66,8 +67,8 @@ export function RhKnowledgeBasePage() {
       setEditId(null)
       setFormTitle(''); setFormContent(''); setFormTags('')
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -85,8 +86,8 @@ export function RhKnowledgeBasePage() {
     try {
       await incrementArticleViews(article.id)
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -95,8 +96,8 @@ export function RhKnowledgeBasePage() {
       await deleteRhKnowledgeBaseArticle(id)
       toast('success', tCommon('toast.deleted'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 

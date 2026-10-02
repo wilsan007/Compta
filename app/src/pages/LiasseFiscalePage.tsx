@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select } from '@/components/ui'
 import { getFiscalYears, getBalanceSheet, getTrialBalance } from '@/lib/queries/accounting'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { FileText, FileBarChart } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 
@@ -27,7 +27,7 @@ export function LiasseFiscalePage() {
     try {
       const years = await getFiscalYears()
       setFiscalYears(years || [])
-    } catch (err: any) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -43,7 +43,7 @@ export function LiasseFiscalePage() {
       ])
       setData(bs)
       setTrialBalance(tb || [])
-    } catch (err: any) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setGenerating(false)
     }

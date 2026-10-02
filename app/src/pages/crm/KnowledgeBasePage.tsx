@@ -5,6 +5,7 @@ import { getKbArticles, createKbArticle, updateKbArticle, deleteKbArticle, incre
 import { useToast } from '@/lib/toast'
 import { Plus, X, BookOpen, Trash2, ThumbsUp, ThumbsDown, Search, Pencil } from 'lucide-react'
 import type { KnowledgeBaseArticle } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 const CATEGORIES = ['faq', 'guide', 'troubleshooting', 'policy'] as const
 const STATUSES = ['draft', 'published', 'archived'] as const
@@ -26,8 +27,8 @@ export function KnowledgeBasePage() {
     try {
       const data = await getKbArticles()
       setArticles(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -46,8 +47,8 @@ export function KnowledgeBasePage() {
     try {
       await incrementKbViews(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -56,8 +57,8 @@ export function KnowledgeBasePage() {
       await rateKbArticle(id, helpful)
       toast('success', tCommon('toast.success'), tCommon('toast.updated'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -66,8 +67,8 @@ export function KnowledgeBasePage() {
       await deleteKbArticle(id)
       toast('success', tCommon('toast.success'), tCommon('toast.deleted'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -189,8 +190,8 @@ function KbForm({ article, onClose, onSaved }: { article: KnowledgeBaseArticle |
       }
       toast('success', tCommon('toast.success'), tCommon('toast.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

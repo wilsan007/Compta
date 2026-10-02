@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatDate, translateStatus } from '@/lib/utils'
 import { getDeliveryNotes, updateDeliveryNote, deleteDeliveryNote, getSalesOrders } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
 import { getDeliveryNoteLines, transformDeliveryNoteToInvoice, getSalesOrderLines, transformSalesOrderToDeliveryNote } from '@/lib/queries/misc'
@@ -34,7 +34,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       setCustomers(custs || [])
       // « Sorti » se lit sur les mouvements de stock réels, pas sur le statut.
       setShipped(await getStockPostedReferences('delivery_note', (ns || []).map((n) => n.id)))
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -42,13 +42,13 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updateDeliveryNote(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteDeliveryNote(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleTransformToInvoice(dn: DeliveryNote) {
@@ -57,8 +57,8 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       const lines = await getDeliveryNoteLines(dn.id)
       setDnLines(lines)
       setTransformDN(dn)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     } finally {
       setTransformLoading(false)
     }
@@ -71,8 +71,8 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
       setTransformDN(null)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
     }
   }
 
@@ -175,7 +175,7 @@ function DNForm({ customers, onClose, onSaved }: { customers: Customer[]; onClos
       if (lines.length === 0) { toast('error', tCommon('toast.error'), t('deliveryNotes.nothingToDeliver')); setSaving(false); return }
       await transformSalesOrderToDeliveryNote(salesOrderId, lines, { delivery_date: deliveryDate, carrier: carrier || null, tracking_number: trackingNumber || null, notes: notes || null })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 

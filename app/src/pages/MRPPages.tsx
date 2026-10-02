@@ -5,7 +5,7 @@ import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Bread
 import { useToast } from '@/lib/toast'
 import { getMRPRuns, runMRPCalculation, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
 import { runMRP } from '@/lib/queries/businessFunctions'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { confirmSync } from '@/lib/confirm'
 
 const proposalTypeIcons: Record<string, any> = { purchase: ShoppingCart, manufacture: Factory, subcontract: Factory }
@@ -24,7 +24,7 @@ export function MRPPage() {
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -38,7 +38,7 @@ export function MRPPage() {
       await loadData()
       setSelectedRun(run)
       setProposals(await getMRPProposals(run.id))
-    } catch (err: any) { toast('error', t('mrp.mrpError'), err.message) }
+    } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
     finally { setCalculating(false) }
   }
 
@@ -53,35 +53,35 @@ export function MRPPage() {
       const count = Array.isArray(result) ? result.length : 0
       toast('success', t('mrp.mrpCalculated'), `${count} besoin(s) net(s) calculé(s)`)
       await loadData()
-    } catch (err: any) { toast('error', t('mrp.mrpError'), err.message) }
+    } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
     finally { setMrpLoading(false) }
   }
 
   async function handleSelectRun(run: any) {
     setSelectedRun(run)
     try { setProposals(await getMRPProposals(run.id)) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleDeleteRun(id: string) {
     if (!confirmSync(t('mrp.confirmDeleteRun'))) return
     try { await deleteMRPRun(id); await loadData(); setSelectedRun(null) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleApprove(id: string) {
     try { await updateMRPProposal(id, { status: 'approved' }); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleReject(id: string) {
     try { await updateMRPProposal(id, { status: 'rejected' }); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleDeleteProposal(id: string) {
     try { await deleteMRPProposal(id); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -187,7 +187,7 @@ export function MRPPendingDocsPage() {
 
   const loadData = useCallback(async () => {
     try { setDocs(await getMRPPendingDocs() || []) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -195,7 +195,7 @@ export function MRPPendingDocsPage() {
 
   async function handleDelete(id: string) {
     try { await deleteMRPPendingDoc(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const docStatusVariants: Record<string, 'neutral' | 'success' | 'danger'> = { pending: 'neutral', processed: 'success', cancelled: 'danger' }

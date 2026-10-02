@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getTreasuryDashboard } from '@/lib/queries/accounting'
 import { Wallet, TrendingUp, TrendingDown, Clock } from 'lucide-react'
 
@@ -20,9 +20,9 @@ export function TreasuryDashboardPage() {
     try {
       const res = await getTreasuryDashboard()
       setData(res)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading treasury dashboard:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

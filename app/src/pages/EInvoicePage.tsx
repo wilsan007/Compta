@@ -8,7 +8,7 @@ import { getCompanySettings } from '@/lib/queries/accounting'
 import { generateFacturX, generateUBL, downloadXML } from '@/lib/facturX'
 import { useToast } from '@/lib/toast'
 import { FileCode, Download, FileText, CheckCircle2, Send } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import type { Invoice, Customer, CompanySettings } from '@/types'
 
 export function EInvoicePage() {
@@ -43,9 +43,9 @@ export function EInvoicePage() {
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -109,8 +109,8 @@ export function EInvoicePage() {
       } else {
         toast('success', t('eInvoice.submitted'), t('eInvoice.submittedDesc', { id: result.transaction_id || '—' }))
       }
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('eInvoice.submitNotConfigured'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('eInvoice.submitNotConfigured'))
     } finally {
       setSubmitting(false)
     }

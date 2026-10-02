@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
 import { getPurchaseRequests, createPurchaseRequest, updatePurchaseRequestStatus, convertPurchaseRequestToOrder, deletePurchaseRequest } from '@/lib/queries/purchaseAdvanced'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ShoppingCart, Plus, Search, Trash2, X, Check, Ban, ArrowRightCircle } from 'lucide-react'
 import type { PurchaseRequest } from '@/types'
@@ -27,8 +27,8 @@ export function PurchaseRequestsPage() {
     try {
       const data = await getPurchaseRequests(statusFilter || undefined)
       setRequests(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -39,8 +39,8 @@ export function PurchaseRequestsPage() {
       await updatePurchaseRequestStatus(id, status, 'currentUser')
       toast('success', t('purchaseRequests.title'), t('purchaseRequests.statusChanged'))
       loadRequests().catch(err => console.error('loadRequests:', err))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -49,8 +49,8 @@ export function PurchaseRequestsPage() {
       await convertPurchaseRequestToOrder(id, '')
       toast('success', t('purchaseRequests.title'), t('purchaseRequests.converted'))
       loadRequests().catch(err => console.error('loadRequests:', err))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -59,8 +59,8 @@ export function PurchaseRequestsPage() {
       await deletePurchaseRequest(id)
       setRequests(requests.filter(r => r.id !== id))
       toast('success', t('purchaseRequests.title'), tCommon('toast.deleted'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -197,8 +197,8 @@ function PurchaseRequestForm({ request, onClose, onSaved }: {
       await createPurchaseRequest(data as any)
       toast('success', t('purchaseRequests.title'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

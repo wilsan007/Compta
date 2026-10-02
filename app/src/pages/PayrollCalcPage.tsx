@@ -8,6 +8,7 @@ import { calculatePayroll, type PayrollInput, type PayrollResult, formatPayrollA
 import { getOvertimeMajoration } from '@/lib/queries/businessFunctions'
 import { Calculator, FileText, Globe } from 'lucide-react'
 import type { Employee, PayrollTaxGridLine, LegislationPack } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function PayrollCalcPage() {
   const { t } = useTranslation('features')
@@ -71,9 +72,9 @@ export function PayrollCalcPage() {
         }
       }
       setUsingGrid(false)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading payroll data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

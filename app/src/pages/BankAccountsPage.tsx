@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, StatCard, Breadcrumb, SkeletonCard, Input, Select } from '@/components/ui'
 import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries/banking'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Banknote, Plus, Landmark, CreditCard, Wallet, TrendingDown, TrendingUp, X, AlertTriangle } from 'lucide-react'
 import type { BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -31,7 +31,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
         const txns = await getBankTransactions(data[0].id)
         setTransactions(txns || [])
       }
-    } catch (err: any) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
     try {
       const txns = await getBankTransactions(id)
       setTransactions(txns || [])
-    } catch (err: any) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -209,8 +209,8 @@ const [name, setName] = useState('')
         account_number: '',
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

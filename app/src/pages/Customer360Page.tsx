@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Badge, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCustomer360, createCustomerContact, updateCustomerContact, deleteCustomerContact } from '@/lib/queries/customerAdvanced'
 import { customerCreditScore } from '@/lib/queries/businessFunctions'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { ArrowLeft, UserCircle, FileText, CreditCard, Bell, BarChart3, Users, Plus, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import type { CustomerContact, Customer } from '@/types'
@@ -30,8 +30,8 @@ export function Customer360Page() {
     try {
       const result = await customerCreditScore(id)
       toast('success', t('customer360.title'), `Score: ${result.score ?? result.credit_score ?? 0}/100 — Rating: ${result.rating ?? result.grade ?? '—'}`)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setScoringCredit(false)
     }
@@ -52,8 +52,8 @@ export function Customer360Page() {
     try {
       const result = await getCustomer360(id!)
       setData(result as any)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -321,7 +321,7 @@ export function Customer360Page() {
                         <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowContactForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
                         <Button variant="danger" size="sm" onClick={async () => {
                           try { await deleteCustomerContact(c.id); toast('success', t('customer360.title'), tCommon('toast.deleted')); loadData() }
-                          catch (e: any) { toast('error', tCommon('toast.error'), e.message) }
+                          catch (e) { toast('error', tCommon('toast.error'), errorMessage(e)) }
                         }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                       </div>
                     </TableCell>
@@ -371,8 +371,8 @@ function ContactForm({ customerId, contact, onClose, onSaved }: {
         toast('success', t('customer360.title'), tCommon('toast.created'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

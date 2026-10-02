@@ -6,6 +6,7 @@ import { Plus, Trash2, Zap, X } from 'lucide-react'
 import type { BankReconciliationRule } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function BankReconciliationRulesPage() {
   const { t } = useTranslation('accounting')
@@ -20,8 +21,8 @@ export function BankReconciliationRulesPage() {
     try {
       const data = await getBankReconciliationRules()
       setRules(data || [])
-    } catch (err: any) { console.error('Failed to load bank recon rules:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load bank recon rules:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -35,8 +36,8 @@ export function BankReconciliationRulesPage() {
       await deleteBankReconciliationRule(id)
       toast('success', tCommon('common.success'), t('bankRecon.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -113,8 +114,8 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
       })
       toast('success', tCommon('common.success'), t('bankRecon.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

@@ -5,6 +5,7 @@ import { getTenantId } from '@/lib/queries/core'
 import { CreditCard, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function PosPaymentMethodsPage() {
   const { t } = useTranslation('pos')
@@ -25,7 +26,7 @@ export function PosPaymentMethodsPage() {
         .order('display_order')
       if (error) throw error
       setMethods(data || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

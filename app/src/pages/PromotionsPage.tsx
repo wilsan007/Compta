@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPromotions, createPromotion, deletePromotion } from '@/lib/queries/catalogAdvanced'
 import { getProducts } from '@/lib/queries/stock'
 import { getCustomers } from '@/lib/queries/partners'
@@ -28,8 +28,8 @@ export function PromotionsPage() {
       setPromotions(promos || [])
       setProducts(prods || [])
       setCustomers(custs || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -55,8 +55,8 @@ export function PromotionsPage() {
       await deletePromotion(id)
       toast('success', tCommon('toast.success'), tCommon('toast.deleted'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -190,8 +190,8 @@ function PromotionForm({ products, customers, onClose, onSaved }: {
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

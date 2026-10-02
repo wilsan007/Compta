@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getRecurringInvoices, toggleRecurringInvoice } from '@/lib/queries/accounting'
 import { getInvoices } from '@/lib/queries/sales'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Power, PowerOff, X } from 'lucide-react'
 import type { Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -23,8 +23,8 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
       const [rec, inv] = await Promise.all([getRecurringInvoices(), getInvoices()])
       setRecurring(rec)
       setAllInvoices(inv)
-    } catch (err: any) { console.error('Failed to load recurring invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load recurring invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -36,8 +36,8 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
   try {
       await toggleRecurringInvoice(id, !current)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -45,8 +45,8 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
     try {
       await toggleRecurringInvoice(id, true, frequency)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -55,8 +55,8 @@ const [recurring, setRecurring] = useState<Invoice[]>([])
       await toggleRecurringInvoice(invoiceId, true, frequency)
       setShowAddModal(false)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 

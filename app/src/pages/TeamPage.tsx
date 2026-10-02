@@ -12,6 +12,7 @@ import { getEnabledModuleRoleOptions } from '@/lib/moduleRoles'
 import { useTenantModules } from '@/lib/useTenantModules'
 import type { GuestPermissions } from '@/types/documents'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function TeamPage() {
   const { toast } = useToast()
@@ -29,8 +30,8 @@ export function TeamPage() {
     try {
       const data = await getTenantUsers(user.tenantId)
       setUsers(data)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -218,8 +219,8 @@ function InviteModal({ tenantId, invitedById, onClose, onSaved }: {
       } else {
         toast('error', tCommon('toast.error'), result.error!)
       }
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

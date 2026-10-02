@@ -7,7 +7,7 @@ import { getPaymentTerms } from '@/lib/queries/payroll'
 import { verifyIban, type IbanCheck } from '@/lib/queries/verifications'
 import { VerificationLine } from '@/components/VerificationLine'
 import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download, Landmark } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
 import type { ThirdPartyAccount, Customer, Supplier, ChartAccount, PartnerBankAccount, PaymentTerm } from '@/types'
@@ -54,9 +54,9 @@ export function ThirdPartyAccountsPage() {
       setCustomers(c || [])
       setSuppliers(s || [])
       setChartAccounts(ca || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading third party accounts:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -85,8 +85,8 @@ export function ThirdPartyAccountsPage() {
       await deleteThirdPartyAccount(id)
       toast('success', t('thirdParty.deleted'))
       await loadData()
-    } catch (err: any) {
-      toast('error', t('thirdParty.deleteError'), err.message || '')
+    } catch (err) {
+      toast('error', t('thirdParty.deleteError'), errorMessage(err) || '')
     }
   }
 
@@ -331,8 +331,8 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
     if (!partnerType || !partnerId) { setPartnerBanks([]); return }
     try {
       setPartnerBanks(await getPartnerBankAccounts(partnerType, partnerId))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }, [partnerType, partnerId, tCommon, toast])
 
@@ -344,8 +344,8 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
     try {
       const res = await verifyIban(bank.account_number.trim())
       setIbanChecks((prev) => ({ ...prev, [bank.id]: res }))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setCheckingIban(null)
     }
@@ -380,8 +380,8 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
         toast('success', t('thirdParty.saved'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', t('thirdParty.saveError'), err.message || '')
+    } catch (err) {
+      toast('error', t('thirdParty.saveError'), errorMessage(err) || '')
     } finally {
       setSaving(false)
     }

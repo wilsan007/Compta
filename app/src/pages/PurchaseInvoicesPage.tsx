@@ -6,7 +6,7 @@ import { getSuppliers, createSupplierPayment } from '@/lib/queries/partners'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
 import { performThreeWayMatch } from '@/lib/queries/businessFunctions'
-import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle, UserPlus, ShieldCheck } from 'lucide-react'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
@@ -45,8 +45,8 @@ export function PurchaseInvoicesPage() {
       setSuppliers(sup || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err: any) { console.error('Error loading purchase invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading purchase invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -70,8 +70,8 @@ export function PurchaseInvoicesPage() {
       setPaying(null)
       toast('success', t('purchaseInvoices.markedPaid'))
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -95,8 +95,8 @@ export function PurchaseInvoicesPage() {
         toast('warning', 'Rapprochement 3 voies', `${status} — ${ecarts} écart(s)`)
       }
       await loadInvoices()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -299,7 +299,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
       try {
         const result = await checkBudgetAvailability(accountCode, totalNum, fiscalYearId || undefined)
         setBudgetCheck(result)
-      } catch (err: any) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+      } catch (err) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       finally { setChecking(false) }
     }, 300)
     return () => clearTimeout(t)
@@ -360,8 +360,8 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
       }
       toast('success', t('purchaseInvoices.created'), t('purchaseInvoices.createdMsg', { number: supplierRef.trim() }))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

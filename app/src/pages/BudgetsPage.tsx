@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries/accounting'
 import { Plus, Pencil, Trash2, X, Target } from 'lucide-react'
 import type { Budget, FiscalYear, ChartAccount } from '@/types'
@@ -42,12 +42,12 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                 return total / 12
               })
             }
-          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
+          } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
         }
       }
       setRealized(realizedMap)
-    } catch (err: any) { console.error('Error loading budgets:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading budgets:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -188,8 +188,8 @@ function BudgetForm({ budget, years, accounts, onClose, onSaved }: {
       if (budget) await updateBudget(budget.id, data)
       else await createBudget(data)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

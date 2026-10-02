@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getCustomerPayments, createCustomerPayment, deleteCustomerPayment, getCustomers } from '@/lib/queries/partners'
 import { getBankAccounts } from '@/lib/queries/banking'
 import { getInvoices } from '@/lib/queries/sales'
@@ -29,7 +29,7 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
       setPayments(pays || [])
       setCustomers(custs || [])
       setBanks(bks || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -38,7 +38,7 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteCustomerPayment(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   const totalAmount = payments.reduce((s, p) => s + Number(p.amount), 0)
@@ -129,7 +129,7 @@ function PaymentForm({ customers, banks, onClose, onSaved }: { customers: Custom
       const number = await nextDocumentNumber('RGT')
       await createCustomerPayment({ number, customer_id: customerId || null, invoice_id: invoiceId || null, payment_date: paymentDate, amount, method: method as any, bank_account_id: bankAccountId || null, reference: reference || null, status: 'recorded', currency_code: currencyCode, exchange_rate: exchangeRate, amount_currency: amountCurrency, exchange_gain_loss: 0 } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 

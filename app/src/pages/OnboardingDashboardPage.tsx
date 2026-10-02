@@ -4,6 +4,7 @@ import { getOnboardingState, updateOnboardingStep, isOnboardingComplete } from '
 import { CheckCircle, Circle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 const STEPS = [
   { key: 'step_identity', label: 'Identité et forme juridique' },
@@ -30,7 +31,7 @@ export function OnboardingDashboardPage() {
       const [s, c] = await Promise.all([getOnboardingState(), isOnboardingComplete()])
       setState(s)
       setComplete(c)
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }, [toast, tCommon])
 
   loadData().catch(err => console.error('loadData:', err))
@@ -40,7 +41,7 @@ export function OnboardingDashboardPage() {
       const current = state?.[step] || false
       await updateOnboardingStep(step, !current)
       await loadData()
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   const completedCount = STEPS.filter(s => state?.[s.key]).length

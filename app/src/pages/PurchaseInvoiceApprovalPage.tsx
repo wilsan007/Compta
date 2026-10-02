@@ -6,6 +6,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 import type { PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function PurchaseInvoiceApprovalPage() {
   const { t } = useTranslation('purchases')
@@ -22,8 +23,8 @@ export function PurchaseInvoiceApprovalPage() {
       const data = await getPurchaseInvoices()
       const filtered = filter === 'all' ? data : data.filter((inv: any) => (inv.approval_status || 'pending') === filter)
       setInvoices(filtered as PurchaseInvoice[])
-    } catch (err: any) { console.error('Failed to load purchase invoices:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load purchase invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -36,8 +37,8 @@ export function PurchaseInvoiceApprovalPage() {
       await updatePurchaseInvoiceApproval(id, 'approved')
       toast('success', tCommon('common.success'), t('approval.approvedSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -46,8 +47,8 @@ export function PurchaseInvoiceApprovalPage() {
       await updatePurchaseInvoiceApproval(id, 'rejected')
       toast('success', tCommon('common.success'), t('approval.rejectedSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

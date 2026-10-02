@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import {
   getAbsenceConflicts, getAbsenceConflictLog,
   type AbsenceConflict, type AbsenceConflictEntry,
@@ -69,8 +69,8 @@ export function AbsenceAnomaliesPage() {
       ])
       setConflicts(c)
       setArbitrations(a)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally { setLoading(false) }
   }, [from, to, toast, tCommon])
 

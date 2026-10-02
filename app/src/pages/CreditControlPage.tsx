@@ -3,7 +3,7 @@ import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, S
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
 import { calculateLatePaymentPenalties } from '@/lib/queries/businessFunctions'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -27,7 +27,7 @@ export function CreditControlPage() {
         .order('name')
       if (error) throw error
       setCustomers(data || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -69,11 +69,11 @@ export function CreditControlPage() {
         try {
           const result = await calculateLatePaymentPenalties(inv.id)
           total += Number(result?.penalty_amount ?? result ?? 0)
-        } catch (e: any) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
+        } catch (e) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
       }
       toast('success', tCommon('common.success'), t('penalties_result', { amount: total, count: invoices.length }))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setPenaltyLoading(null)
     }

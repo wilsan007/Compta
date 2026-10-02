@@ -4,6 +4,7 @@ import { traceLotDownstream, traceLotUpstream } from '@/lib/queries/stock'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function LotTraceabilityPage() {
   const { t } = useTranslation('stock')
@@ -25,7 +26,7 @@ export function LotTraceabilityPage() {
         ? await traceLotDownstream(lotId.trim())
         : await traceLotUpstream(lotId.trim())
       setResults(data?.movements || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [lotId, direction, tCommon, toast])
 

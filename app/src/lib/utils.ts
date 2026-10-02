@@ -6,6 +6,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Message d'une erreur attrapée — `catch` reçoit `unknown` en TypeScript
+ * (useUnknownInCatchVariables), donc `err.message` ne compile pas sans
+ * rétrécissement. Ce helper est LE rétrécissement, écrit une fois.
+ *
+ * Permet de remplacer `catch (err: any) { … err.message … }` — qui désactivait
+ * le contrôle sur TOUT le corps — par `catch (err) { … errorMessage(err) … }`.
+ * Le comportement est identique : `err.message` quand la valeur en porte un,
+ * `String(err)` sinon (au lieu de `undefined` affiché à l'utilisateur).
+ */
+export function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object' && 'message' in err) {
+    const m = (err as { message?: unknown }).message
+    if (typeof m === 'string') return m
+  }
+  return typeof err === 'string' ? err : String(err)
+}
+
 const LOCALE_MAP: Record<string, string> = {
   fr: 'fr-FR',
   en: 'en-US',

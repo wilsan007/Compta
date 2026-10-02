@@ -6,6 +6,7 @@ import { getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, delet
 import type { PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
 import { Plus, Trash2, FileText, AlertCircle } from 'lucide-react'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function TaxGridSettingsPage() {
   const { t } = useTranslation('settings')
@@ -58,7 +59,7 @@ export function TaxGridSettingsPage() {
         setCorporateGrids((prev) => prev.filter((g) => g.id !== id))
       }
       if (selectedGridId === id) setSelectedGridId(null)
-    } catch (err: any) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -291,8 +292,8 @@ function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corpor
         })
       }
       onCreated()
-    } catch (err: any) {
-      setError(err.message || t('taxGrids.createError'))
+    } catch (err) {
+      setError(errorMessage(err) || t('taxGrids.createError'))
     } finally {
       setSaving(false)
     }

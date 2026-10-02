@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Badge } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPaySlips, getPayRuns, getEmployees, generatePaySlipsForRun, updatePaySlip, deletePaySlip } from '@/lib/queries/payroll'
 import { calculatePayslip } from '@/lib/queries/businessFunctions'
 import { FileText, Trash2, Sparkles, ChevronDown, ChevronRight, Receipt, AlertTriangle, Clock, Plane, RotateCcw, Calculator as CalcIcon } from 'lucide-react'
@@ -28,7 +28,7 @@ const [slips, setSlips] = useState<any[]>([])
       setSlips(sl || [])
       setPayRuns(pr || [])
       setEmployees(emps || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [runFilter, tCommon, toast])
 
@@ -42,19 +42,19 @@ const [slips, setSlips] = useState<any[]>([])
       await generatePaySlipsForRun(runId, employees, run)
       await loadData()
       toast('success', tCommon('common.success'), t('paySlips.title'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setGenerating(false) }
   }
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaySlip(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePaySlip(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleCalculatePayslip(employeeId: string, period: string, payRunId?: string) {
@@ -62,7 +62,7 @@ const [slips, setSlips] = useState<any[]>([])
       await calculatePayslip(employeeId, period, payRunId)
       await loadData()
       toast('success', tCommon('common.success'), t('paySlips.calculated'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   function toggleExpand(id: string) {

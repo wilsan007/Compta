@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankConnections, createBankConnection, updateBankConnection, deleteBankConnection, syncBankConnection, getBankAccounts, getBankTransactions } from '@/lib/queries/banking'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Plus, Trash2, X, Zap, Link2, AlertCircle } from 'lucide-react'
 import type { BankConnection, BankAccount, BankTransaction } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -41,8 +41,8 @@ export function BankSyncPage() {
       setConnections(conns)
       setAccounts(accs)
       setTransactions(txns.filter((tx: any) => tx.source === 'auto'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setLoading(false)
     }
@@ -59,8 +59,8 @@ export function BankSyncPage() {
       toast('success', tCommon('common.success'),
         `${t('bankSync.syncSuccess')} — ${t('bankSync.syncImported', { count: result.synced })}`)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), t('bankSync.syncError') + ': ' + (err.message || ''))
+    } catch (err) {
+      toast('error', tCommon('common.error'), t('bankSync.syncError') + ': ' + (errorMessage(err) || ''))
     } finally {
       setSyncing(null)
     }
@@ -71,8 +71,8 @@ export function BankSyncPage() {
     try {
       await deleteBankConnection(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -227,8 +227,8 @@ function SettingsTab({ connections, onUpdate }: { connections: BankConnection[];
       await updateBankConnection(id, { sync_frequency: frequency })
       toast('success', tCommon('common.success'), t('bankSync.settings.syncFrequency') + ' → ' + frequency)
       onUpdate()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || '')
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || '')
     }
   }
 
@@ -289,8 +289,8 @@ function ConnectionForm({ accounts, onClose, onSaved }: { accounts: BankAccount[
       } as any)
       toast('success', tCommon('common.success'), t('bankSync.connections.connectBank'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

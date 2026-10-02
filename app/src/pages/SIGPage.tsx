@@ -7,6 +7,7 @@ import { generateProfitLoss } from '@/lib/queries/businessFunctions'
 import { TrendingUp } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import type { FiscalYear } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function SIGPage() {
   const { t } = useTranslation('accounting')
@@ -28,8 +29,8 @@ export function SIGPage() {
     try {
       const fy = await getFiscalYears()
       setYears(fy || [])
-    } catch (err: any) { console.error('Error loading fiscal years:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -43,8 +44,8 @@ export function SIGPage() {
     try {
       const res = await getSIGData(selectedYear || undefined)
       setData(res)
-    } catch (err: any) { console.error('Error loading SIG:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading SIG:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -57,8 +58,8 @@ export function SIGPage() {
       await generateProfitLoss(selectedYear)
       toast('success', tCommon('common.success'), t('sig.generated'))
       await loadSIG()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }

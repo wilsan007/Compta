@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyStat
 import { getSupplierPriceLists, createSupplierPriceList, deleteSupplierPriceList, getBestSupplierPrice } from '@/lib/queries/purchaseAdvanced'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Tag, Plus, Search, Trash2, X, TrendingDown } from 'lucide-react'
 import type { SupplierPriceList, Supplier, Product } from '@/types'
@@ -30,8 +30,8 @@ export function SupplierPriceListsPage() {
     try {
       const data = await getSupplierPriceLists()
       setLists(data || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ export function SupplierPriceListsPage() {
       const [s, p] = await Promise.all([getSuppliers(), getProducts()])
       setSuppliers(s || [])
       setProducts(p || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleCompare() {
@@ -51,8 +51,8 @@ export function SupplierPriceListsPage() {
       const result = await getBestSupplierPrice(compareProduct, 1)
       setCompareResult(result)
       if (!result) toast('info', t('supplierPrices.compare'), t('supplierPrices.noPriceFound'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -61,8 +61,8 @@ export function SupplierPriceListsPage() {
       await deleteSupplierPriceList(id)
       setLists(lists.filter(l => l.id !== id))
       toast('success', t('supplierPrices.title'), tCommon('toast.deleted'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -178,8 +178,8 @@ function PriceListForm({ suppliers, onClose, onSaved }: {
       } as any)
       toast('success', t('supplierPrices.title'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

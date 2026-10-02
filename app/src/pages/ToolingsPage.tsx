@@ -8,6 +8,7 @@ import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Tooling, Machine } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function ToolingsPage() {
   const { t } = useTranslation('production')
@@ -24,7 +25,7 @@ export function ToolingsPage() {
       const [tls, macs] = await Promise.all([getToolings(), getMachines()])
       setToolings(tls || [])
       setMachines(macs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -33,7 +34,7 @@ export function ToolingsPage() {
   async function handleDelete(id: string) {
     if (!confirmSync(t('toolings.confirmDelete'))) return
     try { await deleteTooling(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   function handleExport() {
@@ -52,7 +53,7 @@ export function ToolingsPage() {
     try {
       const rows = await importFromExcel(file)
       toast('success', t('toolings.import'), t('routings.importSuccess', { count: rows.length }))
-    } catch (err: any) { toast('error', t('routings.importError'), err.message) }
+    } catch (err) { toast('error', t('routings.importError'), errorMessage(err)) }
   }
 
   function getWearPercent(t: Tooling): number {
@@ -140,7 +141,7 @@ function ToolingFormModal({ machines, onClose, onSaved }: { machines: Machine[];
     try {
       await createTooling({ code, name, machine_id: machineId || null, max_pieces: maxPieces, initial_counter: initialCounter, current_counter: currentCounter, status: status as any, notes })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || t('common.error')) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (

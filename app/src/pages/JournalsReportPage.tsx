@@ -6,6 +6,7 @@ import { getJournalsReport } from '@/lib/queries/misc'
 import { useLocale } from '@/hooks/useLocale'
 import { Search } from 'lucide-react'
 import type { JournalEntry } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function JournalsReportPage() {
   const { t } = useTranslation('accounting')
@@ -22,9 +23,9 @@ export function JournalsReportPage() {
     setLoading(true)
     try {
       setEntries(await getJournalsReport(startDate || undefined, endDate || undefined))
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load journals report:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getStockQuantities, getWarehouses } from '@/lib/queries/stock'
 import { Boxes } from 'lucide-react'
 import type { Warehouse } from '@/types'
@@ -22,7 +22,7 @@ export function StockQuantitiesPage() {
       const [stk, whs] = await Promise.all([getStockQuantities(whFilter || undefined), getWarehouses()])
       setStock(stk || [])
       setWarehouses(whs || [])
-    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [whFilter, tCommon, toast])
 

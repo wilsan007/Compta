@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, SkeletonTable, Breadcrumb, Input, Select } from '@/components/ui'
 import { Plus, Trash2, Play, BarChart3 } from 'lucide-react'
 import { getRhReports, createRhReport, deleteRhReport, calculateReportData, getEffectifEvolution, getSalaryAnalysis, getAbsenceStats, getTurnoverRate, getCostByCenter } from '@/lib/queries/sprintH'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
 export function RhReportsPage() {
@@ -23,8 +23,8 @@ export function RhReportsPage() {
     try {
       const r = await getRhReports()
       setReports(r)
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -44,8 +44,8 @@ export function RhReportsPage() {
       }
       setStatsData(data)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -54,8 +54,8 @@ export function RhReportsPage() {
       await calculateReportData(reportId)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -64,8 +64,8 @@ export function RhReportsPage() {
       await deleteRhReport(id)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -76,8 +76,8 @@ export function RhReportsPage() {
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       setNewReport({ name: '', report_type: 'effectifs', chart_type: 'bar' })
       loadData().catch(err => console.error('loadData:', err))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

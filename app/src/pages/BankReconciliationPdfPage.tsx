@@ -9,6 +9,7 @@ import { extractPdfText, parseBankStatement, getAvailableTemplates, getLearnedTe
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText, Zap, CheckCircle, XCircle, AlertTriangle, Loader2, Eye, EyeOff, Sparkles, ThumbsUp, Edit3 } from 'lucide-react'
 import type { BankAccount, Bank } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function BankReconciliationPdfPage() {
   const { t } = useTranslation('banking')
@@ -40,8 +41,8 @@ export function BankReconciliationPdfPage() {
     try {
       const accs = await getBankAccounts()
       setAccounts(accs || [])
-    } catch (err: any) { console.error('Failed to load bank accounts:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load bank accounts:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -50,8 +51,8 @@ export function BankReconciliationPdfPage() {
       const countryCode = await getCompanyCountry()
       const bankList = await getBanks(countryCode || undefined)
       setBanks(bankList || [])
-    } catch (err: any) { console.error('Failed to load banks:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load banks:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -59,8 +60,8 @@ export function BankReconciliationPdfPage() {
     try {
       const learned = await getLearnedTemplates()
       setLearnedTemplates(learned)
-    } catch (err: any) { console.error('Failed to load learned templates:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load learned templates:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -113,9 +114,9 @@ export function BankReconciliationPdfPage() {
       } else {
         toast('success', tCommon('common.success'), t('pdfReconciliation.parsed', { count: result.transactions.length }))
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('PDF parse error:', err)
-      toast('error', tCommon('common.error'), t('pdfReconciliation.parseError') + ': ' + (err.message || ''))
+      toast('error', tCommon('common.error'), t('pdfReconciliation.parseError') + ': ' + (errorMessage(err) || ''))
     } finally {
       setParsing(false)
     }
@@ -150,9 +151,9 @@ export function BankReconciliationPdfPage() {
 
       const matchResult = await autoMatchBankTransactions(selectedAccount)
       toast('success', tCommon('common.success'), t('pdfReconciliation.autoMatched', { matched: matchResult.matched, unmatched: matchResult.unmatched }))
-    } catch (err: any) {
+    } catch (err) {
       console.error('Import error:', err)
-      toast('error', tCommon('common.error'), t('pdfReconciliation.importError') + ': ' + (err.message || ''))
+      toast('error', tCommon('common.error'), t('pdfReconciliation.importError') + ': ' + (errorMessage(err) || ''))
     } finally {
       setImporting(false)
     }
@@ -185,8 +186,8 @@ export function BankReconciliationPdfPage() {
       } else {
         toast('success', tCommon('common.success'), t('pdfReconciliation.validationRecorded', { count: updated.consecutive_successes }))
       }
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || 'Validation failed')
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || 'Validation failed')
     } finally {
       setValidating(false)
     }

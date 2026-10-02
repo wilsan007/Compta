@@ -4,6 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { getExpenseCategories, createExpenseCategory, updateExpenseCategory } from '@/lib/queries/sprintDE'
 import { Tag, Plus, X, Edit2 } from 'lucide-react'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function ExpenseCategoriesPage() {
   const { toast } = useToast()
@@ -20,9 +21,9 @@ export function ExpenseCategoriesPage() {
     try {
       const cats = await getExpenseCategories()
       setRecords(cats || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -120,8 +121,8 @@ function ExpenseCategoryForm({ record, onClose, onSaved }: { record: any; onClos
       }
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

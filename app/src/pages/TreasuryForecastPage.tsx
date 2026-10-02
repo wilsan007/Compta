@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getTreasuryForecast } from '@/lib/queries/accounting'
 import { cashFlowForecast } from '@/lib/queries/businessFunctions'
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react'
@@ -24,9 +24,9 @@ export function TreasuryForecastPage() {
     try {
       const res = await getTreasuryForecast(Number(horizon))
       setData(res)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading treasury forecast:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -38,8 +38,8 @@ export function TreasuryForecastPage() {
       const result = await cashFlowForecast(Number(horizon) || 90)
       const net = result?.net_flow ?? result?.projected_balance ?? result
       toast('success', tCommon('common.success'), t('forecast.cashFlowResult', { amount: typeof net === 'number' ? net : 0, days: horizon }))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setForecastLoading(false)
     }

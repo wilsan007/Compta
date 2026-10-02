@@ -6,6 +6,7 @@ import { getEmployees } from '@/lib/queries/payroll'
 import type { RhRequest, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Plus, UserCheck, CheckCircle } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function RhRequestsPage() {
   const { t } = useTranslation('hr')
@@ -33,8 +34,8 @@ export function RhRequestsPage() {
       ])
       setRequests(reqs as RhRequest[])
       setEmployees(emps)
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -59,8 +60,8 @@ export function RhRequestsPage() {
       setShowForm(false)
       setFormEmp(''); setFormSubject(''); setFormDesc('')
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -69,8 +70,8 @@ export function RhRequestsPage() {
       await assignRhRequest(id, assignedTo)
       toast('success', t('requests.assigned'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -82,8 +83,8 @@ export function RhRequestsPage() {
       setShowResolve(null)
       setResolveText('')
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 

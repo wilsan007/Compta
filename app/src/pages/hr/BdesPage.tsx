@@ -5,6 +5,7 @@ import { getBdesIndicators, calculateBdesIndicators, generateBdesReport, generat
 import type { BdesIndicator } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Calculator, Download, FileText } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 type Category = 'effectifs' | 'remuneration' | 'formation' | 'conditions_travail' | 'hygiene_securite' | 'relations_sociales' | 'egalite_f_h'
 
@@ -23,8 +24,8 @@ export function BdesPage() {
     try {
       const data = await getBdesIndicators(year)
       setIndicators(data)
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -37,8 +38,8 @@ export function BdesPage() {
       await calculateBdesIndicators(year)
       toast('success', t('bdes.calculated'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -46,8 +47,8 @@ export function BdesPage() {
     try {
       await generateBdesReport(year)
       toast('success', t('bdes.reportGenerated'))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -55,8 +56,8 @@ export function BdesPage() {
     try {
       await generateSocialReport(year)
       toast('success', t('bdes.socialReportGenerated'))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 

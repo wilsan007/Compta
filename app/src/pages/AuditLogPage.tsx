@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getAuditLog } from '@/lib/queries/accounting'
 import { useTranslation } from 'react-i18next'
 
@@ -22,9 +22,9 @@ export function AuditLogPage() {
     try {
       const data = await getAuditLog(entityFilter || undefined, actionFilter || undefined)
       setLogs(data || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading audit log:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

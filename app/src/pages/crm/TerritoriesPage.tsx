@@ -6,6 +6,7 @@ import { getSalesRepresentatives } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { Plus, X, MapPin, Trash2 } from 'lucide-react'
 import type { CrmTerritory, SalesRepresentative } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function TerritoriesPage() {
   const { t } = useTranslation('crm')
@@ -22,8 +23,8 @@ export function TerritoriesPage() {
       const [territoriesData, repsData] = await Promise.all([getTerritories(), getSalesRepresentatives()])
       setTerritories(territoriesData || [])
       setReps(repsData || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -36,8 +37,8 @@ export function TerritoriesPage() {
       await deleteTerritory(id)
       toast('success', tCommon('toast.success'), tCommon('toast.deleted'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -116,8 +117,8 @@ function TerritoryForm({ reps, onClose, onSaved }: { reps: SalesRepresentative[]
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

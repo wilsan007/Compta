@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast'
 import { Plus, X, Ticket, CheckCircle } from 'lucide-react'
 import type { ServiceTicket, Customer } from '@/types'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { errorMessage } from '@/lib/utils'
 
 type TicketWithCustomer = ServiceTicket & { customer: { name: string } | null }
 
@@ -31,8 +32,8 @@ export function TicketsPage() {
       const [tkData, custs] = await Promise.all([getTickets(), getCustomers()])
       setTickets(tkData || [])
       setCustomers(custs || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -51,8 +52,8 @@ export function TicketsPage() {
       await updateTicketStatus(id, status)
       toast('success', tCommon('toast.success'), tCommon('toast.updated'))
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -165,8 +166,8 @@ function TicketForm({ customers, onClose, onSaved }: { customers: Customer[]; on
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

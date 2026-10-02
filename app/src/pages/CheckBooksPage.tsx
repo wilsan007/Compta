@@ -6,6 +6,7 @@ import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook, getChecks, createCheck, updateCheck, deleteCheck } from '@/lib/queries/accounting'
 import type { CheckBook, Check } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CheckBooksPage() {
   const { t } = useTranslation('banking')
@@ -28,7 +29,7 @@ export function CheckBooksPage() {
       const [books, chks] = await Promise.all([getCheckBooks(), getChecks()])
       setCheckBooks(books || [])
       setChecks(chks || [])
-    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
@@ -194,8 +195,8 @@ function CheckBookForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       } as any)
       toast('success', t('checkBooks.title'), t('checkBooks.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('checkBooks.saveError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('checkBooks.saveError'))
     } finally { setSaving(false) }
   }
 
@@ -253,8 +254,8 @@ function CheckForm({ checkBooks, onClose, onSaved }: { checkBooks: CheckBook[]; 
       }
       toast('success', t('checkBooks.title'), t('checkBooks.checkSaved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('checkBooks.checkSaveError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('checkBooks.checkSaveError'))
     } finally { setSaving(false) }
   }
 

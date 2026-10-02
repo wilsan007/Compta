@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries/accounting'
 import { ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/lib/toast'
@@ -19,7 +19,7 @@ const [data, setData] = useState<any>(null)
 
   const loadData = useCallback(async () => {
     try { setData(await getGescomTransferData()) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -58,7 +58,7 @@ const [data, setData] = useState<any>(null)
       setResults(res)
       setSelected(new Set())
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setTransferring(false) }
   }
 

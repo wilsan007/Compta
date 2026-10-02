@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, Button, Table, TableRow, TableCell, Badge, EmptyState, Select, Input } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getProducts } from '@/lib/queries/stock'
 import { getProductGrids, createProductGrid, deleteProductGrid, getProductGridCombinations, generateAllCombinations } from '@/lib/queries/catalogAdvanced'
 import { useToast } from '@/lib/toast'
@@ -24,8 +24,8 @@ export function ProductGridsPage() {
       try {
         const prods = await getProducts()
         setProducts(prods || [])
-      } catch (err: any) {
-        toast('error', tCommon('toast.error'), err.message)
+      } catch (err) {
+        toast('error', tCommon('toast.error'), errorMessage(err))
       }
     })()
   }, [toast, tCommon])
@@ -37,8 +37,8 @@ export function ProductGridsPage() {
       const [g, c] = await Promise.all([getProductGrids(productId), getProductGridCombinations(productId)])
       setGrids(g || [])
       setCombinations(c || [])
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -52,8 +52,8 @@ export function ProductGridsPage() {
       await generateAllCombinations(selectedProduct)
       toast('success', tCommon('toast.success'), t('grids.combinationsGenerated'))
       await loadGrids(selectedProduct)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -62,8 +62,8 @@ export function ProductGridsPage() {
       await deleteProductGrid(id)
       toast('success', tCommon('toast.success'), tCommon('toast.deleted'))
       if (selectedProduct) await loadGrids(selectedProduct)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 
@@ -205,8 +205,8 @@ function GridForm({ productId, onClose, onSaved }: { productId: string; onClose:
       })
       toast('success', tCommon('toast.success'), tCommon('toast.created'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setSaving(false)
     }

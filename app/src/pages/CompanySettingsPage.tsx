@@ -5,6 +5,7 @@ import { getCompanySettings, updateCompanySettings } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { Save, Shield, Calculator, FileText, Lock, Settings } from 'lucide-react'
 import type { CompanySettings } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CompanySettingsPage() {
   const { t } = useTranslation('accounting')
@@ -34,8 +35,8 @@ export function CompanySettingsPage() {
     try {
       await updateCompanySettings(settings.id, settings)
       toast('success', tCommon('common.success'), tCommon('toast.saved'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

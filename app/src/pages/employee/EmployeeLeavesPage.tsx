@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Skele
 import { Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
 export function EmployeeLeavesPage() {
@@ -41,8 +41,8 @@ export function EmployeeLeavesPage() {
       const { data: bals } = await bq
       setRequests(reqs || [])
       setBalances(bals || [])
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -72,8 +72,8 @@ export function EmployeeLeavesPage() {
       setShowForm(false)
       setLeaveType(''); setStartDate(''); setEndDate(''); setHalfDay(false); setJustification('')
       loadData().catch(err => console.error('loadData:', err))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -84,8 +84,8 @@ export function EmployeeLeavesPage() {
       if (error) throw error
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

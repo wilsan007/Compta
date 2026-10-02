@@ -10,7 +10,7 @@ import {
 } from '@/lib/queries/banking'
 import { getChartAccounts } from '@/lib/queries/accounting'
 import { updateStatementBalance } from '@/lib/queries/misc'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import type { BankAccount, ChartAccount } from '@/types'
 
@@ -58,9 +58,9 @@ export function BankReconciliationStatePage() {
     setLoading(true)
     try {
       setState(await getBankReconciliationState(accountId, date))
-    } catch (err: any) {
+    } catch (err) {
       setState(null)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -113,8 +113,8 @@ export function BankReconciliationStatePage() {
       toast('success', tCommon('common.success'), t('state.pointDone'))
       setPointTx(null); setPointLine('')
       await loadState()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -124,8 +124,8 @@ export function BankReconciliationStatePage() {
       await unreconcileBankStatementLine(id)
       toast('success', tCommon('common.success'), t('state.unpointDone'))
       await loadState()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -137,8 +137,8 @@ export function BankReconciliationStatePage() {
       toast('success', tCommon('common.success'), t('state.postDone'))
       setPostTx(null); setPostLabel('')
       await loadState()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -149,8 +149,8 @@ export function BankReconciliationStatePage() {
       await updateStatementBalance(accountId, Number(closingAmount), closingDate)
       toast('success', tCommon('common.success'), t('state.closingSaved'))
       await loadState()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

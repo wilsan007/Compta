@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getPendingLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from '@/lib/queries/leavesAbsences'
 import { useToast } from '@/lib/toast'
 import { CheckCircle, XCircle, CalendarClock, AlertTriangle, X } from 'lucide-react'
@@ -20,7 +20,7 @@ export function ManagerLeaveApprovalsPage() {
     try {
       const data = await getPendingLeaveRequests()
       setRequests(data || [])
-    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -32,7 +32,7 @@ export function ManagerLeaveApprovalsPage() {
       toast('success', tCommon('common.success'), t('leaveApprovals.approved'))
       setComment(''); setActiveId(null)
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleReject(id: string) {
@@ -42,7 +42,7 @@ export function ManagerLeaveApprovalsPage() {
       toast('success', tCommon('common.success'), t('leaveApprovals.rejected'))
       setComment(''); setActiveId(null)
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   return (

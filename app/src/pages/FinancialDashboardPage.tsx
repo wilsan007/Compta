@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card, StatCard, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getFinancialDashboard } from '@/lib/queries/accounting'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { TrendingUp, TrendingDown, Wallet, FileText, ArrowRight, Activity } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -33,9 +33,9 @@ export function FinancialDashboardPage() {
     try {
       const d = await getFinancialDashboard()
       setData(d)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading financial dashboard:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

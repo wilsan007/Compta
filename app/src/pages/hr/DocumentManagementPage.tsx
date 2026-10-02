@@ -6,6 +6,7 @@ import { getEmployees, getPayRuns } from '@/lib/queries/payroll'
 import type { EmployeeDocument, DocumentDistributionLog, Employee, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Upload, Trash2, Send, CheckCircle, PenTool, AlertTriangle, BarChart3 } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 type Tab = 'documents' | 'distribution' | 'pilotage' | 'esignature'
 
@@ -42,7 +43,7 @@ export function DocumentManagementPage() {
           try {
             const docs = await getEmployeeDocuments(emp.id)
             allDocs.push(...docs)
-          } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
+          } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
         }
         setDocuments(allDocs)
       }
@@ -54,8 +55,8 @@ export function DocumentManagementPage() {
         const s = await getDocumentStats()
         setStats(s)
       }
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -70,8 +71,8 @@ export function DocumentManagementPage() {
       setBatchControl(result)
       if (result.ok) toast('success', t('demat.batchOk'))
       else toast('warning', t('demat.batchIssues'), result.issues.join(', '))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -81,8 +82,8 @@ export function DocumentManagementPage() {
       await distributePaySlips(selectedPayRun)
       toast('success', t('demat.distributed'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -91,8 +92,8 @@ export function DocumentManagementPage() {
       await signRhDocument(docId)
       toast('success', t('demat.signed'))
       loadData().catch(err => console.error('loadData:', err))
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     }
   }
 
@@ -140,7 +141,7 @@ export function DocumentManagementPage() {
                       <TableCell>{doc.e_signed ? <PenTool className="w-4 h-4 text-blue-600" /> : '-'}</TableCell>
                       <TableCell className="text-xs">{new Date(doc.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('toast.deleted')); loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
+                        <Button size="sm" variant="ghost" onClick={async () => { try { await deleteEmployeeDocument(doc.id); toast('success', tCommon('toast.deleted')); loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" /></Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -172,7 +173,7 @@ export function DocumentManagementPage() {
                       <TableCell className="text-xs">{log.distributed_at ? new Date(log.distributed_at).toLocaleDateString() : '-'}</TableCell>
                       <TableCell><Badge variant={log.status === 'acknowledged' ? 'success' : log.status === 'bounced' || log.status === 'failed' ? 'danger' : 'neutral'}>{t(`demat.statuses.${log.status}`)}</Badge></TableCell>
                       <TableCell>
-                        {log.status === 'distributed' && <Button size="sm" variant="ghost" onClick={async () => { try { await sendDistributionReminders(log.batch_id!); toast('success', t('demat.remindersSent')) } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }}>{t('demat.remind')}</Button>}
+                        {log.status === 'distributed' && <Button size="sm" variant="ghost" onClick={async () => { try { await sendDistributionReminders(log.batch_id!); toast('success', t('demat.remindersSent')) } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }}>{t('demat.remind')}</Button>}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -245,7 +246,7 @@ export function DocumentManagementPage() {
                     setShowUpload(false)
                     loadData().catch(err => console.error('loadData:', err))
                   }
-                } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+                } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
               }} disabled={!uploadEmp}>{tCommon('actions.save')}</Button>
               <Button variant="secondary" onClick={() => setShowUpload(false)}>{tCommon('actions.cancel')}</Button>
             </div>

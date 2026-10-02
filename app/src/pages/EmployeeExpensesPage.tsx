@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Badge } from '@/components/ui'
 import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine } from '@/lib/queries/sprintDE'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
@@ -30,9 +30,9 @@ export function EmployeeExpensesPage() {
     try {
       const data = await getMyExpenseReports()
       setReports(data || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -40,13 +40,13 @@ export function EmployeeExpensesPage() {
 
   async function handleSubmit(id: string) {
     try { await submitMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('common.saved')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('toast.deleted')) }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
 
   if (selectedReport) {
@@ -133,8 +133,8 @@ function ExpenseReportForm({ onClose, onSaved }: { onClose: () => void; onSaved:
       await createMyExpenseReport({ period } as any)
       toast('success', tCommon('common.success'), tCommon('common.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 
@@ -178,9 +178,9 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
       const [l, cats] = await Promise.all([getExpenseReportLines(report.id), getExpenseCategories(true)])
       setLines(l || [])
       setCategories(cats || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally { setLoading(false) }
   }, [report.id, tCommon, toast])
 
@@ -206,8 +206,8 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
       setShowLineForm(false)
       setCategoryId(''); setDate(''); setAmount(''); setVatRate('20'); setDescription('')
       await loadLines()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSavingLine(false) }
   }
 

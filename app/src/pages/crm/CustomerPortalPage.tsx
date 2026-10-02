@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { getTickets, getKbArticles, getServiceContracts } from '@/lib/queries/crmAdvanced'
 import { useToast } from '@/lib/toast'
 import { Ticket, BookOpen, FileText, Plus } from 'lucide-react'
@@ -30,8 +30,8 @@ export function CustomerPortalPage() {
       setTickets(tkData || [])
       setArticles((kbData || []).filter(a => a.is_public))
       setContracts((scData || []).filter(c => c.status === 'active'))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     } finally {
       setLoading(false)
     }

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { getMyObjectives, getInterviewCampaigns } from '@/lib/queries/sprintDE'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Target, Users } from 'lucide-react'
 
@@ -21,9 +21,9 @@ export function EmployeeInterviewsPage() {
       const [objs, camps] = await Promise.all([getMyObjectives(), getInterviewCampaigns('active')])
       setObjectives(objs || [])
       setCampaigns(camps || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally { setLoading(false) }
   }, [toast, tCommon])
 

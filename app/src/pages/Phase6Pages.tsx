@@ -29,6 +29,7 @@ import type {
   VATOnCollection, BatchEntrySession,
 } from '@/types'
 import { nextDocumentNumber } from '@/lib/queries/core'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Batch Entry Page (Saisie par lot) ============
 export function BatchEntryPage() {
@@ -58,12 +59,12 @@ export function BatchEntryPage() {
       toast('success', tCommon('common.success'), t('batchEntry.created'))
       setShowForm(false); setForm({ session_name: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10) })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteBatchEntrySession(id); toast('success', tCommon('common.success'), t('batchEntry.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -133,12 +134,12 @@ export function AutoLabelRulesPage() {
       if (editing) { await updateAutoLabelRule(editing.id, form); toast('success', tCommon('common.success'), t('autoLabel.updated')) }
       else { await createAutoLabelRule(form as any); toast('success', tCommon('common.success'), t('autoLabel.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteAutoLabelRule(id); toast('success', tCommon('common.success'), t('autoLabel.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -209,7 +210,7 @@ export function ExtournePage() {
       await generateExtourne(selectedEntry, reason)
       toast('success', tCommon('common.success'), t('extourne.generated'))
       setShowForm(false); setSelectedEntry(''); setReason(''); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -275,7 +276,7 @@ export function CarryForwardPage() {
       if (!result) { toast('info', tCommon('common.info'), t('carryForward.noData')) }
       else { toast('success', tCommon('common.success'), t('carryForward.generated')) }
       setShowForm(false); setSourceYear(''); setTargetYear(''); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -330,7 +331,7 @@ export function LettrageDifferencesPage() {
 
   async function handleDelete(id: string) {
     try { await deleteLettrageDifference(id); toast('success', tCommon('common.success'), t('lettrageDiff.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -380,7 +381,7 @@ export function AccountingControlsPage() {
       const result = await runAccountingControl('full')
       toast('success', tCommon('common.success'), t('controls.runCompleted', { errors: result.errors_found, warnings: result.warnings_found }))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
     finally { setRunning(false) }
   }
 
@@ -451,17 +452,17 @@ export function CashControlPage() {
       toast('success', tCommon('common.success'), t('cashControl.created'))
       setShowForm(false); setForm({ session_number: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10), theoretical_balance: 0, counted_balance: 0, notes: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleValidate(id: string) {
     try { await updateCashControlSession(id, { status: 'validated', validated_at: new Date().toISOString() }); toast('success', tCommon('common.success'), t('cashControl.validated')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteCashControlSession(id); toast('success', tCommon('common.success'), t('cashControl.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -551,12 +552,12 @@ export function FECAttestationPage() {
       } as any)
       toast('success', tCommon('common.success'), t('fecAttest.created'))
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteFECAttestation(id); toast('success', tCommon('common.success'), t('fecAttest.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   function handleDownload(a: FECAttestation) {
@@ -637,12 +638,12 @@ export function TierRIBsPage() {
       if (editing) { await updateTierRIB(editing.id, form); toast('success', tCommon('common.success'), t('tierRIB.updated')) }
       else { await createTierRIB(form as any); toast('success', tCommon('common.success'), t('tierRIB.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteTierRIB(id); toast('success', tCommon('common.success'), t('tierRIB.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   const tpMap = new Map(thirdParties.map(tp => [tp.id, tp]))
@@ -712,12 +713,12 @@ export function IFRSAdjustmentsPage() {
       toast('success', tCommon('common.success'), t('ifrsAdjustments.created'))
       setShowForm(false); setForm({ adjustment_type: 'provision', account_code: '', counter_account_code: '', description: '', amount: 0, adjustment_date: new Date().toISOString().slice(0, 10), ifrs_standard: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteIFRSAdjustment(id); toast('success', tCommon('common.success'), t('ifrsAdjustments.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -789,7 +790,7 @@ export function TaxPaymentsPage() {
       toast('success', tCommon('common.success'), t('taxPayment.created'))
       setShowForm(false); setForm({ payment_number: '', tax_type: 'TVA', period_label: '', period_start: '', period_end: '', amount: 0, payment_date: new Date().toISOString().slice(0, 10), payment_method: 'telepayment', bank_account_id: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleConfirm(id: string) {
@@ -798,12 +799,12 @@ export function TaxPaymentsPage() {
       await updateTaxPayment(id, { status: 'confirmed', confirmation_number: conf })
       toast('success', tCommon('common.success'), t('taxPayment.confirmed', { num: conf }))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteTaxPayment(id); toast('success', tCommon('common.success'), t('taxPayment.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -882,12 +883,12 @@ export function CustomReportTemplatesPage() {
       if (editing) { await updateCustomReportTemplate(editing.id, payload); toast('success', tCommon('common.success'), t('customReport.updated')) }
       else { await createCustomReportTemplate(payload as any); toast('success', tCommon('common.success'), t('customReport.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteCustomReportTemplate(id); toast('success', tCommon('common.success'), t('customReport.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -960,12 +961,12 @@ export function DeferredPrintingPage() {
       toast('success', tCommon('common.success'), t('deferredPrint.created'))
       setShowForm(false); setForm({ job_name: '', report_type: 'trial_balance', scheduled_date: '', output_format: 'pdf' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteDeferredPrintingJob(id); toast('success', tCommon('common.success'), t('deferredPrint.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -1033,12 +1034,12 @@ export function JournalAccessRightsPage() {
       toast('success', tCommon('common.success'), t('journalAccessRights.created'))
       setShowForm(false); setForm({ user_id: '', journal_code: '', can_view: true, can_create: false, can_edit: false, can_delete: false, can_close: false })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteJournalAccessRight(id); toast('success', tCommon('common.success'), t('journalAccessRights.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -1108,12 +1109,12 @@ export function VATOnCollectionsPage() {
       toast('success', tCommon('common.success'), t('vatCollection.created'))
       setShowForm(false); setForm({ period_label: '', period_start: '', period_end: '', vat_base: 0, vat_rate: 20, vat_amount: 0, collected_amount: 0, uncollected_amount: 0, vat_collected: 0, vat_uncollected: 0 })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteVATOnCollection(id); toast('success', tCommon('common.success'), t('vatCollection.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (

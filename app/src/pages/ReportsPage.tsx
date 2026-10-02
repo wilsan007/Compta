@@ -9,6 +9,7 @@ import { getFiscalYears, getIncomeStatement, getIncomeStatementMonthly, type Inc
 import { generateAccountingAnnex } from '@/lib/queries/businessFunctions'
 import { useToast } from '@/lib/toast'
 import type { FiscalYear } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 // Nombre de postes de charges affichés individuellement dans le graphique ; le reste
 // est regroupé en « Autres dépenses ».
@@ -67,8 +68,8 @@ export function ReportsPage() {
     try {
       await generateAccountingAnnex(selectedYear)
       toast('success', tCommon('common.success'), t('financialReports.annexGenerated'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setGenerating(false)
     }

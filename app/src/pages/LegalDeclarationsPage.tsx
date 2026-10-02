@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getLegalDeclarations, createLegalDeclaration, updateLegalDeclaration, deleteLegalDeclaration } from '@/lib/queries/payroll'
 import { ShieldCheck, Plus, Trash2, X, Send } from 'lucide-react'
 import type { LegalDeclaration } from '@/types'
@@ -23,7 +23,7 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
 
   const loadData = useCallback(async () => {
     try { setDeclarations(await getLegalDeclarations(statusFilter || undefined)) }
-    catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [statusFilter, toast, tCommon])
 
@@ -31,13 +31,13 @@ const [declarations, setDeclarations] = useState<LegalDeclaration[]>([])
 
   async function handleSubmit(id: string) {
   try { await updateLegalDeclaration(id, { status: 'submitted', submission_date: new Date().toISOString().split('T')[0] }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLegalDeclaration(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const pendingCount = declarations.filter((d) => d.status === 'pending').length
@@ -116,7 +116,7 @@ function DeclarationForm({ onClose, onSaved }: { onClose: () => void; onSaved: (
       const number = `${declarationType.toUpperCase()}-${periodYear}-${String(periodMonth).padStart(2, '0')}`
       await createLegalDeclaration({ number, declaration_type: declarationType as any, period_month: periodMonth, period_year: periodYear, due_date: dueDate, submission_date: null, amount, status: 'pending', notes: notes || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 

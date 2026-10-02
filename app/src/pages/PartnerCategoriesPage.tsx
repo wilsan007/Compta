@@ -5,6 +5,7 @@ import { Tag, Plus, Trash2, Edit2, X } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { getPartnerCategories, createPartnerCategory, updatePartnerCategory, deletePartnerCategory } from '@/lib/queries/partners'
 import type { PartnerCategory } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function PartnerCategoriesPage() {
   const { t } = useTranslation('accounting')
@@ -21,7 +22,7 @@ export function PartnerCategoriesPage() {
     try {
       const data = await getPartnerCategories()
       setCategories(data || [])
-    } catch (e: any) { console.error('catch:', e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) } finally { setLoading(false) }
+    } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
@@ -31,7 +32,7 @@ export function PartnerCategoriesPage() {
       await deletePartnerCategory(id)
       toast('success', tCommon('common.success'), t('partnerCategories.deleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   const colorClass: Record<string, string> = {
@@ -134,8 +135,8 @@ function CategoryForm({ category, categories, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('partnerCategories.created'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 

@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, X, PieChart } from 'lucide-react'
 import type { AnalyticSection, AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function AnalyticSectionsPage() {
   const { t } = useTranslation('accounting')
@@ -26,8 +27,8 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
       const pl = await getAnalyticPlans().catch(() => [])
       setSections(data || [])
       setPlans(pl || [])
-    } catch (err: any) { console.error('Error loading analytic sections:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading analytic sections:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -122,8 +123,8 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
       else await createAnalyticSection(data as any)
       toast('success', tCommon('common.success'), t('analyticSections.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Input, EmptyState, SkeletonTable, Badge, Breadcrumb } from '@/components/ui'
 import { AlertTriangle, User, Briefcase, TrendingUp } from 'lucide-react'
 import { getMyProfile, updateMyProfile, getEmployeeAlerts } from '@/lib/queries/sprintH'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
 export function EmployeeProfilePage() {
@@ -22,9 +22,9 @@ export function EmployeeProfilePage() {
       const [p, a] = await Promise.all([getMyProfile(), getEmployeeAlerts()])
       setProfile(p)
       setAlerts(Array.isArray(a) ? a : [])
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setLoading(false) }
   }, [tCommon, toast])
 
@@ -45,8 +45,8 @@ export function EmployeeProfilePage() {
         bank_bic: profile.bank_bic,
       })
       toast('success', tCommon('common.success'), tCommon('common.saved'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally { setSaving(false) }
   }
 

@@ -7,6 +7,7 @@ import { Plus, Trash2, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function CurrencyRevaluationPage() {
   const { t } = useTranslation('accounting')
@@ -27,8 +28,8 @@ export function CurrencyRevaluationPage() {
     try {
       const data = await getCurrencyRevaluations()
       setEntries(data || [])
-    } catch (err: any) { console.error('Failed to load currency revaluations:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load currency revaluations:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -47,8 +48,8 @@ export function CurrencyRevaluationPage() {
           amount: Number(verdict?.gain_loss ?? 0),
         }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setRunning(false)
     }
@@ -70,8 +71,8 @@ export function CurrencyRevaluationPage() {
       await deleteCurrencyRevaluation(id)
       toast('success', tCommon('common.success'), t('revaluation.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -231,8 +232,8 @@ function RevaluationForm({ entry, onClose, onSaved }: { entry: CurrencyRevaluati
       }
       toast('success', tCommon('common.success'), t('revaluation.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

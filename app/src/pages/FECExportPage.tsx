@@ -6,6 +6,7 @@ import { validateFECData, generateFECFileName, generateFECText, downloadFEC, typ
 import { useToast } from '@/lib/toast'
 import { Download, FileText, ShieldCheck, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 import type { FiscalYear } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function FECExportPage() {
   const { t } = useTranslation('features')
@@ -23,9 +24,9 @@ export function FECExportPage() {
   async function loadYears() {
     try {
       setYears((await getFiscalYears()) || [])
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading fiscal years:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -37,9 +38,9 @@ export function FECExportPage() {
       const data = await getFECExport(selectedYear)
       setFec(data)
       setValidation(validateFECData(data))
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading FEC data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -54,8 +55,8 @@ export function FECExportPage() {
       const filename = generateFECFileName(fec.siren || '', year?.end_date || '')
       downloadFEC(generateFECText(fec.rows), filename)
       toast('success', t('fec.exported'), t('fec.exportedDesc', { filename }))
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
     }
   }
 

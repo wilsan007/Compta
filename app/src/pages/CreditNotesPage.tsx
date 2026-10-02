@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCreditNotes, createCreditNote, updateCreditNote, deleteCreditNote, getInvoices } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
-import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import type { CreditNote, Customer, Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -34,8 +34,8 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
       setCreditNotes(cn)
       setCustomers(c)
       setInvoices(inv)
-    } catch (err: any) { console.error('Failed to load credit notes:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load credit notes:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -57,8 +57,8 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
     try {
       await deleteCreditNote(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -67,8 +67,8 @@ const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
       // AUD-E07 : la validation passe l'écriture d'avoir et impute la facture d'origine
       await updateCreditNote(id, { status: 'validated' })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -227,8 +227,8 @@ function CreditNoteForm({ customers, invoices, onClose, onSaved }: {
         })),
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }

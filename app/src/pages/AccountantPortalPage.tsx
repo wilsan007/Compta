@@ -5,7 +5,7 @@ import { Card, PageHeader, AutoBreadcrumb, EmptyState } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
 import { getCompanySettings, getFiscalYears, getJournalEntries } from '@/lib/queries/accounting'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import {
   FileText, BookOpen, Scale, Library, Receipt, BarChart3, FolderOpen, Lock, ArrowRight,
 } from 'lucide-react'
@@ -38,9 +38,9 @@ export function AccountantPortalPage() {
       setCompany(comp)
       setCurrentYear((years || []).find((y) => y.status === 'open') || (years || [])[0] || null)
       setEntries((ent || []).slice(0, 5))
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading accountant portal:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 

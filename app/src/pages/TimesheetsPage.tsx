@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getTimesheets, createTimesheet, updateTimesheet, deleteTimesheet, getEmployees } from '@/lib/queries/payroll'
 import { getProjects } from '@/lib/queries/accounting'
-import { formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatDate, translateStatus } from '@/lib/utils'
 import { Clock, Plus, Trash2, X, CheckCircle, XCircle } from 'lucide-react'
 import type { Employee, Project } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -37,16 +37,16 @@ const [timesheets, setTimesheets] = useState<any[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleApprove(id: string) {
-  try { await updateTimesheet(id, { status: 'approved' }); await loadData() } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+  try { await updateTimesheet(id, { status: 'approved' }); await loadData() } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   async function handleReject(id: string) {
-    try { await updateTimesheet(id, { status: 'rejected' }); await loadData() } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+    try { await updateTimesheet(id, { status: 'rejected' }); await loadData() } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
-    try { await deleteTimesheet(id); await loadData() } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    try { await deleteTimesheet(id); await loadData() } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   const filtered = filterStatus ? timesheets.filter((t: any) => t.status === filterStatus) : timesheets
@@ -142,7 +142,7 @@ function TimesheetForm({ employees, projects, onClose, onSaved }: { employees: E
         description, project_id: projectId || null, status: 'pending',
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) } finally { setSaving(false) }
   }
 
   return (

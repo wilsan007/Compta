@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseInvoices, createPurchaseInvoice } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
@@ -30,7 +30,7 @@ export function SupplierInvoiceAutomationPage() {
       const [inv, sup] = await Promise.all([getPurchaseInvoices(), getSuppliers()])
       setInvoices(inv || [])
       setSuppliers(sup || [])
-    } catch (err: any) { console.error('Error loading data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading data:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -51,8 +51,8 @@ export function SupplierInvoiceAutomationPage() {
     try {
       setOcrResult(await extractSupplierInvoice(file))
       setShowForm(true)
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
     } finally {
       setProcessing(false)
       e.target.value = ''
@@ -157,8 +157,8 @@ const { toast } = useToast()
         status: 'received',
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Bread
 import { getProjects, createProject, updateProject, deleteProject } from '@/lib/queries/accounting'
 import { getCustomers } from '@/lib/queries/partners'
 import { calculateProjectProfitability } from '@/lib/queries/businessFunctions'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { FolderKanban, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { Project, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -27,8 +27,8 @@ const [projects, setProjects] = useState<Project[]>([])
       const [p, c] = await Promise.all([getProjects(), getCustomers()])
       setProjects(p)
       setCustomers(c)
-    } catch (err: any) { console.error('Failed to load projects:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load projects:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -41,8 +41,8 @@ const [projects, setProjects] = useState<Project[]>([])
     try {
       await deleteProject(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -50,8 +50,8 @@ const [projects, setProjects] = useState<Project[]>([])
     try {
       await updateProject(id, { status: status as any })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -63,8 +63,8 @@ const [projects, setProjects] = useState<Project[]>([])
       const cpi = Number(r?.cpi ?? 0)
       const margin = Number(r?.margin ?? 0)
       toast('success', t('projects.title'), `EAC: ${formatCurrency(eac)} • ETC: ${formatCurrency(etc)} • CPI: ${cpi.toFixed(2)} • ${t('projects.profitability')}: ${formatCurrency(margin)}`)
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -158,8 +158,8 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
         start_date: startDate, end_date: endDate || null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }

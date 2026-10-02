@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
 import { getBankTransactions, getBankAccounts, updateBankTransaction, deleteBankTransaction } from '@/lib/queries/banking'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeftRight, Trash2, CheckCircle } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -24,8 +24,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(filterAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err: any) { console.error('Failed to load transactions:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Failed to load transactions:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -37,8 +37,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   try {
       await updateBankTransaction(id, { reconciled: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -47,8 +47,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
     try {
       await deleteBankTransaction(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 

@@ -6,6 +6,7 @@ import { getActiveLegislationPack, getActiveCorporateTaxGrid, getCorporateTaxGri
 import { calculateCorporateTax, type CorporateTaxResult } from '@/lib/taxCalculator'
 import { Calculator, Building2, Globe } from 'lucide-react'
 import type { CorporateTaxGridLine, LegislationPack } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CorporateTaxCalcPage() {
   const { t } = useTranslation('features')
@@ -44,9 +45,9 @@ export function CorporateTaxCalcPage() {
         }
       }
       setUsingGrid(false)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading corporate tax data:', err)
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

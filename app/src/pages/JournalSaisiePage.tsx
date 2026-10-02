@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate, evaluateExpression } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate, evaluateExpression } from '@/lib/utils'
 import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getEntriesForPeriods, createSaisieEntry, updateEntryStatusDetail, deleteJournalEntry, getChartAccounts, getEntryTemplates, getThirdPartyAccounts, getNextPieceNumber, getJournalPeriodBalance, getAnalyticSections, getTaxRates, calculateVAT, applyAutoLabelRules, calculateEcheance, createChartAccount, chartAccountTypeFromCode, isSegregationEnforced } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, X, PenTool, Printer, Lock, CheckCircle2, ChevronDown, ChevronRight, Wand2, Calculator, RefreshCw, Layers,
@@ -87,8 +87,8 @@ const [journals, setJournals] = useState<Journal[]>([])
       if (fy && fy.length > 0) {
         setSelectedYear(fy[0].id)
       }
-    } catch (err: any) { console.error('Error loading saisie data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading saisie data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -108,8 +108,8 @@ const [journals, setJournals] = useState<Journal[]>([])
       const openPeriod = p?.find((per) => per.status === 'open')
       setSelectedPeriod(openPeriod?.id || p?.[0]?.id || '')
       await loadEntries(p || [])
-    } catch (err: any) { console.error('Error loading periods:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading periods:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -119,8 +119,8 @@ const [journals, setJournals] = useState<Journal[]>([])
     try {
       const all = await getEntriesForPeriods(ps.map((p) => p.id))
       setEntries(all || [])
-    } catch (err: any) { console.error('Error loading entries:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading entries:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -468,8 +468,8 @@ function SaisieForm({
       setAnalyticSections(sections || [])
       setTaxRates(txs || [])
       setPieceNumber(tmpls ? '' : '')
-    } catch (err: any) { console.error('Error loading form data:', err)
-    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
+    } catch (err) { console.error('Error loading form data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -535,8 +535,8 @@ function SaisieForm({
           setAccounts((prev) => [...prev, newAccount])
           updateLine(idx, 'account_name', newAccount.name)
           toast('success', t('saisie.accountCreated'), t('saisie.accountCreatedDesc', { code }))
-        } catch (err: any) {
-          toast('error', t('saisie.accountCreateError'), err.message)
+        } catch (err) {
+          toast('error', t('saisie.accountCreateError'), errorMessage(err))
         }
       }
     }
@@ -683,8 +683,8 @@ function SaisieForm({
         lines: linesData,
       })
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -744,7 +744,7 @@ function SaisieForm({
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
-                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) } finally { setRateLoading(false) }
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setRateLoading(false) }
               }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
                 <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
               </button>
