@@ -55,9 +55,28 @@ END $function$;
 COMMENT ON FUNCTION public.is_valid_iban(text) IS
   'Clé de contrôle mod 97-10 d''un IBAN (ISO 13616) : vrai si les chiffres de contrôle correspondent. IMMUTABLE.';
 
+-- Même raison que dans la 323 : un validateur appelé par un déclencheur n'est pas
+-- une fonction d'écran. Elle était livrée à `PUBLIC`, donc appelable par un
+-- visiteur non connecté — mesuré le 02/10 (`check_anon_grants`, porte 1.5a).
+REVOKE ALL ON FUNCTION public.is_valid_iban(text) FROM PUBLIC, anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.partner_bank_account_iban_guard()
 RETURNS trigger
 LANGUAGE plpgsql
+-- `SECURITY DEFINER` N'EST PAS DÉCORATIF, c'est ce qui rend le REVOKE
+-- ci-dessus possible. Sans lui, le déclencheur s'exécute avec les droits de
+-- celui qui écrit (`authenticated`), et celui-ci n'a plus le droit d'appeler
+-- `is_valid_iban` : l'écriture d'un compte bancaire par un comptable échouait
+-- sur `permission denied for function is_valid_iban` — mesuré le 02/10, T05 de
+-- la suite 274 en échec.
+--
+-- Avec `SECURITY DEFINER`, le corps s'exécute avec les droits du propriétaire
+-- de la fonction, et l'appel à `is_valid_iban` passe. C'est le même choix que
+-- tous les autres déclencheurs du dépôt (`partner_apply_fiscal_position`,
+-- `sync_customer_third_party_account`…), et c'est ce qui permet de fermer la
+-- fonction pure au public sans casser le chemin métier.
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $function$
 DECLARE
   v_clean text;
@@ -74,6 +93,10 @@ DROP TRIGGER IF EXISTS ta_partner_bank_account_iban ON public.partner_bank_accou
 CREATE TRIGGER ta_partner_bank_account_iban
   BEFORE INSERT OR UPDATE OF account_number ON public.partner_bank_accounts
   FOR EACH ROW EXECUTE FUNCTION public.partner_bank_account_iban_guard();
+
+-- Même raison que pour les deux fonctions ci-dessus : ce garde-fou est attaché
+-- à `partner_bank_accounts` et appelé par elle, jamais par un visiteur.
+REVOKE ALL ON FUNCTION public.partner_bank_account_iban_guard() FROM PUBLIC, anon, authenticated;
 
 COMMENT ON FUNCTION public.partner_bank_account_iban_guard() IS
   'A5 (ach-003) : refuse d''enregistrer un IBAN dont la clé de contrôle est fausse. Ne touche pas les numéros de compte qui ne sont pas des IBAN.';

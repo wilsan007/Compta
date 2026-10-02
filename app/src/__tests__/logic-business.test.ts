@@ -11,7 +11,7 @@ import { calculateTax, calculateGroupTax, calculateMultipleTaxes, calculatePrice
 import { validateDistribution, distributeEvenly, computeAmounts, flattenDistribution } from '@/lib/analyticDistribution';
 import { formatPayrollAmount } from '@/lib/payrollFormat';
 import { isAllowedWebhookUrl } from '@/lib/security/ssrfGuard';
-import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PayrollTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
+import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
 
 // ============ MOCK DATA ============
 
