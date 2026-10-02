@@ -27,8 +27,13 @@
 --        fonction de passage NON exposée au client (relève + notification
 --        depuis le navigateur serait un levier de déni de service), et la
 --        COMPARAISON, elle, lisible ;
---   T07  isolation : la voisine ne voit pas les alertes de l'autre, mais
---        voit les siennes.
+--   T07  isolation : le journal des alertes est cloisonné par société —
+--        chaque propriétaire voit LA SIENNE, la voisine ne voit pas celle
+--        de l'autre, et la RLS le fait SANS clause de société. Les DEUX
+--        sociétés sont peuplées et le total écrit est contrôlé hors RLS :
+--        sans ce témoin, « la voisine ne voit rien » se distinguerait pas
+--        de « la voisine n'a rien » — un test qui passe sur une table
+--        vide ne prouve rien (cf. le développement du scénario).
 --
 -- Même outillage que la 413 : contexte posé par `_mk_tenant`, mesure par
 -- `service_role` (le rôle qui l'exploite), lectures sous `authenticated`.
@@ -89,6 +94,22 @@ $$;
 -- `SECURITY DEFINER` : la fonction lit `tenant_users`, que le rôle
 -- `authenticated` ne peut pas consulter directement (mesuré : `permission
 -- denied for table users`). C'est un outillage de test, jamais exposé.
+--
+-- ⚠️ ELLE N'ÉTAIT PAS EXPOSÉE AU CLIENT, ET C'ÉTAIT UNE FAUTE (mesuré le
+--   02/10). PostgreSQL accorde `EXECUTE` à `PUBLIC` sur toute fonction
+--   créée : mesuré, `has_function_privilege('authenticated',
+--   '_mk_tenant_contexte(uuid)', 'EXECUTE') = true`, et `anon` aussi.
+--   `SECURITY DEFINER` + `set_config(..., false)` = le client pouvait
+--   CHOISIR sa société : le contexte de session bascule alors pour la
+--   session entière (le `false` de `set_config` la rend permanente), et la
+--   RLS s'applique sur ce contexte frauduleux.
+--   MESURÉ : le rôle `authenticated` de la société SEPT appelle
+--   `_mk_tenant_contexte(<SIX>)` et `current_setting('app.active_tenant_id')`
+--   vaut ensuite SIX — il lit les alertes de SIX. Élévation de privilèges
+--   entre sociétés, sur un helper de test.
+--   Le `REVOKE` ci-dessous est la fermeture : elle suit la définition, donc
+--   elle s'applique quel que soit le fichier de suite qui l'ait écrite
+--   (413, 414, 431 la redéfinissent toutes les trois à l'identique).
 CREATE OR REPLACE FUNCTION _mk_tenant_contexte(p_t uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE a uuid;
@@ -103,6 +124,11 @@ BEGIN
     json_build_object('sub', a, 'role', 'authenticated')::text, false);
   PERFORM set_config('app.active_tenant_id', p_t::text, false);
 END $$;
+
+-- Outillage de test : seul `postgres` (et `service_role`, qui n'en a pas
+-- besoin) l'exécute. Le `GRANT` au propriétaire n'est pas nécessaire :
+-- `postgres` est superutilisateur, il garde le droit.
+REVOKE ALL ON FUNCTION _mk_tenant_contexte(uuid) FROM PUBLIC, anon, authenticated;
 -- ═════════════════════════════════════════════════════════════
 -- T01 — Le premier passage n'alerte pas
 --   Une société neuve n'a qu'un relevé par invariant : il n'y a rien à
@@ -448,10 +474,23 @@ END $$;
 --   cacher les lignes de l'autre. Contrôle positif : la propriétaire voit la
 --   sienne (1 alerte), et la voisine ne voit ni celle de l'autre ni — c'est le
 --   contrôle négatif qui compte — la sienne par un chemin de travers.
+--
+-- ⚠️ L'ORDRE DES FAUTES EST LE SCÉNARIO, ET IL AVAIT ÉTÉ INVERSÉ (mesuré).
+--   La version précédente créait la faute **avant** le premier passage. La
+--   faute est alors déjà là au moment du relevé : le passage 1 constate
+--   `rompu`, le passage 2 constate `rompu` → `rompu`, et la 414 applique le
+--   motif `deja_rompu` — qui, **à juste titre**, n'écrit aucune alerte (cf.
+--   T05). Le scénario voyait donc `0` et non `1`.
+--   Ce n'était pas un défaut d'isolation : c'était un relevé qui ne pouvait
+--   rien prouver, parce que la dégradation n'était jamais SURVENUE. La
+--   RLS n'a pas été touchée — mesuré sur la base neuve : la politique est
+--   bien `tenant_id = current_tenant_id()`, seule politique, et les
+--   4 `perte` écrites par T02→T05 sont réelles.
+--   L'ordre correct est celui de T02 : relevé sain, PUIS faute, PUIS passage.
 -- ═════════════════════════════════════════════════════════════
 DO $$
-DECLARE ta uuid; tb uuid; employe uuid;
-        n_a int; n_b int; n_voisin int;
+DECLARE ta uuid; tb uuid; employe_a uuid; employe_b uuid;
+        n_a int; n_b int; n_voisin int; n_croise int; n_ecrit int;
 BEGIN
   PERFORM set_config('role', 'postgres', true);
   -- Le nom est suffixé par l'horodatage : la comparaison porte sur
@@ -459,42 +498,64 @@ BEGIN
   -- précédent commencerait avec un relevé déjà `rompu` — le scénario verrait
   -- `deja_rompu` au lieu de `perte`, et le contrôle ne prouverait plus rien
   -- (mesuré : c'est exactement ce que donnait un nom fixe).
-  PERFORM set_config('role', 'postgres', true);
   ta := _mk_tenant('AL6-' || to_char(clock_timestamp(), 'HH24MISS'));
-  employe := _l414_employe(ta, 'Salarie AL6');
-  PERFORM _l414_faute(ta, employe, 'AL6-1');
-  -- DEUX passages : le premier ne peut rien signaler (aucun relevé précédent,
-  -- cf. T01), c'est le second qui voit `tenu` → `rompu`. Un seul passage
-  -- laisserait la société sans aucune alerte et le contrôle négatif ne
-  -- prouverait rien.
+  employe_a := _l414_employe(ta, 'Salarie AL6');
+  -- 1) Relevé SAIN : rien ne manque, INV-20 est `tenu`. C'est ce `tenu`
+  --    qui rend la perte plus tard RÉELLE et non déclarative.
   PERFORM set_config('role', 'service_role', true);
   PERFORM public.chain_alertes_lancer(ta);
-  PERFORM public.chain_alertes_lancer(ta);        -- alerte (perte)
+  -- 2) La faute arrive.
+  PERFORM set_config('role', 'postgres', true);
+  PERFORM _l414_faute(ta, employe_a, 'AL6-1');
+  -- 3) Passage 2 : `tenu` → `rompu`, motif `perte`, UNE alerte écrite.
+  PERFORM set_config('role', 'service_role', true);
+  PERFORM public.chain_alertes_lancer(ta);
 
+  -- La voisine : même construction, elle a donc ELLE AUSSI une alerte.
+  -- ⚠️ Une voisine sans aucune alerte ne prouverait rien : voir « le
+  --    contrôle négatif » ci-dessous. Les deux côtés doivent être peuplés,
+  --    sinon « la voisine ne voit rien » se distingue pas de « la voisine
+  --    n'a rien ».
   PERFORM set_config('role', 'postgres', true);
   tb := _mk_tenant('AL7-' || to_char(clock_timestamp(), 'HH24MISS'));
+  employe_b := _l414_employe(tb, 'Salarie AL7');
   PERFORM set_config('role', 'service_role', true);
-  PERFORM public.chain_alertes_lancer(tb);        -- AL7 n'alerte rien
-
-  -- La propriétaire : son journal, et celui de la voisine (doit être vide).
+  PERFORM public.chain_alertes_lancer(tb);        -- relevé sain
   PERFORM set_config('role', 'postgres', true);
+  PERFORM _l414_faute(tb, employe_b, 'AL7-1');
+  PERFORM set_config('role', 'service_role', true);
+  PERFORM public.chain_alertes_lancer(tb);        -- perte, 1 alerte
+
+  --combien d'alertes EXISTENT réellement, hors RLS. C'est le témoin qui
+  -- distingue « la RLS cache » de « la ligne n'a jamais été écrite ».
+  PERFORM set_config('role', 'postgres', true);
+  SELECT count(*) INTO n_ecrit FROM chain_invariant_alertes
+   WHERE tenant_id IN (ta, tb);
+
+  -- La propriétaire : son journal (1 attendu), celui de la voisine (0).
   PERFORM _mk_tenant_contexte(ta);
   PERFORM set_config('role', 'authenticated', true);
   SELECT count(*) INTO n_a FROM chain_invariant_alertes WHERE tenant_id = ta;
   SELECT count(*) INTO n_voisin FROM chain_invariant_alertes WHERE tenant_id = tb;
 
-  -- La voisine, contexte = B : elle voit son journal (vide) et PAS celui de A.
+  -- La voisine, contexte = B : elle voit LA SIENNE (1 attendu — contrôle
+  -- positif), et PAS celle de A (0 attendu).
   PERFORM set_config('role', 'postgres', true);
   PERFORM _mk_tenant_contexte(tb);
   PERFORM set_config('role', 'authenticated', true);
   SELECT count(*) INTO n_b FROM chain_invariant_alertes WHERE tenant_id = tb;
+  SELECT count(*) INTO n_croise FROM chain_invariant_alertes WHERE tenant_id = ta;
 
-  PERFORM _rec('T07', 'isolation : le journal des alertes est cloisonné par société — la propriétaire voit la sienne, la voisine ne voit pas celle de l''autre, et la RLS le fait SANS clause de société',
-    n_a = 1 AND n_voisin = 0 AND n_b = 0,
-    format('alertes de AL6 vues par AL6=%s (1 attendu) | alertes de AL7 vues par AL6=%s (0 attendu) | alertes de AL7 vues par AL7=%s (0 attendu : elle n''a pas d''écart)',
-           n_a, n_voisin, n_b));
+  -- `n_ecrit = 2` est le garde anti-faux-vert : sans lui, les quatre autres
+  -- contrôles peuvent être satisfaits par une table VIDE (RLS trop stricte,
+  -- alertes jamais écrites, faute mal posée). On exige que les deux alertes
+  -- existent réellement, puis que chacune ne soit visible que de sa société.
+  PERFORM _rec('T07', 'isolation : le journal des alertes est cloisonné par société — chaque propriétaire voit LA SIENNE, la voisine ne voit pas celle de l''autre, et la RLS le fait SANS clause de société',
+    n_ecrit = 2 AND n_a = 1 AND n_voisin = 0 AND n_b = 1 AND n_croise = 0,
+    format('écrit hors RLS : AL6+AL7=%s (2 attendu : sans ce témoin, les autres contrôles passeraient sur une table vide) | AL6 voit la sienne=%s (1 attendu) | AL7 vues par AL6=%s (0 attendu) | AL7 voit la sienne=%s (1 attendu) | AL6 vues par AL7=%s (0 attendu)',
+           n_ecrit, n_a, n_voisin, n_b, n_croise));
 EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T07', 'isolation : le journal des alertes est cloisonné par société — la propriétaire voit la sienne, la voisine ne voit pas celle de l''autre, et la RLS le fait SANS clause de société', false, SQLERRM);
+  PERFORM _rec('T07', 'isolation : le journal des alertes est cloisonné par société — chaque propriétaire voit LA SIENNE, la voisine ne voit pas celle de l''autre, et la RLS le fait SANS clause de société', false, SQLERRM);
 END $$;
 
 SELECT _audit_assert('414');

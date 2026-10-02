@@ -52,6 +52,12 @@ BEGIN
   PERFORM set_config('app.active_tenant_id', p_t::text, false);
 END $$;
 
+-- Outillage de test, jamais exposé au client. `SECURITY DEFINER` +
+-- `set_config(..., false)` : sans ce REVOKE, PostgreSQL accorde `EXECUTE` à
+-- `PUBLIC` et le client choisit sa société (mesuré le 02/10, cf. le
+-- développement dans 414_chain_l4_alerte_degradation_tests.sql).
+REVOKE ALL ON FUNCTION _mk_tenant_contexte(uuid) FROM PUBLIC, anon, authenticated;
+
 -- ═══════════════════════════════════════════════════════════════
 -- T01 — Le relevé mesure QUATORZE, et le détail d'INV-19 se lit
 -- ═══════════════════════════════════════════════════════════════

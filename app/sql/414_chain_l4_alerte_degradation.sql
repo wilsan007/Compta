@@ -96,11 +96,61 @@ CREATE TABLE IF NOT EXISTS chain_invariant_alertes (
 -- `releve_id` désigne la ligne de `chain_invariant_results` comparée : c'est
 -- elle qui dit « quel relevé, de quelle seconde ». `ON DELETE CASCADE` : le
 -- relevé disparaît, l'alerte qu'il a fondée n'a plus d'objet.
+--
+-- ⚠️ LA CLÉ ÉTAIT MONO-COLONNE, ET C'ÉTAIT UNE FAUTE (mesuré le 02/10).
+--   `REFERENCES chain_invariant_results(id)` ne compare que l'identifiant :
+--   une alerte de la société B pouvait donc désigner le relevé de la société A.
+--   MESURÉ : l'insertion d'une alerte de SEPT avec un `releve_id` pris chez SIX
+--   est ACCEPTÉE, et `alertes_croisees` (tenant_id de l'alerte <> tenant_id du
+--   relevé visé) vaut 1. C'est la porte ISO-02 qui l'a dit
+--   (`chain_invariant_alertes.releve_id → chain_invariant_results.id`).
+--   La clé devient COMPOSITE `(tenant_id, releve_id)` : le lien ne peut plus
+--   traverser une société. La cible porte l'UNIQUE `(tenant_id, id)` que la
+--   clé composite exige (même forme que `301_project_time_billing.sql`).
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+                 WHERE conname = 'chain_invariant_results_tenant_id_id_key'
+                   AND conrelid = 'public.chain_invariant_results'::regclass) THEN
+    ALTER TABLE public.chain_invariant_results
+      ADD CONSTRAINT chain_invariant_results_tenant_id_id_key
+      UNIQUE (tenant_id, id);
+  END IF;
+END $$;
+
 ALTER TABLE chain_invariant_alertes
-  ADD COLUMN IF NOT EXISTS releve_id bigint
-  REFERENCES chain_invariant_results(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS releve_id bigint;
+
+-- Idempotent : la contrainte mono-colonne tombe d'abord, puis la composite se
+-- pose. Un rejeu ne doit jamais laisser les deux.
+ALTER TABLE chain_invariant_alertes
+  DROP CONSTRAINT IF EXISTS chain_invariant_alertes_releve_id_fkey;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+                 WHERE conname = 'chain_invariant_alertes_releve_fkey'
+                   AND conrelid = 'public.chain_invariant_alertes'::regclass) THEN
+    ALTER TABLE public.chain_invariant_alertes
+      ADD CONSTRAINT chain_invariant_alertes_releve_fkey
+      FOREIGN KEY (tenant_id, releve_id)
+      REFERENCES public.chain_invariant_results (tenant_id, id)
+      ON DELETE CASCADE;
+  END IF;
+END $$;
+
+-- `releve_avant_id` suit la même portée : il désigne le relevé PRÉCÉDENT, donc
+-- il doit appartenir à la société de l'alerte. Même clé composite.
 ALTER TABLE chain_invariant_alertes
   ADD COLUMN IF NOT EXISTS releve_avant_id bigint;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint
+                 WHERE conname = 'chain_invariant_alertes_releve_avant_fkey'
+                   AND conrelid = 'public.chain_invariant_alertes'::regclass) THEN
+    ALTER TABLE public.chain_invariant_alertes
+      ADD CONSTRAINT chain_invariant_alertes_releve_avant_fkey
+      FOREIGN KEY (tenant_id, releve_avant_id)
+      REFERENCES public.chain_invariant_results (tenant_id, id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Idempotent : sur une base neuve, ou après un rejeu, la contrainte tombe
 -- puis se repose sur la même définition.
@@ -177,9 +227,32 @@ DECLARE
   v_avant  record;
   v_apres  record;
   v_motif  text;
+  v_role   text := current_user;
 BEGIN
   IF p_tenant IS NULL OR btrim(COALESCE(p_code, '')) = '' THEN
     RAISE EXCEPTION 'chain_degradation_detectee : (société, code) sont obligatoires';
+  END IF;
+
+  -- ⚠️ GARDE DE SOCIÉTÉ — elle manquait, et la porte `check_tenant_guard`
+  --    l'avait dit (mesuré le 02/10 : « chain_degradation_detectee(p_tenant
+  --    uuid, p_code text) agissent au nom d'une société sans vérifier que
+  --    l'appelant en est membre »).
+  --    La fonction est `SECURITY DEFINER` : elle lit
+  --    `chain_invariant_results` avec les droits du propriétaire, donc
+  --    SANS que la RLS du lecteur ne puisse s'y opposer. Son `p_tenant`
+  --    est libre, et la fonction est donnée à `authenticated` (les droits
+  --    ci-dessous). Un client pouvait donc passer l'identifiant d'une
+  --    AUTRE société et lire son relevé d'invariants.
+  --    MESURÉ avant le correctif : le contexte `authenticated` de la
+  --    société SEPT appelait `chain_degradation_detectee(<SIX>, 'INV-20')`
+  --    et obtenait `degrade = true`, `lignes_apres = 1`, `releve_id = 3015`
+  --    — le relevé de SIX. Après : refus.
+  --    `service_role` passe : c'est lui qui porte le job nocturne, qui
+  --    relève TOUTES les sociétés et doit donc pouvoir les comparer toutes
+  --    (cf. `chain_alertes_toutes_societes`).
+  IF v_role <> 'service_role' AND p_tenant IS DISTINCT FROM current_tenant_id() THEN
+    RAISE EXCEPTION 'chain_degradation_detectee : société % refusée — elle n''est pas celle du contexte', p_tenant
+      USING ERRCODE = '42501';
   END IF;
 
   -- Le relevé à juger : le plus récent pour ce code.
