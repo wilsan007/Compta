@@ -47,7 +47,7 @@ Pour chaque catégorie matchée:
 
 Après exécution du skill:
 1. Vérifier que les livrables du skill sont complets
-2. Si le skill a un volet validation (ex: `tsc --noEmit`, `npm run dev`), l'exécuter
+2. Si le skill a un volet validation (ex: `npm run typecheck`, `npm run dev`), l'exécuter
 3. Si des problèmes subsistent, activer un skill complémentaire
 
 ## Mapping des catégories → skills (Compta)

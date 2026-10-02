@@ -75,14 +75,14 @@ serve(async (req) => {
 
     // SEC-07: Check if user already exists — use targeted search instead of listUsers()
     // listUsers() is paginated and won't find users beyond the first page (1000 users)
+    // La table `profiles` n'existe pas dans la chaîne de migrations (app/sql) :
+    // la recherche échouait et le contrôle de doublon était sauté. On lit
+    // auth.users par la fonction dédiée, comme create-user.
     const { data: existingUser, error: lookupErr } = await supabase
-      .from("profiles")
-      .select("id, email")
-      .eq("email", email)
-      .maybeSingle()
+      .rpc("auth_email_exists", { p_email: email })
     if (lookupErr) {
       console.error("User lookup error:", lookupErr.message)
-    } else if (existingUser) {
+    } else if (existingUser === true) {
       return new Response(
         JSON.stringify({ error: "An account already exists with this email. Please log in." }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },

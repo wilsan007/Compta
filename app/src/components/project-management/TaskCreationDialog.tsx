@@ -74,7 +74,6 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
       recurring_interval: 0,
       recurring_rule_type: 'daily',
       linked_action_id: null,
-      production_order_id: null,
     }
     onConfirm(task)
     onClose()

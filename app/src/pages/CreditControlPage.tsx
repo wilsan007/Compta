@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import { getCustomerBalances } from '@/lib/queries/accounting'
 import { calculateLatePaymentPenalties } from '@/lib/queries/businessFunctions'
 import { errorMessage, formatCurrency } from '@/lib/utils'
 import { ShieldCheck } from 'lucide-react'
@@ -20,21 +21,30 @@ export function CreditControlPage() {
   const loadData = useCallback(async () => {
     try {
       const tid = await getTenantId()
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, credit_limit, credit_used, credit_blocked, credit_policy')
-        .eq('tenant_id', tid)
-        .order('name')
+      // A3 (313) : l'encours utilisé n'est pas `customers.credit_used` (jamais
+      // tenue, 0,00 EUR partout) mais le solde du 411 au grand livre.
+      const [{ data, error }, balances] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('id, name, credit_limit, credit_blocked, credit_policy')
+          .eq('tenant_id', tid)
+          .order('name'),
+        getCustomerBalances(),
+      ])
       if (error) throw error
-      setCustomers(data || [])
+const parClient = new Map(balances.map((b) => [b.customer_id, Number(b.balance) || 0]))
+      setCustomers((data || []).map((c) => ({ ...c, credit_used: parClient.get(c.id) ?? 0 })))
     } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
-  // W-QA (29/09/2026) : l'appel partait PENDANT le rendu — React le signalait
-  // (« Can't perform a React state update on a component that hasn't mounted
-  // yet ») et la requête pouvait repartir à chaque rendu. Un effet la déclenche
-  // une fois, proprement.
+  // ven-016 (B10) : l'appel vivait dans le CORPS du composant — chaque rendu
+  // relançait la lecture, `setCustomers` re-rendait, et la boucle n'avait aucune
+  // condition d'arrêt (14 301 GET /customers en 10 s à la recette du 29/09).
+  // Une seule lecture au montage ; `toast` et `tCommon` sont stables, donc
+  // `loadData` ne change pas d'identité d'un rendu à l'autre.
+  // Le `.catch` garde le rejet consommé : sans lui, un échec de lecture
+  // devient un rejet non traité au montage.
   useEffect(() => {
     loadData().catch((err) => console.error('loadData:', err))
   }, [loadData])

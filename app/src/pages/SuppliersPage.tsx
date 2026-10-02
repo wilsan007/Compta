@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, ConfirmDialog, exportToCSV } from '@/components/ui'
+import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV, Modal } from '@/components/ui'
 import { getSuppliers, deleteSupplier, createSupplier, updateSupplier } from '@/lib/queries/partners'
+import { getSupplierBalances, getCompanySettings } from '@/lib/queries/accounting'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { getSalesRepresentatives } from '@/lib/queries/misc'
+import { verifySiret, type SiretCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
+import { ISO_COUNTRIES, normalizeCountryCode } from '@/lib/countries'
+import { hasSiret, isSiretValid } from '@/lib/siret'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { Package, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
-import type { Supplier } from '@/types'
+import { Package, Plus, Search, Trash2, Edit, Mail, Download, Contact as ContactIcon } from 'lucide-react'
+import type { Supplier, PaymentTerm, SalesRepresentative } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -29,8 +36,11 @@ export function SuppliersPage() {
 
   async function loadSuppliers() {
     try {
-      const data = await getSuppliers()
-      setSuppliers(data || [])
+// A3 (313) : le solde dû d'un fournisseur est celui de son 401 au grand
+      // livre — `suppliers.balance` n'est tenue par rien.
+      const [data, balances] = await Promise.all([getSuppliers(), getSupplierBalances()])
+      const parFournisseur = new Map(balances.map((b) => [b.supplier_id, Number(b.balance) || 0]))
+      setSuppliers((data || []).map((s) => ({ ...s, balance: parFournisseur.get(s.id) ?? 0 })))
     } catch (err) { console.error('Error loading suppliers:', err)
     toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
@@ -153,6 +163,7 @@ export function SuppliersPage() {
       {showForm && (
         <SupplierForm
           supplier={editing}
+          fournisseurs={suppliers}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); loadSuppliers() }}
         />
@@ -179,8 +190,10 @@ export function SuppliersPage() {
   )
 }
 
-function SupplierForm({ supplier, onClose, onSaved }: {
+function SupplierForm({ supplier, fournisseurs, onClose, onSaved }: {
   supplier: Supplier | null
+  /** A4 (318) — « Société parente » devient une liste : les fournisseurs. */
+  fournisseurs: Supplier[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -198,14 +211,67 @@ function SupplierForm({ supplier, onClose, onSaved }: {
   const [salesRepId, setSalesRepId] = useState(supplier?.sales_rep_id || '')
   const [accountTiers, setAccountTiers] = useState(supplier?.account_tiers || '')
   const [accountCollectif, setAccountCollectif] = useState(supplier?.account_collectif || '401000')
+  // A4 (318) : l'identité et l'adresse du tiers — absentes de la fiche (ach-002).
+  const [siret, setSiret] = useState(supplier?.siret || '')
+  const [city, setCity] = useState(supplier?.city || '')
+  const [postalCode, setPostalCode] = useState(supplier?.postal_code || '')
+  const [country, setCountry] = useState(normalizeCountryCode(supplier?.country) || '')
+  const [paymentTermId, setPaymentTermId] = useState(supplier?.payment_term_id || '')
+  const [terms, setTerms] = useState<PaymentTerm[]>([])
+  const [reps, setReps] = useState<SalesRepresentative[]>([])
+  const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
+  const [checkingSiret, setCheckingSiret] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    getPaymentTerms().then(setTerms).catch(err => console.error('getPaymentTerms:', err))
+    getSalesRepresentatives().then(setReps).catch(err => console.error('getSalesRepresentatives:', err))
+    if (supplier) return
+    getCompanySettings()
+      .then(cs => {
+        const code = normalizeCountryCode(cs?.country_code || cs?.country)
+        if (code) setCountry(code)
+      })
+      .catch(err => console.error('getCompanySettings:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement unique a l'ouverture
+  }, [])
+
+  async function handleCheckSiret() {
+    setCheckingSiret(true)
+    try {
+      setSiretCheck(await verifySiret(siret.trim()))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    } finally {
+      setCheckingSiret(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) { toast('warning', tCommon('toast.warning'), t('suppliers.nameRequired')); return }
+    // A4 (318) : un SIRET dont la clé de Luhn est fausse n'est pas enregistré.
+    if (hasSiret(siret) && !isSiretValid(siret)) {
+      toast('warning', tCommon('toast.warning'), t('suppliers.siretInvalid'))
+      return
+    }
+    const code = normalizeCountryCode(country)
+    if (country.trim() && !code) {
+      toast('warning', tCommon('toast.warning'), t('suppliers.countryInvalid'))
+      return
+    }
+    const terme = terms.find((x) => x.id === paymentTermId)
     setSaving(true)
     try {
-      const data = { name, contact_name: contactName, email, phone, address, vat_number: vatNumber, is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null, account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000' }
+      const data = {
+        name, contact_name: contactName, email, phone, address, vat_number: vatNumber,
+        is_company: isCompany, parent_id: parentId || null, sales_rep_id: salesRepId || null,
+        account_tiers: accountTiers || null, account_collectif: accountCollectif || '401000',
+        // A4 (318) — l'identité du tiers.
+        siret: siret.trim() || null, city: city || '', postal_code: postalCode || '',
+        country: code, payment_term_id: paymentTermId || null,
+        payment_terms: terme ? terme.name : '',
+      }
       if (supplier) {
         await updateSupplier(supplier.id, data)
         toast('success', t('suppliers.updated'))
@@ -221,34 +287,86 @@ function SupplierForm({ supplier, onClose, onSaved }: {
     }
   }
 
+  // E1 (ach-001) : cette fenêtre était plus haute que l'écran et rien ne
+  // défilait — « Créer » finissait à 840 px pour un écran de 720, donc clic
+  // impossible. Elle passe au `Modal` commun : cadre borné à l'écran, pied fixe,
+  // et au passage le piège à focus, Échap et le verrou de défilement.
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{supplier ? t('suppliers.edit') : t('suppliers.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <form onSubmit={handleSubmit}>
+      <Modal
+        open
+        onClose={onClose}
+        title={supplier ? t('suppliers.edit') : t('suppliers.new')}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+            <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
           <Input label={t('suppliers.nameLabel')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('suppliers.placeholders.name')} />
           <Input label={t('suppliers.contact')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('suppliers.placeholders.contactName')} />
           <Input label={t('suppliers.email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('suppliers.placeholders.email')} />
           <Input label={t('suppliers.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('suppliers.placeholders.phone')} />
           <Input label={t('suppliers.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('suppliers.placeholders.address')} />
+          <Input label={t('suppliers.zipCode')} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="75001" />
+          <Input label={t('suppliers.city')} value={city} onChange={(e) => setCity(e.target.value)} placeholder={t('suppliers.placeholders.city')} />
+          <Select
+            label={t('suppliers.country')}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            options={[{ value: '', label: t('suppliers.countryUnset') }, ...ISO_COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))]}
+          />
+          <Input label={t('suppliers.siret')} value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="732 829 320 00074" />
+          {hasSiret(siret) && (
+            <VerificationLine
+              busy={checkingSiret}
+              disabled={!siret.trim()}
+              onCheck={handleCheckSiret}
+              result={siretCheck}
+              labels={{
+                check: t('suppliers.checkSiret'),
+                checking: t('suppliers.checkingSiret'),
+                atSource: t('suppliers.siretAtSource'),
+                formatOnly: t('suppliers.siretFormatOnly'),
+                invalid: t('suppliers.siretInvalidKey', { reason: '{{reason}}' }),
+              }}
+            />
+          )}
           <Input label={t('suppliers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder={t('suppliers.placeholders.vatNumber')} />
+          <Select
+            label={t('suppliers.paymentTerms')}
+            value={paymentTermId}
+            onChange={(e) => setPaymentTermId(e.target.value)}
+            options={[{ value: '', label: t('suppliers.paymentTermsUnset') }, ...terms.map((x) => ({ value: x.id, label: x.name }))]}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} />
             {t('suppliers.isCompany')}
           </label>
-          <Input label={t('suppliers.parentId')} value={parentId} onChange={(e) => setParentId(e.target.value)} placeholder={t('suppliers.parentIdPlaceholder')} />
-          <Input label={t('suppliers.salesRepId')} value={salesRepId} onChange={(e) => setSalesRepId(e.target.value)} placeholder={t('suppliers.salesRepIdPlaceholder')} />
+          <Select
+            label={t('suppliers.parentId')}
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            options={[
+              { value: '', label: t('suppliers.parentIdUnset') },
+              ...fournisseurs.filter((f) => f.id !== supplier?.id).map((f) => ({ value: f.id, label: f.name })),
+            ]}
+          />
+          <Select
+            label={t('suppliers.salesRepId')}
+            value={salesRepId}
+            onChange={(e) => setSalesRepId(e.target.value)}
+            options={[
+              { value: '', label: t('suppliers.salesRepIdUnset') },
+              ...reps.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+          />
           <Input label={t('suppliers.accountTiers')} value={accountTiers} onChange={(e) => setAccountTiers(e.target.value)} placeholder="FOU00001" />
           <Input label={t('suppliers.accountCollectif')} value={accountCollectif} onChange={(e) => setAccountCollectif(e.target.value)} placeholder="401000" />
-          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
-            <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" loading={saving}>{supplier ? tCommon('actions.save') : tCommon('actions.create')}</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Modal>
+    </form>
   )
 }

@@ -17,7 +17,7 @@ npm run verify:fast
 
 ## 1. TypeScript & Type Safety
 
-- [ ] ❍ `tsc --noEmit` passe avec 0 erreur
+- [ ] ❍ `npm run typecheck` (`tsc -b --noEmit`) : 0 erreur
 - [ ] ◇ Pas de `as any` dans `src/pages/` (vérifié par test R6)
 - [ ] ◇ Pas de `tid!` non-null assertion dans `src/lib/queries/` (vérifié par test R1)
 - [ ] ◇ Pas de `!` non-null assertion sur des valeurs qui pourraient être null/undefined

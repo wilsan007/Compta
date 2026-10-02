@@ -31,7 +31,7 @@ const LOCALE_MAP: Record<string, string> = {
   ar: 'ar-MA',
 }
 
-function getCurrentLocale(): string {
+export function getCurrentLocale(): string {
   const lang = (i18n.language || 'fr').split('-')[0]
   return LOCALE_MAP[lang] || 'fr-FR'
 }

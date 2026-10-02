@@ -15,6 +15,7 @@ import { ActionCreationDialog } from './ActionCreationDialog'
 import { ProjectCreationDialog } from './ProjectCreationDialog'
 import type { DisplayMode, TaskStatus, TaskCreateInput } from '@/types/projectManagement'
 import { confirmSync } from '@/lib/confirm'
+import { useToast } from '@/lib/toast'
 
 interface DynamicTableProps {
   projectId?: string
@@ -23,6 +24,7 @@ interface DynamicTableProps {
 
 export function DynamicTable({ projectId, className }: DynamicTableProps) {
   const { t } = useTranslation('taskManagement')
+  const { toast } = useToast()
   const { tasks, loading, error, refetch, updateTask, deleteTask, duplicateTask, createSubTask, createTask } = useTaskContext()
   const { projects, projectColorMap, refetch: refetchProjects } = useProjectContext()
   const { can } = useTaskEditPermissions()
@@ -87,9 +89,11 @@ export function DynamicTable({ projectId, className }: DynamicTableProps) {
   const handleCreateTask = useCallback(
     (task: TaskCreateInput) => {
       if (!can('create')) return
-      createTask(task)
+      // L'échec était une promesse rejetée non lue : la fenêtre se fermait sans
+      // rien dire et aucune tâche n'existait.
+      createTask(task).catch((err: Error) => toast('error', t('saveError'), err.message))
     },
-    [can, createTask]
+    [can, createTask, toast, t]
   )
 
   const handleExport = useCallback(() => {

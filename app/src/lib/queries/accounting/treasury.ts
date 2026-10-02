@@ -46,7 +46,11 @@ export async function deletePaymentOrder(id: string) {
 // ============ Sprint 5: Collection Reminders ============
 export async function getCollectionReminders(status?: string) {
   const tid = await getTenantId()
-  let query = supabase.from('collection_reminders').select('*').order('reminder_date', { ascending: false })
+  // B9 (ven-015) : `collection_reminders` ne porte que son propre `number` — ni
+  // nom de client, ni numéro de facture. Sans les jointures, l'écran affichait
+  // « — » dans les deux colonnes : une relance ne disait ni à qui elle
+  // s'adressait, ni quelle facture elle concernait.
+  let query = supabase.from('collection_reminders').select('*, customers(name), invoices(number)').order('reminder_date', { ascending: false })
   if (tid) query = query.eq('tenant_id', tid)
   if (status) query = query.eq('status', status)
   const { data, error } = await query

@@ -328,16 +328,7 @@ export async function checkCreditLimit(tpaCode: string): Promise<{ exceeded: boo
 
 
 // ============ IBAN Validation (#80) ============
-export function validateIBAN(iban: string): boolean {
-  const cleaned = iban.replace(/\s/g, '').toUpperCase()
-  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/.test(cleaned)) return false
-  const rearranged = cleaned.slice(4) + cleaned.slice(0, 4)
-  const converted = rearranged.replace(/[A-Z]/g, (ch) => String(ch.charCodeAt(0) - 55))
-  let remainder: number
-  let block = converted
-  while (block.length > 9) {
-    remainder = Number(block.slice(0, 9)) % 97
-    block = remainder.toString() + block.slice(9)
-  }
-  return Number(block) % 97 === 1
-}
+// A5 : la clé de contrôle est un validateur **pur** — elle vit dans
+// `src/lib/iban.ts`, à côté de `looksLikeIBAN` (la forme, qui décide de
+// bloquer), et elle est réexportée ici pour les appelants existants.
+export { validateIBAN, looksLikeIBAN, cleanIban } from '@/lib/iban'

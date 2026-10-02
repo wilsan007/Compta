@@ -119,6 +119,7 @@
     "ir": "IR",
     "status": "Statut",
     "generate": "Générer les bulletins",
+    "slipsGenerated": "{{count}} bulletin(s) généré(s)",
     "generating": "Génération en cours...",
     "validate": "Valider la campagne",
     "noPayRuns": "Aucune campagne de paie",
@@ -167,7 +168,8 @@
       "cancelled": "Annulé"
     },
     "calculate": "Calculer le bulletin",
-    "calculated": "Bulletin calculé"
+    "calculated": "Bulletin calculé",
+    "generatedCount": "{{count}} bulletin(s) généré(s)"
   },
   "payrollAccounting": {
     "title": "OD de paie",

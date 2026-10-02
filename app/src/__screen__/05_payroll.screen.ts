@@ -22,7 +22,7 @@ it('Paie — salarié, lot, bulletins, journal, virement', async () => {
   const run = await attempt(() => pay.createPayRun({ number: `PAY-2026-09-${stamp}`, period_start: '2026-09-01', period_end: '2026-09-30', pay_date: '2026-09-30', status: 'draft' }))
   check('H03', 'créer le lot de paie de septembre (PayRunsPage, lot vide)', run.ok, run.err ?? (run.val as any).id)
   const pr: any = run.val
-  const gen = await attempt(() => pay.generatePaySlipsForRun(pr.id, emps, pr))
+  const gen = await attempt(() => pay.generatePayRunSlips(pr.id))
   const slips = await sql(`select e.salary::float sal, s.gross_salary::float gross, s.net_salary::float net, s.employer_contributions::float emp, s.status from pay_slips s join employees e on e.id=s.employee_id where s.pay_run_id=$1 order by e.salary`, [pr.id]).catch(async () => sql(`select * from pay_slips where pay_run_id=$1`, [pr.id]))
   check('H04', 'générer les bulletins (moteur SQL calculate_payslip)', gen.ok && slips.length === 2, { err: gen.err, bulletins: slips })
   const sumNet = r2(slips.reduce((s: number, x: any) => s + Number(x.net ?? x.net_salary ?? 0), 0))
@@ -49,7 +49,7 @@ it('Paie — salarié, lot, bulletins, journal, virement', async () => {
   await login(2, A)
   const ve = await attempt(() => pay.createEmployee({ name: 'Intrus', email: 'i@audit.test', salary: 99999, hire_date: '2026-01-01', status: 'active', contract_type: 'cdi' } as any))
   check('H09', 'un lecteur ne peut pas créer de salarié', !ve.ok, ve.err ?? 'ACCEPTÉ')
-  const vs = await attempt(() => pay.generatePaySlipsForRun(pr.id, emps, pr))
+  const vs = await attempt(() => pay.generatePayRunSlips(pr.id))
   check('H10', 'un lecteur ne peut pas (re)calculer les bulletins', !vs.ok, vs.err ?? 'ACCEPTÉ')
   await login(0, A)
   save('s5.json', findings)

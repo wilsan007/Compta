@@ -126,6 +126,7 @@
       "beneficiary": "المستفيد (طرف ثالث)",
       "iban": "IBAN (اختياري)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "IBAN غير صالح: مفتاح التحقق غير مطابق. لم يتم حفظ أمر الدفع.",
       "amount": "المبلغ",
       "paymentDate": "تاريخ الدفع",
       "reference": "المرجع",

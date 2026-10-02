@@ -205,6 +205,7 @@
     "ir": "IR",
     "status": "Status",
     "generate": "Generate payslips",
+    "slipsGenerated": "{{count}} payslip(s) generated",
     "generating": "Generating...",
     "validate": "Validate pay run",
     "noPayRuns": "No pay runs",
@@ -253,7 +254,8 @@
       "cancelled": "Cancelled"
     },
     "calculate": "Calculate payslip",
-    "calculated": "Payslip calculated"
+    "calculated": "Payslip calculated",
+    "generatedCount": "{{count}} payslip(s) generated"
   },
   "payrollAccounting": {
     "title": "Payroll entries",

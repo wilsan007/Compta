@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Badge } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { getPaySlips, getPayRuns, getEmployees, generatePaySlipsForRun, updatePaySlip, deletePaySlip } from '@/lib/queries/payroll'
+import { getPaySlips, getPayRuns, generatePayRunSlips, updatePaySlip, deletePaySlip } from '@/lib/queries/payroll'
 import { calculatePayslip } from '@/lib/queries/businessFunctions'
 import { FileText, Trash2, Sparkles, ChevronDown, ChevronRight, Receipt, AlertTriangle, Clock, Plane, RotateCcw, Calculator as CalcIcon } from 'lucide-react'
-import type { PayRun, Employee } from '@/types'
+import type { PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 
@@ -16,7 +16,6 @@ export function PaySlipsPage() {
   const { t: tNav } = useTranslation('nav')
 const [slips, setSlips] = useState<any[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
-  const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [runFilter, setRunFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -24,24 +23,29 @@ const [slips, setSlips] = useState<any[]>([])
 
   const loadData = useCallback(async () => {
     try {
-      const [sl, pr, emps] = await Promise.all([getPaySlips(runFilter || undefined), getPayRuns(), getEmployees()])
+      const [sl, pr] = await Promise.all([getPaySlips(runFilter || undefined), getPayRuns()])
       setSlips(sl || [])
       setPayRuns(pr || [])
-      setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+} catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [runFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleGenerate(runId: string) {
-  const run = payRuns.find((r) => r.id === runId)
-    if (!run) return
     setGenerating(true)
     try {
-      await generatePaySlipsForRun(runId, employees, run)
+      // rh-006 : un seul appel, et le verdict par salarié est nommé — un refus
+      // ne se taisait plus derrière un succès global.
+      const verdict = await generatePayRunSlips(runId)
       await loadData()
-      toast('success', tCommon('common.success'), t('paySlips.title'))
+const echecs = verdict.echecs || []
+      if (echecs.length > 0) {
+        toast('warning', t('paySlips.generatedCount', { count: verdict.generes }),
+          echecs.map((e) => `${e.employee} : ${e.message}`).join(' · '))
+      } else {
+        toast('success', tCommon('common.success'), t('paySlips.generatedCount', { count: verdict.generes }))
+      }
     } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setGenerating(false) }
   }

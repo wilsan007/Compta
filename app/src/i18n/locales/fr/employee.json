@@ -86,6 +86,7 @@
     "dependents": "Personnes à charge",
     "bankDetails": "Coordonnées bancaires",
     "iban": "IBAN",
+    "ibanRefused": "IBAN invalide : la clé de contrôle ne correspond pas. Vos coordonnées bancaires ne sont pas enregistrées.",
     "bic": "BIC",
     "bankAccountHolder": "Titulaire du compte",
     "transportMode": "Mode de transport",

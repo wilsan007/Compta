@@ -74,8 +74,10 @@ BEGIN
   INSERT INTO customers (tenant_id, name) VALUES (t, 'Client E23') RETURNING id INTO c;
   INSERT INTO products (tenant_id, name, sku, type, sale_account_code)
   VALUES (t, 'Prestation A', 'SKU-E23A', 'service', '706000') RETURNING id INTO pa;
-  INSERT INTO products (tenant_id, name, sku, type)
-  VALUES (t, 'Marchandise B', 'SKU-E23B', 'stock') RETURNING id INTO pb;
+  -- D-QA-1 (317) : une facture directe d'un article stocké sort le stock à la
+  -- validation ; il en faut donc pour que la pièce se valide.
+  INSERT INTO products (tenant_id, name, sku, type, stock_quantity)
+  VALUES (t, 'Marchandise B', 'SKU-E23B', 'stock', 50) RETURNING id INTO pb;
   PERFORM _as_user();
   BEGIN
     inv := _mk_sale213(t, c, pa, 600::numeric, pb, 400::numeric);
@@ -144,8 +146,9 @@ BEGIN
   INSERT INTO customers (tenant_id, name) VALUES (t, 'Client E23d') RETURNING id INTO c;
   INSERT INTO products (tenant_id, name, sku, type, sale_account_code)
   VALUES (t, 'Prestation A', 'SKU-E23D1', 'service', '706000') RETURNING id INTO pa;
-  INSERT INTO products (tenant_id, name, sku, type)
-  VALUES (t, 'Marchandise B', 'SKU-E23D2', 'stock') RETURNING id INTO pb;
+  -- D-QA-1 (317) : même raison qu'en E23 — l'article stocké sort du stock.
+  INSERT INTO products (tenant_id, name, sku, type, stock_quantity)
+  VALUES (t, 'Marchandise B', 'SKU-E23D2', 'stock', 50) RETURNING id INTO pb;
   PERFORM _as_user();
   BEGIN
     inv := _mk_sale213(t, c, pa, 600::numeric, pb, 400::numeric);

@@ -5,6 +5,7 @@ import { AlertTriangle, User, Briefcase, TrendingUp } from 'lucide-react'
 import { getMyProfile, updateMyProfile, getEmployeeAlerts } from '@/lib/queries/sprintH'
 import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
+import { isIbanRejected } from '@/lib/iban'
 
 export function EmployeeProfilePage() {
   const { t } = useTranslation('employee')
@@ -31,6 +32,12 @@ export function EmployeeProfilePage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleSavePersonal() {
+    // A5 (ach-003) : le RIB du salarié part en paie. Même décision que le compte
+    // bancaire du tiers (`isIbanRejected`), même refus nommé.
+    if (isIbanRejected(profile.bank_iban || '')) {
+      toast('warning', tCommon('form.requiredField'), t('profile.ibanRefused'))
+      return
+    }
     setSaving(true)
     try {
       await updateMyProfile({

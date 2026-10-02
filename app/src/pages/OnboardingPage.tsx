@@ -185,7 +185,7 @@ export function OnboardingPage() {
   // Redirect to dashboard only after user state has been refreshed with tenantId
   useEffect(() => {
     if (created && user?.tenantId) {
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
   }, [created, user, navigate])
 

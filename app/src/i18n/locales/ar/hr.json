@@ -205,6 +205,7 @@
     "ir": "ضريبة الدخل",
     "status": "الحالة",
     "generate": "توليد قسائم الرواتب",
+    "slipsGenerated": "تم توليد {{count}} قسيمة رواتب",
     "generating": "جاري التوليد...",
     "validate": "اعتماد الحملة",
     "noPayRuns": "لا توجد حملات رواتب",
@@ -253,7 +254,8 @@
       "cancelled": "ملغى"
     },
     "calculate": "حساب قسيمة الأجر",
-    "calculated": "تم حساب قسيمة الأجر"
+    "calculated": "تم حساب قسيمة الأجر",
+    "generatedCount": "تم توليد {{count}} قسيمة رواتب"
   },
   "payrollAccounting": {
     "title": "قيود الرواتب",

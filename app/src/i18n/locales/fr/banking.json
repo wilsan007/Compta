@@ -364,6 +364,7 @@
     "noAccounts": "Aucun compte bancaire",
     "noAccountsDesc": "Ajoutez votre premier RIB/IBAN",
     "ibanInvalid": "IBAN invalide",
+    "ibanRefused": "IBAN invalide : la clé de contrôle ne correspond pas. Rien n’a été enregistré — vérifiez le numéro saisi.",
     "ibanValid": "IBAN valide",
     "saved": "Compte bancaire enregistré",
     "saveError": "Erreur lors de l'enregistrement",

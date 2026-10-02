@@ -259,7 +259,11 @@
     },
     "validate": "Valider la préparation",
     "validated": "Préparation validée",
-    "validateHint": "Vérifiez les éléments ci-dessus puis validez la préparation"
+    "validateHint": "Vérifiez les éléments ci-dessus puis validez la préparation",
+    "generateSlips": "Générer les bulletins du lot",
+    "slipsGenerated": "{{count}} bulletin(s) généré(s)",
+    "slipsFailed": "{{count}} bulletin(s) refusé(s)",
+    "approveRun": "Approuver la paie"
   },
   "reverseCalc": {
     "title": "Calcul du brut à partir du net",

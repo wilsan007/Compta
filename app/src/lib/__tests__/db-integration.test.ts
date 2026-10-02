@@ -12,12 +12,21 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 const DB_URL = process.env.DATABASE_URL
 const it_db = DB_URL ? it : it.skip
 
+// Mesuré le 30/09/2026 : le SSL était imposé. La base locale Supabase ne le
+// supporte pas et REFUSE la connexion (« The server does not support SSL
+// connections ») — ce fichier échouait donc dès qu'on lui donnait une URL. En
+// CI il n'a jamais tourné : le job qui lance `vitest run` n'a pas de
+// DATABASE_URL, et celui qui en a une ne lance que du psql. Le SSL n'est donc
+// demandé que lorsqu'il l'est explicitement.
+const SSL_DEMANDE = /sslmode=require/.test(DB_URL || '') || process.env.PGSSLMODE === 'require'
+const SSL = SSL_DEMANDE ? { rejectUnauthorized: false } : false
+
 let pgClient: any = null
 
 beforeAll(async () => {
   if (!DB_URL) return
   const pg = await import('pg')
-  pgClient = new pg.Client({ connectionString: DB_URL, ssl: { rejectUnauthorized: false } })
+  pgClient = new pg.Client({ connectionString: DB_URL, ssl: SSL })
   await pgClient.connect()
 })
 
@@ -77,11 +86,24 @@ describe('DB Integration — RPC critiques (TEST-01)', () => {
     expect(res.rows.length).toBeGreaterThan(0)
   })
 
-  it_db('aucune policy USING(true) restante (SEC-02)', async () => {
+  // Ces deux assertions n'ont jamais été jouées (le job CI qui lance
+  // `vitest run` n'a pas de DATABASE_URL) et visaient, à tort, des noms
+  // inexistants. Elles sont réécrites le 30/09/2026, après instruction.
+  //
+  // 1. « aucune policy USING(true) » : il y en a 5, mais sur des RÉFÉRENTIELS
+  //    GLOBAUX — le modèle voulu depuis la 270 (lignes globales lisibles, non
+  //    écrivables ; voir `check_global_rows_writable` en CI). L'assertion
+  //    d'origine les comptait toutes et était donc fausse. Elle porte
+  //    maintenant sur les tables de société, qui sont le vrai périmètre.
+  it_db('aucune policy USING(true) sur une table de société (SEC-02)', async () => {
     const res = await pgClient.query(
-      "SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public' AND (qual = 'true' OR with_check = 'true' OR qual = '(true)' OR with_check = '(true)')"
+      `SELECT tablename, policyname FROM pg_policies
+        WHERE schemaname = 'public'
+          AND (qual = 'true' OR with_check = 'true' OR qual = '(true)' OR with_check = '(true)')
+          AND tablename NOT IN ('banks','chart_account_templates','sql_migrations_tracker',
+                                'v_tenant_id','webhook_event_catalog','legislation_packs')`,
     )
-    expect(res.rows.length).toBe(0)
+    expect(res.rows).toEqual([])
   })
 
   it_db('trigger prevent_posted_entry_modification existe (ACC-01)', async () => {
@@ -91,11 +113,30 @@ describe('DB Integration — RPC critiques (TEST-01)', () => {
     expect(res.rows.length).toBeGreaterThan(0)
   })
 
-  it_db('trigger check_journal_entry_balance existe (ACC-01)', async () => {
+  // 2. L'équilibre d'une écriture EST garanti par la base — mais pas par un
+  //    trigger qui s'appellerait `check_journal_entry_balance` : ce nom n'a
+  //    jamais existé, et l'assertion d'origine cherchait donc toujours 0.
+  //    Le garde-fou réel est la famille mesurée ci-dessous :
+  //      * à la POSE, `check_journal_entry_balance_on_post` refuse une pièce
+  //        déséquilibrée avec un motif nommé (« Écriture … non équilibrée :
+  //        débit 100.00 ≠ crédit 0.00 ») — vérifié à la main le 30/09 ;
+  //      * sur les lignes, `_ins` / `_upd` / `_del` ;
+  //      * une pièce POSÉE est immuable (`prevent_posted_line_modification`).
+  //    Une pièce en brouillon peut être déséquilibrée : c'est voulu, sinon la
+  //    saisie ligne à ligne serait impossible. Le comportement est prouvé par
+  //    `273_journal_entry_validation_tests.sql` (T02), câblé en CI.
+  it_db('les 4 déclencheurs d’équilibre des écritures existent (ACC-01)', async () => {
     const res = await pgClient.query(
-      "SELECT 1 FROM pg_trigger WHERE tgname = 'check_journal_entry_balance'"
+      `SELECT tgname FROM pg_trigger WHERE tgname IN (
+         'check_journal_entry_balance_on_post','check_journal_entry_balance_ins',
+         'check_journal_entry_balance_upd','check_journal_entry_balance_del')`,
     )
-    expect(res.rows.length).toBeGreaterThan(0)
+    expect(res.rows.map((r: any) => r.tgname).sort()).toEqual([
+      'check_journal_entry_balance_del',
+      'check_journal_entry_balance_ins',
+      'check_journal_entry_balance_on_post',
+      'check_journal_entry_balance_upd',
+    ])
   })
 
   it_db('vue balance_sheet existe (ACC-02)', async () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Search, Plus, LayoutGrid } from 'lucide-react'
 import { DynamicTable } from '@/components/project-management/DynamicTable'
 import { KanbanBoard } from '@/components/project-management/KanbanBoard'
@@ -116,8 +117,10 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
 
 function ToolbarTaskDialog({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
   const { createTask } = useTaskContext()
+  const { t } = useTranslation('taskManagement')
+  const { toast } = useToast()
   const handleCreate = (task: TaskCreateInput) => {
-    createTask(task)
+    createTask(task).catch((err: Error) => toast('error', t('saveError'), err.message))
   }
   return (
     <TaskCreationDialog

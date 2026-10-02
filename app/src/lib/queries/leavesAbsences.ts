@@ -353,8 +353,8 @@ export async function calculateLeaveProvisions(period: string): Promise<LeavePro
   // W9 (cohérence UI ↔ base, suite de RH-05) : le taux journalier d'une
   // provision de congés est LE diviseur de la société — celui que la paie
   // applique (RPC `payroll_divisors`, 256). Le `/ 21` que l'écran portait
-  // encore était le cinquième diviseur : la même journée valait 100,00 € pour
-  // la paie et 123,81 € dans la provision.
+  // encore était le cinquième diviseur : la même journée valait 100,00 EUR pour
+  // la paie et 123,81 EUR dans la provision.
   const { data: divisors, error: divErr } = await supabase.rpc('payroll_divisors')
   if (divErr) throw divErr
   const joursDivisor = Number((divisors as any)?.jours ?? 0)
