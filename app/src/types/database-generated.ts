@@ -1896,6 +1896,99 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_invariant_results: {
+      Row: {
+        id: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a: number | null
+        mesure_b: number | null
+        ecart: number | null
+        lignes_en_ecart: number
+        duree_ms: number
+        detail: Json | null
+        mesure_le: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        code?: string
+        verdict?: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Relationships: []
+    }
+    chain_invariants: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        code: string
+        libelle: string
+        modules: string[]
+        source_a: string
+        source_b: string
+        sens: string
+        tolerance: number
+        mesurable: boolean
+        raison_non_mesurable: string | null
+        actif: boolean
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        code: string
+        libelle: string
+        modules?: string[]
+        source_a: string
+        source_b: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        code?: string
+        libelle?: string
+        modules?: string[]
+        source_a?: string
+        source_b?: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chain_regeneration_log: {
       Row: {
         id: number
