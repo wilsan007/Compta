@@ -398,7 +398,11 @@ export async function getSalaryAnalysis(groupBy: 'department' | 'category' | 'ge
   for (const emp of emps) {
     let key = 'N/A'
     if (groupBy === 'department') key = emp.department || 'N/A'
-    else if (groupBy === 'category') key = emp.category || 'N/A'
+    // Corrigé le 2026-10-01 : la colonne s'appelle `payroll_category` (cf.
+    // EmployeesPage.tsx), pas `category`. Le regroupement « par catégorie »
+    // retombait donc TOUJOURS sur 'N/A'. Trouvé en typant `emp` en
+    // Row<'employees'> : le `any` précédent laissait lire une colonne inexistante.
+    else if (groupBy === 'category') key = emp.payroll_category || 'N/A'
     else if (groupBy === 'gender') key = emp.gender || 'N/A'
     else if (groupBy === 'age_range') {
       if (!emp.birth_date) key = 'Unknown'
