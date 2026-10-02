@@ -168,7 +168,7 @@ compilateur.
 1. **Le fond n'est pas traité.** `Joined<>` reste inutilisable (§4) et les **139**
    sites de jointure restent non typés : on a traité **14** d'entre eux, ceux
    d'un module. La voie **A** reste ouverte et n'est pas tranchée.
-2. **La décision de §5 n'est pas prise.** Cet arbitrage est la **voie C** —
+2. **La décision de §8 n'est pas prise.** Cet arbitrage est la **voie C** —
    celle à faible risque — parce qu'elle débloque la mesure ; elle ne préjuge pas
    de A ou B.
 3. **Les 10 états sont nommés, pas revus.** `tsc` ne dit plus rien sur leurs
@@ -178,7 +178,54 @@ compilateur.
    serait un travail **séparé**, à faire contre le type généré — pas ici, où il
    aurait étouffé les 14 fonctions sous un second sujet.
 
-## 5. Ce qu'il faut décider
+## 7. AUD-IDENTITE : `first_name` / `last_name` déclarées là où elles existent
+
+**Ce que tranche 1 laissait en limite 4, sur une worktree séparée.** `Employee`
+ne déclarait pas deux colonnes qui **existent en base** — mesuré le 2026-10-02 sur
+`information_schema` : `first_name` et `last_name` sont `text`, `is_nullable = YES`,
+alors que `name` est `NOT NULL`. Le type généré les porte déjà
+(`first_name: string | null`) : c'est lui qui fait foi.
+
+**Les 19 lectures, et où elles sont.** Mesuré sur `src/pages` + `src/components` :
+
+| Lectures | Où | Typées par |
+|---|---|---|
+| **17** | `x.employees.first_name` sur une **ressource jointe** | `EmployeJoint` (§6) |
+| **2** | `emp?.first_name` sur un vrai `Employee` | **rien** — sous `any` |
+
+C'est la distinction qui commande : ajouter les colonnes à `Employee` ne corrige
+que les **2** secondes. Les 17 autres lisent une ressource jointe, qu'un
+`Employee` ne décrit pas. Le travail réel a donc été de **nommer le retour de
+`getEmployeeDashboardData()`** (`employee: emp as Employee | null`) puis de typer
+l'état du portail — c'est ce qui rend enfin la colonne **vérifiable**.
+
+**La preuve que ça protège, et non que ça remplit.** Après correction, lire
+`emp?.prenom_fantaisiste` donne `TS2339: Property 'prenom_fantaisiste' does not
+exist on type 'Employee'`. Avant correction, la même lecture ne disait rien :
+le `any` avalait tout.
+
+### Rouge mesuré, les 3 nouveaux défauts
+
+| Défaut rejoué | Garde | `tsc` |
+|---|---|---|
+| colonne nullable déclarée non nullable | 1 failed / 20 passed | 1 erreur (TS2741) |
+| retour du portail non nommé | 1 failed / 20 passed | 2 erreurs (TS6196) |
+| état du portail retombe en `any` | 1 failed / 20 passed | 1 erreur (TS2349) |
+
+### Une deuxième trouvaille, dans le passage
+
+La garde a rouge sur un `r: any` que je croyais absent : il y en avait **deux**,
+même agrégat sur `expense_reports` (portail l. 74 et tableau de bord RH l. 210).
+J'ai corrigé la **cause** au lieu d'affaiblir l'assertion — la garde couvre
+maintenant le fichier entier, pas la fonction que j'avais sous les yeux.
+
+⚠️ Et le portillon a rouge **une seconde fois** sur ce commit : mes deux
+assertions `not.toMatch(...)` contenaient le motif interdit **dans leur chaîne**.
+Les motifs sont désormais assemblés à l'exécution (`` `r: ${'an'}y` ``), ce qui
+exprime la même vérification sans comptée comme dette. C'est la **deuxième fois**
+que ce portillon compte du texte ; c'est écrit dans le test.
+
+## 8. Ce qu'il faut décider (lu après les §6 et §7)
 
 *(Arbitrage rendu en §6 : la voie **C** a été appliquée pour débloquer la mesure.
 Les voies **A** et **B** restent ouvertes, et **A** reste le correctif de fond.)*

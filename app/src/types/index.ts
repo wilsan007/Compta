@@ -913,6 +913,20 @@ export interface PartnerBankAccount {
 export interface Employee {
   id: string
   name: string
+  /**
+   * AUD-IDENTITE : `first_name` / `last_name` EXISTENT en base et étaient absents
+   * d'ici — mesuré le 2026-10-02 (`information_schema` : `text`, `null=YES`, donc
+   * `string | null` comme le type généré). **19 sites** les lisaient sur une
+   * ressource jointe, sous le `any` que le repli `Record<string, unknown>[]`
+   * laissait passer ; `tsc` ne pouvait donc pas les voir.
+   *
+   * Ils sont donc déclarés ici, **nullables** : PostgREST renvoie toujours la
+   * propriété (`null` quand la case est vide), jamais absente. Déclarer
+   * `first_name: string` aurait menti sur le schéma — c'est le type généré
+   * (`database-generated.ts`) qui fait foi.
+   */
+  first_name?: string | null
+  last_name?: string | null
   email: string
   phone: string
   position: string
