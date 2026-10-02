@@ -111,12 +111,12 @@ WHERE c.relkind IN ('r', 'p') AND c.relrowsecurity AND NOT c.relforcerowsecurity
 -- ─────────────────────────────────────────────────────────────
 CREATE TEMP TABLE g1_plafond (nom text PRIMARY KEY, valeur integer, raison text);
 INSERT INTO g1_plafond (nom, valeur, raison) VALUES
-  ('tables_tenant',        360, 'Nombre de tables portant tenant_id (base neuve, 261 migrations, 30/09/2026).'),
+  ('tables_tenant',        362, 'Nombre de tables portant tenant_id (base neuve, 263 migrations, 02/10/2026 — +2 pour la 413 : chain_invariants, chain_invariant_results).'),
   ('sans_rls',               0, 'RÈGLE, pas plafond : toute table cloisonnée porte RLS. 0 sans exception depuis la 84.'),
   ('rls_sans_force',        55, 'État daté : partitions du socle et tables d''historique. Défaut ISO-04 non réintroduit.'),
-  ('moins_de_4_commandes',  77, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. État daté.'),
+  ('moins_de_4_commandes',  79, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. +2 pour la 413 : ses deux tables ne portent qu''une politique de LECTURE — le relevé s''écrit par audit_chains() (SECURITY DEFINER), jamais par le client. C''est un choix de sécurité assumé, pas un oubli.'),
   ('sans_politique',        10, 'RLS fermée par défaut : pas un trou, mais un nombre qui ne doit pas monter.'),
-  ('sans_index_societe',    79, 'Défaut BUD-04 à l''échelle du schéma : une lecture par société y scanne la table.');
+  ('sans_index_societe',    79, 'Défaut BUD-04 à l''échelle du schéma : une lecture par société y scanne la table. Inchangé : la 413 ajoute ix_chain_invariants_societe, son index unique portant une expression (COALESCE) ne servant pas la lecture par société.');
 
 -- ─────────────────────────────────────────────────────────────
 -- 3. La mesure confrontée au plafond

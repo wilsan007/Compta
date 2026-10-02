@@ -30,11 +30,16 @@
 -- environnement est muet. Sur une copie de production, c'est donc **le
 -- diagnostic**, exécutable en une commande.
 --
--- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 30/09/2026 :
---     * **311** tables sous `FORCE ROW LEVEL SECURITY` ;
---     * dont **12** sans AUCUNE politique d'écriture — c'est l'exposition : leur
+-- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
+--     * **313** tables sous `FORCE ROW LEVEL SECURITY` ;
+--     * dont **14** sans AUCUNE politique d'écriture — c'est l'exposition : leur
 --       propriétaire ne peut pas écrire dès qu'il n'est ni super ni bypass ;
 --     * les **six** tables du socle en font partie, et c'est le lien avec L3.
+--     * +2 et +2 pour la **413** (L4, invariants) : `chain_invariants` et
+--       `chain_invariant_results`. Elles sont volontairement muettes — le
+--       registre et le relevé ne s'écrivent que par `audit_chains`
+--       (SECURITY DEFINER), jamais par le client : c'est un choix de
+--       sécurité assumé, la raison est écrite dans la migration.
 -- Ces deux nombres sont DATÉS. S'ils **montent**, c'est une régression. S'ils
 -- **baissent**, c'est une amélioration — et elle s'inscrit dans le même commit
 -- (la règle du dépôt : un plafond qui ne se met pas à jour ment).
@@ -76,8 +81,8 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 311),
-  ('muettes',         12);
+  ('tables_forcees', 313),
+  ('muettes',         14);
 
 DO $$
 DECLARE
