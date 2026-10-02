@@ -1,5 +1,5 @@
 -- ============================================================
--- 416_chain_l4_invariants_mesurables.sql — L4, tranche 3 : le
+-- 431_chain_l4_invariants_mesurables.sql — L4, tranche 3 : le
 --   dernier invariant non mesurable, et la preuve des six autres
 --
 -- TÂCHE 3.8 DU PLAN DE LA PARTIE 3 (02/10/2026) : « rendre MESURABLES
@@ -99,7 +99,7 @@ CREATE INDEX IF NOT EXISTS ix_chain_document_types_societe
   ON chain_document_types (tenant_id, type);
 
 COMMENT ON TABLE chain_document_types IS
-  '416 (L4) : le registre « type de document → table ». Résout l''amont_type / aval_type de document_links, que le socle stocke en texte libre sans clé étrangère. tenant_id NULL = entrée standard ; une société peut la surcharger ou la désactiver.';
+  '431 (L4) : le registre « type de document → table ». Résout l''amont_type / aval_type de document_links, que le socle stocke en texte libre sans clé étrangère. tenant_id NULL = entrée standard ; une société peut la surcharger ou la désactiver.';
 COMMENT ON COLUMN chain_document_types.cote IS
   'amont / aval / les_deux : le type n''apparaît que d''un côté de la chaîne.';
 COMMENT ON COLUMN chain_document_types.mesure_le IS
@@ -185,7 +185,7 @@ END
 $fn$;
 
 COMMENT ON FUNCTION public.chain_document_resout(text, uuid) IS
-  '416 : résout un couple (type de document, identifiant) en ''trouve'' / ''absent'' / ''inconnu''. ''inconnu'' signifie que le type n''est pas au registre — ce n''est PAS la même chose que ''absent'', et la 416 compte les deux comme ligne en écart d''INV-19 pour ne jamais produire un vert non vérifié.';
+  '431 : résout un couple (type de document, identifiant) en ''trouve'' / ''absent'' / ''inconnu''. ''inconnu'' signifie que le type n''est pas au registre — ce n''est PAS la même chose que ''absent'', et la 431 compte les deux comme ligne en écart d''INV-19 pour ne jamais produire un vert non vérifié.';
 
 REVOKE ALL ON FUNCTION public.chain_document_resout(text, uuid)
   FROM PUBLIC, anon, authenticated;
@@ -201,7 +201,7 @@ GRANT EXECUTE ON FUNCTION public.chain_document_resout(text, uuid) TO service_ro
 INSERT INTO chain_document_types (tenant_id, type, table_name, libelle, cote, note)
 VALUES
   (NULL, 'pay_runs',         'pay_runs',         'Lot de paie',       'amont',
-   'Mesuré le 02/10 : lien `pay_runs → journal_entries` produit par la 415 (paie versée).'),
+   'Mesuré le 02/10 : lien `pay_runs → journal_entries` produit par la 430 (paie versée).'),
   (NULL, 'journal_entries',  'journal_entries',  'Écriture comptable', 'aval',
    'Mesuré le 02/10 : 6 liens de ce type, dont l''amont est un lot de paie.')
 ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid), type)
@@ -224,7 +224,7 @@ ALTER FUNCTION public.chain_invariant_mesurer(uuid, text)
   RENAME TO chain_invariant_mesurer_base;
 
 COMMENT ON FUNCTION public.chain_invariant_mesurer_base(uuid, text) IS
-  '413 : les treize branches de mesure d''un invariant, telles qu''écrites par la 413. La 416 les a renommées (non dupliquées) et appelle cette fonction pour tout code autre que INV-19. Ne pas la modifier ici : elle se modifie dans son fichier d''origine.';
+  '413 : les treize branches de mesure d''un invariant, telles qu''écrites par la 413. La 431 les a renommées (non dupliquées) et appelle cette fonction pour tout code autre que INV-19. Ne pas la modifier ici : elle se modifie dans son fichier d''origine.';
 
 CREATE OR REPLACE FUNCTION public.chain_invariant_mesurer(
   p_tenant uuid,
@@ -341,7 +341,7 @@ END
 $fn$;
 
 COMMENT ON FUNCTION public.chain_invariant_mesurer(uuid, text) IS
-  '416 (L4) : mesure UN invariant. INV-19 est mesuré ici (résolution amont/aval par le registre `chain_document_types`) ; les treize autres sont délégués à `chain_invariant_mesurer_base` (413). Lève si un code mesurable n''a aucune branche — un relevé vide ne doit jamais passer pour un invariant tenu.';
+  '431 (L4) : mesure UN invariant. INV-19 est mesuré ici (résolution amont/aval par le registre `chain_document_types`) ; les treize autres sont délégués à `chain_invariant_mesurer_base` (413). Lève si un code mesurable n''a aucune branche — un relevé vide ne doit jamais passer pour un invariant tenu.';
 
 REVOKE ALL ON FUNCTION public.chain_invariant_mesurer(uuid, text)
   FROM PUBLIC, anon, authenticated;
@@ -359,9 +359,9 @@ REVOKE ALL ON FUNCTION public.chain_invariant_mesurer(uuid, text)
 UPDATE chain_invariants
    SET mesurable            = true,
        raison_non_mesurable = NULL,
-       note = '416 : mesurable. `document_links` ne porte pas de clé '
+       note = '431 : mesurable. `document_links` ne porte pas de clé '
               'étrangère vers l''amont, mais le registre '
-              '`chain_document_types` (écrit par la 416) résout chaque '
+              '`chain_document_types` (écrit par la 431) résout chaque '
               'type vers sa table. Un lien dont le type est hors '
               'registre compte EN ÉCART : l''invariant ne peut pas être '
               'tenu sans avoir été regardé. Matière de la vue chaîne, '

@@ -179,7 +179,7 @@ INSERT INTO g8_registre VALUES
   ('unreconcile_bank_statement_line', 'EN COURS — tâche 3.3 (dé-lettrage : un maillon qui RETIRE un effet — à traiter comme tel, pas comme une écriture).');
 
 -- ⚠️ `post_payroll_payment` et `payroll_post_run` ÉTAIENT ici, « en cours —
--- tâche 3.2 ». Ils n'y sont PLUS : la 415 les a tracés par leur chemin d'appel,
+-- tâche 3.2 ». Ils n'y sont PLUS : la 430 les a tracés par leur chemin d'appel,
 -- et le sens 2 du contrôle a refusé le commit tant que la ligne restait. C'est
 -- le mécanisme prévu : une tranche qui oublie de nettoyer son registre ne peut
 -- pas passer. Leur trace est dans le commit de la 415.

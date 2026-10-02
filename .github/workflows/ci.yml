@@ -1452,16 +1452,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # L4, tranche 3 — LE DERNIER INVARIANT MESURABLE (416). La 413 inscription
+      # L4, tranche 3 — LE DERNIER INVARIANT MESURABLE (431). La 413 inscription
       # treize invariants mesurables et SEPT nommés sans contrôle, faute de
       # donnée et non faute de méthode — mesuré le 02/10 : `purchase_orders`
       # n'a aucun montant facturé, `budgets` aucun réalisé, `dsn_declarations`
-      # aucun montant du tout. La 416 conserve ce refus (un invariant mesuré
+      # aucun montant du tout. La 431 conserve ce refus (un invariant mesuré
       # par un agrégat inventé afficherait une santé inexistante) et transforme
       # les six raisons en PREUVES mesurées, datées, opposables.
       # Le septième, INV-19, était mesurable : sa raison disait « Devient
       # mesurable dès qu'un registre des types de documents est écrit (c'est la
-      # matière de la vue chaîne, lot L6) ». La 416 écrit ce registre
+      # matière de la vue chaîne, lot L6) ». La 431 écrit ce registre
       # (`chain_document_types`) et INV-19 devient mesuré : 13 → 14. L6 n'aura
       # plus à l'inventer.
       # 7 scénarios : le relevé mesure 14, un orphelin RÉEL est compté, ⚠️ le
@@ -1474,8 +1474,8 @@ jobs:
       # est cloisonné par société. Sans ce branchement (G5), la suite passerait
       # et ne protégerait rien — l'angle mort que le commit 5b7d915 reprochait
       # à la 414.
-      - name: 'L4 : le dernier invariant mesurable et les six preuves (416)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l4_invariants_mesurables_tests.sql
+      - name: 'L4 : le dernier invariant mesurable et les six preuves (431)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/431_chain_l4_invariants_mesurables_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

@@ -8,7 +8,7 @@
 > **Base** : PostgreSQL 16, conteneur `compta-pg16` (port 5433), base
 > neuve reconstruite dans l'ordre de la CI (`00_supabase_stubs` +
 > `00_schema_dump` + **275 migrations, 0 erreur**).
-> **Branche** : `l4-invariants`. **Migration** : `416`.
+> **Branche** : `l4-invariants`. **Migration** : `431`.
 
 ## 1. La mesure a donné une réponse différente de celle attendue
 
@@ -27,12 +27,12 @@ ils manquaient d'une **donnée**.
 | `INV-12` | `projects.actual_cost` existe (3 projets relevés), mais les **deux** recalculs concurrents du référentiel (« PROJ-02 ») subsistent : l'égalité n'a pas de terme de droite | non mes. |
 | `INV-19` | `amont_type` texte + `amont_id` uuid, sans clé étrangère — **mais** les types en usage sont `pay_runs` et `journal_entries`, et **les deux tables existent** | ✅ **mes.** |
 
-## 2. Ce que la 416 livre
+## 2. Ce que la 431 livre
 
 **Un invariant rendu mesurable, pas sept.** `INV-19` disait dans sa
 raison : « Devient mesurable dès qu'un registre des types de documents
 est écrit (**c'est la matière de la vue chaîne, lot L6**) ». La mesure
-confirme que les types sont énumérables — la 416 écrit donc ce registre
+confirme que les types sont énumérables — la 431 écrit donc ce registre
 (`chain_document_types`) et rend `INV-19` mesurable. **13 → 14.** Le
 lot L6 n'aura plus à l'inventer.
 
@@ -50,7 +50,7 @@ nombres sont publiés séparément dans `detail`. Conséquence utile :
 **`INV-19` se durcit à mesure que le registre grandit**, et il ne peut
 jamais être vert sans avoir réellement regardé la chaîne.
 
-## 3. La suite 416 — 7 scénarios, 7 verts
+## 3. La suite 431 — 7 scénarios, 7 verts
 
 | # | Ce qui est prouvé | Mesure relevée |
 |---|---|---|
@@ -78,7 +78,7 @@ faire verte : la table ne porte qu'une politique de lecture, et sa raison
 
 **Le plafond des tables non lues est à 80 pour un plafond de 75.** Il
 était **déjà rouge avant cette migration** (79 > 75) : les trois tables
-de la 413 et de la 414 y sont déjà. La 416 y ajoute `chain_document_types`,
+de la 413 et de la 414 y sont déjà. La 431 y ajoute `chain_document_types`,
 soit **80**.
 
 **Je n'ai pas relevé le plafond**, et c'est délibéré : la règle du dépôt

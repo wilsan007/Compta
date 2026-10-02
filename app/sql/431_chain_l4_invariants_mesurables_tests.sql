@@ -1,8 +1,8 @@
 -- ============================================================
--- 416_chain_l4_invariants_mesurables_tests.sql — L4, tranche 3 :
+-- 431_chain_l4_invariants_mesurables_tests.sql — L4, tranche 3 :
 --   ce que la mesure d'INV-19 et les six preuves garantissent
 --
--- La 416 ajoute le QUATORZIÈME invariant mesurable (INV-19, par le
+-- La 431 ajoute le QUATORZIÈME invariant mesurable (INV-19, par le
 -- registre `chain_document_types`) et transforme les six raisons
 -- restantes en preuves mesurées. La suite prouve sept choses :
 --
@@ -30,8 +30,8 @@
 --        pas lue par la voisine ; l'entrée standard l'est par tous.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '416', false);
-DELETE FROM _audit_results WHERE file = '416';
+SELECT set_config('audit.file', '431', false);
+DELETE FROM _audit_results WHERE file = '431';
 
 -- Rétablit le contexte d'une société comme PostgREST le fait à chaque
 -- requête. Redéfini ici (les suites sont jouées INDÉPENDAMMENT), à
@@ -179,7 +179,7 @@ BEGIN
     (tenant_id, code, libelle, modules, source_a, source_b, sens,
      tolerance, mesurable, raison_non_mesurable, actif)
   VALUES
-    (ta, 'INV-99', 'Sonde de la 416 : mesurable sans branche',
+    (ta, 'INV-99', 'Sonde de la 431 : mesurable sans branche',
      ARRAY['sonde'], 'a', 'b', 'egalite', 0.01, true, NULL, false);
 
   BEGIN
@@ -201,7 +201,7 @@ END $$;
 -- ═══════════════════════════════════════════════════════════════
 -- T05 — Les six raisons sont des PREUVES, pas des affirmations
 --   Le plan autorise le repli (« la raison de chaque exclusion »).
---   La 416 rend cette raison opposable : chacune commence par
+--   La 431 rend cette raison opposable : chacune commence par
 --   « Mesuré le » — elle cite la mesure qui la fonde. Une raison
 --   qui commence autrement est une affirmation, et une affirmation
 --   se recopie sans se vérifier.
@@ -309,5 +309,5 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T07', 'isolation : l''entrée standard (tenant_id NULL) se lit chez les deux sociétés — c''est le produit livré —, l''entrée propre à une société ne se lit QUE chez elle, et la RLS le fait SANS clause de société dans la requête', false, SQLERRM);
 END $$;
 
-SELECT _audit_assert('416');
+SELECT _audit_assert('431');
 

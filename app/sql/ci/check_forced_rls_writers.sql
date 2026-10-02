@@ -42,7 +42,7 @@
 --       sécurité assumé, la raison est écrite dans la migration.
 --     * +1 et +1 pour la **414** : `chain_invariant_alertes`, même raison
 --       (`chain_alertes_lancer`, `service_role`).
---     * +1 et +1 pour la **416** : `chain_document_types`, le registre
+--     * +1 et +1 pour la **431** : `chain_document_types`, le registre
 --       « type de document → table ». Muette elle aussi, et sa raison est la
 --       plus forte du lot : une écriture de client y déclarerait un type
 --       résolvable vers une table arbitraire, et **INV-19 verdirait sans

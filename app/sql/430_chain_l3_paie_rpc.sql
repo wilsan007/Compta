@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 415 — Lot L3, tranche 3 : LA PAIE VERSÉE ET LA COMPTABILISATION DU BULLETIN,
+-- 430 — Lot L3, tranche 3 : LA PAIE VERSÉE ET LA COMPTABILISATION DU BULLETIN,
 --   tracées par leur chemin d'appel (tâche 3.2 du plan de la partie 3)
 -- ═══════════════════════════════════════════════════════════════════════════
 --
@@ -44,7 +44,7 @@
 -- ordinaire ne se trace pas ») :
 --   * si le LIEN existe déjà → rien. Le `document_links` EST la preuve du fait ;
 --   * si le lien N'EXISTE PAS → `sans_effet`, avec le motif. C'est le cas
---     interesting : une écriture antérieure au traçage (donnée d'avant la 415)
+--     interesting : une écriture antérieure au traçage (donnée d'avant la 430)
 --     serait sinon un trou MUET, et `sans_effet` est précisément le vocabulaire
 --     ajouté par la 315 pour dire « attendu et absent ».
 --
@@ -73,10 +73,10 @@ INSERT INTO document_effects (tenant_id, document_type, evenement, effet,
 VALUES
   (NULL, 'pay_runs', 'posted', 'payroll.run.posted',
    true, 'PAIE', false, true, true, false, true,
-   'L3/415 : payroll_post_run écrit l''écriture de paie (journal_entries, référence ''PAYROLL-<n>'', journal PAIE) et son registre (payroll_accounting_entries). Le maillon est un POINT DE CONVERGENCE : il est appelé par la porte R-17 (post_payroll_journal), par le versement (payroll_payment_inner) et par un déclencheur au passage du lot à `paid` — les trois chemins sont donc tracés, sans énumérer les appelants. Réversible : la contrepassation de paie (321) porte l''effet miroir `payroll.run.reversed` sur le même lot.'),
+   'L3/430 : payroll_post_run écrit l''écriture de paie (journal_entries, référence ''PAYROLL-<n>'', journal PAIE) et son registre (payroll_accounting_entries). Le maillon est un POINT DE CONVERGENCE : il est appelé par la porte R-17 (post_payroll_journal), par le versement (payroll_payment_inner) et par un déclencheur au passage du lot à `paid` — les trois chemins sont donc tracés, sans énumérer les appelants. Réversible : la contrepassation de paie (321) porte l''effet miroir `payroll.run.reversed` sur le même lot.'),
   (NULL, 'pay_runs', 'paid', 'payroll.payment.settled',
    true, NULL, false, true, true, false, true,
-   'L3/415 : post_payroll_payment (corps payroll_payment_inner) écrit les écritures de versement, références ''PAYPAY-<n>-<scope>'' — jusqu''à quatre : net, social, taxe, acomptes. Effet N:1 : le lien est au niveau du LOT, l''aval de référence est l''écriture de plus petit identifiant, les quatre identifiants, le décompte et les périmètres sont au payload (doctrine 316).')
+   'L3/430 : post_payroll_payment (corps payroll_payment_inner) écrit les écritures de versement, références ''PAYPAY-<n>-<scope>'' — jusqu''à quatre : net, social, taxe, acomptes. Effet N:1 : le lien est au niveau du LOT, l''aval de référence est l''écriture de plus petit identifiant, les quatre identifiants, le décompte et les périmètres sont au payload (doctrine 316).')
 ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
              document_type, evenement, effet)
 DO UPDATE SET
@@ -184,7 +184,7 @@ BEGIN
 END $maillon$;
 
 COMMENT ON FUNCTION public.payroll_post_run(uuid) IS
-  'L3/415 : la comptabilisation du bulletin, tracée par son chemin d''appel. Le corps est renommé payroll_post_run_inner, intact. Point de convergence : post_payroll_journal (R-17), payroll_payment_inner (versement) et le déclencheur de passage à `paid` passent tous par ici — les trois chemins sont tracés sans énumérer les appelants.';
+  'L3/430 : la comptabilisation du bulletin, tracée par son chemin d''appel. Le corps est renommé payroll_post_run_inner, intact. Point de convergence : post_payroll_journal (R-17), payroll_payment_inner (versement) et le déclencheur de passage à `paid` passent tous par ici — les trois chemins sont tracés sans énumérer les appelants.';
 
 -- ─────────────────────────────────────────────────────────────
 -- 3. post_payroll_payment — LE VERSEMENT, ET SES QUATRE ÉCRITURES
@@ -295,7 +295,7 @@ BEGIN
 END $maillon$;
 
 COMMENT ON FUNCTION public.post_payroll_payment(uuid, uuid, date, text) IS
-  'L3/415 : le versement de la paie, tracé par son chemin d''appel. Effet N:1 (jusqu''à quatre écritures : net, social, taxe, acomptes) — lien au niveau du lot, identifiants et périmètres au payload (doctrine 316). Garde de permission R-17 inchangée.';
+  'L3/430 : le versement de la paie, tracé par son chemin d''appel. Effet N:1 (jusqu''à quatre écritures : net, social, taxe, acomptes) — lien au niveau du lot, identifiants et périmètres au payload (doctrine 316). Garde de permission R-17 inchangée.';
 
 REVOKE ALL ON FUNCTION public.payroll_payment_inner(uuid, uuid, date, text) FROM PUBLIC, anon, authenticated;
 GRANT  EXECUTE ON FUNCTION public.payroll_payment_inner(uuid, uuid, date, text) TO service_role;
@@ -305,10 +305,10 @@ GRANT  EXECUTE ON FUNCTION public.payroll_payment_inner(uuid, uuid, date, text) 
 --    `post_payroll_payment` reste exposée à `authenticated` : c'est l'écran qui
 --    paie, et lui retirer ce droit casserait le produit. Sa garde R-17 est
 --    dans le corps du wrapper.
---    `payroll_post_run` reste au même régime qu'avant la 415 : `service_role`
+--    `payroll_post_run` reste au même régime qu'avant la 430 : `service_role`
 --    (mesuré sur la base avant migration — elle n'était PAS exposée à
 --    `authenticated`, et le front passe par `post_payroll_journal` ou par le
---    versement). On ne change donc AUCUN droit d'exécution : la 415 ne doit
+--    versement). On ne change donc AUCUN droit d'exécution : la 430 ne doit
 --    pas élargir la surface d'appel, seulement la tracer.
 -- ─────────────────────────────────────────────────────────────
 REVOKE ALL ON FUNCTION public.payroll_post_run(uuid) FROM PUBLIC, anon;
@@ -328,7 +328,7 @@ GRANT  EXECUTE ON FUNCTION public.post_payroll_payment(uuid, uuid, date, text) T
 --   paie est tracée depuis la 321, par le compagnon `zz_l1_payroll_run_reversal`.
 --   Les deux effets sont distincts et cohabitent sur le même lot.
 -- * **Elle ne comble pas le trou des écritures antérieures.** Un lot
---   comptabilisé avant le déploiement de la 415 a son écriture mais pas son
+--   comptabilisé avant le déploiement de la 430 a son écriture mais pas son
 --   lien ; le rejouer produit `sans_effet`, ce qui le SIGNALE. Le renseigner
 --   est un choix de reprise de données, pas une correction de traçage.
 -- * **Elle ne mesure pas la performance.** Le banc D1→D8 (tâches 3.4 → 3.7)
