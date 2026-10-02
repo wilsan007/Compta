@@ -1433,6 +1433,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 tranche 4 — LE RELEVÉ BANCAIRE MANUEL (416). Trois maillons, deux
+      # effets, et le troisième qui ne produit RIEN : `unreconcile_bank_
+      # statement_line` RETIRE un pointage, il n'en crée pas — il ferme donc
+      # ses liens (doctrine 320) au lieu d'ouvrir une trace `applique`, qui
+      # dirait le contraire de ce qu'il fait. T03 et T04 le prouvent.
+      # 8 scénarios : la comptabilisation (lien + trace + événement), le
+      # pointage manuel, la fermeture du lien de comptabilisation, celle du
+      # pointage manuel, la distinction manuel/automatique, le refus d'un
+      # montant différent (rien n'est lié), la structure, le cloisonnement.
+      - name: 'L3 : le relevé bancaire manuel est tracé (416)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l3_releve_bancaire_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4
