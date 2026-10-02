@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { getTenantId, ti, tud } from './core'
+import { getTenantId, ti, tud, fetchAllRows } from './core'
 import type { Joined } from '@/types/dbRow'
 import type { WorkStoppage, IjssHistory, WorkHardshipRecord, CpfTransaction, MedicalExam, ExpenseCategory, ExpenseReportLine, InterviewCampaign, EmployeeObjective, EmployeeExitProcess, ExpenseReport, CpfAccount } from '@/types'
 
@@ -313,6 +313,54 @@ export async function getMyExpenseReports() {
   const { data, error } = await q.order('created_at', { ascending: false })
   if (error) throw error
   return data as ExpenseReport[]
+}
+
+/** Rattachement d'une note de frais à la paie, lu sur sa vraie table. */
+export interface ExpensePayrollLink {
+  /** `payroll_variable_elements.source_id` : l'`id` de la note de frais. */
+  sourceId: string
+  /** Posé par le moteur de bulletin (`276`) quand le lot est calculé. */
+  integrated: boolean
+  /** Lot de paie auquel l'élément est rattaché, s'il y en a un. */
+  payRunId: string | null
+}
+
+/**
+ * AUD-ACCES-02 : l'état d'intégration en paie d'une note de frais.
+ *
+ * L'écran lisait `r.payroll_integrated || r.payroll_variable_id` **sur la note de
+ * frais** : aucune des deux n'existe — ni dans `ExpenseReport` (`src/types`), ni
+ * en base (`information_schema.columns` ne renvoie **aucune** colonne `payroll%`
+ * sur `expense_reports`). La condition était donc toujours fausse et
+ * l'indicateur affichait « Non intégré » **même pour une note entrée en paie**.
+ *
+ * La vérité vit ailleurs : `importExpenseElements()` (W4, RH-06/RH-07) écrit un
+ * élément de `payroll_variable_elements` portant `source = 'expense_report'` et
+ * `source_id = <id de la note>`, et le moteur de bulletin (`276`, « Marquer les
+ * éléments variables comme intégrés ») pose `integrated = true` sur les éléments
+ * du lot quand il calcule. Mesuré en base le 2026-10-02 : **35** éléments de ce
+ * `source`, dont **7** rattachés à un lot.
+ */
+export async function getExpensePayrollIntegration(): Promise<ExpensePayrollLink[]> {
+  const tid = await getTenantId()
+  let q = supabase
+    .from('payroll_variable_elements')
+    .select('source_id, integrated, pay_run_id')
+    .eq('source', 'expense_report')
+  if (tid) q = q.eq('tenant_id', tid)
+  // LOT7-03 : aucune note ne doit être omise — la pagination est parcourue.
+  const rows = await fetchAllRows<{
+    source_id: string | null; integrated: boolean | null; pay_run_id: string | null
+  }>(q, { label: 'getExpensePayrollIntegration/payroll_variable_elements' })
+  return rows
+    .filter((r) => Boolean(r.source_id))
+    .map((r) => ({
+      sourceId: r.source_id as string,
+      // W9 (265) : `integrated` peut être NULL — les alimentations de la base ne
+      // le posent pas toujours. NULL veut dire « pas encore intégré ».
+      integrated: r.integrated === true,
+      payRunId: r.pay_run_id ?? null,
+    }))
 }
 
 export async function createMyExpenseReport(data: Partial<ExpenseReport>) {

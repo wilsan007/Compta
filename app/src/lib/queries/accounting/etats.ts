@@ -88,6 +88,11 @@ export async function getAgedBalance(typeFilter?: string, refDate?: string) {
 // --- Echeancier: upcoming payments from invoices + purchase invoices ---
 export async function getEcheancier(typeFilter?: string) {
   const results: Array<{
+    // AUD-ACCES-05 : `id` était sélectionné sur les deux documents sources puis
+    // jeté à la construction de la ligne — l'écran écrivait `key={r.id || i}`, et
+    // le repli sur l'index prenait donc toujours. L'identité d'une échéance est
+    // son document source : elle est désormais portée.
+    id: string
     type: 'customer' | 'supplier'; number: string; date: string; due_date: string
     amount: number; paid: number; remaining: number; third_party_name: string; days_overdue: number
   }> = []
@@ -112,6 +117,7 @@ export async function getEcheancier(typeFilter?: string) {
       const due = new Date(inv.due_date)
       const daysOverdue = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24))
       results.push({
+        id: inv.id,
         type: 'customer', number: inv.number, date: inv.date, due_date: inv.due_date,
         amount: Number(inv.total) || 0, paid: 0, remaining,
         third_party_name: inv.customer_name || '—', days_overdue: daysOverdue > 0 ? daysOverdue : 0,
@@ -137,6 +143,7 @@ export async function getEcheancier(typeFilter?: string) {
       const due = new Date(inv.due_date)
       const daysOverdue = Math.floor((Date.now() - due.getTime()) / (1000 * 60 * 60 * 24))
       results.push({
+        id: inv.id,
         type: 'supplier', number: inv.number, date: inv.date, due_date: inv.due_date,
         amount: Number(inv.total) || 0, paid: 0, remaining,
         third_party_name: inv.supplier_name || '—', days_overdue: daysOverdue > 0 ? daysOverdue : 0,

@@ -12,7 +12,9 @@ export function EcheancierPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
-  const [data, setData] = useState<any[]>([])
+  // AUD-ACCES-05 : type nommé depuis la fonction de requête — l'accès à une
+  // propriété absente est désormais refusé par `tsc`.
+  const [data, setData] = useState<Awaited<ReturnType<typeof getEcheancier>>>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
 
@@ -75,8 +77,8 @@ export function EcheancierPage() {
       ) : (
         <Card>
           <Table headers={[t('echeancier.type'), t('echeancier.number'), t('echeancier.thirdParty'), t('echeancier.date'), t('echeancier.dueDate'), t('echeancier.amount'), t('echeancier.remaining'), t('echeancier.daysOverdue')]}>
-            {data.map((r, i) => (
-              <TableRow key={r.id || i}>
+            {data.map((r) => (
+              <TableRow key={r.id}>
                 <TableCell>
                   <Badge variant={r.type === 'customer' ? 'success' : 'warning'}>
                     {r.type === 'customer' ? t('echeancier.customer') : t('echeancier.supplier')}

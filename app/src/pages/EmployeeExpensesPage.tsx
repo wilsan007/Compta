@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Badge } from '@/components/ui'
-import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine } from '@/lib/queries/sprintDE'
+import { getMyExpenseReports, createMyExpenseReport, submitMyExpenseReport, deleteMyExpenseReport, getExpenseCategories, getExpenseReportLines, addExpenseReportLine, getExpensePayrollIntegration } from '@/lib/queries/sprintDE'
+import type { ExpensePayrollLink } from '@/lib/queries/sprintDE'
 import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
@@ -20,16 +21,22 @@ export function EmployeeExpensesPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [reports, setReports] = useState<any[]>([])
+  // AUD-ACCES-02 : types nommés depuis les fonctions de requête — l'accès à une
+  // propriété absente est désormais refusé par `tsc`.
+  const [reports, setReports] = useState<Awaited<ReturnType<typeof getMyExpenseReports>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedReport, setSelectedReport] = useState<any>(null)
+  /** `id` de la note → son élément de paie. Absente = la note n'est jamais entrée en paie. */
+  const [payrollByReport, setPayrollByReport] = useState<Map<string, ExpensePayrollLink>>(new Map())
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getMyExpenseReports()
+      // Les deux lectures sont indépendantes : elles partent ensemble.
+      const [data, links] = await Promise.all([getMyExpenseReports(), getExpensePayrollIntegration()])
       setReports(data || [])
+      setPayrollByReport(new Map(links.map((l) => [l.sourceId, l])))
     } catch (err) {
       console.error(err)
       toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
@@ -47,6 +54,19 @@ export function EmployeeExpensesPage() {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('toast.deleted')) }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+  }
+
+  // AUD-ACCES-02 : l'état vient de `payroll_variable_elements` (`source =
+  // 'expense_report'`, `source_id = <note>`), pas d'une colonne de la note de
+  // frais — qui n'en porte aucune. Trois états, pas deux : une note peut être
+  // entrée en paie (un élément existe) sans que le bulletin du lot soit encore
+  // calculé (`integrated` est posé par le moteur de bulletin, `276`).
+  function payrollBadge(reportId: string) {
+    const link = payrollByReport.get(reportId)
+    if (!link) return <Badge variant="neutral">{t('expenses.payrollNone')}</Badge>
+    return link.integrated
+      ? <Badge variant="success">{t('expenses.payrollIntegrated')}</Badge>
+      : <Badge variant="warning">{t('expenses.payrollPending')}</Badge>
   }
 
   if (selectedReport) {
@@ -77,7 +97,7 @@ export function EmployeeExpensesPage() {
             t('expenses.period'),
             t('expenses.amount'),
             t('expenses.status'),
-            'Paie',
+            t('expenses.payroll'),
             t('expenses.submittedAt'),
             tCommon('table.actions'),
           ]}>
@@ -86,7 +106,7 @@ export function EmployeeExpensesPage() {
                 <TableCell className="text-sm font-medium">{r.period || '—'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(r.total_ttc || 0)}</TableCell>
                 <TableCell><Badge variant={statusColors[r.status] || 'neutral'}>{t(`expenses.statuses.${r.status}`)}</Badge></TableCell>
-                <TableCell>{(r.payroll_integrated || r.payroll_variable_id) ? <Badge variant="success">Intégré</Badge> : <Badge variant="neutral">Non intégré</Badge>}</TableCell>
+                <TableCell>{payrollBadge(r.id)}</TableCell>
                 <TableCell className="text-xs">{r.submitted_at ? formatDate(r.submitted_at) : '—'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
