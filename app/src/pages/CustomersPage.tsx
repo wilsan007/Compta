@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyStat
 import { getCustomers, deleteCustomer, createCustomer, updateCustomer } from '@/lib/queries/partners'
 import { getCustomerBalances, getCompanySettings } from '@/lib/queries/accounting'
 import { getPaymentTerms } from '@/lib/queries/payroll'
-import { getSalesRepresentatives } from '@/lib/queries/misc'
+import { getSalesRepresentatives, getFiscalPositions } from '@/lib/queries/misc'
 import { verifySiret, type SiretCheck } from '@/lib/queries/verifications'
 import { VerificationLine } from '@/components/VerificationLine'
 import { ISO_COUNTRIES, normalizeCountryCode } from '@/lib/countries'
@@ -12,7 +12,7 @@ import { hasSiret, isSiretValid } from '@/lib/siret'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { Users, Plus, Search, Trash2, Edit, Mail, X, Download, Contact as ContactIcon } from 'lucide-react'
-import type { Customer, PaymentTerm, SalesRepresentative } from '@/types'
+import type { Customer, PaymentTerm, SalesRepresentative, FiscalPosition } from '@/types'
 import { PartnerContactsModal } from '@/pages/PartnerContactsModal'
 import { usePermission } from '@/hooks/usePermission'
 
@@ -220,6 +220,10 @@ function CustomerForm({ customer, clients, onClose, onSaved }: {
   const [paymentTermId, setPaymentTermId] = useState(customer?.payment_term_id || '')
   const [terms, setTerms] = useState<PaymentTerm[]>([])
   const [reps, setReps] = useState<SalesRepresentative[]>([])
+  // B3 (ven-009) : la position fiscale du client — déduite du pays et du n° de
+  // TVA par la base (323) quand elle est laissée vide, choisissable à la main.
+  const [fiscalPositions, setFiscalPositions] = useState<FiscalPosition[]>([])
+  const [fiscalPositionId, setFiscalPositionId] = useState(customer?.fiscal_position_id || '')
   const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
   const [checkingSiret, setCheckingSiret] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -229,6 +233,7 @@ function CustomerForm({ customer, clients, onClose, onSaved }: {
   useEffect(() => {
     getPaymentTerms().then(setTerms).catch(err => console.error('getPaymentTerms:', err))
     getSalesRepresentatives().then(setReps).catch(err => console.error('getSalesRepresentatives:', err))
+    getFiscalPositions().then(setFiscalPositions).catch(err => console.error('getFiscalPositions:', err))
     if (customer) return
     getCompanySettings()
       .then(cs => {
@@ -276,6 +281,9 @@ function CustomerForm({ customer, clients, onClose, onSaved }: {
         // l'échéance d'une facture née d'un bon de livraison le lit.
         siret: siret.trim() || null, city: city || '', postal_code: postalCode || '',
         country: code, payment_term_id: paymentTermId || null,
+        // B3 (323) : un choix explicite de position fiscale est respecté ; laissé
+        // vide, la base le déduit du pays et du n° de TVA.
+        fiscal_position_id: fiscalPositionId || null,
         payment_terms: terme ? terme.name : '',
       }
       if (customer) {
@@ -331,6 +339,12 @@ function CustomerForm({ customer, clients, onClose, onSaved }: {
             />
           )}
           <Input label={t('customers.vatNumber')} value={vatNumber} onChange={(e) => setVatNumber(e.target.value)} placeholder="FR12345678901" />
+          <Select
+            label={t('customers.fiscalPosition')}
+            value={fiscalPositionId}
+            onChange={(e) => setFiscalPositionId(e.target.value)}
+            options={[{ value: '', label: t('customers.fiscalPositionAuto') }, ...fiscalPositions.map((p) => ({ value: p.id, label: p.name }))]}
+          />
           <Select
             label={t('customers.paymentTerms')}
             value={paymentTermId}

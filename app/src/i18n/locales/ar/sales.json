@@ -65,6 +65,7 @@
     "saleAccountGoods": "707000 — البضائع",
     "saleAccountFromProduct": "الحساب من بطاقة المنتج",
     "pdfSeller": "البائع",
+    "untaxedMention": "بيان إلزامي",
     "pdfMentionPenalties": "غرامات التأخير: ثلاثة أضعاف سعر الفائدة القانوني.",
     "pdfMentionIndemnity": "تعويض جزافي لمصاريف التحصيل: 40 EUR.",
     "pdfMentionDiscount": "لا يوجد خصم مقابل الدفع المسبق.",
@@ -350,7 +351,9 @@
     "paymentTermsUnset": "— غير محدّدة —",
     "parentIdUnset": "— لا شيء —",
     "salesRepIdUnset": "— لا شيء —",
-    "cityPlaceholder": "باريس"
+    "cityPlaceholder": "باريس",
+    "fiscalPosition": "الوضع الضريبي",
+    "fiscalPositionAuto": "تلقائي (حسب البلد ورقم الضريبة)"
   },
   "prospects": {
     "title": "العملاء المحتملون",

@@ -42,7 +42,7 @@ vi.mock('@/lib/queries/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/queries/core')>()
   return { ...actual, nextDocumentNumber: vi.fn(async (p: string) => `${p}-2026-000007`) }
 })
-vi.mock('@/lib/queries/misc', () => ({ transformInvoiceToCreditNote: vi.fn(), createAdvanceInvoice: vi.fn(), transformQuoteToSalesOrder: vi.fn() }))
+vi.mock('@/lib/queries/misc', () => ({ transformInvoiceToCreditNote: vi.fn(), createAdvanceInvoice: vi.fn(), transformQuoteToSalesOrder: vi.fn(), getFiscalPositions: vi.fn(async () => []) }))
 vi.mock('@/lib/queries/stock', () => ({ getProducts: vi.fn(async () => []), getProductStock: vi.fn(async () => 0) }))
 vi.mock('@/lib/queries/accounting', () => ({ getCompanySettings: vi.fn(async () => null) }))
 vi.mock('@/lib/legislation', () => ({ useLegislation: () => ({ defaultVatRate: 20 }) }))

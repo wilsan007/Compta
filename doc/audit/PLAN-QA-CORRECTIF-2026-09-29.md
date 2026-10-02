@@ -446,7 +446,7 @@ et les modèles de saisie ne lisent **que** cette table.
   la validation, une seule fois, et une ligne née d'un BL ne ressort rien (T05, T09) ;
   une sortie impossible refuse la validation avec un message nommé.
 
-### B3 — ven-009 🟠 — client UE : ni autoliquidation, ni mention, Factur-X « Z »
+### B3 — ven-009 🟠 — client UE : ni autoliquidation, ni mention, Factur-X « Z » — **✅ CORRIGÉ** (323 + écran)
 - **Correctif** :
   - position fiscale du client (FR, UE assujetti, hors UE), déduite du pays et du n° TVA, modifiable ;
   - facture à un client UE assujetti : taux 0 proposé d'office et mention
@@ -464,6 +464,28 @@ et les modèles de saisie ne lisent **que** cette table.
 - **Tests** :
   - SQL : écriture avec `vat_code`, et CA3 qui porte le montant en non imposable ;
   - Vitest : générateur Factur-X, catégorie AE et motif d'exonération.
+- **Fait (323 + écran)** : le **régime** d'un tiers se déduit du pays (ISO-2, 318)
+  et du n° de TVA — `resolve_fiscal_regime` : `fr` / `eu_vat` (UE **avec** n° de
+  TVA) / `non_eu` / `NULL` si le pays est inconnu (on ne devine pas). La position
+  fiscale du **tiers** existe (`customers.fiscal_position_id`,
+  `suppliers.fiscal_position_id`, FK composite 237) et les trois positions
+  standard sont semées par société (la table était **vide** — l'écran
+  « Positions fiscales » la remplissait à la main). Un choix explicite n'est
+  **jamais** écrasé (T04).
+  La base pose `vat_code = 'UE'` (0 %) sur une vente à un client UE assujetti et
+  `'EXO'` hors UE, **avant** `invoice_line_compute` (197) qui annule la TVA :
+  l'écriture est 411 D / 70x C **sans aucune ligne 445x** (T05) et la CA3 déclare
+  le CA **sans** TVA collectée (T06 — mesuré 50,00 avant). L'écran propose 0 %
+  d'office, affiche la mention obligatoire, et Factur-X porte `AE` (prestation,
+  art. 283-2) ou `K` (livraison de biens, art. 262 ter I) avec son
+  `ExemptionReason` — la distinction biens/services se lit sur `products.type`.
+  ⚠️ **Reste ouvert et nommé** : la ventilation par **cases** de la CA3
+  (E1/E2/ligne 06) n'existe pas — `calculate_vat_ca3` déclare le CA global et la
+  TVA par compte, pas par case. Le `vat_code` est posé pour qu'une CA3 qui ventile
+  le lise ; c'est un correctif séparé (hors de ce lot).
+  Preuves : `323_*_tests` **7/7** (rouge avant mesuré : 4 échecs d'exécution + le
+  client UE taxé à 20 %, 411 à 300, CA3 à 50,00) ; `197` 7/7, `245` 9/9, `300`,
+  `317` 12/12, `318` 6/6 vertes ; `facturX.test.ts` 8/8.
 
 ### B4 — ven-012 🟠 — avoir ventilé au prorata (706 55,56 / 707 44,44) au lieu de l'article rendu — **✅ CORRIGÉ** (317, `c3e95b8`)
 - **Correctif** :

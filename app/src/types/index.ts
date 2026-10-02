@@ -17,6 +17,11 @@ export interface Customer {
   /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
   country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du client : FR / UE assujetti / hors UE.
+   *  Déduite du pays et du n° de TVA par `partner_apply_fiscal_position`,
+   *  jamais écrasée quand elle est posée à la main. `vat_codes` reste
+   *  l'ancien codage par ligne. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   credit_limit: number
@@ -67,6 +72,9 @@ export interface Supplier {
   /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
   country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du fournisseur, même règle que le client :
+   *  déduite du pays et du n° de TVA, jamais écrasée si posée à la main. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   payment_terms: string
@@ -769,6 +777,8 @@ export interface FiscalPosition {
   zip_to?: string | null
   auto_apply: boolean
   active: boolean
+  /** B3 (323) — fr | eu_vat | non_eu pour une position standard ; null sinon */
+  regime?: string | null
   created_at: string
 }
 

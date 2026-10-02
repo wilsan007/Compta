@@ -65,6 +65,7 @@
     "saleAccountGoods": "707000 — Ventes de marchandises",
     "saleAccountFromProduct": "Compte de la fiche article",
     "pdfSeller": "Vendeur",
+    "untaxedMention": "Mention obligatoire",
     "pdfMentionPenalties": "Pénalités de retard : trois fois le taux d'intérêt légal.",
     "pdfMentionIndemnity": "Indemnité forfaitaire pour frais de recouvrement : 40 EUR.",
     "pdfMentionDiscount": "Pas d'escompte pour paiement anticipé.",
@@ -350,7 +351,9 @@
     "paymentTermsUnset": "— non renseignées —",
     "parentIdUnset": "— aucune —",
     "salesRepIdUnset": "— aucun —",
-    "cityPlaceholder": "Paris"
+    "cityPlaceholder": "Paris",
+    "fiscalPosition": "Position fiscale",
+    "fiscalPositionAuto": "Automatique (daprès le pays et le n° de TVA)"
   },
   "prospects": {
     "title": "Prospects",

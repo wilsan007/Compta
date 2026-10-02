@@ -41,7 +41,7 @@ vi.mock('@/lib/queries/accounting', () => ({
   getCompanySettings: vi.fn(async () => ({ id: 'cs1', name: 'Ma Société', country: 'France', country_code: 'FR' })),
 }))
 vi.mock('@/lib/queries/payroll', () => ({ getPaymentTerms: vi.fn(async () => paymentTerms) }))
-vi.mock('@/lib/queries/misc', () => ({ getSalesRepresentatives: vi.fn(async () => reps) }))
+vi.mock('@/lib/queries/misc', () => ({ getSalesRepresentatives: vi.fn(async () => reps), getFiscalPositions: vi.fn(async () => []) }))
 vi.mock('@/lib/queries/verifications', () => ({
   verifySiret: (...a: unknown[]) => verifySiret(...a),
   validateVatVies: vi.fn(),

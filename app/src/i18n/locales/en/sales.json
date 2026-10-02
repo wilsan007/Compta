@@ -65,6 +65,7 @@
     "saleAccountGoods": "707000 — Goods",
     "saleAccountFromProduct": "Account from the product record",
     "pdfSeller": "Seller",
+    "untaxedMention": "Required statement",
     "pdfMentionPenalties": "Late payment interest: three times the legal interest rate.",
     "pdfMentionIndemnity": "Fixed recovery fee: 40 EUR.",
     "pdfMentionDiscount": "No discount for early payment.",
@@ -350,7 +351,9 @@
     "paymentTermsUnset": "— not set —",
     "parentIdUnset": "— none —",
     "salesRepIdUnset": "— none —",
-    "cityPlaceholder": "Paris"
+    "cityPlaceholder": "Paris",
+    "fiscalPosition": "Tax position",
+    "fiscalPositionAuto": "Automatic (from country and VAT number)"
   },
   "prospects": {
     "title": "Prospects",

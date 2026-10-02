@@ -9,13 +9,14 @@ import { createAdvanceInvoice } from '@/lib/queries/misc'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
-import { generateFacturX, downloadXML, isDraftDocument } from '@/lib/facturX'
+import { generateFacturX, downloadXML, isDraftDocument, lineExemptionReason, type EInvoiceOptions } from '@/lib/facturX'
 import { downloadInvoicePdf } from '@/lib/invoicePdf'
 import { getCompanySettings } from '@/lib/queries/accounting'
+import { getFiscalPositions } from '@/lib/queries/misc'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
-import type { Invoice, Customer, CompanySettings, Product } from '@/types'
+import type { Invoice, Customer, CompanySettings, Product, FiscalPosition } from '@/types'
 import { usePermission } from '@/hooks/usePermission'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { useLegislation } from '@/lib/legislation'
@@ -31,6 +32,7 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [fiscalPositions, setFiscalPositions] = useState<FiscalPosition[]>([])
   const [company, setCompany] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -49,16 +51,18 @@ export function InvoicesPage() {
 
   async function loadInvoices() {
     try {
-      const [inv, cust, comp, prods] = await Promise.all([
+      const [inv, cust, comp, prods, positions] = await Promise.all([
         getInvoices(),
         getCustomers(),
         getCompanySettings().catch(() => null),
         getProducts().catch(() => [] as Product[]),
+        getFiscalPositions().catch(() => [] as FiscalPosition[]),
       ])
       setInvoices(inv || [])
       setCustomers(cust || [])
       setCompany(comp)
       setProducts(prods || [])
+      setFiscalPositions(positions || [])
     } catch (err: any) { console.error('Error loading invoices:', err)
     toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
@@ -177,8 +181,30 @@ export function InvoicesPage() {
         t('invoices.pdfMentionPenalties'),
         t('invoices.pdfMentionIndemnity'),
         t('invoices.pdfMentionDiscount'),
+        // B3 (ven-009) : la mention de l'opération non taxée en France
+        ...untaxedMentions(inv),
       ],
     })
+  }
+
+  // B3 (ven-009) : le régime fiscal du client et les mentions des opérations
+  // non taxées en France. Le régime vient de la position fiscale du tiers
+  // (migration 323) ; la catégorie Factur-X dépend aussi du type d'article.
+  const productTypes: Record<string, string> = Object.fromEntries(products.map((p) => [p.id, String(p.type)]))
+  const eInvoiceOptions: EInvoiceOptions = { productTypes }
+  const regimeOf = (customerId: string | null | undefined): string | null => {
+    const c = customers.find((x) => x.id === customerId)
+    if (!c?.fiscal_position_id) return null
+    return fiscalPositions.find((p) => p.id === c.fiscal_position_id)?.regime ?? null
+  }
+  const untaxedMentions = (inv: Invoice): string[] => {
+    const lines = (inv.invoice_lines || []) as { vat_code?: string | null; product_id?: string | null }[]
+    const reasons = new Set<string>()
+    for (const l of lines) {
+      const reason = lineExemptionReason(l, productTypes)
+      if (reason) reasons.add(reason)
+    }
+    return [...reasons]
   }
 
   function handleEInvoice(inv: Invoice) {
@@ -190,7 +216,7 @@ export function InvoicesPage() {
       return
     }
     const customer = customers.find((c) => c.id === inv.customer_id) || null
-    const xml = generateFacturX(inv, customer, company)
+    const xml = generateFacturX(inv, customer, company, eInvoiceOptions)
     downloadXML(xml, `${inv.number}.factur-x.xml`)
     toast('success', tf('eInvoice.facturXGenerated'), tf('eInvoice.facturXGeneratedDesc', { number: inv.number }))
   }
@@ -370,7 +396,7 @@ export function InvoicesPage() {
       </Card>
 
       {showForm && (
-        <InvoiceForm customers={customers} products={products} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadInvoices() }} />
+        <InvoiceForm customers={customers} products={products} customerRegime={regimeOf} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadInvoices() }} />
       )}
 
       {showAdvanceForm && (
@@ -395,9 +421,11 @@ export function InvoicesPage() {
   )
 }
 
-function InvoiceForm({ customers, products, onClose, onSaved }: {
+function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: {
   customers: Customer[]
   products: Product[]
+  /** B3 (ven-009) : régime fiscal du client (fr | eu_vat | non_eu | null) */
+  customerRegime: (customerId: string) => string | null
   onClose: () => void
   onSaved: () => void
 }) {
@@ -485,7 +513,20 @@ function InvoiceForm({ customers, products, onClose, onSaved }: {
   function chooseCustomer(id: string) {
     setCustomerId(id)
     if (!dueTouched) setDueDate(addDays(date, paymentTermsDays(id)))
+    // B3 (ven-009) : une facture à un client UE assujetti (ou hors UE) ne porte
+    // pas de TVA française — le taux 0 est proposé d'office. La base le pose de
+    // toute façon (code UE / EXO, migration 323).
+    const regime = customerRegime(id)
+    if (regime === 'eu_vat' || regime === 'non_eu') {
+      setLines(prev => prev.map(l => ({ ...l, vat_rate: 0 })))
+    }
   }
+
+  // B3 : les mentions légales que portera la pièce (autoliquidation, exonération)
+  const regime = customerRegime(customerId)
+  const untaxedReasons = regime === 'eu_vat' || regime === 'non_eu'
+    ? [...new Set(lines.map(l => lineExemptionReason({ vat_code: regime === 'eu_vat' ? 'UE' : 'EXO', product_id: l.product_id }, Object.fromEntries(products.map(p => [p.id, String(p.type)])))).filter(Boolean))]
+    : []
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -612,6 +653,12 @@ function InvoiceForm({ customers, products, onClose, onSaved }: {
               + {t('invoices.addLine')}
             </button>
           </div>
+
+          {untaxedReasons.length > 0 && (
+            <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-neutral-50)] border border-[var(--color-border)] rounded px-3 py-2">
+              <strong>{t('invoices.untaxedMention')}</strong> — {untaxedReasons.join(' · ')}
+            </p>
+          )}
 
           {openAdvances.length > 0 && (
             <fieldset className="border border-[var(--color-border)] rounded-lg p-3 space-y-2">

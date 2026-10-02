@@ -938,6 +938,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # B3 (recette /qa du 29/09) : un client UE assujetti — position fiscale
+      # déduite du pays et du n° de TVA, code UE (0 % de TVA), CA3 qui déclare
+      # le CA sans TVA collectée, client français et hors UE inchangés.
+      - name: 'QA : client UE, autoliquidation et exonération (323)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/323_eu_customer_reverse_charge_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
       # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
       - name: 'AUD : livraisons, sorties de stock et réservations (230)'
