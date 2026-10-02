@@ -12,8 +12,11 @@ export function AnalyticBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [data, setData] = useState<any[]>([])
-  const [plans, setPlans] = useState<any[]>([])
+  // Corrigé le 2026-10-01 : ces états étaient des tableaux de `any`. Les nommer
+  // depuis leur fonction verrouille le contrat — c'est ce qui a révélé que
+  // l'agrégat ne portait pas `planId` (le filtre par plan vidait l'écran).
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAnalyticBalance>>>([])
+  const [plans, setPlans] = useState<Awaited<ReturnType<typeof getAnalyticPlans>>>([])
   const [exercices, setExercices] = useState<Exercice[]>([])
   const [selectedPlan, setSelectedPlan] = useState('')
   const [selectedExercice, setSelectedExercice] = useState('')
@@ -65,7 +68,11 @@ export function AnalyticBalancePage() {
     }
   }
 
-  const filtered = selectedPlan ? data.filter((d) => d.planId === selectedPlan || d.plan_id === selectedPlan) : data
+  // Corrigé le 2026-10-01 : le filtre cherchait `d.planId` ET `d.plan_id`, deux
+  // propriétés que `getAnalyticBalance` ne renvoyait pas. La condition était donc
+  // TOUJOURS fausse : choisir un plan vidait l'écran et ses totaux au lieu de
+  // filtrer. L'agrégat porte désormais `planId` (cf. accounting/etats.ts).
+  const filtered = selectedPlan ? data.filter((d) => d.planId === selectedPlan) : data
   const totalDebit = filtered.reduce((s, d) => s + d.totalDebit, 0)
   const totalCredit = filtered.reduce((s, d) => s + d.totalCredit, 0)
   const totalAnalytic = filtered.reduce((s, d) => s + d.totalAnalytic, 0)
@@ -126,7 +133,7 @@ export function AnalyticBalancePage() {
           <Card>
             <Table headers={[t('analyticBalance.code'), t('analyticBalance.section'), t('analyticDistribution.plan'), t('analyticBalance.debit'), t('analyticBalance.credit'), t('analyticBalance.analyticAmount'), t('analyticBalance.balance')]}>
               {filtered.map((d) => {
-                const plan = plans.find((p) => p.id === (d.planId || d.plan_id))
+                const plan = plans.find((p) => p.id === d.planId)
                 return (
                 <TableRow key={d.sectionId}>
                   <TableCell className="font-mono text-xs font-semibold">{d.sectionCode}</TableCell>

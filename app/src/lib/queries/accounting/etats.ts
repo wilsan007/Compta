@@ -215,11 +215,14 @@ export async function getFECExport(fiscalYearId: string): Promise<FECExport> {
     accounts: Object.fromEntries(accounts.map((a) => [a.code, a.name])),
     journals: Object.fromEntries(journals.map((j) => [j.code, j.name])),
     tiers,
-    functionalCurrency: (settings as any)?.currency || 'EUR',
+    // `getCompanySettings()` rend déjà `CompanySettings | null`, qui porte
+    // `currency` et `siret` (src/types/index.ts) : le cast en `any` masquait un
+    // type déjà correct — retiré le 2026-10-01.
+    functionalCurrency: settings?.currency || 'EUR',
   }
   return {
     rows: buildFECRows(entries, refs),
-    siren: sirenFrom((settings as any)?.siret),
+    siren: sirenFrom(settings?.siret),
     entryCount: entries.length,
   }
 }
@@ -269,8 +272,14 @@ export async function getAnalyticBalance(dateFrom: string, dateTo: string) {
 
   const sectionMap = new Map(sections.map((s) => [s.id, s]))
 
+  // Corrigé le 2026-10-01 : l'agrégat ne portait PAS le plan de la section, alors
+  // que l'écran en a un sélecteur (« Tous les plans » / un plan). Le filtre de
+  // `AnalyticBalancePage` cherchait `d.planId` / `d.plan_id` sur un objet qui ne
+  // les avait pas : la condition était TOUJOURS fausse, et choisir un plan vidait
+  // l'écran (totaux à zéro) au lieu de filtrer. `analytic_sections.plan_id` existe
+  // (information_schema) — il remonte maintenant.
   const bySection: Record<string, {
-    sectionId: string; sectionCode: string; sectionName: string
+    sectionId: string; sectionCode: string; sectionName: string; planId: string | null
     totalDebit: number; totalCredit: number; totalAnalytic: number
   }> = {}
 
@@ -281,6 +290,7 @@ export async function getAnalyticBalance(dateFrom: string, dateTo: string) {
       const sec = sectionMap.get(sid)
       bySection[sid] = {
         sectionId: sid, sectionCode: sec?.code || '—', sectionName: sec?.name || '—',
+        planId: sec?.plan_id ?? null,
         totalDebit: 0, totalCredit: 0, totalAnalytic: 0,
       }
     }
