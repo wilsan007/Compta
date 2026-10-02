@@ -174,14 +174,15 @@ INSERT INTO g8_registre VALUES
   ('refresh_purchase_invoice_settlement', 'Recalcul paramétrique, même nature que refresh_invoice_settlement. Écarté.'),
   ('revaluate_currency_balances', 'Recalcul de clôture (réévaluation des comptes en devise). Écarté par l''inventaire tranche 4 §2 : « pas un document, acte de clôture ».'),
   ('apply_chart_pack', 'Paramétrage (application d''un plan comptable), pas un maillon : verdict de l''inventaire tranche 4 §2 ligne 5, « écarté ». Il est MEUX classé aujourd''hui qu''alors — la correction de la carte du 02/10 (motif `chart_account`) le fait apparaître : il écrit dans `chart_accounts` et dans les journaux d''une société. Écarté pour la MÊME raison qu''à l''inventaire, et non parce qu''il serait nouveau.'),
-  -- Les cinq maillons EN COURS (tâches 3.2 et 3.3 du plan de la partie 3).
-  -- Ils ne sont pas écartés : ils sont PRENUS. La ligne se retire dans le
-  -- commit qui trace le maillon — le sens 2 du contrôle échoue si on l'oublie.
-  ('post_payroll_payment', 'EN COURS — tâche 3.2 (paie versée). Le corps est `payroll_payment_inner`, l''appelant public `post_payroll_payment` (garde R-17 de la 224). À tracer par son chemin d''appel.'),
-  ('payroll_post_run', 'EN COURS — tâche 3.2 (validation du bulletin). Appel public direct, aucun wrapper : le corps est l''API. À tracer comme une caisse (entrée, lien, sortie).'),
   ('post_bank_statement_line', 'EN COURS — tâche 3.3 (relevé bancaire manuel : ligne de relevé → lettrage et écriture).'),
   ('reconcile_bank_statement_line', 'EN COURS — tâche 3.3 (rapprochement manuel d''une ligne de relevé).'),
   ('unreconcile_bank_statement_line', 'EN COURS — tâche 3.3 (dé-lettrage : un maillon qui RETIRE un effet — à traiter comme tel, pas comme une écriture).');
+
+-- ⚠️ `post_payroll_payment` et `payroll_post_run` ÉTAIENT ici, « en cours —
+-- tâche 3.2 ». Ils n'y sont PLUS : la 415 les a tracés par leur chemin d'appel,
+-- et le sens 2 du contrôle a refusé le commit tant que la ligne restait. C'est
+-- le mécanisme prévu : une tranche qui oublie de nettoyer son registre ne peut
+-- pas passer. Leur trace est dans le commit de la 415.
 
 -- ─────────────────────────────────────────────────────────────
 -- 5. Le verdict : nom PUBLIC, modules, et où vit la chaîne
