@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll';
+import { calculatePayroll } from '@/lib/payroll';
+import { formatPayrollAmount } from '@/lib/payrollFormat';
 import type { Employee, PayRun, PaySlip, Contract, LeaveRequest, PayrollTaxGridLine, PayrollAccountingEntry, SalaryAdvance, DsnDeclaration, EmployeeDocument } from '@/types';
 
 const mockEmp1: Employee = { id: 'emp-001', name: 'Ahmed Benali', email: 'a@co.com', phone: '06', position: 'Dev', department: 'IT', salary: 3500, hire_date: '2022-03-01', status: 'active', employee_number: 'E1', social_security_number: '1', birth_date: '1990-05-15', address: 'rue', city: 'Paris', postal_code: '75002', contract_type: 'CDI', contract_end_date: null, created_at: '2022-03-01', updated_at: '2024-01-01' }

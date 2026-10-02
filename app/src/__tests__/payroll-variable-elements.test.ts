@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll'
+import { formatPayrollAmount } from '@/lib/payrollFormat'
+import { calculatePayroll } from '@/lib/payroll'
 import type { PayrollTaxGridLine } from '@/types'
 
 // ============================================================

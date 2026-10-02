@@ -4,7 +4,7 @@ import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input, Ba
 import { useToast } from '@/lib/toast'
 import { getEmployees, simulatePayslip, type PayslipSimulation } from '@/lib/queries/payroll'
 import { getActiveLegislationPack } from '@/lib/queries/accounting'
-import { formatPayrollAmount } from '@/lib/payroll'
+import { formatPayrollAmount } from '@/lib/payrollFormat'
 import { Calculator, FileText, Globe } from 'lucide-react'
 import type { Employee, LegislationPack } from '@/types'
 
