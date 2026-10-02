@@ -161,6 +161,31 @@ L'essentiel en huit lignes :
   compagnons L1 voisins n'ont entre eux aucun ordre qui compte) et **311 T09** (le
   scénario mesure **son** effet, pas tous les liens du document). Détail, chiffres
   et limites : [preuve](doc/audit/VAGUE-L1-TRANCHE5-2026-09-30.md).
+* **L1 — tranche 6 livrée (02/10) : le sixième candidat direct, la
+  contrepassation de paie.** L'inventaire de la tranche 4 marquait **six** lignes
+  « candidat direct » et la tranche 5 en a tracé **cinq** : la **ligne 22**
+  (`payroll_reverse_posted_run`, déclencheur de la **248**) portait le même
+  verdict, et la mesure confirmait « ni trace ni contrat » — c'est
+  l'incohérence de l'inventaire qui a rendu le sixième visible. La migration
+  **321** le trace : le compagnon `zz_l1_payroll_run_reversal` constate la
+  contrepassation **par la clé écrite dans le corps du maillon**
+  (`journal_entries.reference = 'PAYROLL-REV-' || pay_runs.number`), donc il
+  s'exécute après lui ; le contrat `payroll.run.reversed` est déclaré, et
+  l'annulation d'un lot **comptabilisé** produit **un** lien
+  `pay_runs → journal_entries` (`reversed_by`) + un événement + **une** trace
+  `applique`. La retenue de la tranche 5 est reprise : **le cas ordinaire
+  (lot jamais comptabilisé) ne se trace pas**, et l'anomalie (écriture de paie
+  `posted` sans contrepassation) trace **`sans_effet`** — visible, pas muette.
+  Cumul L1 : **23 effets tracés, 23 contrats**, **17 compagnons** `zz_l1_`,
+  **6 scénarios** (suite **321**, 6/6). Non-régression : **271 migrations**, les
+  **14** contrôles du dépôt verts (`check_plpgsql` **0 erreur** — extension
+  installée), les suites `252/310/311/312/313/314/316/319/320/321/241/247`
+  vertes, et les types générés **sans écart** après régénération sur base neuve
+  (les suites n'y ont pas tourné). Limite dite : la branche d'anomalie n'a
+  qu'**un** décor (le pont passé à `cancelled` à la main), et les neuf maillons
+  RPC de l'inventaire restent du lot **L3** — un compagnon ne s'accroche pas à
+  un appel de fonction. Détail, chiffres et limites :
+  [preuve](doc/audit/VAGUE-L1-TRANCHE6-2026-10-02.md).
 * **L3 — premier maillon livré (30/09) : la réception de marchandise, tracée PAR
   LIGNE.** L'inventaire de L1 en avait fait la seule « réécriture du corps »
   justifiée : N mouvements à partir de N lignes, et la correspondance ligne → ligne

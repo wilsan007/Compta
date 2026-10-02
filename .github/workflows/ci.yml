@@ -1325,6 +1325,57 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 (migration 320) — LES CHEMINS D'ANNULATION FERMENT LEURS LIENS, et le
+      # maillon des réservations REGAGNE son entrée. C'est le reste que la 319
+      # avait nommé en toutes lettres (« il n'appelle pas le cycle du lien
+      # (`chain_lien_fermer`) sur le chemin d'annulation : c'est le reste de L3 »),
+      # et le §8 de la 312 (« le geste que les maillons ajouteront »). L'état
+      # d'entrée, MESURÉ sur la base compilée : deux fonctions seulement
+      # mentionnaient `chain_lien_fermer` — les deux portes de la 312 elle-même.
+      # Aucun maillon métier ne fermait, donc, et le mensonge était nommé : une
+      # commande annulée gardait ses liens `actif` alors que ses réservations sont
+      # libérées, une livraison gardait le sien alors que sa sortie est
+      # contrepassee (253), une réception aussi (251).
+      # La 320 pose TROIS déclencheurs compagnons `zz_l3_` (un par chemin
+      # d'annulation qui CONTRÉPASSE un effet tracé) — un compagnon suffit ici
+      # parce que la fermeture CONSTATE un effet, elle ne décide de rien — et
+      # RÉÉCRIT le seul corps qui devait l'être : `reserve_stock_on_sales_order_
+      # confirm`, dont l'entrée `chain_avant` avait été retirée par la 311 (le rouge
+      # de la suite 230 T04 : la clé du socle n'avait pas de notion de tour). La
+      # 312 a levé cela ; la 320 tient la promesse.
+      # La suite mesure les huit propriétés qui font que la fermeture est un ACTE
+      # et pas un effet de bord : les liens rompus, datés, motivés, signés et
+      # journalisés (M-03 : ils ne sont plus « intacts ») ; l'aval qui reste celui
+      # de l'origine (la contrepassation est un fait neuf) ; la réception PAR LIGNE
+      # de la 319 rompue ligne par ligne ; le rejeu qui ne double rien ; l'entrée
+      # retrouvée (confirmer deux fois ne réserve qu'une fois, traces `ignore`) ;
+      # aucun lien à fermer comme cas ORDINAIRE (la fermeture globale rapporte 0) ;
+      # le cloisonnement ; et la structure (trois compagnons APRÈS leur maillon,
+      # jamais exposés). 8 scénarios.
+      - name: 'L3 : les chemins d''annulation ferment leurs liens (320)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/320_chain_lien_fermetures_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 6 — LA CONTRAPASSATION DE PAIE, le SIXIÈME candidat direct.
+      # L'inventaire de la tranche 4 (doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-
+      # 2026-09-30.md §2) marque SIX lignes « candidat direct » ; la tranche 5
+      # (316) en a tracé CINQ, et son compte (§2, §5) répète ce chiffre. La ligne
+      # 22 — `payroll_reverse_posted_run` (248) — portait pourtant le verdict
+      # « candidat direct » sans trace ni contrat : c'est l'écart que la 321 ferme.
+      # Le maillon est un déclencheur APRÈS dont l'aval est identifiable par la clé
+      # qu'il écrit lui-même (`journal_entries.reference = 'PAYROLL-REV-' || <n° du
+      # lot>`). Le compagnon (`zz_l1_payroll_run_reversal`, trié après lui) lie le
+      # lot à sa contrepassation. Doctrine de la 316, appliquée : le cas ORDINAIRE
+      # (lot jamais comptabilisé) ne se trace pas ; l'ANOMALIE (écriture de paie
+      # « posted » sans contrepassation) trace `sans_effet` (valeur de la 315).
+      # 6 scénarios (T01 le lien, T02 le cas ordinaire, T03 l'anomalie, T04 le
+      # rejeu, T05 la structure, T06 l'isolation).
+      - name: 'L1 : la contrepassation de paie est tracée (321)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/321_chain_l1_paie_contrepassation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

@@ -81,7 +81,7 @@ déclencheur : un compagnon ne peut pas s'y accrocher (doctrine §2 de la 310).
 | 19 | `integrate_salary_advances_on_payrun` | rh, système | **Maillon / déclencheur** (acomptes) | à tracer — **candidat direct** |
 | 20 | `payroll_payment_inner` | compta, système | **Maillon interne** (appelé par la RPC de versement) | à tracer — lot L3 |
 | 21 | `payroll_post_run` | compta, rh | **Maillon / RPC** (validation du bulletin → écriture) | à tracer — lot L3 |
-| 22 | `payroll_reverse_posted_run` | compta, rh | **Maillon / déclencheur** (contre-passation de paie) | à tracer — **candidat direct** |
+| 22 | `payroll_reverse_posted_run` | compta, rh | **Maillon / déclencheur** (contre-passation de paie) | **tracé — tranche 6 (migration 321, effet `payroll.run.reversed`)** |
 | 23 | `post_bank_statement_line` | compta, trésorerie | **Maillon / RPC** (ligne de relevé → lettrage) | à tracer — lot L3 |
 | 24 | `post_deferred_charge` | compta, système | **Recalcul** (étalement d'une charge) | écarté — régénère, ne chaîne pas |
 | 25 | `post_pos_session_on_close` | compta, stock | **Mort** : aucun déclencheur (mesuré par la 311) | écarté — c'est `_multi` qui vit |
