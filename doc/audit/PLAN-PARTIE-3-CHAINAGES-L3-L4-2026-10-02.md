@@ -1,6 +1,6 @@
 # Partie 3 / 4 — Chaînages : finir L3 (maillons RPC, banc D1→D8) et L4 (indice de cohérence)
 
-> **Plan en 4 parties du 02/10/2026** — charges équilibrées (≈ 9 j chacune, ≈ 36 j au total)
+> **Plan en 5 parties du 02/10/2026** — la 5e ajoutée après coup — charges équilibrées (≈ 6 j la 5e, ≈ 42 j au total)
 >
 > | Partie | Objet | Charge | Document |
 > |---|---|---:|---|
@@ -8,6 +8,7 @@
 > | 2 | Finir les défauts métier de la recette (paie, stock, compta, analytique) | ≈ 9,5 j | [PLAN-PARTIE-2](PLAN-PARTIE-2-DEFAUTS-METIER-2026-10-02.md) |
 > | **3** | **Chaînages : finir L3 et L4** | **≈ 9 j** | ce document |
 > | 4 | Montrer, recetter, livrer (L5, e2e, recette écran, production) | ≈ 10 j | [PLAN-PARTIE-4](PLAN-PARTIE-4-RECETTE-LIVRAISON-2026-10-02.md) |
+> | **5** | **L'intégrité référentielle des chaînages** | **≈ 6 j** | [PLAN-PARTIE-5](PLAN-PARTIE-5-INTEGRITE-CHAINAGES-2026-10-02.md) |
 
 ---
 

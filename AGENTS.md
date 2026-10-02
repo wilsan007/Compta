@@ -49,6 +49,25 @@ L'essentiel en huit lignes :
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue
 > déjà sur un doublon (SOC-06) — c'est un garde-fou, pas un plan.*
 
+* **Partie 5 livrée (02/10)** — l'**intégrité référentielle des chaînages**. Les
+  colonnes `document_links.amont_type` / `aval_type` sont **polymorphes** : la
+  colonne ne pouvait porter **aucune** clé étrangère, `link_documents` ne vérifiait
+  ni l'existence des documents ni leur type, et **15 des 27 tables reliées**
+  n'avaient **aucune** garde de suppression. Mesuré : un compte bancaire supprimé
+  laissait **2 liens actifs vers rien** ; un règlement client supprimé laissait une
+  facture « payée, dû 0 » et son écriture **sans document de règlement** ; une
+  commande confirmée supprimée laissait sa **réservation de 3 unités active**.
+  Livré : **6 migrations `450` → `455`** — le **registre des 27 types** (2 clés
+  étrangères), le **contrôle d'existence** dans `link_documents` (`23503`),
+  la **fermeture** des orphelins (jamais effacés), la **garde de suppression**
+  (**32** déclencheurs `zz_garde_p5_…`, exception « compte bancaire sans
+  opération »), la **libération** d'une réservation (454 — la quantité réservée est
+  désormais rendue) et **INV-19 mesurable** (455). Cinq adaptations (252, 402, 413,
+  banc G6, garde W10) et l'écran : refus traduit **fr/en/ar**, 27 types. Suite
+  `450` **14/14** (2 verts avant), `plpgsql_check` 0, base neuve **279 migrations
+  0 erreur**, job base **115/115**, chemin de l'écran **15/15 · 125 verdicts**,
+  Vitest **1 567 verts**. [Preuve](doc/audit/VAGUE-PARTIE-5-2026-10-02.md) ·
+  [Plan](doc/audit/PLAN-PARTIE-5-INTEGRITE-CHAINAGES-2026-10-02.md).
 * **W8 fermée (28/09)** : les 6 défauts du plan sont corrigés — `PROJ-01`
   (refacturation des temps, `301`), `PROD-01→03` (nomenclature multi-niveaux,
   écarts de quantité et de coût chiffrés, écriture datée de l'OF, `302`),

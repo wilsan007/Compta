@@ -1,6 +1,6 @@
 # Partie 4 / 4 — Montrer, recetter, livrer
 
-> **Plan en 4 parties du 02/10/2026** — charges équilibrées (≈ 9 j chacune, ≈ 36 j au total)
+> **Plan en 5 parties du 02/10/2026** — la 5e ajoutée après coup — charges équilibrées (≈ 6 j la 5e, ≈ 42 j au total)
 >
 > | Partie | Objet | Charge | Document |
 > |---|---|---:|---|
@@ -8,6 +8,7 @@
 > | 2 | Finir les défauts métier de la recette (paie, stock, compta, analytique) | ≈ 9,5 j | [PLAN-PARTIE-2](PLAN-PARTIE-2-DEFAUTS-METIER-2026-10-02.md) |
 > | 3 | Chaînages : finir L3 (maillons RPC, banc D1→D8) et L4 (indice de cohérence) | ≈ 9 j | [PLAN-PARTIE-3](PLAN-PARTIE-3-CHAINAGES-L3-L4-2026-10-02.md) |
 > | **4** | **Montrer, recetter, livrer** | **≈ 10 j** | ce document |
+> | **5** | **L'intégrité référentielle des chaînages** | **≈ 6 j** | [PLAN-PARTIE-5](PLAN-PARTIE-5-INTEGRITE-CHAINAGES-2026-10-02.md) |
 
 ---
 
@@ -56,7 +57,7 @@
 
 | # | Tâche | Preuve attendue | Charge | État |
 |---|---|---|---:|---|
-| 4.8 | **Rejeu sur une copie de production** : sauvegarde, restauration locale, application de toutes les migrations depuis l'état réel de la production, suites et sondes ; jouer la porte **G7** sous le vrai rôle propriétaire et **prendre la décision** (les trois issues sont dans son message) | 0 erreur ; journal de rejeu archivé ; décision G7 écrite | 1 j | ⬜ |
+| 4.8 | **Rejeu sur une copie de production** : sauvegarde, restauration locale, application de toutes les migrations depuis l'état réel de la production, suites et sondes ; jouer la porte **G7** sous le vrai rôle propriétaire et **prendre la décision** (les trois issues sont dans son message) ; **exécuter `select chain_fermer_orphelins(NULL)` et noter le nombre** dans le journal de rejeu (partie 5, migration 452 : elle ferme — et n'efface jamais — les liens dont l'amont ou l'aval a disparu avant la garde de suppression ; sur une base neuve elle rend 0) | 0 erreur ; journal de rejeu archivé ; décision G7 écrite | 1 j | ⬜ |
 | 4.9 | **Déploiement** des migrations et des fonctions Edge (après 4.8 et vos validations ci-dessous) ; relecture des paramètres globaux et de `banks` après déploiement | journal de déploiement ; requêtes de contrôle | 0,5 j | ⬜ |
 
 | | **Total (développement)** | | **≈ 10 j** | |
