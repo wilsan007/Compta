@@ -16,7 +16,11 @@ export function GrandLivreTiersPage() {
   const { toast } = useToast()
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
-  const [movements, setMovements] = useState<any[]>([])
+  // Corrigé le 2026-10-01 : ce state portait le type de `getThirdPartyAccounts`
+  // (des TIERS) alors qu'il est rempli par `getGrandLivreTiers` (des MOUVEMENTS de
+  // journal). Le `any` du retour masquait l'erreur : l'écran lisait `debit`,
+  // `credit`, `journal_entries` sur un type qui ne les a pas.
+  const [movements, setMovements] = useState<Awaited<ReturnType<typeof getGrandLivreTiers>>>([])
   const [loading, setLoading] = useState(false)
   const [, setLoadingTiers] = useState(true)
   const [dateFrom, setDateFrom] = useState('')
@@ -172,7 +176,10 @@ export function GrandLivreTiersPage() {
             <option value="">{t('extourne.selectEntry')}</option>
             {movements.map(m => {
               const je = m.journal_entries
-              return <option key={m.id} value={je?.entry_id || m.id}>{je?.date} — {je?.piece_number || je?.number} — {formatCurrency(Number(m.debit) || Number(m.credit))}</option>
+              // Corrigé le 2026-10-01 : `je.entry_id` n'existe pas (l'embed porte
+              // `id`). Le repli prenait `m.id`, l'id de la LIGNE, et non de
+              // l'écriture — l'extourne partait sur la mauvaise pièce.
+              return <option key={m.id} value={je?.id || m.id}>{je?.date} — {je?.piece_number || je?.number} — {formatCurrency(Number(m.debit) || Number(m.credit))}</option>
             })}
           </select>
           <Input label={t('extourne.reason')} value={extourneReason} onChange={e => setExtourneReason(e.target.value)} />

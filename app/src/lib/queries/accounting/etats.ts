@@ -152,7 +152,7 @@ export async function getGrandLivreTiers(accountTiers: string, dateFrom?: string
   const tid = await getTenantId()
   let query = supabase
     .from('journal_lines')
-    .select('*, journal_entries!inner(number, date, journal_code, description, piece_number)')
+    .select('*, journal_entries!inner(id, number, date, journal_code, description, piece_number)')
     .eq('account_tiers', accountTiers)
     .order('created_at', { ascending: true })
     .order('id')
@@ -162,7 +162,13 @@ export async function getGrandLivreTiers(accountTiers: string, dateFrom?: string
   if (dateTo) query = query.lte('journal_entries.date', dateTo)
 
   // LOT7-03 : grand livre auxiliaire — un compte tiers actif dépasse vite 1 000 lignes.
-  return await fetchAllRows<any>(query, { label: 'getGrandLivreTiers/journal_lines' })
+  // Corrigé le 2026-10-01 : le retour était `any`, et l'écran le typait avec le type
+  // de `getThirdPartyAccounts` (des TIERS), d'où 19 accès à des propriétés absentes
+  // (`debit`, `credit`, `journal_entries`). Le type réel est la ligne de journal
+  // (`Row<'journal_lines'>`) augmentée de l'en-tête joint `journal_entries`.
+  return await fetchAllRows<Row<'journal_lines'> & {
+    journal_entries: Pick<Row<'journal_entries'>, 'id' | 'number' | 'date' | 'journal_code' | 'description' | 'piece_number'>
+  }>(query, { label: 'getGrandLivreTiers/journal_lines' })
 }
 
 // --- FEC Export: all entries + lines for a fiscal year ---
