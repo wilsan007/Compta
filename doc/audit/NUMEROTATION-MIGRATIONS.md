@@ -9,8 +9,16 @@
 
 ```bash
 cd app
-npm run migration:prendre -- <nom_en_minuscules> --session "<votre ligne de travail>"
+npm run migration:prendre -- titres_restaurant_au_bulletin --session "partie 2 (défauts métier)"
 ```
+
+Remplacez le **nom** (minuscules, chiffres, `_`) et la **session**, recopiée
+**exactement** depuis `node scripts/migration-numero.mjs plages`. ⚠️ N'écrivez
+jamais de chevrons `<…>` dans le terminal : zsh les lit comme une redirection
+(`zsh: no such file or directory`). La commande **crée vraiment** le fichier et
+prend le numéro : on ne la lance que pour une migration qu'on va écrire. Un
+numéro pris par erreur se rend en supprimant le fichier **et** sa ligne du
+registre.
 
 L'outil (`app/scripts/migration-numero.mjs`) fait, sous un verrou partagé par
 **tous** les worktrees du dépôt :
@@ -36,10 +44,10 @@ personne :
 | **runner** `run-sql-migrations.mjs` | à l'application | un doublon dans la même copie (le dernier filet, après la fusion) |
 
 Un fichier créé à la main avant ce jour se rattache par
-`node app/scripts/migration-numero.mjs inscrire app/sql/NNN_<nom>.sql --session "<ligne>"` —
+`node app/scripts/migration-numero.mjs inscrire app/sql/417_chain_banc_moteur.sql --session "partie 3 (L3, L4)"` —
 **refusé** si le numéro est dans la plage d'une autre ligne. Une nouvelle ligne
 de travail inscrit d'abord sa plage :
-`node app/scripts/migration-numero.mjs plage NNN-MMM --session "<ligne>"` — **refusée**
+`node app/scripts/migration-numero.mjs plage 370-399 --session "ma nouvelle ligne"` — **refusée**
 si elle chevauche une plage existante ou contient un numéro déjà pris.
 
 Puis, **dans le même commit** que la première migration : la ligne de la plage dans

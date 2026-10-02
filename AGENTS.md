@@ -7,7 +7,9 @@
 > fois** (`310`→`321` le matin ; `415`, puis `416` **trois fois** le soir).
 >
 > **Depuis le 02/10 au soir, un numéro se PREND par l'outil, jamais à la main :**
-> `cd app && npm run migration:prendre -- <nom> --session "<votre ligne>"`
+> `cd app && npm run migration:prendre -- mon_nom_de_migration --session "partie 2 (défauts métier)"`
+> (nom et session à remplacer — **sans chevrons**, que zsh lit comme une redirection ;
+> sessions exactes : `node app/scripts/migration-numero.mjs plages`)
 > (contrôle avant → création → contrôle juste après → inscrit PRIS au registre
 > commun à tous les worktrees). Le crochet `pre-commit` (`npm run hooks:install`)
 > et la CI (`SOC-06`) refusent tout numéro en collision ou jamais pris.
