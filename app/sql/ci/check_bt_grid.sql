@@ -111,10 +111,10 @@ WHERE c.relkind IN ('r', 'p') AND c.relrowsecurity AND NOT c.relforcerowsecurity
 -- ─────────────────────────────────────────────────────────────
 CREATE TEMP TABLE g1_plafond (nom text PRIMARY KEY, valeur integer, raison text);
 INSERT INTO g1_plafond (nom, valeur, raison) VALUES
-  ('tables_tenant',        363, 'Nombre de tables portant tenant_id (base neuve, 273 migrations, 02/10/2026 — +2 pour la 413 : chain_invariants, chain_invariant_results ; +1 pour la 414 : chain_invariant_alertes).'),
+  ('tables_tenant',        364, 'Nombre de tables portant tenant_id (base neuve, 275 migrations, 02/10/2026 — +2 pour la 413 : chain_invariants, chain_invariant_results ; +1 pour la 414 : chain_invariant_alertes ; +1 pour la 416 : chain_document_types).'),
   ('sans_rls',               0, 'RÈGLE, pas plafond : toute table cloisonnée porte RLS. 0 sans exception depuis la 84.'),
   ('rls_sans_force',        55, 'État daté : partitions du socle et tables d''historique. Défaut ISO-04 non réintroduit.'),
-  ('moins_de_4_commandes',  80, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. +2 pour la 413, +1 pour la 414 : ces tables ne portent qu''une politique de LECTURE — le registre, le relevé et l''alerte s''écrivent par audit_chains() / chain_alertes_lancer() (SECURITY DEFINER), jamais par le client. C''est un choix de sécurité assumé, pas un oubli.'),
+  ('moins_de_4_commandes',  81, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. +2 pour la 413, +1 pour la 414, +1 pour la 416 : ces tables ne portent qu''une politique de LECTURE — le registre, le relevé et l''alerte s''écrivent par audit_chains() / chain_alertes_lancer() (SECURITY DEFINER), jamais par le client. Le registre des types de documents (416) est du même cas, et sa raison est plus forte encore : inscrire un type depuis le navigateur permettrait de déclarer une table résolvable et de FAIRE VERDIR INV-19 à volonté. C''est un choix de sécurité assumé, pas un oubli.'),
   ('sans_politique',        10, 'RLS fermée par défaut : pas un trou, mais un nombre qui ne doit pas monter.'),
   ('sans_index_societe',    79, 'Défaut BUD-04 à l''échelle du schéma : une lecture par société y scanne la table. Inchangé : la 413 ajoute ix_chain_invariants_societe, son index unique portant une expression (COALESCE) ne servant pas la lecture par société.');
 

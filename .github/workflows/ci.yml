@@ -1452,6 +1452,33 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L4, tranche 3 — LE DERNIER INVARIANT MESURABLE (416). La 413 inscription
+      # treize invariants mesurables et SEPT nommés sans contrôle, faute de
+      # donnée et non faute de méthode — mesuré le 02/10 : `purchase_orders`
+      # n'a aucun montant facturé, `budgets` aucun réalisé, `dsn_declarations`
+      # aucun montant du tout. La 416 conserve ce refus (un invariant mesuré
+      # par un agrégat inventé afficherait une santé inexistante) et transforme
+      # les six raisons en PREUVES mesurées, datées, opposables.
+      # Le septième, INV-19, était mesurable : sa raison disait « Devient
+      # mesurable dès qu'un registre des types de documents est écrit (c'est la
+      # matière de la vue chaîne, lot L6) ». La 416 écrit ce registre
+      # (`chain_document_types`) et INV-19 devient mesuré : 13 → 14. L6 n'aura
+      # plus à l'inventer.
+      # 7 scénarios : le relevé mesure 14, un orphelin RÉEL est compté, ⚠️ le
+      # garde anti-faux-vert (un lien de type NON ENREGISTRÉ fait rompre
+      # l'invariant et nomme le type — jamais « tenu » sur ce qu'il n'a pas su
+      # regarder), la délégation aux treize branches de la 413 est intacte ET la
+      # garde « mesurable sans branche LÈVE » survit au wrapper, les six
+      # raisons portent leur mesure, la table est RLS forcée en lecture seule
+      # (une écriture de client ferait verdir INV-19 à volonté), et le registre
+      # est cloisonné par société. Sans ce branchement (G5), la suite passerait
+      # et ne protégerait rien — l'angle mort que le commit 5b7d915 reprochait
+      # à la 414.
+      - name: 'L4 : le dernier invariant mesurable et les six preuves (416)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l4_invariants_mesurables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

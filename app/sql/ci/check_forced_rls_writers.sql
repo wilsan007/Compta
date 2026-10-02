@@ -31,8 +31,8 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **314** tables sous `FORCE ROW LEVEL SECURITY` ;
---     * dont **15** sans AUCUNE politique d'écriture — c'est l'exposition : leur
+--     * **315** tables sous `FORCE ROW LEVEL SECURITY` ;
+--     * dont **16** sans AUCUNE politique d'écriture — c'est l'exposition : leur
 --       propriétaire ne peut pas écrire dès qu'il n'est ni super ni bypass ;
 --     * les **six** tables du socle en font partie, et c'est le lien avec L3.
 --     * +2 et +2 pour la **413** (L4, invariants) : `chain_invariants` et
@@ -42,6 +42,12 @@
 --       sécurité assumé, la raison est écrite dans la migration.
 --     * +1 et +1 pour la **414** : `chain_invariant_alertes`, même raison
 --       (`chain_alertes_lancer`, `service_role`).
+--     * +1 et +1 pour la **416** : `chain_document_types`, le registre
+--       « type de document → table ». Muette elle aussi, et sa raison est la
+--       plus forte du lot : une écriture de client y déclarerait un type
+--       résolvable vers une table arbitraire, et **INV-19 verdirait sans
+--       jamais avoir regardé la chaîne**. Le refus est mesuré par le
+--       scénario T06 de la suite 416.
 -- Ces deux nombres sont DATÉS. S'ils **montent**, c'est une régression. S'ils
 -- **baissent**, c'est une amélioration — et elle s'inscrit dans le même commit
 -- (la règle du dépôt : un plafond qui ne se met pas à jour ment).
@@ -88,8 +94,8 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- par le client. C'est la même raison que les deux tables de la 413.
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 314),
-  ('muettes',         15);
+  ('tables_forcees', 315),
+  ('muettes',         16);
 
 DO $$
 DECLARE

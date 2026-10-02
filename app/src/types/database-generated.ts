@@ -1896,6 +1896,45 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_document_types: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        type: string
+        table_name: string
+        libelle: string | null
+        cote: string
+        actif: boolean
+        mesure_le: string | null
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        type: string
+        table_name: string
+        libelle?: string
+        cote?: string
+        actif?: boolean
+        mesure_le?: string
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        type?: string
+        table_name?: string
+        libelle?: string
+        cote?: string
+        actif?: boolean
+        mesure_le?: string
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chain_invariant_alertes: {
       Row: {
         id: number
