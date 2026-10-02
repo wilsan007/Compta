@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 322 — Lot L4 : les 20 invariants transversaux, et l'indice de cohérence
+-- 413 — Lot L4 : les 20 invariants transversaux, et l'indice de cohérence
 -- ═══════════════════════════════════════════════════════════════════════════
 --
 -- **Objet.** Le référentiel (§E.3) nomme 20 invariants transversaux — une
@@ -81,10 +81,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_chain_invariants_code
   ON chain_invariants (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
                        code);
 
+-- L'index **mené par `tenant_id`**, que la porte G1 exige de toute table
+-- cloisonnée (`sans_index_societe`) : l'index unique ci-dessus porte une
+-- expression et ne commence donc pas par `tenant_id` — sans cet index, la
+-- lecture du registre d'une société (la politique RLS filtre sur
+-- `tenant_id = current_tenant_id()`) scanne la table. Même convention que
+-- `ix_document_effects_societe` (252).
+CREATE INDEX IF NOT EXISTS ix_chain_invariants_societe
+  ON chain_invariants (tenant_id, code);
+
 COMMENT ON TABLE chain_invariants IS
-  '322 (L4) : le registre des invariants transversaux (§E.3 du référentiel). tenant_id NULL = invariant standard livré avec le produit ; une ligne de société l''emporte (et peut le désactiver par actif = false).';
+  '413 (L4) : le registre des invariants transversaux (§E.3 du référentiel). tenant_id NULL = invariant standard livré avec le produit ; une ligne de société l''emporte (et peut le désactiver par actif = false).';
 COMMENT ON COLUMN chain_invariants.mesurable IS
-  '322 : false = l''invariant est NOMMÉ mais aucune requête ne peut le trancher aujourd''hui. La raison est obligatoire (raison_non_mesurable) et l''invariant ne compte ni au numérateur ni au dénominateur de l''indice.';
+  '413 : false = l''invariant est NOMMÉ mais aucune requête ne peut le trancher aujourd''hui. La raison est obligatoire (raison_non_mesurable) et l''invariant ne compte ni au numérateur ni au dénominateur de l''indice.';
 COMMENT ON COLUMN chain_invariants.sens IS
   'egalite = a doit valoir b (à la tolérance près) ; inferieur_ou_egal = a <= b ; existence = aucune ligne ne doit exister ; integrite = la propriété structurelle doit tenir.';
 
@@ -119,7 +128,7 @@ CREATE INDEX IF NOT EXISTS ix_chain_invariant_results_code
   ON chain_invariant_results (tenant_id, code, mesure_le DESC);
 
 COMMENT ON TABLE chain_invariant_results IS
-  '322 (L4) : le relevé daté des invariants, par société — la matière de la page « Cohérence » (lot L5) : score, écarts, historique.';
+  '413 (L4) : le relevé daté des invariants, par société — la matière de la page « Cohérence » (lot L5) : score, écarts, historique.';
 COMMENT ON COLUMN chain_invariant_results.verdict IS
   'tenu = l''égalité tient à la tolérance près ; rompu = l''écart est un défaut exploitable ; non_mesure = l''invariant est inscrit mais aucune requête ne le tranche (la raison est au registre).';
 
@@ -709,7 +718,7 @@ END
 $fn$;
 
 COMMENT ON FUNCTION public.chain_invariant_mesurer(uuid, text) IS
-  '322 (L4) : mesure UN invariant transversal pour une société. Rend les deux mesures, l''écart, le nombre de lignes en écart et le détail. Lève une exception si le code est inscrit mesurable mais n''a aucune branche — un relevé vide ne doit jamais passer pour un invariant tenu.';
+  '413 (L4) : mesure UN invariant transversal pour une société. Rend les deux mesures, l''écart, le nombre de lignes en écart et le détail. Lève une exception si le code est inscrit mesurable mais n''a aucune branche — un relevé vide ne doit jamais passer pour un invariant tenu.';
 
 -- ─────────────────────────────────────────────────────────────
 -- 6. LE RELEVÉ COMPLET D'UNE SOCIÉTÉ — et l'indice de cohérence
@@ -819,7 +828,7 @@ END
 $fn$;
 
 COMMENT ON FUNCTION public.audit_chains(uuid) IS
-  '322 (L4) : le relevé complet d''une société — écrit une ligne par invariant actif dans chain_invariant_results, et rend l''indice de cohérence (tenus / mesurés). Les invariants non mesurables sont écrits avec leur raison et exclus du score.';
+  '413 (L4) : le relevé complet d''une société — écrit une ligne par invariant actif dans chain_invariant_results, et rend l''indice de cohérence (tenus / mesurés). Les invariants non mesurables sont écrits avec leur raison et exclus du score.';
 
 -- ─────────────────────────────────────────────────────────────
 -- 7. Droits sur les fonctions
@@ -854,10 +863,10 @@ BEGIN
       '30 2 * * *',
       'SELECT public.audit_chains(t.id) FROM public.tenants t ORDER BY t.id');
     EXECUTE v_cmd;
-    RAISE NOTICE '322 : job nocturne audit_chains_nocturne posé (2 h 30).';
+    RAISE NOTICE '413 : job nocturne audit_chains_nocturne posé (2 h 30).';
   ELSE
     RAISE NOTICE
-      '322 : pg_cron absent — le job nocturne n''est pas posé. Le relevé reste '
+      '413 : pg_cron absent — le job nocturne n''est pas posé. Le relevé reste '
       'produit par tout appel de audit_chains(tenant) (déploiement, recette, '
       'service_role).';
   END IF;

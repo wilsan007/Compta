@@ -1399,6 +1399,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
+      # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
+      # modules qui doit être vraie en permanence — et disait « de l'ordre de 4
+      # à 6 sur 20 ». Ce chiffre n'était MESURÉ NULLE PART.
+      # Doctrine : un invariant NON MESURABLE ne compte ni au numérateur ni au
+      # dénominateur. Afficher « 13/20 » quand sept ne le sont pas serait un
+      # mensonge ; l'indice dit « tant tenus sur 13 mesurés, 7 non mesurables
+      # sur 20 inscrits ». Un invariant absent du registre serait un invariant
+      # oublié ; un invariant inscrit non mesurable est un invariant NOMMÉ.
+      # 8 scénarios : le registre et son héritage (standard / société), le
+      # dénominateur honnête, le refus d'un relevé vide, l'isolation
+      # multi-société, la date et le TenantIndex que la porte G1 exige.
+      - name: 'L4 : les 20 invariants transversaux et l''indice (413)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/413_chain_l4_invariants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
