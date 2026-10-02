@@ -1417,7 +1417,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # L3 tranche 3 — LA PAIE TRACÉE PAR SON CHEMIN D'APPEL (415). La 415 a
+      # L3 tranche 3 — LA PAIE TRACÉE PAR SON CHEMIN D'APPEL (430). La 430 a
       # choisi le POINT DE CONVERGENCE de la comptabilisation : `payroll_post_run`
       # est appelé par la porte R-17, par le versement, et par un déclencheur au
       # passage du lot à `paid`. T04 éprouve les TROIS chemins séparément — c'est
@@ -1428,12 +1428,12 @@ jobs:
       # le versement PARTIEL (le lien désigne SA écriture, pas celle de paie), le
       # mode refuse (rien ne persiste), la structure (corps `_inner` non exposés)
       # et le cloisonnement.
-      - name: 'L3 : la paie est tracée par son chemin d''appel (415)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/415_chain_l3_paie_rpc_tests.sql
+      - name: 'L3 : la paie est tracée par son chemin d''appel (430)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/430_chain_l3_paie_rpc_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # L3 tranche 4 — LE RELEVÉ BANCAIRE MANUEL (416). Trois maillons, deux
+      # L3 tranche 4 — LE RELEVÉ BANCAIRE MANUEL (432). Trois maillons, deux
       # effets, et le troisième qui ne produit RIEN : `unreconcile_bank_
       # statement_line` RETIRE un pointage, il n'en crée pas — il ferme donc
       # ses liens (doctrine 320) au lieu d'ouvrir une trace `applique`, qui
@@ -1442,8 +1442,8 @@ jobs:
       # pointage manuel, la fermeture du lien de comptabilisation, celle du
       # pointage manuel, la distinction manuel/automatique, le refus d'un
       # montant différent (rien n'est lié), la structure, le cloisonnement.
-      - name: 'L3 : le relevé bancaire manuel est tracé (416)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l3_releve_bancaire_tests.sql
+      - name: 'L3 : le relevé bancaire manuel est tracé (432)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/432_chain_l3_releve_bancaire_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

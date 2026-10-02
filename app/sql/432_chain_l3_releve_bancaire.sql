@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- 416 — Lot L3, tranche 4 : LE RELEVÉ BANCAIRE MANUEL, ses trois maillons
+-- 432 — Lot L3, tranche 4 : LE RELEVÉ BANCAIRE MANUEL, ses trois maillons
 --   tracés par leur chemin d'appel (tâche 3.3 du plan de la partie 3)
 -- ═══════════════════════════════════════════════════════════════════════════
 --
@@ -56,10 +56,10 @@ INSERT INTO document_effects (tenant_id, document_type, evenement, effet,
 VALUES
   (NULL, 'bank_transactions', 'posted', 'treasury.statement_line.posted',
    true, NULL, false, false, true, false, true,
-   'L3/416 : post_bank_statement_line fait NAÎTRE une écriture à partir d''une ligne de relevé (la banque d''un côté, la contrepartie de l''autre, la ligne bancaire née pointée). Lien `generated_entry` vers l''écriture créée. Réversible : unreconcile_bank_statement_line défait le pointage et ROMPT ce lien (doctrine 320).'),
+   'L3/432 : post_bank_statement_line fait NAÎTRE une écriture à partir d''une ligne de relevé (la banque d''un côté, la contrepartie de l''autre, la ligne bancaire née pointée). Lien `generated_entry` vers l''écriture créée. Réversible : unreconcile_bank_statement_line défait le pointage et ROMPT ce lien (doctrine 320).'),
   (NULL, 'bank_transactions', 'reconciled', 'treasury.statement_line.manually_reconciled',
    false, NULL, false, false, true, false, true,
-   'L3/416 : reconcile_bank_statement_line CONSTATE qu''une ligne d''écriture DÉJÀ validée est la contrepartie de la ligne de relevé (montant et sens vérifiés). Lien `reconciled_with` vers l''ÉCRITURE, le détail de la ligne au payload. Distinct de treasury.bank_transaction.reconciled (316, rapprochement AUTOMATIQUE) : deux gestes différents, deux effets différents.')
+   'L3/432 : reconcile_bank_statement_line CONSTATE qu''une ligne d''écriture DÉJÀ validée est la contrepartie de la ligne de relevé (montant et sens vérifiés). Lien `reconciled_with` vers l''ÉCRITURE, le détail de la ligne au payload. Distinct de treasury.bank_transaction.reconciled (316, rapprochement AUTOMATIQUE) : deux gestes différents, deux effets différents.')
 ON CONFLICT (COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::uuid),
              document_type, evenement, effet)
 DO UPDATE SET
@@ -253,7 +253,7 @@ BEGIN
 END $maillon$;
 
 COMMENT ON FUNCTION public.reconcile_bank_statement_line(uuid, uuid) IS
-  'L3/416 : le pointage manuel d''une ligne de relevé, tracé par son chemin d''appel. Corps renommé reconcile_bank_statement_line_inner, intact. Lien `reconciled_with` vers l''ÉCRITURE (la ligne est au payload) — c''est l''écriture que le dé-lettrage rouvrira.';
+  'L3/432 : le pointage manuel d''une ligne de relevé, tracé par son chemin d''appel. Corps renommé reconcile_bank_statement_line_inner, intact. Lien `reconciled_with` vers l''ÉCRITURE (la ligne est au payload) — c''est l''écriture que le dé-lettrage rouvrira.';
 -- ─────────────────────────────────────────────────────────────
 -- 4. unreconcile_bank_statement_line — LE DÉ-LETTRAGE, QUI FERME LE LIEN
 --    Le corps (garde de permission, contrôle de nature et de pointage, ligne
@@ -354,11 +354,11 @@ BEGIN
 END $maillon$;
 
 COMMENT ON FUNCTION public.unreconcile_bank_statement_line(uuid) IS
-  'L3/416 : le dé-lettrage d''une ligne de relevé, tracé par la FERMETURE de ses liens (doctrine 320) — pas par une trace `applique`, qui dirait le contraire de ce qui s''est passé. Corps renommé unreconcile_bank_statement_line_inner, intact. Ferme les deux liens possibles : la comptabilisation et le pointage manuel.';
+  'L3/432 : le dé-lettrage d''une ligne de relevé, tracé par la FERMETURE de ses liens (doctrine 320) — pas par une trace `applique`, qui dirait le contraire de ce qui s''est passé. Corps renommé unreconcile_bank_statement_line_inner, intact. Ferme les deux liens possibles : la comptabilisation et le pointage manuel.';
 COMMENT ON FUNCTION public.post_bank_statement_line(uuid, text, text) IS
-  'L3/416 : la comptabilisation d''une ligne de relevé, tracée par son chemin d''appel. Le corps est renommé post_bank_statement_line_inner, intact, non exposé. Lien `generated_entry` vers l''écriture créée ; le dé-lettrage rompt ce lien (doctrine 320).';
+  'L3/432 : la comptabilisation d''une ligne de relevé, tracée par son chemin d''appel. Le corps est renommé post_bank_statement_line_inner, intact, non exposé. Lien `generated_entry` vers l''écriture créée ; le dé-lettrage rompt ce lien (doctrine 320).';
 -- ─────────────────────────────────────────────────────────────
--- 5. DROITS — inchangés, comme la 412 et la 415
+-- 5. DROITS — inchangés, comme la 412 et la 430
 --    Les trois wrappers gardent le régime des corps qu'ils enveloppaient : ils
 --    portent les mêmes gardes de permission, dans le corps intact. Les corps
 --    `_inner` ne sont plus exposés (leçon R-17). On rétablit donc exactement
@@ -382,7 +382,7 @@ GRANT  EXECUTE ON FUNCTION public.unreconcile_bank_statement_line(uuid) TO authe
 -- * **Elle ne pose pas de contrat pour le dé-lettrage** : il ne produit aucun
 --   effet, il en retire un. Un contrat serait un mensonge de vocabulaire.
 -- * **Elle ne reprise pas les pointages antérieurs** : une ligne pointée avant
---   le déploiement de la 416 n'a pas de lien. Son dé-lettrage produira un
+--   le déploiement de la 432 n'a pas de lien. Son dé-lettrage produira un
 --   `chain_lien_rompre` sans effet (aucun lien actif) — c'est sans danger, et
 --   cela vaut mieux qu'un lien inventé après coup.
 -- * **Elle ne mesure pas la performance** : le banc D1→D8 (tâches 3.4 → 3.7)

@@ -176,7 +176,7 @@ INSERT INTO g8_registre VALUES
   ('apply_chart_pack', 'Paramétrage (application d''un plan comptable), pas un maillon : verdict de l''inventaire tranche 4 §2 ligne 5, « écarté ». Il est MEUX classé aujourd''hui qu''alors — la correction de la carte du 02/10 (motif `chart_account`) le fait apparaître : il écrit dans `chart_accounts` et dans les journaux d''une société. Écarté pour la MÊME raison qu''à l''inventaire, et non parce qu''il serait nouveau.');
 
 -- ⚠️ CE REGISTRE NE CONTIENT PLUS QUE DES ÉCARTÉS. Les entrées « EN COURS »
--- qui y ont vécu (paie : 415 ; relevé bancaire : 416) ont disparu dans le
+-- qui y ont vécu (paie : 430 ; relevé bancaire : 432) ont disparu dans le
 -- MÊME commit que la migration qui les a tracés — le sens 2 du contrôle l'a
 -- EXIGÉ, et a refusé de passer tant qu'elles restaient. C'est le mécanisme :
 -- une tranche qui oublie de nettoyer son registre ne peut pas être commitée.
@@ -185,7 +185,7 @@ INSERT INTO g8_registre VALUES
 -- « en attente ».
 
 -- ⚠️ `post_payroll_payment` et `payroll_post_run` ÉTAIENT ici, « en cours —
--- tâche 3.2 ». Ils n'y sont PLUS : la 415 les a tracés par leur chemin d'appel,
+-- tâche 3.2 ». Ils n'y sont PLUS : la 430 les a tracés par leur chemin d'appel,
 -- et le sens 2 du contrôle a refusé le commit tant que la ligne restait. C'est
 -- le mécanisme prévu : une tranche qui oublie de nettoyer son registre ne peut
 -- pas passer. Leur trace est dans le commit de la 415.

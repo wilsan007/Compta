@@ -1,6 +1,6 @@
 -- ============================================================
--- 415_chain_l3_paie_rpc_tests.sql — L3 : LA PAIE TRACÉE PAR SON CHEMIN
---   D'APPEL — ce que les deux wrappers de la 415 garantissent
+-- 430_chain_l3_paie_rpc_tests.sql — L3 : LA PAIE TRACÉE PAR SON CHEMIN
+--   D'APPEL — ce que les deux wrappers de la 430 garantissent
 --
 -- Source : recomptage de la tâche 3.1 (porte `ci/check_chain_rpc_inventory.sql`,
 -- daté du 02/10/2026) — lignes `payroll_post_run` et `post_payroll_payment`,
@@ -14,7 +14,7 @@
 --        `already_posted` ;
 --   T04  les TROIS CHEMINS d'appel convergent sur la même trace : la porte R-17
 --        (`post_payroll_journal`), le versement, et le déclencheur au passage
---        à `paid`. C'est la promesse de la 415 — sans elle, on aurait tracé
+--        à `paid`. C'est la promesse de la 430 — sans elle, on aurait tracé
 --        une façade et laissé deux chemins muets ;
 --   T05  le versement : lien au niveau du LOT, payload qui porte les
 --        écritures, une trace `applique` ;
@@ -40,8 +40,8 @@
 -- T07 mesure cette limite au lieu de la supposer.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '415', false);
-DELETE FROM _audit_results WHERE file = '415';
+SELECT set_config('audit.file', '430', false);
+DELETE FROM _audit_results WHERE file = '430';
 
 -- ─────────────────────────────────────────────────────────────
 -- Outillage propre à ce fichier (préfixé `_`, hors contrôle des droits)
@@ -55,8 +55,8 @@ DELETE FROM _audit_results WHERE file = '415';
 -- `payroll_account_mapping` est peuplée en `tenant_id IS NULL`), donc
 -- `_mk_tenant` suffit — pas de fixture ledger ici, contrairement aux
 -- suites compta.
-DROP FUNCTION IF EXISTS _l415_paie(text, text);
-CREATE OR REPLACE FUNCTION _l415_paie(p_nom text, p_statut text DEFAULT 'approved',
+DROP FUNCTION IF EXISTS _l430_paie(text, text);
+CREATE OR REPLACE FUNCTION _l430_paie(p_nom text, p_statut text DEFAULT 'approved',
   OUT t uuid, OUT emp uuid, OUT run uuid, OUT slip uuid, OUT usr uuid)
 LANGUAGE plpgsql AS $fn$
 DECLARE v_date date := DATE '2026-03-31';
@@ -103,8 +103,8 @@ END $fn$;
 
 -- Les liens d'un lot pour un effet donné : la suite ne suppose pas qu'un
 -- seul maillon a produit quelque chose.
-DROP FUNCTION IF EXISTS _l415_liens(uuid, text);
-CREATE OR REPLACE FUNCTION _l415_liens(p_run uuid, p_effet text)
+DROP FUNCTION IF EXISTS _l430_liens(uuid, text);
+CREATE OR REPLACE FUNCTION _l430_liens(p_run uuid, p_effet text)
 RETURNS TABLE (lien uuid, aval uuid, etat text, payload jsonb)
 LANGUAGE sql STABLE AS $fn$
   SELECT l.id, l.aval_id, l.etat, l.payload
@@ -114,8 +114,8 @@ LANGUAGE sql STABLE AS $fn$
 $fn$;
 
 -- Les traces d'un lot pour un effet donné.
-DROP FUNCTION IF EXISTS _l415_traces(uuid, text);
-CREATE OR REPLACE FUNCTION _l415_traces(p_run uuid, p_effet text)
+DROP FUNCTION IF EXISTS _l430_traces(uuid, text);
+CREATE OR REPLACE FUNCTION _l430_traces(p_run uuid, p_effet text)
 RETURNS TABLE (resultat text, lignes integer)
 LANGUAGE sql STABLE AS $fn$
   SELECT c.resultat, c.lignes_ecrites
@@ -130,18 +130,18 @@ $fn$;
 DO $t01$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t01') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t01') INTO t, emp, run, slip, usr;
   PERFORM payroll_post_run(run);
   PERFORM _rec('T01', 'la comptabilisation est tracée par son chemin d''appel',
-    (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')) = 1
-    AND (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted')
+    (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')) = 1
+    AND (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted')
            WHERE resultat = 'applique' AND lignes = 1) = 1
     AND (SELECT count(*) FROM domain_events
            WHERE tenant_id = t AND aggregate_type = 'pay_runs'
              AND aggregate_id = run AND event_name = 'pay_runs.posted') = 1,
     format('liens=%s applique=%s evenements=%s',
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')),
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')),
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
            (SELECT count(*) FROM domain_events WHERE tenant_id = t AND aggregate_id = run
               AND event_name = 'pay_runs.posted')));
 END $t01$;
@@ -155,7 +155,7 @@ END $t01$;
 DO $t02$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid; v_leve boolean := false;
 BEGIN
-  SELECT * FROM _l415_paie('t02', 'draft') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t02', 'draft') INTO t, emp, run, slip, usr;
   BEGIN
     PERFORM payroll_post_run(run);
   EXCEPTION WHEN OTHERS THEN
@@ -163,11 +163,11 @@ BEGIN
   END;
   PERFORM _rec('T02', 'un lot en brouillon refuse et ne laisse NI lien NI trace',
     v_leve
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')) = 0
-    AND (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted')) = 0,
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')) = 0
+    AND (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted')) = 0,
     format('levée=%s liens=%s traces=%s', v_leve,
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')),
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted'))));
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')),
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted'))));
 END $t02$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -179,19 +179,19 @@ END $t02$;
 DO $t03$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t03') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t03') INTO t, emp, run, slip, usr;
   PERFORM payroll_post_run(run);
   PERFORM payroll_post_run(run);
   PERFORM payroll_post_run(run);
   PERFORM _rec('T03', 'trois appels : une trace `applique`, un lien, une écriture',
-    (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted')
+    (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted')
        WHERE resultat = 'applique') = 1
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')) = 1
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')) = 1
     AND (SELECT count(*) FROM journal_entries
            WHERE tenant_id = t AND reference = 'PAYROLL-PR-t03') = 1,
     format('applique=%s liens=%s ecritures=%s',
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')),
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')),
            (SELECT count(*) FROM journal_entries WHERE tenant_id = t AND reference = 'PAYROLL-PR-t03')));
 END $t03$;
 
@@ -211,44 +211,44 @@ END $t03$;
 DO $t04a$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t04a') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t04a') INTO t, emp, run, slip, usr;
   -- (1) la porte R-17
   PERFORM post_payroll_journal(run);
   PERFORM _rec('T04a', 'chemin 1 — la porte R-17 `post_payroll_journal` trace',
-    (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique') = 1
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')) = 1,
+    (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique') = 1
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')) = 1,
     format('applique=%s liens=%s',
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted'))));
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted'))));
 END $t04a$;
 
 DO $t04b$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t04b') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t04b') INTO t, emp, run, slip, usr;
   -- (2) le DÉCLENCHEUR : on écrit le lot à `paid`, le maillon part tout seul
   EXECUTE 'RESET ROLE';
   UPDATE pay_runs SET status = 'paid' WHERE id = run AND tenant_id = t;
   PERFORM _rec('T04b', 'chemin 2 — le déclencheur de passage à `paid` trace aussi',
-    (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique') = 1
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted')) = 1,
+    (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique') = 1
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted')) = 1,
     format('applique=%s liens=%s',
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.run.posted'))));
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.run.posted'))));
 END $t04b$;
 
 DO $t04c$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t04c') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t04c') INTO t, emp, run, slip, usr;
   -- (3) le VERSEMENT : il appelle la comptabilisation en interne
   PERFORM post_payroll_payment(run, NULL, NULL, 'all');
   PERFORM _rec('T04c', 'chemin 3 — le versement trace la comptabilisation ET son versement',
-    (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted')   WHERE resultat = 'applique') = 1
-    AND (SELECT count(*) FROM _l415_traces(run, 'payroll.payment.settled') WHERE resultat = 'applique') = 1,
+    (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted')   WHERE resultat = 'applique') = 1
+    AND (SELECT count(*) FROM _l430_traces(run, 'payroll.payment.settled') WHERE resultat = 'applique') = 1,
     format('post=%s paiement=%s',
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.payment.settled') WHERE resultat = 'applique')));
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.run.posted') WHERE resultat = 'applique'),
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.payment.settled') WHERE resultat = 'applique')));
 END $t04c$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ END $t04c$;
 DO $t05$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid; v_n int; v_ref uuid;
 BEGIN
-  SELECT * FROM _l415_paie('t05') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t05') INTO t, emp, run, slip, usr;
   PERFORM payroll_post_run(run);
   PERFORM post_payroll_payment(run, NULL, NULL, 'all');
 
@@ -279,14 +279,14 @@ BEGIN
 
   PERFORM _rec('T05', 'le versement lie le lot à son aval de référence et porte le décompte au payload',
     v_n >= 1
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.payment.settled')) = 1
-    AND (SELECT aval FROM _l415_liens(run, 'payroll.payment.settled')) = v_ref
-    AND (SELECT (payload->>'versements')::int FROM _l415_liens(run, 'payroll.payment.settled')) = v_n
-    AND (SELECT jsonb_array_length(payload->'ids') FROM _l415_liens(run, 'payroll.payment.settled')) = v_n
-    AND (SELECT count(*) FROM _l415_traces(run, 'payroll.payment.settled')
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.payment.settled')) = 1
+    AND (SELECT aval FROM _l430_liens(run, 'payroll.payment.settled')) = v_ref
+    AND (SELECT (payload->>'versements')::int FROM _l430_liens(run, 'payroll.payment.settled')) = v_n
+    AND (SELECT jsonb_array_length(payload->'ids') FROM _l430_liens(run, 'payroll.payment.settled')) = v_n
+    AND (SELECT count(*) FROM _l430_traces(run, 'payroll.payment.settled')
            WHERE resultat = 'applique') = 1,
     format('ecritures=%s aval_ref=%s liens=%s', v_n, v_ref,
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.payment.settled'))));
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.payment.settled'))));
 END $t05$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -300,13 +300,13 @@ END $t05$;
 DO $t06$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid; v_aval uuid; v_ref text;
 BEGIN
-  SELECT * FROM _l415_paie('t06') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t06') INTO t, emp, run, slip, usr;
   PERFORM payroll_post_run(run);
   PERFORM post_payroll_payment(run, NULL, NULL, 'net');
 
-  -- La colonne de sortie de `_l415_liens` s'appelle `aval` (c'est le nom
+  -- La colonne de sortie de `_l430_liens` s'appelle `aval` (c'est le nom
   -- donné dans le RETURNS TABLE de l'outillage), pas `aval_id`.
-  SELECT l.aval INTO v_aval FROM _l415_liens(run, 'payroll.payment.settled') l;
+  SELECT l.aval INTO v_aval FROM _l430_liens(run, 'payroll.payment.settled') l;
   SELECT je.reference INTO v_ref FROM journal_entries je WHERE je.id = v_aval;
 
   PERFORM _rec('T06', 'un versement partiel lie le lot à SON écriture de versement, pas à l''écriture de paie',
@@ -339,7 +339,7 @@ DO $t07$
 DECLARE t uuid; emp uuid; run uuid; slip uuid; usr uuid;
         v_leve boolean := false; v_statut text; v_msg text := '';
 BEGIN
-  SELECT * FROM _l415_paie('t07') INTO t, emp, run, slip, usr;
+  SELECT * FROM _l430_paie('t07') INTO t, emp, run, slip, usr;
   PERFORM payroll_post_run(run);
 
   -- (a) le mode de la société : `refuse`
@@ -368,12 +368,12 @@ BEGIN
     AND v_statut <> 'paid'
     AND (SELECT count(*) FROM journal_entries
            WHERE tenant_id = t AND reference LIKE 'PAYPAY-PR-t07-%') = 0
-    AND (SELECT count(*) FROM _l415_liens(run, 'payroll.payment.settled')) = 0
-    AND (SELECT count(*) FROM _l415_traces(run, 'payroll.payment.settled')) = 0,
+    AND (SELECT count(*) FROM _l430_liens(run, 'payroll.payment.settled')) = 0
+    AND (SELECT count(*) FROM _l430_traces(run, 'payroll.payment.settled')) = 0,
     format('levée=%s msg=%s statut=%s ecritures=%s liens=%s traces=%s', v_leve, left(v_msg, 40), v_statut,
            (SELECT count(*) FROM journal_entries WHERE tenant_id = t AND reference LIKE 'PAYPAY-PR-t07-%'),
-           (SELECT count(*) FROM _l415_liens(run, 'payroll.payment.settled')),
-           (SELECT count(*) FROM _l415_traces(run, 'payroll.payment.settled'))));
+           (SELECT count(*) FROM _l430_liens(run, 'payroll.payment.settled')),
+           (SELECT count(*) FROM _l430_traces(run, 'payroll.payment.settled'))));
 END $t07$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -381,7 +381,7 @@ END $t07$;
 --    chaîne, les contrats sont ACTIFS.
 --    C'est la leçon R-17 de la 220 (« le corps renommé n'est plus exposé »)
 --    appliquée : un corps `_inner` exécutable par `authenticated` permetrait
---    d'écrire une paie sans laisser de trace — le défaut exact que la 415
+--    d'écrire une paie sans laisser de trace — le défaut exact que la 430
 --    vient fermer.
 -- ─────────────────────────────────────────────────────────────
 DO $t08$
@@ -424,13 +424,13 @@ DECLARE ta uuid; ea uuid; ra uuid; sa uuid; ua uuid;
         tb uuid; eb uuid; rb uuid; sb uuid; ub uuid;
         v_liens_b integer; v_traces_b integer;
 BEGIN
-  SELECT * FROM _l415_paie('t09a') INTO ta, ea, ra, sa, ua;
+  SELECT * FROM _l430_paie('t09a') INTO ta, ea, ra, sa, ua;
   -- A est comptabilisée et payée sous SON contexte
   PERFORM payroll_post_run(ra);
   PERFORM post_payroll_payment(ra, NULL, NULL, 'all');
 
   -- On passe chez B, avec SA société active
-  SELECT * FROM _l415_paie('t09b') INTO tb, eb, rb, sb, ub;
+  SELECT * FROM _l430_paie('t09b') INTO tb, eb, rb, sb, ub;
 
   SELECT count(*) INTO v_liens_b FROM document_links
    WHERE tenant_id = tb AND amont_type = 'pay_runs' AND amont_id = ra;
@@ -440,7 +440,7 @@ BEGIN
   -- On revient chez A : l'IDENTITÉ, pas seulement la société.
   -- `current_tenant_id()` exige que `auth.uid()` soit membre de la société
   -- visée (mesuré sur la base neuve) : rétablir `app.active_tenant_id` seul
-  -- ne suffit pas, et l'outillage `_l415_liens` ne reverrait rien — le test
+  -- ne suffit pas, et l'outillage `_l430_liens` ne reverrait rien — le test
   -- dirait « cloisonnement cassé » alors que le maillon est parfaitement
   -- cloisonné. On rétablit donc les DEUX.
   PERFORM set_config('request.jwt.claim.sub', ua::text, false);
@@ -450,10 +450,10 @@ BEGIN
 
   PERFORM _rec('T09', 'la société voisine ne voit NI lien NI trace de la paie de A — et A voit les siens',
     v_liens_b = 0 AND v_traces_b = 0
-    AND (SELECT count(*) FROM _l415_liens(ra, 'payroll.payment.settled')) = 1
-    AND (SELECT count(*) FROM _l415_liens(ra, 'payroll.run.posted')) = 1,
+    AND (SELECT count(*) FROM _l430_liens(ra, 'payroll.payment.settled')) = 1
+    AND (SELECT count(*) FROM _l430_liens(ra, 'payroll.run.posted')) = 1,
     format('liens_vus_par_B=%s traces_vues_par_B=%s liens_de_A=%s', v_liens_b, v_traces_b,
-           (SELECT count(*) FROM _l415_liens(ra, 'payroll.payment.settled'))));
+           (SELECT count(*) FROM _l430_liens(ra, 'payroll.payment.settled'))));
 END $t09$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -461,4 +461,4 @@ END $t09$;
 -- attendus et REFUSE un fichier sans verdict (une suite qui ne prouve rien
 -- est pire qu'une suite absente : elle laisse croire que le défaut est couvert).
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('415');
+SELECT _audit_assert('430');

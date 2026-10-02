@@ -1,5 +1,5 @@
 -- ============================================================
--- 416_chain_l3_releve_bancaire_tests.sql — L3 : LE RELEVÉ BANCAIRE MANUEL,
+-- 432_chain_l3_releve_bancaire_tests.sql — L3 : LE RELEVÉ BANCAIRE MANUEL,
 --   ses trois maillons — ce que la doctrine 320 change pour le troisième
 --
 -- Source : recomptage de la tâche 3.1 — lignes `post_bank_statement_line`,
@@ -15,7 +15,7 @@
 --   T04  le dé-lettrage ferme AUSSI le lien du pointage manuel (`manually_
 --        reconciled`), pas seulement celui de la comptabilisation ;
 --   T05  les deux gestes sont DISTINCTS : l'automatique (316) et le manuel
---        (416) ne partagent pas de nom d'effet — les confondre empêcherait de
+--        (432) ne partagent pas de nom d'effet — les confondre empêcherait de
 --        savoir qui a pointé ;
 --   T06  le montant et le sens sont vérifiés par le corps : un pointage sur une
 --        écriture du mauvais montant lève, et RIEN n'est lié ;
@@ -26,8 +26,8 @@
 -- ============================================================
 \ir ci/audit_helpers.sql
 \ir ci/ledger_fixture.sql
-SELECT set_config('audit.file', '416', false);
-DELETE FROM _audit_results WHERE file = '416';
+SELECT set_config('audit.file', '432', false);
+DELETE FROM _audit_results WHERE file = '432';
 
 -- ─────────────────────────────────────────────────────────────
 -- Outillage propre à ce fichier (préfixé `_`)
@@ -35,8 +35,8 @@ DELETE FROM _audit_results WHERE file = '416';
 
 -- Une société, une banque (avec son compte comptable), une ligne de relevé.
 -- Le plan est semé et les comptes du cas sont posés par `_ledger_fixture`.
-DROP FUNCTION IF EXISTS _l416_banque(text, text);
-CREATE OR REPLACE FUNCTION _l416_banque(p_nom text, p_type text DEFAULT 'debit',
+DROP FUNCTION IF EXISTS _l432_banque(text, text);
+CREATE OR REPLACE FUNCTION _l432_banque(p_nom text, p_type text DEFAULT 'debit',
   OUT t uuid, OUT ba uuid, OUT acc text, OUT tx uuid, OUT usr uuid)
 LANGUAGE plpgsql AS $fn$
 DECLARE v_date date := DATE '2026-03-15';
@@ -78,8 +78,8 @@ END $fn$;
 
 -- Crée une écriture VALIDÉE au compte de banque, du bon montant, pour éprouver
 -- le pointage manuel. Renvoie l'id de l'ÉCRITURE et celui de sa LIGNE bancaire.
-DROP FUNCTION IF EXISTS _l416_ecriture(uuid, numeric, text);
-CREATE OR REPLACE FUNCTION _l416_ecriture(p_t uuid, p_montant numeric, p_sens text DEFAULT 'debit',
+DROP FUNCTION IF EXISTS _l432_ecriture(uuid, numeric, text);
+CREATE OR REPLACE FUNCTION _l432_ecriture(p_t uuid, p_montant numeric, p_sens text DEFAULT 'debit',
   OUT je uuid, OUT jl uuid)
 LANGUAGE plpgsql AS $fn$
 BEGIN
@@ -97,8 +97,8 @@ BEGIN
    WHERE journal_id = je AND account_code = '512100' LIMIT 1;
 END $fn$;
 
-DROP FUNCTION IF EXISTS _l416_liens(uuid, text);
-CREATE OR REPLACE FUNCTION _l416_liens(p_tx uuid, p_effet text)
+DROP FUNCTION IF EXISTS _l432_liens(uuid, text);
+CREATE OR REPLACE FUNCTION _l432_liens(p_tx uuid, p_effet text)
 RETURNS TABLE (lien uuid, aval uuid, etat text, ouvert boolean, payload jsonb)
 LANGUAGE sql STABLE AS $fn$
   SELECT l.id, l.aval_id, l.etat, (l.etat = 'actif'), l.payload
@@ -107,8 +107,8 @@ LANGUAGE sql STABLE AS $fn$
     AND l.amont_id = p_tx AND l.effet = p_effet
 $fn$;
 
-DROP FUNCTION IF EXISTS _l416_traces(uuid, text);
-CREATE OR REPLACE FUNCTION _l416_traces(p_tx uuid, p_effet text)
+DROP FUNCTION IF EXISTS _l432_traces(uuid, text);
+CREATE OR REPLACE FUNCTION _l432_traces(p_tx uuid, p_effet text)
 RETURNS TABLE (resultat text, lignes integer)
 LANGUAGE sql STABLE AS $fn$
   SELECT c.resultat, c.lignes_ecrites
@@ -119,8 +119,8 @@ $fn$;
 
 -- Retourne au contexte d'une société (identité + société) : `current_tenant_id()`
 -- exige que `auth.uid()` soit membre de la société visée — mesuré en 3.2 (T09).
-DROP FUNCTION IF EXISTS _l416_revenir(uuid, uuid);
-CREATE OR REPLACE FUNCTION _l416_revenir(p_t uuid, p_usr uuid)
+DROP FUNCTION IF EXISTS _l432_revenir(uuid, uuid);
+CREATE OR REPLACE FUNCTION _l432_revenir(p_t uuid, p_usr uuid)
 RETURNS void LANGUAGE plpgsql AS $fn$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_usr::text, false);
@@ -135,27 +135,27 @@ END $fn$;
 DO $t01$
 DECLARE t uuid; ba uuid; acc text; tx uuid; usr uuid; v_je uuid; v_ref text;
 BEGIN
-  SELECT * FROM _l416_banque('t01') INTO t, ba, acc, tx, usr;
+  SELECT * FROM _l432_banque('t01') INTO t, ba, acc, tx, usr;
   PERFORM post_bank_statement_line(tx, NULL, 'Frais bancaires');
 
-  v_je := (SELECT aval FROM _l416_liens(tx, 'treasury.statement_line.posted'));
+  v_je := (SELECT aval FROM _l432_liens(tx, 'treasury.statement_line.posted'));
   SELECT reference INTO v_ref FROM journal_entries WHERE id = v_je;
 
   PERFORM _rec('T01', 'la comptabilisation lie la ligne de relevé à son écriture, et trace `applique`',
-    (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted')) = 1
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) = 1
+    (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted')) = 1
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) = 1
     -- l'aval est bien une ÉCRITURE validée, née de CE relevé
     AND (SELECT status FROM journal_entries WHERE id = v_je) = 'posted'
     AND v_ref LIKE 'COMPTA-BQ-%'
-    AND (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.posted')
+    AND (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.posted')
            WHERE resultat = 'applique' AND lignes = 1) = 1
     AND (SELECT count(*) FROM domain_events
            WHERE tenant_id = t AND aggregate_id = tx
              AND event_name = 'bank_transactions.posted') = 1,
     format('liens=%s aval=%s ref=%s traces=%s',
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted')),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted')),
            v_je, v_ref,
-           (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.posted'))));
+           (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.posted'))));
 END $t01$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -164,22 +164,22 @@ END $t01$;
 DO $t02$
 DECLARE t uuid; ba uuid; acc text; tx uuid; usr uuid; je uuid; jl uuid; v_aval uuid;
 BEGIN
-  SELECT * FROM _l416_banque('t02') INTO t, ba, acc, tx, usr;
-  SELECT * FROM _l416_ecriture(t, 42.00, 'debit') INTO je, jl;
+  SELECT * FROM _l432_banque('t02') INTO t, ba, acc, tx, usr;
+  SELECT * FROM _l432_ecriture(t, 42.00, 'debit') INTO je, jl;
 
   PERFORM reconcile_bank_statement_line(tx, jl);
 
-  SELECT aval INTO v_aval FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled');
+  SELECT aval INTO v_aval FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled');
 
   PERFORM _rec('T02', 'le pointage manuel lie la ligne à l''ÉCRITURE (la ligne est au payload)',
-    (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')) = 1
+    (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')) = 1
     AND v_aval = je
     AND (SELECT (payload->>'journal_line_id')::uuid
-           FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')) = jl
-    AND (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.manually_reconciled')
+           FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')) = jl
+    AND (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.manually_reconciled')
            WHERE resultat = 'applique') = 1,
     format('liens=%s aval=%s attendu=%s',
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')),
            v_aval, je));
 END $t02$;
 -- ─────────────────────────────────────────────────────────────
@@ -191,28 +191,28 @@ END $t02$;
 DO $t03$
 DECLARE t uuid; ba uuid; acc text; tx uuid; usr uuid;
 BEGIN
-  SELECT * FROM _l416_banque('t03') INTO t, ba, acc, tx, usr;
+  SELECT * FROM _l432_banque('t03') INTO t, ba, acc, tx, usr;
   PERFORM post_bank_statement_line(tx, NULL, 'Frais bancaires');
 
   -- Le lien est actif avant : sinon le test ne prouverait pas la fermeture.
-  IF (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) <> 1 THEN
+  IF (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) <> 1 THEN
     RAISE EXCEPTION 'Décor T03 invalide : le lien de comptabilisation n''est pas actif avant le dé-lettrage';
   END IF;
 
   PERFORM unreconcile_bank_statement_line(tx);
 
   PERFORM _rec('T03', 'le dé-lettrage ROMPT le lien (doctrine 320) et n''écrit AUCUNE trace `applique`',
-    (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted')) = 1
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) = 0
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted')
+    (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted')) = 1
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted') WHERE ouvert) = 0
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted')
            WHERE etat = 'rompu') = 1
     -- la SEULE trace `applique` reste celle de la comptabilisation (T01)
-    AND (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.posted')
+    AND (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.posted')
            WHERE resultat = 'applique') = 1,
     format('liens=%s actifs=%s rompus=%s',
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted')),
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted') WHERE ouvert),
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.posted') WHERE etat = 'rompu')));
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted')),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted') WHERE ouvert),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.posted') WHERE etat = 'rompu')));
 END $t03$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -225,21 +225,21 @@ END $t03$;
 DO $t04$
 DECLARE t uuid; ba uuid; acc text; tx uuid; usr uuid; je uuid; jl uuid;
 BEGIN
-  SELECT * FROM _l416_banque('t04') INTO t, ba, acc, tx, usr;
-  SELECT * FROM _l416_ecriture(t, 42.00, 'debit') INTO je, jl;
+  SELECT * FROM _l432_banque('t04') INTO t, ba, acc, tx, usr;
+  SELECT * FROM _l432_ecriture(t, 42.00, 'debit') INTO je, jl;
   PERFORM reconcile_bank_statement_line(tx, jl);
   PERFORM unreconcile_bank_statement_line(tx);
 
   PERFORM _rec('T04', 'le dé-lettrage ferme le lien du pointage MANUEL, comme celui de la comptabilisation',
-    (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')) = 1
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')
+    (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')) = 1
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')
            WHERE ouvert) = 0
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')
            WHERE etat = 'rompu') = 1,
     format('liens=%s actifs=%s rompus=%s',
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')),
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled') WHERE ouvert),
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled') WHERE etat = 'rompu')));
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled') WHERE ouvert),
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled') WHERE etat = 'rompu')));
 END $t04$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -274,9 +274,9 @@ DO $t06$
 DECLARE t uuid; ba uuid; acc text; tx uuid; usr uuid; je uuid; jl uuid;
         v_leve boolean := false;
 BEGIN
-  SELECT * FROM _l416_banque('t06') INTO t, ba, acc, tx, usr;
+  SELECT * FROM _l432_banque('t06') INTO t, ba, acc, tx, usr;
   -- L'écriture vaut 99, la ligne de relevé 42 : le pointage doit être refusé.
-  SELECT * FROM _l416_ecriture(t, 99.00, 'debit') INTO je, jl;
+  SELECT * FROM _l432_ecriture(t, 99.00, 'debit') INTO je, jl;
 
   BEGIN
     PERFORM reconcile_bank_statement_line(tx, jl);
@@ -286,11 +286,11 @@ BEGIN
 
   PERFORM _rec('T06', 'un pointage sur un montant différent lève, et NE LIAIT RIEN (le lien ne précède pas la garde)',
     v_leve
-    AND (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')) = 0
-    AND (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.manually_reconciled')) = 0,
+    AND (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')) = 0
+    AND (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.manually_reconciled')) = 0,
     format('levée=%s liens=%s traces=%s', v_leve,
-           (SELECT count(*) FROM _l416_liens(tx, 'treasury.statement_line.manually_reconciled')),
-           (SELECT count(*) FROM _l416_traces(tx, 'treasury.statement_line.manually_reconciled'))));
+           (SELECT count(*) FROM _l432_liens(tx, 'treasury.statement_line.manually_reconciled')),
+           (SELECT count(*) FROM _l432_traces(tx, 'treasury.statement_line.manually_reconciled'))));
 END $t06$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -340,10 +340,10 @@ DECLARE ta uuid; baa uuid; acca text; txa uuid; ua uuid;
         tb uuid; bab uuid; accb text; txb uuid; ub uuid;
         v_liens_b integer; v_traces_b integer;
 BEGIN
-  SELECT * FROM _l416_banque('t08a') INTO ta, baa, acca, txa, ua;
+  SELECT * FROM _l432_banque('t08a') INTO ta, baa, acca, txa, ua;
   PERFORM post_bank_statement_line(txa, NULL, 'Opération A');
 
-  SELECT * FROM _l416_banque('t08b') INTO tb, bab, accb, txb, ub;
+  SELECT * FROM _l432_banque('t08b') INTO tb, bab, accb, txb, ub;
 
   SELECT count(*) INTO v_liens_b FROM document_links
    WHERE tenant_id = tb AND amont_type = 'bank_transactions' AND amont_id = txa;
@@ -351,11 +351,11 @@ BEGIN
    WHERE tenant_id = tb AND amont_type = 'bank_transactions' AND amont_id = txa;
 
   -- retour chez A : identité ET société (mesuré en 3.2, T09)
-  PERFORM _l416_revenir(ta, ua);
+  PERFORM _l432_revenir(ta, ua);
 
   PERFORM _rec('T08', 'la société voisine ne voit NI lien NI trace du relevé de A — et A voit les siens',
     v_liens_b = 0 AND v_traces_b = 0
-    AND (SELECT count(*) FROM _l416_liens(txa, 'treasury.statement_line.posted') WHERE ouvert) = 1,
+    AND (SELECT count(*) FROM _l432_liens(txa, 'treasury.statement_line.posted') WHERE ouvert) = 1,
     format('liens_vus_par_B=%s traces_vues_par_B=%s', v_liens_b, v_traces_b));
 END $t08$;
 
@@ -363,4 +363,4 @@ END $t08$;
 -- ─────────────────────────────────────────────────────────────
 -- Verdict de la suite — `_audit_assert` REFUSE un fichier sans verdict.
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('416');
+SELECT _audit_assert('432');
