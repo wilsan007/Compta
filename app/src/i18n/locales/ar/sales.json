@@ -313,6 +313,7 @@
     "vatNumber": "رقم الضريبة",
     "siret": "SIRET",
     "contactName": "اسم جهة الاتصال",
+    "createdAt": "تاريخ الإنشاء",
     "paymentTerms": "شروط الدفع",
     "creditLimit": "حد الائتمان",
     "outstandingBalance": "الرصيد المستحق",

@@ -313,6 +313,7 @@
     "vatNumber": "VAT number",
     "siret": "SIRET",
     "contactName": "Contact name",
+    "createdAt": "Created on",
     "paymentTerms": "Payment terms",
     "creditLimit": "Credit limit",
     "outstandingBalance": "Outstanding balance",

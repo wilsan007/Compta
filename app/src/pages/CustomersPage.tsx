@@ -60,7 +60,9 @@ export function CustomersPage() {
   }
 
   function handleExportCSV() {
-    const headers = [t('customers.name'), t('customers.contactName'), t('customers.email'), t('customers.phone'), t('customers.outstandingBalance'), tCommon('table.total')]
+    // A6 (ven-002) : le dernier en-tête disait « Total » au-dessus d'une date de
+    // création. Les cinq autres sont alignés sur leurs valeurs ; celui-ci non.
+    const headers = [t('customers.name'), t('customers.contactName'), t('customers.email'), t('customers.phone'), t('customers.outstandingBalance'), t('customers.createdAt')]
     const rows = filtered.map((c) => [c.name || '', c.contact_name || '', c.email || '', c.phone || '', Number(c.balance || 0), c.created_at ? formatDate(c.created_at) : ''])
     exportToCSV(`clients-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
     toast('info', tCommon('actions.export'), `${filtered.length} ${t('customers.title').toLowerCase()} ${tCommon('toast.exported').toLowerCase()}`)
@@ -115,7 +117,7 @@ export function CustomersPage() {
               { label: t('customers.contactName'), key: 'contact_name', sortable: true },
               { label: t('customers.email'), key: 'email', sortable: true },
               { label: t('customers.outstandingBalance'), key: 'balance', sortable: true, className: 'text-right' },
-              { label: tCommon('table.total'), key: 'created_at', sortable: true },
+              { label: t('customers.createdAt'), key: 'created_at', sortable: true },
               { label: tCommon('table.actions') },
             ]}
             data={filtered as any}

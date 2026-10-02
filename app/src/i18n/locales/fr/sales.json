@@ -313,6 +313,7 @@
     "vatNumber": "N° TVA",
     "siret": "SIRET",
     "contactName": "Nom du contact",
+    "createdAt": "Créé le",
     "paymentTerms": "Conditions de paiement",
     "creditLimit": "Encours autorisé",
     "outstandingBalance": "Solde dû",

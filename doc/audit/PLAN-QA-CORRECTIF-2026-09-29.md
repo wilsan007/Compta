@@ -265,9 +265,10 @@ Quatre leçons de méthode, toutes mesurées :
 
 ## 4. Lot A — Tiers et comptes auxiliaires (≈ 2,5 j) — **priorité 1**
 
-> **État au 30/09** : A1, A2, A3, A4, A5 **fermés** (`6409c0e`, `3155a90`, `318`,
-> `eaebd85`). Il reste **A6** (colonne « Total » de la liste des clients qui affiche
-> une date de création).
+> **État au 30/09** : A1, A2, A3, A4, A5, A6 **fermés** (`6409c0e`, `3155a90`,
+> `318`, `eaebd85`, A6). **Le lot A est clos** : plus aucun défaut ouvert de
+> cohérence sur les tiers et leurs comptes auxiliaires. Suite : les relances B9 et
+> la ventilation de la CA3 par cases restent ouverts (voir leur section).
 
 Cause commune : la création d'un client ou d'un fournisseur à l'écran n'écrit **aucune**
 ligne dans `third_party_accounts`. Or le plan tiers, le lettrage, la balance âgée par type
@@ -408,8 +409,23 @@ et les modèles de saisie ne lisent **que** cette table.
   `PartnerBankAccountsModal.test.tsx` **3/3** (rouges avant : le bouton n'était pas
   désactivé et `createPartnerBankAccount` était appelé) ; Vitest **1541/1541**.
 
-### A6 — ven-002 🔵 — colonne « Total » de la liste des clients = date de création
+### A6 — ven-002 🔵 — colonne « Total » de la liste des clients = date de création — **✅ CORRIGÉ** (écran)
 - **Correctif** : colonne « Total facturé » (somme HT validée) ou en-tête « Créé le ».
+- **Fait** : l'en-tête devient **« Créé le »**, dans la liste comme dans l'export
+  CSV — le CSV portait le même mensonge (les cinq autres en-têtes y sont, eux,
+  correctement alignés sur leurs valeurs). La colonne reste triable sur
+  `created_at`.
+- **Choix de périmètre, assumé** : on n'a **pas** remplacé la colonne par un
+  « Total facturé ». Un tel montant n'existe nulle part dans le modèle, et sa
+  définition n'est écrite nulle part (factures validées seules ? nets des avoirs
+  ? annulées ?) : c'est exactement le nombre sans définition qui avait produit
+  le 411 à 540,00 € contre 0,00 € à l'écran (A3/313). Si la recette le veut, c'est
+  un **agrégat à définir d'abord** (`sum(invoices.subtotal)` sur les validées,
+  moins les avoirs), pas un en-tête à recopier — on le fera quand la règle
+  sera écrite.
+- **Preuve** : `PartnerIdentityForm.test.tsx` **9/9** (rouges avant : aucun en-tête
+  `customers.createdAt`, et les en-têtes de l'export venaient avec
+  `table.total`) ; Vitest complet vert ; `tsc`/`oxlint`/i18n verts.
 
 ---
 

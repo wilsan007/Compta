@@ -16,10 +16,12 @@ const updateCustomer = vi.fn()
 const createSupplier = vi.fn()
 const verifySiret = vi.fn()
 const toast = vi.fn()
+// A6 : l'export CSV est capturé, pas exécuté (il télécharge un fichier)
+const exportToCSV = vi.fn()
 
 const clients = [
-  { id: 'c1', name: 'Client Un', country: 'FR' },
-  { id: 'c2', name: 'MClient Deux', country: 'FR' },
+  { id: 'c1', name: 'Client Un', country: 'FR', contact_name: 'Dupont', phone: '0102030405', created_at: '2026-02-11T09:00:00Z' },
+  { id: 'c2', name: 'MClient Deux', country: 'FR', contact_name: 'Martin', phone: '0605060607', created_at: '2026-03-12T09:00:00Z' },
 ]
 const fournisseurs = [{ id: 'f1', name: 'Fournisseur Un', country: 'FR' }]
 const paymentTerms = [{ id: 'pt1', code: '30J', name: '30 jours', type: 'fixed', days_1: 30, pct_1: 100, active: true }]
@@ -49,6 +51,11 @@ vi.mock('@/lib/queries/verifications', () => ({
   requestSignature: vi.fn(),
 }))
 vi.mock('@/lib/toast', () => ({ useToast: () => ({ toast }) }))
+// A6 : on veut lire ce que l'export écrit, pas télécharger un fichier
+vi.mock('@/components/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/components/ui')>()
+  return { ...actual, exportToCSV }
+})
 vi.mock('@/hooks/usePermission', () => ({ usePermission: () => ({ canCreate: true, canDelete: true, canEdit: true }) }))
 vi.mock('@/pages/PartnerContactsModal', () => ({ PartnerContactsModal: () => null }))
 vi.mock('react-i18next', async (importOriginal) => {
@@ -148,6 +155,39 @@ describe('A4 (318) — la fiche client porte l’identité du tiers', () => {
     expect(parentes.map((o) => o.textContent)).toEqual(['customers.parentIdUnset', 'Client Un', 'MClient Deux'])
     const commerciaux = within(screen.getByLabelText('customers.salesRepId')).getAllByRole('option')
     expect(commerciaux.map((o) => o.textContent)).toEqual(['customers.salesRepIdUnset', 'Commercial Un'])
+  })
+})
+
+// A6 (ven-002) : la colonne « Total » de la liste des clients affichait une
+// **date de création**, et l'export CSV répétait le mensonge (les cinq autres
+// en-têtes y sont, eux, correctement alignés sur leurs valeurs). Un en-tête
+// doit dire ce que la case contient ; on n'invente pas un « total facturé » dont
+// la définition (factures validées seules ? nets d'avoirs ?) n'est écrite nulle
+// part.
+describe('A6 (ven-002) — les en-têtes de la liste des clients disent ce qu’ils montrent', () => {
+  it('la colonne de date s’appelle « Créé le », pas « Total »', async () => {
+    render(<MemoryRouter><CustomersPage /></MemoryRouter>)
+    await screen.findByText('Client Un')
+    expect(screen.getByText('customers.createdAt')).toBeInTheDocument()
+    expect(screen.queryByText('table.total')).toBeNull()
+  })
+
+  it('l’export CSV met le téléphone sous « Téléphone » et la date sous « Créé le »', async () => {
+    render(<MemoryRouter><CustomersPage /></MemoryRouter>)
+    await screen.findByText('Client Un')
+    fireEvent.click(screen.getByRole('button', { name: 'actions.export' }))
+
+    expect(exportToCSV).toHaveBeenCalledTimes(1)
+    const [, headers, rows] = exportToCSV.mock.calls[0] as [string, string[], (string | number)[][]]
+    expect(headers).toEqual([
+      'customers.name', 'customers.contactName', 'customers.email',
+      'customers.phone', 'customers.outstandingBalance', 'customers.createdAt',
+    ])
+    // la ligne dit bien le téléphone sous l'en-tête Téléphone (4e colonne)
+    expect(rows[0][3]).toBe('0102030405')
+    // … et une date de création sous « Créé le » (6e colonne), pas un montant
+    // (formatée par `formatDate` : 11/02/2026)
+    expect(String(rows[0][5])).toBe('11/02/2026')
   })
 })
 
