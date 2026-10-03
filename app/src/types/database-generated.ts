@@ -18,51 +18,6 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-    _audit_expected: {
-      Row: {
-        file: string
-        test_id: string
-        reason: string
-      }
-      Insert: {
-        file: string
-        test_id: string
-        reason: string
-      }
-      Update: {
-        file?: string
-        test_id?: string
-        reason?: string
-      }
-      Relationships: []
-    }
-    _audit_results: {
-      Row: {
-        id: number
-        file: string
-        test_id: string
-        label: string
-        ok: boolean
-        detail: string | null
-      }
-      Insert: {
-        id?: number
-        file: string
-        test_id: string
-        label: string
-        ok: boolean
-        detail?: string
-      }
-      Update: {
-        id?: number
-        file?: string
-        test_id?: string
-        label?: string
-        ok?: boolean
-        detail?: string
-      }
-      Relationships: []
-    }
     absence_conflict_log: {
       Row: {
         id: string
@@ -2488,7 +2443,8 @@ export interface Database {
         libelle_fr?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     chain_invariant_results: {
       Row: {
@@ -2530,7 +2486,15 @@ export interface Database {
         detail?: Json
         mesure_le?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chain_invariant_results_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chain_invariants: {
       Row: {
@@ -2581,7 +2545,15 @@ export interface Database {
         note?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chain_invariants_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chain_regeneration_log: {
       Row: {
@@ -3444,6 +3416,9 @@ export interface Database {
         absence_method: string | null
         next_lettrage_seq: number | null
         enforce_segregation: boolean | null
+        ocr_consent: boolean
+        ocr_consent_at: string | null
+        ocr_consent_by: string | null
       }
       Insert: {
         id?: string
@@ -3481,6 +3456,9 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
+        ocr_consent?: boolean
+        ocr_consent_at?: string
+        ocr_consent_by?: string
       }
       Update: {
         id?: string
@@ -3518,6 +3496,9 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
+        ocr_consent?: boolean
+        ocr_consent_at?: string
+        ocr_consent_by?: string
       }
       Relationships: [
         {
@@ -3933,7 +3914,6 @@ export interface Database {
         product_id: string | null
         vat_code: string | null
         vat_amount: number
-        account_code: string | null
       }
       Insert: {
         id?: string
@@ -3950,7 +3930,6 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
-        account_code?: string
       }
       Update: {
         id?: string
@@ -3967,7 +3946,6 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
-        account_code?: string
       }
       Relationships: [
         {
@@ -4955,8 +4933,6 @@ export interface Database {
         credit_policy: string | null
         credit_warning: boolean | null
         import_batch_id: string | null
-        payment_term_id: string | null
-        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -5000,8 +4976,6 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
-        payment_term_id?: string
-        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -5045,8 +5019,6 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
-        payment_term_id?: string
-        fiscal_position_id?: string
       }
       Relationships: [
         {
@@ -5057,24 +5029,10 @@ export interface Database {
           referencedColumns: ["tenant_id", "id"]
         },
         {
-          foreignKeyName: "customers_fiscal_position_tenant_fkey",
-          columns: ["tenant_id", "fiscal_position_id"],
-          isOneToOne: false,
-          referencedRelation: "fiscal_positions",
-          referencedColumns: ["tenant_id", "id"]
-        },
-        {
           foreignKeyName: "customers_parent_id_fkey",
           columns: ["tenant_id", "parent_id"],
           isOneToOne: false,
           referencedRelation: "customers",
-          referencedColumns: ["tenant_id", "id"]
-        },
-        {
-          foreignKeyName: "customers_payment_term_tenant_fkey",
-          columns: ["tenant_id", "payment_term_id"],
-          isOneToOne: false,
-          referencedRelation: "payment_terms",
           referencedColumns: ["tenant_id", "id"]
         },
         {
@@ -5793,6 +5751,11 @@ export interface Database {
         payload: Json
         created_by: string | null
         created_at: string
+        etat: string
+        tour: number
+        ferme_le: string | null
+        ferme_par: string | null
+        motif: string | null
       }
       Insert: {
         id?: string
@@ -5808,6 +5771,11 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
+        etat?: string
+        tour?: number
+        ferme_le?: string
+        ferme_par?: string
+        motif?: string
       }
       Update: {
         id?: string
@@ -5823,8 +5791,27 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
+        etat?: string
+        tour?: number
+        ferme_le?: string
+        ferme_par?: string
+        motif?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "document_links_amont_type_fk",
+          columns: ["amont_type"],
+          isOneToOne: true,
+          referencedRelation: "chain_document_types",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "document_links_aval_type_fk",
+          columns: ["aval_type"],
+          isOneToOne: true,
+          referencedRelation: "chain_document_types",
+          referencedColumns: ["code"]
+        },
         {
           foreignKeyName: "document_links_tenant_id_fkey",
           columns: ["tenant_id"],
@@ -7530,7 +7517,6 @@ export interface Database {
         auto_apply: boolean | null
         active: boolean | null
         created_at: string | null
-        regime: string | null
       }
       Insert: {
         id?: string
@@ -7543,7 +7529,6 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
-        regime?: string
       }
       Update: {
         id?: string
@@ -7556,7 +7541,6 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
-        regime?: string
       }
       Relationships: [
         {
@@ -8598,7 +8582,6 @@ export interface Database {
         advance_invoice_id: string | null
         time_entry_id: string | null
         analytic_section_id: string | null
-        account_code: string | null
       }
       Insert: {
         id?: string
@@ -8620,7 +8603,6 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
-        account_code?: string
       }
       Update: {
         id?: string
@@ -8642,7 +8624,6 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
-        account_code?: string
       }
       Relationships: [
         {
@@ -10566,7 +10547,15 @@ export interface Database {
         note?: string
         cree_le?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "metric_definitions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     mirror_servers: {
       Row: {
@@ -13297,6 +13286,13 @@ export interface Database {
         bloque_par_absence?: boolean
       }
       Relationships: [
+        {
+          foreignKeyName: "planning_slots_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
         {
           foreignKeyName: "planning_slots_machine_id_fkey",
           columns: ["tenant_id", "machine_id"],
@@ -19664,8 +19660,6 @@ export interface Database {
         account_tiers: string | null
         account_collectif: string | null
         import_batch_id: string | null
-        payment_term_id: string | null
-        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -19704,8 +19698,6 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
-        payment_term_id?: string
-        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -19744,8 +19736,6 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
-        payment_term_id?: string
-        fiscal_position_id?: string
       }
       Relationships: [
         {
@@ -19756,24 +19746,10 @@ export interface Database {
           referencedColumns: ["tenant_id", "id"]
         },
         {
-          foreignKeyName: "suppliers_fiscal_position_tenant_fkey",
-          columns: ["tenant_id", "fiscal_position_id"],
-          isOneToOne: false,
-          referencedRelation: "fiscal_positions",
-          referencedColumns: ["tenant_id", "id"]
-        },
-        {
           foreignKeyName: "suppliers_parent_id_fkey",
           columns: ["tenant_id", "parent_id"],
           isOneToOne: false,
           referencedRelation: "suppliers",
-          referencedColumns: ["tenant_id", "id"]
-        },
-        {
-          foreignKeyName: "suppliers_payment_term_tenant_fkey",
-          columns: ["tenant_id", "payment_term_id"],
-          isOneToOne: false,
-          referencedRelation: "payment_terms",
           referencedColumns: ["tenant_id", "id"]
         },
         {
@@ -21469,28 +21445,6 @@ export interface Database {
       }
       Update: {
         id?: string
-      }
-      Relationships: [
-      ]
-    }
-    v_us: {
-      Row: {
-        t: string | null
-        facture: string | null
-        ligne: string | null
-        client: string | null
-      }
-      Insert: {
-        t?: string
-        facture?: string
-        ligne?: string
-        client?: string
-      }
-      Update: {
-        t?: string
-        facture?: string
-        ligne?: string
-        client?: string
       }
       Relationships: [
       ]

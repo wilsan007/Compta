@@ -847,7 +847,7 @@ export interface AIFallbackResult {
  * Paramètres → Société »), pas se perdre dans « IA indisponible » comme les
  * autres échecs, que `aiFallbackMapping` rend en `null`.
  */
-export class ConsentementRequis extends Error {}
+class ConsentementRequis extends Error {}
 
 export async function aiFallbackMapping(
   sourceHeaders: string[],
