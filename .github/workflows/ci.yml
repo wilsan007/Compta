@@ -1534,6 +1534,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # I-08 (461) — le dictionnaire de données : un indicateur est une
+      # requête NOMMÉE et DATÉE, écrite une fois. Deux définitions ne
+      # peuvent pas se chevaucher pour le même indicateur et la même
+      # période : le remède structurel aux « définitions concurrentes »
+      # (5 fichiers calculaient une marge projet, 8 un suivi budgétaire,
+      # chacun avec sa formule).
+      # 6 scénarios : structure, résolution, datation, chevauchement
+      # refusé, indicateur inconnu, priorité de la société.
+      - name: 'I-08 : le dictionnaire de données (461)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/461_metric_definitions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

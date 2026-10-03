@@ -8214,6 +8214,48 @@ export interface Database {
       }
       Relationships: []
     }
+    metric_definitions: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        code: string
+        version: number
+        libelle: string
+        unite: string | null
+        sql_definition: string
+        valide_du: string
+        valide_au: string | null
+        note: string | null
+        cree_le: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        code: string
+        version: number
+        libelle: string
+        unite?: string
+        sql_definition: string
+        valide_du: string
+        valide_au?: string
+        note?: string
+        cree_le?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        code?: string
+        version?: number
+        libelle?: string
+        unite?: string
+        sql_definition?: string
+        valide_du?: string
+        valide_au?: string
+        note?: string
+        cree_le?: string
+      }
+      Relationships: []
+    }
     mirror_servers: {
       Row: {
         id: string
