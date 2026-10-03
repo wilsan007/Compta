@@ -462,14 +462,24 @@ BEGIN
   PERFORM set_config('role', 'postgres', true);
   ta := _mk_tenant('AL6-' || to_char(clock_timestamp(), 'HH24MISS'));
   employe := _l414_employe(ta, 'Salarie AL6');
-  PERFORM _l414_faute(ta, employe, 'AL6-1');
-  -- DEUX passages : le premier ne peut rien signaler (aucun relevé précédent,
-  -- cf. T01), c'est le second qui voit `tenu` → `rompu`. Un seul passage
-  -- laisserait la société sans aucune alerte et le contrôle négatif ne
-  -- prouverait rien.
+
+  -- ⚠️ L'ORDRE EST TOUT. Un relevé passe avant la faute, et l'autre après.
+  --
+  -- La faute était plantée AVANT le premier passage : le premier relevait donc
+  -- déjà `rompu`, et le second relevait `rompu` → `rompu`. Or une alerte
+  -- motives une TRANSITION `tenu` → `rompu` ; `deja_rompu` n'en motive
+  -- aucune, par construction. T07 obtenait donc zéro alerte — et son contrôle
+  -- « la propriétaire voit la sienne » échouait sur une absence de donnée,
+  -- pas sur une fuite. Un test d'isolation qui échoue parce que la table est
+  -- vide ne teste pas l'isolation : il faut le dire, sinon on corrige la RLS.
   PERFORM set_config('role', 'service_role', true);
-  PERFORM public.chain_alertes_lancer(ta);
-  PERFORM public.chain_alertes_lancer(ta);        -- alerte (perte)
+  PERFORM public.chain_alertes_lancer(ta);        -- relevé 1 : tout est tenu
+
+  PERFORM set_config('role', 'postgres', true);
+  PERFORM _l414_faute(ta, employe, 'AL6-1');     -- la faute arrive ICI
+
+  PERFORM set_config('role', 'service_role', true);
+  PERFORM public.chain_alertes_lancer(ta);        -- relevé 2 : tenue → rompue
 
   PERFORM set_config('role', 'postgres', true);
   tb := _mk_tenant('AL7-' || to_char(clock_timestamp(), 'HH24MISS'));
