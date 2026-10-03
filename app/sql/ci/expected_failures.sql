@@ -32,10 +32,22 @@
 --     la TVA. Fermé le 28/09/2026 par la **300** : le CA se lit sur les comptes
 --     de produits (classe 70), la TVA reste lue sur les comptes 445x.
 --
-INSERT INTO _audit_expected (file, test_id, reason) VALUES
-  ('321', 'T02', 'Titres-restaurant hors du brut, des cotisations et du net — avantage en nature non traité, grille 2026 sans ligne pour ce poste (montants à sourcer)'),
-  ('321', 'T03', 'Indemnité de transport hors du brut, des cotisations et du net — même cause, même chantier de paramétrage'),
-  ('321', 'T05', 'Les deux ci-dessus cumulés');
+-- Le registre est VOLONTAIREMENT VIDE.
+--
+-- Les trois lignes qu'il portait (`321 T02`, `T03`, `T05`) ont été retirées le
+-- 02/10/2026 : après la fusion 1.6, la suite `411` donne 6 scénarios verts, et
+-- `_audit_assert` refuse un scénario « corrigé mais encore au registre ». Elle
+-- l'a signalé elle-même. Le raisonnement qui les justifiait (les taux des
+-- avantages en nature changent chaque année et doivent être SOURCÉS) est
+-- conservé plus haut, dans l'historique de ce fichier.
+--
+-- `INSERT INTO _audit_expected (file, test_id, reason) VALUES` reste ici, vide :
+-- la table existe, l'auto-test `audit_registry_selftest.sql` s'appuie dessus
+-- pour vérifier que le registre porte bien le couple (fichier, identifiant).
+--
+-- Un défaut connu doit s'inscrire ici AVEC SA RAISON, puis disparaître avec son
+-- correctif. Une suite qui reste rouge sans être inscrite casse la CI — c'est
+-- voulu.
 
 -- Réouvert le 30/09/2026 — un défaut PROUVÉ, trouvé en portant la couverture des
 -- éléments variables du second moteur vers le moteur réel (321) :
@@ -55,6 +67,25 @@ INSERT INTO _audit_expected (file, test_id, reason) VALUES
 -- explicitement (`[URSSAF-PSS]`, « [URSSAF-TAUX] »). Écrire un taux de mémoire
 -- serait exactement le défaut que ce dépôt combat. Le correctif est un chantier
 -- à part, avec ses sources.
+--
+-- ⚠️ `321 T02`, `T03` et `T05` ont été RETIRÉS le 02/10/2026.
+--
+-- Ils étaient inscrits ici depuis le 30/09 (« les TITRES-RESTAURANT
+-- n'entrent ni dans le brut, ni dans les cotisations, ni dans le net…
+-- mesuré 160 € sur un brut de 2 500 € »). Après la fusion 1.6, la suite
+-- `411_chain_l1_paie_contrepassation_tests` donne **6 scénarios verts** — et
+-- `_audit_assert` refuse précisément un scénario « corrigé mais encore au
+-- registre » : c'est elle qui l'a signalé, pas une relecture.
+--
+-- Ils sont donc sortis, et la suite est la preuve. Le raisonnement qui les
+-- justifiait reste dans l'historique de git : les taux changent chaque année et
+-- doivent être SOURCÉS, ce que la 276 exige. Si un jour une des trois lignes
+-- redevient fausse, elle se réinscrit ICI avec sa raison — pas dans un
+-- commentaire.
+--
+-- Le registre ne contient plus AUCUNE entrée : les défauts qu'il portait sont
+-- tous corrigés, et « un défaut connu doit s'inscrire ici, puis disparaître
+-- avec son correctif ».
 --
 -- Plus aucun autre scénario n'a le droit d'échouer : un échec hors registre
 -- casse la CI, et un défaut connu doit s'inscrire ici avec sa raison — puis

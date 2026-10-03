@@ -34,6 +34,15 @@ préjudice est fait, dans un pipeline, après que deux sessions ont travaillé.
 > La fusion **1.6** a pris `326` sur la première, pour la suite de paie que la
 > recette apportait sous un numéro **libre** (322) — voir ci-dessous.
 >
+> ⚠️ **Ce que la fusion a appris sur l'ORDRE D'EXÉCUTION.** La 419 réconcilie
+> deux versions de `create_stock_out_on_delivery` (la 314 de la recette et la
+> 401 des chaînages) qui s'écrasaient. Elle a d'abord été écrite en **327** — et
+> elle n'était jamais appliquée : le runner exécute dans l'ordre **lexicographique**
+> (`32…` avant `4…`), donc la 401, appliquée ensuite, l'écrasait. Elle a été
+> portée en **419**, au-dessus de la série des chaînages, et là elle gagne.
+> Un numéro n'est pas seulement un nom de fichier : **il décide du dernier
+> écrivain.**
+>
 > ⚠️ **Ce que la fusion a appris sur les numéros libres.** La suite
 > `322_payslip_elements_invariants` n'avait **aucune migration** de ce numéro :
 > 322 était un NOM LIBRE, comme il en reste (`325` → `399` ci-dessus). Elle ne
