@@ -13,6 +13,12 @@ on:
     # travaille, on la fusionne, et la porte se découvre à la fusion — après
     # avoir fusionné. Les sessions multiples du dépôt ont besoin que la
     # recette et les parties soient jouées à chaque push.
+    #
+    # `fusion-*` a été ajouté le 02/10/2026 avec la fusion 1.6 : une branche de
+    # fusion qui n'est pas jouée est une fusion dont on ne saura qu'après coup
+    # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
+    # branche de travail, pas seulement pour celles dont le nom commence par
+    # « partie ».
     branches:
       - main
       - master
@@ -20,8 +26,9 @@ on:
       - commercial-hr-paie
       - 'qa/**'
       - 'partie-*'
+      - 'fusion-*'
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*']
+    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*']
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'
