@@ -148,6 +148,14 @@ EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T06', 'T06 — le scénario n''a pas pu s''exécuter', false, SQLERRM);
 END $$;
 
+-- NETTOYAGE. Un test qui écrit dans le dictionnaire — une table de
+-- PRODUCTION — doit rendre l'état qu'il a trouvé. On l'avait mesuré :
+-- la suite 461 laissait `projet.marge` v1 et v2 derrière elle, et la
+-- migration 463 (les définitions réelles) se faisait alors REFUSER par
+-- le garde anti-chevauchement. Un test qui pollue une table partagée
+-- casse le travail suivant — c'est un défaut, pas un détail.
+DELETE FROM metric_definitions WHERE code IN ('projet.marge', 'budget.realise');
+
 SELECT _audit_assert('461');
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T03', 'T03 — le scénario n''a pas pu s''exécuter', false, SQLERRM);
