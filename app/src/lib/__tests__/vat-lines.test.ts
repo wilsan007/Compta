@@ -14,7 +14,7 @@ const EXO: VatCode = {
   collected_account: '445710', deductible_account: null, ca3_base_box: 'E2', ca3_tax_box: null,
 }
 
-describe('buildVatLines — saisie manuelle (198)', () => {
+describe('buildVatLines — saisie manuelle (325)', () => {
   it('achat à 20 % : TVA au compte déductible du paramétrage, contrepartie TTC', () => {
     expect(buildVatLines(FR20, 100, true)).toEqual({
       ht: 100, tva: 20, counterpart: 120,

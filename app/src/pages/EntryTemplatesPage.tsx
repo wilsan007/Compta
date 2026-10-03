@@ -164,7 +164,7 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
   const [accounts, setAccounts] = useState<any[]>([])
   const [thirdParties, setThirdParties] = useState<any[]>([])
   const [analyticSections, setAnalyticSections] = useState<any[]>([])
-  // 198 : codes du paramétrage TVA (et non plus V0 / V5.5 / V10 / V20, inconnus des déclarations)
+  // 325 : codes du paramétrage TVA (et non plus V0 / V5.5 / V10 / V20, inconnus des déclarations)
   const [vatCodes, setVatCodes] = useState<VatCode[]>([])
 
   useEffect(() => {

@@ -69,13 +69,13 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `210` → `299` | audits fonctionnels, W7/W8, L7 | 2026-09-28 |
 | `300` → `309` | W7 | 2026-09-28 |
 | `310` → `324` | session recette (qa/recette-2026-09-29) | 2026-10-02 |
-| `325` | partie 1 (correctif TVA 198, tâche 1.7) | 2026-10-02 |
+| `325` | partie 1 (correctif TVA de la saisie, ex-`198`, tâche 1.7 — livré le 03/10 par la fusion 1.6) | 2026-10-03 |
 | `326` → `339` | partie 1, fusion 1.6 (correctifs portés par la fusion) | 2026-10-02 |
 | `340` → `369` | partie 2 (défauts métier) | 2026-10-02 (plan) |
 | `400` → `413` | chaînages L1-L4 (socle) | 2026-10-02 |
 | `414`, `430` → `449` | partie 3 (L3, L4) | 2026-10-02 |
 | `415` → `429` | L16-L24 | 2026-10-02 |
-| `450` → `459` | partie 5 (intégrité référentielle) | 2026-10-02 |
+| `450` → `459` | partie 5 (intégrité référentielle) — `456` : une seule fonction de mesure des invariants (harmonisation) | 2026-10-03 |
 | **`460` → `469`** | **I-01, la « Vue Chaîne »** | **2026-10-02** |
 | `370` → `399` | **LIBRE** — à inscrire avant usage | — |
 

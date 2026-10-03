@@ -167,7 +167,7 @@ export function SaisieParPiecePage() {
     const code = vatCodes.find((v) => v.vat_code === line.vat_code)
     const isDebit = Boolean(line.debit)
     const amount = Number(line.debit) || Number(line.credit) || 0
-    // 198 : comptes du paramétrage TVA ; autoliquidation = TVA déductible et due, contrepartie HT
+    // 325 : comptes du paramétrage TVA ; autoliquidation = TVA déductible et due, contrepartie HT
     const calc = code ? buildVatLines(code, amount, isDebit) : null
     if (!code || !calc) {
       toast('warning', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatSelectRate'))

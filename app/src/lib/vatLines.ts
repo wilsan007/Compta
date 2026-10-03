@@ -1,4 +1,4 @@
-// Lignes de TVA de la saisie manuelle (migration 198).
+// Lignes de TVA de la saisie manuelle (migration 325).
 // Les codes viennent du paramétrage (get_vat_codes : FR20, FR055, AUTOLIQ, UE…),
 // les mêmes que ceux des factures : la ligne est déclarée dans la bonne case.
 

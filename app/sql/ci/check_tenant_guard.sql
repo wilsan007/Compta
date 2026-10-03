@@ -61,14 +61,6 @@ INSERT INTO tenant_guard_registre (nom, args, raison) VALUES
    'Rend un code de compte de variation : lecture seule, aucun montant.'),
   ('vat_account_class', 'p_tenant uuid, p_account text, OUT direction text, OUT reverse_charge boolean',
    'Classe un compte de TVA : lecture du plan de TVA, aucune écriture.'),
-   -- Les deux suivantes viennent de la 198. Même nature que les deux du dessus :
-   -- elles lisent le plan de TVA (le paramétrage des codes et des cases) et
-   -- renvoient une étiquette. Aucune écriture, aucun montant, aucune donnée
-   -- propre à une société — c'est un paramétrage, comme un barème légal.
-   ('vat_account_ca3', 'p_tenant uuid, p_account text, OUT tax_box text, OUT base_box text',
-    'Cases CA3 d''un compte de TVA : lecture du plan de TVA, aucune écriture.'),
-   ('vat_code_normalize', 'p_tenant uuid, p_code text',
-    'Normalise un code de TVA vers le paramétrage : lecture du plan de TVA.'),
   ('vat_reverse_charge', 'p_tenant uuid, p_code text',
    'Dit si un code de TVA est autoliquidé : lecture du plan de TVA.'),
   ('vat_self_assessed', 'p_tenant uuid, p_code text, p_base numeric, p_rate numeric',
