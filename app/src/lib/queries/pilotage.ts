@@ -104,51 +104,61 @@ export async function getMarginAnalysis(
   else if (period === 'quarter') startDate.setMonth(now.getMonth() - 3)
   else if (period === 'year') startDate.setFullYear(now.getFullYear() - 1)
 
-  let q = supabase
-    .from('invoice_lines')
-    .select(`
-      total,
-      quantity,
-      unit_price,
-      product_id,
-      product:products(name, category, cost_price),
-      invoice:invoices!inner(customer_id, date, status, customer:customers(name))
-    `)
-    .eq('invoice.status', 'paid')
-    .gte('invoice.date', startDate.toISOString().split('T')[0])
-    .order('id')
-  if (tid) q = q.eq('invoice.tenant_id', tid)
-  // LOT7-03 : analyse de marge par produit/client — agrégat sur toutes les lignes de facture.
-  const lines = await fetchAllRows<any>(q, { label: 'getMarginAnalysis/invoice_lines' })
-  const groups: Record<string, { revenue: number; cost: number; margin: number; marginPercent: number }> = {}
+  // I-08 : la formule est désormais une fonction SQL NOMMÉE
+  // (`metric_pilotage_marge`, migrations 465 → 467). Elle reproduit à
+  // l'identique l'agrégat JavaScript qui était ici — dont le correctif
+  // M10 (le coût vient du coût de revient de l'article, jamais d'une
+  // estimation à 70 % du prix qui rendait la marge égale à 30 % quoi
+  // qu'il arrive), la fenêtre de dates, et le filtre sur les factures
+  // PAYÉES.
+  //
+  // Pourquoi le déplacer : la formule était recalculée À L'AFFICHAGE, en
+  // JavaScript. Trois conséquences, toutes supprimées ici :
+  //   * deux écrans, deux résultats si l'un des deux evolve ;
+  //   * le client ne peut pas savoir avec quelle formule on a calculé ;
+  //   * la base ne peut ni le dater, ni le.versionner (dictionnaire 461).
+  // Elle est maintenant nommée, datée, et unique — `pilotage.marge_pct`.
+  //
+  // ⚠️ Les trois paramètres traduisent l'exigence EXACTE du code
+  // précédent : `p_fin` reste `null` parce que l'ancien aggregat n'avait
+  // qu'une borne basse (`.gte`), et `p_statut` vaut `'paid'` parce que
+  // l'ancien code filtrait sur `.eq('invoice.status', 'paid')`. Toute
+  // divergence ici changerait les chiffres affichés en silence — c'est
+  // exactement ce que les migrations 466 et 467 ont redressé.
+  const { data, error } = await supabase.rpc('metric_pilotage_marge', {
+    p_tenant: tid,
+    p_dimension: dimension,
+    p_debut: startDate.toISOString().split('T')[0],
+    p_fin: null,
+    p_statut: 'paid',
+  })
+  if (error) throw error
 
-  for (const line of lines as any[]) {
-    // M10 (audit du 28/09/2026) : `invoice_lines` porte `total` (HT), pas `line_total` —
-    // l'écran tombait en erreur. Le coût était « estimé à 70 % du prix » : la marge
-    // affichée valait 30 % quoi qu'il arrive. Il vient désormais du coût de revient de
-    // l'article ; une ligne sans article ni coût compte pour 0 de coût.
-    const revenue = Number(line.total || 0)
-    const cost = Number(line.quantity || 0) * Number(line.product?.cost_price || 0)
-    const margin = revenue - cost
-
-    let key = 'Unknown'
-    if (dimension === 'product') key = line.product?.name || 'No product'
-    else if (dimension === 'customer') key = line.invoice?.customer?.name || 'No customer'
-    else if (dimension === 'category') key = line.product?.category || 'No category'
-
-    if (!groups[key]) groups[key] = { revenue: 0, cost: 0, margin: 0, marginPercent: 0 }
-    groups[key].revenue += revenue
-    groups[key].cost += cost
-    groups[key].margin += margin
+  // La base rend `cle / chiffre_affaires / cout / marge / marge_pct` ; le
+  // tableau de bord attend `name / revenue / cost / margin / marginPercent`
+  // et le TRI PAR CHIFFRE D'AFFAIRES DÉCROISSANT. On ne change ni les
+  // noms, ni l'ordre : un tableau de bord qui se réordonne seul fait
+  // croire aux utilisateurs que les chiffres ont bougé.
+  // La forme que rend la fonction SQL. Déclarée ici, pas `any` : la porte
+  // `check-any-ceiling` refuse de voir la dette d'`any` augmenter, et elle
+  // a raison — un `any` ici ferait perdre à la compilation la seule chose
+  // qui nous protège : que le nom des colonnes rendues par la fonction
+  // reste le bon.
+  type LigneMarge = {
+    cle: string
+    chiffre_affaires: number
+    cout: number
+    marge: number
+    marge_pct: number
   }
 
-  for (const key of Object.keys(groups)) {
-    groups[key].marginPercent = groups[key].revenue > 0 ? (groups[key].margin / groups[key].revenue) * 100 : 0
-  }
-
-  const result = Object.entries(groups)
-    .map(([name, vals]) => ({ name, ...vals }))
+  return ((data ?? []) as unknown as LigneMarge[])
+    .map((r) => ({
+      name: r.cle,
+      revenue: Number(r.chiffre_affaires ?? 0),
+      cost: Number(r.cout ?? 0),
+      margin: Number(r.marge ?? 0),
+      marginPercent: Number(r.marge_pct ?? 0),
+    }))
     .sort((a, b) => b.revenue - a.revenue)
-
-  return result
 }
