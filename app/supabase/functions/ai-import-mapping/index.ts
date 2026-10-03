@@ -16,6 +16,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { checkRateLimit, getClientIp, validateBodySize, rateLimitResponse } from "../_shared/rateLimit.ts";
+import { ocrConsent, tenantFromRequest } from "../_shared/ocrConsent.ts";
 
 interface MappingRequest {
   sourceHeaders: string[];
@@ -93,16 +94,38 @@ serve(async (req: Request) => {
     return rateLimitResponse(corsHeaders, 60);
   }
 
-  // Verify user is an active tenant user
-  // SECURITY: Use .limit(1) instead of .maybeSingle() to prevent failure for multi-tenant users
+  // ============================================
+  // D-5 (318, tâche 1.11) — LA SOCIÉTÉ EST DÉSIGNÉE, ET ELLE A CONSENTI.
+  //
+  // Cette fonction envoie les en-têtes ET des lignes d'exemple d'un fichier importé à un prestataire d'IA. Elle devinait la
+  // société (« le premier rattachement actif ») et ne demandait aucun
+  // consentement : pour un utilisateur de deux sociétés, le consentement — ou
+  // son absence — de l'une valait pour l'autre. Même garde, dans le même ordre,
+  // que `ocr-invoice-import` : société lue sur `x-tenant-id` (jointe par
+  // l'application à chaque requête), appartenance vérifiée POUR CETTE société,
+  // consentement lu AVANT tout envoi. Un doute ne fait pas partir les données.
+  // ============================================
+  const tenantId = tenantFromRequest(req);
+  if (!tenantId) {
+    return new Response(
+      JSON.stringify({
+        error: "Société non précisée (en-tête x-tenant-id absent) : impossible de savoir à qui appartiennent les données.",
+        code: "TENANT_REQUIRED",
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Verify user is an active member of THIS tenant
   const { data: tenantUsers, error: tuErr } = await userClient
     .from("tenant_users")
-    .select("id, role, status")
+    .select("id, role, status, tenant_id")
     .eq("auth_id", user.id)
+    .eq("tenant_id", tenantId)
     .eq("status", "active")
     .limit(1);
 
-  if (tuErr || !tenantUsers || tenantUsers.length === 0) {
+  if (tuErr || !tenantUsers || tenantUsers.length === 0 || tenantUsers[0].tenant_id !== tenantId) {
     return new Response(
       JSON.stringify({ error: "Utilisateur non autorisé" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -116,6 +139,21 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ error: "Réservé aux administrateurs et comptables" }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const consentement = await ocrConsent(
+    createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!),
+    tenantId,
+  );
+  if (!consentement.granted) {
+    return new Response(
+      JSON.stringify({
+        error: "L'envoi à un prestataire d'IA n'est pas autorisé pour cette société. Donnez votre consentement dans Paramètres → Société ; aucune donnée n'a été transmise.",
+        code: "OCR_CONSENT_REQUIRED",
+        motif: consentement.motif,
+      }),
+      { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 

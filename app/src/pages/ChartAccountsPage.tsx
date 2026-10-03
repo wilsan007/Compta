@@ -612,28 +612,9 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
 
             {activeTab === 'complement' && (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
-                  <Input label={t('chartAccounts.nbLines')} type="number" defaultValue="" placeholder="0" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('chartAccounts.pageBreak')} type="number" defaultValue="" placeholder="0" />
-                  <Input label={t('chartAccounts.regrouping')} defaultValue="" placeholder="" />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.analyticEntry')}
-                  </label>
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.echeanceEntry')}
-                  </label>
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.tiersEntry')}
-                  </label>
-                </div>
+                {/* 1.10 (AUD-I02) : six champs factices retirés d'ici — voir
+                    src/lib/__tests__/chart-accounts-no-placebo.test.ts. */}
+                <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
                 <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
               </>
             )}
