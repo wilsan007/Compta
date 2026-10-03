@@ -102,7 +102,7 @@
 
 | Tâche | Objet | État | Repris de (plan QA du 29/09) |
 |---|---|---|---|
-| 2.1 | Titres-restaurant et transport dans le bulletin | ⬜ | C2 ter |
+| 2.1 | Titres-restaurant et transport dans le bulletin | ✅ code · 👤 signature | C2 ter — migration `341`, suite `321` **9/9**, registre SQL **vide** ; barèmes 2026 relevés sur urssaf.fr le 04/10 ; **déploiement soumis à la signature de l'expert-comptable (D-G)** |
 | 2.2 | Heures sup détectées depuis la feuille de temps | ✅ | C3 (rh-008) — migration `340`, suite `340` **9/9** (4 rouges avant), scénario écran H11/H12, 04/10 |
 | 2.3 | Tranches d'heures sup + exonération | ⬜ | reste de W5 |
 | 2.4 | Pointage d'absence ; constats bas de paie | ⬜ | C4 (rh-009), C5, C6 |

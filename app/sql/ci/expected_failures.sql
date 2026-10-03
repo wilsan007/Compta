@@ -67,10 +67,7 @@
 -- explicitement (« [URSSAF-PSS] », « [URSSAF-TAUX] »). Écrire un taux de
 -- mémoire serait exactement le défaut que ce dépôt combat.
 --
-INSERT INTO _audit_expected (file, test_id, reason) VALUES
-  ('321', 'T02', 'Les titres-restaurant n''entrent pas dans le brut (mesuré 2 500,00 € au lieu de 2 660,00) : la grille 2026 n''a aucune ligne pour ce poste. Le paramétrage à SOURCER est un chantier distinct.'),
-  ('321', 'T03', 'L''indemnité de transport n''entre pas dans le brut (mesuré 2 500,00 € au lieu de 2 575,00) : même constat, plafond d''exonération 2026 à SOURCER.'),
-  ('321', 'T05', 'Cumul des deux ci-dessus : brut 3 000,00 € au lieu de 3 235,00. Même cause que T02 et T03.');
+-- (vide depuis le 04/10/2026 : `321 T02 / T03 / T05` fermés par la 341 — tâche 2.1)
 
 -- Un défaut connu doit s'inscrire ici AVEC SA RAISON, puis disparaître avec son
 -- correctif. Une suite qui reste rouge sans être inscrite casse la CI — c'est

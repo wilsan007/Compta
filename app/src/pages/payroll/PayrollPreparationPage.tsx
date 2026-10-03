@@ -398,8 +398,10 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
             { value: 'bonus', label: t('preparation.elementTypes.bonus') },
             { value: 'commission', label: t('preparation.elementTypes.commission') },
             { value: 'absence', label: t('preparation.elementTypes.absence') },
-            { value: 'meal_voucher', label: t('preparation.elementTypes.meal_voucher') },
-            { value: 'transport', label: t('preparation.elementTypes.transport') },
+            // 341 : les types que LIT le moteur de bulletin. `meal_voucher` et `transport`
+            // (singulier) étaient enregistrés mais n'entraient dans aucun bulletin.
+            { value: 'meal_vouchers', label: t('preparation.elementTypes.meal_voucher') },
+            { value: 'transport_allowance', label: t('preparation.elementTypes.transport') },
             { value: 'advance_deduction', label: t('preparation.elementTypes.advance_deduction') },
             { value: 'pay_recall', label: t('preparation.elementTypes.pay_recall') },
             { value: 'expense_reimbursement', label: t('preparation.elementTypes.expense_reimbursement') },
@@ -413,6 +415,14 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
             <Input label={t('preparation.unitPrice')} type="number" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
             <Input label={t('preparation.amount')} type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
+          {/* 341 : pour ces deux postes, les trois champs ont un sens précis — le
+              moteur en déduit la part exonérée et ce qui entre dans le brut. */}
+          {elementType === 'meal_vouchers' && (
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('preparation.hintMealVouchers')}</p>
+          )}
+          {elementType === 'transport_allowance' && (
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('preparation.hintTransport')}</p>
+          )}
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
             <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>

@@ -3940,7 +3940,8 @@ export interface PayrollVariableElement {
   employee_id: string
   pay_run_id: string | null
   period: string
-  element_type: 'overtime' | 'bonus' | 'commission' | 'absence' | 'meal_voucher' | 'transport' | 'other'
+  // `meal_vouchers` et `transport_allowance` sont les types lus par le moteur de bulletin (341).
+  element_type: 'overtime' | 'bonus' | 'commission' | 'absence' | 'meal_voucher' | 'meal_vouchers' | 'transport' | 'transport_allowance' | 'other'
   description: string | null
   quantity: number | null
   unit_price: number | null

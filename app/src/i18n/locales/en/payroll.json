@@ -194,7 +194,7 @@
       "cancelled": "Cancelled"
     }
   },
-  "preparation": {
+  "preparation": { "hintMealVouchers": "Quantity = number of vouchers, unit price = voucher value, amount = share paid by the employee. The employer share above the exemption limit is added to gross pay.", "hintTransport": "Quantity = 1, unit price = cost of the pass, amount = sum covered. Anything above the exempt share is added to gross pay.",
     "title": "Payroll Preparation",
     "subtitle": "5-step payroll preparation wizard",
     "steps": { "period": "Period", "constants": "Constants", "variables": "Variables", "preview": "Preview", "validate": "Validation" },
@@ -224,7 +224,7 @@
         "parametre": "company overtime premium parameter"
       }
     },
-    "elementTypes": { "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "meal_vouchers": "Meal Vouchers (payroll)", "transport": "Transport", "other": "Other", "advance_deduction": "Salary Advance Deduction", "pay_recall": "Pay Recall", "expense_reimbursement": "Expense Reimbursement", "unpaid_leave_deduction": "Unpaid Leave Deduction", "timesheet_hours": "Timesheet Hours", "lateness_deduction": "Lateness Deduction", "unpaid_absence": "Unpaid Absence" },
+    "elementTypes": { "transport_allowance": "Transport contribution", "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "meal_vouchers": "Meal Vouchers (payroll)", "transport": "Transport", "other": "Other", "advance_deduction": "Salary Advance Deduction", "pay_recall": "Pay Recall", "expense_reimbursement": "Expense Reimbursement", "unpaid_leave_deduction": "Unpaid Leave Deduction", "timesheet_hours": "Timesheet Hours", "lateness_deduction": "Lateness Deduction", "unpaid_absence": "Unpaid Absence" },
     "validate": "Validate Preparation", "validated": "Preparation validated",
     "validateHint": "Review the elements above then validate the preparation",
     "generateSlips": "Generate the run's payslips",

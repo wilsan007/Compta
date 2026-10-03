@@ -194,7 +194,7 @@
       "cancelled": "ملغى"
     }
   },
-  "preparation": {
+  "preparation": { "hintMealVouchers": "الكمية = عدد القسائم، سعر الوحدة = قيمة القسيمة، المبلغ = الحصة التي يدفعها الموظف. حصة صاحب العمل التي تتجاوز حد الإعفاء تُضاف إلى الأجر الإجمالي.", "hintTransport": "الكمية = 1، سعر الوحدة = تكلفة الاشتراك، المبلغ = المبلغ المتكفَّل به. ما يتجاوز الحصة المعفاة يُضاف إلى الأجر الإجمالي.",
     "title": "تحضير الرواتب",
     "subtitle": "معالج تحضير الرواتب في 5 خطوات",
     "steps": { "period": "الفترة", "constants": "الثوابت", "variables": "المتغيرات", "preview": "معاينة", "validate": "التحقق" },
@@ -224,7 +224,7 @@
         "parametre": "معامل الزيادة القانونية للشركة"
       }
     },
-    "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "meal_vouchers": "قسائم طعام (راتب)", "transport": "نقل", "other": "أخرى", "advance_deduction": "خصم سلفة الراتب", "pay_recall": "استدراك الراتب", "expense_reimbursement": "تعويض المصاريف", "unpaid_leave_deduction": "خصم إجازة بدون أجر", "timesheet_hours": "ساعات العمل", "lateness_deduction": "خصم التأخير", "unpaid_absence": "غياب بدون أجر" },
+    "elementTypes": { "transport_allowance": "المساهمة في النقل", "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "meal_vouchers": "قسائم طعام (راتب)", "transport": "نقل", "other": "أخرى", "advance_deduction": "خصم سلفة الراتب", "pay_recall": "استدراك الراتب", "expense_reimbursement": "تعويض المصاريف", "unpaid_leave_deduction": "خصم إجازة بدون أجر", "timesheet_hours": "ساعات العمل", "lateness_deduction": "خصم التأخير", "unpaid_absence": "غياب بدون أجر" },
     "validate": "التحقق من التحضير", "validated": "تم التحقق من التحضير",
     "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير",
     "generateSlips": "توليد قسائم الدفعة",

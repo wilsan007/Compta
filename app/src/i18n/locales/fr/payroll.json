@@ -194,7 +194,7 @@
       "cancelled": "Annulé"
     }
   },
-  "preparation": {
+  "preparation": { "hintMealVouchers": "Quantité = nombre de titres, prix unitaire = valeur du titre, montant = part payée par le salarié. La part de l'employeur au-delà de la limite d'exonération entre dans le brut.", "hintTransport": "Quantité = 1, prix unitaire = coût de l'abonnement, montant = somme prise en charge. Ce qui dépasse la part exonérée entre dans le brut.",
     "title": "Préparation de paie",
     "subtitle": "Assistant de préparation de paie en 5 étapes",
     "steps": {
@@ -240,7 +240,7 @@
         "parametre": "paramètre de majoration de la société"
       }
     },
-    "elementTypes": {
+    "elementTypes": { "transport_allowance": "Prise en charge du transport",
       "overtime": "Heures sup.",
       "bonus": "Prime",
       "commission": "Commission",
