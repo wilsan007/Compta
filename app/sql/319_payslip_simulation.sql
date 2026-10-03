@@ -77,6 +77,7 @@ DECLARE
   v_category text;
   v_line_rate_er numeric;
   v_contrib jsonb := '[]'::jsonb;    -- détail ligne à ligne (tests d'or, 0,01 €)
+  v_elem RECORD;                     -- un élément variable, pour son détail
   v_pas_rate numeric;
 
   -- Éléments variables
@@ -353,6 +354,49 @@ BEGIN
   END IF;
 
   v_csg_crds_total := v_csg_deductible + v_csg_non_deductible + v_crds;
+
+-- ── Les ÉLÉMENTS VARIABLES au détail du bulletin ────────────────────────
+--
+-- Ils étaient calculés juste au-dessus, en agrégat (`SUM(CASE WHEN
+-- ve.element_type = …)`), et jamais restitués ligne à ligne : le bulletin
+-- disait le montant, sans dire d'où il venait. La suite 326 T05/T07 le
+-- mesurait — « ligne=ABSENTE » pour un acompte de 300 € et pour un rappel
+-- de 500 €, alors que les deux étaient bien appliqués au net.
+--
+-- Un bulletin doit DIRE d'où vient chaque euro : c'est la doctrine du
+-- dépôt, et c'est ce qui permet à l'éditor de relire un bulletin sans
+-- rouvrir la saisie. Le signe suit le sens de l'opération — un acompte et
+-- un congé sans solde sortent du net, un rappel et un remboursement y
+-- entrent.
+FOR v_elem IN
+  SELECT ve.element_type, ve.description, ve.amount
+  FROM payroll_variable_elements ve
+  -- MÊME CLAUSE que l'agrégat ci-dessus (l. 217-220), et c'est indispensable :
+  -- sans `employee_id`, le bulletin afficherait les éléments variables d'un
+  -- AUTRE salarié — et le test T06 (sans élément de ce type, le bulletin
+  -- n'invente aucune ligne) ne le verrait pas. Les deux lectures ne peuvent
+  -- pas diverger.
+  WHERE ve.pay_run_id = p_pay_run_id
+    AND ve.employee_id = p_employee_id
+    AND ve.tenant_id = v_tid
+    AND COALESCE(ve.integrated, false) = false
+    AND ve.amount IS NOT NULL
+    AND ve.amount <> 0
+  ORDER BY ve.element_type, ve.id
+LOOP
+  v_contrib := v_contrib || jsonb_build_object(
+    'type', v_elem.element_type,
+    'label', v_elem.description,
+    'base', round(v_total_gross, 2),
+    'rate_employee', 0, 'employee', 0,
+    'rate_employer', 0, 'employer', 0,
+    'amount', CASE
+                WHEN v_elem.element_type IN ('advance_deduction', 'unpaid_leave_deduction')
+                  THEN -abs(v_elem.amount)
+                ELSE abs(v_elem.amount)
+              END);
+END LOOP;
+
 
   -- ── Net social et net imposable ──
   -- 276 : le net imposable garde la CSG non déductible et la CRDS (il les

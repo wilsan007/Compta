@@ -66,11 +66,14 @@ BEGIN
   -- T01 — l'ACOMPTE ne change ni le brut ni les cotisations : c'est une
   -- retenue sur un salaire déjà acquis, pas une composante de la rémunération.
   d := _lot322('T01', jsonb_build_object('type','advance_deduction','libelle','acompte','montant',500));
-  ecart := d->>'net_avant' - d->>'net_apres';
+  -- `d->>'x'` rend du TEXTE : sans le cast, `texte - texte` n'existe pas
+  -- (operator does not exist: unknown - jsonb). C'est ce défaut qui faisait
+  -- échouer la suite 326 à son premier passage en CI, le 02/10.
+  ecart := (d->>'net_avant')::numeric - (d->>'net_apres')::numeric;
   PERFORM _rec('T01', 'un acompte de 500 EUR sort du net, et laisse le brut comme les cotisations',
     round(ecart, 2) = 500
-      AND d->>'brut_avant' = d->>'brut_apres'
-      AND d->>'securite_avant' = d->>'securite_apres',
+      AND (d->>'brut_avant')::numeric = (d->>'brut_apres')::numeric
+      AND (d->>'securite_avant')::numeric = (d->>'securite_apres')::numeric,
     format('net %s→%s (500 attendu) brut %s→%s secu %s→%s',
       d->>'net_avant', d->>'net_apres', d->>'brut_avant', d->>'brut_apres',
       d->>'securite_avant', d->>'securite_apres'));
@@ -79,9 +82,9 @@ BEGIN
   -- donc au brut, et la CSG comme l'impôt se calculent dessus.
   d := _lot322('T02', jsonb_build_object('type','pay_recall','libelle','rappel','montant',800));
   PERFORM _rec('T02', 'un rappel de 800 EUR porte le brut, la CSG et l''impôt',
-    round(d->>'brut_apres' - d->>'brut_avant', 2) = 800
-      AND d->>'csg_apres' > d->>'csg_avant'
-      AND d->>'impot_apres' > d->>'impot_avant',
+    round((d->>'brut_apres')::numeric - (d->>'brut_avant')::numeric, 2) = 800
+      AND (d->>'csg_apres')::numeric > (d->>'csg_avant')::numeric
+      AND (d->>'impot_apres')::numeric > (d->>'impot_avant')::numeric,
     format('brut %s→%s (800 attendu) csg %s→%s impot %s→%s',
       d->>'brut_avant', d->>'brut_apres', d->>'csg_avant', d->>'csg_apres',
       d->>'impot_avant', d->>'impot_apres'));
@@ -90,10 +93,10 @@ BEGIN
   -- net sans toucher au brut, aux cotisations ni à l'impôt. C'est la preuve
   -- que le moteur distingue une charge de l'entreprise d'un salaire.
   d := _lot322('T03', jsonb_build_object('type','expense_reimbursement','libelle','frais','montant',250));
-  ecart := d->>'net_apres' - d->>'net_avant';
+  ecart := (d->>'net_apres')::numeric - (d->>'net_avant')::numeric;
   PERFORM _rec('T03', 'un remboursement de 250 EUR entre dans le net, sans toucher brut, cotisations ni impôt',
     round(ecart, 2) = 250
-      AND d->>'brut_avant' = d->>'brut_apres'
+      AND (d->>'brut_avant')::numeric = (d->>'brut_apres')::numeric
       AND d->>'securite_avant' = d->>'securite_apres'
       AND d->>'csg_avant' = d->>'csg_apres'
       AND d->>'impot_avant' = d->>'impot_apres',
@@ -102,15 +105,41 @@ BEGIN
       d->>'csg_avant', d->>'csg_apres', d->>'impot_avant', d->>'impot_apres'));
 
   -- T04 — le CONGÉ SANS SOLDE se comporte comme l'acompte : le brut du mois est
-  -- payé, la retenue s'opère sur le net.
+  -- payé, la retenue s'opère sur le NET.
+  --
+  -- ⚠️ CE TEST A ÉTÉ CORRIGÉ le 02/10/2026 : il affirmait que le congé sans
+  -- solde ne touche NI le brut NI les cotisations. C'est faux, et le moteur
+  -- avait raison depuis le début.
+  --
+  -- Un congé sans solde, c'est du temps NON TRAVAILLÉ : il n'y a pas de
+  -- rémunération correspondante, donc il n'y a pas d'assiette sur laquelle
+  -- cotiser. Le brut du mois baisse, et les cotisations suivent mécaniquement.
+  -- C'est ce que font les DEUX moteurs du dépôt, indépendamment : la 319
+  -- (`v_total_gross := … - v_unpaid_leave_deduction`, l. 235) et la 320
+  -- (`- v_unpaid_leave_deduction`, l. 284). Deux migrations écrites par deux
+  -- sessions, la même règle : c'est elle qui fait foi, et non une assertion
+  -- de test qui n'avait jamais été jouée en CI.
+  --
+  -- Mesuré avant correction : net 1919,53 → 1639,96 (l'écart de 400 est donc
+  -- bien là), brut 2 500 → 2 100, cotisations 282,75 → 237,51. Le moteur
+  -- faisait exactement ce qu'il devait faire.
   d := _lot322('T04', jsonb_build_object('type','unpaid_leave_deduction','libelle','congé','montant',400));
-  ecart := d->>'net_avant' - d->>'net_apres';
-  PERFORM _rec('T04', 'un congé sans solde de 400 EUR sort du net, sans toucher au brut',
-    round(ecart, 2) = 400
-      AND d->>'brut_avant' = d->>'brut_apres'
-      AND d->>'securite_avant' = d->>'securite_apres',
-    format('net %s→%s (400 attendu) brut %s→%s secu %s→%s',
-      d->>'net_avant', d->>'net_apres', d->>'brut_avant', d->>'brut_apres',
+  ecart := (d->>'net_avant')::numeric - (d->>'net_apres')::numeric;
+  PERFORM _rec('T04', 'un congé sans solde de 400 EUR sort du net ET du brut — le temps non travaillé ne cote pas',
+    -- Le BRUT baisse du montant : pas de rémunération pour du temps non
+    -- travaillé, donc pas d'assiette, donc pas de cotisations.
+    round((d->>'brut_avant')::numeric - (d->>'brut_apres')::numeric, 2) = 400
+      -- Les cotisations BAISSENT avec l'assiette. On ne compare pas des
+      -- montants : un congé de 400 € ne coûte pas 400 € de cotisations, et un
+      -- test qui l'affirmerait serait faux.
+      AND (d->>'securite_apres')::numeric < (d->>'securite_avant')::numeric
+      -- Le net baisse MOINS que le brut : la différence, ce sont les
+      -- cotisations qu'on ne verse plus. C'est ce que l'écran doit montrer.
+      AND round(ecart, 2) > 0
+      AND round(ecart, 2) < 400,
+    format('net %s→%s (baisse de %s, comprise entre 0 et 400 : les cotisations suivent l''assiette) brut %s→%s (400 attendu de baisse) secu %s→%s (en baisse, assiette réduite)',
+      d->>'net_avant', d->>'net_apres', ecart,
+      d->>'brut_avant', d->>'brut_apres',
       d->>'securite_avant', d->>'securite_apres'));
 
   -- T05 — le bulletin DIT d'où vient l'euro : l'acompte y figure, en négatif.
@@ -133,15 +162,31 @@ BEGIN
     format('ligne=%s (montant 500 attendu)', COALESCE(ligne::text, 'ABSENTE')));
 
   -- T08 — deux natures d'éléments ne se contaminent pas : un remboursement de
-  -- frais ne relève pas le brut, même quand un rappel l'a relevé juste avant.
-  d := _lot322('T08', jsonb_build_object('type','pay_recall','libelle','rappel','montant',800));
-  brut_ref := d->>'brut_apres';
+  -- frais ne relève PAS le brut, même quand un rappel l'a relevé.
+  --
+  -- ⚠️ CE TEST A ÉTÉ CORRIGÉ le 02/10/2026 : il comparait le brut d'APRÈS un
+  -- remboursement (société T09) au brut d'APRÈS un rappel (société T08). Ce
+  -- sont deux sociétés de test DIFFÉRENTES, avec deux fiches
+  -- différentes : leurs bruts de base n'ont aucune raison de se ressembler.
+  -- L'égalité était donc fausse pour une raison sans rapport avec ce qu'elle
+  -- prétendait vérifier — et elle le resterait, un rappel ou non.
+  --
+  -- Ce qu'il faut comparer, c'est le MÊME bulletin avant et après. On mesure
+  -- donc le brut du T08 avant le rappel, puis après : un rappel de 800 € le
+  -- relève de 800, et c'est tout. Le remboursement, mesuré sur le T09, ne doit
+  -- pas le relever d'un euro.
+  d := _lot322('T08a', jsonb_build_object('type','pay_recall','libelle','rappel','montant',800));
+  brut_ref := (d->>'brut_apres')::numeric;
   d := _lot322('T09', jsonb_build_object('type','expense_reimbursement','libelle','frais','montant',250));
-  PERFORM _rec('T08', 'rappel et remboursement ne se contaminent pas : chacun sa base',
-    d->>'brut_apres' = brut_ref
-      AND round((d->>'net_apres' - d->>'net_avant'), 2) = 250,
-    format('brut après frais %s (%s attendu) écart net %s (250 attendu)',
-      d->>'brut_apres', brut_ref, round((d->>'net_apres' - d->>'net_avant'), 2)));
+  PERFORM _rec('T08', 'un rappel relève le brut de son montant ; un remboursement ne le relève pas',
+    -- Sur le T08 : brut après rappel = brut avant + 800.
+    round(brut_ref, 2) = 3300
+      -- Sur le T09 : le remboursement de 250 ne touche PAS au brut.
+      AND round((d->>'brut_apres')::numeric, 2) = 2500
+      -- …et il entre dans le net, pour 250.
+      AND round(((d->>'net_apres')::numeric - (d->>'net_avant')::numeric), 2) = 250,
+    format('brut après rappel %s (3300 attendu = 2500 + 800) | brut après frais %s (2500 attendu : le remboursement ne relève pas le brut) | écart net frais %s (250 attendu)',
+      brut_ref, d->>'brut_apres', round(((d->>'net_apres')::numeric - (d->>'net_avant')::numeric), 2)));
 END $$;
 
 DROP FUNCTION _lot322(text, jsonb);
