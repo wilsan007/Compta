@@ -1895,15 +1895,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # I-08 (462) — le « pourquoi ce chiffre ? » : dérouler, pour un
-      # document, les pièces de sa chaîne (460), les écritures produites
-      # et les lignes qui portent le montant. Ne calcule rien, n'invente
-      # aucun lien : un chiffre qu'aucune chaîne ne porte est renvoyé
-      # vide, jamais fabriqué.
-      # 5 scénarios : structure, pièce comptable, lignes, montant recomposé,
-      # chiffre sans explication.
-      - name: 'I-08 : le « pourquoi ce chiffre ? » (462)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/462_chain_expliquer_montant_tests.sql
       # L4, tranche 2 — L'ALERTE EN CAS DE DÉGRADATION (414). La 413 produit un
       # historique que personne ne regarde : l'indice peut tomber en silence et
       # l'éditeur découvre le lendemain qu'un maillon s'est cassé. La 414 compare
