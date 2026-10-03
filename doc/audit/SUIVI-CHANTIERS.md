@@ -35,24 +35,24 @@
 ## 0. Mesures (recalculées par le script)
 
 <!-- MESURES:DEBUT -->
-*Mesuré le **2026-10-02** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
+*Mesuré le **2026-10-03** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `partie-5-integrite-chainages` @ `c21c832` | — |
-| Migrations / suites SQL dans `app/sql` | 179 / 103 | — |
+| Branche de la copie de travail | `harmonisation` @ `75d9799` | — |
+| Migrations / suites SQL dans `app/sql` | 215 / 134 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
-| Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 0 | registre |
+| Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 2 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
-| `confirmSync` (= `window.confirm`) — fichiers | 97 | AUD-I01 · 1.8 · UX-03 |
+| `confirmSync` (= `window.confirm`) — fichiers | 100 | AUD-I01 · 1.8 · UX-03 |
 | `useConfirm` / `confirmDialog` — fichiers | 4 | AUD-I01 · 1.8 |
-| Champs factices du plan comptable (`nbLines`, `pageBreak`, `regrouping`) | ⬜ présents | AUD-I02 · 1.10 |
+| Champs factices du plan comptable (`nbLines`, `pageBreak`, `regrouping`) | ✅ retirés | AUD-I02 · 1.10 |
 | Suite `412` (caisse) finit par `_audit_assert` | ✅ | 1.2 |
-| `parse-bank-statement` / `ai-import-mapping` refusent sans consentement | ⬜ / ⬜ | D-5 · AUD-H04 · 1.11 |
-| `get_vat_codes` (correctif TVA 198) présent en base | ⬜ | 1.7 |
+| `parse-bank-statement` / `ai-import-mapping` refusent sans consentement | ✅ / ✅ | D-5 · AUD-H04 · 1.11 |
+| `get_vat_codes` (correctif TVA 198) présent en base | ✅ | ✅ | `325_vat_codes_ca3` (ex-`198`), livré par `08fbb39` sur `fusion-1.6`, fusionné dans `harmonisation` 
 | e2e Playwright sur chaque PR vers `main` | ⬜ sur étiquette seulement | AUD-J01 · 4.3 |
-| `any` explicites (plafond gelé : production / tests) | 988 / 796 (gelé le 2026-10-02) | AUD-J07 · DAT-02 |
-| Tables non lues par l'écran (plafond) | 75 (gelé le 2026-09-29) | SOC-05 |
+| `any` explicites (plafond gelé : production / tests) | 1035 / 802 (gelé le 2026-10-03) | AUD-J07 · DAT-02 |
+| Tables non lues par l'écran (plafond) | 75 (gelé le 2026-10-03) | SOC-05 |
 | **Tables coquilles** (ni écran, ni Edge, SQL = DDL seul) | 37 | ORPH-02 · SOC-05 |
 | Suites SQL qui exercent `user_totp` / `api_keys` | 0 | ORPH-01 · SEC-02 |
 
@@ -71,9 +71,9 @@
 |---|---|---|---|---|
 | ✅ **ALR-01** | **`415` pris deux fois, puis `416` trois fois** — **corrigé le 02/10 au soir** | la plage inscrite (`415`→`429`, L16→L24) garde ses numéros ; la partie 3 passe en `430` (paie), `431` (invariants L4), `432` (relevé) — `0cd347c` (poussé) sur `partie-3-chainages`, `9e0f33d` sur `l4-invariants`. **Prévention** : `migration-numero.mjs` (contrôle avant → création → contrôle après → registre commun), crochet `pre-commit` commun à tous les worktrees, étape CI `SOC-06` | — | 02/10 |
 | 🔶 **ALR-02** | **Une copie de travail, plusieurs sessions** | la copie est sur `partie-5-integrite-chainages` avec ~20 fichiers modifiés non commités (partie 5 en cours) et les fichiers L23 non suivis. Un `git checkout` d'une autre session les emporte | chaque session : worktree propre (tâche 1.9) | 02/10 |
-| 🔶 **ALR-03** | **Le plan QA et ses correctifs ne sont pas sur la ligne principale** | `PLAN-QA-CORRECTIF-2026-09-29.md`, les lots A/B et `4065d10` (1.5) n'existent que sur `qa/recette-2026-09-29` ; D3 (`bc92cf9`) sur `qa/lot-d-stock` | tâche 1.6 | 02/10 |
+| ✅ **ALR-03** | **Le plan QA et ses correctifs ne sont pas sur la ligne principale** | `PLAN-QA-CORRECTIF-2026-09-29.md`, les lots A/B et `4065d10` (1.5) n'existent que sur `qa/recette-2026-09-29` ; D3 (`bc92cf9`) sur `qa/lot-d-stock` | tâche 1.6 | 02/10 — **levée le 03/10 : tout est dans `harmonisation`** |
 | 🔶 **ALR-04** | **`417_chain_banc_moteur` (partie 3, non suivi) est dans la plage de L16→L24** | le crochet refusera son commit ; la session doit le prendre dans sa plage (`433` si libre) avec `migration:prendre` | session partie 3 | 02/10 |
-| 🔴 **ALR-05** | **Deux migrations créent `chain_document_types`** | `431_chain_l4_invariants_mesurables` (`l4-invariants`) et `450_chain_document_types` (partie 5, livrée) : collision de **contenu**, invisible au contrôle des numéros. La fusion de `l4-invariants` doit réutiliser le registre de la `450` | session L4, avant fusion | 02/10 |
+| ✅ **ALR-05** | **Deux migrations créaient `chain_document_types`** — **tranchée le 03/10** | un seul registre : celui de la `450`. La `431` ne garde que les six raisons de non-mesure devenues preuves ; même défaut sur `chain_invariant_mesurer` (`435` × `455`), réuni par la `456` — 17 mesurés, 3 nommés | branche `harmonisation` (`934b725`, `3fbf208`) | 03/10 |
 
 ---
 
@@ -89,7 +89,7 @@
 | 1.3 | Garde anti-faux-vert dans `check-test-suites.mjs` | ✅ | `317c0a6` | — |
 | 1.4 | CI sur `qa/**` et `partie-*` | ✅ | `b5a02dc` | — |
 | 1.5 | Réparer la branche QA avant fusion | 🔶 | `4065d10` sur `qa/recette-2026-09-29`, pas encore sur la ligne principale | — |
-| 1.6 | Fusionner la recette (QA `310→324`, chaînages `400→413`) | 🔶 | **en cours** dans le worktree `p1-fusion` (branche `fusion-1.6`) : 4 conflits restants à 22:35 le 02/10, fichiers modifiés à 22:29 — une session y travaille | ALR-03 |
+| 1.6 | Fusionner la recette (QA `310→324`, chaînages `400→413`) | ✅ | fusionnée dans `harmonisation` (`18fb06d`, `75d9799`), avec `partie-1-stabiliser`, `audit/employe-colonnes-identite`, `l4-invariants` et `partie-3-chainages` : base neuve **316 migrations, 0 erreur**, **150/150** étapes SQL, Vitest **1 643** | ALR-03 |
 | 1.7 | Correctif TVA 198 sous `325` | ⬜ | `get_vat_codes` absent (mesure §0) | — |
 | 1.8 | Vrai dialogue de confirmation | ⬜ **bloquée** | attend la fin de 1.6 : la fusion touche les mêmes écrans (`SuppliersPage`, `QuotesPage`, `CustomersPage`…) ; `confirmSync` dans 97 fichiers (mesure §0) | AUD-I01, UX-03 |
 | 1.9 | Ménage des worktrees et des documents | ⬜ | — | ALR-02 |
