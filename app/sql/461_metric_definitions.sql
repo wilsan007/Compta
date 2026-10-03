@@ -177,3 +177,13 @@ COMMENT ON FUNCTION public.chain_metric_definition(uuid, text, date) IS
 
 REVOKE ALL ON FUNCTION public.chain_metric_definition(uuid, text, date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.chain_metric_definition(uuid, text, date) TO authenticated, service_role;
+
+-- ── Cloisonnement (ex-421) ────────────────────────────────────────────────
+-- Ces deux instructions vivaient dans `421_metric_definitions_cloisonnement.sql`.
+-- Le runner applique dans l'ordre des NUMÉROS : la 421 passait donc AVANT la
+-- création de la table, et toute base neuve s'arrêtait sur « relation
+-- "public.metric_definitions" does not exist » (CI rouge du 02/10 au soir au
+-- 03/10). Elles sont ici, à la suite de la table qu'elles cloisonnent.
+CREATE INDEX IF NOT EXISTS ix_metric_definitions_tenant
+  ON public.metric_definitions (tenant_id, code);
+ALTER TABLE public.metric_definitions FORCE ROW LEVEL SECURITY;

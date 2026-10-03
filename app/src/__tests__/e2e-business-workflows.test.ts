@@ -558,7 +558,7 @@ describe('Workflow Trésorerie & Échéances', () => {
       error: null,
     } as any)
 
-    const result = await cashFlowForecast(90) as any
+    const result = await cashFlowForecast(90) as Record<string, number>
 
     // l'engagement de production est visible, et le net historique
     // n'a pas bougé : c'est la non-régression de la 420 (T02).

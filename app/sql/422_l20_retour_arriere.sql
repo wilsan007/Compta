@@ -217,3 +217,14 @@ REVOKE ALL ON FUNCTION public.chain_regeneration_rollback(uuid, bigint, jsonb)
   FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.chain_regeneration_rollback(uuid, bigint, jsonb)
   TO authenticated, service_role;
+
+-- ── Catalogue des événements (L23) ───────────────────────────────────────
+-- Le retour arrière ÉMET `chain.regeneration_reverted` : il doit être promis
+-- au catalogue, sinon la suite 415 (T05 — « ni promesse morte, ni effet
+-- invisible ») rougit sur base neuve. Mesuré le 03/10.
+INSERT INTO webhook_event_catalog (event_name, description, category, is_active) VALUES
+  ('chain.regeneration_reverted', 'Une régénération d''effet de chaîne a été ramenée à son état précédent. Payload : effet, regeneration_id, retour_id, liens_ramenes, cause.', 'chain', true)
+ON CONFLICT (event_name) DO UPDATE
+SET description = EXCLUDED.description,
+    category    = EXCLUDED.category,
+    is_active   = true;

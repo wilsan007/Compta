@@ -60,6 +60,10 @@ AS $fn$
   LEFT JOIN public.customers c ON c.id  = i.customer_id AND c.tenant_id  = i.tenant_id
   LEFT JOIN public.products pr ON pr.id = l.product_id  AND pr.tenant_id = l.tenant_id
  WHERE l.tenant_id = p_tenant
+   -- GARDE DE SOCIÉTÉ : la fonction est SECURITY DEFINER et p_tenant vient du
+   -- client. Sans cette ligne, tout utilisateur connecté lisait le CA et la
+   -- marge d'une AUTRE société (refusé par ci/check_tenant_guard.sql).
+   AND p_tenant = public.current_tenant_id()
    -- La fenêtre : celle de l'écran. Sans date, on prend tout (v2).
    AND (p_debut IS NULL OR i.date >= p_debut)
    AND (p_fin   IS NULL OR i.date <= p_fin)

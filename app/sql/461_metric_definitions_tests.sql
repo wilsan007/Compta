@@ -157,6 +157,3 @@ END $$;
 DELETE FROM metric_definitions WHERE code IN ('projet.marge', 'budget.realise');
 
 SELECT _audit_assert('461');
-EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T03', 'T03 — le scénario n''a pas pu s''exécuter', false, SQLERRM);
-END $$;
