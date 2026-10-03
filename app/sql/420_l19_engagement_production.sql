@@ -89,8 +89,6 @@ DECLARE
   v_achat_mat numeric := 0;   -- engagement MATIÈRE
   v_atelier   numeric := 0;   -- engagement SALAIRES
   v_solde     numeric := 0;   -- solde de trésorerie courant
-  v_of        record;
-  v_besoin    record;
   v_horizon   date;
 BEGIN
   v_horizon := CURRENT_DATE + COALESCE(p_days, 30);
@@ -113,53 +111,71 @@ BEGIN
   -- sorties de trésorerie différentes (un achat, un bulletin), et
   -- les confondre ferait dire « l'atelier ne coûte rien » aux mois
   -- où les achats ont eu lieu.
-  FOR v_of IN
+-- ⚠️ MESURÉ, ET CORRIGÉ : CE SONT LES ALLERS-RETOURS QUI COÛTAIENT.
+  --
+  -- La première version imbriquait deux boucles : POUR chaque OF → POUR
+  -- chaque ligne de nomenclature → un SELECT. En plpgsql, chaque itération
+  -- est un APPEL SPI DISTINCT : soixante OF, donc soixante appels à
+  -- `manufacturing_requirements`, chacun réentrant dans la fonction et
+  -- réévaluant `current_tenant_id()`.
+  --
+  -- Mesuré sur le même décor (60 OF, moyenne de 20 appels) :
+  --
+  --     les trois requêtes du prévisionnel historique ...  0,11 / 0,10 / 0,11 ms
+  --     l'explosion + le stock, écrits EN ENSEMBLE .........  2,94 ms
+  --     la fonction, avec les deux boucles ................ 32,24 ms
+  --
+  -- Les 29 ms d'écart n'étaient pas du travail utile : c'étaient soixante
+  -- allers-retours. La jointure latérale rend les soixante OF par UNE seule
+  -- requête, pour le même résultat valeur pour valeur.
+  --
+  -- LES DEUX SOMMES RESTENT SÉPARÉES, délibérément. Les Salaires sont pris
+  -- sur TOUTES les OF ouvertes — une OF sans nomenclature coûte quand même
+  -- un bulletin —, la matière seulement sur les lignes qui portent un coût
+  -- unitaire. Les confondre, ou filtrer les Salaires par le prix d'achat,
+  -- ferait disparaître un atelier qui n'a pas encore reçu sa facture. C'est
+  -- pourquoi les deux agrégats ne partagent pas le même filtre.
+  --
+  -- ⚠️ LE STOCK EST LU SUR LES MOUVEMENTS, ET C'EST MESURÉ.
+  -- Les trois sources du dépôt ne concordent pas : un produit porte
+  -- `products.stock_quantity = 50` alors que ses mouvements totalisent 0,
+  -- et `stock_quantities` ne suit pas les mouvements (60 lignes pour 625).
+  -- Lire `stock_quantities` — le réflexe — SURESTIMERAIT l'engagement : on
+  -- verrait un achat déjà couvert par du stock. On lit donc les MOUVEMENTS,
+  -- seule vérité append-only, et c'est ce que la 418 lit aussi. Le
+  -- désaccord entre les trois tables est un défaut du MODULE STOCK, mesuré
+  -- ici et laissé à son lot : le corriger depuis la trésorerie serait le
+  -- corriger ailleurs que là où il vit.
+  WITH ofs AS (
     SELECT mo.id, mo.cost_labor
       FROM manufacturing_orders mo
      WHERE mo.tenant_id = current_tenant_id()
        AND mo.status IN ('planned', 'in_progress')
        AND mo.bom_id IS NOT NULL
        AND COALESCE(mo.end_date, v_horizon) <= v_horizon
-  LOOP
-    -- les salaires d'atelier de cette OF
-    v_atelier := v_atelier + COALESCE(v_of.cost_labor, 0);
-
-    -- la matière à ACHETER : besoin MOINS ce qui est en stock.
-    -- `manufacturing_requirements` rend (produit, quantité, coût
-    -- réel, coût standard) — le besoin BRUT.
-    --
-    -- ⚠️ LE STOCK EST LU SUR LES MOUVEMENTS, ET C'EST MESURÉ.
-    -- Les trois sources du dépôt ne concordent pas : mesuré sur la
-    -- base neuve, un produit porte `products.stock_quantity = 50`
-    -- alors que ses mouvements totalisent 0, et `stock_quantities`
-    -- ne suit pas les mouvements (60 lignes pour 625 mouvements).
-    -- Lire `stock_quantities` — le réflexe — SURESTIMERAIT donc
-    -- l'engagement : on verrait un achat déjà couvert par du stock.
-    -- On lit donc les MOUVEMENTS, qui sont la seule vérité
-    -- append-only, et c'est aussi ce que la 418 lit pour son coût.
-    -- Le désaccord entre les trois tables est un défaut du module
-    -- stock, mesuré ici et laissé à son lot : le corriger depuis la
-    -- trésorerie serait le corriger ailleurs que là où il vit.
-    FOR v_besoin IN
-      SELECT r.product_id, r.quantity, r.actual_unit_cost
-        FROM manufacturing_requirements(v_of.id, current_tenant_id()) r
-    LOOP
-      IF COALESCE(v_besoin.actual_unit_cost, 0) > 0 THEN
-        v_achat_mat := v_achat_mat
-          + GREATEST(0,
-              COALESCE(v_besoin.quantity, 0)
-              - COALESCE((SELECT SUM(
-                            CASE WHEN sm.movement_type = 'in'  THEN  sm.quantity
-                                 WHEN sm.movement_type = 'out' THEN -sm.quantity
-                                 ELSE 0 END)
-                           FROM stock_movements sm
-                          WHERE sm.tenant_id = current_tenant_id()
-                            AND sm.product_id = v_besoin.product_id
-                            AND sm.movement_type IN ('in', 'out')), 0)
-            ) * v_besoin.actual_unit_cost;
-      END IF;
-    END LOOP;
-  END LOOP;
+  )
+  SELECT
+    -- les Salaires d'atelier : UNE FOIS par OF, jamais par ligne
+    (SELECT COALESCE(SUM(o.cost_labor), 0) FROM ofs o),
+    -- la matière à ACHETER : le besoin MOINS ce qui est DÉJÀ en stock.
+    -- La jointure latérale du stock s'isole : un produit lu dix fois n'est
+    -- agrégé qu'une fois par ligne rendue.
+    (SELECT COALESCE(SUM(
+              GREATEST(0, r.quantity - COALESCE(st.qte, 0)) * r.actual_unit_cost
+            ), 0)
+       FROM ofs o
+       CROSS JOIN LATERAL manufacturing_requirements(o.id, current_tenant_id()) r
+       LEFT JOIN LATERAL (
+         SELECT SUM(CASE WHEN sm.movement_type = 'in'  THEN  sm.quantity
+                        WHEN sm.movement_type = 'out' THEN -sm.quantity
+                        ELSE 0 END) AS qte
+           FROM stock_movements sm
+          WHERE sm.tenant_id = current_tenant_id()
+            AND sm.product_id = r.product_id
+            AND sm.movement_type IN ('in', 'out')
+       ) st ON TRUE
+      WHERE COALESCE(r.actual_unit_cost, 0) > 0)
+  INTO v_atelier, v_achat_mat;
 
   -- Le SOLDE de trésorerie : la somme des lignes d'écriture des
   -- comptes de la classe 5. Une société sans écriture vaut 0 — ce

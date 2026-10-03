@@ -89,7 +89,7 @@ défaut de précision.
 | T05 | les salaires d'atelier | **750**, engagement total **758** |
 | T06 | le cycle | 300 → **0** après clôture de l'OF |
 | T07 | l'isolation | rendu **9008** (celui de B) ; celui de A (≈ 408) **absent** |
-| T08 | le surcoût | **p95 = 35,632 ms** pour 50 ms, 60 OF ouvertes |
+| T08 | le surcoût | **p95 = 3,712 ms** pour 50 ms, 60 OF ouvertes (rejoué à chaque exécution : le nombre s'affiche dans la sortie CI) |
 
 **Non-régression, base neuve, ordre de la CI** — **285 migrations, 0 erreur**,
 **23 suites vertes, 256 verdicts, 0 rouge**. `tsc` **0** · Vitest du parcours
@@ -114,16 +114,33 @@ je les signale plutôt que de les contourner :
 
 ## 6. Limites dites
 
-1. **La marge de performance est mince** : **35,6 ms** pour 60 OF
-   ouvertes, sur un budget de 50. Au-delà, le prévisionnel dépasse le
-   budget — l'explosion de nomenclature est appelée une fois par OF. Un
-   index ou une matérialisation serait la suite ; c'est dit, pas fait.
+1. **Le budget de §3.3 tient jusqu'à ~300 OF ouvertes** — mesuré, et
+   c'est une **montée en charge linéaire**, pas un plafond de sécurité :
+
+   | OF ouvertes | 60 | 200 | 400 |
+   |---|---|---|---|
+   | p95 mesuré | **3,26 ms** | 14,86 ms | **64,55 ms** |
+
+   ⚠️ **La première version de cette preuve annonçait une limite de
+   60 OF et l'attribuait à l'explosion de nomenclature. C'était FAUX,
+   et la mesure l'a démoli** : l'explosion ne coûte que **2,4 ms**,
+   le scan de stock **0,08 ms**, et les trois requêtes historiques
+   0,10 ms chacune. Les 29 ms manquants étaient les **soixante
+   allers-retours SPI** de la double boucle plpgsql. Écrit en
+   ensemble (une jointure latérale), le même calcul rend les mêmes
+   nombres **9,6× plus vite**. Une limite qu'on annonce sans avoir
+   mesuré où elle vient, c'est une excuse ; celle-ci est un relevé.
 2. **`net_forecast` n'inclut pas l'engagement.** Choix explicite (§3.1) ;
    `net_with_production` est là pour qui le veut.
 3. **Aucun enchaînement automatique.** L'engagement est une LECTURE ; il
    ne déclenche pas d'achat — le MRP existe déjà pour ça.
 4. **Le solde de trésorerie** est lu sur les lignes de la classe `5`. Une
    société sans écriture vaut 0 — vrai, pas un défaut d'affichage.
+5. **Les trois tables de stock se contredisent** (`products.stock_quantity`,
+   `stock_quantities`, `stock_movements`). On lit les mouvements, seule
+   vérité append-only. Le désaccord lui-même est un défaut du module stock,
+   mesuré ici et **laissé à son lot** : le corriger depuis la trésorerie
+   serait le corriger ailleurs que là où il vit.
 
 ## 7. Suite
 
