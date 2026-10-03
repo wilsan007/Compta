@@ -20,6 +20,9 @@ function createChainableMock() {
   mock.range = vi.fn(() => mock)
   mock.in = vi.fn(() => mock)
   mock.gte = vi.fn(() => mock)
+  // D4 : `lt` manquait — l'ancien code des statistiques de caisse l'appelait
+  // sans qu'aucun test unitaire ne passe par là (angle mort du harnais).
+  mock.lt = vi.fn(() => mock)
   mock.lte = vi.fn(() => mock)
   mock.like = vi.fn(() => mock)
   mock.ilike = vi.fn(() => mock)

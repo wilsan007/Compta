@@ -364,6 +364,7 @@
     "noAccounts": "No bank account",
     "noAccountsDesc": "Add your first RIB/IBAN",
     "ibanInvalid": "Invalid IBAN",
+    "ibanRefused": "Invalid IBAN: the check digits do not match. Nothing was saved — check the number entered.",
     "ibanValid": "Valid IBAN",
     "saved": "Bank account saved",
     "saveError": "Error saving bank account",

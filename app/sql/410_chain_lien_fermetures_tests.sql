@@ -33,7 +33,7 @@
 -- versée, relevé manuel), ni le banc D1→D8 — les deux tranches suivantes de L3.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '320', false);
+SELECT set_config('audit.file', '410', false);
 DELETE FROM _audit_results WHERE file = '320';
 
 -- ─────────────────────────────────────────────────────────────
@@ -505,4 +505,4 @@ END $$;
 -- Le registre des échecs attendus reste VIDE : aucun scénario de ce fichier
 -- n'a le droit d'échouer (doctrine AUD-A02).
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('320');
+SELECT _audit_assert('410');

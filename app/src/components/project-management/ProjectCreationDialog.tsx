@@ -64,8 +64,10 @@ export function ProjectCreationDialog({ open, onClose, onCreated }: ProjectCreat
         status,
         budget,
         actual_cost: 0,
-        start_date: startDate,
-        end_date: endDate,
+        // Une date non saisie est NULL : '' était refusé par la base (400) et
+        // aucun projet ne pouvait être créé sans ses deux dates.
+        start_date: startDate || null,
+        end_date: endDate || null,
         manager_id: managerId,
       }
       await createProject(projectData)

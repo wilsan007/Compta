@@ -491,13 +491,44 @@ export async function deleteOFLot(id: string) {
 
 
 // ============ Production Module: OF Consumptions ============
+// D3 (stk-010) : l'onglet « Consommations » ne lisait que `of_consumptions`,
+// table que seul le formulaire manuel écrit. La **clôture** d'un OF sort ses
+// composants dans `stock_movements` (`reference_type = 'production'`,
+// `reference_id` = l'OF) : sur tout OF terminé, l'onglet était donc vide par
+// construction (« Aucune consommation »). Les deux sources sont renvoyées,
+// chacune marquée par son `origin` — on ne les additionne pas, on les montre.
 export async function getOFConsumptions(moId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('of_consumptions').select('*, products(name, sku)').eq('manufacturing_order_id', moId).order('consumption_date', { ascending: false })
-  if (tid) q = q.eq('tenant_id', tid)
-  const { data, error } = await q
-  if (error) throw error
-  return data as any[]
+  let qm = supabase
+    .from('stock_movements')
+    .select('*, products(name, unit)')
+    .eq('reference_type', 'production')
+    .eq('reference_id', moId)
+    .eq('movement_type', 'out')
+    .order('date', { ascending: false })
+  let qc = supabase.from('of_consumptions').select('*, products(name, unit)').eq('manufacturing_order_id', moId).order('consumption_date', { ascending: false })
+  if (tid) {
+    qm = qm.eq('tenant_id', tid)
+    qc = qc.eq('tenant_id', tid)
+  }
+  const [rm, rc] = await Promise.all([qm, qc])
+  if (rm.error) throw rm.error
+  if (rc.error) throw rc.error
+  const mouvements = (rm.data || []).map((mv: any) => ({
+    id: mv.id,
+    product_id: mv.product_id,
+    products: mv.products,
+    quantity: mv.quantity,
+    unit: mv.products?.unit || '',
+    consumption_date: mv.date || mv.movement_date || null,
+    is_deferred: false,
+    notes: mv.reference,
+    origin: 'movement',
+  }))
+  const manuelles = (rc.data || []).map((c: any) => ({ ...c, origin: 'manual' }))
+  return [...mouvements, ...manuelles].sort(
+    (a: any, b: any) => String(b.consumption_date || '').localeCompare(String(a.consumption_date || '')),
+  ) as any[]
 }
 
 export async function createOFConsumption(cons: Omit<OFConsumption, 'id' | 'created_at'>) {

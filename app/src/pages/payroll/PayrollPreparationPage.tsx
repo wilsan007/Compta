@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { getPayRuns, getEmployees, getPayrollComponents } from '@/lib/queries/payroll'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { getPayRuns, getEmployees, getPayrollComponents, updatePayRun, generatePayRunSlips } from '@/lib/queries/payroll'
+import type { PayRunSlipsVerdict } from '@/lib/queries/payroll'
 import { getVariableElements, createVariableElement, deleteVariableElement, attachTimesheetElements, importLeaveElements, importExpenseElements, generateMealVoucherElements, calculateGrossFromNet, getSickLeaves } from '@/lib/queries/leavesAbsences'
 import type { SickLeave } from '@/lib/queries/leavesAbsences'
 import { previewOvertimePay, calculateSickLeavePay } from '@/lib/queries/businessFunctions'
@@ -29,6 +30,10 @@ export function PayrollPreparationPage() {
   const [showReverseCalc, setShowReverseCalc] = useState(false)
   const [showOvertimeCalc, setShowOvertimeCalc] = useState(false)
   const [showSickLeaveCalc, setShowSickLeaveCalc] = useState(false)
+  // rh-006 : le verdict de la génération des bulletins (l'étape 5 agissait sans
+  // rien produire — un `toast` de succès tenait lieu de preuve).
+  const [slips, setSlips] = useState<PayRunSlipsVerdict | null>(null)
+  const [working, setWorking] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -36,7 +41,7 @@ export function PayrollPreparationPage() {
       setPayRuns(runs || [])
       setEmployees(emps || [])
       setComponents(comps || [])
-    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
@@ -47,7 +52,7 @@ export function PayrollPreparationPage() {
     try {
       const els = await getVariableElements(selectedPayRun)
       setVariableElements(els || [])
-    } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err: any) { console.error(err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
   }, [selectedPayRun, tCommon, toast])
 
   useEffect(() => { loadVariableElements() }, [loadVariableElements])
@@ -80,16 +85,56 @@ export function PayrollPreparationPage() {
       }
       await loadVariableElements()
       toast('success', tCommon('common.success'), t('preparation.imported'))
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
 
   async function handleDeleteElement(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteVariableElement(id); await loadVariableElements() }
-    catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message) }
   }
 
   const totalVariable = variableElements.reduce((s, e) => s + Number(e.amount), 0)
+
+  // rh-006 : générer les bulletins du lot ÉTAPE 5 — un appel, un verdict par
+  // salarié. Sans cela, le bouton « Valider la préparation » n'émettait aucune
+  // requête et un lot vide pouvait être approuvé.
+  async function handleGenerateSlips() {
+    if (!selectedPayRun) return
+    setWorking(true)
+    try {
+      const verdict = await generatePayRunSlips(selectedPayRun)
+      setSlips(verdict)
+      await loadData()
+      const echecs = verdict.echecs || []
+      if (echecs.length > 0) {
+        toast('warning', t('preparation.slipsGenerated', { count: verdict.generes }),
+          echecs.map((e) => `${e.employee} : ${e.message}`).join(' · '))
+      } else {
+        toast('success', t('preparation.slipsGenerated', { count: verdict.generes }), selectedRun?.number || '')
+      }
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  // rh-006 : approuver la paie est un acte réel, et la base refuse un lot sans
+  // bulletin (311). L'écran ne fait donc que demander le passage à `approved`.
+  async function handleApproveRun() {
+    if (!selectedPayRun) return
+    setWorking(true)
+    try {
+      await updatePayRun(selectedPayRun, { status: 'approved' as any })
+      await loadData()
+      toast('success', t('preparation.approveRun'), selectedRun?.number || '')
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setWorking(false)
+    }
+  }
 
   const steps = [
     { num: 1, label: t('preparation.steps.period') },
@@ -235,14 +280,37 @@ export function PayrollPreparationPage() {
           )}
 
           {step === 5 && (
-            <Card className="p-6 text-center">
+            <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">{t('preparation.steps.validate')}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t('preparation.validateHint')}</p>
-              <div className="flex justify-center gap-3">
-                <Button variant="secondary" onClick={() => setStep(4)}><ArrowLeft className="w-4 h-4" /> {t('preparation.prev')}</Button>
-                <Button onClick={() => toast('success', tCommon('common.success'), t('preparation.validated'))}>
-                  <Calculator className="w-4 h-4" /> {t('preparation.validate')}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={handleGenerateSlips} disabled={working || !selectedPayRun}>
+                  <Wand2 className="w-4 h-4" /> {t('preparation.generateSlips')}
                 </Button>
+                <Button variant="secondary" onClick={handleApproveRun}
+                  disabled={working || !slips || slips.generes === 0 || (slips.echecs || []).length > 0}>
+                  <Calculator className="w-4 h-4" /> {t('preparation.approveRun')}
+                </Button>
+              </div>
+              {slips && (
+                <div className="mt-4 space-y-2">
+                  <div className="text-sm font-medium">{t('preparation.slipsGenerated', { count: slips.generes })}</div>
+                  {(slips.echecs || []).length > 0 && (
+                    <div className="p-3 rounded-lg bg-[var(--color-neutral-50)] border border-[var(--color-border)]">
+                      <div className="text-sm font-medium text-[var(--color-danger)]">
+                        {t('preparation.slipsFailed', { count: slips.echecs.length })}
+                      </div>
+                      <ul className="mt-2 space-y-1 text-xs text-[var(--color-text-secondary)]">
+                        {slips.echecs.map((e) => (
+                          <li key={e.employee_id}>{e.employee} : {e.message}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-between mt-4">
+                <Button variant="secondary" onClick={() => setStep(4)}><ArrowLeft className="w-4 h-4" /> {t('preparation.prev')}</Button>
               </div>
             </Card>
           )}
@@ -309,7 +377,7 @@ function AddElementModal({ employees, payRunId, period, onClose, onSaved }: {
         amount: Number(amount), source: 'manual', source_id: null, integrated: false,
       } as any)
       onSaved()
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setSaving(false) }
   }
 
@@ -438,7 +506,7 @@ function OvertimeCalcModal({ employees, onClose }: { employees: Employee[]; onCl
         taux: Number(res?.taux_horaire_majore || 0),
         source: String(res?.source || 'parametre'),
       })
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
 
@@ -512,7 +580,7 @@ function SickLeaveCalcModal({ employees, onClose }: { employees: Employee[]; onC
         carence: Number(res?.waiting_days ?? 0),
       })
       toast('success', tCommon('common.success'), `IJSS: ${formatCurrency(Number(res?.ijss_amount ?? 0))}`)
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message) }
     finally { setLoading(false) }
   }
 

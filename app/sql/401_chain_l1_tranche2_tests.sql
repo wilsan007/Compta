@@ -33,7 +33,7 @@
 --   T12  un document resté en brouillon ne trace rien (le fait est l'état).
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '311', false);
+SELECT set_config('audit.file', '401', false);
 DELETE FROM _audit_results WHERE file = '311';
 
 -- ─────────────────────────────────────────────────────────────
@@ -647,7 +647,7 @@ BEGIN
   END;
 END $$;
 
-SELECT _audit_assert('311');
+SELECT _audit_assert('401');
 
 
 

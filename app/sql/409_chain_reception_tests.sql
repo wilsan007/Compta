@@ -22,7 +22,7 @@
 -- l'annulation — aucun maillon ne l'appelle encore, c'est le reste de L3.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '319', false);
+SELECT set_config('audit.file', '409', false);
 DELETE FROM _audit_results WHERE file = '319';
 
 -- ─────────────────────────────────────────────────────────────
@@ -238,5 +238,5 @@ BEGIN
     format('liens=%s, traces=%s, événements=%s (0 attendu partout)', n_liens, n_traces, n_events));
 END $$;
 
-SELECT _audit_assert('319');
+SELECT _audit_assert('409');
 

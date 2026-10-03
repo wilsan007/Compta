@@ -32,7 +32,7 @@
 -- posé, puis rôle `authenticated` — un utilisateur réel, sous RLS.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '314', false);
+SELECT set_config('audit.file', '404', false);
 DELETE FROM _audit_results WHERE file = '314';
 
 -- ─────────────────────────────────────────────────────────────
@@ -435,5 +435,5 @@ END $$;
 -- Le registre des échecs attendus reste VIDE : aucun scénario de ce fichier n'a
 -- le droit d'échouer (doctrine AUD-A02).
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('314');
+SELECT _audit_assert('404');
 

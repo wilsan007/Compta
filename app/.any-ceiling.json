@@ -1,6 +1,7 @@
 {
-  "production": 982,
-  "tests": 796,
-  "total": 1778,
-  "frozenAt": "2026-10-03"
+  "production": 1035,
+  "tests": 802,
+  "total": 1837,
+  "frozenAt": "2026-10-03",
+  "note": "Mesure apres harmonisation du 03/10 (partie-5 + fusion-1.6) : 1035 production + 802 tests. La ligne principale etait gelee a 982/796 ; la recette apporte sa dette propre, deja relevee et justifiee sur fusion-1.6 (1041/803) — src/lib/queries/stock.ts (62 any, diagnostic D3, tache 2.5) et src/pages/Phase6Pages.tsx (24). Aucun any nouveau ne nait de la fusion ; le plafond ne peut que descendre ensuite."
 }

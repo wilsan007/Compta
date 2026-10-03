@@ -172,7 +172,6 @@ describe('1. Task CRUD', () => {
       recurring_interval: 1,
       recurring_rule_type: 'weekly',
       linked_action_id: null,
-      production_order_id: null,
     })
     expect(result).toEqual(task)
     expect(mockChain.insert).toHaveBeenCalled()
@@ -187,7 +186,7 @@ describe('1. Task CRUD', () => {
       effort_estimate_h: 0, effort_spent_h: 0, progress: 0,
       display_order: '0', task_level: 0, budget: 0, color: 0,
       acceptance_criteria: null, recurring_task: false, recurring_interval: 1,
-      recurring_rule_type: 'weekly', linked_action_id: null, production_order_id: null,
+      recurring_rule_type: 'weekly', linked_action_id: null,
     })).rejects.toThrow('Insert failed')
   })
 
@@ -228,7 +227,7 @@ describe('1. Task CRUD', () => {
       task_level: 0, budget: 1000, color: 0,
       acceptance_criteria: null, recurring_task: false,
       recurring_interval: 1, recurring_rule_type: 'weekly',
-      linked_action_id: null, production_order_id: null,
+      linked_action_id: null,
     }
     // Premier appel: getTaskById → existing
     mockChain.maybeSingle = vi.fn(() => Promise.resolve({ data: existing, error: null }))
@@ -632,7 +631,7 @@ describe('11. Tenant Isolation', () => {
       effort_estimate_h: 0, effort_spent_h: 0, progress: 0,
       display_order: '0', task_level: 0, budget: 0, color: 0,
       acceptance_criteria: null, recurring_task: false, recurring_interval: 1,
-      recurring_rule_type: 'weekly', linked_action_id: null, production_order_id: null,
+      recurring_rule_type: 'weekly', linked_action_id: null,
     })
     const payload = mockChain.insert.mock.calls[0][0]
     expect(payload.tenant_id).toBe('test-tenant-id')

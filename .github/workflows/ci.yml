@@ -13,6 +13,12 @@ on:
     # travaille, on la fusionne, et la porte se découvre à la fusion — après
     # avoir fusionné. Les sessions multiples du dépôt ont besoin que la
     # recette et les parties soient jouées à chaque push.
+    #
+    # `fusion-*` a été ajouté le 02/10/2026 avec la fusion 1.6 : une branche de
+    # fusion qui n'est pas jouée est une fusion dont on ne saura qu'après coup
+    # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
+    # branche de travail, pas seulement pour celles dont le nom commence par
+    # « partie ».
     branches:
       - main
       - master
@@ -20,8 +26,10 @@ on:
       - commercial-hr-paie
       - 'qa/**'
       - 'partie-*'
+      - 'fusion-*'
+      - harmonisation
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*']
+    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*']
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'
@@ -741,6 +749,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 198 — les CODES de TVA de la saisie manuelle, et les cases A/B de la CA3.
+      # Mesuré le 02/10/2026 : la saisie offrait un code `20` là où le
+      # paramétrage déclare `FR20`, et la vente disparaissait de la synthèse
+      # (base 0, taux 0, sans case). La normalisation et les cases sont ici.
+      - name: 'AUD : codes de TVA de la saisie et cases de la CA3 (198)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/198_vat_codes_ca3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # R-03 — acomptes : D 411 / C 4191 / C 4457, déduction sur la facture finale, lettrage 4191.
       - name: 'AUD : factures d''acompte et déduction (210)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/210_advance_invoices_tests.sql
@@ -977,6 +994,149 @@ jobs:
       # inventer de taux. T01 à T05 vus rouges avant.
       - name: 'AUD : écart de change au règlement et réévaluation de clôture (309)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/309_exchange_gain_loss_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # QA-01 (recette /qa du 29/09) : le référentiel `legislation_packs` est rangé
+      # sous la société technique …0001 et n'était lisible par personne —
+      # l'inscription s'arrêtait sur une liste de pays vide. T01, T02 vus rouges avant.
+      - name: 'QA : le référentiel des législations est lisible à l''inscription (310)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/310_legislation_packs_readable_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # rh-006 (recette /qa du 29/09) : aucun écran ne produisait de bulletin —
+      # « Générer les bulletins » créait un lot VIDE et « Valider la préparation »
+      # n'émettait aucune requête, donc un lot vide s'approuvait. La 311 génère les
+      # bulletins d'un lot par UN appel (verdict par salarié, refus nommés) et
+      # refuse l'approbation d'un lot sans bulletin. T01, T02, T04 vus rouges avant.
+      - name: 'QA : les bulletins de paie se génèrent, et un lot vide ne s''approuve pas (311)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_pay_run_slip_generation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A1 (recette /qa du 29/09) : créer un client ou un fournisseur ne
+      # l'inscrivait pas au plan des tiers (`third_party_accounts` restait vide) —
+      # lettrage sans tiers, plan tiers vide, balance âgée en « other », FEC sans
+      # libellé. Le déclencheur inscrit le compte, le rattrapage couvre les tiers
+      # existants. T01/T02/T03 vus rouges avant (mesuré : 0 compte pour un client
+      # + un fournisseur + un salarié créés par le chemin écran, 3 après).
+      - name: 'QA : un tiers créé a son compte au plan des tiers (312)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/312_third_party_accounts_from_partners_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A3 : le « Solde dû » lisait `customers.balance` / `suppliers.balance` /
+      # `credit_used`, trois colonnes que RIEN ne tient (mesuré : 540,00 au 411 et
+      # 0,00 à l'écran). Les vues `customer_balances` / `supplier_balances` lisent
+      # le grand livre, écritures validées seulement.
+      - name: 'QA : le solde dû d''un tiers se lit au grand livre (313)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/313_customer_balances_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # B1 (recette /qa du 29/09) : un bon de livraison ne sortait le stock qu'au
+      # passage à « Expédié » — choisir « Livré » directement laissait la
+      # marchandise partir sans mouvement — et il sortait TOUTES les lignes : un
+      # bon mêlant article et prestation était refusé
+      # (« Stock insuffisant: disponible=0, demandé=1 », le « 1 » du service).
+      # La sortie suit désormais les deux chemins, les articles de type `stock`
+      # seulement, et la commande ne se déclare livrée qu'à la sortie réelle.
+      - name: 'QA : le bon de livraison sort le stock (articles, expédié ou livré) (314)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/314_delivery_stock_out_on_ship_or_deliver_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D1 (recette /qa du 29/09) : la sortie de stock d'un produit FINI vendu
+      # passait en matières — D 603000 / C 310000 — alors que son entrée (l'OF)
+      # l'avait porté en 355000 / 713500. Le compte d'une sortie est celui de
+      # l'entrée qui a nourri la couche consommée.
+      - name: 'QA : le compte d''une sortie de stock est celui de son entrée (315)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/315_stock_exit_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D2 (recette /qa du 29/09) : « Valoriser le stock » échouait en 300 — deux
+      # surcharges de `calculate_stock_valuation` — et, avec un dépôt, affichait
+      # une ligne unique valorisée au prix de la FICHE. Une seule fonction
+      # désormais, adossée aux couches de valorisation.
+      - name: 'QA : une seule valorisation de stock, lue sur les couches (316)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/316_stock_valuation_single_function_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot B (recette /qa du 29/09) : facture directe (B2, ven-008), décision
+      # D-QA-1 (une facture directe d'un article stocké sort le stock, avec garde
+      # anti-double), avoir d'article (B4, ven-012), nom du client et date
+      # d'origine (B6, ven-006), numérotation chronologique (B7, ven-007 / D-QA-2).
+      - name: 'QA : facture directe, avoir et chronologie (317)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_invoice_direct_stock_and_line_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot A (recette /qa du 29/09) : A4 (ven-001, ach-002) — la fiche client et
+      # la fiche fournisseur portent SIRET, pays (code ISO 3166-1 alpha-2, pas de
+      # nom et pas de défaut « France »), code postal, ville et conditions de
+      # paiement choisies dans la liste ; la référence est composite (237).
+      - name: 'QA : identité et pays des tiers (318)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/318_partner_identity_country_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot C (recette /qa du 29/09) : C2 (rh-005) — le simulateur de paie
+      # appelle le moteur (`simulate_payslip`) au lieu de son propre barème :
+      # les trois bulletins d'or de la 276 y sont rejoués au centime, et une
+      # simulation n'écrit aucun bulletin.
+      - name: 'QA : le simulateur appelle le moteur de la paie (319)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/319_payslip_simulation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Le prorata d'entrée / sortie (320) : un salarié embauché ou sorti en
+      # cours de mois est payé au prorata de sa présence dans le mois
+      # (Code du travail L1234-9 ; même règle que Sage 100 §12 et Odoo).
+      - name: 'QA : prorata d''entrée et de sortie (320)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/320_payroll_prorata_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot C de la paie — 108 invariants qui vivaient sur les chiffres du
+      # SECOND moteur de paie (`src/lib/payroll.ts`, supprimé) sont rejoués en
+      # DIFFÉRENCE (avec / sans élément variable) contre `payroll_compute_slip`,
+      # le moteur qui fait foi. Aucun test n'est perdu : il change de support.
+      #
+      # ⚠️ La suite portait le numéro 322, qui n'appartenait à aucune migration :
+      # c'était un NOM LIBRE, et il aurait collide avec la série des
+      # chaînages, où 322 désigne la caisse et les invariants. Elle est renumérotée 326, la
+      # première valeur libre de la plage inscrite pour cette fusion (`326 -> 339`,
+      # NUMEROTATION-MIGRATIONS.md), et son `audit.file` suit.
+      - name: 'QA : éléments de bulletin contre le moteur (326)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/326_payslip_elements_invariants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Les avantages en nature (titres-restaurant, indemnité de transport) :
+      # 3 scénarios ROUGES ATTENDUS, inscrits au registre — un avantage en nature
+      # est un salaire et son absence de la grille 2026 est un défaut prouvé
+      # (321 T02/T03/T05). Ils se ferment avec le paramétrage sourcé.
+      - name: 'QA : éléments variables — dont les avantages en nature (321)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/321_payroll_variable_elements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # B3 (recette /qa du 29/09) : un client UE assujetti — position fiscale
+      # déduite du pays et du n° de TVA, code UE (0 % de TVA), CA3 qui déclare
+      # le CA sans TVA collectée, client français et hors UE inchangés.
+      - name: 'QA : client UE, autoliquidation et exonération (323)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/323_eu_customer_reverse_charge_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A5 (ach-003) : un IBAN à clé de contrôle fausse était enregistré malgré
+      # le message rouge de l'écran. La base refuse (324), les comptes ordinaires
+      # qui ne sont pas des IBAN passent toujours.
+      - name: 'QA : clé de contrôle des IBAN et comptes tiers (324)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/324_partner_bank_account_iban_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

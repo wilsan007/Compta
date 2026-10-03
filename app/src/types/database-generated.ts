@@ -3914,6 +3914,7 @@ export interface Database {
         product_id: string | null
         vat_code: string | null
         vat_amount: number
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -3930,6 +3931,7 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
       Update: {
         id?: string
@@ -3946,6 +3948,7 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
       Relationships: [
         {
@@ -4933,6 +4936,8 @@ export interface Database {
         credit_policy: string | null
         credit_warning: boolean | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -4976,6 +4981,8 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -5019,6 +5026,8 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Relationships: [
         {
@@ -5029,10 +5038,24 @@ export interface Database {
           referencedColumns: ["tenant_id", "id"]
         },
         {
+          foreignKeyName: "customers_fiscal_position_tenant_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
           foreignKeyName: "customers_parent_id_fkey",
           columns: ["tenant_id", "parent_id"],
           isOneToOne: false,
           referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_payment_term_tenant_fkey",
+          columns: ["tenant_id", "payment_term_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_terms",
           referencedColumns: ["tenant_id", "id"]
         },
         {
@@ -7517,6 +7540,7 @@ export interface Database {
         auto_apply: boolean | null
         active: boolean | null
         created_at: string | null
+        regime: string | null
       }
       Insert: {
         id?: string
@@ -7529,6 +7553,7 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
       Update: {
         id?: string
@@ -7541,6 +7566,7 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
       Relationships: [
         {
@@ -8582,6 +8608,7 @@ export interface Database {
         advance_invoice_id: string | null
         time_entry_id: string | null
         analytic_section_id: string | null
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -8603,6 +8630,7 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
       Update: {
         id?: string
@@ -8624,6 +8652,7 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
       Relationships: [
         {
@@ -19660,6 +19689,8 @@ export interface Database {
         account_tiers: string | null
         account_collectif: string | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -19698,6 +19729,8 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -19736,6 +19769,8 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Relationships: [
         {
@@ -19746,10 +19781,24 @@ export interface Database {
           referencedColumns: ["tenant_id", "id"]
         },
         {
+          foreignKeyName: "suppliers_fiscal_position_tenant_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
           foreignKeyName: "suppliers_parent_id_fkey",
           columns: ["tenant_id", "parent_id"],
           isOneToOne: false,
           referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_payment_term_tenant_fkey",
+          columns: ["tenant_id", "payment_term_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_terms",
           referencedColumns: ["tenant_id", "id"]
         },
         {
@@ -21508,6 +21557,9 @@ export interface Database {
         base_account: string | null
         reverse_charge: boolean
         account_name: string | null
+        label: string | null
+        ca3_base_box: string | null
+        ca3_tax_box: string | null
       }
       Insert: {
         id?: string
@@ -21520,6 +21572,9 @@ export interface Database {
         base_account?: string
         reverse_charge?: boolean
         account_name?: string
+        label?: string
+        ca3_base_box?: string
+        ca3_tax_box?: string
       }
       Update: {
         id?: string
@@ -21532,6 +21587,9 @@ export interface Database {
         base_account?: string
         reverse_charge?: boolean
         account_name?: string
+        label?: string
+        ca3_base_box?: string
+        ca3_tax_box?: string
       }
       Relationships: [
       ]

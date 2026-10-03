@@ -1738,6 +1738,7 @@
     "title": "Relances & liens de paiement",
     "subtitle": "Gérez vos relances et générez des liens de paiement en ligne",
     "breadcrumb": "Relances",
+    "reminder": "Relance",
     "customer": "Client",
     "invoice": "Facture",
     "amount": "Montant",

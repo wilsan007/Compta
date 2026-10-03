@@ -4,6 +4,7 @@
 // SECURITY DEFINER côté serveur pour garantir l'intégrité et l'isolation.
 
 import { supabase } from '@/lib/supabase'
+import type { VatCode } from '@/lib/vatLines'
 
 // ============================================================
 // PAIE (migration 87)
@@ -45,6 +46,16 @@ export async function calculateVatCa3(periodStart: string, periodEnd: string) {
   })
   if (error) throw error
   return data
+}
+
+/** Codes TVA du paramétrage (migration 198) : ceux que portent factures et écritures */
+export async function getVatCodes(): Promise<VatCode[]> {
+  const { data, error } = await supabase.rpc('get_vat_codes')
+  if (error) throw error
+  // Le taux revient en `numeric` : PostgREST le rend enchaîne, on le convertit
+  // une fois pour que l'appelant fasse des calculs et non des comparaisons de texte.
+  const rows = (data ?? []) as unknown as Omit<VatCode, 'rate'> & { rate: number | string | null }[]
+  return rows.map((r) => ({ ...r, rate: Number(r.rate) || 0 }))
 }
 
 /** Génère une déclaration TVA CA3 en base */

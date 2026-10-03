@@ -28,7 +28,7 @@
 -- posé, puis rôle `authenticated` — un utilisateur réel, sous RLS.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '316', false);
+SELECT set_config('audit.file', '406', false);
 DELETE FROM _audit_results WHERE file = '316';
 
 -- ─────────────────────────────────────────────────────────────
@@ -649,4 +649,4 @@ BEGIN
            n_liens, n_hors_societe, n_types_etrangers));
 END $$;
 
-SELECT _audit_assert('316');
+SELECT _audit_assert('406');

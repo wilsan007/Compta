@@ -74,7 +74,6 @@ export interface ProjectTask {
   recurring_rule_type: RecurringRuleType
   is_closed: boolean
   linked_action_id: string | null
-  production_order_id: string | null
   created_at: string
   updated_at: string
   // Computed (not in DB, populated by queries)

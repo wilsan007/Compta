@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { getTenantId, ti, tud } from './core'
+import { getCustomerBalance } from './accounting'
 import type { CustomerContact, SupplierContact, Customer, Invoice, Quote, SalesOrder, DeliveryNote, CustomerPayment, CollectionReminder } from '@/types'
 
 // ============ Sprint B: Customer Contacts ============
@@ -81,7 +82,9 @@ export async function getCustomer360(customerId: string) {
 
   const customerData = customer.data as Customer | null
   const creditLimit = Number(customerData?.credit_limit || 0)
-  const creditUsed = Number(customerData?.credit_used || customerData?.balance || 0)
+  // A3 (313) : l'encours utilisé est le solde du 411 au grand livre — ni
+  // `credit_used` ni `balance` (colonnes jamais tenues) ne le portent.
+  const creditUsed = await getCustomerBalance(customerId)
   const creditAvailable = creditLimit - creditUsed
   const creditBlocked = customerData?.credit_blocked || false
 
@@ -136,13 +139,15 @@ export async function getCustomer360(customerId: string) {
 // ============ Sprint B: Check Customer Credit ============
 export async function checkCustomerCredit(customerId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('customers').select('credit_limit, credit_used, credit_blocked, balance').eq('id', customerId)
+  let q = supabase.from('customers').select('credit_limit, credit_blocked').eq('id', customerId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data: credData, error: credError } = await q.maybeSingle()
   if (credError) throw credError
   if (!credData) return { limit: 0, used: 0, available: 0, blocked: false }
   const limit = Number(credData.credit_limit || 0)
-  const used = Number(credData.credit_used || credData.balance || 0)
+  // A3 (313) : l'encours utilisé se lit au grand livre (411), pas dans une
+  // colonne que rien ne tient.
+  const used = await getCustomerBalance(customerId)
   return {
     limit,
     used,

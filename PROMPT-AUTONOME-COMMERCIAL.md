@@ -4,7 +4,7 @@
 
 Accorder pour toute la durée :
 1. Créer/éditer : `app/sql/`, `app/src/types/`, `app/src/lib/`, `app/src/pages/`, `app/src/i18n/`, `App.tsx`, `app/src/lib/supabase.ts`
-2. Exécuter : `npx tsc --noEmit --pretty` dans `/app`, `npm run dev`, `browser_preview`
+2. Exécuter : `npm run typecheck` (`tsc -b --noEmit`) dans `/app`, `npm run dev`, `browser_preview`
 3. Rechercher : `code_search`, `grep_search`, `read_file` sur tout le projet
 4. Créer : `app/src/__tests__/logic-business-commercial.test.ts`
 
@@ -23,7 +23,7 @@ Répliquer la méthodologie du module comptabilité (voir `PLAN-IMPLEMENTATION-F
 2. Implémenter en parallèle (5 axes) : SQL → Types → Queries → Pages → i18n/Routes
 3. Valider en parallèle (3 axes) : QA-UI, Logique métier, SQL/Intégration
 4. Corriger les bugs
-5. Checkpoints : `tsc --noEmit` + `npm run dev` + `browser_preview`
+5. Checkpoints : `npm run typecheck` (`tsc -b --noEmit`) + `npm run dev` + `browser_preview`
 6. Si échec → auto-correction (max 3 tentatives) → sprint suivant
 
 ---
@@ -91,7 +91,7 @@ Répliquer la méthodologie du module comptabilité (voir `PLAN-IMPLEMENTATION-F
 
 ## CHECKPOINTS PAR SPRINT
 
-1. `npx tsc --noEmit --pretty` → 0 erreur
+1. `npm run typecheck` (`tsc -b --noEmit`) → 0 erreur
 2. `npm run dev` → démarre sans erreur
 3. `browser_preview` → page se charge
 4. Cohérence SQL → Type → Query → UI

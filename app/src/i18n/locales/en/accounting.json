@@ -1738,6 +1738,7 @@
     "title": "Payment reminders & links",
     "subtitle": "Manage reminders and generate online payment links",
     "breadcrumb": "Reminders",
+    "reminder": "Reminder",
     "customer": "Customer",
     "invoice": "Invoice",
     "amount": "Amount",

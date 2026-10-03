@@ -39,7 +39,7 @@
 -- socle n'est pas une API (252 §14).
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '313', false);
+SELECT set_config('audit.file', '403', false);
 DELETE FROM _audit_results WHERE file = '313';
 
 -- ─────────────────────────────────────────────────────────────
@@ -573,5 +573,5 @@ END $$;
 -- 30/09 (T01, T11, T12 de la suite 310) sont documentés dans leur fichier, pas
 -- blanchis ici.
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('313');
+SELECT _audit_assert('403');
 

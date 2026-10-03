@@ -93,7 +93,12 @@ BEGIN
     (t, cpt, 'x2m8-cpt@audit.test', 'Comptable', 'accountant', 'active');
   FOR r IN SELECT * FROM (VALUES
       ('third_party_accounts',  $q$INSERT INTO third_party_accounts (tenant_id, code, name, type) VALUES (%L, 'T'||%L, 'Tiers', 'customer')$q$),
-      ('partner_bank_accounts', $q$INSERT INTO partner_bank_accounts (tenant_id, partner_type, partner_id, account_number) VALUES (%L, 'supplier', gen_random_uuid(), 'FR76300060000112345678901'||%L)$q$),
+      -- L'IBAN est VALIDE (clé 89). Il ne l'était pas : le test posait
+      -- `FR76300060000112345678901`, dont la clé de contrôle est fausse, et le
+      -- garde-fou de la 324 le refusait — T05 échouait donc sur le jeu de
+      -- données, pas sur le droit qu'il prétendait vérifier. La suite 105 et
+      -- la 324 portent la même valeur, qui est la bonne : FR76 …0189.
+      ('partner_bank_accounts', $q$INSERT INTO partner_bank_accounts (tenant_id, partner_type, partner_id, account_number) VALUES (%L, 'supplier', gen_random_uuid(), 'FR7630006000011234567890189')$q$),
       ('payment_terms',         $q$INSERT INTO payment_terms (tenant_id, code, name, type) VALUES (%L, 'PT'||%L, '30 jours', 'fixed')$q$),
       ('analytic_sections',     $q$INSERT INTO analytic_sections (tenant_id, code, name) VALUES (%L, 'S'||%L, 'Section')$q$),
       ('analytic_plans',        $q$INSERT INTO analytic_plans (tenant_id, code, name) VALUES (%L, 'P'||%L, 'Plan')$q$),

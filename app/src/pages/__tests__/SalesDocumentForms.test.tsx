@@ -42,7 +42,7 @@ vi.mock('@/lib/queries/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/queries/core')>()
   return { ...actual, nextDocumentNumber: vi.fn(async (p: string) => `${p}-2026-000007`) }
 })
-vi.mock('@/lib/queries/misc', () => ({ transformInvoiceToCreditNote: vi.fn(), createAdvanceInvoice: vi.fn(), transformQuoteToSalesOrder: vi.fn() }))
+vi.mock('@/lib/queries/misc', () => ({ transformInvoiceToCreditNote: vi.fn(), createAdvanceInvoice: vi.fn(), transformQuoteToSalesOrder: vi.fn(), getFiscalPositions: vi.fn(async () => []) }))
 vi.mock('@/lib/queries/stock', () => ({ getProducts: vi.fn(async () => []), getProductStock: vi.fn(async () => 0) }))
 vi.mock('@/lib/queries/accounting', () => ({ getCompanySettings: vi.fn(async () => null) }))
 vi.mock('@/lib/legislation', () => ({ useLegislation: () => ({ defaultVatRate: 20 }) }))
@@ -194,5 +194,36 @@ describe('Formulaires de pièces de vente (AUD-E02, AUD-E04)', () => {
       number: 'REG-2026-000007', invoice_id: 'v1',
       amount: 80, payment_date: '2026-04-15', method: 'check', bank_account_id: 'bq2', reference: 'CHQ-77',
     })
+  })
+
+  // B6 (ven-006, restitution) : la fenêtre « Voir » n'affichait que l'en-tête —
+  // aucune ligne, aucun HT ni TVA par taux. La facture est pourtant chargée
+  // avec ses lignes (`getInvoices` sélectionne `invoice_lines(*)`).
+  it('Liste des factures : « Voir » affiche les lignes, le HT et la TVA par taux', async () => {
+    invoiceList = [{
+      id: 'v2', number: 'FAC-2026-000002', customer_id: 'c1', customer_name: 'Client Deux',
+      date: '2026-03-01', due_date: '2026-03-31', status: 'sent', validation_status: 'validated',
+      subtotal: 340, vat_total: 59, total: 399, amount_due: 399, amount_paid: 0, invoice_type: 'standard',
+      invoice_lines: [
+        { id: 'l1', invoice_id: 'v2', product_id: null, description: 'Prestation', quantity: 1, unit_price: 250, vat_rate: 20, total: 250, vat_total: 50, line_order: 1 },
+        { id: 'l2', invoice_id: 'v2', product_id: null, description: 'Marchandise', quantity: 2, unit_price: 45, vat_rate: 10, total: 90, vat_total: 9, line_order: 2 },
+      ],
+    }]
+    render(<MemoryRouter><InvoicesPage /></MemoryRouter>)
+    expect(await screen.findByText('FAC-2026-000002')).toBeInTheDocument()
+    fireEvent.click(screen.getByTitle('actions.view'))
+    const dialog = await screen.findByRole('dialog')
+    // les lignes elles-mêmes, avec leur description
+    expect(within(dialog).getByText('Prestation')).toBeInTheDocument()
+    expect(within(dialog).getByText('Marchandise')).toBeInTheDocument()
+    // le HT et la TVA par taux : 20 % (base 250,00, TVA 50,00) et 10 % (base 90,00, TVA 9,00)
+    expect(within(dialog).getByText('20 %')).toBeInTheDocument()
+    expect(within(dialog).getByText('10 %')).toBeInTheDocument()
+    expect(within(dialog).getAllByText(/^250[.,]00/)).toHaveLength(3) // prix unitaire, total de ligne HT et base 20 %
+    expect(within(dialog).getAllByText(/^90[.,]00/)).toHaveLength(2)   // total de ligne HT + base 10 %
+    expect(within(dialog).getAllByText(/^50[.,]00/)).toHaveLength(1)  // TVA 20 %
+    expect(within(dialog).getAllByText(/^9[.,]00/)).toHaveLength(1)    // TVA 10 %
+    expect(within(dialog).getAllByText(/^340[.,]00/)).toHaveLength(1)  // total HT
+    expect(within(dialog).getAllByText(/^399[.,]00/)).toHaveLength(2)  // total TTC + reste dû (échue en entier)
   })
 })

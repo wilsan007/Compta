@@ -242,12 +242,14 @@ describe('Workflow Stock : valuation → variance', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('calculateStockValuation avec méthode CUMP', async () => {
+    // D2 (316) : la fonction rend un TABLEAU — une ligne par article et par
+    // dépôt, valorisée sur les couches — et non plus un objet `{items, total_*}`.
+    // L'ancien contrat faisait afficher UNE ligne bidon (« — | 0 | 0,00 € »).
     vi.mocked(supabase.rpc).mockResolvedValue({
-      data: {
-        method: 'cump',
-        total_cump: 50000,
-        items: [{ product_name: 'Produit A', cump: 25, quantity: 200 }],
-      },
+      data: [
+        { product_id: 'p1', product_name: 'Produit A', warehouse_id: 'w1', quantity: 200, unit_cost: 250, total_value: 50000, method: 'cump' },
+        { product_id: 'p2', product_name: 'Produit B', warehouse_id: 'w1', quantity: 10, unit_cost: 12, total_value: 120, method: 'cump' },
+      ],
       error: null,
     } as any)
 
@@ -257,7 +259,10 @@ describe('Workflow Stock : valuation → variance', () => {
       p_method: 'cump',
       p_warehouse_id: undefined,
     })
-    expect(result.total_cump).toBe(50000)
+    expect(result).toHaveLength(2)
+    expect(result[0].total_value).toBe(50000)
+    // Le total que l'écran affiche est la somme des lignes.
+    expect(result.reduce((s: number, r: any) => s + Number(r.total_value), 0)).toBe(50120)
   })
 
   it('calculateInventoryVariance détecte les écarts', async () => {

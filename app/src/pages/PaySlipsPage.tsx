@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Badge } from '@/components/ui'
-import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { getPaySlips, getPayRuns, getEmployees, generatePaySlipsForRun, updatePaySlip, deletePaySlip } from '@/lib/queries/payroll'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { getPaySlips, getPayRuns, generatePayRunSlips, updatePaySlip, deletePaySlip } from '@/lib/queries/payroll'
 import { calculatePayslip } from '@/lib/queries/businessFunctions'
 import { FileText, Trash2, Sparkles, ChevronDown, ChevronRight, Receipt, AlertTriangle, Clock, Plane, RotateCcw, Calculator as CalcIcon } from 'lucide-react'
-import type { PayRun, Employee } from '@/types'
+import type { PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
 
@@ -16,7 +16,6 @@ export function PaySlipsPage() {
   const { t: tNav } = useTranslation('nav')
 const [slips, setSlips] = useState<any[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
-  const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [runFilter, setRunFilter] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -24,37 +23,42 @@ const [slips, setSlips] = useState<any[]>([])
 
   const loadData = useCallback(async () => {
     try {
-      const [sl, pr, emps] = await Promise.all([getPaySlips(runFilter || undefined), getPayRuns(), getEmployees()])
+      const [sl, pr] = await Promise.all([getPaySlips(runFilter || undefined), getPayRuns()])
       setSlips(sl || [])
       setPayRuns(pr || [])
-      setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [runFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleGenerate(runId: string) {
-  const run = payRuns.find((r) => r.id === runId)
-    if (!run) return
     setGenerating(true)
     try {
-      await generatePaySlipsForRun(runId, employees, run)
+      // rh-006 : un seul appel, et le verdict par salarié est nommé — un refus
+      // ne se taisait plus derrière un succès global.
+      const verdict = await generatePayRunSlips(runId)
       await loadData()
-      toast('success', tCommon('common.success'), t('paySlips.title'))
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+      const echecs = verdict.echecs || []
+      if (echecs.length > 0) {
+        toast('warning', t('paySlips.generatedCount', { count: verdict.generes }),
+          echecs.map((e) => `${e.employee} : ${e.message}`).join(' · '))
+      } else {
+        toast('success', tCommon('common.success'), t('paySlips.generatedCount', { count: verdict.generes }))
+      }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
     finally { setGenerating(false) }
   }
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaySlip(id, { status: status as any }); await loadData() }
-    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePaySlip(id); await loadData() }
-    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleCalculatePayslip(employeeId: string, period: string, payRunId?: string) {
@@ -62,7 +66,7 @@ const [slips, setSlips] = useState<any[]>([])
       await calculatePayslip(employeeId, period, payRunId)
       await loadData()
       toast('success', tCommon('common.success'), t('paySlips.calculated'))
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   function toggleExpand(id: string) {
@@ -105,12 +109,7 @@ const [slips, setSlips] = useState<any[]>([])
               <Card key={runId}>
                 <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleExpand(runId)}
-                      aria-label={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
-                      title={tCommon(isExpanded ? 'actions.collapse' : 'actions.expand')}
-                      className="w-6 h-6 shrink-0 flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)]"
-                    >
+                    <button onClick={() => toggleExpand(runId)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)]">
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                     <span className="font-semibold">{run?.number || t('paySlips.title')}</span>
@@ -136,12 +135,7 @@ const [slips, setSlips] = useState<any[]>([])
                           <TableRow key={s.id}>
                             <TableCell className="font-mono text-xs">
                               {hasVariableElements && (
-                                <button
-                                  onClick={() => setExpandedSlip(isSlipExpanded ? null : s.id)}
-                                  aria-label={tCommon(isSlipExpanded ? 'actions.collapse' : 'actions.expand')}
-                                  title={tCommon(isSlipExpanded ? 'actions.collapse' : 'actions.expand')}
-                                  className="w-6 h-6 shrink-0 inline-flex items-center justify-center rounded hover:bg-[var(--color-neutral-100)] mr-1"
-                                >
+                                <button onClick={() => setExpandedSlip(isSlipExpanded ? null : s.id)} className="p-0.5 rounded hover:bg-[var(--color-neutral-100)] mr-1">
                                   {isSlipExpanded ? <ChevronDown className="w-3 h-3 inline" /> : <ChevronRight className="w-3 h-3 inline" />}
                                 </button>
                               )}

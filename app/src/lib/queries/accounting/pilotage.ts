@@ -76,7 +76,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getDashboardChartData(): Promise<{
   monthly: Array<{ month: string; revenus: number; depenses: number }>
-  cashFlow: Array<{ name: string; value: number; color: string }>
+  cashFlow: Array<{ key: 'inflow' | 'outflow' | 'net'; name: string; value: number; color: string }>
   overdueCount: number
   overdueTotal: number
 }> {
@@ -124,9 +124,9 @@ export async function getDashboardChartData(): Promise<{
   const soldeNet = totalRevenus - totalDepenses
 
   const cashFlow = [
-    { name: 'Encaissements', value: totalRevenus, color: '#00875a' },
-    { name: 'Décaissements', value: totalDepenses, color: '#de350b' },
-    { name: 'Solde net', value: soldeNet, color: '#0066cc' },
+    { key: 'inflow' as const, name: 'Encaissements', value: totalRevenus, color: '#00875a' },
+    { key: 'outflow' as const, name: 'Décaissements', value: totalDepenses, color: '#de350b' },
+    { key: 'net' as const, name: 'Solde net', value: soldeNet, color: '#0066cc' },
   ]
 
   let overQ = supabase

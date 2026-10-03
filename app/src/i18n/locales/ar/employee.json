@@ -86,6 +86,7 @@
     "dependents": "المعالون",
     "bankDetails": "التفاصيل البنكية",
     "iban": "IBAN",
+    "ibanRefused": "IBAN غير صالح: مفتاح التحقق غير مطابق. لم يتم حفظ بياناتك البنكية.",
     "bic": "BIC",
     "bankAccountHolder": "صاحب الحساب",
     "transportMode": "وسيلة النقل",

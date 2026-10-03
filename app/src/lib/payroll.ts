@@ -503,7 +503,10 @@ export function calculatePayroll(input: PayrollInput, gridLines?: PayrollTaxGrid
   }
 }
 
-export function formatPayrollAmount(n: number): string {
-  return n.toFixed(2)
-}
+// `formatPayrollAmount` ne vit plus ici : c'est désormais
+// `src/lib/payrollFormat.ts`, module qui ne contient QUE le formatage. Il
+// était dupliqué dans les deux fichiers, et celui d'ici n'était plus
+// importé par personne — la garde des exports morts (knip) le refusait.
+
+
 

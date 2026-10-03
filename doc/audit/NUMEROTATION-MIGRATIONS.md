@@ -70,18 +70,36 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `300` → `309` | W7 | 2026-09-28 |
 | `310` → `324` | session recette (qa/recette-2026-09-29) | 2026-10-02 |
 | `325` | partie 1 (correctif TVA 198, tâche 1.7) | 2026-10-02 |
+| `326` → `339` | partie 1, fusion 1.6 (correctifs portés par la fusion) | 2026-10-02 |
 | `340` → `369` | partie 2 (défauts métier) | 2026-10-02 (plan) |
 | `400` → `413` | chaînages L1-L4 (socle) | 2026-10-02 |
 | `414`, `430` → `449` | partie 3 (L3, L4) | 2026-10-02 |
 | `415` → `429` | L16-L24 | 2026-10-02 |
 | `450` → `459` | partie 5 (intégrité référentielle) | 2026-10-02 |
 | **`460` → `469`** | **I-01, la « Vue Chaîne »** | **2026-10-02** |
-| `326` → `339`, `370` → `399` | **LIBRE** — à inscrire avant usage | — |
+| `370` → `399` | **LIBRE** — à inscrire avant usage | — |
 
 *Numéros constatés hors de leur fichier de plan, au 02/10 : `414` alerte de
 dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé
 bancaire manuel (partie 3) ; `415` journal d'événements unifié (L23), `416`
 capacité ↔ absence (L17).*
+
+> ⚠️ **Ce que la fusion a appris sur l'ORDRE D'EXÉCUTION.** La 419 réconcilie
+> deux versions de `create_stock_out_on_delivery` (la 314 de la recette et la
+> 401 des chaînages) qui s'écrasaient. Elle a d'abord été écrite en **327** — et
+> elle n'était jamais appliquée : le runner exécute dans l'ordre **lexicographique**
+> (`32…` avant `4…`), donc la 401, appliquée ensuite, l'écrasait. Elle a été
+> portée en **419**, au-dessus de la série des chaînages, et là elle gagne.
+> Un numéro n'est pas seulement un nom de fichier : **il décide du dernier
+> écrivain.**
+>
+> ⚠️ **Ce que la fusion a appris sur les numéros libres.** La suite
+> `322_payslip_elements_invariants` n'avait **aucune migration** de ce numéro :
+> 322 était un NOM LIBRE, comme il en reste (`325` → `399` ci-dessus). Elle ne
+> heurtait donc personne — **tant qu'on n'ajoute pas la série des chaînages**,
+> où 322 désigne la caisse et les invariants. Un numéro libre n'est pas un
+> numéro sûr : c'est un numéro que personne n'a encore revendiqué. La fusion
+> l'a renumérotée **326** avant d'être jouée par la CI, pas après.
 
 ## Ce qui s'est passé le 02 octobre — deux fois
 
