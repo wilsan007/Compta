@@ -1896,6 +1896,99 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_invariant_results: {
+      Row: {
+        id: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a: number | null
+        mesure_b: number | null
+        ecart: number | null
+        lignes_en_ecart: number
+        duree_ms: number
+        detail: Json | null
+        mesure_le: string
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        code: string
+        verdict: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        code?: string
+        verdict?: string
+        mesure_a?: number
+        mesure_b?: number
+        ecart?: number
+        lignes_en_ecart?: number
+        duree_ms?: number
+        detail?: Json
+        mesure_le?: string
+      }
+      Relationships: []
+    }
+    chain_invariants: {
+      Row: {
+        id: string
+        tenant_id: string | null
+        code: string
+        libelle: string
+        modules: string[]
+        source_a: string
+        source_b: string
+        sens: string
+        tolerance: number
+        mesurable: boolean
+        raison_non_mesurable: string | null
+        actif: boolean
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id?: string
+        code: string
+        libelle: string
+        modules?: string[]
+        source_a: string
+        source_b: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        code?: string
+        libelle?: string
+        modules?: string[]
+        source_a?: string
+        source_b?: string
+        sens?: string
+        tolerance?: number
+        mesurable?: boolean
+        raison_non_mesurable?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
     chain_regeneration_log: {
       Row: {
         id: number
@@ -2986,6 +3079,7 @@ export interface Database {
         product_id: string | null
         vat_code: string | null
         vat_amount: number
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -3002,6 +3096,7 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
       Update: {
         id?: string
@@ -3018,6 +3113,7 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
       Relationships: []
     }
@@ -3733,6 +3829,8 @@ export interface Database {
         credit_policy: string | null
         credit_warning: boolean | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -3776,6 +3874,8 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -3819,6 +3919,8 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Relationships: []
     }
@@ -5751,6 +5853,7 @@ export interface Database {
         auto_apply: boolean | null
         active: boolean | null
         created_at: string | null
+        regime: string | null
       }
       Insert: {
         id?: string
@@ -5763,6 +5866,7 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
       Update: {
         id?: string
@@ -5775,6 +5879,7 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
       Relationships: []
     }
@@ -6567,6 +6672,7 @@ export interface Database {
         advance_invoice_id: string | null
         time_entry_id: string | null
         analytic_section_id: string | null
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -6588,6 +6694,7 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
       Update: {
         id?: string
@@ -6609,6 +6716,7 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
       Relationships: []
     }
@@ -14960,6 +15068,8 @@ export interface Database {
         account_tiers: string | null
         account_collectif: string | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -14998,6 +15108,8 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -15036,6 +15148,8 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Relationships: []
     }

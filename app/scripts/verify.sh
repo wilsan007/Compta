@@ -3,7 +3,7 @@
 # Usage: ./scripts/verify.sh [--skip-tests] [--skip-lint] [--list-rules]
 #
 # Architecture:
-#   1. TypeScript type-check (tsc --noEmit)        — fixe
+#   1. TypeScript type-check (tsc -b)              — fixe
 #   2. Lint (oxlint)                               — fixe
 #   3. i18n key parity (check-i18n.mjs)            — fixe
 #   4. Audit grep rules (scripts/verify-rules/*.rule) — MODULAIRE
@@ -93,15 +93,21 @@ fi
 # ══════════════════════════════════════════════════════════════
 # FIXE 1/5: TypeScript Type-Check
 # ══════════════════════════════════════════════════════════════
-section "1/5  TypeScript Type-Check (tsc --noEmit)"
+# `tsc -b`, pas `tsc --noEmit`. Mesuré le 30/09/2026 : le `tsconfig.json`
+# racine est une configuration « solution » (`files: []`, `references`), donc
+# `npx tsc --noEmit` ne compile RIEN et sort toujours 0 — le contrôle annonçait
+# « 0 erreur de type » sur un code qui en avait. `-b` suit les références et
+# vérifie l'application, les scripts et les tests ; c'est aussi ce que lancent
+# `npm run typecheck`, `npm run build` et `npm run test:full`.
+section "1/5  TypeScript Type-Check (tsc -b)"
 
-TSC_OUTPUT=$(npx tsc --noEmit --pretty 2>&1 || true)
+TSC_OUTPUT=$(npx tsc -b --noEmit --pretty 2>&1 || true)
 TSC_ERRORS=$(echo "$TSC_OUTPUT" | grep -c "error TS" || true)
 
 if [ "$TSC_ERRORS" -eq 0 ]; then
-  pass "tsc --noEmit: 0 erreurs de type"
+  pass "tsc -b: 0 erreurs de type"
 else
-  fail "tsc --noEmit: ${TSC_ERRORS} erreurs de type" "$TSC_ERRORS"
+  fail "tsc -b: ${TSC_ERRORS} erreurs de type" "$TSC_ERRORS"
   echo "$TSC_OUTPUT" | head -80 | sed 's/^/    /'
 fi
 
@@ -273,11 +279,21 @@ section "5/5  Tests Vitest"
 if [ "$SKIP_TESTS" = true ]; then
   warn "Tests skippés (--skip-tests)"
 else
-  TEST_OUTPUT=$(npx vitest run 2>&1 || true)
-  if echo "$TEST_OUTPUT" | grep -q "Test Files.*passed" && ! echo "$TEST_OUTPUT" | grep -q "failed"; then
+  # On juge sur le CODE DE SORTIE de vitest, pas sur une recherche de texte.
+  # Mesuré le 30/09/2026 : `grep -q "failed"` sur toute la sortie faisait
+  # échouer le contrôle alors que 1543 tests passaient, parce que des tests qui
+  # vérifient la gestion d'erreur journalisent volontairement « … failed »
+  # (`audit_log query failed: Table missing`). Le contrôle accusait à tort, et au
+  # gré de l'ordre d'exécution des fichiers — ce que la doctrine du dépôt
+  # interdit (cf. 5940f57, « le harnais cesse d'accuser à tort »).
+  TEST_OUTPUT=$(npx vitest run 2>&1)
+  TEST_EXIT=$?
+  if [ "$TEST_EXIT" -eq 0 ]; then
     pass "Vitest: tous les tests passent"
   else
-    TEST_FAIL=$(echo "$TEST_OUTPUT" | grep -c "FAIL\|×" || true)
+    # un test en échec, pas un fichier : le compte sert au résumé, pas au verdict
+    TEST_FAIL=$(echo "$TEST_OUTPUT" | grep -cE '^ +× ' || true)
+    [ "$TEST_FAIL" -eq 0 ] && TEST_FAIL=1
     fail "Vitest: ${TEST_FAIL} tests échouent" "$TEST_FAIL"
     echo "$TEST_OUTPUT" | tail -30 | sed 's/^/    /'
   fi

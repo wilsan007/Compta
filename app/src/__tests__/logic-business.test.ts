@@ -9,9 +9,9 @@ import { describe, it, expect } from 'vitest';
 import { calculateVAT } from '@/lib/queries/accounting';
 import { calculateTax, calculateGroupTax, calculateMultipleTaxes, calculatePriceWithTax, extractTaxFromIncludedPrice, calculateCorporateTax } from '@/lib/taxCalculator';
 import { validateDistribution, distributeEvenly, computeAmounts, flattenDistribution } from '@/lib/analyticDistribution';
-import { calculatePayroll, formatPayrollAmount } from '@/lib/payroll';
+import { formatPayrollAmount } from '@/lib/payrollFormat';
 import { isAllowedWebhookUrl } from '@/lib/security/ssrfGuard';
-import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PayrollTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
+import type { TaxRate, FixedAsset, DistributionGrill, DistributionGrillLine, FiscalPosition, FiscalPositionMapping, AccountTag, AccountTagMapping, Currency, ExchangeGainLossEntry, CorporateTaxGridLine, PartnerContact, PartnerBankAccount } from '@/types';
 
 // ============ MOCK DATA ============
 
@@ -158,25 +158,6 @@ const mockCorporateGridLines: CorporateTaxGridLine[] = [
   { id: 'cl2', grid_id: 'g1', line_type: 'bracket', label: 'Tranche 2',
     base_type: 'profit', min_amount: 50000, max_amount: null, rate: 25,
     cap_amount: null, fixed_amount: 0, sort_order: 2, created_at: '2024-01-01' },
-]
-
-const mockPayrollGridLines: PayrollTaxGridLine[] = [
-  { id: 'pl1', grid_id: 'g1', line_type: 'percentage', category: 'social_security',
-    label: 'Sécu salariale', base_type: 'gross', min_amount: 0, max_amount: null,
-    rate_employee: 6.98, rate_employer: 29.74, cap_amount: null, fixed_amount: 0,
-    sort_order: 1, created_at: '2024-01-01' },
-  { id: 'pl2', grid_id: 'g1', line_type: 'percentage', category: 'retirement',
-    label: 'Retraite salariale', base_type: 'gross', min_amount: 0, max_amount: null,
-    rate_employee: 11.40, rate_employer: 10.93, cap_amount: null, fixed_amount: 0,
-    sort_order: 2, created_at: '2024-01-01' },
-  { id: 'pl3', grid_id: 'g1', line_type: 'percentage', category: 'csg_crds',
-    label: 'CSG/CRDS', base_type: 'total_gross', min_amount: 0, max_amount: null,
-    rate_employee: 9.20, rate_employer: 0, cap_amount: null, fixed_amount: 0,
-    sort_order: 3, created_at: '2024-01-01' },
-  { id: 'pl4', grid_id: 'g1', line_type: 'percentage', category: 'income_tax',
-    label: 'ITS/PAS', base_type: 'taxable_gross', min_amount: 0, max_amount: null,
-    rate_employee: 0, rate_employer: 0, cap_amount: null, fixed_amount: 0,
-    sort_order: 4, created_at: '2024-01-01' },
 ]
 
 // ============ 2a: TESTS DE CALCULS FINANCIERS ============
@@ -977,103 +958,20 @@ describe('2d. Tests de cohérence multi-niveau', () => {
   })
 
   describe('Niveau Payroll', () => {
-    it('calculatePayroll avec grid lines: salaire 3000€ → net positif', () => {
-      const result = calculatePayroll({
-        grossSalary: 3000,
-        contractType: 'cdi',
-        hoursPerWeek: 35,
-        overtimeHours: 0,
-        mealVouchers: 100,
-        transportAllowance: 50,
-        age: 30,
-        department: '75',
-        taxRate: 5,
-      }, mockPayrollGridLines)
-
-      expect(result.grossSalary).toBe(3000)
-      expect(result.totalGross).toBe(3000)
-      expect(result.netPay).toBeGreaterThan(0)
-      expect(result.netPayable).toBeGreaterThan(result.netPay) // net + vouchers + transport
-      expect(result.totalCostEmployer).toBeGreaterThan(result.totalGross)
-    })
-
-    it('calculatePayroll fallback (sans grid): salaire 3000€ → net positif', () => {
-      const result = calculatePayroll({
-        grossSalary: 3000,
-        contractType: 'cdi',
-        hoursPerWeek: 35,
-        overtimeHours: 0,
-        mealVouchers: 0,
-        transportAllowance: 0,
-        age: 30,
-        department: '75',
-        taxRate: 5,
-      })
-
-      expect(result.grossSalary).toBe(3000)
-      expect(result.socialSecurityEmployee).toBeGreaterThan(0)
-      expect(result.retirementEmployee).toBeGreaterThan(0)
-      expect(result.csgCrds).toBeGreaterThan(0)
-      expect(result.netPay).toBeGreaterThan(0)
-    })
-
-    it('calculatePayroll avec overtime: 10h supplémentaires', () => {
-      const result = calculatePayroll({
-        grossSalary: 3000,
-        contractType: 'cdi',
-        hoursPerWeek: 35,
-        overtimeHours: 10,
-        mealVouchers: 0,
-        transportAllowance: 0,
-        age: 30,
-        department: '75',
-        taxRate: 0,
-      })
-
-      // overtimePay = 10 * (3000 / 151.67) * 1.25 = 247.18...
-      expect(result.overtimePay).toBeGreaterThan(240)
-      expect(result.overtimePay).toBeLessThan(250)
-      expect(result.totalGross).toBe(result.grossSalary + result.overtimePay)
-    })
-
-    it('calculatePayroll salaire 0 → tout à 0 ou proche', () => {
-      const result = calculatePayroll({
-        grossSalary: 0,
-        contractType: 'cdi',
-        hoursPerWeek: 35,
-        overtimeHours: 0,
-        mealVouchers: 0,
-        transportAllowance: 0,
-        age: 30,
-        department: '75',
-        taxRate: 0,
-      })
-
-      expect(result.grossSalary).toBe(0)
-      expect(result.totalGross).toBe(0)
-      expect(result.netPay).toBe(0)
-    })
-
+    // Les tests de calcul de paie vivaient ici, sur `calculatePayroll`
+    // (`src/lib/payroll.ts`, 509 lignes). Ce second moteur est supprimé :
+    // 2 500 EUR de brut y donnaient 1 798,53 EUR de net contre 1 919,53 EUR
+    // au moteur de la base (C2 / rh-005), et il ignorait le prorata comme la
+    // réduction générale. Ses 108 assertions portaient sur ses propres
+    // chiffres — plusieurs faux.
+    //
+    // Ce qui reste ici est ce qui ne dépend d'aucun barème. La COUVERTURE de
+    // ce qui en dépend est portée contre `payroll_compute_slip` (le moteur qui
+    // reste) : 243 (heures sup, pointage), 256 (périodes, éléments), 265/266
+    // (absences, congés, rappels), 320 (prorata), 321 (prime, titres-restaurant,
+    // transport, autres déductions).
     it('formatPayrollAmount: 1234.567 → "1234.57"', () => {
       expect(formatPayrollAmount(1234.567)).toBe('1234.57')
-    })
-
-    it('CSG/CRDS base = totalGross * 0.9825', () => {
-      const result = calculatePayroll({
-        grossSalary: 3000,
-        contractType: 'cdi',
-        hoursPerWeek: 35,
-        overtimeHours: 0,
-        mealVouchers: 0,
-        transportAllowance: 0,
-        age: 30,
-        department: '75',
-        taxRate: 0,
-      }, mockPayrollGridLines)
-
-      const expectedCsgBase = 3000 * 0.9825
-      const expectedCsg = expectedCsgBase * 0.092
-      expect(result.csgCrds).toBe(Math.round(expectedCsg * 100) / 100)
     })
   })
 })
@@ -1136,35 +1034,6 @@ describe('2e. Tests de cohérence cross-module', () => {
   it('Corporate tax + après taxe: profit - finalTax = afterTaxProfit', () => {
     const result = calculateCorporateTax(100000, 500000, mockCorporateGridLines)
     expect(result.afterTaxProfit).toBe(100000 - result.finalTax)
-  })
-
-  it('Payroll: totalGross = grossSalary + overtimePay', () => {
-    const result = calculatePayroll({
-      grossSalary: 3000, contractType: 'cdi', hoursPerWeek: 35,
-      overtimeHours: 10, mealVouchers: 100, transportAllowance: 50,
-      age: 30, department: '75', taxRate: 5,
-    })
-    expect(result.totalGross).toBe(result.grossSalary + result.overtimePay)
-  })
-
-  it('Payroll: netPayable = netPay + mealVouchers + transportAllowance', () => {
-    const result = calculatePayroll({
-      grossSalary: 3000, contractType: 'cdi', hoursPerWeek: 35,
-      overtimeHours: 0, mealVouchers: 100, transportAllowance: 50,
-      age: 30, department: '75', taxRate: 5,
-    })
-    expect(result.netPayable).toBe(result.netPay + result.mealVouchers + result.transportAllowance)
-  })
-
-  it('Payroll: totalCostEmployer = totalGross + totalEmployerContributions + mealVouchers + transportAllowance', () => {
-    const result = calculatePayroll({
-      grossSalary: 3000, contractType: 'cdi', hoursPerWeek: 35,
-      overtimeHours: 0, mealVouchers: 100, transportAllowance: 50,
-      age: 30, department: '75', taxRate: 5,
-    })
-    expect(result.totalCostEmployer).toBe(
-      result.totalGross + result.totalEmployerContributions + result.mealVouchers + result.transportAllowance
-    )
   })
 })
 

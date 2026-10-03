@@ -31,6 +31,71 @@ interface EmployeJoint {
 type AvecEmploye<T> = T & { employees: EmployeJoint | null }
 /** Même chose pour une ressource jointe qui n'est pas `employees`. */
 type Avec<T, C extends string, E> = T & { [K in C]: E | null }
+// ============ Simulateur de paie (C2, rh-005) ============
+//
+// L'écran « Simuler » appelle le MOTEUR (`simulate_payslip`, migration 319) et
+// affiche ce qu'il rend. Avant, il recalculait tout en TypeScript
+// (`src/lib/payroll.ts`) : c'était un second moteur, avec ses propres taux —
+// 2 500 EUR brut y donnaient 1 798,53 EUR de net au lieu des 1 919,53 EUR du moteur
+// de la base. La doctrine W5 : un seul moteur par grandeur.
+
+/** Une ligne du détail des cotisations, telle que le moteur la rend. */
+export interface PayrollContributionLine {
+  label: string
+  base: number
+  rate_employee: number
+  employee: number
+  rate_employer: number
+  employer: number
+}
+
+/** Le jsonb du moteur, typé pour l'écran. */
+export interface PayslipSimulation {
+  success: boolean
+  simulated?: boolean
+  error?: string
+  gross_salary: number
+  total_gross: number
+  social_security_employee: number
+  csg_deductible: number
+  csg_non_deductible: number
+  crds: number
+  total_deductions: number
+  net_taxable: number
+  income_tax: number
+  net_social: number
+  net_salary: number
+  employer_contributions: number
+  reduction_generale: number
+  rgdu_coefficient?: number
+  pmss?: number
+  grid_version?: string | null
+  country_code?: string | null
+  contributions?: PayrollContributionLine[]
+}
+
+/**
+ * Simule un bulletin. `p_gross` est le brut mensuel simulé ; la période par
+ * défaut est le mois en cours. Ne RIEN n'écrit : c'est le moteur en lecture.
+ */
+export async function simulatePayslip(
+  employeeId: string,
+  gross: number,
+  period?: string,
+): Promise<PayslipSimulation> {
+  const { data, error } = await supabase.rpc('simulate_payslip', {
+    p_employee_id: employeeId,
+    p_gross: gross,
+    ...(period ? { p_period: period } : {}),
+  })
+  if (error) throw error
+  // Le moteur rend toujours un verdict : un échec est un motif nommé, pas une
+  // exception. On ne le laisse pas passer pour un résultat vide.
+  if (!data || data.success !== true) {
+    throw new Error(data?.error || 'Le moteur de paie n’a rien rendu')
+  }
+  return data as PayslipSimulation
+}
 
 // ============ Employees ============
 export async function getEmployees() {
@@ -157,40 +222,28 @@ export async function deletePaySlip(id: string) {
   if (error) throw error
 }
 
-export async function generatePaySlipsForRun(payRunId: string, employees: Employee[], payRun: PayRun) {
-  // LOT4-02 : Moteur unique en SQL — le RPC calculate_payslip fait tout le calcul
-  // légal (PMSS, CSG/CRDS, tranches, cumuls) et crée/met à jour le bulletin.
-  // Le moteur TypeScript (calculatePayroll) n'est plus utilisé pour la génération.
-  const results: PaySlip[] = []
-  const period = String(payRun.period_start).slice(0, 7) // YYYY-MM
+/** Verdict de la génération des bulletins d'un lot (311, rh-006).
+ *  Un verdict par salarié : la base dit qui a été calculé, qui a été refusé, et
+ *  pourquoi. L'écran affiche ce verdict — il ne boucle plus lui-même et
+ *  n'avale plus le premier échec rencontré. */
+export type PayRunSlipsVerdict = {
+  pay_run_id: string
+  number: string
+  period: string
+  total: number
+  generes: number
+  echecs: { employee_id: string; employee: string; message: string }[]
+  bulletins: { employee_id: string; employee: string; pay_slip_id: string; total_gross: number; net_salary: number }[]
+}
 
-  for (const emp of employees) {
-    if (emp.status === 'inactive') continue
-
-    // Appeler le RPC SQL qui calcule et persiste le bulletin
-    const { data, error } = await supabase.rpc('calculate_payslip', {
-      p_employee_id: emp.id,
-      p_period: period,
-      p_pay_run_id: payRunId,
-    })
-    if (error) throw error
-    if (data && data.success === false) {
-      throw new Error(data.error || 'Erreur calcul bulletin')
-    }
-
-    // Recharger le bulletin créé par le RPC
-    if (data && data.pay_slip_id) {
-      const { data: slip, error: slipError } = await supabase
-        .from('pay_slips')
-        .select('*')
-        .eq('id', data.pay_slip_id)
-        .single()
-      if (!slipError && slip) {
-        results.push(slip as PaySlip)
-      }
-    }
-  }
-  return results
+/** rh-006 : la génération des bulletins d'un lot se fait par UN appel. C'est la
+ *  base qui appelle le moteur unique (`calculate_payslip`, 276) pour chaque
+ *  salarié ACTIF de la période, et qui refuse un lot sans droit, un lot d'une
+ *  autre société ou un lot déjà approuvé. */
+export async function generatePayRunSlips(payRunId: string): Promise<PayRunSlipsVerdict> {
+  const { data, error } = await supabase.rpc('generate_pay_run_slips', { p_pay_run_id: payRunId })
+  if (error) throw error
+  return data as PayRunSlipsVerdict
 }
 
 // ============ Sprint 7: Payroll Accounting Entries ============

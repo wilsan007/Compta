@@ -1,4 +1,5 @@
 {
-  "unusedTables": 75,
-  "frozenAt": "2026-09-29"
+  "unusedTables": 77,
+  "frozenAt": "2026-10-02",
+  "note": "77 = 75 + les 2 tables L4 (chain_invariants, chain_invariant_results). Elles ne sont pas lues sur cette branche parce que le lecteur `src/lib/queries/chainCoherence.ts` est livre par la tache 1.1 de la partie 1 et arrive au fast-forward suivant (run 37024339034). Elles ne relevent pas d'une dette : la 413 les ecrit, et le lecteur qui les rend visibles a deja ete ecrit et verifie. Le plafond ne sera pas abaisse a la main — la garde le fera seule des que le lecteur sera present."
 }

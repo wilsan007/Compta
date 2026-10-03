@@ -283,8 +283,21 @@
       "email": "contact@supplier.com",
       "phone": "0612345678",
       "address": "15 شارع التجارة، 75011 باريس",
-      "vatNumber": "FR98765432109"
-    }
+      "vatNumber": "FR98765432109",
+      "city": "باريس"
+    },
+    "checkSiret": "تحقّق",
+    "checkingSiret": "جارٍ التحقّق…",
+    "siretAtSource": "تم التحقّق من المصدر",
+    "siretFormatOnly": "التنسيق ومفتاح التحقّق صحيحان — التحقّق من المصدر غير مُهيّأ",
+    "siretInvalidKey": "غير صالح: {{reason}}",
+    "siretInvalid": "رقم SIRET غير صالح: 14 رقمًا ومفتاح تحقّق (Luhn) مطلوبان",
+    "countryUnset": "— غير محدّد —",
+    "countryInvalid": "دولة غير صالحة: رمز ISO من حرفين (مثال BE)",
+    "paymentTermsUnset": "— غير محدّدة —",
+    "parentIdUnset": "— لا شيء —",
+    "salesRepIdUnset": "— لا شيء —",
+    "cityPlaceholder": "باريس"
   },
   "automation": {
     "title": "أتمتة الفواتير",

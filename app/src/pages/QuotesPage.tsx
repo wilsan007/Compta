@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice } from '@/lib/queries/sales'
 import { transformQuoteToSalesOrder } from '@/lib/queries/misc'
 import { getCustomers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
-import { errorMessage, formatCurrency, formatDate, translateStatus } from '@/lib/utils'
+import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package, FileSignature } from 'lucide-react'
 import type { Quote, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -45,8 +45,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         sMap[prod.id] = (stockEntries[i] as any[] || []).reduce((sum, s) => sum + Number(s.quantity || 0), 0)
       })
       setStockMap(sMap)
-    } catch (err) { console.error('Failed to load quotes:', err)
-    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
+    } catch (err: any) { console.error('Failed to load quotes:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -68,8 +68,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
     try {
       await deleteQuote(id)
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
     }
   }
 
@@ -79,8 +79,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       await convertQuoteToInvoice(id)
       toast('success', tCommon('toast.success'), t('quotes.convertToInvoice'))
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.error'))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
     }
   }
 
@@ -90,8 +90,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       await transformQuoteToSalesOrder(id)
       toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('toast.error'), errorMessage(err) || t('transformations.transformationError'))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
     }
   }
 
@@ -99,8 +99,8 @@ const [quotes, setQuotes] = useState<Quote[]>([])
     try {
       await updateQuote(id, { status: status as any })
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
     }
   }
 
@@ -136,10 +136,6 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       ) : (
         <Card>
           <Table headers={tableHeaders}>
-            {/* W-QA (29/09/2026) : un <div> enveloppait chaque ligne, donc un
-                <div> dans un <tbody> — HTML invalide (React le signalait :
-                « <div> cannot be a child of <tbody> »). Un Fragment garde la
-                clé et laisse les <tr> à leur place. */}
             {filtered.map((quote) => (
               <Fragment key={quote.id}>
                 <TableRow onClick={() => toggleExpand(quote.id)}>
@@ -305,8 +301,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
         })),
       } as any)
       onSaved()
-    } catch (err) {
-      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -348,7 +344,7 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
                 {lines.map((line, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
                     <td className="px-3 py-2">
-                      <select aria-label={t('invoices.product')} value={line.productId || ""} onChange={(e) => { selectProduct(idx, e.target.value); setLines(prev => prev.map((l, i) => i === idx ? { ...l, productId: e.target.value } : l)) }} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]">
+                      <select value={line.productId || ""} onChange={(e) => { selectProduct(idx, e.target.value); setLines(prev => prev.map((l, i) => i === idx ? { ...l, productId: e.target.value } : l)) }} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]">
                         <option value="">—</option>
                         {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
@@ -357,13 +353,13 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
                       <input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder={t('invoices.description')} />
                     </td>
                     <td className="px-3 py-2">
-                      <input aria-label={t('invoices.quantity')} type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2">
-                      <input aria-label={t('invoices.unitPrice')} type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2">
-                      <input aria-label={t('invoices.vatRate')} type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
+                      <input type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{line.productId ? (stockMap[line.productId] ?? '—') : '—'}</td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>

@@ -323,6 +323,109 @@ export function getCurrencyForCountry(country: string): string {
   return COUNTRY_CURRENCY_MAP[country] || 'EUR'
 }
 
+// ============================================================
+// A4 (migration 318) — le pays d'un tiers est un code ISO
+// ============================================================
+//
+// Un tiers ne porte plus un nom de pays (« France ») mais un code ISO 3166-1
+// alpha-2 (« FR ») : c'est ce qu'attend le générateur Factur-X, ce qu'a posé
+// la 318, et ce sans quoi rien ne distingue un client français d'un client
+// belge (B3 : autoliquidation, mention, catégorie `AE`).
+//
+// La liste ci-dessous n'est pas le catalogue ISO complet : elle couvre les pays
+// que l'application connaît déjà (`COUNTRY_CODE_MAP`) et les 27 de l'Union
+// européenne, où se posent les questions de TVA intracommunautaire. Un pays
+// hors liste reste saisissable en tapant son code à deux lettres — on ne
+// refuse pas un client parce qu'il vient d'ailleurs.
+
+export interface CountryOption { code: string; name: string }
+
+/** Les 27 pays de l'Union européenne, en code ISO 3166-1 alpha-2. */
+export const EU_COUNTRY_CODES: readonly string[] = [
+  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR',
+  'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO',
+  'SE', 'SI', 'SK',
+]
+
+export const ISO_COUNTRIES: CountryOption[] = [
+  // Union européenne
+  { code: 'FR', name: 'France' },
+  { code: 'BE', name: 'Belgique' },
+  { code: 'DE', name: 'Allemagne' },
+  { code: 'AT', name: 'Autriche' },
+  { code: 'ES', name: 'Espagne' },
+  { code: 'IE', name: 'Irlande' },
+  { code: 'IT', name: 'Italie' },
+  { code: 'LU', name: 'Luxembourg' },
+  { code: 'NL', name: 'Pays-Bas' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'GR', name: 'Grèce' },
+  { code: 'FI', name: 'Finlande' },
+  { code: 'DK', name: 'Danemark' },
+  { code: 'SE', name: 'Suède' },
+  { code: 'PL', name: 'Pologne' },
+  { code: 'CZ', name: 'République tchèque' },
+  { code: 'SK', name: 'Slovaquie' },
+  { code: 'SI', name: 'Slovénie' },
+  { code: 'HR', name: 'Croatie' },
+  { code: 'HU', name: 'Hongrie' },
+  { code: 'RO', name: 'Roumanie' },
+  { code: 'BG', name: 'Bulgarie' },
+  { code: 'EE', name: 'Estonie' },
+  { code: 'LV', name: 'Lettonie' },
+  { code: 'LT', name: 'Lituanie' },
+  { code: 'CY', name: 'Chypre' },
+  { code: 'MT', name: 'Malte' },
+  // Voisins et pays que l'application connaît déjà
+  { code: 'GB', name: 'Royaume-Uni' },
+  { code: 'NO', name: 'Norvège' },
+  { code: 'CH', name: 'Suisse' },
+  { code: 'MA', name: 'Maroc' },
+  { code: 'TN', name: 'Tunisie' },
+  { code: 'DZ', name: 'Algérie' },
+  { code: 'SN', name: 'Sénégal' },
+  { code: 'CI', name: "Côte d'Ivoire" },
+  { code: 'CM', name: 'Cameroun' },
+  { code: 'BF', name: 'Burkina Faso' },
+  { code: 'ML', name: 'Mali' },
+  { code: 'NE', name: 'Niger' },
+  { code: 'GN', name: 'Guinée' },
+  { code: 'BJ', name: 'Bénin' },
+  { code: 'TG', name: 'Togo' },
+  { code: 'MZ', name: 'Mozambique' },
+  { code: 'AO', name: 'Angola' },
+  { code: 'DJ', name: 'Djibouti' },
+  { code: 'US', name: 'États-Unis' },
+  { code: 'CA', name: 'Canada' },
+]
+
+/** Le pays est-il dans l'Union européenne ? (B3 : autoliquidation intracom.) */
+export function isEuCountry(code: string | null | undefined): boolean {
+  const c = normalizeCountryCode(code)
+  return !!c && EU_COUNTRY_CODES.includes(c)
+}
+
+/**
+ * Ramène une valeur à un code ISO 3166-1 alpha-2, ou `null` si elle n'en est
+ * pas un. Accepte le code lui-même (« be » → « BE ») comme le nom
+ * (« Belgique » → « BE »), parce que l'existant portait des noms.
+ */
+export function normalizeCountryCode(value: string | null | undefined): string | null {
+  const v = (value || '').trim()
+  if (!v) return null
+  if (/^[A-Za-z]{2}$/.test(v)) return v.toUpperCase()
+  const mapped = COUNTRY_CODE_MAP[v]
+  return mapped && /^[A-Z]{2}$/.test(mapped) ? mapped : null
+}
+
+/** Le libellé d'un code pays, ou le code lui-même s'il n'est pas dans la liste. */
+export function countryLabel(code: string | null | undefined): string {
+  const c = normalizeCountryCode(code)
+  if (!c) return ''
+  return ISO_COUNTRIES.find((o) => o.code === c)?.name || c
+}
+
+
 export function getCountryCode(country: string): string | undefined {
   return COUNTRY_CODE_MAP[country]
 }

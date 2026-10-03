@@ -32,6 +32,30 @@
 --     la TVA. Fermé le 28/09/2026 par la **300** : le CA se lit sur les comptes
 --     de produits (classe 70), la TVA reste lue sur les comptes 445x.
 --
--- Plus aucun scénario n'a le droit d'échouer : un échec hors registre casse la
--- CI, et un défaut connu doit s'inscrire ici avec sa raison — puis disparaître
--- avec son correctif.
+INSERT INTO _audit_expected (file, test_id, reason) VALUES
+  ('321', 'T02', 'Titres-restaurant hors du brut, des cotisations et du net — avantage en nature non traité, grille 2026 sans ligne pour ce poste (montants à sourcer)'),
+  ('321', 'T03', 'Indemnité de transport hors du brut, des cotisations et du net — même cause, même chantier de paramétrage'),
+  ('321', 'T05', 'Les deux ci-dessus cumulés');
+
+-- Réouvert le 30/09/2026 — un défaut PROUVÉ, trouvé en portant la couverture des
+-- éléments variables du second moteur vers le moteur réel (321) :
+--   • `321 T02` — les TITRES-RESTAURANT n'entrent ni dans le brut, ni dans les
+--     cotisations, ni dans le net. Mesuré : un titre de 160 € sur un brut de
+--     2 500 € laisse le brut à 2 500,00 €. Un avantage en nature est un salaire :
+--     sa valeur faciale entre dans le brut, et seule la part exonérée (la valeur
+--     du titre) échappe aux cotisations. La grille 2026 **n'a aucune ligne** pour
+--     ce poste — il manque le paramétrage, pas seulement la formule.
+--   • `321 T03` — l'INDEMNITÉ DE TRANSPORT, même constat : mesuré 2 500,00 €
+--     au lieu de 2 575,00 €.
+--   • `321 T05` — les deux ci-dessus cumulés.
+--
+-- Pourquoi ils ne sont pas corrigés ici : les deux montants à paramétrer
+-- (valeur faciale du titre-restaurant, plafond d'exonération de l'indemnité de
+-- transport) changent chaque année et doivent être SOURCÉS — la 276 le fait
+-- explicitement (`[URSSAF-PSS]`, « [URSSAF-TAUX] »). Écrire un taux de mémoire
+-- serait exactement le défaut que ce dépôt combat. Le correctif est un chantier
+-- à part, avec ses sources.
+--
+-- Plus aucun autre scénario n'a le droit d'échouer : un échec hors registre
+-- casse la CI, et un défaut connu doit s'inscrire ici avec sa raison — puis
+-- disparaître avec son correctif.

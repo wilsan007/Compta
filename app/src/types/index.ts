@@ -14,8 +14,14 @@ export interface Customer {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du client : FR / UE assujetti / hors UE.
+   *  Déduite du pays et du n° de TVA par `partner_apply_fiscal_position`,
+   *  jamais écrasée quand elle est posée à la main. `vat_codes` reste
+   *  l'ancien codage par ligne. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   credit_limit: number
@@ -35,6 +41,10 @@ export interface Customer {
   credit_blocked?: boolean
   account_tiers?: string | null
   account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
 }
 
 export interface CustomerContact {
@@ -59,8 +69,12 @@ export interface Supplier {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du fournisseur, même règle que le client :
+   *  déduite du pays et du n° de TVA, jamais écrasée si posée à la main. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   payment_terms: string
@@ -77,6 +91,10 @@ export interface Supplier {
   email_settings?: Record<string, any> | null
   account_tiers?: string | null
   account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
 }
 
 export interface SupplierContact {
@@ -180,6 +198,8 @@ export interface InvoiceLine {
   vat_amount?: number
   /** Ligne de déduction d'acompte (montant négatif) : facture d'acompte déduite */
   advance_invoice_id?: string | null
+  /** B2 (ven-008) : compte de vente d'une ligne sans article (706000 / 707000) */
+  account_code?: string | null
 }
 
 export interface Invoice {
@@ -256,12 +276,17 @@ export interface Quote {
 export interface CreditNoteLine {
   id: string
   credit_note_id: string
+  product_id?: string | null
   description: string
   quantity: number
   unit_price: number
   vat_rate: number
   total: number
   vat_total: number
+  vat_code?: string | null
+  vat_amount?: number
+  /** B4 (ven-012) : compte de vente d'une ligne sans article */
+  account_code?: string | null
   line_order: number
   created_at: string
 }
@@ -602,8 +627,8 @@ export interface Project {
   status: 'active' | 'completed' | 'on_hold' | 'cancelled'
   budget: number
   actual_cost: number
-  start_date: string
-  end_date: string
+  start_date: string | null
+  end_date: string | null
   manager_id: string | null
   created_at: string
   updated_at: string
@@ -757,6 +782,8 @@ export interface FiscalPosition {
   zip_to?: string | null
   auto_apply: boolean
   active: boolean
+  /** B3 (323) — fr | eu_vat | non_eu pour une position standard ; null sinon */
+  regime?: string | null
   created_at: string
 }
 
@@ -1203,6 +1230,15 @@ export interface CollectionReminder {
   status: 'draft' | 'sent' | 'paid' | 'cancelled'
   notes: string | null
   created_at: string
+  /** B9 (ven-015) : la table ne porte ni le nom du client ni le numéro de la
+   *  facture — ils viennent des jointures demandées par `getCollectionReminders`. */
+  customers?: { name: string } | null
+  invoices?: { number: string } | null
+  payment_status?: 'unpaid' | 'pending' | 'paid' | null
+  payment_link_url?: string | null
+  payment_link_expires_at?: string | null
+  reminder_level_id?: string | null
+  dispute_id?: string | null
 }
 
 // ============ Sprint A: Commercial Transformations ============

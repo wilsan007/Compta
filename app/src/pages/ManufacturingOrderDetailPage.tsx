@@ -113,6 +113,31 @@ export function ManufacturingOrderDetailPage() {
   if (loading) return <SkeletonTable rows={4} cols={4} />
   if (!mo) return <EmptyState title={t('manufacturing.detail.notFound')} description={t('manufacturing.detail.notFoundDescription')} action={<Button onClick={() => navigate('/production/manufacturing')}><ArrowLeft className="w-4 h-4" /> {t('manufacturing.detail.back')}</Button>} />
 
+  // D3 (stk-010) : le coût de référence est celui que la **clôture** a écrit sur
+  // l'OF (`cost_material`, `cost_labor`, `cost_overhead`, `cost_total`,
+  // `unit_cost`, `cost_variance`) — `getManufacturingOrder` le ramène déjà.
+  // Le bouton « Calculer le coût » reste pour un OF en cours : son résultat
+  // (`calculate_production_cost`, qui applique 10 % de frais généraux en dur et
+  // les entrées de projet) n'est affiché que s'il n'y a pas de coût de clôture,
+  // et il est alors annoncé comme un recalcul, pas comme le coût de l'OF.
+  const coutCloture = mo.cost_total != null || mo.cost_material != null ? {
+    material: Number(mo.cost_material || 0),
+    labor: Number(mo.cost_labor || 0),
+    overhead: Number(mo.cost_overhead || 0),
+    total: Number(mo.cost_total || 0),
+    unit: Number(mo.unit_cost || 0),
+    variance: mo.cost_variance != null ? Number(mo.cost_variance) : null,
+  } : null
+  const coutRecalcule = productionCost && typeof productionCost === 'object' && productionCost.total_cost != null ? {
+    material: Number(productionCost.material_cost || 0),
+    labor: Number(productionCost.labor_cost || 0),
+    overhead: Number(productionCost.overhead_cost || 0),
+    total: Number(productionCost.total_cost || 0),
+    unit: Number(productionCost.unit_cost || 0),
+    variance: null,
+  } : null
+  const coutAffiche = coutCloture ?? coutRecalcule
+
   const tabs = [
     { key: 'info', label: t('manufacturing.detail.tabs.info'), icon: ClipboardList },
     { key: 'labels', label: t('manufacturing.detail.tabs.labels'), icon: Tag },
@@ -178,35 +203,51 @@ export function ManufacturingOrderDetailPage() {
           <Card>
             <div className="flex items-center justify-between p-4">
               <div>
-                <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">{t('manufacturing.detail.info.cost')}</p>
-                <p className="text-sm font-medium">{productionCost != null ? formatCurrency(Number(productionCost.total_cost ?? productionCost ?? 0)) : '—'}</p>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">
+                  {t('manufacturing.detail.info.cost')}
+                  {coutCloture && <span className="ml-2 text-[var(--color-text-tertiary)]">{t('manufacturing.detail.info.costFromClosing')}</span>}
+                </p>
+                <p className="text-sm font-medium">{coutAffiche ? formatCurrency(coutAffiche.total) : '—'}</p>
               </div>
               <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : t('manufacturing.detail.info.calculateCost', { defaultValue: 'Calculer le coût' })}</Button>
             </div>
-            {productionCost && typeof productionCost === 'object' && productionCost.total_cost != null && (
+            {coutAffiche && (
               <div className="border-t border-[var(--color-border)] px-4 py-3">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.materialCost', { defaultValue: 'Coût matières' })}</p>
-                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.material_cost || 0))}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.material)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.laborCost', { defaultValue: 'Coût main-d\'œuvre' })}</p>
-                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.labor_cost || 0))}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.labor)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.overheadCost', { defaultValue: 'Frais généraux' })}</p>
-                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.overhead_cost || 0))}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.overhead)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.unitCost', { defaultValue: 'Coût unitaire' })}</p>
-                    <p className="font-mono font-medium">{formatCurrency(Number(productionCost.unit_cost || 0))}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.unit)}</p>
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
-                  <span className="text-sm text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.totalCost', { defaultValue: 'Coût total' })} ({Number(productionCost.quantity || mo.quantity || 0)} unités)</span>
-                  <span className="font-bold font-mono text-base">{formatCurrency(Number(productionCost.total_cost || 0))}</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.totalCost', { defaultValue: 'Coût total' })} ({Number(mo.quantity || 0)} unités)</span>
+                  <span className="font-bold font-mono text-base">{formatCurrency(coutAffiche.total)}</span>
                 </div>
+                {coutCloture && coutCloture.variance != null && (
+                  <div className="mt-2 pt-2 border-t border-[var(--color-border)] flex items-center justify-between">
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      {t('manufacturing.detail.info.costVariance')}
+                      <span className="ml-1 text-[var(--color-text-tertiary)]">
+                        {t('manufacturing.detail.info.costVarianceHint', { defaultValue: 'standard moins réel' })}
+                      </span>
+                    </span>
+                    <span className={`font-mono text-sm font-semibold ${Number(coutCloture.variance) > 0 ? 'text-[var(--color-success)]' : Number(coutCloture.variance) < 0 ? 'text-[var(--color-danger)]' : ''}`}>
+                      {formatCurrency(Number(coutCloture.variance))}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </Card>

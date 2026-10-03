@@ -283,8 +283,21 @@
       "email": "contact@supplier.fr",
       "phone": "0612345678",
       "address": "15 rue du Commerce, 75011 Paris",
-      "vatNumber": "FR98765432109"
-    }
+      "vatNumber": "FR98765432109",
+      "city": "Paris"
+    },
+    "checkSiret": "Vérifier",
+    "checkingSiret": "Vérification…",
+    "siretAtSource": "Vérifié à la source",
+    "siretFormatOnly": "Format et clé de contrôle valides — vérification à la source non configurée",
+    "siretInvalidKey": "Invalide : {{reason}}",
+    "siretInvalid": "SIRET invalide : 14 chiffres et clé de contrôle (Luhn) exigés",
+    "countryUnset": "— non renseigné —",
+    "countryInvalid": "Pays invalide : deux lettres de code ISO (ex. BE)",
+    "paymentTermsUnset": "— non renseignées —",
+    "parentIdUnset": "— aucune —",
+    "salesRepIdUnset": "— aucun —",
+    "cityPlaceholder": "Paris"
   },
   "automation": {
     "title": "Automatisation des factures",

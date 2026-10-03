@@ -226,7 +226,11 @@
     },
     "elementTypes": { "overtime": "Overtime", "bonus": "Bonus", "commission": "Commission", "absence": "Absence", "meal_voucher": "Meal Voucher", "meal_vouchers": "Meal Vouchers (payroll)", "transport": "Transport", "other": "Other", "advance_deduction": "Salary Advance Deduction", "pay_recall": "Pay Recall", "expense_reimbursement": "Expense Reimbursement", "unpaid_leave_deduction": "Unpaid Leave Deduction", "timesheet_hours": "Timesheet Hours", "lateness_deduction": "Lateness Deduction", "unpaid_absence": "Unpaid Absence" },
     "validate": "Validate Preparation", "validated": "Preparation validated",
-    "validateHint": "Review the elements above then validate the preparation"
+    "validateHint": "Review the elements above then validate the preparation",
+    "generateSlips": "Generate the run's payslips",
+    "slipsGenerated": "{{count}} payslip(s) generated",
+    "slipsFailed": "{{count}} payslip(s) refused",
+    "approveRun": "Approve payroll"
   },
   "reverseCalc": {
     "title": "Reverse Calculation (Net to Gross)",

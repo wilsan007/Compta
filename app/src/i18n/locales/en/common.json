@@ -323,8 +323,6 @@
     "loading": "Loading...",
     "noData": "No data",
     "noResults": "No results",
-    "noEmployeeRecord": "No employee record is linked to your account",
-    "noEmployeeRecordHint": "Ask an administrator to link your account to an employee record.",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -487,7 +485,12 @@
     "invoiceCreated": "Invoice created",
     "invoiceCreatedDesc": "Redirecting to the form...",
     "revenue": "Revenue",
-    "expenses": "Expenses"
+    "expenses": "Expenses",
+    "cashFlowLegend": {
+      "inflow": "Inflows",
+      "outflow": "Outflows",
+      "net": "Net balance"
+    }
   },
   "language": {
     "fr": "Français",
@@ -582,46 +585,68 @@
     "totalTtc": "Total incl. tax",
     "required": "An order needs at least one line (product or description, positive quantity)."
   },
-  "guide": {
+  "onboardingTour": {
     "skip": "Skip",
     "previous": "Previous",
     "next": "Next",
     "start": "Get started",
-    "s1Title": "Welcome to Compta!",
-    "s1Subtitle": "Your accounting, simplified and augmented",
-    "s1Intro": "We will walk you through the main features in a few steps. You can come back to this guide any time from Help.",
-    "s1Item1": "Smart dashboard",
-    "s1Item2": "Built-in AI assistant",
-    "s1Item3": "Quick navigation (Cmd+K)",
-    "s1Item4": "Dark mode",
-    "s2Title": "Set up your company",
-    "s2Subtitle": "Step 1 of 4",
-    "s2Intro": "Go to Settings > Company to configure your business. This information appears automatically on your invoices and documents.",
-    "s2Item1": "Legal name and trade name",
-    "s2Item2": "VAT number and SIRET",
-    "s2Item3": "Address and contact details",
-    "s2Item4": "Currency and fiscal year",
-    "s3Title": "Add your customers and suppliers",
-    "s3Subtitle": "Step 2 of 4",
-    "s3Intro": "In the Sales and Purchases tabs you can manage your business relationships and your transactions.",
-    "s3Item1": "Create customer and supplier records",
-    "s3Item2": "Send invoices and quotes",
-    "s3Item3": "Track payments and reminders",
-    "s3Item4": "Record purchase invoices",
-    "s4Title": "Connect your bank",
-    "s4Subtitle": "Step 3 of 4",
-    "s4Intro": "In the Banking tab, connect your accounts to automate your accounting.",
-    "s4Item1": "Import your transactions automatically",
-    "s4Item2": "Categorise with automatic rules",
-    "s4Item3": "Reconcile in one click",
-    "s4Item4": "Track your cash flow in real time",
-    "s5Title": "Use the AI assistant",
-    "s5Subtitle": "Step 4 of 4",
-    "s5Intro": "Click “AI assistant” at the top right to get help at any time.",
-    "s5Item1": "Analyse your cash flow",
-    "s5Item2": "Spot overdue invoices",
-    "s5Item3": "Prepare your VAT return",
-    "s5Item4": "Get personalised advice",
-    "s5Tip": "Tip: press Cmd+K (Mac) or Ctrl+K (Windows) to open quick search at any time."
+    "steps": [
+      {
+        "title": "Welcome to Compta!",
+        "subtitle": "Your accounting, simplified and augmented",
+        "intro": "We will guide you through the main features in a few steps. You can come back to this guide at any time from Help.",
+        "items": [
+          "Smart dashboard",
+          "Built-in AI assistant",
+          "Quick navigation (Cmd+K)",
+          "Dark mode"
+        ]
+      },
+      {
+        "title": "Set up your company",
+        "subtitle": "Step 1 of 4",
+        "intro": "Go to Settings > Company to set up your company. This information will appear automatically on your invoices and documents.",
+        "items": [
+          "Company and legal name",
+          "VAT number and SIRET",
+          "Address and contact details",
+          "Currency and fiscal year"
+        ]
+      },
+      {
+        "title": "Add your customers and suppliers",
+        "subtitle": "Step 2 of 4",
+        "intro": "In the Sales and Purchases tabs, you can manage your business relationships and transactions.",
+        "items": [
+          "Create customer and supplier records",
+          "Send invoices and quotes",
+          "Track payments and reminders",
+          "Record purchase invoices"
+        ]
+      },
+      {
+        "title": "Connect your bank",
+        "subtitle": "Step 3 of 4",
+        "intro": "In the Bank tab, connect your accounts to automate your bookkeeping.",
+        "items": [
+          "Import your transactions automatically",
+          "Categorize with automatic rules",
+          "Reconcile in one click",
+          "Track your cash in real time"
+        ]
+      },
+      {
+        "title": "Use the AI Assistant",
+        "subtitle": "Step 4 of 4",
+        "intro": "Click \"AI Assistant\" at the top right to get help at any time.",
+        "items": [
+          "Analyze your cash flow",
+          "Spot overdue invoices",
+          "Prepare your VAT return",
+          "Get personalized advice"
+        ],
+        "tip": "Tip: press Cmd+K (Mac) or Ctrl+K (Windows) to open quick search at any time!"
+      }
+    ]
   }
 }

@@ -451,3 +451,51 @@ export async function getTrialBalanceFiltered(filters?: {
 
   return Object.values(balances).sort((a, b) => a.account_code.localeCompare(b.account_code))
 }
+
+// --- A3 (313) : le solde des tiers se lit au grand livre --------------------
+// `customers.balance`, `customers.credit_used` et `suppliers.balance` sont trois
+// colonnes dénormalisées que RIEN ne tient : mesuré à l'écran, le 411 portait
+// 540,00 EUR et la liste des clients affichait 0,00 EUR. Les vues
+// `customer_balances` / `supplier_balances` rendent le solde du 411 / 401 par
+// tiers (écritures validées seulement), avec la RLS de la société
+// (`security_invoker`). Même doctrine que la 277 pour la banque.
+//
+// ⚠️ Ce bloc vient de la recette (migration 313). Sur la branche principale,
+// `accounting.ts` a été découpé en quatorze modules le 01/10 ; ces trois
+// lecteurs sont donc posés ici, dans le module qui porte déjà les clients.
+export interface PartnerBalance {
+  customer_id?: string
+  supplier_id?: string
+  name: string
+  account_tiers: string | null
+  balance: number
+  lines_count: number
+}
+
+export async function getCustomerBalances(): Promise<PartnerBalance[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('customer_balances').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as PartnerBalance[]
+}
+
+export async function getSupplierBalances(): Promise<PartnerBalance[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('supplier_balances').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as PartnerBalance[]
+}
+
+/** Le solde dû d'UN client (411 au grand livre) ; 0,00 EUR s'il n'a pas bougé. */
+export async function getCustomerBalance(customerId: string): Promise<number> {
+  const tid = await getTenantId()
+  let q = supabase.from('customer_balances').select('balance').eq('customer_id', customerId)
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q.maybeSingle()
+  if (error) throw error
+  return Number((data as { balance?: number } | null)?.balance || 0)
+}

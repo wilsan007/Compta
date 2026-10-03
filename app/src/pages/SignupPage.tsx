@@ -15,6 +15,7 @@ export function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [confirmationSent, setConfirmationSent] = useState(false)
+  const [emailSent, setEmailSent] = useState(true)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,13 +37,14 @@ export function SignupPage() {
       return
     }
     setLoading(true)
-    const { error: signUpError, needsConfirmation } = await signUp(email, password)
+    const { error: signUpError, needsConfirmation, emailSent: sent } = await signUp(email, password)
     if (signUpError) {
       setError(signUpError)
       setLoading(false)
       return
     }
     if (needsConfirmation) {
+      setEmailSent(sent !== false)
       setConfirmationSent(true)
       setLoading(false)
       return
@@ -59,12 +61,15 @@ export function SignupPage() {
             <CheckCircle2 className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">{t('signup.verifyEmail')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-            {/* Le libellé porte une mise en valeur (« strong ») : sans <Trans>,
-                React affiche les balises telles quelles — défaut mesuré à
-                l'écran le 29/09/2026. */}
-            <Trans i18nKey="signup.verifyEmailDescription" ns="auth" values={{ email }} components={{ strong: <strong /> }} />
-          </p>
+          {emailSent ? (
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+              <Trans t={t} i18nKey="signup.verifyEmailDescription" values={{ email }} components={{ strong: <strong /> }} />
+            </p>
+          ) : (
+            <p role="alert" className="text-sm text-[var(--color-danger)] mt-2">
+              <Trans t={t} i18nKey="signup.emailNotSent" values={{ email }} components={{ strong: <strong /> }} />
+            </p>
+          )}
           <Link to="/login" className="inline-block mt-6 text-sm text-[var(--color-primary)] font-medium">
             {t('password.backToLogin')}
           </Link>

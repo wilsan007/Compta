@@ -364,6 +364,7 @@
     "noAccounts": "لا يوجد حساب بنكي",
     "noAccountsDesc": "أضف أول RIB/IBAN",
     "ibanInvalid": "IBAN غير صالح",
+    "ibanRefused": "IBAN غير صالح: مفتاح التحقق غير مطابق. لم يتم حفظ أي شيء — راجع الرقم المُدخل.",
     "ibanValid": "IBAN صالح",
     "saved": "تم حفظ الحساب البنكي",
     "saveError": "خطأ في حفظ الحساب",

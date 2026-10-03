@@ -226,7 +226,11 @@
     },
     "elementTypes": { "overtime": "ساعات إضافية", "bonus": "مكافأة", "commission": "عمولة", "absence": "غياب", "meal_voucher": "قسيمة طعام", "meal_vouchers": "قسائم طعام (راتب)", "transport": "نقل", "other": "أخرى", "advance_deduction": "خصم سلفة الراتب", "pay_recall": "استدراك الراتب", "expense_reimbursement": "تعويض المصاريف", "unpaid_leave_deduction": "خصم إجازة بدون أجر", "timesheet_hours": "ساعات العمل", "lateness_deduction": "خصم التأخير", "unpaid_absence": "غياب بدون أجر" },
     "validate": "التحقق من التحضير", "validated": "تم التحقق من التحضير",
-    "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير"
+    "validateHint": "راجع العناصر أعلاه ثم تحقق من التحضير",
+    "generateSlips": "توليد قسائم الدفعة",
+    "slipsGenerated": "تم توليد {{count}} قسيمة رواتب",
+    "slipsFailed": "تم رفض {{count}} قسيمة رواتب",
+    "approveRun": "اعتماد الرواتب"
   },
   "reverseCalc": {
     "title": "حساب عكسي (من الصافي إلى الإجمالي)",

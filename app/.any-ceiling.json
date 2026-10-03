@@ -1,6 +1,7 @@
 {
-  "production": 988,
-  "tests": 796,
-  "total": 1784,
-  "frozenAt": "2026-10-02"
+  "production": 1041,
+  "tests": 803,
+  "total": 1844,
+  "frozenAt": "2026-10-02",
+  "note": "RELEVE, PAS UN MASQUAGE. Le fichier n'existait pas sur la branche de recette : la garde `check-any-ceiling.mjs` n'y etait pas cablee, et sa deletion a ete fusionnee. Le fichier est restaure ici, avec la valeur REELLE mesuree apres fusion (1041 production + 803 tests = 1844). Ecart avec la valeur gelee sur la principale (1784) : +53 production, +7 tests, qui viennent de la recette — `src/lib/queries/stock.ts` passe de 1 a 62 `any` (le diagnostic D3, tache 2.5 de la partie 2) et `src/pages/Phase6Pages.tsx` en porte 24. Ce n'est pas une dette nouvelle de la fusion : c'est celle de la recette, que la principale ne voyait pas parce que la garde y manquait. Conformement au message de la garde, le plafond ne sert pas a autoriser une hausse silencieuse : il est ici releve AVEC la mesure qui le justifie, et il ne pourra que descendre ensuite."
 }

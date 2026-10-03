@@ -874,6 +874,8 @@ interface ModalProps {
   onClose: () => void
   title?: string
   children: ReactNode
+  /** Actions de la fenêtre (boutons) — posées dans un pied fixe, hors zone de défilement. */
+  footer?: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
@@ -881,7 +883,7 @@ interface ModalProps {
 // `aria-modal`, un lecteur d'écran continue de lire la page derrière ; sans
 // `aria-labelledby`, il n'annonce pas de quoi il s'agit à l'ouverture. Le bouton de
 // fermeture n'affichait qu'une croix, sans libellé.
-export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: ModalProps) {
   const titleId = useId()
   const { t } = useTranslation('common')
   // LOT7-07 : au clavier, la boîte n'était pas une boîte — Tab sortait derrière elle,
@@ -895,6 +897,12 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
   }[size]
+  // E1 (ach-001, stk-015) : `max-h-[90vh]` laissait la fenêtre plus haute que
+  // l'écran dès que son contenu était long, et TOUT défilait — titre, champs et
+  // boutons. « Créer » restait alors hors de l'écran (mesuré : top = 840 px pour
+  // un écran de 720) et le clic était impossible. Le cadre tient désormais dans
+  // la fenêtre (1 rem de marge), l'en-tête et le pied ne bougent pas, et seul le
+  // corps défile : le bouton de validation est toujours atteignable.
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
@@ -904,10 +912,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} max-h-[90vh] overflow-y-auto`}
+        className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} flex flex-col max-h-[calc(100vh-2rem)]`}
       >
         {title && (
-          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)] shrink-0">
             <h2 id={titleId} className="font-semibold">{title}</h2>
             <button
               onClick={onClose}
@@ -919,7 +927,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
             </button>
           </div>
         )}
-        <div className="p-4">{children}</div>
+        <div className="p-4 flex-1 overflow-y-auto">{children}</div>
+        {footer && (
+          <div className="p-4 border-t border-[var(--color-border)] shrink-0">{footer}</div>
+        )}
       </div>
     </div>
   )

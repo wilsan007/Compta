@@ -2,8 +2,9 @@ import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import { getCustomerBalances } from '@/lib/queries/accounting'
 import { calculateLatePaymentPenalties } from '@/lib/queries/businessFunctions'
-import { errorMessage, formatCurrency } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -20,24 +21,29 @@ export function CreditControlPage() {
   const loadData = useCallback(async () => {
     try {
       const tid = await getTenantId()
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, credit_limit, credit_used, credit_blocked, credit_policy')
-        .eq('tenant_id', tid)
-        .order('name')
+      // A3 (313) : l'encours utilisé n'est pas `customers.credit_used` (jamais
+      // tenue, 0,00 EUR partout) mais le solde du 411 au grand livre.
+      const [{ data, error }, balances] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('id, name, credit_limit, credit_blocked, credit_policy')
+          .eq('tenant_id', tid)
+          .order('name'),
+        getCustomerBalances(),
+      ])
       if (error) throw error
-      setCustomers(data || [])
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+      const parClient = new Map(balances.map((b) => [b.customer_id, Number(b.balance) || 0]))
+      setCustomers((data || []).map((c) => ({ ...c, credit_used: parClient.get(c.id) ?? 0 })))
+    } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 
-  // W-QA (29/09/2026) : l'appel partait PENDANT le rendu — React le signalait
-  // (« Can't perform a React state update on a component that hasn't mounted
-  // yet ») et la requête pouvait repartir à chaque rendu. Un effet la déclenche
-  // une fois, proprement.
-  useEffect(() => {
-    loadData().catch((err) => console.error('loadData:', err))
-  }, [loadData])
+  // ven-016 (B10) : l'appel vivait dans le CORPS du composant — chaque rendu
+  // relançait la lecture, `setCustomers` re-rendait, et la boucle n'avait aucune
+  // condition d'arrêt (14 301 GET /customers en 10 s à la recette du 29/09).
+  // Une seule lecture au montage ; `toast` et `tCommon` sont stables, donc
+  // `loadData` ne change pas d'identité d'un rendu à l'autre.
+  useEffect(() => { loadData() }, [loadData])
 
   const getExposure = (c: any) => {
     const used = Number(c.credit_used || 0)
@@ -69,11 +75,11 @@ export function CreditControlPage() {
         try {
           const result = await calculateLatePaymentPenalties(inv.id)
           total += Number(result?.penalty_amount ?? result ?? 0)
-        } catch (e) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
+        } catch (e: any) { console.error('Penalty calc failed for', inv.id, e); toast('error', tCommon('toast.error'), e.message || tCommon('toast.loadingError')) }
       }
       toast('success', tCommon('common.success'), t('penalties_result', { amount: total, count: invoices.length }))
-    } catch (err) {
-      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setPenaltyLoading(null)
     }

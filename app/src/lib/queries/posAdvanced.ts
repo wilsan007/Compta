@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { localDateString } from '@/lib/dateRange'
 import { getTenantId, ti, tud } from './core'
 import type { PosTerminal, PosSession, PosTicket, PosTicketLine } from '@/types'
 
@@ -124,7 +125,10 @@ export async function createPosTicket(
   return data as unknown as PosTicket
 }
 
-export async function getPosTickets(sessionId?: string, date?: string): Promise<(PosTicket & { pos_ticket_lines: PosTicketLine[] })[]> {
+// `range` : bornes `[from, to)` d'une période, dans le fuseau de l'utilisateur
+// (`localDayRange`). La borne haute est EXCLUE — la forme `lt` d'avant prenait
+// le même jour que la borne basse, donc la période était vide (D4, stk-013).
+export async function getPosTickets(sessionId?: string, range?: { from: string; to: string }): Promise<(PosTicket & { pos_ticket_lines: PosTicketLine[] })[]> {
   const tid = await getTenantId()
   let q = supabase
     .from('pos_tickets')
@@ -132,7 +136,7 @@ export async function getPosTickets(sessionId?: string, date?: string): Promise<
     .order('date', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   if (sessionId) q = q.eq('session_id', sessionId)
-  if (date) q = q.gte('date', date).lt('date', date + 'T23:59:59')
+  if (range) q = q.gte('date', range.from).lt('date', range.to)
   const { data, error } = await q
   if (error) throw error
   return (data || []) as any
@@ -167,7 +171,7 @@ export async function convertTicketToInvoice(ticketId: string): Promise<string> 
     .insert(ti({
       number: invoiceNumber,
       customer_id: t.customer_id,
-      date: new Date().toISOString().split('T')[0],
+      date: localDateString(),
       subtotal: t.subtotal,
       vat_total: t.vat_total,
       total: t.total,

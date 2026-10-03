@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees } from '@/lib/queries/payroll'
+import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees, generatePayRunSlips } from '@/lib/queries/payroll'
 import { generatePayrollJournal, payPayrollRun } from '@/lib/queries/misc'
-import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { Calendar, Plus, Trash2, X, FileText, Banknote } from 'lucide-react'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { Calendar, Plus, Trash2, X, FileText, Banknote, Sparkles } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
@@ -19,6 +19,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  // rh-006 : identifiant du lot dont les bulletins sont en cours de génération
+  const [generating, setGenerating] = useState<string | null>(null)
   // R-04 : identifiant du lot en cours de versement (bouton désactivé pendant l'appel)
   const [paying, setPaying] = useState<string | null>(null)
   // R-08 (décision D-10) : le versement se saisit dans la fenêtre de règlement —
@@ -38,12 +40,12 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleStatusChange(id: string, status: string) {
-  try { await updatePayRun(id, { status: status as any }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+  try { await updatePayRun(id, { status: status as any }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
     if (!confirmSync(tCommon('form.confirmDelete'))) return
-    try { await deletePayRun(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+    try { await deletePayRun(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }
 
   async function handleGenerateJournal(id: string) {
@@ -51,8 +53,30 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
       await generatePayrollJournal(id)
       toast('success', tCommon('common.success'), t('payrollAccounting.generatedEntries'))
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    }
+  }
+
+  // rh-006 : le lot naît vide (275) ; c'est ici que ses bulletins sont VRAIMENT
+  // produits — un seul appel, et le verdict par salarié est affiché (un refus
+  // est nommé, jamais avalé).
+  async function handleGenerateSlips(run: PayRun) {
+    setGenerating(run.id)
+    try {
+      const verdict = await generatePayRunSlips(run.id)
+      await loadData()
+      const echecs = verdict.echecs || []
+      if (echecs.length > 0) {
+        toast('warning', t('payRuns.slipsGenerated', { count: verdict.generes }),
+          echecs.map((e) => `${e.employee} : ${e.message}`).join(' · '))
+      } else {
+        toast('success', t('payRuns.generate'), t('payRuns.slipsGenerated', { count: verdict.generes }))
+      }
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } finally {
+      setGenerating(null)
     }
   }
 
@@ -70,8 +94,8 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
         toast('success', t('payRuns.pay'), t('payRuns.payDone'))
       }
       await loadData()
-    } catch (err) {
-      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } catch (err: any) {
+      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
     } finally {
       setPaying(null)
     }
@@ -110,6 +134,11 @@ const [payRuns, setPayRuns] = useState<PayRun[]>([])
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
+                    {(pr.status === 'draft' || pr.status === 'processing') && (
+                      <button onClick={() => handleGenerateSlips(pr)} disabled={generating === pr.id} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)] disabled:opacity-50" title={t('payRuns.generate')} aria-label={t('payRuns.generate')}>
+                        <Sparkles className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    )}
                     <button onClick={() => handleGenerateJournal(pr.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('payrollAccounting.generate')}><FileText className="w-4 h-4" /></button>
                     {pr.status !== 'paid' && pr.status !== 'cancelled' && pr.status !== 'draft' && (
                       <button onClick={() => setPayRunToPay(pr)} disabled={paying === pr.id} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)] disabled:opacity-50" title={paying === pr.id ? t('payRuns.paying') : t('payRuns.pay')} aria-label={t('payRuns.pay')}>
@@ -162,11 +191,21 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
       // C5/C7 (X3) : un lot naît VIDE. Ses totaux sont ceux de ses bulletins,
       // agrégés par la base (275) — l'écran ne calcule plus aucune cotisation
       // (il portait un troisième moteur, marocain, étranger à la paie de la société).
-      await createPayRun({
+      const run = await createPayRun({
         number, period_start: periodStart, period_end: periodEnd, pay_date: payDate, status: 'draft',
       })
+      // rh-006 : le bouton « Générer les bulletins » produit donc vraiment les
+      // bulletins — un appel, un verdict par salarié, les refus nommés.
+      const verdict = await generatePayRunSlips(run.id)
+      const echecs = verdict.echecs || []
+      if (echecs.length > 0) {
+        toast('warning', t('payRuns.slipsGenerated', { count: verdict.generes }),
+          echecs.map((e) => `${e.employee} : ${e.message}`).join(' · '))
+      } else {
+        toast('success', t('payRuns.generate'), t('payRuns.slipsGenerated', { count: verdict.generes }))
+      }
       onSaved()
-    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (

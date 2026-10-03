@@ -284,13 +284,25 @@ describe('OF Lots', () => {
 describe('OF Consumptions', () => {
   beforeEach(() => resetMock())
 
-  it('getOFConsumptions queries by manufacturing_order_id', async () => {
-    setMockData([{ id: '1', quantity: 10 }])
+  it('getOFConsumptions lit les sorties de la clôture ET les saisies manuelles', async () => {
+    // D3 (stk-010) : la clôture sort les composants en `stock_movements`
+    // (`reference_type = 'production'`), jamais dans `of_consumptions`. Lire la
+    // seule table des saisies manuelles laissait l'onglet vide sur tout OF
+    // terminé (« Aucune consommation »).
+    setMockData([{ id: 'mv1', quantity: 4, date: '2026-03-10', reference: 'OF-1', product_id: 'p2', products: { name: 'Composant A' } }])
     const { getOFConsumptions } = await import('@/lib/queries')
     const result = await getOFConsumptions('mo-1')
+
+    expect((supabase as any).from).toHaveBeenCalledWith('stock_movements')
     expect((supabase as any).from).toHaveBeenCalledWith('of_consumptions')
-    expect(mockChain.eq).toHaveBeenCalledWith('manufacturing_order_id', 'mo-1')
-    expect(result).toHaveLength(1)
+    expect(mockChain.eq).toHaveBeenCalledWith('reference_type', 'production')
+    expect(mockChain.eq).toHaveBeenCalledWith('reference_id', 'mo-1')
+    expect(mockChain.eq).toHaveBeenCalledWith('movement_type', 'out')
+    // les mouvements sont remis dans la forme du tableau, marqués par leur origine
+    expect(result[0]).toMatchObject({
+      id: 'mv1', quantity: 4, consumption_date: '2026-03-10',
+      products: { name: 'Composant A' }, origin: 'movement',
+    })
   })
 
   it('createOFConsumption inserts with tenant_id', async () => {
