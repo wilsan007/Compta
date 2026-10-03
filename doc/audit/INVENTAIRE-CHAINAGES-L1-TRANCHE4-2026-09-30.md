@@ -196,6 +196,54 @@ remplace. Le changement est daté dans le fichier.
 * **Neuf maillons restants sont des RPC** (caisse, paie, relevé) : un compagnon ne
   peut pas s'y accrocher, il faut les tracer **par leur chemin d'appel**. C'est
   un travail de nature différente (lot **L3**), pas une omission.
+  → **RECOMPTÉ le 02/10/2026 (tâche 3.1 du plan de la partie 3).** Le chiffre
+  « neuf » ne tenait pas : il comptait des fonctions que le compilateur ne
+  qualifiait pas, et il en omettait une. Le recomptage est rejouable — il est
+  dans la porte **`ci/check_chain_rpc_inventory.sql`**, câblée en CI, qui lit
+  `pg_proc` (ce qui est compilé, pas les fichiers) et **publie l'inventaire à
+  chaque passage**. Mesuré sur base neuve (PostgreSQL 16, 273 migrations) :
+
+  **14 maillons RPC transverses** (écrivent dans ≥ 2 modules, entrée par
+  appel), dont :
+
+  | # | Maillon (nom public) | Modules | Verdict au 02/10 |
+  |---:|---|---|---|
+  | 1 | `create_pos_ticket` | caisse, stock | ✅ **tracé (412)** — par son wrapper |
+  | 2 | `pos_refund_ticket` | caisse, stock | ✅ **tracé (412)** — par son wrapper |
+  | 3 | `post_payroll_payment` | compta, rh | ⬜ **tâche 3.2** (paie versée) |
+  | 4 | `payroll_post_run` | compta, rh | ⬜ **tâche 3.2** (validation du bulletin) |
+  | 5 | `post_bank_statement_line` | compta, trésorerie | ⬜ **tâche 3.3** (relevé manuel) |
+  | 6 | `reconcile_bank_statement_line` | compta, trésorerie | ⬜ **tâche 3.3** (rapprochement) |
+  | 7 | `unreconcile_bank_statement_line` | compta, trésorerie | ⬜ **tâche 3.3** (dé-lettrage) |
+  | 8 | `apply_chart_pack` | compta, système | écarté — paramétrage (inventaire §2, l. 5) |
+  | 9 | `bootstrap_tenant` | compta, système | écarté — mise en service |
+  | 10 | `create_tenant_for_current_user` | rh, système | écarté — mise en service |
+  | 11 | `cancel_import_batch` | 5 modules | écarté — acte d'import (inventaire §2, l. 1) |
+  | 12 | `refresh_invoice_settlement` | commercial, compta | écarté — recalcul paramétrique |
+  | 13 | `refresh_purchase_invoice_settlement` | achats, compta | écarté — recalcul paramétrique |
+  | 14 | `revaluate_currency_balances` | compta, système | écarté — recalcul de clôture |
+
+  **Trois écarts avec le tableau du 30/09, et pourquoi :**
+
+  * **`payroll_payment_inner` n'existe plus comme entrée** : il a été RENOMMÉ en
+    `payroll_payment_inner` en 224, et l'appel public est **`post_payroll_payment`**
+    (qui porte la garde de permission R-17). Le nom du §2, ligne 20, ne désigne
+    plus rien d'exposable. C'est mesuré, pas déduit : `payroll_payment` — ce
+    que donnerait une simple soustraction du suffixe `_inner` — **n'existe pas**.
+  * **`apply_chart_pack` apparaît** là où il était invisible : la carte des
+    modules du 02/10 a été corrigée (le motif `accounts` ne matchait pas
+    `chart_accounts`, qui le *contient* sans le commencer). Le maillon n'est pas
+    nouveau ; il était mal compté. Il reste écarté, pour la **même** raison que
+    l'inventaire.
+  * **`create_stock_on_manufacturing_complete` et `statement_line_ledger_match`
+    ne sont pas des RPC** : ce sont des déclencheurs, et leur chaîne est dans des
+    compagnons `zz_l1_…`. Les classer « à tracer » était un effet de bord de la
+    même extraction.
+
+  **Ce que la porte rend impossible désormais** : un maillon RPC transverse neuf
+  qui arrive sans chaîne **casse la CI**, et une entrée du registre devenue
+  inutile **casse aussi** (elle doit disparaître dans le commit qui trace le
+  maillon). La liste ne peut donc plus mentir en silence.
 * **La carte de modules est une heuristique** : un chiffre comme « 99 » dépend de
   la liste de motifs. Le document publie la sienne, ce qui la rend **discutable**
   — et c'est le point : le référentiel avait la même limite, il l'avait dit aussi.

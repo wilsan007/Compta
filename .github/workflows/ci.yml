@@ -531,6 +531,24 @@ jobs:
       # `document_effects` OU inscrit au registre du fichier, qui ne peut que
       # rétrécir (lot L7 = celui qui déclarera). Un maillon neuf sans contrat casse
       # donc la CI, ce que rien ne faisait avant.
+      # L3, tâche 3.1 du plan de la partie 3 — LA LISTE DES MAILLONS RPC, TENUE.
+      # L'inventaire tranche 4 (30/09) rangeait neuf maillons « à tracer — lot
+      # L3 ». C'est un tableau dans un document : vrai le jour où on l'écrit,
+      # muet le lendemain. Une fonction nouvelle peut écrire dans deux modules
+      # sans que personne ne le voie, et « 5 / 7 tracés » devient « 5 / 8 »
+      # sans qu'aucun chiffre ne bouge ailleurs.
+      # Ce contrôle lit `pg_proc` — ce qui est COMPILÉ, pas les fichiers — et
+      # exige que tout maillon RPC transverse soit tracé par son chemin d'appel
+      # (doctrine 412) ou inscrit au registre avec la raison de son écart. Il a
+      # deux sens, comme G2 : ce qui protège (un maillon neuf non tracé casse),
+      # et ce qui empêche le registre de pourrir (une entrée devenue inutile
+      # casse aussi, et doit disparaître dans le même commit).
+      # Il publie l'inventaire daté — c'est la preuve attendue de la tâche 3.1.
+      - name: 'L3 : la liste des maillons RPC est tenue (3.1)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_chain_rpc_inventory.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       - name: 'L2 : contrat d''effet confronté au code (G2)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_effects_contract.sql
         env:
@@ -1788,6 +1806,69 @@ jobs:
       # chiffre sans explication.
       - name: 'I-08 : le « pourquoi ce chiffre ? » (462)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/462_chain_expliquer_montant_tests.sql
+      # L4, tranche 2 — L'ALERTE EN CAS DE DÉGRADATION (414). La 413 produit un
+      # historique que personne ne regarde : l'indice peut tomber en silence et
+      # l'éditeur découvre le lendemain qu'un maillon s'est cassé. La 414 compare
+      # le relevé du jour au relevé PRÉCÉDENT et alerte sur une perte, un
+      # agravement, ou un invariant redevenu mesurable et rompu. Elle n'alerte
+      # PAS sur une amélioration (alerter sur une bonne nouvelle est un défaut de
+      # conception), ni sur un écart déjà rompu et stationnaire.
+      # 7 scénarios : le premier passage n'alerte pas, la perte est détectée,
+      # écrite et notifiée, le rejeu est sans effet (unicité posée en BASE),
+      # l'aggravation d'un écart déjà signalé est notifiée, les fonctions et
+      # les index sont en place, et le job nocturne est inscrit quand pg_cron
+      # existe. Sans ce branchement (G5), la suite passerait et ne protégerait
+      # rien.
+      - name: 'L4 : l''alerte en cas de dégradation (414)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/414_chain_l4_alerte_degradation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4, tranche 3 — LE DERNIER INVARIANT MESURABLE (431). La 413 inscription
+      # treize invariants mesurables et SEPT nommés sans contrôle, faute de
+      # donnée et non faute de méthode — mesuré le 02/10 : `purchase_orders`
+      # n'a aucun montant facturé, `budgets` aucun réalisé, `dsn_declarations`
+      # aucun montant du tout. La 431 conserve ce refus (un invariant mesuré
+      # par un agrégat inventé afficherait une santé inexistante) et transforme
+      # les six raisons en PREUVES mesurées, datées, opposables.
+      # Le septième, INV-19, était mesurable : sa raison disait « Devient
+      # mesurable dès qu'un registre des types de documents est écrit (c'est la
+      # matière de la vue chaîne, lot L6) ». La 431 écrit ce registre
+      # (`chain_document_types`) et INV-19 devient mesuré : 13 → 14. L6 n'aura
+      # plus à l'inventer.
+      # 7 scénarios : le relevé mesure 14, un orphelin RÉEL est compté, ⚠️ le
+      # garde anti-faux-vert (un lien de type NON ENREGISTRÉ fait rompre
+      # l'invariant et nomme le type — jamais « tenu » sur ce qu'il n'a pas su
+      # regarder), la délégation aux treize branches de la 413 est intacte ET la
+      # garde « mesurable sans branche LÈVE » survit au wrapper, les six
+      # raisons portent leur mesure, la table est RLS forcée en lecture seule
+      # (une écriture de client ferait verdir INV-19 à volonté), et le registre
+      # est cloisonné par société. Sans ce branchement (G5), la suite passerait
+      # et ne protégerait rien — l'angle mort que le commit 5b7d915 reprochait
+      # à la 414.
+      - name: 'L4 : le dernier invariant mesurable et les six preuves (431)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/431_chain_l4_invariants_mesurables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4 — LES TROIS FUITES ENTRE SOCIÉTÉS, ET LEUR NON-RÉGRESSION (437).
+      # Le 02/10, en validant la 414, trois défauts d'isolation ont été trouvés et
+      # corrigés. Les corrections n'étaient prouvées que par des MESURES
+      # MANUELLES — rien ne les rejouait. Cette suite les rend opposables :
+      #   T01 `_mk_tenant_contexte` (helper de test, SECURITY DEFINER) n'est plus
+      #        exécutable par `authenticated` ni `anon` — sans le REVOKE, un client
+      #        choisissait sa société et la RLS s'appliquait dessus ;
+      #   T02 `chain_degradation_detectee` refuse la société d'autrui ET répond
+      #        pour la sienne (une garde, pas une fonction cassée) ;
+      #   T03 `releve_id` est une clé COMPOSITE (tenant_id, releve_id) : une alerte
+      #        de SEPT ne peut pas viser le relevé de SIX (porte ISO-02).
+      # Les trois exigent un REFUS, pas un compte : un compte de zéro passerait
+      # aussi sur une base vide. T01 vérifie en plus que la fonction existe —
+      # sans quoi il passerait sur une absence (faux vert mesuré le 02/10).
+      # Placée APRÈS la 431, qui crée le helper, et APRÈS la 414, qui crée les
+      # tables : jouée seule, T01 dirait honnêtement qu'il ne peut rien prouver.
+      - name: 'L4 : les trois fuites entre sociétés restent fermées (437)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/437_chain_l4_fuites_fermees_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

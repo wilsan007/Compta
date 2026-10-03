@@ -47,6 +47,18 @@ L'essentiel en huit lignes :
 > | `210` → `299` | audits fonctionnels, W7/W8, L7 | 2026-09-28 |
 > | **`300` → `309`** | **W7** : CA3, temps, production, projets, analytique, FEC, devises, budgets, import Sage, écart de change | 2026-09-28 |
 > | **`310` → `324`** | **session recette** (`qa/recette-2026-09-29`) : paquets lisibles, bulletin de paie, tiers, soldes clients, livraison, sorties de stock, valorisation, facture directe, identité tiers, simulateur, prorata, autoliquidation UE, IBAN | **2026-10-02** |
+> | **`414`, `430` → `449`** | **partie 3 du plan** (`partie-3-chainages`) : maillons RPC restants (L3), banc d'épreuves D1→D8 (L3), indice de cohérence mesuré et publié (L4) | **2026-10-02** |
+>
+> *Numéros **constatés** dans cette plage au 02/10, à la date où on les a pris :*
+> *`414` alerte de dégradation · `430` paie versée (session L3) ·*
+> *`431` invariants mesurables + registre des types de documents (session L4,
+> branche `l4-invariants`) · `433` moteur du banc, `434` ses huit épreuves,
+> `435` invariants par agrégation, `436` six maillons de plus (session L3,
+> branche `partie-3-chainages`) ·*
+> *`437` **non-régression des trois fuites entre sociétés fermées en L4**
+> (session L4, branche `l4-invariants`) — pris par
+> `migration-numero.mjs`, premier libre après `436`, vérifié dans les six
+> worktrees au moment de le prendre.*
 > | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) — les 14 chaînages et leurs suites | **2026-10-02** |
 > | **`415` → `429`** | **L16 → L24** (événements unifiés, capacité ↔ absence, régénération, chaînages internes, stock ↔ projets, dérivés du lettrage, reporting, moteur de règles, explicabilité) — `415` L23, `416` L17 | **2026-10-02** |
 > | **`414`, `430` → `449`** | **partie 3** (L3, L4) : `414` alerte de dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé bancaire — **déplacés de `415`/`416` le 02/10 au soir** (`0cd347c`, `9e0f33d`) | **2026-10-02** |

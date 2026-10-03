@@ -2446,6 +2446,85 @@ export interface Database {
       Relationships: [
       ]
     }
+    chain_invariant_alertes: {
+      Row: {
+        id: number
+        tenant_id: string
+        code: string
+        mesure_le: string
+        verdict_avant: string
+        verdict_apres: string
+        mesure_avant: number | null
+        mesure_apres: number | null
+        lignes_avant: number
+        lignes_apres: number
+        delta: number | null
+        motif: string
+        notifiee: boolean
+        created_at: string
+        releve_id: number | null
+        releve_avant_id: number | null
+      }
+      Insert: {
+        id?: number
+        tenant_id: string
+        code: string
+        mesure_le: string
+        verdict_avant: string
+        verdict_apres: string
+        mesure_avant?: number
+        mesure_apres?: number
+        lignes_avant?: number
+        lignes_apres?: number
+        delta?: number
+        motif: string
+        notifiee?: boolean
+        created_at?: string
+        releve_id?: number
+        releve_avant_id?: number
+      }
+      Update: {
+        id?: number
+        tenant_id?: string
+        code?: string
+        mesure_le?: string
+        verdict_avant?: string
+        verdict_apres?: string
+        mesure_avant?: number
+        mesure_apres?: number
+        lignes_avant?: number
+        lignes_apres?: number
+        delta?: number
+        motif?: string
+        notifiee?: boolean
+        created_at?: string
+        releve_id?: number
+        releve_avant_id?: number
+      }
+      Relationships: [
+        {
+          foreignKeyName: "chain_invariant_alertes_releve_avant_fkey",
+          columns: ["tenant_id", "releve_avant_id"],
+          isOneToOne: false,
+          referencedRelation: "chain_invariant_results",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "chain_invariant_alertes_releve_fkey",
+          columns: ["tenant_id", "releve_id"],
+          isOneToOne: false,
+          referencedRelation: "chain_invariant_results",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "chain_invariant_alertes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     chain_invariant_results: {
       Row: {
         id: number

@@ -96,7 +96,13 @@ END $$;
 CREATE OR REPLACE FUNCTION _l415_producteurs()
 RETURNS TABLE (evt text)
 LANGUAGE sql STABLE AS $$
-  SELECT DISTINCT (regexp_matches(p.prosrc, '''([a-z_]+\.[a-z_]+)''', 'g'))[1]
+  -- 03/10/2026 (harmonisation) : un littéral passé à `has_permission('…')` est
+  -- un DROIT (« payroll.pay »), pas un événement. La 430 en porte un dans une
+  -- fonction qui émet : le motif large le prenait pour un producteur. On retire
+  -- ces appels du texte lu — et eux seuls : tout autre littéral reste compté.
+  SELECT DISTINCT (regexp_matches(
+           regexp_replace(p.prosrc, 'has_permission\(''[^'']+''\)', '', 'g'),
+           '''([a-z_]+\.[a-z_]+)''', 'g'))[1]
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
     AND p.proname <> 'emit_domain_event'
