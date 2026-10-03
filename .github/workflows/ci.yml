@@ -1463,6 +1463,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L17 (tranche 1) : le couple `production ↔ RH`, qui était VIDE.
+      # Mesuré avant : `planning_slots` ne portait AUCUNE colonne d'opérateur
+      # (0 parmi employee_id / operator_id / assigned_to), 0 fonction ne lisait
+      # à la fois le planning et le registre d'absences, et la capacité d'un
+      # poste se comparait à un `capacity_hours_per_day` théorique — un calcul
+      # FAUX affiché comme vrai. 8 scénarios : le porteur et sa clé composite
+      # (T01), l'absence déclarée APRÈS le planning qui marque chaque créneau
+      # (T02), le cycle — le constat tombe avec sa cause et l'historique garde
+      # les DEUX faits (T03), le rejeu borné structurellement (T04), le refus
+      # rédigé de la garde et son contre-exemple « mission » (T05), la capacité
+      # ajustée (T06), l'isolation par la ligne (T07), le p95 mesuré (T08).
+      - name: 'L17 : le planning de production connaît l''absence (416)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l17_capacite_absence_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une

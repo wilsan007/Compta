@@ -548,6 +548,8 @@
     "operation": "العملية",
     "duration": "المدة",
     "materials": "المواد",
+    "availability": "المشغّل",
+    "operatorAbsent": "المشغّل غائب",
     "ok": "موافق",
     "missing": "ناقص",
     "checkMaterials": "فحص المواد",

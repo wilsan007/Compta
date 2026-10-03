@@ -548,6 +548,8 @@
     "operation": "Opération",
     "duration": "Durée",
     "materials": "Matières",
+    "availability": "Opérateur",
+    "operatorAbsent": "Opérateur absent",
     "ok": "OK",
     "missing": "Manquant",
     "checkMaterials": "Vérifier matières",

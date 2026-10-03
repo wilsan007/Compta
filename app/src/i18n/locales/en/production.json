@@ -548,6 +548,8 @@
     "operation": "Operation",
     "duration": "Duration",
     "materials": "Materials",
+    "availability": "Operator",
+    "operatorAbsent": "Operator absent",
     "ok": "OK",
     "missing": "Missing",
     "checkMaterials": "Check materials",

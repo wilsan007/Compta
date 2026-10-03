@@ -10321,6 +10321,8 @@ export interface Database {
         material_available: boolean | null
         material_check_date: string | null
         created_at: string | null
+        employee_id: string | null
+        bloque_par_absence: boolean
       }
       Insert: {
         id?: string
@@ -10337,6 +10339,8 @@ export interface Database {
         material_available?: boolean
         material_check_date?: string
         created_at?: string
+        employee_id?: string
+        bloque_par_absence?: boolean
       }
       Update: {
         id?: string
@@ -10353,6 +10357,8 @@ export interface Database {
         material_available?: boolean
         material_check_date?: string
         created_at?: string
+        employee_id?: string
+        bloque_par_absence?: boolean
       }
       Relationships: []
     }

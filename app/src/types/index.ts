@@ -2173,6 +2173,14 @@ export interface PlanningSlot {
   material_available: boolean
   material_check_date: string | null
   created_at: string
+  /** L17/416 — l'opérateur du créneau. C'est le porteur qui rend le
+   *  couple `production ↔ RH` possible. NULL = créneau non attribué. */
+  employee_id?: string | null
+  /** L17/416 — CONSTAT posé par la base : l'opérateur est absent ce
+   *  jour-là avec une absence qui bloque le travail. Le créneau reste
+   *  planifié (la réaffectation est une décision du chef d'atelier),
+   *  mais il ne doit plus compter dans la capacité du poste. */
+  bloque_par_absence?: boolean
 }
 
 // ============ Production Module: Complémentaires ============

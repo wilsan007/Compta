@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
-import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock } from 'lucide-react'
+import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock, UserX } from 'lucide-react'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getPlanningSlots, deletePlanningSlot, checkMaterialAvailability, autoScheduleMOs } from '@/lib/queries/stock'
@@ -93,7 +93,7 @@ export function PlanningPage() {
           </Card>
 
           <Card>
-            <Table headers={[t('planning.of'), t('planning.operation'), t('planning.machine'), t('planning.start'), t('planning.end'), t('planning.duration'), t('planning.materials'), tCommon('common.status'), tCommon('table.actions')]}>
+            <Table headers={[t('planning.of'), t('planning.operation'), t('planning.machine'), t('planning.start'), t('planning.end'), t('planning.duration'), t('planning.materials'), t('planning.availability'), tCommon('common.status'), tCommon('table.actions')]}>
               {slots.map((s) => {
                 const duration = s.planned_start && s.planned_end
                   ? Math.round((new Date(s.planned_end).getTime() - new Date(s.planned_start).getTime()) / 60000)
@@ -111,6 +111,21 @@ export function PlanningPage() {
                         <Badge variant="success"><CheckCircle2 className="w-3 h-3 inline mr-1" />{t('planning.ok')}</Badge>
                       ) : (
                         <Badge variant="danger"><PackageX className="w-3 h-3 inline mr-1" />{t('planning.missing')}</Badge>
+                      )}
+                    </TableCell>
+                    {/* L17/416 — le constat vient de la base : le créneau est
+                        planifié, mais son opérateur est absent ce jour-là. On
+                        ne l'annule pas (c'est une décision du chef d'atelier) :
+                        on le SIGNALE, sinon l'écran afficherait un créneau
+                        vert alors que personne ne peut le faire. */}
+                    <TableCell>
+                      {s.bloque_par_absence ? (
+                        <Badge variant="danger">
+                          <UserX className="w-3 h-3 inline mr-1" />
+                          {t('planning.operatorAbsent')}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted text-xs">—</span>
                       )}
                     </TableCell>
                     <TableCell><Badge variant={statusVariants[s.status] || 'neutral'}>{t(`planning.statuses.${s.status}`, { defaultValue: s.status })}</Badge></TableCell>
