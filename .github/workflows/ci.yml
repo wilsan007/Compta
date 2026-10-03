@@ -1497,6 +1497,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L18 : le projet consomme le stock, et la marge le sait. Mesuré
+      # avant : ZÉRO lecture croisée entre `stock_movements` et
+      # `projects`, et `projects.actual_cost` n'est ÉCRITE PAR PERSONNE
+      # (0 fonction ne la met à jour, 0 ne la lit) — la marge d'un
+      # projet vaut donc 0 quoi qu'il dépense. Un indicateur faux
+      # affiché comme vrai, plus grave qu'une capacité théorique.
+      # 8 scénarios : le porteur générique (T01), l'imputation (T02), le
+      # coût MATIERE et non le prix de vente (T03), la correction qui
+      # REMPLACE et n'ajoute pas (T04), une ENTRÉE n'impute rien (T05),
+      # l'isolation (T06), le retrait borné à 0 (T07), le p95 (T08).
+      - name: 'L18 : la consommation de chantier et le coût du projet (418)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/418_l18_consommation_chantier_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
