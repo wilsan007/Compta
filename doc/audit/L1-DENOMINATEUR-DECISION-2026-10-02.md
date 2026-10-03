@@ -334,4 +334,124 @@ L1 : 51 fonctions écrivantes transverses
 
 C'est un indicateur **honnête** : il dit ce qui est fait, ce qui reste, et
 quand il n'a pas tranché. Il ne prétend pas à un « X/51 » que personne n'a
+---
+
+## 11. Le TRI DES 51, ligne à ligne
+
+> **Méthode.** Même discipline que la tranche 4 : **une ligne, un verdict, une
+> raison écrite**. Les signaux sont **mesurés** : `LIEN` = le corps appelle
+> `chain_avant` / `chain_apres` / `link_documents` ; `LEVE` = il lève ; entrée =
+> déclencheur ou appel. Le verdict se décide **sur le corps lu** — c'est ce qui
+> a fait échouer les deux tentatives par regex (cf. §10).
+
+### 11.1 Maillons (1 → 18)
+
+| # | Fonction | Modules | Entrée | LIEN | Verdict | Raison lue dans le corps |
+|---:|---|---|---|---|---|---|
+| 1 | `create_stock_on_goods_receipt` | prod, stock | trig | ✅ | **maillon** | le seul des trois `create_stock_*` qui pose un lien |
+| 2 | `create_stock_out_on_delivery` | comm, stock | trig | ✅ | **maillon** | BL → sortie de stock : pose le lien, écrit le mouvement |
+| 3 | `reserve_stock_on_sales_order_confirm` | comm, stock | trig | ✅ | **maillon** | confirmation → réservation : pose le lien |
+| 4 | `create_stock_on_manufacturing_complete` | compta, prod, stock | trig | ❌ | **maillon** | OF terminé → stock + compta. Le corps lève aussi (contrôle quantité) : il **produit**, ce n'est pas une garde. **Non tracé** |
+| 5 | `create_journal_on_invoice_validate` | comm, compta, stock | trig | ❌ | **maillon** | facture validée → écriture + mouvement ; compagnon `chain_l1_invoice_entry` |
+| 6 | `create_journal_on_purchase_invoice_validate` | comm, compta, stock | trig | ❌ | **maillon** | idem côté achats, `chain_l1_purchase_invoice_entry` |
+| 7 | `create_journal_on_customer_payment` | comm, compta | trig | ❌ | **maillon** | règlement client → écriture, `chain_l1_customer_payment_entry` |
+| 8 | `create_journal_on_supplier_payment` | comm, compta | trig | ❌ | **maillon** | règlement fournisseur → écriture, `chain_l1_supplier_payment_entry` |
+| 9 | `create_journal_on_stock_movement` | compta, stock | trig | ❌ | **maillon** | mouvement → comptabilisation. **Non tracé** |
+| 10 | `post_exchange_gain_loss_on_payment` | comm, compta | trig | ❌ | **maillon** | écart de change au règlement : écrit un état, pas un agrégat. **Non tracé**, candidat direct |
+| 11 | `integrate_expense_report_on_approval` | compta, rh | trig | ❌ | **maillon** | note de frais → écriture + élément de paie, **deux effets**. Tracé |
+| 12 | `create_billable_line_on_timesheet_stop` | comm, projets | trig | ❌ | **maillon** | temps arrêté → ligne facturable. **Non tracé**, candidat direct |
+| 13 | `post_pos_session_on_close_multi` | compta, stock | trig | ❌ | **maillon** | clôture de session ; la version qui **vit** |
+| 14 | `post_pos_session_on_close` | compta, stock | appel | ❌ | **maillon — mort** : aucun déclencheur ne l'appelle, `_multi` l'a remplacé. À supprimer ou garder comme alias ? |
+| 15 | `pos_refund_ticket_inner` | comm, stock | appel | ❌ | **maillon** | avoir de caisse + retour de stock ; l'interne de `pos_refund_ticket` |
+| 16 | `payroll_post_run_inner` | compta, rh | appel | ❌ | **maillon** | bulletin → écriture ; l'interne de `payroll_post_run` |
+| 17 | `payroll_payment_inner` | compta, rh | appel | ❌ | **maillon** | versement de la paie |
+| 18 | `post_bank_statement_line` | compta, tréso | appel | ❌ | **maillon** | ligne de relevé → comptabilisation |
+
+### 11.2 Maillons (19 → 31) et paramétrage / recalcul
+
+| # | Fonction | Modules | Entrée | LIEN | Verdict et raison |
+|---:|---|---|---|---|---|
+| 19 | `allocate_result` | compta, système | appel | ❌ | **maillon** — le corps **écrit une écriture** d'affectation du résultat : pas un simple calcul |
+| 20 | `generate_depreciation_entry` | compta, système | appel | ❌ | **maillon** — amortissement → écriture. **Sans déclencheur** (job). Non tracé |
+| 21 | `bank_account_post_opening_balance` | compta, système | trig | ❌ | **maillon** — le solde d'ouverture **est** une écriture, même s'il n'a lieu qu'une fois |
+| 22 | `bank_account_assign_ledger` | compta, tréso | trig | ❌ | **maillon** — affecte le compte du journal à la banque : produit un lien comptable |
+| 23 | `auto_reconcile_by_score` | comm, tréso | trig | ❌ | **maillon** — lettrage automatique : écrit `reconciled_entry_id` |
+| 24 | `auto_reconcile_bank_transaction` | comm, tréso | trig | ❌ | **maillon** — idem. **Doublon à examiner avec 23** |
+| 25 | `smart_bank_reconciliation` | comm, tréso | appel | ❌ | **maillon** — lettrage « intelligent » : écrit le lettrage |
+| 26 | `statement_line_ledger_match` | compta, tréso | trig | ❌ | **maillon** — le corps écrit `reconciled_entry_id`. **Non tracé**, candidat direct |
+| 27 | `reconcile_bank_statement_line` | compta, tréso | appel | ❌ | **maillon** — lettrage **manuel** : il lève sur permission et sur ligne absente, mais il **écrit** le lettrage — ce n'est donc pas une garde |
+| 28 | `unreconcile_bank_statement_line` | compta, tréso | appel | ❌ | **maillon** — dé-lettrage : il **ferme** un lien (sens `ferme` du catalogue) |
+| 29 | `update_po_status_on_receipt` | comm, production | trig | ❌ | **maillon** — réception → statut de commande : transition d'un état de document |
+| 30 | `sync_commitments_on_purchase_order` | stock, système | trig | ❌ | **maillon** — écrit un engagement budgétaire |
+| 31 | `create_goods_receipt_from_order` | comm, production | appel | ❌ | **maillon** — crée une réception depuis une commande : produit un document |
+| 32 | `close_fiscal_year` | compta, système | appel | ❌ | **paramétrage** — **acte de clôture**, pas un flux : l'exercice se ferme une fois. Le corps lève si des écritures non validées — cohérent |
+| 33 | `revaluate_currency_balances` | compta, système | appel | ❌ | **recalcul** — régénère des soldes en devise : aucun document créé |
+| 34 | `refresh_invoice_settlement` | comm, compta | appel | ❌ | **recalcul** — recalcule un solde depuis les règlements : agrégat |
+| 35 | `refresh_purchase_invoice_settlement` | comm, compta | appel | ❌ | **recalcul** — le symétrique côté fournisseur |
+| 36 | `run_mrp` | comm, prod, stock | appel | ❌ | **recalcul** — le corps crée une table temporaire de besoins et propage : c'est un **calcul**. Le plus transverse des 51 (3 modules) |
+
+### 11.3 Gardes, notifications, paramétrage, et les non tranchées (37 → 51)
+
+| # | Fonction | Modules | Entrée | Verdict et raison |
+|---:|---|---|---|---|
+| 37 | `check_task_dependencies_before_start` | projets, système | trig | **garde** — le nom dit tout et le corps le confirme : il **vérifie** les dépendances, il ne produit rien |
+| 38 | `journal_entry_guard` | compta, système | trig | **garde** — force le brouillon puis la validation ; le corps initialise et **lève**. L'écriture naît ailleurs |
+| 39 | `credit_note_guard` | comm, compta, stock | trig | **garde** — prépare un avoir et lève si le statut n'est pas `draft`. **Doute à relire** : le corps déclare `v_entry` et `v_ordre` |
+| 40 | `purchase_credit_note_guard` | comm, compta, stock | trig | **garde** — le symétrique. **Même doute que 39** |
+| 41 | `notify_assignee_on_assignment` | projets, système | trig | **notification** — écrit `project_notifications`, pas d'état comptable |
+| 42 | `notify_watchers_on_comment` | projets, système | trig | **notification** — idem, pour les observateurs d'une tâche |
+| 43 | `notify_watchers_on_status_change` | projets, système | trig | **notification** — idem, au changement de statut |
+| 44 | `notify_overdue_tasks` | projets, système | appel | **notification** — idem, pour les tâches en retard |
+| 45 | `escalate_overdue_tasks` | projets, système | appel | **notification** — escalade : écrit une notification, pas un document métier |
+| 46 | `bootstrap_tenant` | compta, système | appel | **paramétrage** — mise en service d'une société : acte unique de référentiel |
+| 47 | `create_tenant_for_current_user` | rh, système | appel | **paramétrage** — création de société + utilisateur : mise en service |
+| 48 | `apply_chart_pack` | compta, système | appel | **paramétrage** — application d'un plan comptable : acte de référentiel |
+| 49 | `cancel_import_batch` | rh, stock | appel | **à confirmer** — annule un lot d'import ; la tranche 4 l'avait écarté. Relecture nécessaire |
+| 50 | `create_invoice_service` | comm, système | appel | **non tranché** — nom ambigu, corps qui lève tôt : je n'ai pas tranché, et je préfère le dire |
+| 51 | `calculate_payslip` | rh, système | appel | **non tranché** — le nom promet un maillon, le corps lève sans laisser voir s'il écrit |
+
+### 11.4 Le compte, sans arrondi
+
+| Verdict | Nombre |
+|---|---:|
+| **maillon** | **31** |
+| **recalcul** | 4 |
+| **garde** | 4 |
+| **notification** | 5 |
+| **paramétrage** | 4 |
+| à confirmer / non tranché | 3 |
+| **Total** | **51** |
+
+Parmi les 31 maillons : **3 posent un lien dans leur corps**, 1 est **mort** (n° 14),
+et **18 sont des candidats directs à instruire** (non tracés).
+
+### 11.5 Ce que le tri a changé
+
+⚠️ **Le dénominateur des maillons est 31, pas 51.** Les 20 autres fonctions ne
+produisent aucun document d'un bout à l'autre : 4 recalculent un agrégat, 4
+gardent, 5 notifient, 4 paramètrent, 3 restent à trancher. **Les compter comme
+maillons aurait gonflé l'indicateur de 65 %** — c'est exactement le chiffre
+faux que le plan interdit de publier.
+
+**Une 5ᵉ catégorie apparaît : la notification.** Cinq fonctions n'écrivent que des
+notifications — ni maillon, ni garde, ni recalcul. La tranche 4 n'avait pas cette
+catégorie parce que son périmètre était plus étroit. Elle est honnête de la nommer
+plutôt que de la ranger sous « recalcul ».
+
+### 11.6 Ce que je n'ai pas tranché, et pourquoi
+
+`create_invoice_service` et `calculate_payslip` : nom et signaux (`LEVE`, sans
+écriture d'état visible dans l'extrait) ne suffisent pas. **Je les laisse non
+tranchées** plutôt que de leur inventer une raison — c'est la règle que je viens
+d'écrire, appliquée à moi-même.
+
+`credit_note_guard` et `purchase_credit_note_guard` portent un doute inverse :
+leur corps déclare des variables d'écriture (`v_entry`, `v_ordre`). Classés
+« garde » parce que leur `LEVE` l'emporte, mais la relecture peut les faire
+basculer en maillon.
+
+**Le tri est fait, pas jetable** : il est reproductible (la requête est dans
+`doc/audit/TRI-51-REQUETE.sql`, à rejouer sur n'importe quelle base neuve), et
+chaque ligne porte sa raison — donc un lecteur peut en contester une sans
+refaire les 50 autres.
 vérifié — c'est exactement le piège que `ca69070` a retire de l'inventaire.
