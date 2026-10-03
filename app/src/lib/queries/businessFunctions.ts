@@ -48,7 +48,7 @@ export async function calculateVatCa3(periodStart: string, periodEnd: string) {
   return data
 }
 
-/** Codes TVA du paramétrage (migration 198) : ceux que portent factures et écritures */
+/** Codes TVA du paramétrage (migration 325) : ceux que portent factures et écritures */
 export async function getVatCodes(): Promise<VatCode[]> {
   const { data, error } = await supabase.rpc('get_vat_codes')
   if (error) throw error

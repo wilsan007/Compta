@@ -1,5 +1,5 @@
 -- ============================================================
--- 198_vat_codes_ca3_tests.sql — codes TVA de la saisie manuelle, cases de la CA3
+-- 325_vat_codes_ca3_tests.sql — codes TVA de la saisie manuelle, cases de la CA3
 --
 -- Défauts repérés le 22/09/2026 après la 197 :
 --   - la saisie manuelle (JournalSaisiePage, SaisieParPiecePage) enregistrait
@@ -16,8 +16,8 @@
 --     intracommunautaires).
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '198', false);
-DELETE FROM _audit_results WHERE file = '198';
+SELECT set_config('audit.file', '325', false);
+DELETE FROM _audit_results WHERE file = '325';
 
 -- Écriture de saisie manuelle : [{"a": compte, "d":, "c":, "v": code TVA saisi}]
 CREATE OR REPLACE FUNCTION _vc_entry(p_t uuid, p_date date, p_lines jsonb) RETURNS uuid LANGUAGE plpgsql AS $$
@@ -77,7 +77,7 @@ DO $$
 DECLARE t uuid := _mk_tenant('C02'); fy uuid; got text;
 BEGIN
   SELECT id INTO fy FROM fiscal_years WHERE tenant_id = t;
-  -- ligne historique : posée sans la normalisation, comme avant la 198
+  -- ligne historique : posée sans la normalisation, comme avant la 325
   INSERT INTO journal_entries (tenant_id, number, date, journal_code, status, description)
   VALUES (t, 'HIST-C02', '2026-03-03', 'OD', 'draft', 'Historique');
   ALTER TABLE journal_lines DISABLE TRIGGER USER;
@@ -152,16 +152,15 @@ BEGIN
     INSERT INTO purchase_invoice_lines (tenant_id, purchase_invoice_id, description, quantity, unit_price, vat_rate, vat_code) VALUES
       (t, pi, 'C', 1, 500, 20, 'FR20'), (t, pi, 'D', 1, 400, 20, 'UE');
     UPDATE purchase_invoices SET approval_status = 'approved' WHERE id = pi;
-    -- 300 a RETIRÉ la ventilation par case : elle demande les pièces de vente
-       -- (le code de TVA de la ligne), pas seulement le grand livre — c'est
-       -- hors de son périmètre, et rien dans l'application ne lit `ca3`. On
-       -- On n'affirme donc plus des cases que plus personne ne produit ; on
-       -- mesure ce que 300 garantit : la TVA collectée / déductible et le net.
-       -- (ventes : 1 000 à 20 % → 200, 500 à 10 % → 50, donc 250 collectés ;
-       --  achats : 500 à 20 % → 100 déductibles ; intracommunautaire 400 à
-       --  20 % en autoliquidation → 80 des deux côtés. Total 330 / 180, net
-       --  150 — exactement les cases 16 et 20 que le test vérifiait avant que
-       --  300 ne retire la ventilation.)
+    -- La 300 a RETIRÉ la ventilation par case : elle demande les pièces de vente
+    -- (le code de TVA de la ligne), pas seulement le grand livre — c'est hors de
+    -- son périmètre, et rien dans l'application ne lit `ca3`. Ce test affirmait
+    -- donc des cases que plus personne ne produit. Il mesure ce que la 300
+    -- garantit : la TVA collectée, la déductible, et ce qu'il en reste à payer.
+    -- (ventes : 1 000 à 20 % → 200, 500 à 10 % → 50, donc 250 collectés ;
+    --  achats : 500 à 20 % → 100 déductibles ; intracommunautaire 400 à
+    --  20 % en autoliquidation → 80 des deux côtés. Total 330 / 180, net 150 —
+    --  exactement les cases 16 et 20 que le test vérifiait avant la 300.)
     r := calculate_vat_ca3('2026-03-01', '2026-03-31');
     PERFORM _rec('C05', 'CA3 : TVA collectée 330 (dont 80 autoliquidée), déductible 180, net 150 ; pas de cases (hors périmètre 300)',
       (r->>'vat_collected')::numeric = 330 AND (r->>'vat_deductible')::numeric = 180
@@ -188,4 +187,4 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN PERFORM _rec('C06', 'modèle d''écriture : V20 → FR20, V5.5 → FR055', false, SQLERRM); END;
 END $$;
 
-SELECT _audit_assert('198');
+SELECT _audit_assert('325');

@@ -703,12 +703,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
-      # 198 — les CODES de TVA de la saisie manuelle, et les cases A/B de la CA3.
+      # 325 — les CODES de TVA de la saisie manuelle, et les cases A/B de la CA3.
       # Mesuré le 02/10/2026 : la saisie offrait un code `20` là où le
       # paramétrage déclare `FR20`, et la vente disparaissait de la synthèse
       # (base 0, taux 0, sans case). La normalisation et les cases sont ici.
-      - name: 'AUD : codes de TVA de la saisie et cases de la CA3 (198)'
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/198_vat_codes_ca3_tests.sql
+      - name: 'AUD : codes de TVA de la saisie et cases de la CA3 (325)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/325_vat_codes_ca3_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 

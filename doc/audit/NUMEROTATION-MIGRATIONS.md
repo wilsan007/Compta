@@ -26,13 +26,15 @@ préjudice est fait, dans un pipeline, après que deux sessions ont travaillé.
 | `300` → `309` | **W7** | 2026-09-28 |
 | `310` → `324` | **session recette** (`qa/recette-2026-09-29`) | 2026-10-02 |
 | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) | 2026-10-02 |
-| `326` → `339` | **partie 1, fusion 1.6** (correctifs portés par la fusion) | 2026-10-02 |
-| `325` → `399` | **LIBRE** | — |
+| `325` → `339` | **partie 1, fusion 1.6** (correctifs portés par la fusion) | 2026-10-03 |
+| `340` → `399` | **LIBRE** | — |
 
 > **Plages des parties du plan du 02/10 (règle 2)** : `325` → `339` partie 1,
 > `340` → `369` partie 2, `414` → `449` partie 3, `370` → `399` partie 4.
 > La fusion **1.6** a pris `326` sur la première, pour la suite de paie que la
-> recette apportait sous un numéro **libre** (322) — voir ci-dessous.
+> recette apportait sous un numéro **libre** (322) — voir ci-dessous. Le 03/10,
+> elle a pris `325` pour le correctif de TVA de la saisie, que la recette
+> apportait sous `198` — un numéro déjà pris par la recette.
 >
 > ⚠️ **Ce que la fusion a appris sur l'ORDRE D'EXÉCUTION.** La 419 réconcilie
 > deux versions de `create_stock_out_on_delivery` (la 314 de la recette et la

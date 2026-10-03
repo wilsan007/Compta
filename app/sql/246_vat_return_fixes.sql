@@ -242,15 +242,8 @@ AS $function$
     RIGHT JOIN (SELECT 1) one ON true
   ), l AS (
     SELECT a.acc,
-           -- une ligne saisie à la main n'a pas de code : le déduire du compte.
-           --
-           -- ET une ligne d'historique peut porter un taux brut (« 20 », « V20 »,
-           -- « 10 % ») : on le normalise, sinon le code reste sans correspondance
-           -- dans le paramétrage et la ligne disparaît de la synthèse — pas de
-           -- case, pas de taux, base 0. Une ligne validée étant immuable, on ne
-           -- peut pas la réécrire : la lecture doit être la repairsse.
-           COALESCE(NULLIF(vat_code_normalize(jl.tenant_id, jl.vat_code), ''),
-                    m0.vat_code, a.acc) AS vat_code,
+           -- une ligne saisie à la main n'a pas de code : le déduire du compte
+           COALESCE(NULLIF(jl.vat_code, ''), m0.vat_code, a.acc) AS vat_code,
            c.direction,
            CASE c.direction WHEN 'collected' THEN jl.credit - jl.debit
                             ELSE jl.debit - jl.credit END AS amount,
@@ -269,13 +262,6 @@ AS $function$
       AND je.date >= b.d1 AND je.date <= b.d2
       AND COALESCE(je.journal_code, '') NOT IN ('AN', 'CL')
       AND c.direction IS NOT NULL
-      -- Écarte les écritures de LIQUIDATION de TVA (le compte 4455 = TVA
-      -- collectée, 44567 = TVA due). Le motif ne prend PAS 445661 : c'est le
-      -- compte de la TVA DÉDUCTIBLE, et une écriture d'achat porte
-      -- naturellement ce compte. Filtrer dessus ferait disparaître toute
-      -- écriture d'achat des deux côtés — on ne verrait ni la collecte ni la
-      -- déduction, et la CA3 resterait vide. Le filtre se fait ligne à ligne
-      -- (c.direction IS NOT NULL).
       AND NOT EXISTS (SELECT 1 FROM journal_lines x
                       WHERE x.journal_id = je.id
                         AND COALESCE(x.account_general, x.account_code) ~ '^(4455|44567)')
