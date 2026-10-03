@@ -533,21 +533,41 @@ describe('Workflow Trésorerie & Échéances', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('cashFlowForecast projette à 90 jours', async () => {
+    // ⚠️ L19/420 : ce test simulait une réponse avec des clés
+    // INVENTÉES (`current_balance`, `net_flow`, `projected_balance`)
+    // que ni `cash_flow_forecast` ni `TreasuryForecastPage`
+    // n'emploient — il était vert et ne prouvait rien. Les clés sont
+    // celles de la fonction RÉELLE, mesurées : voir
+    // sql/420_l19_engagement_production_tests.sql (T01), qui prouve le
+    // contrat contre la base, seul endroit où il peut l'être — un
+    // mock ne prouve jamais le contrat d'une fonction.
     vi.mocked(supabase.rpc).mockResolvedValue({
       data: {
-        current_balance: 50000,
+        days: 90,
         expected_inflows: 30000,
         expected_outflows: 20000,
-        net_flow: 10000,
-        projected_balance: 60000,
+        net_forecast: 10000,
+        currentBalance: 50000,
+        totalIncoming: 30000,
+        totalOutgoing: 20000,
+        production_material_commitment: 4000,
+        production_labor_commitment: 2500,
+        production_commitment: 6500,
+        net_with_production: 3500,
       },
       error: null,
     } as any)
 
-    const result = await cashFlowForecast(90)
+    const result = await cashFlowForecast(90) as any
 
-    expect(result.projected_balance).toBe(60000)
-    expect(result.net_flow).toBe(10000)
+    // l'engagement de production est visible, et le net historique
+    // n'a pas bougé : c'est la non-régression de la 420 (T02).
+    expect(result.net_forecast).toBe(10000)
+    expect(result.production_commitment).toBe(6500)
+    // et les trois clés que l'écran lit sont bien là (T01).
+    expect(result.currentBalance).toBe(50000)
+    expect(result.totalIncoming).toBe(30000)
+    expect(result.totalOutgoing).toBe(20000)
   })
 
   it('calculatePaymentDueDates calcule les échéances', async () => {

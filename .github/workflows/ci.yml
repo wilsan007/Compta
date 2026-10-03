@@ -1512,6 +1512,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L19 : l'engagement de production alimente le prévisionnel. Mesuré
+      # avant : `cash_flow_forecast` — la SEULE prévision de trésorerie du
+      # dépôt — ne lisait aucune donnée de production, et l'écran
+      # `TreasuryForecastPage` lisait trois clés (currentBalance,
+      # totalIncoming, totalOutgoing) qu'aucune fonction ne rendait :
+      # ZÉRO clé commune, donc un écran entier affichait 0 en toutes
+      # circonstances. 8 scénarios : le CONTRAT DES CLÉS de l'écran (T01),
+      # les quatre clés historiques inchangées (T02), l'engagement
+      # matière (T03), net du stock (T04), les salaires d'atelier (T05),
+      # le cycle d'une OF close (T06), l'isolation (T07), le p95 (T08).
+      - name: 'L19 : l''engagement de production dans le prévisionnel (420)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/420_l19_engagement_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
@@ -1544,6 +1559,18 @@ jobs:
       # refusé, indicateur inconnu, priorité de la société.
       - name: 'I-08 : le dictionnaire de données (461)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/461_metric_definitions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # I-08 (462) — le « pourquoi ce chiffre ? » : dérouler, pour un
+      # document, les pièces de sa chaîne (460), les écritures produites
+      # et les lignes qui portent le montant. Ne calcule rien, n'invente
+      # aucun lien : un chiffre qu'aucune chaîne ne porte est renvoyé
+      # vide, jamais fabriqué.
+      # 5 scénarios : structure, pièce comptable, lignes, montant recomposé,
+      # chiffre sans explication.
+      - name: 'I-08 : le « pourquoi ce chiffre ? » (462)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/462_chain_expliquer_montant_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
