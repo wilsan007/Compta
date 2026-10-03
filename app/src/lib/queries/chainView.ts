@@ -86,26 +86,6 @@ export async function getChain(
   }))
 }
 
-/**
- * La chaîne entière : l'amont ET l'aval, la racine en tête.
- *
- * C'est ce que veut dire « tout document ouvert sur son amont et son
- * aval » : l'écran affiche une frise unique, pas deux listes. La racine
- * est renvoyée deux fois (une par direction) ; on la garde une seule
- * fois et on reclasse les nœuds autour d'elle.
- */
-export async function getChainComplete(
-  type: string,
-  id: string,
-  options: { profondeur?: number; historique?: boolean } = {}
-): Promise<{ amont: ChainNode[]; aval: ChainNode[] }> {
-  const [amont, aval] = await Promise.all([
-    getChain(type, id, { ...options, sens: 'amont' }),
-    getChain(type, id, { ...options, sens: 'aval' }),
-  ])
-  return { amont: amont.filter((n) => n.sens !== 'racine'), aval: aval.filter((n) => n.sens !== 'racine') }
-}
-
 // ───────────────────────────────────────────────────────────────
 // I-08 — le « pourquoi ce chiffre ? »
 //

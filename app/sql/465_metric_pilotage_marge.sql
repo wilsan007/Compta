@@ -80,9 +80,15 @@ UPDATE public.metric_definitions
    SET valide_au = CURRENT_DATE - 1
  WHERE code = 'pilotage.marge_pct' AND version = 1;
 
-INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
-VALUES (NULL, 'pilotage.marge_pct', 2, 'Marge en % du chiffre d''affaires', '%',
-        'metric_pilotage_marge(p_tenant, p_dimension)',
-        CURRENT_DATE, NULL,
-        'Migration 465 : la formule quitte le JAVASCRIPT (pilotage.ts, trois endroits) pour UNE fonction SQL nommée. Formule inchangée, correctif M10 inclus. La version 1 se ferme la veille — premier usage réel du dictionnaire.')
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.metric_definitions
+                  WHERE code = 'pilotage.marge_pct' AND version = 2
+                    AND tenant_id IS NULL) THEN
+  INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
+  VALUES (NULL, 'pilotage.marge_pct', 2, 'Marge en % du chiffre d''affaires', '%',
+          'metric_pilotage_marge(p_tenant, p_dimension)',
+          CURRENT_DATE, NULL,
+          'Migration 465 : la formule quitte le JAVASCRIPT (pilotage.ts, trois endroits) pour UNE fonction SQL nommée. Formule inchangée, correctif M10 inclus. La version 1 se ferme la veille — premier usage réel du dictionnaire.');
+  END IF;
+END $$;

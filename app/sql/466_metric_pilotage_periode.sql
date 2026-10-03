@@ -86,9 +86,14 @@ GRANT EXECUTE ON FUNCTION public.metric_pilotage_marge(uuid, text, date, date) T
 DELETE FROM public.metric_definitions
  WHERE code = 'pilotage.marge_pct' AND version = 2;
 
-INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
-VALUES (NULL, 'pilotage.marge_pct', 2, 'Marge en % du chiffre d''affaires (période)', '%',
-        'metric_pilotage_marge(p_tenant, p_dimension, p_debut, p_fin)',
-        CURRENT_DATE, NULL,
-        'Migration 466 : la formule accepte la FENÊTRE de dates de l''écran (mois / trimestre / année). La 465 l''ignorait — la brancher aurait changé les chiffres en silence. La v1 (JavaScript) reste dans l''historique, close à la veille : on saura qu''elle était recalculée à l''affichage, sans période.')
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.metric_definitions
+                  WHERE code = 'pilotage.marge_pct' AND tenant_id IS NULL) THEN
+  INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
+  VALUES (NULL, 'pilotage.marge_pct', 2, 'Marge en % du chiffre d''affaires (période)', '%',
+          'metric_pilotage_marge(p_tenant, p_dimension, p_debut, p_fin)',
+          CURRENT_DATE, NULL,
+          'Migration 466 : la formule accepte la FENÊTRE de dates de l''écran (mois / trimestre / année). La 465 l''ignorait — la brancher aurait changé les chiffres en silence. La v1 (JavaScript) reste dans l''historique, close à la veille : on saura qu''elle était recalculée à l''affichage, sans période.');
+  END IF;
+END $$;

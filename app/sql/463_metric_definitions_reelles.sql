@@ -35,18 +35,33 @@
 -- Les définitions sont insérées par la MIGRATION, jamais par l'écran :
 -- la 461 a retiré tout droit d'écriture à `authenticated`.
 
-INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
-VALUES
-  (NULL, 'projet.marge', 1, 'Marge projet', '%',
-   'calculate_project_profitability(p_project_id)',
-   DATE '2026-01-01', NULL,
-   'Implémentation RÉELLE existante : fonction SQL calculate_project_profitability (créée par une migration antérieure), appelée par businessFunctions.ts : calculateProjectProfitability. Relevé du 02/10/2026 : UNE seule fonction, UN seul appel front — la concurrence mesurée à tort par la 461 n''existe pas sur cet indicateur.'),
+-- ⚠️ PAS DE `ON CONFLICT DO NOTHING` ICI, et c'est mesuré : un déclencheur
+-- `BEFORE INSERT` tire AVANT que PostgreSQL ne regarde le conflit. La
+-- seconde exécution de cette migration se faisait donc REFUSER par le
+-- garde — qui avait raison, la ligne étant bien déjà là. Une migration
+-- doit être REJOUABLE : c'est un critère de sortie du plan (partie 5).
+-- D'où le `IF NOT EXISTS` ci-dessous, qui teste AVANT d'insérer.
 
-  (NULL, 'budget.realise', 1, 'Réalisé budgétaire', 'EUR',
-   'somme des écritures postées bornées aux dates de l''exercice du budget',
-   DATE '2026-01-01', NULL,
-   'Implémentation RÉELLE existante : accounting/budgets.ts : getBudgetTracking — lecture de `budgets` + une requête de lignes par EXERCICE (et non par budget, BUD-04), bornée aux dates de l''exercice et aux écritures postées (BUD-01). Ce n''est pas une formule concurrente mais une lecture documentée.')
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.metric_definitions
+                  WHERE code = 'projet.marge' AND version = 1 AND tenant_id IS NULL) THEN
+    INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
+    VALUES (NULL, 'projet.marge', 1, 'Marge projet', '%',
+            'calculate_project_profitability(p_project_id)',
+            DATE '2026-01-01', NULL,
+            'Implémentation RÉELLE existante : fonction SQL calculate_project_profitability, appelée par businessFunctions.ts : calculateProjectProfitability. Relevé du 02/10/2026 : UNE seule fonction, UN seul appel front — la concurrence mesurée à tort par la 461 n''existe pas sur cet indicateur.');
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.metric_definitions
+                  WHERE code = 'budget.realise' AND version = 1 AND tenant_id IS NULL) THEN
+    INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
+    VALUES (NULL, 'budget.realise', 1, 'Réalisé budgétaire', 'EUR',
+            'somme des écritures postées bornées aux dates de l''exercice du budget',
+            DATE '2026-01-01', NULL,
+            'Implémentation RÉELLE : accounting/budgets.ts : getBudgetTracking — lecture de `budgets` + une requête de lignes par EXERCICE (et non par budget, BUD-04), bornée aux dates de l''exercice et aux écritures postées (BUD-01). Ce n''est pas une formule concurrente mais une lecture documentée.');
+  END IF;
+END $$;
 
 COMMENT ON FUNCTION public.chain_expliquer_montant(uuid, text, uuid) IS
   '462 (I-08) : le « pourquoi ce chiffre ? ». Déroule, pour un document, les pièces de sa chaîne (460), les ÉCRITURES produites et les LIGNES qui portent le montant. Ne calcule rien et n''invente aucun lien : un chiffre qu''aucune chaîne ne porte est renvoyé vide, jamais fabriqué.';

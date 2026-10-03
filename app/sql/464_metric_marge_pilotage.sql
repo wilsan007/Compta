@@ -24,10 +24,15 @@
 --Traçabilité, ce que fait déjà la 463.
 -- ═══════════════════════════════════════════════════════════════════════════
 
-INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
-VALUES
-  (NULL, 'pilotage.marge_pct', 1, 'Marge en % du chiffre d''affaires', '%',
-   'marge / chiffre d''affaires * 100',
-   DATE '2026-01-01', NULL,
-   'Implémentation RÉELLE : src/lib/queries/pilotage.ts — (margin / revenue) * 100, en deux endroits (agrégat par produit/client ligne 146, synthèse ligne 295), et accounting/pilotage.ts ligne 295. Calcul JAVACRIPT, donc refait à l''affichage — c''est le reliquat du défaut que le dictionnaire supprime. À migrer vers une fonction SQL nommée, puis à pointer depuis le dictionnaire.')
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.metric_definitions
+                  WHERE code = 'pilotage.marge_pct' AND tenant_id IS NULL) THEN
+  INSERT INTO public.metric_definitions (tenant_id, code, version, libelle, unite, sql_definition, valide_du, valide_au, note)
+  VALUES
+    (NULL, 'pilotage.marge_pct', 1, 'Marge en % du chiffre d''affaires', '%',
+     'marge / chiffre d''affaires * 100',
+     DATE '2026-01-01', NULL,
+     'Implémentation RÉELLE : src/lib/queries/pilotage.ts — (margin / revenue) * 100, en deux endroits (agrégat par produit/client ligne 146, synthèse ligne 295), et accounting/pilotage.ts ligne 295. Calcul JAVACRIPT, donc refait à l''affichage — c''est le reliquat du défaut que le dictionnaire supprime. À migrer vers une fonction SQL nommée, puis à pointer depuis le dictionnaire.');
+  END IF;
+END $$;
