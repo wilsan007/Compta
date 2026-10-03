@@ -2421,6 +2421,148 @@ export interface Database {
         },
       ]
     }
+    chain_banc_maillons: {
+      Row: {
+        code: string
+        libelle: string
+        effet: string
+        document_type: string
+        evenement: string
+        amont_type: string
+        fonction: string
+        arguments: Json
+        sens: string
+        actif: boolean
+        note: string | null
+        created_at: string
+        appat: string | null
+        arg_valeurs: Json
+        arg_types: string[] | null
+        defaut_dblink: boolean
+        budget_ms: number
+        appat_annul: string | null
+        appat_reouverture: string | null
+        arg_series: Json
+        arg_valeurs_annul: Json | null
+        arg_types_annul: string[] | null
+        arg_valeurs_reouverture: Json | null
+        arg_types_reouverture: string[] | null
+        nature: string
+      }
+      Insert: {
+        code: string
+        libelle: string
+        effet: string
+        document_type: string
+        evenement: string
+        amont_type: string
+        fonction: string
+        arguments?: Json
+        sens?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+        appat?: string
+        arg_valeurs?: Json
+        arg_types?: string[]
+        defaut_dblink?: boolean
+        budget_ms?: number
+        appat_annul?: string
+        appat_reouverture?: string
+        arg_series?: Json
+        arg_valeurs_annul?: Json
+        arg_types_annul?: string[]
+        arg_valeurs_reouverture?: Json
+        arg_types_reouverture?: string[]
+        nature?: string
+      }
+      Update: {
+        code?: string
+        libelle?: string
+        effet?: string
+        document_type?: string
+        evenement?: string
+        amont_type?: string
+        fonction?: string
+        arguments?: Json
+        sens?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+        appat?: string
+        arg_valeurs?: Json
+        arg_types?: string[]
+        defaut_dblink?: boolean
+        budget_ms?: number
+        appat_annul?: string
+        appat_reouverture?: string
+        arg_series?: Json
+        arg_valeurs_annul?: Json
+        arg_types_annul?: string[]
+        arg_valeurs_reouverture?: Json
+        arg_types_reouverture?: string[]
+        nature?: string
+      }
+      Relationships: [
+      ]
+    }
+    chain_banc_resultats: {
+      Row: {
+        id: number
+        code: string
+        epreuve: string
+        tenant_id: string
+        joue_le: string
+        verdict: string
+        mesure: number | null
+        attendu: string | null
+        obtenu: string | null
+        duree_ms: number | null
+        raison: string | null
+      }
+      Insert: {
+        id?: number
+        code: string
+        epreuve: string
+        tenant_id: string
+        joue_le?: string
+        verdict: string
+        mesure?: number
+        attendu?: string
+        obtenu?: string
+        duree_ms?: number
+        raison?: string
+      }
+      Update: {
+        id?: number
+        code?: string
+        epreuve?: string
+        tenant_id?: string
+        joue_le?: string
+        verdict?: string
+        mesure?: number
+        attendu?: string
+        obtenu?: string
+        duree_ms?: number
+        raison?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "chain_banc_resultats_code_fkey",
+          columns: ["code"],
+          isOneToOne: true,
+          referencedRelation: "chain_banc_maillons",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "chain_banc_resultats_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     chain_document_types: {
       Row: {
         code: string

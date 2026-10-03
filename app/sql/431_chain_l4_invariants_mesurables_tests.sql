@@ -8,7 +8,9 @@
 -- l'en-tête de la migration). INV-19 — orphelin compté, société saine
 -- tenue, branche présente — est éprouvé par la suite 450 (T12 à T14) et
 -- par la 413 (14 mesurés, 6 nommés). Il reste ici le scénario que rien
--- d'autre ne couvre : T05.
+-- d'autre ne couvre : T05. Après la 435 (INV-05, 06, 08 mesurés par
+-- agrégation), TROIS invariants restent non mesurables — INV-07, 10, 12 :
+-- verdict précédent « 6 », avant la fusion de la partie 3.
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '431', false);
@@ -34,8 +36,8 @@ BEGIN
    WHERE tenant_id IS NULL AND NOT mesurable;
 
   PERFORM _rec('T05', 'les six invariants non mesurables portent chacun une raison qui COMMENCE par « Mesuré le » : la raison est datée, fondée sur une mesure réelle, opposable — c''est le repli que le plan autorise, tenu au standard de preuve du dépôt',
-    v_sans_preuve IS NULL AND v_nb = 6,
-    format('non mesurables=%s (6 attendus) | sans preuve datée : %s',
+    v_sans_preuve IS NULL AND v_nb = 3,
+    format('non mesurables=%s (3 attendus) | sans preuve datée : %s',
            v_nb, COALESCE(v_sans_preuve, '(aucun — les six portent leur mesure)')));
 EXCEPTION WHEN OTHERS THEN
   PERFORM _rec('T05', 'les six invariants non mesurables portent chacun une raison qui COMMENCE par « Mesuré le » : la raison est datée, fondée sur une mesure réelle, opposable — c''est le repli que le plan autorise, tenu au standard de preuve du dépôt', false, SQLERRM);

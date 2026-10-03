@@ -31,10 +31,12 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **316** tables sous `FORCE ROW LEVEL SECURITY` (03/10/2026 : 461 metric_definitions,
---       puis 414 chain_invariant_alertes à l'harmonisation ;
+--     * **318** tables sous `FORCE ROW LEVEL SECURITY` (03/10/2026 : 461 metric_definitions,
+--       puis à l'harmonisation 414 chain_invariant_alertes et 433 chain_banc_maillons,
+--       chain_banc_resultats ;
 --       314 le 02/10 avec la 415 : webhook_delivery_queue) ;
---     * dont **16** (03/10/2026 : +1 `chain_invariant_alertes` de la 414 à l'harmonisation ;
+--     * dont **18** (03/10/2026, harmonisation : +1 `chain_invariant_alertes` de la 414,
+--       +2 `chain_banc_maillons` / `chain_banc_resultats` de la 433 ;
 --       +1 `metric_definitions` de la 461 — dictionnaire en
 --       lecture seule pour l'écran, écrit par les seules migrations ; 14 le 02/10)
 --       sans AUCUNE politique d'écriture — c'est l'exposition : leur
@@ -86,8 +88,8 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 316),
-  ('muettes',         16);
+  ('tables_forcees', 318),
+  ('muettes',         18);
 
 DO $$
 DECLARE

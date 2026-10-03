@@ -24,7 +24,10 @@ function extractTableNames() {
   const tables = new Set()
   const files = readdirSync(sqlDir).filter(f => f.endsWith('.sql'))
   for (const file of files) {
-    const content = readFileSync(join(sqlDir, file), 'utf8')
+    // Les commentaires SQL sont retirés avant la lecture : une phrase comme
+    // « APRÈS le CREATE TABLE puis… » ou « `CREATE TABLE IF NOT EXISTS` ne… »
+    // inscrivait une table « puis » ou « IF » (mesuré le 03/10/2026).
+    const content = readFileSync(join(sqlDir, file), 'utf8').replace(/^\s*--.*$/gm, '')
     // CREATE TABLE IF NOT EXISTS [public.]table_name (
     const matches = content.matchAll(/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+(?:public\.)?"?(\w+)/gi)
     for (const m of matches) {
@@ -116,6 +119,8 @@ const SERVER_ONLY_TABLES = {
   chain_settings: '252 (L0) — drapeau d\'application par société, lu par chain_enforcement_mode() ; l\'écran arrive au lot L5',
   domain_events_defaut: '252 (L0) — partition par défaut du journal d\'événements : stockage, jamais lue en direct',
   chain_traces_defaut: '252 (L0) — partition par défaut des traces : stockage, jamais lue en direct',
+  chain_banc_maillons: '433 (L3) — registre des maillons du banc d\'épreuves : lu par chain_banc_lancer() (service_role) ; la page « Robustesse » (tâche 4.1) l\'affichera',
+  chain_banc_resultats: '433 (L3) — verdicts du banc D1→D8, par exécution : écrits par chain_banc_lancer(), lus par la vue de rapport ; la page « Robustesse » (tâche 4.1) les affichera',
   chain_invariant_alertes: '414 (L4) — alertes de dégradation de l\'indice : écrites par le relevé, lues par chain_degradation_detectee(), jamais en direct ; la page « Cohérence » (tâche 4.2) les affichera',
   metric_definitions: '461 (I-08) — dictionnaire des indicateurs : lu par chain_metric_definition(), jamais en direct (la définition en vigueur à une date est résolue par la base)',
   chain_document_types: '450 (Partie 5) — registre des types de document des chaînages : lu par link_documents(), la garde de suppression (453) et INV-19 (455) ; l\'écran traduit les types par i18n (errors:chain.types)',

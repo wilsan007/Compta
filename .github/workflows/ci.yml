@@ -1639,6 +1639,104 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 tranche 3 — LA PAIE TRACÉE PAR SON CHEMIN D'APPEL (430). La 430 a
+      # choisi le POINT DE CONVERGENCE de la comptabilisation : `payroll_post_run`
+      # est appelé par la porte R-17, par le versement, et par un déclencheur au
+      # passage du lot à `paid`. T04 éprouve les TROIS chemins séparément — c'est
+      # la promesse que seule une façade n'aurait pas tenue.
+      # 11 scénarios : le lien et la trace de la comptabilisation, le refus d'un
+      # lot en brouillon (sans trace : un refus est une absence), le rejeu, les
+      # trois chemins, le versement N:1 (lien au lot, aval de référence, payload),
+      # le versement PARTIEL (le lien désigne SA écriture, pas celle de paie), le
+      # mode refuse (rien ne persiste), la structure (corps `_inner` non exposés)
+      # et le cloisonnement.
+      - name: 'L3 : la paie est tracée par son chemin d''appel (430)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/430_chain_l3_paie_rpc_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 4 — LE RELEVÉ BANCAIRE MANUEL (432). Trois maillons, deux
+      # effets, et le troisième qui ne produit RIEN : `unreconcile_bank_
+      # statement_line` RETIRE un pointage, il n'en crée pas — il ferme donc
+      # ses liens (doctrine 320) au lieu d'ouvrir une trace `applique`, qui
+      # dirait le contraire de ce qu'il fait. T03 et T04 le prouvent.
+      # 8 scénarios : la comptabilisation (lien + trace + événement), le
+      # pointage manuel, la fermeture du lien de comptabilisation, celle du
+      # pointage manuel, la distinction manuel/automatique, le refus d'un
+      # montant différent (rien n'est lié), la structure, le cloisonnement.
+      - name: 'L3 : le relevé bancaire manuel est tracé (432)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/432_chain_l3_releve_bancaire_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 5 — LE BANC D'ÉPREUVES (434). La 433 rendait huit verdicts
+      # par maillon, tous `non_joue` : un cadre honnête, mais un cadre vide — on
+      # comptait des preuves sans en avoir pris aucune. Ici les huit épreuves
+      # SONT jouées, et le verdict écrit est celui qui a été mesuré.
+      #
+      # Cinq verdicts sont réellement `tenu`, chacun sur une mesure : le rejeu
+      # (+0 lien, +0 trace, refus métier 23505), l'annulation par geste DÉDIÉ
+      # (et non en rejouant le producteur), le retour arrière, le p95 sur
+      # 19 stimuli DISTINCTS, et l'isolation — mesurée depuis une session
+      # réelle en `authenticated`, seule façon de faire jouer la RLS.
+      # Trois restent `non_joue` avec leur raison : D2 exige une seconde
+      # connexion, D3 un point d'échec instrumenté, D5 bute sur
+      # `uniq_journal_entry_number_tenant` — le numéro d'écriture étant dérivé de
+      # la ligne, la réouverture est impossible. T07 vérifie que ces trois-là ne
+      # deviennent jamais vertes par défaut.
+      - name: 'L3 : le banc d''épreuves rend huit verdicts mesurés (434)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/434_chain_banc_epreuves_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4 — LES INVARIANTS PAR AGRÉGATION (435). Quatre des sept invariants
+      # qui n'étaient pas mesurables le deviennent SANS nouvelle colonne : le
+      # reproche « la donnée n'est pas stockée » est souvent sans objet quand
+      # les deux côtés de l'égalité se répondent. Le côté manquant se CALCULE
+      # (reste à facturer, réalisé, solde de relevé, amont existant) au lieu
+      # d'être dupliqué dans une colonne que personne ne tiendrait à jour.
+      #
+      # L'indice passe de 13/20 à 17/20. INV-07, INV-10 et INV-12 restent non
+      # mesurables, et INV-12 est verrouillé par un test : le rendre mesurable
+      # en comparant « facturé − temps » au coût publié aurait mesuré un
+      # invariant plus faible sous le même nom. 8 scénarios.
+      - name: 'L4 : quatre invariants mesurés par agrégation (435)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/435_chain_l4_invariants_agregation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 6 — LES SIX AUTRES MAILLONS ÉPROUVÉS (436). La 434 écrivait
+      # le cadre et n'éprouvait qu'UN maillon sur sept : « cinq verdicts `tenu`
+      # sur huit » était le score d'un seul maillon, et le rapport pouvait le
+      # laisser croire à un score de sept. Ici les six autres portent leur décor
+      # réel — un ticket de caisse, un avoir, un lot de paie, un versement, une
+      # ligne de relevé, un dé-lettrage — et les quatre épreuves jouables sur
+      # chacun.
+      #
+      # ⚠️ CE QUE LA 436 A TROUVÉ EN ÉCRIVANT SES DÉCORS, ET QUI EST DANS LA
+      # MIGRATION : quatre défauts de l'INSTRUMENT, tous mesurés, tous corrigés
+      # dans le même fichier que le test qui les a produits.
+      #   • un geste d'annulation n'a pas la signature de l'appel nominal
+      #     (`void_pos_ticket` prend un ticket, `create_pos_ticket` un contenu) :
+      #     le moteur n'avait qu'un seul jeu d'arguments — `arg_valeurs_annul` ;
+      #   • le vocabulaire des refus était faux : le dépôt écrit ses refus
+      #     d'affaires en `42501`, `P0002` et `23503`, autant de codes que le
+      #     moteur ne connaissait pas. `caisse.avoir` rendait `rompu` un rejeu
+      #     CORRECTEMENT refusé ;
+      #   • D1 comptait les traces `ignore` comme des duplications : les deux
+      #     maillons de paie sortaient `rompu` alors que leur rejeu est tenu
+      #     (0 lien, 0 ligne, et une trace qui le dit) ;
+      #   • D1 n'a pas d'objet sur un maillon de CRÉATION : rejouer
+      #     `create_pos_ticket` crée un second ticket, par définition. La
+      #     colonne `nature` le dit, et l'épreuve est rendue `non_joue`.
+      # 9 scénarios : la structure du catalogue, les quatre épreuves de chacun
+      # des six maillons, le rapport daté (7 × 8 = 56 verdicts), et le contrôle
+      # qu'aucun `tenu` ne soit publié sans mesure.
+      - name: 'L3 : les six maillons restants sont éprouvés (436)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/436_chain_banc_six_maillons_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4

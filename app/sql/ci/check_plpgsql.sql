@@ -53,6 +53,18 @@ BEGIN
 END;
 $$;
 
+-- Paramètre de type `record` nu (03/10/2026, banc 434/436 : `chain_banc_appeler(m record, …)`).
+-- L'analyse statique ne connaît pas la forme d'un `record` reçu en argument et
+-- rend « record "m" is not assigned yet » — alors que l'appelant le fournit.
+-- On n'écarte QUE ce message, et QUE pour une fonction dont un argument est un `record`.
+DELETE FROM plpgsql_check_report r
+WHERE r.level = 'error'
+  AND r.message ~ '^record "[a-z0-9_]+" is not assigned yet$'
+  AND EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid::regprocedure::text = r.function_name
+      AND 'record'::regtype = ANY (p.proargtypes::oid[]));
+
 -- Tables temporaires créées à l'exécution (CREATE TEMP TABLE _x) : invisibles pour l'analyse statique
 DELETE FROM plpgsql_check_report r
 WHERE r.level = 'error'
