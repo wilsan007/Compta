@@ -50,6 +50,19 @@ async function generateTypes() {
       JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
       WHERE t.table_schema = 'public'
         AND t.table_type = 'BASE TABLE'
+        -- Les tables d audit des suites SQL (_audit_expected, _audit_results)
+        -- sont des ARTEFACTS D EXECUTION : elles naissent quand les tests SQL
+        -- tournent, et disparaissent sur une base neuve. Les inclure rendrait le
+        -- fichier genere dependant du fait que les tests ont tourne en local :
+        -- la CI regenere sur base neuve et refuserait alors tout ecart, sans
+        -- qu aucun code ait change. Meme famille que le piege des partitions
+        -- ci-dessus, meme cause : une table qui n est pas du schema.
+        -- Le predicat NOT LIKE avec un joker ne convient PAS : le tiret bas
+        -- matche n importe quel caractere, donc il est VRAI pour toutes les
+        -- tables (mesure le 2026-10-02) et la generation renvoyait 0 table.
+        -- D ou le left(...,1) different du tiret bas : ni joker, ni
+        -- dependance au reglage standard_conforming_strings.
+        AND left(t.table_name, 1) <> '_'
         AND NOT EXISTS (
           SELECT 1
             FROM pg_class k
@@ -62,6 +75,82 @@ async function generateTypes() {
     `
 
     const { rows } = await pool.query(tablesQuery)
+
+    // Les relations : chaque clé étrangère, avec ses colonnes RÉSOLUES PAR
+    // `attnum` (et non par position dans le tableau — l'ordre de `conkey` suit
+    // l'ordre de déclaration de la contrainte, pas celui des colonnes).
+    //
+    // `unnest(...) WITH ORDINALITY` sert à garder l'association colonne ↔ colonne
+    // référencée quand la clé est COMPOSITE (427 des 692 le sont : le
+    // cloisonnement de tenant, `(tenant_id, employee_id)`).
+    //
+    // On ne garde que les relations que PostgREST sait RÉSOUDRE : il exige que
+    // les colonnes référencées soient couvertes par une clé unique ou primaire
+    // côté cible. Sans cette condition on déclarerait des jointures que PostgREST
+    // refuse à l'exécution — un type qui promet l'impossible. Mesuré le
+    // 2026-10-02 : **692/692** relations sont résolvables, donc ce filtre ne
+    // retire rien aujourd'hui ; il rend le générateur exact si une clé cible
+    // non unique apparaît plus tard.
+    const relationsQuery = `
+      SELECT
+        c.conname AS foreign_key_name,
+        src.relname AS source_table,
+        tgt.relname AS target_table,
+        src_att.attname AS source_column,
+        tgt_att.attname AS target_column,
+        cardinality(c.conkey) AS column_count,
+        (src_att.attnotnull AND cardinality(c.confkey) = 1) AS is_one_to_one
+      FROM pg_constraint c
+      JOIN pg_class src ON src.oid = c.conrelid
+      JOIN pg_class tgt ON tgt.oid = c.confrelid
+      JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS src_key(attnum, ordinality)
+        ON TRUE
+      JOIN LATERAL unnest(c.confkey) WITH ORDINALITY AS tgt_key(attnum, ordinality)
+        ON tgt_key.ordinality = src_key.ordinality
+      JOIN pg_attribute src_att
+        ON src_att.attrelid = c.conrelid AND src_att.attnum = src_key.attnum
+      JOIN pg_attribute tgt_att
+        ON tgt_att.attrelid = c.confrelid AND tgt_att.attnum = tgt_key.attnum
+      WHERE c.contype = 'f'
+        AND c.connamespace = 'public'::regnamespace
+        AND EXISTS (
+          SELECT 1 FROM pg_constraint uc
+          WHERE uc.contype IN ('u', 'p')
+            AND uc.conrelid = c.confrelid
+            AND uc.conkey @> c.confkey
+        )
+      ORDER BY c.conname, src_key.ordinality
+    `
+    const { rows: relationRows } = await pool.query(relationsQuery)
+
+    // Regrouper les colonnes par clé étrangère : `conkey` et `confkey` sont
+    // parallèles, d'où le regroupement sur (conname, ordre).
+    const relations = {}
+    for (const row of relationRows) {
+      const cle = row.source_table + '\u0000' + row.foreign_key_name
+      if (!relations[cle]) {
+        relations[cle] = {
+          foreignKeyName: row.foreign_key_name,
+          columns: [],
+          isOneToOne: row.is_one_to_one,
+          referencedRelation: row.target_table,
+          referencedColumns: []
+        }
+      }
+      relations[cle].columns.push(row.source_column)
+      relations[cle].referencedColumns.push(row.target_column)
+    }
+    // `source_table` -> liste de relations, dans un ordre DÉTERMINÉ (le nom de la
+    // contrainte) : le fichier généré ne doit pas dépendre de l'ordre du planner.
+    const relationsParTable = {}
+    for (const [cle, rel] of Object.entries(relations)) {
+      const table = cle.split('\u0000')[0]
+      if (!relationsParTable[table]) relationsParTable[table] = []
+      relationsParTable[table].push(rel)
+    }
+    for (const list of Object.values(relationsParTable)) {
+      list.sort((a, b) => (a.foreignKeyName < b.foreignKeyName ? -1 : a.foreignKeyName > b.foreignKeyName ? 1 : 0))
+    }
 
     // Grouper par table
     const tables = {}
@@ -120,12 +209,36 @@ export interface Database {
       for (const col of columns) {
         tsContent += `        ${tsKey(col.name)}?: ${col.type}\n`
       }
-      // LOT7-04 : supabase-js exige `Relationships` sur chaque table. Sans cette clé,
-      // `createClient<Database>` résout toutes les lignes sur `never` — les accès
-      // deviennent des erreurs « Property 'id' does not exist ». Les jointures
-      // imbriquées ne sont pas décrites ici : un tableau vide suffit à rendre la
-      // forme conforme, les tables restant typées correctement.
-      tsContent += `      }\n      Relationships: []\n    }\n`
+      // Relations : chaque clé étrangère devient une entrée `Relationships`.
+    //
+    // LOT7-04 (corrigé le 2026-10-02) : ce bloc était écrit `Relationships: []`
+    // en dur, et le commentaire affirmait que « les jointures imbriquées ne sont pas
+    // décrites ici ». C'était vrai du générateur, et c'est ce qui rendait
+    // `Joined<>` INUTILISABLE : les 363 tables déclaraient zéro relation, donc
+    // aucune relation n'était une clé de `Row<T>` et le type ne pouvait nommer
+    // aucune jointure (0 usage). Mesuré : **692** clés étrangères existent, dont
+    // **427 composites** `(tenant_id, …)` — le cloisonnement de tenant.
+    //
+    // `Relationships` est la forme attendue par supabase-js :
+    // `{ foreignKeyName, columns, isOneToOne, referencedRelation, referencedColumns }`.
+    // C'est ce que `Joined<>` lit pour résoudre une ressource jointe.
+    //
+    // Une relation n'est PAS toujours clé de `Row` : `employees` n'est pas une
+    // colonne de `salary_advances`, c'est une clé étrangère. `Joined<>` ne doit
+    // donc pas contraindre `K` à `keyof Row<T>` (ce qui le rendait faux même
+    // lorsque les relations étaient là) mais à `RelationshipsNames<T>` — voir
+    // `src/types/dbRow.ts`.
+    tsContent += `      }\n      Relationships: [\n`
+    for (const rel of relationsParTable[tableName] || []) {
+      tsContent += `        {\n`
+      tsContent += `          foreignKeyName: ${JSON.stringify(rel.foreignKeyName)},\n`
+      tsContent += `          columns: [${rel.columns.map((c) => JSON.stringify(c)).join(', ')}],\n`
+      tsContent += `          isOneToOne: ${rel.isOneToOne},\n`
+      tsContent += `          referencedRelation: ${JSON.stringify(rel.referencedRelation)},\n`
+      tsContent += `          referencedColumns: [${rel.referencedColumns.map((c) => JSON.stringify(c)).join(', ')}]\n`
+      tsContent += `        },\n`
+    }
+    tsContent += `      ]\n    }\n`
     }
 
     // Idem pour les quatre sections de schéma attendues par supabase-js.

@@ -97,7 +97,15 @@ export interface Database {
         dropped_origin?: string
         detected_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "absence_conflict_log_employee_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     account_tag_mappings: {
       Row: {
@@ -124,7 +132,22 @@ export interface Database {
         entity_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "account_tag_mappings_tag_id_fkey",
+          columns: ["tenant_id", "tag_id"],
+          isOneToOne: false,
+          referencedRelation: "account_tags",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "account_tag_mappings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     account_tags: {
       Row: {
@@ -154,7 +177,15 @@ export interface Database {
         country_code?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "account_tags_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     accounting_control_runs: {
       Row: {
@@ -199,7 +230,29 @@ export interface Database {
         details?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "accounting_control_runs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "acr_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "acr_period_id_fkey",
+          columns: ["tenant_id", "period_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_periods",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     analytic_distribution_lines: {
       Row: {
@@ -232,7 +285,36 @@ export interface Database {
         amount?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "analytic_distribution_lines_journal_line_id_fkey",
+          columns: ["tenant_id", "journal_line_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "analytic_distribution_lines_plan_id_fkey",
+          columns: ["tenant_id", "plan_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_plans",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "analytic_distribution_lines_section_id_fkey",
+          columns: ["tenant_id", "section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "analytic_distribution_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     analytic_journal_codes: {
       Row: {
@@ -268,7 +350,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "analytic_journal_codes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     analytic_plans: {
       Row: {
@@ -304,7 +394,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "analytic_plans_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     analytic_sections: {
       Row: {
@@ -346,7 +444,29 @@ export interface Database {
         plan_id?: string
         section_type?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "analytic_sections_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "analytic_sections_plan_id_fkey",
+          columns: ["tenant_id", "plan_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_plans",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "analytic_sections_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     api_call_logs: {
       Row: {
@@ -388,7 +508,8 @@ export interface Database {
         duration_ms?: number
         called_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     api_keys: {
       Row: {
@@ -439,7 +560,8 @@ export interface Database {
         revoked_at?: string
         scope?: string[]
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     approval_workflows: {
       Row: {
@@ -469,7 +591,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "approval_workflows_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     asset_batch_disposal_lines: {
       Row: {
@@ -505,7 +635,22 @@ export interface Database {
         gain_loss?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_batch_disposal_lines_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "asset_batch_disposal_lines_batch_id_fkey",
+          columns: ["tenant_id", "batch_id"],
+          isOneToOne: false,
+          referencedRelation: "asset_batch_disposals",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_batch_disposals: {
       Row: {
@@ -547,7 +692,8 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     asset_depreciation_plans: {
       Row: {
@@ -601,7 +747,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_depreciation_plans_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_depreciations: {
       Row: {
@@ -643,7 +797,22 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_depreciations_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "asset_depreciations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     asset_documents: {
       Row: {
@@ -676,7 +845,15 @@ export interface Database {
         description?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_documents_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_families: {
       Row: {
@@ -721,7 +898,15 @@ export interface Database {
         description?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_families_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "asset_families",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_free_fields: {
       Row: {
@@ -754,7 +939,15 @@ export interface Database {
         field_category?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_free_fields_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_revaluations: {
       Row: {
@@ -793,7 +986,15 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_revaluations_asset_id_fkey",
+          columns: ["tenant_id", "asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_split_components: {
       Row: {
@@ -823,7 +1024,22 @@ export interface Database {
         allocated_percentage?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_split_components_new_asset_id_fkey",
+          columns: ["tenant_id", "new_asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "asset_split_components_split_id_fkey",
+          columns: ["tenant_id", "split_id"],
+          isOneToOne: false,
+          referencedRelation: "asset_splits",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     asset_splits: {
       Row: {
@@ -850,7 +1066,15 @@ export interface Database {
         reason?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "asset_splits_original_asset_id_fkey",
+          columns: ["tenant_id", "original_asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     at_rates: {
       Row: {
@@ -886,7 +1110,22 @@ export interface Database {
         risk_category?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "at_rates_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "at_rates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     audit_log: {
       Row: {
@@ -928,7 +1167,22 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "audit_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "audit_log_user_id_fkey",
+          columns: ["tenant_id", "user_id"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     auto_label_rules: {
       Row: {
@@ -973,7 +1227,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "auto_label_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_accounts: {
       Row: {
@@ -1039,7 +1301,15 @@ export interface Database {
         account_code?: string
         journal_code?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_accounts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_connections: {
       Row: {
@@ -1084,7 +1354,22 @@ export interface Database {
         metadata?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_connections_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_connections_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_reconciliation_rules: {
       Row: {
@@ -1129,7 +1414,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_reconciliation_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_reconciliation_suggestions: {
       Row: {
@@ -1174,7 +1467,8 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     bank_rules: {
       Row: {
@@ -1219,7 +1513,15 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_statement_imports: {
       Row: {
@@ -1258,7 +1560,22 @@ export interface Database {
         error_message?: string
         imported_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_statement_imports_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_statement_imports_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_statement_templates: {
       Row: {
@@ -1339,7 +1656,22 @@ export interface Database {
         last_validated_at?: string
         last_correction_notes?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_statement_templates_bank_id_fkey",
+          columns: ["bank_id"],
+          isOneToOne: false,
+          referencedRelation: "banks",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "bank_statement_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bank_transactions: {
       Row: {
@@ -1438,7 +1770,50 @@ export interface Database {
         matched_line_id?: string
         provider_transaction_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bank_transactions_account_id_fkey",
+          columns: ["tenant_id", "account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_transactions_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_transactions_matched_line_id_fkey",
+          columns: ["tenant_id", "matched_line_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_transactions_purchase_invoice_id_fkey",
+          columns: ["tenant_id", "purchase_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_transactions_reconciled_entry_id_fkey",
+          columns: ["tenant_id", "reconciled_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bank_transactions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     banks: {
       Row: {
@@ -1468,7 +1843,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     batch_entry_sessions: {
       Row: {
@@ -1516,7 +1892,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "batch_entry_sessions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bdes_indicators: {
       Row: {
@@ -1561,7 +1945,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bdes_indicators_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     bom_lines: {
       Row: {
@@ -1597,7 +1989,29 @@ export interface Database {
         scrap_rate?: number
         lot_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "bom_lines_bom_id_fkey",
+          columns: ["tenant_id", "bom_id"],
+          isOneToOne: false,
+          referencedRelation: "boms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bom_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "bom_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     boms: {
       Row: {
@@ -1639,7 +2053,29 @@ export interface Database {
         routing_id?: string
         bom_type?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "boms_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "boms_routing_id_fkey",
+          columns: ["tenant_id", "routing_id"],
+          isOneToOne: false,
+          referencedRelation: "routings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "boms_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     budget_commitments: {
       Row: {
@@ -1690,7 +2126,29 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "budget_commitments_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "budget_commitments_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "budget_commitments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     budgets: {
       Row: {
@@ -1756,7 +2214,29 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "budgets_analytic_section_id_fkey",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "budgets_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "budgets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     career_history: {
       Row: {
@@ -1840,7 +2320,15 @@ export interface Database {
         reason?: string
         documents?: Json
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "career_history_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     carry_forward_log: {
       Row: {
@@ -1882,7 +2370,36 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "carry_forward_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "cfl_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "cfl_source_fy_fkey",
+          columns: ["tenant_id", "source_fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "cfl_target_fy_fkey",
+          columns: ["tenant_id", "target_fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     cash_control_sessions: {
       Row: {
@@ -1939,7 +2456,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cash_control_sessions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chain_document_types: {
       Row: {
@@ -2095,7 +2620,15 @@ export interface Database {
         created_by?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chain_regeneration_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chain_settings: {
       Row: {
@@ -2116,7 +2649,15 @@ export interface Database {
         updated_at?: string
         updated_by?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chain_settings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chain_traces: {
       Row: {
@@ -2161,7 +2702,15 @@ export interface Database {
         message?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chain_traces_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chart_account_templates: {
       Row: {
@@ -2197,7 +2746,15 @@ export interface Database {
         sort_order?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chart_account_templates_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
     }
     chart_accounts: {
       Row: {
@@ -2284,7 +2841,22 @@ export interface Database {
         deprecated?: boolean
         account_type?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chart_accounts_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "chart_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "chart_accounts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chart_pack_status: {
       Row: {
@@ -2317,7 +2889,15 @@ export interface Database {
         published_at?: string
         source?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chart_pack_status_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
     }
     chart_pack_switch_log: {
       Row: {
@@ -2347,7 +2927,15 @@ export interface Database {
         detail?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chart_pack_switch_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     chart_provisional_fallbacks: {
       Row: {
@@ -2362,7 +2950,15 @@ export interface Database {
         country_code?: string
         fallback_pack?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "chart_provisional_fallbacks_fallback_pack_fkey",
+          columns: ["fallback_pack"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
     }
     chart_required_accounts: {
       Row: {
@@ -2380,7 +2976,8 @@ export interface Database {
         source?: string
         reason?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     check_books: {
       Row: {
@@ -2422,7 +3019,22 @@ export interface Database {
         issued_count?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "check_books_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "check_books_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     checks: {
       Row: {
@@ -2470,7 +3082,29 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "checks_check_book_id_fkey",
+          columns: ["tenant_id", "check_book_id"],
+          isOneToOne: false,
+          referencedRelation: "check_books",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "checks_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "checks_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     cice_config: {
       Row: {
@@ -2503,7 +3137,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cice_config_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     collection_reminders: {
       Row: {
@@ -2584,7 +3226,57 @@ export interface Database {
         email_sent?: boolean
         last_error?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "collection_reminders_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_dispute_id_fkey",
+          columns: ["tenant_id", "dispute_id"],
+          isOneToOne: false,
+          referencedRelation: "disputes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_promise_id_fkey",
+          columns: ["tenant_id", "promise_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_promises",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_reminder_level_id_fkey",
+          columns: ["tenant_id", "reminder_level_id"],
+          isOneToOne: false,
+          referencedRelation: "reminder_levels",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "collection_reminders_third_party_id_fkey",
+          columns: ["tenant_id", "third_party_id"],
+          isOneToOne: false,
+          referencedRelation: "third_party_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     collective_agreements: {
       Row: {
@@ -2617,7 +3309,8 @@ export interface Database {
         metadata?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     collective_classifications: {
       Row: {
@@ -2653,7 +3346,15 @@ export interface Database {
         minimum_monthly_salary?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "collective_classifications_agreement_id_fkey",
+          columns: ["tenant_id", "agreement_id"],
+          isOneToOne: false,
+          referencedRelation: "collective_agreements",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     compaction_logs: {
       Row: {
@@ -2689,7 +3390,22 @@ export interface Database {
         compacted_at?: string
         details?: Json
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cl_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "compaction_logs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     company_settings: {
       Row: {
@@ -2728,9 +3444,6 @@ export interface Database {
         absence_method: string | null
         next_lettrage_seq: number | null
         enforce_segregation: boolean | null
-        ocr_consent: boolean
-        ocr_consent_at: string | null
-        ocr_consent_by: string | null
       }
       Insert: {
         id?: string
@@ -2768,9 +3481,6 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
-        ocr_consent?: boolean
-        ocr_consent_at?: string
-        ocr_consent_by?: string
       }
       Update: {
         id?: string
@@ -2808,11 +3518,23 @@ export interface Database {
         absence_method?: string
         next_lettrage_seq?: number
         enforce_segregation?: boolean
-        ocr_consent?: boolean
-        ocr_consent_at?: string
-        ocr_consent_by?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "company_settings_legislation_pack_code_fkey",
+          columns: ["tenant_id", "legislation_pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["tenant_id", "code"]
+        },
+        {
+          foreignKeyName: "company_settings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     consolidated_treasury: {
       Row: {
@@ -2845,7 +3567,8 @@ export interface Database {
         details?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     contracts: {
       Row: {
@@ -2902,7 +3625,22 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "contracts_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "contracts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     corporate_tax_grid_lines: {
       Row: {
@@ -2947,7 +3685,15 @@ export interface Database {
         sort_order?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "corporate_tax_grid_lines_grid_id_fkey",
+          columns: ["grid_id"],
+          isOneToOne: true,
+          referencedRelation: "corporate_tax_grids",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     corporate_tax_grids: {
       Row: {
@@ -2998,7 +3744,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "corporate_tax_grids_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     cpf_accounts: {
       Row: {
@@ -3034,7 +3788,15 @@ export interface Database {
         updated_at?: string
         last_sync_date?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cpf_accounts_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     cpf_transactions: {
       Row: {
@@ -3079,7 +3841,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cpf_transactions_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "cpf_transactions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     credit_lines: {
       Row: {
@@ -3130,7 +3907,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "credit_lines_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     credit_note_lines: {
       Row: {
@@ -3148,6 +3933,7 @@ export interface Database {
         product_id: string | null
         vat_code: string | null
         vat_amount: number
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -3164,6 +3950,7 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
       Update: {
         id?: string
@@ -3180,8 +3967,31 @@ export interface Database {
         product_id?: string
         vat_code?: string
         vat_amount?: number
+        account_code?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "credit_note_lines_credit_note_id_fkey",
+          columns: ["tenant_id", "credit_note_id"],
+          isOneToOne: false,
+          referencedRelation: "credit_notes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "credit_note_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "credit_note_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     credit_notes: {
       Row: {
@@ -3253,7 +4063,43 @@ export interface Database {
         transferred_entry_id?: string
         validated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "credit_notes_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "credit_notes_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "credit_notes_source_invoice_id_fkey",
+          columns: ["tenant_id", "source_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "credit_notes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "credit_notes_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     crm_activities: {
       Row: {
@@ -3301,7 +4147,29 @@ export interface Database {
         assigned_to?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_activities_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_activities_opportunity_id_fkey",
+          columns: ["tenant_id", "opportunity_id"],
+          isOneToOne: false,
+          referencedRelation: "crm_opportunities",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_activities_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     crm_campaign_recipients: {
       Row: {
@@ -3352,7 +4220,36 @@ export interface Database {
         responded?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_campaign_recipients_campaign_id_fkey",
+          columns: ["tenant_id", "campaign_id"],
+          isOneToOne: false,
+          referencedRelation: "crm_campaigns",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_campaign_recipients_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_campaign_recipients_prospect_id_fkey",
+          columns: ["tenant_id", "prospect_id"],
+          isOneToOne: false,
+          referencedRelation: "prospects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_campaign_recipients_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     crm_campaigns: {
       Row: {
@@ -3415,7 +4312,15 @@ export interface Database {
         conversion_count?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_campaigns_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     crm_forecasts: {
       Row: {
@@ -3457,7 +4362,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_forecasts_sales_rep_id_fkey",
+          columns: ["tenant_id", "sales_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_forecasts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     crm_opportunities: {
       Row: {
@@ -3523,7 +4443,36 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_opportunities_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_opportunities_prospect_id_fkey",
+          columns: ["tenant_id", "prospect_id"],
+          isOneToOne: false,
+          referencedRelation: "prospects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_opportunities_sales_rep_id_fkey",
+          columns: ["tenant_id", "sales_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_opportunities_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     crm_territories: {
       Row: {
@@ -3559,7 +4508,29 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "crm_territories_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "crm_territories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_territories_sales_rep_id_fkey",
+          columns: ["tenant_id", "sales_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "crm_territories_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     currencies: {
       Row: {
@@ -3607,7 +4578,15 @@ export interface Database {
         active?: boolean
         position?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "currencies_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     currency_revaluations: {
       Row: {
@@ -3670,7 +4649,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "cr_entry_id_fkey",
+          columns: ["tenant_id", "entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "cr_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "currency_revaluations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     custom_report_templates: {
       Row: {
@@ -3742,7 +4743,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "custom_report_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     customer_contacts: {
       Row: {
@@ -3787,7 +4796,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "customer_contacts_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customer_contacts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     customer_payments: {
       Row: {
@@ -3850,7 +4874,43 @@ export interface Database {
         transferred_entry_id?: string
         invoice_number?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "customer_payments_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customer_payments_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customer_payments_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customer_payments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "customer_payments_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     customers: {
       Row: {
@@ -3895,6 +4955,8 @@ export interface Database {
         credit_policy: string | null
         credit_warning: boolean | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -3938,6 +5000,8 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -3981,8 +5045,60 @@ export interface Database {
         credit_policy?: string
         credit_warning?: boolean
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "customers_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_fiscal_position_tenant_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_payment_term_tenant_fkey",
+          columns: ["tenant_id", "payment_term_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_terms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_price_list_id_fkey",
+          columns: ["tenant_id", "price_list_id"],
+          isOneToOne: false,
+          referencedRelation: "price_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_sales_rep_id_fkey",
+          columns: ["tenant_id", "sales_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "customers_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     dashboard_widgets: {
       Row: {
@@ -4024,7 +5140,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "dashboard_widgets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     data_import_logs: {
       Row: {
@@ -4072,7 +5196,8 @@ export interface Database {
         completed_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     deferred_printing_jobs: {
       Row: {
@@ -4120,7 +5245,15 @@ export interface Database {
         error_message?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "deferred_printing_jobs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     delivery_note_lines: {
       Row: {
@@ -4162,7 +5295,36 @@ export interface Database {
         lot_id?: string
         serial_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "delivery_note_lines_delivery_note_id_fkey",
+          columns: ["tenant_id", "delivery_note_id"],
+          isOneToOne: false,
+          referencedRelation: "delivery_notes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "delivery_note_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "delivery_note_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "dnl_sales_order_line_id_fkey",
+          columns: ["tenant_id", "sales_order_line_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_order_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     delivery_notes: {
       Row: {
@@ -4213,7 +5375,29 @@ export interface Database {
         fully_invoiced?: boolean
         invoice_status?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "delivery_notes_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "delivery_notes_sales_order_id_fkey",
+          columns: ["tenant_id", "sales_order_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "delivery_notes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     delivery_schedules: {
       Row: {
@@ -4252,7 +5436,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "delivery_schedules_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "delivery_schedules_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     disputes: {
       Row: {
@@ -4300,7 +5499,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "disputes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     distribution_grill_lines: {
       Row: {
@@ -4327,7 +5534,22 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "distribution_grill_lines_grill_id_fkey",
+          columns: ["tenant_id", "grill_id"],
+          isOneToOne: false,
+          referencedRelation: "distribution_grills",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "distribution_grill_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     distribution_grills: {
       Row: {
@@ -4363,7 +5585,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "distribution_grills_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_charges: {
       Row: {
@@ -4408,7 +5638,22 @@ export interface Database {
         supplier_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_charges_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "document_charges_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_distribution_logs: {
       Row: {
@@ -4450,7 +5695,29 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_distribution_logs_employee_document_id_fkey",
+          columns: ["tenant_id", "employee_document_id"],
+          isOneToOne: false,
+          referencedRelation: "employee_documents",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "document_distribution_logs_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "document_distribution_logs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_effects: {
       Row: {
@@ -4501,7 +5768,15 @@ export interface Database {
         note?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_effects_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_links: {
       Row: {
@@ -4518,11 +5793,6 @@ export interface Database {
         payload: Json
         created_by: string | null
         created_at: string
-        etat: string
-        tour: number
-        ferme_le: string | null
-        ferme_par: string | null
-        motif: string | null
       }
       Insert: {
         id?: string
@@ -4538,11 +5808,6 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
-        etat?: string
-        tour?: number
-        ferme_le?: string
-        ferme_par?: string
-        motif?: string
       }
       Update: {
         id?: string
@@ -4558,13 +5823,16 @@ export interface Database {
         payload?: Json
         created_by?: string
         created_at?: string
-        etat?: string
-        tour?: number
-        ferme_le?: string
-        ferme_par?: string
-        motif?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_links_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_number_sequences: {
       Row: {
@@ -4594,7 +5862,15 @@ export interface Database {
         updated_at?: string
         fiscal_year_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_number_sequences_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     document_shares: {
       Row: {
@@ -4636,7 +5912,15 @@ export interface Database {
         viewed_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_shares_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     document_templates: {
       Row: {
@@ -4675,7 +5959,8 @@ export interface Database {
         is_default?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     document_transformations: {
       Row: {
@@ -4714,7 +5999,15 @@ export interface Database {
         transformed_at?: string
         notes?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "document_transformations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     domain_events: {
       Row: {
@@ -4747,7 +6040,15 @@ export interface Database {
         actor_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "domain_events_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     dpae_records: {
       Row: {
@@ -4786,7 +6087,15 @@ export interface Database {
         response_code?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "dpae_records_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     dsn_declarations: {
       Row: {
@@ -4828,7 +6137,8 @@ export interface Database {
         response_message?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     electronic_signatures: {
       Row: {
@@ -4885,7 +6195,15 @@ export interface Database {
         signers?: Json
         initiated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "electronic_signatures_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     email_templates: {
       Row: {
@@ -4927,7 +6245,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "email_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     employee_absence_days: {
       Row: {
@@ -4975,7 +6301,15 @@ export interface Database {
         created_at?: string
         day_uid?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "employee_absence_days_employee_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     employee_activity_logs: {
       Row: {
@@ -5005,7 +6339,22 @@ export interface Database {
         metadata?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "employee_activity_logs_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employee_activity_logs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     employee_documents: {
       Row: {
@@ -5083,7 +6432,15 @@ export interface Database {
         archive_date?: string
         retention_years?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "employee_documents_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     employee_exit_processes: {
       Row: {
@@ -5170,7 +6527,29 @@ export interface Database {
         created_at?: string
         completed_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "eep_exit_payslip_id_fkey",
+          columns: ["tenant_id", "exit_payslip_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_slips",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employee_exit_processes_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employee_exit_processes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     employee_objectives: {
       Row: {
@@ -5221,7 +6600,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "employee_objectives_campaign_id_fkey",
+          columns: ["tenant_id", "campaign_id"],
+          isOneToOne: false,
+          referencedRelation: "interview_campaigns",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employee_objectives_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employee_objectives_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     employees: {
       Row: {
@@ -5368,7 +6769,29 @@ export interface Database {
         gender?: string
         payroll_category?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "employees_classification_id_fkey",
+          columns: ["tenant_id", "classification_id"],
+          isOneToOne: false,
+          referencedRelation: "collective_classifications",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employees_collective_agreement_id_fkey",
+          columns: ["tenant_id", "collective_agreement_id"],
+          isOneToOne: false,
+          referencedRelation: "collective_agreements",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "employees_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     entry_templates: {
       Row: {
@@ -5410,7 +6833,15 @@ export interface Database {
         counterpart_account?: string
         payment_terms?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "entry_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     etat_rapprochement: {
       Row: {
@@ -5458,7 +6889,22 @@ export interface Database {
         generated_at?: string
         generated_by?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "er_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "etat_rapprochement_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     exchange_gain_loss_entries: {
       Row: {
@@ -5503,7 +6949,29 @@ export interface Database {
         journal_entry_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "exchange_gain_loss_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "exgl_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "exgl_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     exchange_rates: {
       Row: {
@@ -5536,7 +7004,15 @@ export interface Database {
         source?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "exchange_rates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     expense_categories: {
       Row: {
@@ -5578,7 +7054,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "expense_categories_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     expense_report_lines: {
       Row: {
@@ -5644,7 +7128,29 @@ export interface Database {
         mission_absence_day?: string
         mission_absence_employee_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "expense_report_lines_category_id_fkey",
+          columns: ["tenant_id", "category_id"],
+          isOneToOne: false,
+          referencedRelation: "expense_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "expense_report_lines_expense_report_id_fkey",
+          columns: ["tenant_id", "expense_report_id"],
+          isOneToOne: false,
+          referencedRelation: "expense_reports",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "expense_report_lines_mission_fkey",
+          columns: ["tenant_id", "mission_absence_employee_id", "mission_absence_day"],
+          isOneToOne: false,
+          referencedRelation: "employee_absence_days",
+          referencedColumns: ["tenant_id", "employee_id", "day"]
+        },
+      ]
     }
     expense_reports: {
       Row: {
@@ -5701,7 +7207,22 @@ export interface Database {
         manager_comment?: string
         reimbursement_date?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "er_manager_id_fkey",
+          columns: ["tenant_id", "manager_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "expense_reports_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     extourne_log: {
       Row: {
@@ -5743,7 +7264,29 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "el_extourne_entry_id_fkey",
+          columns: ["tenant_id", "extourne_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "el_original_entry_id_fkey",
+          columns: ["tenant_id", "original_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "extourne_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fec_attestations: {
       Row: {
@@ -5794,7 +7337,22 @@ export interface Database {
         generated_by?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fec_attest_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fec_attestations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fiscal_backups: {
       Row: {
@@ -5830,7 +7388,22 @@ export interface Database {
         created_by?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fiscal_backups_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_backups_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fiscal_periods: {
       Row: {
@@ -5866,7 +7439,22 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fiscal_periods_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_periods_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fiscal_position_mappings: {
       Row: {
@@ -5899,7 +7487,36 @@ export interface Database {
         target_account_code?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fiscal_position_mappings_fiscal_position_id_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_position_mappings_source_tax_id_fkey",
+          columns: ["tenant_id", "source_tax_id"],
+          isOneToOne: false,
+          referencedRelation: "tax_rates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_position_mappings_target_tax_id_fkey",
+          columns: ["tenant_id", "target_tax_id"],
+          isOneToOne: false,
+          referencedRelation: "tax_rates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_position_mappings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fiscal_positions: {
       Row: {
@@ -5913,6 +7530,7 @@ export interface Database {
         auto_apply: boolean | null
         active: boolean | null
         created_at: string | null
+        regime: string | null
       }
       Insert: {
         id?: string
@@ -5925,6 +7543,7 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
       Update: {
         id?: string
@@ -5937,8 +7556,17 @@ export interface Database {
         auto_apply?: boolean
         active?: boolean
         created_at?: string
+        regime?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fiscal_positions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fiscal_years: {
       Row: {
@@ -5983,7 +7611,29 @@ export interface Database {
         result_allocated_at?: string
         result_allocation_entry_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fiscal_years_closed_by_fkey",
+          columns: ["tenant_id", "closed_by"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_years_result_allocation_entry_id_fkey",
+          columns: ["tenant_id", "result_allocation_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fiscal_years_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fixed_asset_components: {
       Row: {
@@ -6022,7 +7672,15 @@ export interface Database {
         start_date?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fixed_asset_components_fixed_asset_id_fkey",
+          columns: ["tenant_id", "fixed_asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     fixed_assets: {
       Row: {
@@ -6115,7 +7773,36 @@ export interface Database {
         partner_id?: string
         currency_code?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fa_journal_id_fkey",
+          columns: ["tenant_id", "journal_id"],
+          isOneToOne: false,
+          referencedRelation: "journals",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fixed_assets_family_id_fkey",
+          columns: ["tenant_id", "family_id"],
+          isOneToOne: false,
+          referencedRelation: "asset_families",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fixed_assets_parent_asset_id_fkey",
+          columns: ["tenant_id", "parent_asset_id"],
+          isOneToOne: false,
+          referencedRelation: "fixed_assets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "fixed_assets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     fusion_logs: {
       Row: {
@@ -6145,7 +7832,15 @@ export interface Database {
         fused_by?: string
         fused_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fusion_logs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     future_accounting_movements: {
       Row: {
@@ -6193,7 +7888,15 @@ export interface Database {
         incorporated_entry_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fam_incorporated_entry_id_fkey",
+          columns: ["tenant_id", "incorporated_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     goods_receipt_lines: {
       Row: {
@@ -6232,7 +7935,36 @@ export interface Database {
         serial_id?: string
         purchase_order_line_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "goods_receipt_lines_goods_receipt_id_fkey",
+          columns: ["tenant_id", "goods_receipt_id"],
+          isOneToOne: false,
+          referencedRelation: "goods_receipts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "goods_receipt_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "goods_receipt_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "grl_purchase_order_line_id_fkey",
+          columns: ["tenant_id", "purchase_order_line_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_order_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     goods_receipts: {
       Row: {
@@ -6271,7 +8003,36 @@ export interface Database {
         tenant_id?: string
         warehouse_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "goods_receipts_purchase_order_id_fkey",
+          columns: ["tenant_id", "purchase_order_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "goods_receipts_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "goods_receipts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "goods_receipts_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     grid_templates: {
       Row: {
@@ -6313,7 +8074,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "grid_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     honorarium_records: {
       Row: {
@@ -6355,7 +8124,29 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "honorarium_records_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "honorarium_records_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "hr_accounting_entry_id_fkey",
+          columns: ["tenant_id", "accounting_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     idempotency_records: {
       Row: {
@@ -6385,7 +8176,8 @@ export interface Database {
         expires_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     ifrs_adjustments: {
       Row: {
@@ -6436,7 +8228,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "ifrs_adjustments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "ifrs_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "ifrs_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     ijss_history: {
       Row: {
@@ -6484,7 +8298,36 @@ export interface Database {
         payslip_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "ijss_history_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "ijss_history_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "ijss_history_work_stoppage_id_fkey",
+          columns: ["tenant_id", "work_stoppage_id"],
+          isOneToOne: false,
+          referencedRelation: "work_stoppages",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "ijss_payslip_id_fkey",
+          columns: ["tenant_id", "payslip_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_slips",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     import_batches: {
       Row: {
@@ -6532,7 +8375,8 @@ export interface Database {
         validated_at?: string
         completed_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     import_column_mappings: {
       Row: {
@@ -6562,7 +8406,8 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     interview_campaigns: {
       Row: {
@@ -6601,7 +8446,15 @@ export interface Database {
         form_template?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "interview_campaigns_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     interviews: {
       Row: {
@@ -6658,7 +8511,22 @@ export interface Database {
         employee_feedback?: string
         employee_rating?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "interviews_campaign_id_fkey",
+          columns: ["tenant_id", "campaign_id"],
+          isOneToOne: false,
+          referencedRelation: "interview_campaigns",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "interviews_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     investments: {
       Row: {
@@ -6706,7 +8574,8 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     invoice_lines: {
       Row: {
@@ -6729,6 +8598,7 @@ export interface Database {
         advance_invoice_id: string | null
         time_entry_id: string | null
         analytic_section_id: string | null
+        account_code: string | null
       }
       Insert: {
         id?: string
@@ -6750,6 +8620,7 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
       Update: {
         id?: string
@@ -6771,8 +8642,59 @@ export interface Database {
         advance_invoice_id?: string
         time_entry_id?: string
         analytic_section_id?: string
+        account_code?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "invoice_lines_analytic_section_fk",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_delivery_note_line_id_fkey",
+          columns: ["tenant_id", "delivery_note_line_id"],
+          isOneToOne: false,
+          referencedRelation: "delivery_note_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_sales_order_line_id_fkey",
+          columns: ["tenant_id", "sales_order_line_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_order_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "invoice_lines_time_entry_fk",
+          columns: ["tenant_id", "time_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "project_time_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     invoices: {
       Row: {
@@ -6898,7 +8820,71 @@ export interface Database {
         e_invoice_submitted_at?: string
         e_invoice_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "invoices_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_delivery_note_id_fkey",
+          columns: ["tenant_id", "delivery_note_id"],
+          isOneToOne: false,
+          referencedRelation: "delivery_notes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_fiscal_position_id_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_parent_invoice_id_fkey",
+          columns: ["tenant_id", "parent_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_project_fk",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_quote_id_fkey",
+          columns: ["tenant_id", "quote_id"],
+          isOneToOne: false,
+          referencedRelation: "quotes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_sales_order_id_fkey",
+          columns: ["tenant_id", "sales_order_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "invoices_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "invoices_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     journal_access_rights: {
       Row: {
@@ -6940,7 +8926,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "journal_access_rights_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     journal_entries: {
       Row: {
@@ -7036,7 +9030,43 @@ export interface Database {
         posting_number?: string
         is_manual?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "journal_entries_entry_template_id_fkey",
+          columns: ["tenant_id", "entry_template_id"],
+          isOneToOne: false,
+          referencedRelation: "entry_templates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_entries_fiscal_period_id_fkey",
+          columns: ["tenant_id", "fiscal_period_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_periods",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_entries_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_entries_journal_fkey",
+          columns: ["tenant_id", "journal_code"],
+          isOneToOne: false,
+          referencedRelation: "journals",
+          referencedColumns: ["tenant_id", "code"]
+        },
+        {
+          foreignKeyName: "journal_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     journal_lines: {
       Row: {
@@ -7162,7 +9192,36 @@ export interface Database {
         currency_amount?: number
         exchange_rate?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "journal_lines_analytic_section_id_fkey",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_lines_journal_id_fkey",
+          columns: ["tenant_id", "journal_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     journal_posting_sequences: {
       Row: {
@@ -7183,7 +9242,22 @@ export interface Database {
         fiscal_year_id?: string
         last_seq?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "journal_posting_sequences_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journal_posting_sequences_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     journals: {
       Row: {
@@ -7255,7 +9329,22 @@ export interface Database {
         next_number?: number
         racines_autorisees?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "journals_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "journals_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     justificatif_solde: {
       Row: {
@@ -7297,7 +9386,22 @@ export interface Database {
         generated_at?: string
         generated_by?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "js_fiscal_period_id_fkey",
+          columns: ["tenant_id", "fiscal_period_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_periods",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "justificatif_solde_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     knowledge_base_articles: {
       Row: {
@@ -7348,7 +9452,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "knowledge_base_articles_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     landed_cost_lines: {
       Row: {
@@ -7384,7 +9496,15 @@ export interface Database {
         new_unit_cost?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "landed_cost_lines_landed_cost_id_fkey",
+          columns: ["tenant_id", "landed_cost_id"],
+          isOneToOne: false,
+          referencedRelation: "landed_costs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     landed_costs: {
       Row: {
@@ -7417,7 +9537,8 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     leave_balances: {
       Row: {
@@ -7468,7 +9589,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "leave_balances_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "leave_balances_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     leave_provisions: {
       Row: {
@@ -7522,7 +9658,29 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "leave_provisions_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "leave_provisions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "lp_accounting_entry_id_fkey",
+          columns: ["tenant_id", "accounting_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     leave_requests: {
       Row: {
@@ -7570,7 +9728,29 @@ export interface Database {
         tenant_id?: string
         manager_comment?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "leave_requests_approved_by_fkey",
+          columns: ["tenant_id", "approved_by"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "leave_requests_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "leave_requests_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     leave_rules: {
       Row: {
@@ -7639,7 +9819,15 @@ export interface Database {
         lateness_deduction_rate?: number
         lateness_grace_period?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "leave_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     legal_declarations: {
       Row: {
@@ -7684,7 +9872,15 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "legal_declarations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     legal_watch: {
       Row: {
@@ -7726,7 +9922,8 @@ export interface Database {
         read?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     legislation_packs: {
       Row: {
@@ -7786,7 +9983,15 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "legislation_packs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     lettrage_differences: {
       Row: {
@@ -7834,7 +10039,22 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "ld_generated_entry_id_fkey",
+          columns: ["tenant_id", "generated_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "lettrage_differences_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     lettrage_groups: {
       Row: {
@@ -7876,7 +10096,8 @@ export interface Database {
         created_by?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     machines: {
       Row: {
@@ -7915,7 +10136,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "machines_work_center_id_fkey",
+          columns: ["tenant_id", "work_center_id"],
+          isOneToOne: false,
+          referencedRelation: "work_centers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     maintenance_plans: {
       Row: {
@@ -7957,7 +10186,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     maintenance_records: {
       Row: {
@@ -8002,7 +10232,15 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "maintenance_records_plan_id_fkey",
+          columns: ["tenant_id", "plan_id"],
+          isOneToOne: false,
+          referencedRelation: "maintenance_plans",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     manufacturing_orders: {
       Row: {
@@ -8098,7 +10336,50 @@ export interface Database {
         qty_scrapped?: number
         cost_variance?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "manufacturing_orders_bom_id_fkey",
+          columns: ["tenant_id", "bom_id"],
+          isOneToOne: false,
+          referencedRelation: "boms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_parent_mo_id_fkey",
+          columns: ["tenant_id", "parent_mo_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_routing_id_fkey",
+          columns: ["tenant_id", "routing_id"],
+          isOneToOne: false,
+          referencedRelation: "routings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "manufacturing_orders_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     marking_types: {
       Row: {
@@ -8131,7 +10412,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "marking_types_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     meal_voucher_config: {
       Row: {
@@ -8167,7 +10456,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "meal_voucher_config_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     medical_exams: {
       Row: {
@@ -8212,7 +10509,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "medical_exams_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "medical_exams_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     metric_definitions: {
       Row: {
@@ -8311,7 +10623,15 @@ export interface Database {
         install_platform?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mirror_servers_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     mirror_verification_details: {
       Row: {
@@ -8344,7 +10664,22 @@ export interface Database {
         verified_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mirror_verification_details_mirror_server_id_fkey",
+          columns: ["tenant_id", "mirror_server_id"],
+          isOneToOne: false,
+          referencedRelation: "mirror_servers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "mirror_verification_details_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     mo_consumptions: {
       Row: {
@@ -8380,7 +10715,15 @@ export interface Database {
         variance_quantity?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mo_consumptions_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     mo_operations: {
       Row: {
@@ -8434,7 +10777,15 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mo_operations_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     module_document_access_log: {
       Row: {
@@ -8467,7 +10818,29 @@ export interface Database {
         user_agent?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "module_document_access_log_document_id_fkey",
+          columns: ["tenant_id", "document_id"],
+          isOneToOne: false,
+          referencedRelation: "module_documents",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "module_document_access_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "module_document_access_log_user_id_fkey",
+          columns: ["tenant_id", "user_id"],
+          isOneToOne: false,
+          referencedRelation: "tenant_users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     module_document_shares: {
       Row: {
@@ -8506,7 +10879,29 @@ export interface Database {
         download_count?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "module_document_shares_created_by_fkey",
+          columns: ["tenant_id", "created_by"],
+          isOneToOne: false,
+          referencedRelation: "tenant_users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "module_document_shares_document_id_fkey",
+          columns: ["tenant_id", "document_id"],
+          isOneToOne: false,
+          referencedRelation: "module_documents",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "module_document_shares_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     module_documents: {
       Row: {
@@ -8590,7 +10985,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "module_documents_approved_by_fkey",
+          columns: ["tenant_id", "approved_by"],
+          isOneToOne: false,
+          referencedRelation: "tenant_users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "module_documents_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "module_documents_uploaded_by_fkey",
+          columns: ["tenant_id", "uploaded_by"],
+          isOneToOne: false,
+          referencedRelation: "tenant_users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     mrp_pending_docs: {
       Row: {
@@ -8623,7 +11040,15 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mrp_pending_docs_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     mrp_proposals: {
       Row: {
@@ -8680,7 +11105,36 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "mrp_proposals_bom_id_fkey",
+          columns: ["tenant_id", "bom_id"],
+          isOneToOne: false,
+          referencedRelation: "boms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "mrp_proposals_mrp_run_id_fkey",
+          columns: ["tenant_id", "mrp_run_id"],
+          isOneToOne: false,
+          referencedRelation: "mrp_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "mrp_proposals_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "mrp_proposals_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     mrp_runs: {
       Row: {
@@ -8713,7 +11167,8 @@ export interface Database {
         summary?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     nf525_event_log: {
       Row: {
@@ -8767,7 +11222,8 @@ export interface Database {
         closed?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     nf525_period_closures: {
       Row: {
@@ -8797,7 +11253,8 @@ export interface Database {
         closed_by?: string
         closed_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     notification_email_queue: {
       Row: {
@@ -8842,7 +11299,15 @@ export interface Database {
         created_at?: string
         metadata?: Json
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "notification_email_queue_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     notification_preferences: {
       Row: {
@@ -8875,7 +11340,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "notification_preferences_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "notification_preferences_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     notifications: {
       Row: {
@@ -8917,7 +11397,15 @@ export interface Database {
         read_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "notifications_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     of_consumptions: {
       Row: {
@@ -8959,7 +11447,22 @@ export interface Database {
         created_at?: string
         lot_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "of_consumptions_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "of_consumptions_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     of_document_access: {
       Row: {
@@ -8992,7 +11495,15 @@ export interface Database {
         can_export?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "of_document_access_user_id_fkey",
+          columns: ["tenant_id", "user_id"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     of_labels: {
       Row: {
@@ -9031,7 +11542,22 @@ export interface Database {
         is_declared?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "of_labels_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "of_labels_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     of_lots: {
       Row: {
@@ -9073,7 +11599,22 @@ export interface Database {
         expiry_type?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "of_lots_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "of_lots_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     online_payments: {
       Row: {
@@ -9118,7 +11659,29 @@ export interface Database {
         paid_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "online_payments_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "online_payments_invoice_id_fkey",
+          columns: ["tenant_id", "invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "online_payments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     overtime_tiers: {
       Row: {
@@ -9148,7 +11711,8 @@ export interface Database {
         is_conventional?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     partner_bank_accounts: {
       Row: {
@@ -9199,7 +11763,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "partner_bank_accounts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     partner_categories: {
       Row: {
@@ -9226,7 +11798,22 @@ export interface Database {
         parent_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "partner_categories_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pc_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "partner_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     partner_category_mappings: {
       Row: {
@@ -9253,7 +11840,22 @@ export interface Database {
         partner_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "partner_category_mappings_category_id_fkey",
+          columns: ["tenant_id", "category_id"],
+          isOneToOne: false,
+          referencedRelation: "partner_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "partner_category_mappings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     partner_contacts: {
       Row: {
@@ -9313,7 +11915,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "partner_contacts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     pas_rates: {
       Row: {
@@ -9346,7 +11956,22 @@ export interface Database {
         source?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pas_rates_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pas_rates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     pay_recalls: {
       Row: {
@@ -9382,7 +12007,22 @@ export interface Database {
         processed_pay_run_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pay_recalls_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pay_recalls_processed_pay_run_id_fkey",
+          columns: ["tenant_id", "processed_pay_run_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pay_runs: {
       Row: {
@@ -9427,7 +12067,15 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pay_runs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     pay_slip_clarified: {
       Row: {
@@ -9493,7 +12141,22 @@ export interface Database {
         net_imposable?: number
         net_paid?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pay_slip_clarified_pay_slip_id_fkey",
+          columns: ["tenant_id", "pay_slip_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_slips",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pay_slip_clarified_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     pay_slips: {
       Row: {
@@ -9571,7 +12234,29 @@ export interface Database {
         journal_entry_id?: string
         journal_posted?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pay_slips_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pay_slips_pay_run_id_fkey",
+          columns: ["tenant_id", "pay_run_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pay_slips_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payment_orders: {
       Row: {
@@ -9640,7 +12325,29 @@ export interface Database {
         amount_currency?: number
         exchange_gain_loss?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payment_orders_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "payment_orders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "payment_orders_third_party_id_fkey",
+          columns: ["tenant_id", "third_party_id"],
+          isOneToOne: false,
+          referencedRelation: "third_party_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     payment_promises: {
       Row: {
@@ -9682,7 +12389,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payment_promises_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payment_templates_compta: {
       Row: {
@@ -9724,7 +12439,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payment_templates_compta_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payment_terms: {
       Row: {
@@ -9775,7 +12498,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payment_terms_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payroll_account_mapping: {
       Row: {
@@ -9799,7 +12530,15 @@ export interface Database {
         account_code?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_account_mapping_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payroll_accounting_entries: {
       Row: {
@@ -9844,7 +12583,29 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_accounting_entries_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "payroll_accounting_entries_pay_run_id_fkey",
+          columns: ["tenant_id", "pay_run_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "payroll_accounting_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payroll_archives: {
       Row: {
@@ -9880,7 +12641,15 @@ export interface Database {
         retention_until?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_archives_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     payroll_component_rates: {
       Row: {
@@ -9919,7 +12688,15 @@ export interface Database {
         end_date?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_component_rates_component_id_fkey",
+          columns: ["tenant_id", "component_id"],
+          isOneToOne: false,
+          referencedRelation: "payroll_components",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     payroll_components: {
       Row: {
@@ -9973,7 +12750,8 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     payroll_cumulative: {
       Row: {
@@ -10039,7 +12817,8 @@ export interface Database {
         reduction_generale?: number
         overtime_exemption_used?: number
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     payroll_legal_parameters: {
       Row: {
@@ -10072,7 +12851,8 @@ export interface Database {
         valid_to?: string
         source?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     payroll_tax_grid_lines: {
       Row: {
@@ -10168,7 +12948,15 @@ export interface Database {
         rate_employer_param?: string
         source?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_tax_grid_lines_grid_id_fkey",
+          columns: ["grid_id"],
+          isOneToOne: true,
+          referencedRelation: "payroll_tax_grids",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payroll_tax_grids: {
       Row: {
@@ -10219,7 +13007,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_tax_grids_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     payroll_templates: {
       Row: {
@@ -10252,7 +13048,8 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     payroll_variable_elements: {
       Row: {
@@ -10303,7 +13100,29 @@ export interface Database {
         integrated?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "payroll_variable_elements_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "payroll_variable_elements_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pve_pay_run_id_fkey",
+          columns: ["tenant_id", "pay_run_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pick_list_lines: {
       Row: {
@@ -10345,7 +13164,29 @@ export interface Database {
         picked_quantity?: number
         pick_order?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pick_list_lines_location_id_fkey",
+          columns: ["tenant_id", "location_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouse_locations",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pick_list_lines_pick_list_id_fkey",
+          columns: ["tenant_id", "pick_list_id"],
+          isOneToOne: false,
+          referencedRelation: "pick_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pick_list_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pick_lists: {
       Row: {
@@ -10390,7 +13231,15 @@ export interface Database {
         wave_id?: string
         tour_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pick_lists_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     planning_slots: {
       Row: {
@@ -10447,7 +13296,36 @@ export interface Database {
         employee_id?: string
         bloque_par_absence?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "planning_slots_machine_id_fkey",
+          columns: ["tenant_id", "machine_id"],
+          isOneToOne: false,
+          referencedRelation: "machines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "planning_slots_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "planning_slots_routing_operation_id_fkey",
+          columns: ["tenant_id", "routing_operation_id"],
+          isOneToOne: false,
+          referencedRelation: "routing_operations",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "planning_slots_work_center_id_fkey",
+          columns: ["tenant_id", "work_center_id"],
+          isOneToOne: false,
+          referencedRelation: "work_centers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     platform_admins: {
       Row: {
@@ -10462,7 +13340,8 @@ export interface Database {
         auth_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     pos_payment_methods: {
       Row: {
@@ -10498,7 +13377,15 @@ export interface Database {
         display_order?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_payment_methods_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     pos_payments: {
       Row: {
@@ -10528,7 +13415,29 @@ export interface Database {
         transaction_reference?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_payments_payment_method_id_fkey",
+          columns: ["tenant_id", "payment_method_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_payment_methods",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pos_payments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pos_payments_ticket_id_fkey",
+          columns: ["tenant_id", "ticket_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_tickets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pos_sessions: {
       Row: {
@@ -10576,7 +13485,22 @@ export interface Database {
         notes?: string
         session_number?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_sessions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pos_sessions_terminal_id_fkey",
+          columns: ["tenant_id", "terminal_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_terminals",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pos_terminals: {
       Row: {
@@ -10606,7 +13530,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_terminals_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pos_terminals_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pos_ticket_lines: {
       Row: {
@@ -10645,7 +13584,29 @@ export interface Database {
         line_total?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_ticket_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pos_ticket_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pos_ticket_lines_ticket_id_fkey",
+          columns: ["tenant_id", "ticket_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_tickets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     pos_tickets: {
       Row: {
@@ -10735,7 +13696,36 @@ export interface Database {
         voided_at?: string
         void_reason?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "pos_tickets_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pos_tickets_session_id_fkey",
+          columns: ["tenant_id", "session_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_sessions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "pos_tickets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "pos_tickets_terminal_id_fkey",
+          columns: ["tenant_id", "terminal_id"],
+          isOneToOne: false,
+          referencedRelation: "pos_terminals",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     price_list_customers: {
       Row: {
@@ -10753,7 +13743,22 @@ export interface Database {
         customer_id?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "price_list_customers_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "price_list_customers_price_list_id_fkey",
+          columns: ["tenant_id", "price_list_id"],
+          isOneToOne: false,
+          referencedRelation: "price_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     price_list_lines: {
       Row: {
@@ -10783,7 +13788,29 @@ export interface Database {
         discount_percent?: number
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "price_list_lines_price_list_id_fkey",
+          columns: ["tenant_id", "price_list_id"],
+          isOneToOne: false,
+          referencedRelation: "price_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "price_list_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "price_list_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     price_lists: {
       Row: {
@@ -10837,7 +13864,15 @@ export interface Database {
         base_price_list_id?: string
         discount_percent?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "price_lists_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     product_attributes: {
       Row: {
@@ -10864,7 +13899,8 @@ export interface Database {
         options?: Json
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     product_batches: {
       Row: {
@@ -10897,7 +13933,15 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_batches_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     product_categories: {
       Row: {
@@ -10936,7 +13980,15 @@ export interface Database {
         updated_at?: string
         variation_account_code?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_categories_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "product_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     product_equivalences: {
       Row: {
@@ -10963,7 +14015,22 @@ export interface Database {
         conversion_ratio?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_equivalences_equivalent_product_id_fkey",
+          columns: ["tenant_id", "equivalent_product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_equivalences_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     product_grid_combinations: {
       Row: {
@@ -11002,7 +14069,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_grid_combinations_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_grid_combinations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     product_grids: {
       Row: {
@@ -11035,7 +14117,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_grids_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_grids_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     product_links: {
       Row: {
@@ -11065,7 +14162,29 @@ export interface Database {
         quantity?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_links_linked_product_id_fkey",
+          columns: ["tenant_id", "linked_product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_links_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_links_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     product_packagings: {
       Row: {
@@ -11104,7 +14223,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_packagings_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_packagings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     product_serial_numbers: {
       Row: {
@@ -11137,7 +14271,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_serial_numbers_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     product_substitutes: {
       Row: {
@@ -11164,7 +14306,22 @@ export interface Database {
         priority?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_substitutes_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "product_substitutes_substitute_id_fkey",
+          columns: ["tenant_id", "substitute_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     product_variants: {
       Row: {
@@ -11200,7 +14357,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "product_variants_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     production_forecasts: {
       Row: {
@@ -11248,7 +14413,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "production_forecasts_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     products: {
       Row: {
@@ -11386,7 +14559,43 @@ export interface Database {
         purchase_uom_id?: string
         sale_uom_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "products_category_fk",
+          columns: ["tenant_id", "category_id"],
+          isOneToOne: false,
+          referencedRelation: "product_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "products_purchase_uom_id_fkey",
+          columns: ["tenant_id", "purchase_uom_id"],
+          isOneToOne: false,
+          referencedRelation: "uoms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "products_sale_uom_id_fkey",
+          columns: ["tenant_id", "sale_uom_id"],
+          isOneToOne: false,
+          referencedRelation: "uoms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "products_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "products_uom_id_fkey",
+          columns: ["tenant_id", "uom_id"],
+          isOneToOne: false,
+          referencedRelation: "uoms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     project_activity_log: {
       Row: {
@@ -11428,7 +14637,29 @@ export interface Database {
         description?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_activity_log_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_activity_log_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_activity_log_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_docs: {
       Row: {
@@ -11461,7 +14692,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_docs_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     project_members: {
       Row: {
@@ -11491,7 +14730,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_members_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_members_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_members_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_milestones: {
       Row: {
@@ -11533,7 +14794,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_milestones_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_milestones_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_notifications: {
       Row: {
@@ -11575,7 +14851,36 @@ export interface Database {
         action_url?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_notifications_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_notifications_recipient_id_fkey",
+          columns: ["tenant_id", "recipient_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_notifications_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_notifications_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_stages: {
       Row: {
@@ -11623,7 +14928,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_stages_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_tags: {
       Row: {
@@ -11647,7 +14960,15 @@ export interface Database {
         color?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_tags_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_task_assignees: {
       Row: {
@@ -11662,7 +14983,22 @@ export interface Database {
         task_id?: string
         employee_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_task_assignees_employee_id_fkey",
+          columns: ["employee_id"],
+          isOneToOne: true,
+          referencedRelation: "employees",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "project_task_assignees_task_id_fkey",
+          columns: ["task_id"],
+          isOneToOne: true,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_task_dependencies: {
       Row: {
@@ -11692,7 +15028,29 @@ export interface Database {
         lag_days?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_task_dependencies_depends_on_task_id_fkey",
+          columns: ["tenant_id", "depends_on_task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_dependencies_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_dependencies_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_task_tags: {
       Row: {
@@ -11710,7 +15068,29 @@ export interface Database {
         tag_id?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_task_tags_tag_id_fkey",
+          columns: ["tenant_id", "tag_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tags",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_tags_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_tags_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_task_templates: {
       Row: {
@@ -11764,7 +15144,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_task_templates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_task_watchers: {
       Row: {
@@ -11788,7 +15176,29 @@ export interface Database {
         employee_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_task_watchers_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_watchers_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_task_watchers_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_tasks: {
       Row: {
@@ -11911,7 +15321,43 @@ export interface Database {
         total_slack?: number
         is_critical_path?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_tasks_assignee_id_fkey",
+          columns: ["tenant_id", "assignee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_tasks_milestone_id_fkey",
+          columns: ["tenant_id", "milestone_id"],
+          isOneToOne: false,
+          referencedRelation: "project_milestones",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_tasks_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_tasks_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_tasks_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     project_time_entries: {
       Row: {
@@ -11962,7 +15408,36 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "project_time_entries_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_time_entries_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_time_entries_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "project_time_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     projects: {
       Row: {
@@ -12061,7 +15536,29 @@ export interface Database {
         baseline_end_date?: string
         baseline_budget?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "proj_manager_id_fkey",
+          columns: ["tenant_id", "manager_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "projects_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "projects_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     promotions: {
       Row: {
@@ -12118,7 +15615,36 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "promotions_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "promotions_free_product_id_fkey",
+          columns: ["tenant_id", "free_product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "promotions_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "promotions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     prospects: {
       Row: {
@@ -12178,7 +15704,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "prospects_assigned_rep_id_fkey",
+          columns: ["tenant_id", "assigned_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "prospects_converted_customer_id_fkey",
+          columns: ["tenant_id", "converted_customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     public_holidays: {
       Row: {
@@ -12211,7 +15752,15 @@ export interface Database {
         is_working_day?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "public_holidays_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_credit_lines: {
       Row: {
@@ -12262,7 +15811,29 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_credit_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_credit_lines_purchase_credit_id_fkey",
+          columns: ["tenant_id", "purchase_credit_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_credit_notes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_credit_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_credit_notes: {
       Row: {
@@ -12334,7 +15905,36 @@ export interface Database {
         supplier_reference?: string
         validated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_credit_notes_purchase_invoice_id_fkey",
+          columns: ["tenant_id", "purchase_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_credit_notes_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_credit_notes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "purchase_credit_notes_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     purchase_invoice_lines: {
       Row: {
@@ -12394,7 +15994,43 @@ export interface Database {
         vat_amount?: number
         analytic_section_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_invoice_lines_analytic_section_fk",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoice_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoice_lines_purchase_invoice_id_fkey",
+          columns: ["tenant_id", "purchase_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoice_lines_purchase_order_line_id_fkey",
+          columns: ["tenant_id", "purchase_order_line_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_order_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoice_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_invoices: {
       Row: {
@@ -12502,7 +16138,50 @@ export interface Database {
         supplier_reference?: string
         created_by?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_invoices_fiscal_position_id_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoices_goods_receipt_id_fkey",
+          columns: ["tenant_id", "goods_receipt_id"],
+          isOneToOne: false,
+          referencedRelation: "goods_receipts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoices_purchase_order_id_fkey",
+          columns: ["tenant_id", "purchase_order_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoices_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_invoices_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "purchase_invoices_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     purchase_order_lines: {
       Row: {
@@ -12541,7 +16220,29 @@ export interface Database {
         tenant_id?: string
         line_order?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_order_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_order_lines_purchase_order_id_fkey",
+          columns: ["tenant_id", "purchase_order_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_order_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_orders: {
       Row: {
@@ -12589,7 +16290,22 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_orders_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_orders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_request_lines: {
       Row: {
@@ -12631,7 +16347,36 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_request_lines_preferred_supplier_id_fkey",
+          columns: ["tenant_id", "preferred_supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_request_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_request_lines_purchase_request_id_fkey",
+          columns: ["tenant_id", "purchase_request_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_requests",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "purchase_request_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     purchase_requests: {
       Row: {
@@ -12676,7 +16421,15 @@ export interface Database {
         approved_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "purchase_requests_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     quality_checks: {
       Row: {
@@ -12721,7 +16474,15 @@ export interface Database {
         quantity_checked?: number
         quantity_rejected?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "quality_checks_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     quality_control_plans: {
       Row: {
@@ -12757,7 +16518,8 @@ export interface Database {
         sampling_rate?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     quality_control_points: {
       Row: {
@@ -12796,7 +16558,15 @@ export interface Database {
         is_mandatory?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "quality_control_points_plan_id_fkey",
+          columns: ["tenant_id", "plan_id"],
+          isOneToOne: false,
+          referencedRelation: "quality_control_plans",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     quote_lines: {
       Row: {
@@ -12841,7 +16611,29 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "quote_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "quote_lines_quote_id_fkey",
+          columns: ["tenant_id", "quote_id"],
+          isOneToOne: false,
+          referencedRelation: "quotes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "quote_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     quotes: {
       Row: {
@@ -12901,7 +16693,29 @@ export interface Database {
         transformed_to_order_id?: string
         transformation_status?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "quotes_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "quotes_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "quotes_transformed_to_order_id_fkey",
+          columns: ["tenant_id", "transformed_to_order_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     recurring_entries: {
       Row: {
@@ -12964,7 +16778,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "recurring_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     recurring_invoice_templates: {
       Row: {
@@ -13000,7 +16822,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "recurring_invoice_templates_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     regularization_entries: {
       Row: {
@@ -13075,7 +16905,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "reg_created_entry_id_fkey",
+          columns: ["tenant_id", "created_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "reg_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "regularization_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     reimputation_logs: {
       Row: {
@@ -13120,7 +16972,36 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "reimputation_logs_original_entry_id_fkey",
+          columns: ["tenant_id", "original_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "reimputation_logs_original_line_id_fkey",
+          columns: ["tenant_id", "original_line_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_lines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "reimputation_logs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "rl_reimputed_entry_id_fkey",
+          columns: ["tenant_id", "reimputed_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     reminder_levels: {
       Row: {
@@ -13159,7 +17040,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "reminder_levels_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     reorder_rules: {
       Row: {
@@ -13198,7 +17087,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     reporting_plans: {
       Row: {
@@ -13243,7 +17133,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "reporting_plans_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     revision_cycles: {
       Row: {
@@ -13285,7 +17183,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "revision_cycles_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     rgpd_requests: {
       Row: {
@@ -13327,7 +17233,15 @@ export interface Database {
         processed_at?: string
         notes?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "rgpd_requests_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     rh_dashboard_configs: {
       Row: {
@@ -13360,7 +17274,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "rh_dashboard_configs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     rh_knowledge_base: {
       Row: {
@@ -13402,7 +17324,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "rh_knowledge_base_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     rh_reports: {
       Row: {
@@ -13444,7 +17374,15 @@ export interface Database {
         shared?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "rh_reports_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     rh_requests: {
       Row: {
@@ -13486,7 +17424,22 @@ export interface Database {
         resolved_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "rh_requests_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "rh_requests_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     role_permissions: {
       Row: {
@@ -13510,7 +17463,15 @@ export interface Database {
         permission?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "role_permissions_role_id_fkey",
+          columns: ["tenant_id", "role_id"],
+          isOneToOne: false,
+          referencedRelation: "tenant_roles",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     routing_operations: {
       Row: {
@@ -13567,7 +17528,43 @@ export interface Database {
         st_quantity?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "routing_operations_machine_id_fkey",
+          columns: ["tenant_id", "machine_id"],
+          isOneToOne: false,
+          referencedRelation: "machines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "routing_operations_routing_id_fkey",
+          columns: ["tenant_id", "routing_id"],
+          isOneToOne: false,
+          referencedRelation: "routings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "routing_operations_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "routing_operations_tooling_id_fkey",
+          columns: ["tenant_id", "tooling_id"],
+          isOneToOne: false,
+          referencedRelation: "toolings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "routing_operations_work_center_id_fkey",
+          columns: ["tenant_id", "work_center_id"],
+          isOneToOne: false,
+          referencedRelation: "work_centers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     routings: {
       Row: {
@@ -13606,7 +17603,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "routings_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     salary_advances: {
       Row: {
@@ -13642,7 +17647,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "salary_advances_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     sales_order_lines: {
       Row: {
@@ -13681,7 +17694,29 @@ export interface Database {
         tenant_id?: string
         delivered_quantity?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "sales_order_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "sales_order_lines_sales_order_id_fkey",
+          columns: ["tenant_id", "sales_order_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "sales_order_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     sales_orders: {
       Row: {
@@ -13744,7 +17779,29 @@ export interface Database {
         delivery_status?: string
         credit_warning?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "sales_orders_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "sales_orders_quote_id_fkey",
+          columns: ["tenant_id", "quote_id"],
+          isOneToOne: false,
+          referencedRelation: "quotes",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "sales_orders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     sales_representatives: {
       Row: {
@@ -13780,7 +17837,8 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     saved_filters: {
       Row: {
@@ -13813,7 +17871,15 @@ export interface Database {
         is_default?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "saved_filters_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     sepa_payment_orders: {
       Row: {
@@ -13867,7 +17933,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "sepa_payment_orders_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "spo_pay_run_id_fkey",
+          columns: ["tenant_id", "pay_run_id"],
+          isOneToOne: false,
+          referencedRelation: "pay_runs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     service_contracts: {
       Row: {
@@ -13927,7 +18008,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "service_contracts_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "service_contracts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     service_ticket_messages: {
       Row: {
@@ -13963,7 +18059,22 @@ export interface Database {
         is_internal?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "service_ticket_messages_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "service_ticket_messages_ticket_id_fkey",
+          columns: ["tenant_id", "ticket_id"],
+          isOneToOne: false,
+          referencedRelation: "service_tickets",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     service_tickets: {
       Row: {
@@ -14032,7 +18143,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "service_tickets_contact_id_fkey",
+          columns: ["tenant_id", "contact_id"],
+          isOneToOne: false,
+          referencedRelation: "customer_contacts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "service_tickets_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "service_tickets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     sick_leaves: {
       Row: {
@@ -14080,7 +18213,15 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "sick_leaves_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     social_declarations: {
       Row: {
@@ -14155,7 +18296,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "social_declarations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     sql_migrations_tracker: {
       Row: {
@@ -14179,7 +18328,8 @@ export interface Database {
         status?: string
         error_message?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     st_orders: {
       Row: {
@@ -14236,7 +18386,36 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "st_orders_manufacturing_order_id_fkey",
+          columns: ["tenant_id", "manufacturing_order_id"],
+          isOneToOne: false,
+          referencedRelation: "manufacturing_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_orders_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_orders_routing_operation_id_fkey",
+          columns: ["tenant_id", "routing_operation_id"],
+          isOneToOne: false,
+          referencedRelation: "routing_operations",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_orders_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     st_receipt_lines: {
       Row: {
@@ -14269,7 +18448,22 @@ export interface Database {
         line_type?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "st_receipt_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_receipt_lines_st_receipt_id_fkey",
+          columns: ["tenant_id", "st_receipt_id"],
+          isOneToOne: false,
+          referencedRelation: "st_receipts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     st_receipts: {
       Row: {
@@ -14311,7 +18505,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "st_receipts_st_order_id_fkey",
+          columns: ["tenant_id", "st_order_id"],
+          isOneToOne: false,
+          referencedRelation: "st_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_receipts_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     st_shipment_lines: {
       Row: {
@@ -14341,7 +18550,22 @@ export interface Database {
         unit?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "st_shipment_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_shipment_lines_st_shipment_id_fkey",
+          columns: ["tenant_id", "st_shipment_id"],
+          isOneToOne: false,
+          referencedRelation: "st_shipments",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     st_shipments: {
       Row: {
@@ -14377,7 +18601,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "st_shipments_st_order_id_fkey",
+          columns: ["tenant_id", "st_order_id"],
+          isOneToOne: false,
+          referencedRelation: "st_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "st_shipments_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     staff_requirements: {
       Row: {
@@ -14413,7 +18652,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "staff_requirements_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     standard_labels: {
       Row: {
@@ -14437,7 +18684,15 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "standard_labels_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     stat_fields: {
       Row: {
@@ -14473,7 +18728,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "stat_fields_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     stock_alerts: {
       Row: {
@@ -14515,7 +18778,29 @@ export interface Database {
         resolved_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "stock_alerts_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_alerts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "stock_alerts_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     stock_count_cycles: {
       Row: {
@@ -14554,7 +18839,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     stock_movement_phantoms: {
       Row: {
@@ -14608,7 +18894,36 @@ export interface Database {
         decided_at?: string
         replay_movement_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "stock_movement_phantoms_movement_fkey",
+          columns: ["tenant_id", "movement_id"],
+          isOneToOne: false,
+          referencedRelation: "stock_movements",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_movement_phantoms_product_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_movement_phantoms_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "stock_movement_phantoms_warehouse_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     stock_movements: {
       Row: {
@@ -14671,7 +18986,29 @@ export interface Database {
         serial_id?: string
         location_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "sm_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_movements_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_movements_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     stock_quantities: {
       Row: {
@@ -14725,7 +19062,36 @@ export interface Database {
         incoming_quantity?: number
         quantity_available?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "stock_quantities_location_id_fkey",
+          columns: ["tenant_id", "location_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouse_locations",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_quantities_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_quantities_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "stock_quantities_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     stock_reservations: {
       Row: {
@@ -14767,7 +19133,8 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     stock_transfer_lines: {
       Row: {
@@ -14797,7 +19164,15 @@ export interface Database {
         unit_cost?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "stock_transfer_lines_transfer_id_fkey",
+          columns: ["tenant_id", "transfer_id"],
+          isOneToOne: false,
+          referencedRelation: "stock_transfers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     stock_transfers: {
       Row: {
@@ -14839,7 +19214,8 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     stock_valuation_layers: {
       Row: {
@@ -14881,7 +19257,8 @@ export interface Database {
         created_at?: string
         seq?: number
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     supplier_contacts: {
       Row: {
@@ -14926,7 +19303,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "supplier_contacts_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_contacts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     supplier_delivery_schedules: {
       Row: {
@@ -14986,7 +19378,36 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "supplier_delivery_schedules_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_delivery_schedules_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_delivery_schedules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "supplier_delivery_schedules_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     supplier_payments: {
       Row: {
@@ -15049,7 +19470,43 @@ export interface Database {
         transferred_entry_id?: string
         invoice_number?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "supplier_payments_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_payments_purchase_invoice_id_fkey",
+          columns: ["tenant_id", "purchase_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_payments_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_payments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "supplier_payments_transferred_entry_id_fkey",
+          columns: ["tenant_id", "transferred_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     supplier_price_list_lines: {
       Row: {
@@ -15088,7 +19545,29 @@ export interface Database {
         lead_time_days?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "supplier_price_list_lines_price_list_id_fkey",
+          columns: ["tenant_id", "price_list_id"],
+          isOneToOne: false,
+          referencedRelation: "supplier_price_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_price_list_lines_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_price_list_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     supplier_price_lists: {
       Row: {
@@ -15130,7 +19609,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "supplier_price_lists_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "supplier_price_lists_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     suppliers: {
       Row: {
@@ -15170,6 +19664,8 @@ export interface Database {
         account_tiers: string | null
         account_collectif: string | null
         import_batch_id: string | null
+        payment_term_id: string | null
+        fiscal_position_id: string | null
       }
       Insert: {
         id?: string
@@ -15208,6 +19704,8 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
       Update: {
         id?: string
@@ -15246,8 +19744,60 @@ export interface Database {
         account_tiers?: string
         account_collectif?: string
         import_batch_id?: string
+        payment_term_id?: string
+        fiscal_position_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "suppliers_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_fiscal_position_tenant_fkey",
+          columns: ["tenant_id", "fiscal_position_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_positions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_payment_term_tenant_fkey",
+          columns: ["tenant_id", "payment_term_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_terms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_price_list_id_fkey",
+          columns: ["tenant_id", "price_list_id"],
+          isOneToOne: false,
+          referencedRelation: "price_lists",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_sales_rep_id_fkey",
+          columns: ["tenant_id", "sales_rep_id"],
+          isOneToOne: false,
+          referencedRelation: "sales_representatives",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "suppliers_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     task_action_attachments: {
       Row: {
@@ -15286,7 +19836,29 @@ export interface Database {
         uploader_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "task_action_attachments_task_action_id_fkey",
+          columns: ["tenant_id", "task_action_id"],
+          isOneToOne: false,
+          referencedRelation: "task_actions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_action_attachments_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_action_attachments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     task_actions: {
       Row: {
@@ -15322,7 +19894,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "task_actions_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_actions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     task_comments: {
       Row: {
@@ -15352,7 +19939,22 @@ export interface Database {
         author_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "task_comments_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_comments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     task_documents: {
       Row: {
@@ -15391,7 +19993,29 @@ export interface Database {
         uploader_id?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "task_documents_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_documents_task_id_fkey",
+          columns: ["tenant_id", "task_id"],
+          isOneToOne: false,
+          referencedRelation: "project_tasks",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "task_documents_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tax_cash_basis_entries: {
       Row: {
@@ -15430,7 +20054,29 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tax_cash_basis_entries_tax_id_fkey",
+          columns: ["tenant_id", "tax_id"],
+          isOneToOne: false,
+          referencedRelation: "tax_rates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tax_cash_basis_entries_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "tcb_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     tax_groups: {
       Row: {
@@ -15454,7 +20100,15 @@ export interface Database {
         country_code?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tax_groups_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tax_payments: {
       Row: {
@@ -15511,7 +20165,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tax_payments_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tax_payments_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tax_payments_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tax_rates: {
       Row: {
@@ -15598,7 +20274,29 @@ export interface Database {
         analytic?: boolean
         fixed_amount?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tax_rates_pack_code_fkey",
+          columns: ["pack_code"],
+          isOneToOne: true,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "tax_rates_parent_tax_id_fkey",
+          columns: ["tenant_id", "parent_tax_id"],
+          isOneToOne: false,
+          referencedRelation: "tax_rates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tax_rates_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tax_repartition_lines: {
       Row: {
@@ -15634,7 +20332,22 @@ export interface Database {
         tag_ids?: string[]
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tax_repartition_lines_tax_id_fkey",
+          columns: ["tenant_id", "tax_id"],
+          isOneToOne: false,
+          referencedRelation: "tax_rates",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tax_repartition_lines_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tenant_onboarding_state: {
       Row: {
@@ -15691,7 +20404,8 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     tenant_roles: {
       Row: {
@@ -15721,7 +20435,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     tenant_users: {
       Row: {
@@ -15787,7 +20502,36 @@ export interface Database {
         guest_permissions?: Json
         custom_role_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tenant_users_auth_id_fkey",
+          columns: ["auth_id"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "tenant_users_custom_role_id_fkey",
+          columns: ["tenant_id", "custom_role_id"],
+          isOneToOne: false,
+          referencedRelation: "tenant_roles",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tenant_users_invited_by_fkey",
+          columns: ["tenant_id", "invited_by"],
+          isOneToOne: false,
+          referencedRelation: "tenant_users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tenant_users_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tenants: {
       Row: {
@@ -15868,7 +20612,22 @@ export interface Database {
         chart_pack_code?: string
         chart_provisional?: boolean
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tenants_chart_pack_code_fkey",
+          columns: ["chart_pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "tenants_legislation_pack_code_fkey",
+          columns: ["legislation_pack_code"],
+          isOneToOne: false,
+          referencedRelation: "legislation_packs",
+          referencedColumns: ["code"]
+        },
+      ]
     }
     third_party_accounts: {
       Row: {
@@ -15931,7 +20690,50 @@ export interface Database {
         default_bank_account_id?: string
         credit_limit?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "fk_tpa_payment_term",
+          columns: ["tenant_id", "payment_term_id"],
+          isOneToOne: false,
+          referencedRelation: "payment_terms",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "third_party_accounts_customer_id_fkey",
+          columns: ["tenant_id", "customer_id"],
+          isOneToOne: false,
+          referencedRelation: "customers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "third_party_accounts_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "third_party_accounts_supplier_id_fkey",
+          columns: ["tenant_id", "supplier_id"],
+          isOneToOne: false,
+          referencedRelation: "suppliers",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "third_party_accounts_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "tpa_default_bank_account_id_fkey",
+          columns: ["tenant_id", "default_bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     three_way_matches: {
       Row: {
@@ -15988,7 +20790,36 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "three_way_matches_goods_receipt_id_fkey",
+          columns: ["tenant_id", "goods_receipt_id"],
+          isOneToOne: false,
+          referencedRelation: "goods_receipts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "three_way_matches_purchase_invoice_id_fkey",
+          columns: ["tenant_id", "purchase_invoice_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_invoices",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "three_way_matches_purchase_order_id_fkey",
+          columns: ["tenant_id", "purchase_order_id"],
+          isOneToOne: false,
+          referencedRelation: "purchase_orders",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "three_way_matches_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     tier_ribs: {
       Row: {
@@ -16042,7 +20873,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tier_ribs_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "tier_ribs_third_party_account_id_fkey",
+          columns: ["tenant_id", "third_party_account_id"],
+          isOneToOne: false,
+          referencedRelation: "third_party_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     time_entries: {
       Row: {
@@ -16093,7 +20939,8 @@ export interface Database {
         approved_by?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     timesheets: {
       Row: {
@@ -16171,7 +21018,29 @@ export interface Database {
         approved_by?: string
         approved_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "timesheets_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "timesheets_project_id_fkey",
+          columns: ["tenant_id", "project_id"],
+          isOneToOne: false,
+          referencedRelation: "projects",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "timesheets_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     toolings: {
       Row: {
@@ -16213,7 +21082,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "toolings_machine_id_fkey",
+          columns: ["tenant_id", "machine_id"],
+          isOneToOne: false,
+          referencedRelation: "machines",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     tracking_warnings: {
       Row: {
@@ -16243,7 +21120,8 @@ export interface Database {
         message?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     treasury_recurring: {
       Row: {
@@ -16285,7 +21163,15 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "treasury_recurring_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     treasury_transfers: {
       Row: {
@@ -16330,7 +21216,29 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "treasury_transfers_from_account_id_fkey",
+          columns: ["tenant_id", "from_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "treasury_transfers_to_account_id_fkey",
+          columns: ["tenant_id", "to_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "tt_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     tvs_declarations: {
       Row: {
@@ -16381,7 +21289,15 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "tvs_declarations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     uom_categories: {
       Row: {
@@ -16402,7 +21318,8 @@ export interface Database {
         name?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     uoms: {
       Row: {
@@ -16438,7 +21355,15 @@ export interface Database {
         rounding?: number
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "uoms_category_id_fkey",
+          columns: ["tenant_id", "category_id"],
+          isOneToOne: false,
+          referencedRelation: "uom_categories",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     user_totp: {
       Row: {
@@ -16471,7 +21396,15 @@ export interface Database {
         enabled_at?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "user_totp_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     users: {
       Row: {
@@ -16510,7 +21443,22 @@ export interface Database {
         updated_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "users_auth_id_fkey",
+          columns: ["auth_id"],
+          isOneToOne: false,
+          referencedRelation: "users",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "users_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     v_tenant_id: {
       Row: {
@@ -16522,7 +21470,30 @@ export interface Database {
       Update: {
         id?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
+    }
+    v_us: {
+      Row: {
+        t: string | null
+        facture: string | null
+        ligne: string | null
+        client: string | null
+      }
+      Insert: {
+        t?: string
+        facture?: string
+        ligne?: string
+        client?: string
+      }
+      Update: {
+        t?: string
+        facture?: string
+        ligne?: string
+        client?: string
+      }
+      Relationships: [
+      ]
     }
     value_date_tracking: {
       Row: {
@@ -16561,7 +21532,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "value_date_tracking_bank_account_id_fkey",
+          columns: ["tenant_id", "bank_account_id"],
+          isOneToOne: false,
+          referencedRelation: "bank_accounts",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     vat_account_mapping: {
       Row: {
@@ -16600,7 +21579,8 @@ export interface Database {
         reverse_charge?: boolean
         account_name?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     vat_on_collections: {
       Row: {
@@ -16660,7 +21640,29 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "vat_on_collections_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "voc_fiscal_year_id_fkey",
+          columns: ["tenant_id", "fiscal_year_id"],
+          isOneToOne: false,
+          referencedRelation: "fiscal_years",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "voc_journal_entry_id_fkey",
+          columns: ["tenant_id", "journal_entry_id"],
+          isOneToOne: false,
+          referencedRelation: "journal_entries",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     vat_returns: {
       Row: {
@@ -16741,7 +21743,15 @@ export interface Database {
         vat_deductible?: number
         vat_to_pay?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "vat_returns_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     warehouse_locations: {
       Row: {
@@ -16792,7 +21802,22 @@ export interface Database {
         max_volume?: number
         max_pallets?: number
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "warehouse_locations_parent_id_fkey",
+          columns: ["tenant_id", "parent_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouse_locations",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "warehouse_locations_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     warehouse_users: {
       Row: {
@@ -16822,7 +21847,22 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "warehouse_users_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "warehouse_users_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     warehouses: {
       Row: {
@@ -16861,7 +21901,15 @@ export interface Database {
         created_at?: string
         tenant_id?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "warehouses_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     webhook_delivery_logs: {
       Row: {
@@ -16903,7 +21951,8 @@ export interface Database {
         error_message?: string
         delivered_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     webhook_delivery_queue: {
       Row: {
@@ -16978,7 +22027,15 @@ export interface Database {
         delivered_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "webhook_delivery_queue_endpoint_id_fkey",
+          columns: ["tenant_id", "endpoint_id"],
+          isOneToOne: false,
+          referencedRelation: "webhook_endpoints",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     webhook_endpoints: {
       Row: {
@@ -17014,7 +22071,8 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     webhook_event_catalog: {
       Row: {
@@ -17044,7 +22102,8 @@ export interface Database {
         is_active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     work_center_calendars: {
       Row: {
@@ -17077,7 +22136,8 @@ export interface Database {
         is_closed?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     work_centers: {
       Row: {
@@ -17110,7 +22170,8 @@ export interface Database {
         active?: boolean
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     work_hardship: {
       Row: {
@@ -17149,7 +22210,15 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "work_hardship_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
     }
     work_hardship_records: {
       Row: {
@@ -17197,7 +22266,22 @@ export interface Database {
         notes?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "work_hardship_records_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "work_hardship_records_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     work_stoppages: {
       Row: {
@@ -17296,7 +22380,22 @@ export interface Database {
         created_at?: string
         updated_at?: string
       }
-      Relationships: []
+      Relationships: [
+        {
+          foreignKeyName: "work_stoppages_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "work_stoppages_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
     }
     workflows: {
       Row: {
@@ -17332,7 +22431,8 @@ export interface Database {
         status?: string
         created_at?: string
       }
-      Relationships: []
+      Relationships: [
+      ]
     }
     }
     Views: Record<string, never>

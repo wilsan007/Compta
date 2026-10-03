@@ -13,7 +13,12 @@ export function EmployeeDashboardPage() {
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
   const navigate = useNavigate()
-  const [data, setData] = useState<any>(null)
+  // AUD-IDENTITE : l'etat est nomme depuis sa fonction de requete. Le retour
+  // declare `employee: Employee | null`, donc `emp?.first_name` est verifie :
+  // c'est une colonne nullable reelle, et non une propriete inventee. Le `?`
+  // reste necessaire — un compte connecte n est pas forcement un salarie
+  // (mesure du 29/09 : le portail ne doit pas casser sur ces comptes).
+  const [data, setData] = useState<Awaited<ReturnType<typeof getEmployeeDashboardData>>>(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

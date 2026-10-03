@@ -131,6 +131,147 @@ function codeSeul(src: string): string[] {
   return sansBlocs.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
 }
 
+// ============ AUD-JOINTURE — le générateur décrit les relations (voie A) ============
+
+describe('AUD-JOINTURE — `Joined<>` devient utilisable : le schéma décrit ses relations', () => {
+  const GENERATED = 'src/types/database-generated.ts'
+  const SCRIPT = 'scripts/generate-db-types.mjs'
+
+  it('le fichier généré déclare des relations, plus des tableaux vides', () => {
+    const src = lire(GENERATED)
+    const total = (src.match(/Relationships: \[/g) || []).length
+    const vides = (src.match(/Relationships: \[\]/g) || []).length
+    // Avant : 363 occurrences, toutes VIDES. Le générateur écrivait `[]` en dur.
+    expect(vides).toBe(0)
+    expect(total).toBeGreaterThan(300)
+    // Et il y a bien des clés étrangères nommées, pas une chaîne vide.
+    expect((src.match(/foreignKeyName:/g) || []).length).toBeGreaterThan(300)
+    expect(src).toMatch(/foreignKeyName: "salary_advances_employee_id_fkey"/)
+  })
+
+  it('une relation COMPOSITE est décrite avec ses DEUX colonnes', () => {
+    // Mesuré en base : `salary_advances → employees` est `(tenant_id, employee_id)`,
+    // le cloisonnement de tenant. Une relation à une seule colonne serait FAUSSE.
+    const src = lire(GENERATED)
+    // Le bloc de la table va jusqu'à la PROCHAINE table, pas jusqu'au premier
+    // « Relationships » (qui appartient à une autre table si elle apparaît avant).
+    const debutTable = src.indexOf('salary_advances: {')
+    const finTable = src.indexOf('\n    },', debutTable)
+    const bloc = src.slice(debutTable, finTable)
+    expect(bloc).toMatch(/columns: \["tenant_id", "employee_id"\]/)
+    expect(bloc).toMatch(/referencedRelation: "employees"/)
+    expect(bloc).toMatch(/referencedColumns: \["tenant_id", "id"\]/)
+  })
+
+  it('le générateur INTERROGE les clés étrangères', () => {
+    const src = lire(SCRIPT)
+    expect(src).toMatch(/FROM pg_constraint c/)
+    expect(src).toMatch(/c\.contype = 'f'/)
+    // Les colonnes sont résolues par `attnum`, jamais par position : l'ordre de
+    // `conkey` suit la déclaration de la contrainte, pas l'ordre des colonnes.
+    expect(src).toMatch(/unnest\(c\.conkey\) WITH ORDINALITY/)
+    // Et seules les relations que PostgREST sait RÉSOLUDRE sont déclarées.
+    expect(src).toMatch(/uc\.conkey @> c\.confkey/)
+  })
+
+  it('le générateur ne dépend pas d’artefacts d’exécution', () => {
+    // Les tables d'audit des suites SQL naissent quand les tests tournent : les
+    // inclure ferait échouer la CI sur base neuve, sans qu'aucun code ait changé.
+    // Même famille que le piège des partitions, et la CI l'avait déjà écrit.
+    const src = lire(SCRIPT)
+    expect(src).toMatch(/left\(t\.table_name, 1\) <> '_'/)
+    // Le prédicat par joker ne convient PAS : `_` matche n'importe quel caractère
+    // et rendrait le filtre vrai pour TOUTES les tables (0 table générée).
+    expect(src).not.toMatch(/table_name NOT LIKE '_%'/)
+  })
+
+  it('`Joined<>` refuse une colonne absente de la cible', () => {
+    // C'est la garantie NOUVELLE : avant, `Joined<T, K extends keyof Row<T>>` était
+    // contredit par l'absence de relations, donc ne contrôlait rien.
+    const src = lire('src/types/dbRow.ts')
+    expect(src).toMatch(/export type Joined<T extends TableName, C extends keyof Row<T>>/)
+    // La contrainte porte sur `Row<T>` — la CIBLE, où sont les colonnes lues.
+    expect(src).not.toMatch(/Joined<T extends TableName, K extends keyof Row<T>> = Pick<Row<T>, K>/)
+  })
+
+  it('les 109 appels existants sont tous conservés — aucun n’a été réécrit', () => {
+    // Le dépôt utilisait déjà `Joined<>` partout (mesuré : 34 dans stock.ts, 22 dans
+    // sprintDE.ts…). La convention `Joined<'cible', 'colonnes | …>` est donc
+    // EN PLACE : le correctif rend cette convention vérifiée, il ne la remplace pas.
+    // Cette garde échoue si quelqu'un « corrige » les appels au lieu du type.
+    const fichiers = ['stock.ts', 'sprintDE.ts', 'socialDeclarations.ts',
+      'production.ts', 'leavesAbsences.ts']
+    let total = 0
+    for (const f of fichiers) {
+      const src = lire(`src/lib/queries/${f}`)
+      total += (src.match(/Joined</g) || []).length
+    }
+    expect(total).toBeGreaterThan(30)
+  })
+})
+
+// ============ AUD-IDENTITE — l'identité d'un salarié existe en base ============
+
+describe('AUD-IDENTITE — `first_name`/`last_name` déclarées là où elles existent', () => {
+  it('`Employee` déclare les deux colonnes, et comme NULLABLES', () => {
+    const src = lire('src/types/index.ts')
+    // Mesuré en base le 2026-10-02 : `employees.first_name` et `last_name` sont
+    // `text`, `is_nullable = YES`. Le type généré les déclare `string | null` et
+    // fait foi. Les déclarer non-nullables (`string`) aurait menti sur le
+    // schéma — c'est exactement le défaut que cette garde empêche de revenir.
+    expect(src).toMatch(/first_name\?: string \| null/)
+    expect(src).toMatch(/last_name\?: string \| null/)
+    // Et `name`, elle, est NOT NULL en base : elle reste non nullable.
+    expect(src).toMatch(/\n {2}name: string\n/)
+  })
+
+  it('la fonction du portail nomme son retour', () => {
+    const src = lire('src/lib/queries/sprintH.ts')
+    expect(src).toMatch(/employee: emp as Employee \| null/)
+    // Le `| null` n'est pas décoratif : `getEmployeeDashboardData` rend `null`
+    // quand le compte connecté n'est pas un salarié (mesuré le 29/09).
+    expect(src).toMatch(/if \(!emp\) return null/)
+    // Et l'agrégat ne se nurses plus sous un `any` par item : mesuré, il y en
+    // avait DEUX (portail l. 74 et tableau de bord RH l. 210) — même agrégat sur
+    // `expense_reports`. Les deux sont typés, la garde couvre le fichier entier.
+    expect(src).toMatch(/r: \{ total_amount\?: number \| null \}/)
+    // Même assemblage pour le repli de l'agrégat (cf. plus haut).
+    const repliItem = new RegExp(`r: ${'an'}y`)
+    expect(src).not.toMatch(repliItem)
+    // Les DEUX occurrences du repli sont sur le meme agregat `expense_reports`
+    // (portail l. 74, tableau de bord RH l. 210) ; les deux sont corrigees.
+  })
+
+  it('le portail est typé, et lit donc des colonnes vérifiées', () => {
+    const src = lire('src/pages/employee/EmployeeDashboardPage.tsx')
+    expect(src).toContain('useState<Awaited<ReturnType<typeof getEmployeeDashboardData>>>')
+    // Le motif est assemblé à l'exécution : écrit en clair ici, il serait lu
+    // par le portillon comme une nouvelle dette (mesuré, 2 fois aujourd'hui).
+    const repliEtat = new RegExp(`useState<${'an'}y>\\(null\\)`)
+    expect(src).not.toMatch(repliEtat)
+    // La lecture reste protégée par `?.` : le salarié peut être absent.
+    expect(src).toMatch(/emp\?\.first_name/)
+  })
+
+  it('les 17 lectures par jointure restent couvertes par `EmployeJoint`', () => {
+    // Ces 17 sites lisent `employees.first_name` sur une RESSOURCE JOINTE, pas
+    // sur un `Employee` : ils sont typés par `EmployeJoint` (queries/payroll.ts),
+    // pas par cette interface. C'est mesuré : 19 lectures au total, dont 17
+    // jointures et 2 sur `Employee` (le portail, ci-dessus).
+    const payroll = lire('src/lib/queries/payroll.ts')
+    expect(payroll).toMatch(/interface EmployeJoint/)
+    expect(payroll).toMatch(/first_name\?: string \| null/)
+    const pages = ['MedicalExamsPage', 'CareerHistoryPage', 'EmployeeExitPage',
+      'WorkStoppagesPage', 'ManagerExpenseApprovalsPage', 'CPFPage',
+      'Phase4Pages', 'WorkHardshipPage']
+    const jointures = pages.filter((p) =>
+      lire(`src/pages/${p}.tsx`).includes('employees.first_name'))
+    // Au moins sept écrans lisent bien par jointure — la garde échoue si le
+    // jour où quelqu'un les bascule sur `Employee` sans vérifier le type.
+    expect(jointures.length).toBeGreaterThanOrEqual(7)
+  })
+})
+
 // ============ AUD-JOINTURE — les types de retour de la paie ============
 
 describe('AUD-JOINTURE — les 14 fonctions de paie déclarent enfin leur retour', () => {

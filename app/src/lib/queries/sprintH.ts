@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { fetchAllRows, getTenantId, ti, tud } from './core'
-import type { RhDashboardConfig, RhReport, EmployeeActivityLog } from '@/types'
+import type { RhDashboardConfig, RhReport, EmployeeActivityLog, Employee } from '@/types'
 
 // ============ Employee Activity Logs ============
 
@@ -62,11 +62,17 @@ export async function getEmployeeDashboardData() {
     getEmployeeActivity(employeeId, 10),
   ])
 
+  // AUD-IDENTITE : le retour est désormais nomme. `emp` venait d'un
+  // `maybeSingle()` non type, et l'ecran lisait `emp?.first_name` /
+  // `emp?.last_name` — deux colonnes REELLEMENT presentes en base
+  // (`information_schema` : `text`, `null=YES`) que `Employee` ne declarait pas.
+  // Sous le `any`, aucune de ces lectures ne pouvait etre verifiee ; nommer le
+  // retour les rend visibles, et l'ecran peut etre type a son tour.
   return {
-    employee: emp,
+    employee: emp as Employee | null,
     leaveBalances: balances,
     pendingLeaveCount: pendingLeaves.length,
-    pendingExpenseAmount: pendingExpenses.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0),
+    pendingExpenseAmount: pendingExpenses.reduce((s: number, r: { total_amount?: number | null }) => s + Number(r.total_amount || 0), 0),
     upcomingInterview: upcomingInterviews[0] || null,
     recentActivity: activity,
   }
@@ -201,7 +207,7 @@ export async function getRhDashboardData() {
     },
     expenses: {
       pendingCount: pendingExpenses.length,
-      pendingAmount: pendingExpenses.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0),
+      pendingAmount: pendingExpenses.reduce((s: number, r: { total_amount?: number | null }) => s + Number(r.total_amount || 0), 0),
     },
     workStoppages: {
       current: workStoppages.length,
