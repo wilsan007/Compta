@@ -1569,6 +1569,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L20, tranche 1 : le RETOUR EN ARRIÈRE des régénérations. Mesuré
+      # avant : `chain_regeneration_log` existe depuis la 252 et
+      # `chain_regenerate` écrit dedans, mais ZÉRO fonction n'atteint ce
+      # `avant` — la moitié « possibilité de revenir à la version
+      # précédente » du plan (M-04) n'était pas livrée. 8 scénarios : la
+      # restauration (T01), le refus sans société (T02), l'id inconnu et
+      # l'autre société (T03), le CONFLIT qui refuse d'écraser un travail
+      # plus récent (T04), le retour journalisé et son événement (T05), le
+      # double retour refusé (T06), le lien ROMPU qui ne ressuscite pas
+      # (T07), et la relecture de l'historique (T08).
+      - name: 'L20 : le retour arrière des régénérations (422)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/422_l20_retour_arriere_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
