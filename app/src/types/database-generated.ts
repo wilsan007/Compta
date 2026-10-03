@@ -18,6 +18,51 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+    _audit_expected: {
+      Row: {
+        file: string
+        test_id: string
+        reason: string
+      }
+      Insert: {
+        file: string
+        test_id: string
+        reason: string
+      }
+      Update: {
+        file?: string
+        test_id?: string
+        reason?: string
+      }
+      Relationships: []
+    }
+    _audit_results: {
+      Row: {
+        id: number
+        file: string
+        test_id: string
+        label: string
+        ok: boolean
+        detail: string | null
+      }
+      Insert: {
+        id?: number
+        file: string
+        test_id: string
+        label: string
+        ok: boolean
+        detail?: string
+      }
+      Update: {
+        id?: number
+        file?: string
+        test_id?: string
+        label?: string
+        ok?: boolean
+        detail?: string
+      }
+      Relationships: []
+    }
     absence_conflict_log: {
       Row: {
         id: string

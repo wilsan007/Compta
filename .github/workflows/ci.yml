@@ -1488,6 +1488,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # I-01 (460) — la « Vue Chaîne » : tout document ouvert sur son amont
+      # et son aval. La fonction `chain_document_arborescence` parcourt
+      # `document_links` récursivement : la racine, puis la descendance
+      # (ce que le document a produit) ou l'ascendance (ce qui l'a produit),
+      # avec profondeur, effet, état du lien et le libellé du registre (450).
+      # Profondeur bornée et chemin déjà visité : un cycle ne boucle pas.
+      # 8 scénarios : structure, racine, descente, montée, lien fermé,
+      # cloisonnement, cycle, document inconnu.
+      - name: 'I-01 : la Vue Chaîne, amont et aval (460)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/460_chain_arborescence_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne

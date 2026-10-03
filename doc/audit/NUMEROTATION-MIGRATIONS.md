@@ -75,7 +75,8 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `414`, `430` → `449` | partie 3 (L3, L4) | 2026-10-02 |
 | `415` → `429` | L16-L24 | 2026-10-02 |
 | `450` → `459` | partie 5 (intégrité référentielle) | 2026-10-02 |
-| `326` → `339`, `370` → `399`, `460` → … | **LIBRE** — à inscrire avant usage | — |
+| **`460` → `469`** | **I-01, la « Vue Chaîne »** | **2026-10-02** |
+| `326` → `339`, `370` → `399` | **LIBRE** — à inscrire avant usage | — |
 
 *Numéros constatés hors de leur fichier de plan, au 02/10 : `414` alerte de
 dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé

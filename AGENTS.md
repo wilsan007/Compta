@@ -52,7 +52,8 @@ L'essentiel en huit lignes :
 > | **`414`, `430` → `449`** | **partie 3** (L3, L4) : `414` alerte de dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé bancaire — **déplacés de `415`/`416` le 02/10 au soir** (`0cd347c`, `9e0f33d`) | **2026-10-02** |
 > | **`450` → `459`** | **Partie 5** — intégrité référentielle des chaînages (registre des types, existence, garde de suppression, INV-19) | **2026-10-02** |
 > | `325` · `340` → `369` | **partie 1** (TVA 198, tâche 1.7) · **partie 2** (défauts métier) | **2026-10-02** |
-> | `326` → `339`, `370` → `399`, `460` → … | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
+> | `326` → `339`, `370` → `399` | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
+> | **`460` → `469`** | **I-01, la « Vue Chaîne »** (`460`) — instrumenter les chaînages existants, pas les réécrire | **2026-10-02** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue
