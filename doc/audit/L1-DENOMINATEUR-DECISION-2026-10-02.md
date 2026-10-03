@@ -396,8 +396,8 @@ quand il n'a pas tranché. Il ne prétend pas à un « X/51 » que personne n'a
 |---:|---|---|---|---|
 | 37 | `check_task_dependencies_before_start` | projets, système | trig | **garde** — le nom dit tout et le corps le confirme : il **vérifie** les dépendances, il ne produit rien |
 | 38 | `journal_entry_guard` | compta, système | trig | **garde** — force le brouillon puis la validation ; le corps initialise et **lève**. L'écriture naît ailleurs |
-| 39 | `credit_note_guard` | comm, compta, stock | trig | **garde** — prépare un avoir et lève si le statut n'est pas `draft`. **Doute à relire** : le corps déclare `v_entry` et `v_ordre` |
-| 40 | `purchase_credit_note_guard` | comm, compta, stock | trig | **garde** — le symétrique. **Même doute que 39** |
+| 39 | `credit_note_guard` | comm, compta, stock | trig | **maillon — CORRIGÉ** : relecture du corps ENTIER, il fait `INSERT INTO journal_entries` puis des `journal_lines` — il **crée l'écriture** de l'avoir. Maillon au nom trompeur, pas une garde |
+| 40 | `purchase_credit_note_guard` | comm, compta, stock | trig | **maillon — CORRIGÉ** : le symétrique, il insère aussi son écriture (`INSERT INTO journal_entries` + `journal_lines`) |
 | 41 | `notify_assignee_on_assignment` | projets, système | trig | **notification** — écrit `project_notifications`, pas d'état comptable |
 | 42 | `notify_watchers_on_comment` | projets, système | trig | **notification** — idem, pour les observateurs d'une tâche |
 | 43 | `notify_watchers_on_status_change` | projets, système | trig | **notification** — idem, au changement de statut |
@@ -407,48 +407,80 @@ quand il n'a pas tranché. Il ne prétend pas à un « X/51 » que personne n'a
 | 47 | `create_tenant_for_current_user` | rh, système | appel | **paramétrage** — création de société + utilisateur : mise en service |
 | 48 | `apply_chart_pack` | compta, système | appel | **paramétrage** — application d'un plan comptable : acte de référentiel |
 | 49 | `cancel_import_batch` | rh, stock | appel | **à confirmer** — annule un lot d'import ; la tranche 4 l'avait écarté. Relecture nécessaire |
-| 50 | `create_invoice_service` | comm, système | appel | **non tranché** — nom ambigu, corps qui lève tôt : je n'ai pas tranché, et je préfère le dire |
-| 51 | `calculate_payslip` | rh, système | appel | **non tranché** — le nom promet un maillon, le corps lève sans laisser voir s'il écrit |
+| 50 | `create_invoice_service` | comm, système | appel | **ni maillon ni garde — TRANCHÉ** : le corps ne fait qu'un `UPDATE invoices SET updated_at` ; il **ne produit aucun document**. Ni maillon, ni garde : la catégorie exacte est « mise à jour administrative » |
+| 51 | `calculate_payslip` | rh, système | appel | **maillon — TRANCHÉ** : `INSERT INTO pay_slips` et `pay_slip_clarified`, et il touche `employees` / `tenants` : deux modules, donc il est bien dans les 51 |
 
 ### 11.4 Le compte, sans arrondi
 
 | Verdict | Nombre |
 |---|---:|
-| **maillon** | **31** |
+| **maillon** | **34** |
 | **recalcul** | 4 |
-| **garde** | 4 |
+| **garde** | 2 |
 | **notification** | 5 |
 | **paramétrage** | 4 |
-| à confirmer / non tranché | 3 |
+| mise à jour administrative | 1 |
+| à confirmer | 1 |
 | **Total** | **51** |
 
-Parmi les 31 maillons : **3 posent un lien dans leur corps**, 1 est **mort** (n° 14),
-et **18 sont des candidats directs à instruire** (non tracés).
+Parmi les 34 maillons : **3 posent un lien dans leur corps** (mesuré, colonne LIEN),
+**1 est mort** (aucun déclencheur ne l'appelle), et **33 sont à instruire ou à
+tracer** — c'est-à-dire que presque tous les maillons restent à couvrir : le
+travail de L1 est devant, pas derrière.
+
+⚠️ **Ces chiffres ont bougé après relecture des quatre lignes en doute** (§11.6) :
+`credit_note_guard` et `purchase_credit_note_guard` sont des **maillons**, pas des
+gardes — ils insèrent leur écriture (`INSERT INTO journal_entries`). C'est
+exactement le doute que j'avais signalé, et il était fondé.
+
+**Le compte est vérifié ligne à ligne, pas estimé** : 34 + 4 + 2 + 5 + 4 + 1 + 1
+= 51, sans doublon et sans ligne manquante. Un premier jet annonçait 32 — l'écart
+venait de deux lignes dont la colonne « verdict » n'avait pas été rendue par le
+script de mise en forme, pas d'un désaccord sur le fond.
 
 ### 11.5 Ce que le tri a changé
 
-⚠️ **Le dénominateur des maillons est 31, pas 51.** Les 20 autres fonctions ne
-produisent aucun document d'un bout à l'autre : 4 recalculent un agrégat, 4
-gardent, 5 notifient, 4 paramètrent, 3 restent à trancher. **Les compter comme
-maillons aurait gonflé l'indicateur de 65 %** — c'est exactement le chiffre
-faux que le plan interdit de publier.
+⚠️ **Le dénominateur des maillons est 34, pas 51.** Les 17 autres fonctions ne
+produisent aucun document d'un bout à l'autre : 4 recalculent un agrégat, 2
+gardent, 5 notifient, 4 paramètrent, 1 est une mise à jour administrative, 1
+reste à confirmer. **Les compter comme maillons aurait gonflé l'indicateur de
+50 %** — c'est exactement le chiffre faux que le plan interdit de publier.
 
 **Une 5ᵉ catégorie apparaît : la notification.** Cinq fonctions n'écrivent que des
 notifications — ni maillon, ni garde, ni recalcul. La tranche 4 n'avait pas cette
 catégorie parce que son périmètre était plus étroit. Elle est honnête de la nommer
 plutôt que de la ranger sous « recalcul ».
 
-### 11.6 Ce que je n'ai pas tranché, et pourquoi
+### 11.6 Les quatre lignes en doute, relues et tranchées
 
-`create_invoice_service` et `calculate_payslip` : nom et signaux (`LEVE`, sans
-écriture d'état visible dans l'extrait) ne suffisent pas. **Je les laisse non
-tranchées** plutôt que de leur inventer une raison — c'est la règle que je viens
-d'écrire, appliquée à moi-même.
+Je les avais laissées ouvertes en §11.3 en disant que je préférerais le silence à
+une raison inventée. **Je les ai relues depuis, corps entier.** Deux surprises :
 
-`credit_note_guard` et `purchase_credit_note_guard` portent un doute inverse :
-leur corps déclare des variables d'écriture (`v_entry`, `v_ordre`). Classés
-« garde » parce que leur `LEVE` l'emporte, mais la relecture peut les faire
-basculer en maillon.
+| Fonction | Verdict initial | Verdict **tranché** | Ce que la relecture a montré |
+|---|---|---|---|
+| `credit_note_guard` | garde (doute) | **maillon** | `INSERT INTO journal_entries` puis `journal_lines` : il **crée l'écriture** de l'avoir |
+| `purchase_credit_note_guard` | garde (doute) | **maillon** | le symétrique : il insère aussi son écriture |
+| `calculate_payslip` | non tranché | **maillon** | `INSERT INTO pay_slips` + `pay_slip_clarified`, et il touche `employees` / `tenants` : 2 modules |
+| `create_invoice_service` | non tranché | **ni maillon ni garde** | le corps ne fait qu'un `UPDATE invoices SET updated_at` : il **ne produit aucun document** |
+
+⚠️ **Le doute sur les deux `*_credit_note_guard` était fondé — et il inversait le
+verdict.** Une fonction dont le nom dit « garde » peut parfaitement produire une
+écriture comptable. C'est le contre-exemple exact qui justifyait de lire les
+corps : un regex l'aurait classée « garde » sans hésiter.
+
+**`create_invoice_service` a fait apparaître une catégorie qui manquait** : ni
+maillon (il ne produit aucun document), ni garde (il n'empêche rien), ni recalcul.
+C'est une **mise à jour administrative**. Une seule fonction, donc je ne crée pas
+une catégorie pour elle — mais elle est nommée, pas rangée de travers.
+
+### 11.7 Ce qui reste ouvert
+
+**Une seule** : `cancel_import_batch` (annulation d'un lot d'import), que la
+tranche 4 avait écartée sans que je puisse dire si c'était justifié. Elle agit sur
+des documents, donc le tri la range parmi les « à confirmer » — **je ne la classe
+pas par défaut dans un sens qui m'arrangerait.**
+
+Le reste est tranché : **51 lignes, 51 verdicts, une seule réserve nommée.**
 
 **Le tri est fait, pas jetable** : il est reproductible (la requête est dans
 `doc/audit/TRI-51-REQUETE.sql`, à rejouer sur n'importe quelle base neuve), et
