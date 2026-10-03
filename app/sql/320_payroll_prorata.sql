@@ -94,6 +94,7 @@ DECLARE
   v_line_rate_er numeric;
   v_contrib jsonb := '[]'::jsonb;    -- détail ligne à ligne (tests d'or, 0,01 €)
   v_pas_rate numeric;
+  v_elem RECORD;                     -- un élément variable, pour son détail (319)
 
   -- Éléments variables
   v_overtime_pay numeric := 0;
@@ -402,6 +403,43 @@ BEGIN
   END IF;
 
   v_csg_crds_total := v_csg_deductible + v_csg_non_deductible + v_crds;
+
+  -- ── Les ÉLÉMENTS VARIABLES au détail du bulletin ────────────────────────
+  -- Repris de la 319, qui les calculait déjà mais ne les restituait pas ligne
+  -- à ligne : le bulletin disait le montant, sans dire d'où il venait, et la
+  -- suite 326 mesurait « ligne=ABSENTE » pour un acompte comme pour un rappel
+  -- alors que les deux étaient bien appliqués au net.
+  --
+  -- ⚠️ La 319 définit `calculate_payslip`, mais elle n'est plus qu'un ENVELOPPE
+  -- qui délègue ici (`payroll_compute_slip`) : un correctif écrit dans son
+  -- corps ne s'exécute plus jamais. C'est ce qui rendait 326 T05/T07 rouges
+  -- malgré le correctif — il était au bon endroit, dans une fonction morte.
+  -- La clause de filtrage est celle de l'agrégat plus haut, à l'identique.
+  FOR v_elem IN
+    SELECT ve.element_type, ve.description, ve.amount
+    FROM payroll_variable_elements ve
+    WHERE ve.pay_run_id = p_pay_run_id
+      AND ve.employee_id = p_employee_id
+      AND ve.tenant_id = v_tid
+      AND COALESCE(ve.integrated, false) = false
+      AND ve.amount IS NOT NULL
+      AND ve.amount <> 0
+    ORDER BY ve.element_type, ve.id
+  LOOP
+    v_contrib := v_contrib || jsonb_build_object(
+      'type', v_elem.element_type,
+      'label', v_elem.description,
+      'base', round(v_total_gross, 2),
+      'rate_employee', 0, 'employee', 0,
+      'rate_employer', 0, 'employer', 0,
+      -- Le signe suit le sens de l'opération : un acompte et un congé sans
+      -- solde sortent du net, un rappel et un remboursement y entrent.
+      'amount', CASE
+                  WHEN v_elem.element_type IN ('advance_deduction', 'unpaid_leave_deduction')
+                    THEN -abs(v_elem.amount)
+                  ELSE abs(v_elem.amount)
+                END);
+  END LOOP;
 
   -- ── Net social et net imposable ──
   -- 276 : le net imposable garde la CSG non déductible et la CRDS (il les

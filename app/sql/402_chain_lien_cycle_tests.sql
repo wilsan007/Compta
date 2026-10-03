@@ -38,7 +38,7 @@
 -- avec `_as_user()`, et reviennent avec `set_config('role','none',true)`.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '312', false);
+SELECT set_config('audit.file', '402', false);
 DELETE FROM _audit_results WHERE file = '312';
 
 -- ─────────────────────────────────────────────────────────────
@@ -542,5 +542,5 @@ END $$;
 -- Le registre des échecs attendus reste VIDE : aucun scénario de ce fichier
 -- n'a le droit d'échouer (doctrine AUD-A02).
 -- ─────────────────────────────────────────────────────────────
-SELECT _audit_assert('312');
+SELECT _audit_assert('402');
 

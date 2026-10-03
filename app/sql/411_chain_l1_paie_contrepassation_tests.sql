@@ -24,7 +24,15 @@
 -- posé, puis rôle `authenticated` — un utilisateur réel, sous RLS.
 -- ============================================================
 \ir ci/audit_helpers.sql
-SELECT set_config('audit.file', '321', false);
+-- ⚠️ Ce fichier s'annonçait `321` (`audit.file` et `_audit_assert`), alors
+-- qu'il ne rejoue AUCUN scénario de la 321 : ses fixtures sont R6A…R6F et ne
+-- comportent ni titre-restaurant ni indemnité de transport. Ses verdicts
+-- écrasaient donc ceux de la vraie 321 sous la même clé — et c'est ainsi que le
+-- 02/10/2026 on a cru, sur la foi de « 411 verte », que les défauts `321 T02`,
+-- `T03` et `T05` étaient corrigés, et on les a retirés du registre. Ils ne
+-- l'étaient pas : la 321 est rouge sur ces trois lignes. Chaque suite doit
+-- réponse de SON fichier.
+SELECT set_config('audit.file', '411', false);
 DELETE FROM _audit_results WHERE file = '321';
 
 -- ─────────────────────────────────────────────────────────────
@@ -299,4 +307,4 @@ BEGIN
   END;
 END $$;
 
-SELECT _audit_assert('321');
+SELECT _audit_assert('411');

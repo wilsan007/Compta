@@ -20,7 +20,10 @@
 -- 245 — déclaration de TVA (M-10)
 --
 -- Ces deux lignes portaient les deux derniers défauts ouverts du plan correctif.
--- Elles sont fermées — le registre est donc **VIDE** :
+-- Elles sont fermées par les migrations 301 et 300 (voir l'historique ci-dessus).
+--
+-- Le registre ne porte plus que `321 T02`, `T03` et `T05` — réinscrites le
+-- 03/10/2026, avec leur raison, plus bas. Les autres défauts sont tous corrigés.
 --
 --   • `231 M-17-01` — la refacturation des temps n'existait pas
 --     (`create_billable_line_on_timesheet_stop` ne créait qu'une notification).
@@ -32,19 +35,43 @@
 --     la TVA. Fermé le 28/09/2026 par la **300** : le CA se lit sur les comptes
 --     de produits (classe 70), la TVA reste lue sur les comptes 445x.
 --
--- Le registre est VOLONTAIREMENT VIDE.
---
--- Les trois lignes qu'il portait (`321 T02`, `T03`, `T05`) ont été retirées le
--- 02/10/2026 : après la fusion 1.6, la suite `411` donne 6 scénarios verts, et
--- `_audit_assert` refuse un scénario « corrigé mais encore au registre ». Elle
--- l'a signalé elle-même. Le raisonnement qui les justifiait (les taux des
--- avantages en nature changent chaque année et doivent être SOURCÉS) est
--- conservé plus haut, dans l'historique de ce fichier.
+-- HISTORIQUE — la vacance du 02/10/2026, et pourquoi elle a pris fin le 03/10.
+-- Le registre avait été déclaré VOLONTAIREMENT VIDE : les trois lignes qu'il
+-- portait (`321 T02`, `T03`, `T05`) avaient été retirées au motif que « la suite
+-- 411 donne 6 scénarios verts ». Ce motif ne tenait pas — la 411 mesure la
+-- CONTRAPASSATION d'un bulletin validé, elle ne calcule aucun élément variable.
+-- Elles ont donc été RÉINSCRITES, avec la même raison qu'avant (voir l'INSERT
+-- plus bas) : les taux des avantages en nature changent chaque année et doivent
+-- être SOURCÉS.
 --
 -- `INSERT INTO _audit_expected (file, test_id, reason) VALUES` reste ici, vide :
 -- la table existe, l'auto-test `audit_registry_selftest.sql` s'appuie dessus
 -- pour vérifier que le registre porte bien le couple (fichier, identifiant).
 --
+-- `321 T02`, `T03` et `T05` sont de RETOUR dans le registre, et pourquoi.
+--
+-- Elles en étaient sorties le 02/10/2026 au motif que « la suite 411 donne 6
+-- scénarios verts ». Ce motif ne tenait pas : la 411 mesure la CONTRAPASSATION
+-- d'un bulletin validé, elle ne fait aucun calcul d'élément variable. Un
+-- correctif écrit dans le corps de la 319 — que la 320 a ensuite réduite à une
+-- enveloppe déléguant à `payroll_compute_slip` — ne pouvait d'ailleurs rien
+-- prouver. Remesuré le 03/10/2026 sur base neuve : brut 2 500,00 € au lieu de
+-- 2 660,00 €, 2 500,00 au lieu de 2 575,00, 3 000,00 au lieu de 3 235.
+--
+-- Le raisonnement qui les justifiait est donc restauré tel quel : un avantage en
+-- nature est un salaire, sa valeur faciale entre dans le brut, et seule la part
+-- exonérée échappe aux cotisations. La grille 2026 n'a AUCUNE ligne pour ces
+-- deux postes : il manque le paramétrage, pas la formule. Les deux montants
+-- (valeur du titre-restaurant, plafond d'exonération de l'indemnité de
+-- transport) changent chaque année et doivent être SOURCÉS — la 276 le fait
+-- explicitement (« [URSSAF-PSS] », « [URSSAF-TAUX] »). Écrire un taux de
+-- mémoire serait exactement le défaut que ce dépôt combat.
+--
+INSERT INTO _audit_expected (file, test_id, reason) VALUES
+  ('321', 'T02', 'Les titres-restaurant n''entrent pas dans le brut (mesuré 2 500,00 € au lieu de 2 660,00) : la grille 2026 n''a aucune ligne pour ce poste. Le paramétrage à SOURCER est un chantier distinct.'),
+  ('321', 'T03', 'L''indemnité de transport n''entre pas dans le brut (mesuré 2 500,00 € au lieu de 2 575,00) : même constat, plafond d''exonération 2026 à SOURCER.'),
+  ('321', 'T05', 'Cumul des deux ci-dessus : brut 3 000,00 € au lieu de 3 235,00. Même cause que T02 et T03.');
+
 -- Un défaut connu doit s'inscrire ici AVEC SA RAISON, puis disparaître avec son
 -- correctif. Une suite qui reste rouge sans être inscrite casse la CI — c'est
 -- voulu.
@@ -68,24 +95,14 @@
 -- serait exactement le défaut que ce dépôt combat. Le correctif est un chantier
 -- à part, avec ses sources.
 --
--- ⚠️ `321 T02`, `T03` et `T05` ont été RETIRÉS le 02/10/2026.
+-- RÉTABLISSÉ le 03/10/2026. Elles étaient sorties le 02/10 au motif que la
+-- `411_chain_l1_paie_contrepassation_tests` donnait 6 scénarios verts : or la
+-- 411 mesure la contrepassation d'un bulletin validé, elle ne calcule aucun
+-- élément variable. La suite 321, elle, reste rouge sur les trois lignes.
 --
--- Ils étaient inscrits ici depuis le 30/09 (« les TITRES-RESTAURANT
--- n'entrent ni dans le brut, ni dans les cotisations, ni dans le net…
--- mesuré 160 € sur un brut de 2 500 € »). Après la fusion 1.6, la suite
--- `411_chain_l1_paie_contrepassation_tests` donne **6 scénarios verts** — et
--- `_audit_assert` refuse précisément un scénario « corrigé mais encore au
--- registre » : c'est elle qui l'a signalé, pas une relecture.
---
--- Ils sont donc sortis, et la suite est la preuve. Le raisonnement qui les
--- justifiait reste dans l'historique de git : les taux changent chaque année et
--- doivent être SOURCÉS, ce que la 276 exige. Si un jour une des trois lignes
--- redevient fausse, elle se réinscrit ICI avec sa raison — pas dans un
--- commentaire.
---
--- Le registre ne contient plus AUCUNE entrée : les défauts qu'il portait sont
--- tous corrigés, et « un défaut connu doit s'inscrire ici, puis disparaître
--- avec son correctif ».
+-- Le registre ne contient que ces trois entrées. « Un défaut connu doit
+-- s'inscrire ici avec sa raison, puis disparaître avec son correctif » : elles
+-- sortiront le jour où la grille 2026 portera les deux postes à SOURCER.
 --
 -- Plus aucun autre scénario n'a le droit d'échouer : un échec hors registre
 -- casse la CI, et un défaut connu doit s'inscrire ici avec sa raison — puis

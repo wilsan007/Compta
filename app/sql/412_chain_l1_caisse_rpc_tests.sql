@@ -37,7 +37,7 @@
 -- ============================================================
 \ir ci/audit_helpers.sql
 \ir ci/ledger_fixture.sql
-SELECT set_config('audit.file', '322', false);
+SELECT set_config('audit.file', '412', false);
 DELETE FROM _audit_results WHERE file = '322';
 
 -- ─────────────────────────────────────────────────────────────
@@ -400,3 +400,10 @@ BEGIN
            n_liens_a, n_tr_a, n_ev_a, n_liens_b,
            n_liens_voisin, n_tr_voisin, n_ev_voisin));
 END $$;
+
+-- Cette suite doit RÉPONDRE à la CI. Elle enregistrait ses verdicts sous la
+-- clé `322` — qui n'est le fichier d'aucune suite — et n'appelait jamais
+-- `_audit_assert` : un scénario rouge y était donc indifférente, sans jamais
+-- faire échouer quoi que ce soit. C'est exactement la façon dont la CI affiche
+-- du vert sur du vide. Elle répond maintenant sous SON fichier, `412`.
+SELECT _audit_assert('412');
