@@ -1483,6 +1483,38 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 tranche 6 — LES SIX AUTRES MAILLONS ÉPROUVÉS (436). La 434 écrivait
+      # le cadre et n'éprouvait qu'UN maillon sur sept : « cinq verdicts `tenu`
+      # sur huit » était le score d'un seul maillon, et le rapport pouvait le
+      # laisser croire à un score de sept. Ici les six autres portent leur décor
+      # réel — un ticket de caisse, un avoir, un lot de paie, un versement, une
+      # ligne de relevé, un dé-lettrage — et les quatre épreuves jouables sur
+      # chacun.
+      #
+      # ⚠️ CE QUE LA 436 A TROUVÉ EN ÉCRIVANT SES DÉCORS, ET QUI EST DANS LA
+      # MIGRATION : quatre défauts de l'INSTRUMENT, tous mesurés, tous corrigés
+      # dans le même fichier que le test qui les a produits.
+      #   • un geste d'annulation n'a pas la signature de l'appel nominal
+      #     (`void_pos_ticket` prend un ticket, `create_pos_ticket` un contenu) :
+      #     le moteur n'avait qu'un seul jeu d'arguments — `arg_valeurs_annul` ;
+      #   • le vocabulaire des refus était faux : le dépôt écrit ses refus
+      #     d'affaires en `42501`, `P0002` et `23503`, autant de codes que le
+      #     moteur ne connaissait pas. `caisse.avoir` rendait `rompu` un rejeu
+      #     CORRECTEMENT refusé ;
+      #   • D1 comptait les traces `ignore` comme des duplications : les deux
+      #     maillons de paie sortaient `rompu` alors que leur rejeu est tenu
+      #     (0 lien, 0 ligne, et une trace qui le dit) ;
+      #   • D1 n'a pas d'objet sur un maillon de CRÉATION : rejouer
+      #     `create_pos_ticket` crée un second ticket, par définition. La
+      #     colonne `nature` le dit, et l'épreuve est rendue `non_joue`.
+      # 9 scénarios : la structure du catalogue, les quatre épreuves de chacun
+      # des six maillons, le rapport daté (7 × 8 = 56 verdicts), et le contrôle
+      # qu'aucun `tenu` ne soit publié sans mesure.
+      - name: 'L3 : les six maillons restants sont éprouvés (436)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/436_chain_banc_six_maillons_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4
