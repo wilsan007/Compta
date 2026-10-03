@@ -1527,6 +1527,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 462 — I-08, la moitié visible du dictionnaire : dérouler la chaîne
+      # qui produit un montant. Elle ne CALCULE rien et n'INVENTE aucun
+      # lien : elle ne rend que ce que les maillons de la 460 ont tracé, et
+      # un montant dont aucune chaîne ne le porte revient VIDE, avec le
+      # motif — jamais un chiffre fabriqué. Rendue ici parce que le fichier
+      # était écrit mais non branché (porte G5 rouge).
+      - name: '462 : dérouler la chaîne qui produit un montant (I-08)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/462_chain_expliquer_montant_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une

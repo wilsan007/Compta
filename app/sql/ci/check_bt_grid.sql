@@ -111,12 +111,12 @@ WHERE c.relkind IN ('r', 'p') AND c.relrowsecurity AND NOT c.relforcerowsecurity
 -- ─────────────────────────────────────────────────────────────
 CREATE TEMP TABLE g1_plafond (nom text PRIMARY KEY, valeur integer, raison text);
 INSERT INTO g1_plafond (nom, valeur, raison) VALUES
-  ('tables_tenant',        362, 'Nombre de tables portant tenant_id (base neuve, 263 migrations, 02/10/2026 — +2 pour la 413 : chain_invariants, chain_invariant_results).'),
+  ('tables_tenant',        363, 'Nombre de tables portant tenant_id (base neuve, 286 migrations, 03/10/2026 — +1 pour la 421 : metric_definitions, le dictionnaire d''indicateurs posé par la 461 et resté hors plafond).'),
   ('sans_rls',               0, 'RÈGLE, pas plafond : toute table cloisonnée porte RLS. 0 sans exception depuis la 84.'),
-  ('rls_sans_force',        54, 'État daté : partitions du socle et tables d''historique. Défaut ISO-04 non réintroduit. −1 le 02/10/2026 (415) : webhook_delivery_queue passe sous FORCE — elle était la seule table de la chaîne des webhooks sans le FORCÉ (§3.5).'),
-  ('moins_de_4_commandes',  79, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. +2 pour la 413 : ses deux tables ne portent qu''une politique de LECTURE — le relevé s''écrit par audit_chains() (SECURITY DEFINER), jamais par le client. C''est un choix de sécurité assumé, pas un oubli.'),
+  ('rls_sans_force',        54, 'État daté : partitions du socle et tables d''historique. Défaut ISO-04 non réintroduit. −1 le 02/10/2026 (415) : webhook_delivery_queue passe sous FORCE. Stable le 03/10 : la 421 force metric_definitions, dont la 461 avait oublié le FORCE — le compteur RETROUVE sa valeur, il ne la dépasse pas.'),
+  ('moins_de_4_commandes',  80, 'Le plan (§4.2) tient une table à moins de 4 commandes pour suspecte. +2 pour la 413 (chain_invariants et ses résultats : une politique de LECTURE, le relevé s''écrit par audit_chains()). +1 pour la 421 : metric_definitions est dans le même cas — une politique de lecture, les écritures passant par chain_metric_definition, qui est SECURITY DEFINER. Choix de sécurité assumé, pas un oubli.'),
   ('sans_politique',        10, 'RLS fermée par défaut : pas un trou, mais un nombre qui ne doit pas monter.'),
-  ('sans_index_societe',    78, 'Défaut BUD-04 à l''échelle du schéma : une lecture par société y scanne la table. −1 le 02/10/2026 (415) : uq_webhook_queue_source_event mène par tenant_id, la file de livraison a désormais son index de société.');
+  ('sans_index_societe',    78, 'Défaut BUD-04 à l''échelle du schéma : une lecture par société y scanne la table. −1 le 02/10/2026 (415). Stable le 03/10 : la 421 pose l''index de société de metric_definitions, que la 461 avait oublié — le compteur RETROUVE sa valeur, il ne la dépasse pas.');
 
 -- ─────────────────────────────────────────────────────────────
 -- 3. La mesure confrontée au plafond
