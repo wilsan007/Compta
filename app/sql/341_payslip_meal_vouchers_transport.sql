@@ -43,8 +43,12 @@
 --          75 % du coût de l'abonnement est réintégré au brut.
 --
 -- CE QU'IL NE FAIT PAS — à trancher avec l'expert-comptable :
---   * une part patronale INFÉRIEURE à 50 % de la valeur du titre : non traitée
---     (la règle de réintégration n'a pas pu être lue à la source) ;
+--   * une part patronale INFÉRIEURE à 50 % de la valeur du titre : la TOTALITÉ est
+--     réintégrée dans l'assiette. Ajouté le 04/10/2026 d'après la position du BOSS
+--     du 16/03/2023 (source de second rang : le BOSS n'a pas pu être lu
+--     directement) ;
+--   * une part patronale SUPÉRIEURE à 60 % : seul l'excédent est réintégré. Une note de
+--     relecture avance « la totalité » pour ce cas, SANS source : à trancher ;
 --   * la prime de transport « carburant » (300 € / an) et le forfait mobilités
 --     durables (600 € / an, 900 € en cumul) : plafonds ANNUELS, qui demandent un
 --     cumul par salarié — non codés ici ;
@@ -256,8 +260,8 @@ BEGIN
     -- la valeur du titre ET sous le plafond par titre (TITRE_RESTAURANT_EXO_MAX).
     -- Ce qui dépasse la plus basse des deux limites (60 %, plafond) est réintégré
     -- dans le brut. Sans quantité ni valeur, rien ne peut être mesuré : rien n'est
-    -- réintégré. Une part patronale INFÉRIEURE à 50 % n'est pas traitée ici (règle
-    -- à confirmer par l'expert-comptable) : elle est publiée au détail du bulletin.
+    -- réintégré. Une part patronale INFÉRIEURE à 50 % fait perdre l'exonération :
+    -- la totalité de la participation entre dans l'assiette (voir ci-dessous).
     v_tr_exo_max := COALESCE(get_legal_parameter('TITRE_RESTAURANT_EXO_MAX', v_country_code, v_period_start, v_tid), 0);
     v_tp_exo_pct := COALESCE(get_legal_parameter('TRANSPORT_PUBLIC_EXO_PCT', v_country_code, v_period_start, v_tid), 0);
 
@@ -265,8 +269,19 @@ BEGIN
       COALESCE(SUM(CASE WHEN ve.element_type = 'meal_vouchers' AND COALESCE(ve.quantity, 0) > 0 AND COALESCE(ve.unit_price, 0) > 0
                         THEN GREATEST(ve.quantity * ve.unit_price - COALESCE(ve.amount, 0), 0) ELSE 0 END), 0),
       COALESCE(SUM(CASE WHEN ve.element_type = 'meal_vouchers' AND COALESCE(ve.quantity, 0) > 0 AND COALESCE(ve.unit_price, 0) > 0 AND v_tr_exo_max > 0
-                        THEN GREATEST(ve.quantity * ve.unit_price - COALESCE(ve.amount, 0)
-                                      - ve.quantity * LEAST(v_tr_exo_max, 0.60 * ve.unit_price), 0) ELSE 0 END), 0),
+                        THEN CASE
+                               -- Part patronale INFÉRIEURE à 50 % de la valeur du titre : la
+                               -- TOTALITÉ de la participation est réintégrée dans l'assiette
+                               -- (BOSS, mise à jour du 16/03/2023). Tolérance d'un demi-centime.
+                               WHEN ve.quantity * ve.unit_price - COALESCE(ve.amount, 0) > 0
+                                AND ve.quantity * ve.unit_price - COALESCE(ve.amount, 0)
+                                    < 0.50 * ve.quantity * ve.unit_price - 0.005
+                               THEN ve.quantity * ve.unit_price - COALESCE(ve.amount, 0)
+                               -- Sinon : seule la fraction au-delà de min(60 %, plafond).
+                               ELSE GREATEST(ve.quantity * ve.unit_price - COALESCE(ve.amount, 0)
+                                             - ve.quantity * LEAST(v_tr_exo_max, 0.60 * ve.unit_price), 0)
+                             END
+                        ELSE 0 END), 0),
       -- Transport : quantity × unit_price = coût de l'abonnement, amount = prise
       -- en charge. Sans coût renseigné, la prise en charge est tenue pour exonérée.
       COALESCE(SUM(CASE WHEN ve.element_type = 'transport_allowance' AND COALESCE(ve.quantity, 0) > 0 AND COALESCE(ve.unit_price, 0) > 0 AND v_tp_exo_pct > 0

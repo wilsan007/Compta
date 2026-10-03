@@ -154,6 +154,20 @@ BEGIN
     brut = 2515 AND (d->>'transportReintegrated')::numeric = 15,
     format('brut=%s (2515) réintégré=%s (15)', brut, d->>'transportReintegrated'));
 
+  -- T10 — part patronale INFÉRIEURE à 50 % (341). 20 titres de 10 €, part
+  -- salariale 120 € → part patronale 4,00 € par titre (40 %). L'exonération est
+  -- perdue : la TOTALITÉ (80 €) entre dans l'assiette (BOSS, 16/03/2023). Elle
+  -- n'est PAS versée : le net baisse de la seule part salariale (120 €), plus
+  -- les cotisations dues sur ces 80 €.
+  d := _lot321('T10', 2500, jsonb_build_array(
+    jsonb_build_object('type','meal_vouchers','libelle','titres-restaurant','qte',20,'pu',10,'montant',120)));
+  brut := (d->>'total_gross')::numeric;
+  ecart := round((d2->>'net_salary')::numeric - (d->>'net_salary')::numeric, 2);
+  PERFORM _rec('T10', 'part patronale sous 50 % de la valeur du titre : la TOTALITÉ (80 €) entre dans l''assiette, sans être versée au salarié',
+    brut = 2580 AND (d->>'mealVouchersReintegrated')::numeric = 80 AND ecart > 120 AND ecart < 160,
+    format('brut=%s (2580) réintégré=%s (80) baisse du net=%s (120 € de part salariale + cotisations sur 80 €)',
+           brut, d->>'mealVouchersReintegrated', ecart));
+
   -- T09 — les deux paramètres sont DATÉS et SOURCÉS
   PERFORM _rec('T09', 'les deux paramètres légaux 2026 sont en base, datés du 01/01/2026 et sourcés (7,32 € ; 75 %)',
     (SELECT count(*) FROM payroll_legal_parameters
