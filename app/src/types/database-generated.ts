@@ -1951,10 +1951,10 @@ export interface Database {
         amont_type: string
         fonction: string
         arguments: Json
+        sens: string
         actif: boolean
         note: string | null
         created_at: string
-        sens: string
         appat: string | null
         arg_valeurs: Json
         arg_types: string[] | null
@@ -1963,6 +1963,11 @@ export interface Database {
         appat_annul: string | null
         appat_reouverture: string | null
         arg_series: Json
+        arg_valeurs_annul: Json | null
+        arg_types_annul: string[] | null
+        arg_valeurs_reouverture: Json | null
+        arg_types_reouverture: string[] | null
+        nature: string
       }
       Insert: {
         code: string
@@ -1973,10 +1978,10 @@ export interface Database {
         amont_type: string
         fonction: string
         arguments?: Json
+        sens?: string
         actif?: boolean
         note?: string
         created_at?: string
-        sens?: string
         appat?: string
         arg_valeurs?: Json
         arg_types?: string[]
@@ -1985,6 +1990,11 @@ export interface Database {
         appat_annul?: string
         appat_reouverture?: string
         arg_series?: Json
+        arg_valeurs_annul?: Json
+        arg_types_annul?: string[]
+        arg_valeurs_reouverture?: Json
+        arg_types_reouverture?: string[]
+        nature?: string
       }
       Update: {
         code?: string
@@ -1995,10 +2005,10 @@ export interface Database {
         amont_type?: string
         fonction?: string
         arguments?: Json
+        sens?: string
         actif?: boolean
         note?: string
         created_at?: string
-        sens?: string
         appat?: string
         arg_valeurs?: Json
         arg_types?: string[]
@@ -2007,6 +2017,11 @@ export interface Database {
         appat_annul?: string
         appat_reouverture?: string
         arg_series?: Json
+        arg_valeurs_annul?: Json
+        arg_types_annul?: string[]
+        arg_valeurs_reouverture?: Json
+        arg_types_reouverture?: string[]
+        nature?: string
       }
       Relationships: []
     }
