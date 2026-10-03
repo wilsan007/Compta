@@ -65,6 +65,8 @@ AS $fn$
   LEFT JOIN public.customers c ON c.id  = i.customer_id AND c.tenant_id  = i.tenant_id
   LEFT JOIN public.products pr ON pr.id = l.product_id  AND pr.tenant_id = l.tenant_id
  WHERE l.tenant_id = p_tenant
+   -- GARDE DE SOCIÉTÉ (comme 465/466) : SECURITY DEFINER + p_tenant du client.
+   AND p_tenant = public.current_tenant_id()
    AND (p_debut IS NULL OR i.date >= p_debut)
    AND (p_fin   IS NULL OR i.date <= p_fin)
    -- LE STATUT : ce que l'écranfiltrait déjà (`.eq('invoice.status','paid')`)
