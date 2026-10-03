@@ -165,6 +165,27 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    # 02/10/2026 — Cette suite SALTait en CI sans jamais rien vérifier :
+    # `db-integration.test.ts` fait `it_db = DB_URL ? it : it.skip`, et le
+    # job n'avait ni service Postgres ni DATABASE_URL. Les 13 scénarios
+    # étaient donc comptés « skipped » et le fichier ne disait rien — un
+    # vert qui ne prouve rien. Le service est donc monté ICI, pas dans un
+    # autre job : c'est le seul endroit où `DATABASE_URL` existe pour la
+    # suite Vitest.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
     defaults:
       run:
         working-directory: app
@@ -179,6 +200,16 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # 02/10/2026 — La base, pour que les tests d'intégration aient un
+      # schéma à vérifier. Sans ces trois étapes, `db-integration.test.ts`
+      # tournerait contre une base VIDE et ses 13 scénarios tomberaient
+      # tous : mieux vaut qu'ils tournent pour de vrai.
+      - name: 'Base pour les tests d’intégration (stubs, schéma, migrations)'
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+          node run-sql-migrations.mjs
 
       - name: 'LOT5-05 : Garde SSRF webhook (bypass IP encodés)'
         run: npx vitest run src/lib/__tests__/ssrfGuard.test.ts
