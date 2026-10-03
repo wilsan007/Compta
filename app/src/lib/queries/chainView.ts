@@ -105,3 +105,50 @@ export async function getChainComplete(
   ])
   return { amont: amont.filter((n) => n.sens !== 'racine'), aval: aval.filter((n) => n.sens !== 'racine') }
 }
+
+// ───────────────────────────────────────────────────────────────
+// I-08 — le « pourquoi ce chiffre ? »
+//
+// La 462 déroule, pour un document, les pièces de sa chaîne, les
+// ÉCRITURES produites et les LIGNES qui portent le montant.
+//
+// CE QUE L'ÉCRAN DOIT PRÉSERVER, ET QUOIQU'IL ARRIVE :
+//
+// 1. **Rien n'est recalculé ici.** `montant` vient de la base ; l'écran
+//    l'affiche, il ne le recompose pas. Recalculer à l'affichage, c'est
+//    exactement le défaut « définitions concurrentes » (5 fichiers
+//    calculaient une marge, 8 un budget) qu'I-08 supprime.
+// 2. **Une explication vide est une VRAIE RÉPONSE.** Une facture sans
+//    maillon ne renvoie rien : l'écran doit le dire (« provenance non
+//    renseignée »), pas combler avec un calcul de secours. Un chiffre
+//    qu'on ne sait pas expliquer doit le dire — c'est tout le sens
+//    d'I-08.
+
+/** Une pièce de l'explication : document, écriture, ou ligne. */
+export interface ExplicationPiece {
+  genre: 'document' | 'ecriture' | 'ligne'
+  type: string
+  id: string
+  libelle: string | null
+  libelle_piece: string | null
+  effet: string | null
+  lien_etat: string | null
+  profondeur: number
+  montant: number | null
+  debit: boolean | null
+  date_piece: string | null
+}
+
+/** Le « pourquoi ce chiffre ? » : d'où vient ce montant ? */
+export async function expliquerMontant(type: string, id: string): Promise<ExplicationPiece[]> {
+  const tid = await getTenantId()
+  if (!tid) return []
+
+  const { data, error } = await supabase.rpc('chain_expliquer_montant', {
+    p_tenant: tid,
+    p_type: type,
+    p_id: id,
+  })
+  if (error) throw error
+  return (data ?? []) as ExplicationPiece[]
+}

@@ -160,6 +160,14 @@
       "rompu": "annulé",
       "remplace": "remplacé"
     },
-    "title": "Chaîne du document"
+    "title": "Chaîne du document",
+    "explain": {
+      "loading": "Lecture de la provenance…",
+      "toggle": "Pourquoi ce montant ?",
+      "entry": "Écriture comptable",
+      "none": "Aucune provenance enregistrée pour ce document : aucun maillon ne l'a produit. Le chiffre n'est pas expliqué — et l'écran ne l'invente pas.",
+      "sum": "Montant affiché à l’écran : {{montant}}. Rien n’a été recalculé ici.",
+      "error": "Provenance illisible : {{message}}"
+    }
   }
 }

@@ -160,6 +160,14 @@
       "rompu": "cancelled",
       "remplace": "replaced"
     },
-    "title": "Document chain"
+    "title": "Document chain",
+    "explain": {
+      "loading": "Reading the provenance…",
+      "toggle": "Why this amount?",
+      "entry": "Journal entry",
+      "none": "No provenance recorded for this document: no chain produced it. The amount is not explained — and the screen does not invent one.",
+      "sum": "Amount shown on screen: {{montant}}. Nothing was recalculated here.",
+      "error": "Provenance unreadable: {{message}}"
+    }
   }
 }

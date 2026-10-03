@@ -12,6 +12,8 @@ import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 // I-01 — la Vue Chaîne, réutilisée telle quelle sur la fiche facture.
 import { ChainTimeline } from '@/components/ChainTimeline'
+// I-08 — le « pourquoi ce montant ? », sous la même frise.
+import { ExplainAmount } from '@/components/ExplainAmount'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
 import type { Invoice, Customer, CompanySettings } from '@/types'
@@ -586,6 +588,10 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: (
           <div className="border-t border-[var(--color-border)] pt-3">
             <div className="text-sm text-[var(--color-text-secondary)] mb-1">{tChain('chain.title')}</div>
             <ChainTimeline type="invoices" id={invoice.id} libelle={t('invoices.title')} />
+              {/* I-08 — le « pourquoi ce montant ? » : les lignes d'écriture qui
+                  portent réellement ce total. Rien n'est recalculé ici, et une
+                  provenance absente est DITE absente — jamais comblée. */}
+              <ExplainAmount type="invoices" id={invoice.id} montantAffiche={Number(invoice.total)} />
           </div>
         </div>
       </div>
