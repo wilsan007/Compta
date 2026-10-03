@@ -143,5 +143,57 @@ restants. **Les trois nombres ensemble, jamais le premier seul.**
 Sur une base neuve (PostgreSQL 16), la table de modules est celle de la tranche 4
 (une cinquantaine de motifs priorisés, un module par table) ; la requête lit
 `pg_proc.prosrc` — **ce qui s'exécute**, pas ce qui est écrit dans les fichiers.
-Le détail des 99 noms, et le tri par nature, sont dans le §2 de la tranche 4, à
-rejouer après chaque tranche.
+---
+
+## 8. Addendum du 02/10 — ce que le banc mesure RÉELLEMENT (relevé fait pour le tri)
+
+Le tri des 51 n'a pas été fait ici, mais **le relevé qui le précède a été fait**, parce
+qu'il change la question. Le banc D1→D8 (`433` moteur, `434` épreuves, branche
+`partie-3-chainages`) n'a **pas** 51 ni 62 entrées : mesuré sur base neuve,
+`chain_banc_maillons` porte **7 lignes**.
+
+| Mesure (base neuve, 275 migrations, 0 erreur) | Valeur |
+|---|---:|
+| Maillons déclarés au banc (`chain_banc_maillons`) | **7** |
+| → verdicts que le banc en tire (7 × 8 épreuves) | **56** |
+| Effets déclarés (`document_effects`) | **30** |
+| Effets **tracés** sur base neuve (`chain_traces`) | **0** |
+| Les 7 fonctions des 7 maillons existent en base | **7 / 7** |
+
+Les 7 entrées sont, dans le fichier même, « les maillons **déjà tracés** » — la 433
+le dit : *« Sept maillons, sept LIGNES. C'est la démonstration que le moteur est
+tenable »*. C'est un **banc de démonstration**, pas le banc du plan.
+
+### Ce que cela change pour le dénominateur
+
+Il y a **trois** chiffres, et ils ne mesurent pas la même chose :
+
+| Chiffre | Ce qu'il compte | Statut |
+|---|---|---|
+| **7** | ce que le banc sait produire aujourd'hui | mesuré, cohérent (7/7 fonctions existent) |
+| **30** | les effets que le produit **promet** (`document_effects`) | mesuré |
+| **51** | les fonctions qui écrivent dans ≥ 2 modules | mesuré, mais **non trié** |
+
+Le banc court aujourd'hui sur 7 ; l'indicateur doit porter sur 51 ; le produit
+promet 30 effets. **Aucun des trois n'est faux — ils ne sont pas au même étage.**
+Les confondre est exactement l'erreur qui a produit « 62 ».
+
+⚠️ **`chain_traces` est vide sur base neuve** (0 effet tracé), et ce n'est pas un
+défaut : aucune suite n'exerce les flux métier dans ce contexte. C'est ce que le
+banc doit produire. La suite de tests du banc n'existe pas encore, et `434` n'est
+pas câblée en la CI — tant que ces deux choses sont fausses, le « 0/62 » initial
+était **juste**, et il le restera.
+
+### Ce qu'il reste à faire, dans l'ordre
+
+1. **Réparer la `434`** (branche `partie-3-chainages`) : le fichier est corrompu —
+   la preuve D4 est coupée en plein milieu par un en-tête D6 collé au-dessus
+   d'elle, et un fragment orphelin suit la fin de `chain_banc_lancer`. Mesuré :
+   **276 succès / 1 erreur sur 277 migrations**, `syntax error`.
+2. **Écrire la suite de tests du banc** et la **câbler en CI** (porte G5). Sans
+   elle, le moteur passe sans prouver.
+3. **Étendre le catalogue de 7 à 30** (les effets que le produit promet), pas à 51
+   d'un coup : chaque entrée doit avoir sa fonction, vérifié.
+4. **Trier les 51** (maillon / paramétrage / recalcul / garde) : c'est le seul
+   chiffre qui pourra porter un indicateur « X/Y » honnête.
+5. **Puis** aligner le dénominateur publié, une fois 3 et 4 faits — pas avant.
