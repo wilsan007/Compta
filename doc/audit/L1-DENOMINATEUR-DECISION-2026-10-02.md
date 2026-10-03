@@ -196,4 +196,78 @@ pas câblée en la CI — tant que ces deux choses sont fausses, le « 0/62 » i
    d'un coup : chaque entrée doit avoir sa fonction, vérifié.
 4. **Trier les 51** (maillon / paramétrage / recalcul / garde) : c'est le seul
    chiffre qui pourra porter un indicateur « X/Y » honnête.
-5. **Puis** aligner le dénominateur publié, une fois 3 et 4 faits — pas avant.
+---
+
+## 9. Addendum — T06 (D8) est rouge : ce que la mesure prouve, et ce qu'elle ne prouve pas
+
+Relevé du 02/10, base neuve (278 migrations, 0 erreur, branche
+`partie-3-chainages`, commit `a118d5f` — la 434 est réparée et s'applique).
+La suite du banc existe et rend **7 vert / 1 rouge** : `T06 (D8 — isolation)`.
+
+```
+T06 | verdict=rompu liens_visibles_depuis_la_voisine=20
+    obtenu=20 lien(s) sur le registre ; société voisine,
+    session réelle en `authenticated` : 20 visible(s)
+```
+
+### Ce que j'ai vérifié : l'isolation du produit est SAINE
+
+| Mesure | Résultat |
+|---|---|
+| Politique de `document_links` | `tenant_id = current_tenant_id()`, RLS **activée et forcée** |
+| Lecture directe sous `authenticated`, contexte voisin | **3 liens** — ceux du voisin, pas ceux du propriétaire |
+| Le propriétaire `ta`, lien du voisin au hasard | **3 liens** |
+
+**Aucune fuite.** Les 3 liens vus sont ceux de la société voisine : la RLS filtre
+correctement. Le « 20 » n'est pas une fuite inter-sociétés.
+
+### Ce que le banc mesure réellement
+
+`chain_banc_liens_visibles` ne filtre **pas** par `tenant_id` :
+
+```sql
+SELECT count(*) FROM document_links
+ WHERE amont_type = p_amont_type AND effet = p_effet
+   AND created_at >= p_depuis
+```
+
+C'est **délibéré et correct** : elle n'est pas `SECURITY DEFINER`
+(mesuré : `prosecdef = false`), donc elle s'exécute avec les droits de
+l'appelant, et **c'est la RLS qui filtre**. Le comptage mesure donc « ce que le
+voisin voit », ce qui est exactement l'épreuve D8.
+
+### La cause du rouge : le témoin n'est pas un témoin
+
+La suite choisit sa société voisine ainsi (l. 225-229) :
+
+```sql
+SELECT t2.id INTO tb
+  FROM tenants t2
+ WHERE t2.id <> ta
+   AND EXISTS (SELECT 1 FROM tenant_users tu WHERE tu.tenant_id = t2.id)
+ LIMIT 1;                       -- ← aucun ORDER BY : le voisin est AU HASARD
+```
+
+**8 sociétés ont des liens** dans la base de la suite. `LIMIT 1` sans `ORDER BY`
+en choisit une **au hasard**, et cette société a **ses propres liens**. Le
+comptage remonte donc *ses* liens — ce qui est correct — et l'épreuve conclut à
+un défaut d'isolation qui n'existe pas.
+
+> **Ce n'est pas un défaut du produit, c'est un témoin mal choisi.** La preuve
+> d'isolation exige une société **sans lien de ce maillon**, sinon « le voisin
+> voit 3 liens » ne se distingue pas de « le voisin voit les liens du
+> propriétaire ».
+
+⚠️ **Le même raisonnement vaut pour le T07 de la 414 que j'ai corrigé :**
+lui aussi employait un témoin arbitraire. J'y ai ajouté un témoin hors RLS
+(`n_ecrit = 2`) ; ici il faut l'équivalent — **choisir un voisin dont on sait
+qu'il n'a aucun lien de ce maillon**, et le prouver par un comptage préalable.
+
+### Ce que je n'ai pas fait
+
+Je n'ai **pas touché** `434_chain_banc_epreuves_tests.sql` : c'est le fichier de
+la session `partie-3-chainages`, en cours de travail (le fichier est passé de
+434 à 655 lignes pendant ce relevé). Le correctif consiste à trier les candidats
+pour retenir une société **sans lien de ce maillon**, puis à afficher dans le
+détail les deux nombres — liens du voisin, liens du propriétaire — pour que le
+rouge soit attribuable.
