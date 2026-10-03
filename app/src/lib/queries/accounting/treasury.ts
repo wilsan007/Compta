@@ -9,6 +9,10 @@ import { type Row, type Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, ti, tud } from '../core'
 import { type PaymentOrder, type CollectionReminder, type CurrencyRevaluation, type FutureAccountingMovement, type TreasuryTransfer, type TreasuryRecurring, type ConsolidatedTreasury, type ExchangeRate, type ExchangeGainLossEntry, type CheckBook, type Check } from '@/types'
 import { getKpis } from './pilotage'
+// L19 : le prévisionnel a UN moteur — `cash_flow_forecast`. Avant, cette
+// fonction en était une seconde implémentation en JavaScript, et les deux
+// divergeaient de 4 000 € sur le même libellé (mesuré : la preuve 422).
+import { cashFlowForecast } from '../businessFunctions'
 
 // ============ Sprint 5: Payment Orders ============
 export async function getPaymentOrders(status?: string) {
@@ -152,15 +156,38 @@ export async function getTreasuryDashboard() {
 
 
 // ============ Sprint 5: Treasury Forecast ============
+//
+// ⚠️ CETTE FONCTION ÉTAIT UNE SECONDE IMPLÉMENTATION DU PRÉVISIONNEL.
+//
+// Mesuré : elle recalculait en JavaScript ce que `cash_flow_forecast`
+// calcule en SQL — et les deux ne disaient pas la même chose.
+//
+//   solde actuel   SQL : journal_lines, TOUTE la classe 5 (2 500 de banque
+//                            + 1 500 de caisse = 4 000)
+//                     JS : bank_accounts.calculated_balance ....... 0
+//   entrées/sorties SQL : SUM(amount_due)  — l'ÉCHÉANCE
+//                     JS : SUM(total)        — le TOTAL DE FACTURE
+//
+// Une facture partiellement réglée compte donc pour son total ici et pour
+// son dû côté moteur : deux chiffres, un seul libellé, aucun avertissement.
+// C'est le défaut « un seul moteur par grandeur » (W5), et c'est ce que la
+// 420 areveulé en rendant enfin les bons clés côté SQL.
+//
+// LA RÈGLE, MAINTENANT : le MOTEUR est le SQL. Cette fonction n'assemble
+// plus que la LIGNE DE TEMPS — une liste d'affichage, pas une grandeur. Tout
+// chiffre affiché vient de `cash_flow_forecast`.
 export async function getTreasuryForecast(days: number = 90) {
   const tid = await getTenantId()
   const today = new Date()
   const end = new Date(today)
   end.setDate(end.getDate() + days)
 
+  // ── LE MOTEUR. Une seule source pour toutes les grandeurs.
+  const previsionnel = await cashFlowForecast(days)
+
   let invQ = supabase
     .from('invoices')
-    .select('number, total, due_date, customer_id, status')
+    .select('number, total, amount_due, due_date, customer_id, status')
     .in('status', ['sent', 'overdue'])
     .gte('due_date', today.toISOString().split('T')[0])
     .lte('due_date', end.toISOString().split('T')[0])
@@ -181,17 +208,21 @@ export async function getTreasuryForecast(days: number = 90) {
   if (tid) purQ = purQ.eq('tenant_id', tid)
   const purchaseInvoices = await fetchAllRows<any>(purQ, { label: 'getTreasuryForecast/purchase_invoices' })
 
-  let baQ = supabase.from('bank_accounts').select('calculated_balance').order('id')
-  if (tid) baQ = baQ.eq('tenant_id', tid)
-  const bankAccounts = await fetchAllRows<any>(baQ, { label: 'getTreasuryForecast/bank_accounts' })
-  const currentBalance = bankAccounts.reduce((s, a) => s + Number(a.calculated_balance), 0)
+  // ⚠️ LE SOLDE NE SE LIT PLUS ICI. Il vient du moteur (classe 5), et
+  // cette lecture-ci ne voyait que les comptes bancaires : une caisse de
+  // 1 500 € n'y entrait pas, et l'écran affichait 0 € là où le moteur
+  // disait 4 000 €. Mesuré, dans la preuve de la 422.
+  const currentBalance = Number(previsionnel?.currentBalance ?? 0)
 
   const events: Array<{ date: string; type: 'in' | 'out'; amount: number; reference: string }> = []
   for (const inv of invoices) {
-    events.push({ date: inv.due_date, type: 'in', amount: Number(inv.total), reference: inv.number })
+    // `amount_due` et non `total` : c'est l'ÉCHÉANCE que le moteur compte.
+    // Une facture aux 3 000 € dont 2 000 € sont encaissés ne pèse que 1 000
+    // dans la prévision — avec `total`, elle en pesait 3 000.
+    events.push({ date: inv.due_date, type: 'in', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
   }
   for (const inv of purchaseInvoices) {
-    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.total), reference: inv.number })
+    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
   }
 
   events.sort((a, b) => a.date.localeCompare(b.date))
@@ -202,7 +233,20 @@ export async function getTreasuryForecast(days: number = 90) {
     return { ...e, runningBalance }
   })
 
-  return { currentBalance, timeline, totalIncoming: events.filter((e) => e.type === 'in').reduce((s, e) => s + e.amount, 0), totalOutgoing: events.filter((e) => e.type === 'out').reduce((s, e) => s + e.amount, 0) }
+  // Les ENTRÉES et SORTIES viennent du moteur aussi : la somme de la ligne
+  // de temps est un récapitulatif d'affichage, pas une deuxième grandeur.
+  return {
+    currentBalance,
+    timeline,
+    totalIncoming: Number(previsionnel?.totalIncoming ?? 0),
+    totalOutgoing: Number(previsionnel?.totalOutgoing ?? 0),
+    // et l'ENGAGEMENT DE PRODUCTION, que rien ne rendait visible jusqu'ici
+    productionMaterialCommitment: Number(previsionnel?.production_material_commitment ?? 0),
+    productionLaborCommitment: Number(previsionnel?.production_labor_commitment ?? 0),
+    productionCommitment: Number(previsionnel?.production_commitment ?? 0),
+    netForecast: Number(previsionnel?.net_forecast ?? 0),
+    netWithProduction: Number(previsionnel?.net_with_production ?? 0),
+  }
 }
 
 

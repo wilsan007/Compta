@@ -63,7 +63,13 @@
     "incomingType": "Encaissement",
     "outgoingType": "Décaissement",
     "runForecast": "Prévision à N jours",
-    "cashFlowResult": "Prévision de flux: {{amount}} sur {{days}} jours"
+    "cashFlowResult": "Prévision de flux: {{amount}} sur {{days}} jours",
+    "productionCommitment": "Engagement de production",
+    "materialToBuy": "Matière à acheter",
+    "workshopLabor": "Salaires d'atelier",
+    "commitmentTotal": "Total engagement",
+    "netWithProduction": "Net avec production",
+    "netForecast": "Net prévisionnel"
   },
   "paymentOrders": {
     "title": "Ordres de paiement",

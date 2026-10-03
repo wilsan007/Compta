@@ -499,14 +499,45 @@ describe('Treasury Forecast', () => {
   beforeEach(() => resetMock())
 
   it('getTreasuryForecast returns timeline with events', async () => {
-    // M3 (277, D-F) : le solde de départ est le solde COMPTABLE du compte
-    setMockData([{ id: '1', calculated_balance: 5000, due_date: '2025-01-15', number: 'INV-001', total: 1000 }])
+    // ⚠️ ASSERTION CHANGÉE LE 03/10/2026 (L19), ET LES DEUX VERDICTS
+    // SONT CONSERVÉS CI-DESSOUS.
+    //
+    // AVANT : le solde venait de `bank_accounts.calculated_balance`, lu en
+    // JavaScript, et le test affirmait 5 000 parce que c'était ce que le
+    // mock renvoyait. Il ne prouvait que le mock.
+    //
+    // APRÈS : le prévisionnel a UN moteur, `cash_flow_forecast` (SQL), et
+    // il rend le solde, les entrées et les sorties. L'écran ne récalcule
+    // plus rien — c'est le défaut « un seul moteur par grandeur » (W5),
+    // et les deux moteurs divergeaient de 4 000 € sur le même libellé
+    // (mesuré : la preuve de la 422).
+    //
+    // On fait donc dire au mock BANCAIRE un chiffre FAUX (9 999) et au
+    // MOTEUR le bon (5 000) : si la fonction relisait encore la banque,
+    // le test rougirait. C'est plus fort que l'ancien, qui ne pouvait
+    // échouer que si le mock changeait.
+    const { supabase: sb } = await import('@/lib/supabase')
+    setMockData([{ id: '1', calculated_balance: 9999, due_date: '2025-01-15', number: 'INV-001', total: 1000, amount_due: 400 }])
+    ;(sb.rpc as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: {
+        days: 90, expected_inflows: 400, expected_outflows: 0, net_forecast: 400,
+        currentBalance: 5000, totalIncoming: 400, totalOutgoing: 0,
+        production_material_commitment: 0, production_labor_commitment: 0,
+        production_commitment: 0, net_with_production: 400,
+      },
+      error: null,
+    })
+
     const { getTreasuryForecast } = await import('@/lib/queries')
     const result = await getTreasuryForecast(90)
     expect(result).toBeDefined()
     expect(result?.currentBalance).toBe(5000)
+    // le chiffre du MOTEUR, pas celui de la banque (9 999)
+    expect(result?.currentBalance).not.toBe(9999)
     expect(result?.timeline).toBeDefined()
     expect(typeof result.totalIncoming).toBe('number')
+    // et l'ENGAGEMENT DE PRODUCTION, rendu par le moteur
+    expect(result?.productionCommitment).toBe(0)
   })
 })
 

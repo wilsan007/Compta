@@ -63,7 +63,13 @@
     "incomingType": "Inflow",
     "outgoingType": "Outflow",
     "runForecast": "Run forecast",
-    "cashFlowResult": "Cash flow forecast: {{amount}} over {{days}} days"
+    "cashFlowResult": "Cash flow forecast: {{amount}} over {{days}} days",
+    "productionCommitment": "Production commitment",
+    "materialToBuy": "Material to buy",
+    "workshopLabor": "Workshop labor",
+    "commitmentTotal": "Total commitment",
+    "netWithProduction": "Net with production",
+    "netForecast": "Forecast net"
   },
   "paymentOrders": {
     "title": "Payment orders",
