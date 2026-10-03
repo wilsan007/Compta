@@ -1467,6 +1467,22 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L4 — LES INVARIANTS PAR AGRÉGATION (435). Quatre des sept invariants
+      # qui n'étaient pas mesurables le deviennent SANS nouvelle colonne : le
+      # reproche « la donnée n'est pas stockée » est souvent sans objet quand
+      # les deux côtés de l'égalité se répondent. Le côté manquant se CALCULE
+      # (reste à facturer, réalisé, solde de relevé, amont existant) au lieu
+      # d'être dupliqué dans une colonne que personne ne tiendrait à jour.
+      #
+      # L'indice passe de 13/20 à 17/20. INV-07, INV-10 et INV-12 restent non
+      # mesurables, et INV-12 est verrouillé par un test : le rendre mesurable
+      # en comparant « facturé − temps » au coût publié aurait mesuré un
+      # invariant plus faible sous le même nom. 8 scénarios.
+      - name: 'L4 : quatre invariants mesurés par agrégation (435)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/435_chain_l4_invariants_agregation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4

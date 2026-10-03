@@ -21,8 +21,10 @@
   anciens noms `310` → `322`.
 - **En cours** : le **banc d'épreuves D1 → D8** existe et JOUE (`434`) ; il est
   éprouvé sur **1 maillon sur 7** (`releve.comptabilise`) — **5 verdicts `tenu`
-  sur 8**, 3 `non_joue` avec leur raison. L'indice de cohérence **publié et
-  relevé chaque nuit** reste à faire (3.8 : 13 / 20 mesurés).
+  sur 8**, 3 `non_joue` avec leur raison. L'indice de cohérence est passé de
+  **13/20 à 17/20** (`435`) ; 3 invariants restent non mesurables, pour des
+  raisons **vérifiées** et non supposées. Reste **3.10** (lecture du registre
+  par un écran).
 - **Entrée** : partie 1 close. La partie 3 **peut** tourner en même temps que la partie 2
   **seulement si** les deux sessions respectent leurs plages et ne modifient jamais le même
   fichier ; sinon, elle vient après.
@@ -60,7 +62,7 @@
 
 | # | Tâche | Preuve attendue | Charge | État |
 |---|---|---|---:|---|
-| 3.8 | Rendre **mesurables** les 7 invariants « non mesurables » (ou en retirer avec raison écrite) | `13 / 20` → `20 / 20` mesurés, ou la raison de chaque exclusion | 1 j | ⬜ |
+| 3.8 | Rendre **mesurables** les 7 invariants « non mesurables » (ou en retirer avec raison écrite) | `13 / 20` → `20 / 20` mesurés, ou la raison de chaque exclusion | 1 j | 17/20 — 3 restent nommés |
 | 3.9 | *(en vol : `414`)* **Relevé nocturne** par `pg_cron` (`audit_chains` par société), historique daté, **alerte** quand l'indice baisse | job inscrit ; une baisse provoquée lève l'alerte | 0,5 j | ⬜ |
 | 3.10 | `chain_invariants` et `chain_invariant_results` **lus par l'écran** (lecture minimale, sans les pages de la partie 4) — ferme durablement l'écart du plafond des tables non lues | `check-unused-tables` revient au plafond sans le relever | 0,5 j | ⬜ |
 
@@ -134,8 +136,22 @@ Le banc (3.4 → 3.7) s'applique **aussi** aux maillons posés en 3.2 et 3.3.
         **un maillon** (`releve.comptabilise`). Les 6 autres portent leurs
         gabarits et leurs gestes au catalogue, mais **62 / 62 éprouvés n'est
         toujours pas atteint** : la preuve attendue est à **1 / 7**.
-- [ ] **3.8** — les 7 invariants « non mesurables » de la 413 restent non
-      mesurables : l'indice est toujours **13 / 20 mesurés**, pas 20 / 20.
+- [x] **3.8** — l'indice de cohérence passe de **13 / 20 à 17 / 20** (`435`).
+      Quatre des sept invariants non mesurables le deviennent **par
+      agrégation, sans aucune nouvelle colonne** : le reproche « la donnée
+      n'est pas stockée » est sans objet quand les deux côtés de l'égalité se
+      répondent. Le côté manquant se **calcule** — reste à facturer (INV-05),
+      réalisé budgétaire (INV-06), solde de relevé (INV-08), amont existant
+      (INV-19).
+      **INV-07, INV-10 et INV-12 restent non mesurables**, et c'est dit :
+      - INV-07 (lien groupe de lettrage ↔ ligne de TVA) et INV-10 (montant
+        absent de `dsn_declarations`) exigent une colonne ou une clé sur des
+        tables métier **partagées avec d'autres chantiers** — hors périmètre,
+        pour ne pas créer une seconde vérité à désynchroniser ;
+      - INV-12 aurait pu « passer » en comparant « facturé − temps » au coût
+        publié, mais `v_project_profitability` n'agrège que des **heures** :
+        cela aurait mesuré un invariant **plus faible sous le même nom**. Un
+        test (T07) verrouille ce refus.
 - [ ] **3.10** — `chain_invariants` et `chain_invariant_results` ne sont pas
       lus par l'écran. Le plafond des tables non lues reste donc au-dessus de
       sa valeur : mesuré à **79 pour 75**, dont 3 tables L4 et **76 de dette
