@@ -81,15 +81,16 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
          WHERE politiques_ecriture = 0 AND NOT environnement_ecrit) AS muettes_ici;
 
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
--- Mesuré le 02/10/2026 sur base neuve (273 migrations) : 314 tables sous FORCE
--- RLS, dont 15 sans AUCUNE politique d'écriture. Le +1/+1 vient de la 414
--- (`chain_invariant_alertes`), qui est volontairement MUETTE — elle ne s'écrit
--- que par `chain_alertes_lancer` (SECURITY DEFINER, rôle `service_role`), jamais
--- par le client. C'est la même raison que les deux tables de la 413.
+-- Mesuré le 02/10/2026 sur base neuve (273 migrations + 417) : 316 tables sous
+-- FORCE RLS, dont 17 sans AUCUNE politique d'écriture. Les +2/+2 viennent de la
+-- 417 (le banc D1→D8) : `chain_banc_maillons` et `chain_banc_resultats`.
+-- Elles sont volontairement MUETTES — le banc ne s'écrit que par
+-- `chain_banc_lancer` (SECURITY DEFINER, rôle `service_role`), jamais par le
+-- client. C'est la même raison que les tables de la 413 et de la 414.
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 314),
-  ('muettes',         15);
+  ('tables_forcees', 316),
+  ('muettes',         17);
 
 DO $$
 DECLARE

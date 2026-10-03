@@ -1896,6 +1896,93 @@ export interface Database {
       }
       Relationships: []
     }
+    chain_banc_maillons: {
+      Row: {
+        code: string
+        libelle: string
+        effet: string
+        document_type: string
+        evenement: string
+        amont_type: string
+        fonction: string
+        arguments: Json
+        sens: string
+        actif: boolean
+        note: string | null
+        created_at: string
+      }
+      Insert: {
+        code: string
+        libelle: string
+        effet: string
+        document_type: string
+        evenement: string
+        amont_type: string
+        fonction: string
+        arguments?: Json
+        sens?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Update: {
+        code?: string
+        libelle?: string
+        effet?: string
+        document_type?: string
+        evenement?: string
+        amont_type?: string
+        fonction?: string
+        arguments?: Json
+        sens?: string
+        actif?: boolean
+        note?: string
+        created_at?: string
+      }
+      Relationships: []
+    }
+    chain_banc_resultats: {
+      Row: {
+        id: number
+        code: string
+        epreuve: string
+        tenant_id: string
+        joue_le: string
+        verdict: string
+        mesure: number | null
+        attendu: string | null
+        obtenu: string | null
+        duree_ms: number | null
+        raison: string | null
+      }
+      Insert: {
+        id?: number
+        code: string
+        epreuve: string
+        tenant_id: string
+        joue_le?: string
+        verdict: string
+        mesure?: number
+        attendu?: string
+        obtenu?: string
+        duree_ms?: number
+        raison?: string
+      }
+      Update: {
+        id?: number
+        code?: string
+        epreuve?: string
+        tenant_id?: string
+        joue_le?: string
+        verdict?: string
+        mesure?: number
+        attendu?: string
+        obtenu?: string
+        duree_ms?: number
+        raison?: string
+      }
+      Relationships: []
+    }
     chain_invariant_alertes: {
       Row: {
         id: number
