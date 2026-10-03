@@ -1447,6 +1447,26 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L3 tranche 5 — LE BANC D'ÉPREUVES (434). La 433 rendait huit verdicts
+      # par maillon, tous `non_joue` : un cadre honnête, mais un cadre vide — on
+      # comptait des preuves sans en avoir pris aucune. Ici les huit épreuves
+      # SONT jouées, et le verdict écrit est celui qui a été mesuré.
+      #
+      # Cinq verdicts sont réellement `tenu`, chacun sur une mesure : le rejeu
+      # (+0 lien, +0 trace, refus métier 23505), l'annulation par geste DÉDIÉ
+      # (et non en rejouant le producteur), le retour arrière, le p95 sur
+      # 19 stimuli DISTINCTS, et l'isolation — mesurée depuis une session
+      # réelle en `authenticated`, seule façon de faire jouer la RLS.
+      # Trois restent `non_joue` avec leur raison : D2 exige une seconde
+      # connexion, D3 un point d'échec instrumenté, D5 bute sur
+      # `uniq_journal_entry_number_tenant` — le numéro d'écriture étant dérivé de
+      # la ligne, la réouverture est impossible. T07 vérifie que ces trois-là ne
+      # deviennent jamais vertes par défaut.
+      - name: 'L3 : le banc d''épreuves rend huit verdicts mesurés (434)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/434_chain_banc_epreuves_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
       # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
       # modules qui doit être vraie en permanence — et disait « de l'ordre de 4

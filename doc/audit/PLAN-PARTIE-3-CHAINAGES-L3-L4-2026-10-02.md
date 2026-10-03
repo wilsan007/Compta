@@ -19,8 +19,10 @@
   invariants, **13 mesurables, 7 non mesurables**, suite 8/8 après correction de l'index).
   Suites `400` → `413` toutes vertes, y compris sur une base mise à niveau depuis les
   anciens noms `310` → `322`.
-- **Pas commencé** : le **banc d'épreuves D1 → D8** (`0 / 62` chaînages éprouvés),
-  l'indice de cohérence **publié et relevé chaque nuit**.
+- **En cours** : le **banc d'épreuves D1 → D8** existe et JOUE (`434`) ; il est
+  éprouvé sur **1 maillon sur 7** (`releve.comptabilise`) — **5 verdicts `tenu`
+  sur 8**, 3 `non_joue` avec leur raison. L'indice de cohérence **publié et
+  relevé chaque nuit** reste à faire (3.8 : 13 / 20 mesurés).
 - **Entrée** : partie 1 close. La partie 3 **peut** tourner en même temps que la partie 2
   **seulement si** les deux sessions respectent leurs plages et ne modifient jamais le même
   fichier ; sinon, elle vient après.
@@ -50,9 +52,9 @@
 | # | Épreuve | Ce que le banc prouve, par chaînage | Charge | État |
 |---|---|---|---:|---|
 | 3.4 | Le **moteur** paramétré par chaînage (une description du maillon → les 8 épreuves) et le **rapport par maillon** (table + vue) | un chaînage déclaré = 8 verdicts datés | 1,5 j | ✅ |
-| 3.5 | **D1 rejeu** (aucun doublement) · **D2 concurrence** (deux appels simultanés) | 0 effet doublé, verrous tenus | 1 j | ⬜ |
-| 3.6 | **D3 panne partielle** (tout ou rien) · **D4 annulation** (lien fermé, effet retiré) | 0 effet orphelin | 1 j | ⬜ |
-| 3.7 | **D5 réouverture / reconfirmation** (nouveau tour) · **D6 retour arrière** · **D7 volume** (budget G6) · **D8 isolation** (deux sociétés) | rapport complet ; p95 dans le budget | 1,5 j | ⬜ |
+| 3.5 | **D1 rejeu** (aucun doublement) · **D2 concurrence** (deux appels simultanés) | 0 effet doublé, verrous tenus | 1 j | D1 ✅ / D2 `non_joue` |
+| 3.6 | **D3 panne partielle** (tout ou rien) · **D4 annulation** (lien fermé, effet retiré) | 0 effet orphelin | 1 j | D4 ✅ / D3 `non_joue` |
+| 3.7 | **D5 réouverture / reconfirmation** (nouveau tour) · **D6 retour arrière** · **D7 volume** (budget G6) · **D8 isolation** (deux sociétés) | rapport complet ; p95 dans le budget | 1,5 j | D6 D7 D8 ✅ / D5 `non_joue` |
 
 ### Bloc L4 — L'indice de cohérence publié (≈ 2 j)
 
@@ -103,17 +105,47 @@ Le banc (3.4 → 3.7) s'applique **aussi** aux maillons posés en 3.2 et 3.3.
 
 **Reste — et c'est dit sans arrondir :**
 
-- [ ] **3.5, 3.6, 3.7** — les épreuves **D1 → D8 ne sont pas écrites**. Le
-      moteur les déclare et les enregistre `non_joue` **avec leur raison** ; il
-      ne les déclare pas vertes. C'est délibéré : un banc « vert par défaut »
-      donnerait l'assurance d'une preuve sans la preuve. **La preuve attendue —
-      « 62 / 62 éprouvés » — n'est donc PAS acquise.**
+- [x] **3.5, 3.6, 3.7** — les épreuves **D1 → D8 sont écrites ET jouées** (`434`) ;
+      suite 434 : **8 scénarios, 8 verts**. Le verdict écrit est celui qui a été
+      **mesuré**, jamais un `tenu` par défaut :
+      - **D1 rejeu** — `tenu` : +0 lien, +0 trace. Le 2ᵉ appel est **refusé**
+        (SQLSTATE `23505`), pas silencieux : le refus métier est un mode de
+        tenue aussi valide que le silence, et c'est le SQLSTATE qui distingue
+        un refus d'une panne — sans quoi un maillon cassé qui plante avant
+        d'écrire passerait pour un rejeu correct.
+      - **D4 annulation** — `tenu`, via un geste **dédié**
+        (`appat_annul` → `unreconcile_bank_statement_line`). Rejouer le
+        producteur pour « annuler » demandait un **second effet, pas sa
+        suppression**.
+      - **D6 retour arrière**, **D7 volume** — `tenu` : p95 sur **19 stimuli
+        distincts**, pas 19 rejeux de la même ligne (on aurait mesuré le coût
+        d'un refus en l'appelant une performance), et `percentile_cont(0.95)`
+        réel.
+      - **D8 isolation** — `tenu`, mesuré depuis une **session réelle** en
+        `authenticated`. En `SECURITY DEFINER` la RLS est contournée : compter
+        avec `tenant_id <> v_tid` donnait un vert **par construction**.
+      - **D2, D3 et D5 restent `non_joue`**, chacune avec sa raison : D2 exige
+        une **seconde connexion** (PostgreSQL interdit `SET ROLE` dans une
+        fonction `SECURITY DEFINER`), D3 un **point d'échec instrumenté**, et
+        D5 bute sur `uniq_journal_entry_number_tenant` — le numéro d'écriture
+        étant dérivé de la ligne, **la réouverture est impossible**. T07
+        vérifie qu'aucune ne devient verte par défaut.
+      - **Ce qui reste acquis et non arrondi :** le banc n'est éprouvé que sur
+        **un maillon** (`releve.comptabilise`). Les 6 autres portent leurs
+        gabarits et leurs gestes au catalogue, mais **62 / 62 éprouvés n'est
+        toujours pas atteint** : la preuve attendue est à **1 / 7**.
 - [ ] **3.8** — les 7 invariants « non mesurables » de la 413 restent non
       mesurables : l'indice est toujours **13 / 20 mesurés**, pas 20 / 20.
 - [ ] **3.10** — `chain_invariants` et `chain_invariant_results` ne sont pas
       lus par l'écran. Le plafond des tables non lues reste donc au-dessus de
       sa valeur : mesuré à **79 pour 75**, dont 3 tables L4 et **76 de dette
       antérieure à L4**.
+
+> **Rouge connu, préexistant, hors périmètre de la 434 :** `414` /
+> `T07 isolation` est rouge — la propriétaire `AL6` voit **0** de ses **1**
+> alerte. Les contrôles `check_chain_rpc_inventory`, `check_forced_rls_writers`
+> et `check_bt_grid` restent verts, et aucun fichier de la 414 n'a été touché
+> par la 434.
 
 ## 4. Ce qui n'est PAS dans cette partie
 
