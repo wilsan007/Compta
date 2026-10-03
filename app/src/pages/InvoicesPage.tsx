@@ -10,6 +10,8 @@ import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, 
 import { generateFacturX, downloadXML, isDraftDocument } from '@/lib/facturX'
 import { getCompanySettings } from '@/lib/queries/accounting'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
+// I-01 — la Vue Chaîne, réutilisée telle quelle sur la fiche facture.
+import { ChainTimeline } from '@/components/ChainTimeline'
 import { QuickCustomerAccess } from '@/components/cross-module/QuickCustomerAccess'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
 import type { Invoice, Customer, CompanySettings } from '@/types'
@@ -554,6 +556,8 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: (
   const { t } = useTranslation('sales')
   const { t: tAcc } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  // I-01 — la Vue Chaîne. Espace `crossModule`, comme le composant.
+  const { t: tChain } = useTranslation('crossModule')
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
@@ -572,6 +576,17 @@ function InvoiceDetailModal({ invoice, onClose }: { invoice: Invoice; onClose: (
           <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('invoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.paidAmount')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('invoices.balance')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
+
+          {/* I-01 — la Vue Chaîne, premier écran qui l'accueille. La facture est
+              le meilleur point d'entrée : c'est le document qui clôt le plus
+              souvent une chaîne (commande → BL → facture), donc celui où le
+              client veut le plus voir « d'où vient ce chiffre ». Le composant
+              ne décide rien : direction, profondeur et historique viennent de
+              `chain_document_arborescence` (migration 460). */}
+          <div className="border-t border-[var(--color-border)] pt-3">
+            <div className="text-sm text-[var(--color-text-secondary)] mb-1">{tChain('chain.title')}</div>
+            <ChainTimeline type="invoices" id={invoice.id} libelle={t('invoices.title')} />
+          </div>
         </div>
       </div>
     </div>

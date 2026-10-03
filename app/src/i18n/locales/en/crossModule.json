@@ -159,6 +159,7 @@
     "etats": {
       "rompu": "cancelled",
       "remplace": "replaced"
-    }
+    },
+    "title": "Document chain"
   }
 }

@@ -159,6 +159,7 @@
     "etats": {
       "rompu": "annulé",
       "remplace": "remplacé"
-    }
+    },
+    "title": "Chaîne du document"
   }
 }
