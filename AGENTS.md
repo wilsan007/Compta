@@ -45,7 +45,13 @@ L'essentiel en huit lignes :
 > *Numéros **constatés** dans cette plage au 02/10, à la date où on les a pris :*
 > *`414` alerte de dégradation · `430` paie versée (session L3) ·*
 > *`431` invariants mesurables + registre des types de documents (session L4,
-> branche `l4-invariants`).*
+> branche `l4-invariants`) · `433` moteur du banc, `434` ses huit épreuves,
+> `435` invariants par agrégation, `436` six maillons de plus (session L3,
+> branche `partie-3-chainages`) ·*
+> *`437` **non-régression des trois fuites entre sociétés fermées en L4**
+> (session L4, branche `l4-invariants`) — pris par
+> `migration-numero.mjs`, premier libre après `436`, vérifié dans les six
+> worktrees au moment de le prendre.*
 > | **`400` → `413`** | **chaînages** (L1, L2, L3, L4) — les 14 chaînages et leurs suites | **2026-10-02** |
 > | `325` → `399` | **libre** | — |
 >

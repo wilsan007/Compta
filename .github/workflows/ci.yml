@@ -1479,6 +1479,27 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L4 — LES TROIS FUITES ENTRE SOCIÉTÉS, ET LEUR NON-RÉGRESSION (437).
+      # Le 02/10, en validant la 414, trois défauts d'isolation ont été trouvés et
+      # corrigés. Les corrections n'étaient prouvées que par des MESURES
+      # MANUELLES — rien ne les rejouait. Cette suite les rend opposables :
+      #   T01 `_mk_tenant_contexte` (helper de test, SECURITY DEFINER) n'est plus
+      #        exécutable par `authenticated` ni `anon` — sans le REVOKE, un client
+      #        choisissait sa société et la RLS s'appliquait dessus ;
+      #   T02 `chain_degradation_detectee` refuse la société d'autrui ET répond
+      #        pour la sienne (une garde, pas une fonction cassée) ;
+      #   T03 `releve_id` est une clé COMPOSITE (tenant_id, releve_id) : une alerte
+      #        de SEPT ne peut pas viser le relevé de SIX (porte ISO-02).
+      # Les trois exigent un REFUS, pas un compte : un compte de zéro passerait
+      # aussi sur une base vide. T01 vérifie en plus que la fonction existe —
+      # sans quoi il passerait sur une absence (faux vert mesuré le 02/10).
+      # Placée APRÈS la 431, qui crée le helper, et APRÈS la 414, qui crée les
+      # tables : jouée seule, T01 dirait honnêtement qu'il ne peut rien prouver.
+      - name: 'L4 : les trois fuites entre sociétés restent fermées (437)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/437_chain_l4_fuites_fermees_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
       # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
       # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
