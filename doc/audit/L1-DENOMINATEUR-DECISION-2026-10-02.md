@@ -270,4 +270,68 @@ la session `partie-3-chainages`, en cours de travail (le fichier est passé de
 434 à 655 lignes pendant ce relevé). Le correctif consiste à trier les candidats
 pour retenir une société **sans lien de ce maillon**, puis à afficher dans le
 détail les deux nombres — liens du voisin, liens du propriétaire — pour que le
-rouge soit attribuable.
+---
+
+## 10. Addendum — le tri des 51 : ce que la machine peut dire, et ce qu'elle ne peut pas
+
+J'ai tenté le tri des 51 par requête, comme la tranche 4 l'a fait pour ses 32.
+**Le résultat est instructif : la machine donne des bornes, pas des verdicts.**
+
+### Ce qui est mesurable, et solide
+
+| Mesure | Valeur |
+|---|---:|
+| Fonctions écrivantes dans ≥ 2 modules | **51** |
+| … qui **posent un lien** (`chain_avant` / `chain_apres` / `link_documents`) | **26** |
+| Déclencheurs compagnons `chain_l1_*` posés | **16** |
+
+Le chiffre **26** est le plus utile : c'est le nombre de maillons **déjà
+instrumentés** dans le produit. Il croise `pg_proc.prosrc` et les déclencheurs
+réels, sans se fier à un nom de fonction.
+
+### Ce que le tri automatique rate — et pourquoi
+
+Premier essai, quatre verdicts déduits du nom et du corps de la fonction. Il
+classe `create_stock_on_manufacturing_complete` en « recalcul » et
+`notify_watchers_on_comment` en « garde » : **faux dans les deux cas**.
+Second essai, critère plus propre — « pose-t-il un lien ? » — il classe
+`create_journal_on_invoice_validate` en « non tracé » alors qu'un compagnon
+`chain_l1_invoice_entry` le trace, et `reconcile_bank_statement_line` en
+« garde » alors que c'est un maillon de lettrage.
+
+> **Le tri ne se délègue pas à une regex.** Une fonction est un maillon par ce
+> qu'elle **fait**, et « ce qu'elle fait » se lit dans son corps. Une heuristique
+> sur le nom produit un tri qui a l'air sort juste — c'est le pire défaut
+> possible ici, parce qu'un faux tri est plus dangereux qu'un tri absent.
+
+### Ce que le tri doit être, concrètement
+
+Il faut **examiner les 51 une par une**, et pour chacune écrire :
+
+| Colonne | Contenu |
+|---|---|
+| fonction | son nom |
+| modules écrits | mesuré |
+| entrée | déclencheur / RPC / interne — mesuré |
+| **trace ou non** | mesuré : appelle-t-elle `chain_avant` ? un compagnon la couvre-t-il ? |
+| **verdict** | maillon / paramétrage / recalcul / garde |
+| **raison** | une phrase par ligne — la doctrine de la tranche 4 |
+
+C'est un travail de **lecture**, pas de requête. C'est aussi pour cela qu'il
+vaut mieux le faire en une fois, avec la base neuve sous les yeux, que par
+intermitence.
+
+### Le dénominateur publié, dans l entre-temps
+
+Tant que le tri n'est pas fait, le chiffre honnête à publier est :
+
+```
+L1 : 51 fonctions écrivantes transverses
+     ├─ 26 instrumentées (dont 16 par un compagnon chain_l1_*)
+     ├─ 25 à instruire
+     └─ tri ligne à ligne EN ATTENTE (raison écrite par ligne)
+```
+
+C'est un indicateur **honnête** : il dit ce qui est fait, ce qui reste, et
+quand il n'a pas tranché. Il ne prétend pas à un « X/51 » que personne n'a
+vérifié — c'est exactement le piège que `ca69070` a retire de l'inventaire.
