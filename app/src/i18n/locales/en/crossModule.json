@@ -151,5 +151,14 @@
     "moduleActive": "Stock module active",
     "moduleActiveDescription": "The Stock module is enabled. Manage your products from the Stock module.",
     "goToProducts": "Go to products"
+  },
+  "chain": {
+    "loading": "Reading the chain…",
+    "error": "Chain unreadable: {{message}}",
+    "isolated": "This document has neither an upstream nor a downstream: it was entered on its own.",
+    "etats": {
+      "rompu": "cancelled",
+      "remplace": "replaced"
+    }
   }
 }

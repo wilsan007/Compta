@@ -151,5 +151,14 @@
     "moduleActive": "Module Stock actif",
     "moduleActiveDescription": "Le module Stock est activé. Gérez vos produits depuis le module Stock.",
     "goToProducts": "Aller aux produits"
+  },
+  "chain": {
+    "loading": "Lecture de la chaîne…",
+    "error": "Chaîne illisible : {{message}}",
+    "isolated": "Ce document n’a ni amont ni aval : il a été saisi seul.",
+    "etats": {
+      "rompu": "annulé",
+      "remplace": "remplacé"
+    }
   }
 }
