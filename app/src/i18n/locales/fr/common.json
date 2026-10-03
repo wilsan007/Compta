@@ -422,7 +422,9 @@
     "display": "Afficher",
     "refresh": "Rafraîchir",
     "selectEmployee": "Veuillez sélectionner un employé",
-    "fillRequired": "Veuillez remplir tous les champs obligatoires"
+    "fillRequired": "Veuillez remplir tous les champs obligatoires",
+    "noEmployeeRecord": "Aucun dossier salarié associé à votre session",
+    "noEmployeeRecordHint": "Aucun compte n'est rattaché à votre compte utilisateur. Demandez à un administrateur de vous affecter un dossier salarié, puis reconnectez-vous."
   },
   "dashboard": {
     "title": "Tableau de bord",

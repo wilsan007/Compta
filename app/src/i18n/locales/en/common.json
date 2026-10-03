@@ -422,7 +422,9 @@
     "display": "Display",
     "refresh": "Refresh",
     "selectEmployee": "Please select an employee",
-    "fillRequired": "Please fill in all required fields"
+    "fillRequired": "Please fill in all required fields",
+    "noEmployeeRecord": "No employee record linked to your session",
+    "noEmployeeRecordHint": "No profile is attached to your user account. Ask an administrator to assign an employee record, then sign in again."
   },
   "dashboard": {
     "title": "Dashboard",
