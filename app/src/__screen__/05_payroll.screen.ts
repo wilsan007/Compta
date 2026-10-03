@@ -52,5 +52,19 @@ it('Paie — salarié, lot, bulletins, journal, virement', async () => {
   const vs = await attempt(() => pay.generatePayRunSlips(pr.id))
   check('H10', 'un lecteur ne peut pas (re)calculer les bulletins', !vs.ok, vs.err ?? 'ACCEPTÉ')
   await login(0, A)
+  // C3 / rh-008 (340) : TimesheetsPage n'envoie que des HEURES. 12 h pour 7 h prévues = 5 h sup,
+  // calculées par la base ; l'approbation pose l'élément de paie et signe l'approbateur.
+  if (emps[0]) {
+    type Feuille = { id: string; overtime_minutes: number | null }
+    const ts = await attempt(() => pay.createTimesheet({ employee_id: emps[0].id, date: '2026-11-10', hours: 12, description: 'Inventaire', project_id: null, status: 'pending' }))
+    const feuille = ts.val as Feuille | undefined
+    check('H11', 'feuille de temps de 12 h saisie par l\'écran : 300 minutes d\'heures sup calculées par la base', ts.ok && Number(feuille?.overtime_minutes) === 300, ts.err ?? feuille?.overtime_minutes)
+    if (ts.ok && feuille) {
+      const ap = await attempt(() => pay.updateTimesheet(feuille.id, { status: 'approved' }))
+      const el = await sql(`select quantity::float q, amount::float a from payroll_variable_elements where source_id=$1 and element_type='overtime'`, [feuille.id])
+      const sig = (await sql(`select approved_by, approved_at from timesheets where id=$1`, [feuille.id]))[0]
+      check('H12', 'approuver la feuille pose UN élément « heures sup » (5 h, montant non nul) et signe l\'approbation', ap.ok && el.length === 1 && el[0].q === 5 && el[0].a > 0 && !!sig?.approved_by && !!sig?.approved_at, { err: ap.err, elements: el, signature: sig })
+    }
+  }
   save('s5.json', findings)
 })

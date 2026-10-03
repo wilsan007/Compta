@@ -292,6 +292,7 @@
     "validate": "اعتماد",
     "reject": "رفض",
     "noTimesheets": "لا توجد جداول وقت",
+    "overtimeIncluded": "منها {{hours}} س إضافية",
     "noTimesheetsDescription": "لم يتم تسجيل أي جدول وقت",
     "createFirst": "إنشاء أول جدول وقت",
     "searchPlaceholder": "البحث بموظف، تاريخ...",

@@ -304,8 +304,11 @@ BEGIN
 
   -- Trois données saisies AVANT que l'absence existe : les gardes ne pouvaient
   -- pas les refuser, c'est exactement ce que le filet doit retrouver.
+  -- 04/10/2026 (340) : 7 h, l'horaire prévu d'un salarié à 35 h. Avec 8 h, la base
+  -- mesure désormais 1 h supplémentaire et le contrôle nomme — à raison — une
+  -- QUATRIÈME incohérence (`heures_supplementaires`). Verdict précédent : 8 h.
   INSERT INTO timesheets (tenant_id, employee_id, date, hours, status)
-  VALUES (t, e, '2026-06-29', 8, 'pending');
+  VALUES (t, e, '2026-06-29', 7, 'pending');
   INSERT INTO project_time_entries (tenant_id, employee_id, start_time, duration_seconds, is_billable)
   VALUES (t, e, '2026-06-29 09:00:00+00', 3600, true);
   INSERT INTO expense_reports (tenant_id, employee_id, number, status)

@@ -1005,6 +1005,8 @@ export interface Timesheet {
   description: string
   project_id: string | null
   status: 'pending' | 'approved' | 'rejected'
+  /** Calculé par la base (340) : minutes au-delà de l'horaire prévu du jour. */
+  overtime_minutes?: number | null
   created_at: string
 }
 

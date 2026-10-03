@@ -292,6 +292,7 @@
     "validate": "Validate",
     "reject": "Reject",
     "noTimesheets": "No timesheets",
+    "overtimeIncluded": "incl. {{hours}} h overtime",
     "noTimesheetsDescription": "No timesheet recorded",
     "createFirst": "Create my first timesheet",
     "searchPlaceholder": "Search by employee, date...",

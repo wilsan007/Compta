@@ -206,6 +206,7 @@
     "validate": "Valider",
     "reject": "Rejeter",
     "noTimesheets": "Aucune feuille de temps",
+    "overtimeIncluded": "dont {{hours}} h sup",
     "noTimesheetsDescription": "Aucune feuille de temps enregistrée",
     "createFirst": "Créer ma première feuille de temps",
     "searchPlaceholder": "Rechercher par employé, date...",

@@ -17,6 +17,8 @@ export function TimesheetsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
+  // `t` est masqué par la ligne dans la boucle du tableau : alias pour y traduire.
+  const { t: tHr } = useTranslation('hr')
 const [timesheets, setTimesheets] = useState<any[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -89,7 +91,15 @@ const [timesheets, setTimesheets] = useState<any[]>([])
               <TableRow key={t.id}>
                 <TableCell className="text-xs">{formatDate(t.date)}</TableCell>
                 <TableCell className="font-medium text-sm">{t.employees?.name || empName(t.employee_id)}</TableCell>
-                <TableCell className="font-mono text-xs">{Number(t.hours).toFixed(1)}h</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {Number(t.hours).toFixed(1)}h
+                  {/* 340 : les heures sup sont calculées par la base (heures − horaire prévu). */}
+                  {Number(t.overtime_minutes) > 0 && (
+                    <span className="block text-[var(--color-warning-text)]">
+                      {tHr('timesheets.overtimeIncluded', { hours: (Number(t.overtime_minutes) / 60).toFixed(2) })}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm max-w-xs truncate">{t.description || '—'}</TableCell>
                 <TableCell className="text-xs">{projName(t.project_id)}</TableCell>
                 <TableCell><Badge variant={statusBadge[t.status]}>{translateStatus(t.status)}</Badge></TableCell>

@@ -103,7 +103,7 @@
 | Tâche | Objet | État | Repris de (plan QA du 29/09) |
 |---|---|---|---|
 | 2.1 | Titres-restaurant et transport dans le bulletin | ⬜ | C2 ter |
-| 2.2 | Heures sup détectées depuis la feuille de temps | ⬜ | C3 (rh-008) |
+| 2.2 | Heures sup détectées depuis la feuille de temps | ✅ | C3 (rh-008) — migration `340`, suite `340` **9/9** (4 rouges avant), scénario écran H11/H12, 04/10 |
 | 2.3 | Tranches d'heures sup + exonération | ⬜ | reste de W5 |
 | 2.4 | Pointage d'absence ; constats bas de paie | ⬜ | C4 (rh-009), C5, C6 |
 | 2.5 | OF terminé à 0,00 €, consommations | 🔶 | D3 — `bc92cf9` sur `qa/lot-d-stock` |

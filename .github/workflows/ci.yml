@@ -2053,6 +2053,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.2 (C3, rh-008) : une feuille de temps saisie en HEURES
+      # (ce que l'écran envoie) ne produisait aucune heure supplémentaire — le
+      # déclencheur ne calculait que sur une heure de départ. 9 scénarios :
+      # 12 h pour 7 h prévues → 300 min (T01) et l'élément de paie au taux majoré
+      # (T02), 7 h → rien (T03), le pointage horaire inchangé (T04), l'horaire
+      # du salarié (T05), l'approbation signée par la base (T06), l'absence qui
+      # ne fabrique rien (T07), la correction des heures qui recalcule (T08), la
+      # valeur fournie qui est respectée (T09).
+      - name: 'Partie 2 (2.2) : les heures sup d''une feuille saisie en heures (340)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/340_timesheet_overtime_from_hours_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
