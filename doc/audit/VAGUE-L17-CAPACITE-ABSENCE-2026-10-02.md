@@ -159,5 +159,130 @@ deuxième fois que la leçon se présente dans cette journée.
 ## 7. Suite
 
 **L17 tranche 2** : proposition de réaffectation (l'interface qui propose un
-remplaçant), prévisionnel RH en sens inverse, écran des créneaux orphelins.
-Puis **L20** (régénération), **L23-b/c**.
+
+---
+
+# Tranche 2 — La proposition de réaffectation et le prévisionnel RH
+
+**Migration** `417_l17_reaffectation_previsionnel.sql` · **Suite** `417_l17_reaffectation_previsionnel_tests.sql`
+· **Date** 03/10/2026 · **Branche** `partie-5-integrite-chainages`
+
+> Lot **L17** du plan §5 Phase F, troisième et quatrième exigence :
+> « alerte sur les créneaux orphelins, **proposition de réaffectation** ;
+> à l'inverse, **une charge de production planifiée apparaît dans le
+> prévisionnel RH** ». La 416 (tranche 1) a livré le porteur, le constat,
+> la garde et la capacité ajustée, et a dit dans sa preuve (§6, points 2
+> et 3) que ces deux exigences restaient entières.
+
+## 1. Le défaut, mesuré avant (base neuve, 280 migrations, 0 erreur)
+
+| # | Mesure | Chiffre |
+|---|---|---|
+| D1 | Fonctions de proposition (« réaffect », « candidat », « remplac », « disponib ») | **0** |
+| D2 | Fonctions de prévision / charge lisant `planning_slots` | **0** |
+| D3 | Contrainte sur `employees.position` | **aucune** (texte libre) |
+
+La seule fonction approchant D1 est `chain_lien_remplacer` — le **cycle du
+lien** du socle (402), sans rapport. La 416 avait rendu le PROBLÈME
+visible ; elle n'avait pas rendu la SOLUTION possible.
+
+## 2. Ce que la 417 pose — deux lectures, aucun schéma
+
+1. **`planning_slot_candidats(société, créneau)`** — qui peut prendre ce
+   créneau, du plus disponible au moins disponible, **avec son motif**.
+   Trois filtres : actif ; **absent ce jour-là → jamais proposé** ; même
+   `position` que l'opérateur à remplacer.
+2. **`employee_planned_load(société, salarié, du, au)`** — la charge de
+   production planifiée en heures, **les créneaux bloqués par une absence
+   en sont retirés**.
+
+**Aucune écriture, aucune colonne, aucun déclencheur.** La réaffectation
+elle-même est déjà possible depuis la 416 : il suffit d'écrire le nouvel
+`employee_id`, et la garde rejoue. Cette migration rend la **décision**
+faisable ; elle ne la prend pas — le plan confie la réaffectation au chef
+d'atelier.
+
+## 3. Trois décisions, et pourquoi
+
+### 3.1 Sans qualification portée → AUCUN candidat (T04)
+
+`position` étant un texte libre, la fonction **ne devine pas** : quand
+l'opérateur à remplacer n'en porte pas, elle ne renvoie personne plutôt
+que les 40 employés de la société. Une liste sans critère est une liste
+sans information. Le test porte le **contre-exemple** : avec une position,
+la proposition revient.
+
+### 3.2 L'égalité de `position` est une égalité de texte
+
+« Tourneur » et « tourneur » ne se rejoignent pas. On ne normalise pas :
+normaliser ici supposerait une convention d'écriture que la base ne
+possède pas. **Limite dite**, pas cachée.
+
+### 3.3 Un créneau inexistant est REFUSÉ, pas rendu vide
+
+Une liste vide se lit « personne n'est disponible » — ce qui est une
+*autre* information que « ce créneau n'existe pas ».
+
+## 4. Résultats
+
+**Suite 417 — 8/8 verts** (base neuve `l17_t3`, 282 migrations, 0 erreur) :
+
+| | Scénario | Chiffre mesuré |
+|---|---|---|
+| T01 | la proposition et son motif | 1 candidat, motif « Même qualification (Tourneur), 0 h déjà planifiées » |
+| T02 | un candidat absent n'est **jamais** proposé | 2 tourneurs absents, 1 seul candidat (le présent) |
+| T03 | le moins chargé d'abord | 2 candidats, **Nabil (0 h)** avant Amine (6 h) |
+| T04 | sans qualification → aucun | sans position → **0** ; avec position → **2** |
+| T05 | le prévisionnel retire les heures bloquées | Amine **4 h** ; Kader **2 h → 0 h** après son absence |
+| T06 | l'isolation sur les **deux** sens | contexte B, candidats A **et** B répondent, charge de B lue depuis A = **0** |
+| T07 | refus nommé | « Proposition de réaffectation refusée : le créneau … n'existe pas dans la société … » |
+| T08 | surcoût mesuré | candidats **p95 0,398 ms** · prévisionnel **p95 0,255 ms** (budget 50 ms) |
+
+**Non-régression, base neuve, ordre de la CI** — **282 migrations, 0 erreur**,
+**21 suites vertes, 0 rouge** : 234 (8) · 236 (17) · W9 263/264/265/266
+(13+11+10+34) · 400→413 (15, 12, 12, 11, 10, 12, 7, 8, 6, 8, 8) · 415 (8) ·
+416 (8) · **417 (8)** · 450 (14).
+
+**12 portes vertes**, dont `check_anon_grants` — qui a **vu rouge** (§5).
+G5 : **105/105 suites** branchées.
+
+**Aucune modification de schéma** → `db:types` sans écart, par
+construction.
+
+## 5. Une porte a vu rouge, et elle avait raison
+
+`check_anon_grants` a refusé les deux lectures : une fonction créée l'est
+avec EXECUTE pour `PUBLIC`, donc **un visiteur non connecté** pouvait
+appeler les deux — et les deux traversent la RLS (`SECURITY DEFINER`),
+l'une rendant la charge de production d'un salarié. Révocées à `PUBLIC`
+et `anon`, accordées à `authenticated` + `service_role`.
+
+## 6. Limites dites
+
+1. **La qualification est un texte libre.** La proposition est aussi
+   fiable que `employees.position` — le modèle n'a pas de référentiel de
+   compétences. C'est la limite structurelle du lot, et elle est au cœur
+   de T04 plutôt que dans une note.
+2. **L'écran n'est pas encore branché.** Les deux lectures sont en base ;
+   le panneau « réaffecter » de `PlanningPage.tsx` reste à écrire.
+3. **Le jour regardé est `planned_start::date`** — hérité de la 416.
+4. **Le prévisionnel est borné au créneau lu** : un créneau à cheval ne
+   compte que sa fraction dans la période. C'est plus exact, et c'est la
+   raison pour laquelle le calcul est un `CASE` et non une somme simple.
+
+## 7. Suite
+
+Le couple `production ↔ RH` est désormais fermé dans ses deux sens :
+**porteur, constat, garde, capacité ajustée, proposition, prévisionnel**.
+Restent **L18** (stock ↔ projets), **L19** (production ↔ trésorerie),
+puis **L20** (régénération) et **L23-b/c**.
+
+**Migration** `416_chain_l17_capacite_absence.sql` · **Suite** `416_chain_l17_capacite_absence_tests.sql`
+· **Date** 02/10/2026 · **Branche** `partie-5-integrite-chainages`
+
+> Lot **L17** du plan §5 Phase F — « Production ↔ RH (capacité ↔ absence) ».
+> Dépendance : **L11** (`employee_absence_days`, 263) ✅. C'est le couple vide
+> nommé en §A.4 du référentiel : « la capacité de production ne connaît pas
+> l'absence : on planifie avec des salariés absents — **le cas d'usage
+> fondateur de tout ce travail** ».
+

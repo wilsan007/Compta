@@ -1479,6 +1479,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # L17 (tranche 2) : les deux exigences que la 416 avait dites
+      # ouvertes. Mesuré avant : AUCUNE proposition de remplacement
+      # n'existait (0 fonction « réaffect » / « candidat » / « remplac »)
+      # et AUCUN prévisionnel RH ne lisait `planning_slots` — les deux
+      # sens du couple étaient vides. Deux LECTURES, aucun schéma : le
+      # porteur et la garde sont ceux de la 416, cette tranche rend la
+      # DÉCISION faisable sans la prendre. 8 scénarios : la proposition
+      # avec son motif (T01), un candidat lui-même ABSENT jamais proposé
+      # (T02), le moins chargé d'abord (T03), aucun critère porté → aucun
+      # candidat plutôt que les 40 employés (T04), le prévisionnel qui
+      # retire ce que l'absence rend inexploitable (T05), l'isolation sur
+      # les DEUX sens (T06), le refus nommé d'un créneau inexistant
+      # (T07), le p95 des deux lectures (T08).
+      - name: 'L17 : la proposition de réaffectation et le prévisionnel RH (417)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/417_l17_reaffectation_previsionnel_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
       # se pose que vers des documents qui existent (registre des types + contrôle
       # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
