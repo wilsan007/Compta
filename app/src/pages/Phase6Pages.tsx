@@ -38,7 +38,7 @@ export function BatchEntryPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [sessions, setSessions] = useState<BatchEntrySession[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ session_name: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10) })
@@ -111,7 +111,7 @@ export function AutoLabelRulesPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [rules, setRules] = useState<AutoLabelRule[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<AutoLabelRule | null>(null)
@@ -189,7 +189,7 @@ export function ExtournePage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [logs, setLogs] = useState<ExtourneLog[]>([])
-  const [entries, setEntries] = useState<any[]>([])
+  const [entries, setEntries] = useState<Awaited<ReturnType<typeof getJournalEntries>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState('')
@@ -199,7 +199,7 @@ export function ExtournePage() {
     setLoading(true)
     try {
       const [l, e] = await Promise.all([getExtourneLogs(), getJournalEntries()])
-      setLogs(l || []); setEntries((e || []).filter((x: any) => x.status === 'posted'))
+      setLogs(l || []); setEntries((e || []).filter((x) => x.status === 'posted'))
     } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
@@ -254,7 +254,7 @@ export function CarryForwardPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [logs, setLogs] = useState<CarryForwardLog[]>([])
-  const [years, setYears] = useState<any[]>([])
+  const [years, setYears] = useState<Awaited<ReturnType<typeof getFiscalYears>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [sourceYear, setSourceYear] = useState('')
@@ -431,7 +431,7 @@ export function CashControlPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [sessions, setSessions] = useState<CashControlSession[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ session_number: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10), theoretical_balance: 0, counted_balance: 0, notes: '' })
@@ -519,7 +519,7 @@ export function FECAttestationPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [attestations, setAttestations] = useState<FECAttestation[]>([])
-  const [years, setYears] = useState<any[]>([])
+  const [years, setYears] = useState<Awaited<ReturnType<typeof getFiscalYears>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ fiscal_year_id: '', fec_type: 'definitive' })
@@ -615,7 +615,7 @@ export function TierRIBsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [ribs, setRibs] = useState<TierRIB[]>([])
-  const [thirdParties, setThirdParties] = useState<any[]>([])
+  const [thirdParties, setThirdParties] = useState<Awaited<ReturnType<typeof getThirdPartyAccounts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<TierRIB | null>(null)
@@ -655,7 +655,7 @@ export function TierRIBsPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('tierRIB.thirdParty')} value={form.third_party_account_id} onChange={e => setForm({ ...form, third_party_account_id: e.target.value })}
-              options={[{ value: '', label: tCommon('actions.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.account_code} - ${tp.name || tp.account_name || ''}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.code} - ${tp.name}` }))]} />
             <Input label={t('tierRIB.label')} value={form.rib_label} onChange={e => setForm({ ...form, rib_label: e.target.value })} />
             <Input label={t('tierRIB.iban')} value={form.iban} onChange={e => setForm({ ...form, iban: e.target.value })} />
             <Input label={t('tierRIB.bic')} value={form.bic} onChange={e => setForm({ ...form, bic: e.target.value })} />
@@ -675,7 +675,7 @@ export function TierRIBsPage() {
         <Table headers={[t('tierRIB.colThirdParty'), t('tierRIB.colLabel'), t('tierRIB.colIBAN'), t('tierRIB.colBIC'), t('tierRIB.colBank'), t('tierRIB.colDefault'), tCommon('table.actions')]}>
           {ribs.map(r => (
             <TableRow key={r.id}>
-              <TableCell>{tpMap.get(r.third_party_account_id)?.account_code || r.third_party_account_id.slice(0, 8)}</TableCell>
+              <TableCell>{tpMap.get(r.third_party_account_id)?.code || r.third_party_account_id.slice(0, 8)}</TableCell>
               <TableCell>{r.rib_label}</TableCell>
               <TableCell className="font-mono text-xs">{r.iban}</TableCell>
               <TableCell className="font-mono text-xs">{r.bic || '-'}</TableCell>
@@ -770,7 +770,7 @@ export function TaxPaymentsPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [items, setItems] = useState<TaxPayment[]>([])
-  const [bankAccounts, setBankAccounts] = useState<any[]>([])
+  const [bankAccounts, setBankAccounts] = useState<Awaited<ReturnType<typeof getBankAccounts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ payment_number: '', tax_type: 'TVA', period_label: '', period_start: '', period_end: '', amount: 0, payment_date: new Date().toISOString().slice(0, 10), payment_method: 'telepayment', bank_account_id: '' })
@@ -1013,8 +1013,8 @@ export function JournalAccessRightsPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getJournalAccessRights>>>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ user_id: '', journal_code: '', can_view: true, can_create: false, can_edit: false, can_delete: false, can_close: false })

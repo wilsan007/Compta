@@ -5,7 +5,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { getProspects, createProspect, deleteProspect, convertProspectToCustomer, getSalesRepresentatives, createSalesRepresentative, deleteSalesRepresentative, getDeliverySchedules, createDeliverySchedule, deleteDeliverySchedule, getDocumentTemplates, createDocumentTemplate, deleteDocumentTemplate } from '@/lib/queries/misc'
-import { getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
+import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
 import { getQualityChecks, createQualityCheck, updateQualityCheck, getPickLists, createPickList, updatePickList } from '@/lib/queries/production'
 import type { QualityCheck, PickList } from '@/types'
 import { errorMessage } from '@/lib/utils'
@@ -15,7 +15,7 @@ export function ProspectsPage() {
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getProspects>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', country: '', contact_name: '', source: '', status: 'new' as const, notes: '', postal_code: '', assigned_rep_id: null as string | null, converted_customer_id: null as string | null })
@@ -79,7 +79,7 @@ export function RepresentativesPage() {
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getSalesRepresentatives>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', commission_rate: 0, territory: '', active: true, tenant_id: null as string | null })
@@ -120,7 +120,7 @@ export function WarehouseLocationsPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getWarehouseLocations>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' })
@@ -150,7 +150,7 @@ export function QualityCheckPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getQualityChecks>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', reference_type: 'goods_receipt', reference_id: '', status: 'pending', notes: '', quantity_checked: '', quantity_rejected: '' })
@@ -225,7 +225,7 @@ export function PickListPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getPickLists>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ number: '', reference_type: 'sales_order', warehouse_id: '', status: 'draft' })
@@ -255,7 +255,7 @@ export function SerialNumbersPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getProductSerialNumbers>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', serial_number: '', status: 'in_stock', warranty_expiry: '', notes: '' })
@@ -285,7 +285,7 @@ export function ProductBatchesPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getProductBatches>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', batch_number: '', quantity: 0, expiry_date: '', status: 'active' })
@@ -315,7 +315,7 @@ export function DocumentTemplatesPage() {
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getDocumentTemplates>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', document_type: 'invoice', logo_url: '', primary_color: '#2563eb', secondary_color: '#64748b', is_default: false })
@@ -345,7 +345,7 @@ export function DeliverySchedulePage() {
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getDeliverySchedules>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ customer_id: '', product_id: '', frequency: 'weekly', quantity: 0, start_date: '', end_date: '', active: true })
@@ -375,7 +375,7 @@ export function ProductSubstitutesPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getProductSubstitutes>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ product_id: '', substitute_id: '', priority: 1 })
@@ -405,7 +405,7 @@ export function DormantStockPage() {
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getStockQuantities>>>([])
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(90)
 
@@ -421,7 +421,7 @@ export function DormantStockPage() {
       if (tid) q = q.eq('tenant_id', tid)
       const { data, error } = await q
       if (error) throw error
-      setItems(data || [])
+      setItems((data || []) as Awaited<ReturnType<typeof getStockQuantities>>)
     } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) }
   }, [days, tCommon, toast])
   useEffect(() => { loadData() }, [loadData])

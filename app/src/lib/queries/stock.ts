@@ -1357,7 +1357,7 @@ export async function getProductBatches(productId?: string) {
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ProductBatch & { products: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createProductBatch(b: Omit<ProductBatch, 'id' | 'created_at'>) {
   const tid = await getTenantId()
@@ -1405,7 +1405,7 @@ export async function getProductSubstitutes(productId?: string) {
   if (productId) q = q.eq('product_id', productId)
   const { data, error } = await q
   if (error) throw error
-  return data as any[]
+  return data as (ProductSubstitute & { produit: Joined<'products', 'name' | 'sku'>; substitut: Joined<'products', 'name' | 'sku'> })[]
 }
 export async function createProductSubstitute(s: Omit<ProductSubstitute, 'id' | 'created_at'>) {
   const tid = await getTenantId()

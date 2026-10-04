@@ -530,3 +530,76 @@ describe("2.16 — réservations de stock : l'article et le dépôt arrivent jus
     expect(src).toMatch(/r\.warehouses\?\.name/)
   })
 })
+
+describe('2.16 — RIB des tiers : le code du tiers se lit sur `code`', () => {
+  // Défaut révélé par le type : l'écran lisait `tp.account_code` et `tp.account_name`
+  // sur un compte de tiers. Ni l'un ni l'autre n'existe (`information_schema` :
+  // `third_party_accounts.code`, `.name`). La liste du formulaire affichait
+  // « undefined - Nom », la colonne « Tiers » les huit premiers caractères d'un UUID.
+  const src = lire('src/pages/Phase6Pages.tsx')
+  const ecran = src.slice(src.indexOf('export function TierRIBsPage'), src.indexOf('export function IFRSAdjustmentsPage'))
+
+  it("l'écran ne lit plus les deux colonnes fantômes", () => {
+    const fautives = codeSeul(ecran).filter((l) => /\.account_code|\.account_name/.test(l))
+    expect(fautives).toEqual([])
+    expect(ecran).toMatch(/tp\.code/)
+    expect(ecran).toMatch(/\)\?\.code \|\|/)
+  })
+
+  it('les dix états comptables du fichier sont nommés', () => {
+    const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
+    expect(codeSeul(src).filter((l) => NON_TYPE.test(l))).toEqual([])
+    expect(src).toMatch(/useState<Awaited<ReturnType<typeof getThirdPartyAccounts>>>/)
+  })
+})
+
+// ============ 2.16 — un état nommé depuis une fonction qui rend un type vide n'apprend rien ============
+
+/**
+ * Le piège mesuré le 04/10 : nommer un état `Awaited<ReturnType<typeof f>>` laisse
+ * `tsc` muet si `f` rend lui-même un type vide de tout contrôle — l'état est
+ * « nommé », et toujours aveugle. Deux fonctions de stock étaient dans ce cas
+ * (lots, substituts). La preuve ci-dessous est faite PAR LE COMPILATEUR : si une de
+ * ces fonctions retombe, `tsc -b` refuse ce fichier (TS2322), sans attendre Vitest.
+ */
+type EstVide<T> = 0 extends 1 & T ? true : false
+type Element<F extends (...a: never[]) => unknown> = Awaited<ReturnType<F>> extends (infer E)[] ? E : Awaited<ReturnType<F>>
+type Verdict<F extends (...a: never[]) => unknown> = EstVide<Element<F>>
+type Q = typeof import('@/lib/queries')
+type S = typeof import('@/lib/queries/stock')
+type P = typeof import('@/lib/queries/production')
+type M = typeof import('@/lib/queries/misc')
+type PA = typeof import('@/lib/queries/purchaseAdvanced')
+type LA = typeof import('@/lib/queries/leavesAbsences')
+type PY = typeof import('@/lib/queries/payroll')
+interface RetoursVerifies {
+  getJournals: Verdict<Q['getJournals']>; getFiscalYears: Verdict<Q['getFiscalYears']>; getBankAccounts: Verdict<Q['getBankAccounts']>
+  getJournalAccessRights: Verdict<Q['getJournalAccessRights']>; getJournalEntries: Verdict<Q['getJournalEntries']>
+  getThirdPartyAccounts: Verdict<Q['getThirdPartyAccounts']>; getChartAccounts: Verdict<Q['getChartAccounts']>
+  getAnalyticSections: Verdict<Q['getAnalyticSections']>; getSIGData: Verdict<Q['getSIGData']>
+  getTrialBalanceFiltered: Verdict<Q['getTrialBalanceFiltered']>
+  getUnletteredLines: Verdict<Q['getUnletteredLines']>; getLetteredLines: Verdict<Q['getLetteredLines']>
+  getStockMovements: Verdict<S['getStockMovements']>; getStockQuantities: Verdict<S['getStockQuantities']>
+  getStockReservations: Verdict<S['getStockReservations']>; getWarehouseLocations: Verdict<S['getWarehouseLocations']>
+  getProductSerialNumbers: Verdict<S['getProductSerialNumbers']>; getProductBatches: Verdict<S['getProductBatches']>
+  getProductSubstitutes: Verdict<S['getProductSubstitutes']>
+  getQualityChecks: Verdict<P['getQualityChecks']>; getPickLists: Verdict<P['getPickLists']>
+  getProspects: Verdict<M['getProspects']>; getSalesRepresentatives: Verdict<M['getSalesRepresentatives']>
+  getDeliverySchedules: Verdict<M['getDeliverySchedules']>; getDocumentTemplates: Verdict<M['getDocumentTemplates']>
+  getBestSupplierPrice: Verdict<PA['getBestSupplierPrice']>; calculateMealVouchers: Verdict<LA['calculateMealVouchers']>
+  getTimesheets: Verdict<PY['getTimesheets']>; getContracts: Verdict<PY['getContracts']>
+  getPayrollAccountingEntries: Verdict<PY['getPayrollAccountingEntries']>
+}
+/** Toutes les entrées doivent valoir `false` — c'est cette affectation que `tsc` vérifie. */
+const retoursVerifies: { [K in keyof RetoursVerifies]: false } = {} as RetoursVerifies
+
+describe('2.16 — les trente fonctions qui nomment un état rendent un type réel', () => {
+  it('la preuve est portée par le compilateur (tsc -b), ce test en garde la trace', () => {
+    expect(retoursVerifies).toBeDefined()
+  })
+
+  it('les écrans de stock et de commerce de Phase2Pages ne gardent aucun état non typé', () => {
+    const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
+    expect(codeSeul(lire('src/pages/Phase2Pages.tsx')).filter((l) => NON_TYPE.test(l))).toEqual([])
+  })
+})
