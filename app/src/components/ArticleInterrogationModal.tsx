@@ -28,9 +28,9 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<TabKey>('stock')
   const [loading, setLoading] = useState(true)
-  const [stock, setStock] = useState<any[]>([])
-  const [supplierPrices, setSupplierPrices] = useState<any[]>([])
-  const [documents, setDocuments] = useState<any[]>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getProductStock>>>([])
+  const [supplierPrices, setSupplierPrices] = useState<Awaited<ReturnType<typeof getProductSupplierPrices>>>([])
+  const [documents, setDocuments] = useState<Awaited<ReturnType<typeof getProductDocuments>>>([])
   const [bomsData, setBomsData] = useState<{ asFinished: any[]; asComponent: any[] }>({ asFinished: [], asComponent: [] })
 
   const loadData = useCallback(async () => {
@@ -133,10 +133,11 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
                     <Table headers={['Fournisseur', 'Liste de prix', 'Prix unitaire', 'Devise', 'Qté min', 'Remise %']}>
                       {supplierPrices.map((p) => (
                         <TableRow key={p.id}>
-                          <TableCell className="text-sm">{p.suppliers?.name || '—'}</TableCell>
+                          {/* 2.16 : aucune liste de prix n'est rattachée à un fournisseur dans le modèle (LOT7-04) — la colonne ne peut pas être renseignée. */}
+                          <TableCell className="text-sm">—</TableCell>
                           <TableCell className="text-sm">{p.price_lists?.name || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{formatCurrency(Number(p.unit_price || 0))}</TableCell>
-                          <TableCell className="text-xs">{p.currency || 'EUR'}</TableCell>
+                          <TableCell className="text-xs">{p.price_lists?.currency || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{Number(p.min_quantity || 0)}</TableCell>
                           <TableCell className="font-mono text-xs">{Number(p.discount_percent || 0)}%</TableCell>
                         </TableRow>
@@ -153,7 +154,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
                   ) : (
                     <Table headers={['Type', 'N°', 'Date', 'Quantité', 'Statut']}>
                       {documents.map((d, i) => (
-                        <TableRow key={d.id || i}>
+                        <TableRow key={`${d.type}-${d.number}-${i}`}>
                           <TableCell className="text-sm">{d.type}</TableCell>
                           <TableCell className="font-mono text-xs">{d.number || '—'}</TableCell>
                           <TableCell className="text-xs">{d.date ? formatDate(d.date) : '—'}</TableCell>

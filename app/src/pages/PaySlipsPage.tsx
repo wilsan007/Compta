@@ -14,7 +14,7 @@ export function PaySlipsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-const [slips, setSlips] = useState<any[]>([])
+const [slips, setSlips] = useState<Awaited<ReturnType<typeof getPaySlips>>>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [loading, setLoading] = useState(true)
   const [runFilter, setRunFilter] = useState('')

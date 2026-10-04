@@ -12,7 +12,7 @@ export function BankAccountsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [accounts, setAccounts] = useState<BankAccount[]>([])
-  const [transactions, setTransactions] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<Awaited<ReturnType<typeof getBankTransactions>>>([])
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)

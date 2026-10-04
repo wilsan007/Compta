@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import type { Row } from '@/types/dbRow'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
@@ -9,12 +10,15 @@ import { ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
 
+/** 2.16 — un client, sa limite de crédit, et l'encours lu au grand livre (411). */
+type CreditCustomer = Pick<Row<'customers'>, 'id' | 'name' | 'credit_limit' | 'credit_blocked' | 'credit_policy'> & { credit_used: number }
+
 export function CreditControlPage() {
   const { t } = useTranslation('sales')
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
   const { t: tCommon } = useTranslation('common')
-  const [customers, setCustomers] = useState<any[]>([])
+  const [customers, setCustomers] = useState<CreditCustomer[]>([])
   const [loading, setLoading] = useState(true)
   const [penaltyLoading, setPenaltyLoading] = useState<string | null>(null)
 
@@ -33,7 +37,7 @@ export function CreditControlPage() {
       ])
       if (error) throw error
       const parClient = new Map(balances.map((b) => [b.customer_id, Number(b.balance) || 0]))
-      setCustomers((data || []).map((c) => ({ ...c, credit_used: parClient.get(c.id) ?? 0 })))
+      setCustomers(((data || []) as Omit<CreditCustomer, 'credit_used'>[]).map((c) => ({ ...c, credit_used: parClient.get(c.id) ?? 0 })))
     } catch (err: any) { console.error('Error:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])

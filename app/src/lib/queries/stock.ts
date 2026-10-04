@@ -1150,36 +1150,41 @@ export async function getProductSupplierPrices(productId: string) {
   // de `supplier_id`). Toute la requête échouait, donc l'onglet « Tarifs fournisseurs »
   // de la fiche article restait vide. La colonne « Fournisseur » de cet écran ne peut
   // pas être renseignée tant que le modèle n'aura pas ce lien (voir SUIVI, bloc G).
-  let q = supabase.from('price_list_lines').select('*, price_lists(name, type)').eq('product_id', productId)
+  let q = supabase.from('price_list_lines').select('*, price_lists(name, type, currency)').eq('product_id', productId)
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return (data as any[]).filter((line) => line.price_lists?.type === 'purchase')
+  return (data as (PriceListLine & { price_lists: Joined<'price_lists', 'name' | 'type' | 'currency'> })[]).filter((line) => line.price_lists?.type === 'purchase')
 }
 
-export async function getProductDocuments(productId: string) {
+/** 2.16 — une pièce où l'article apparaît (fiche article, onglet « Documents »). */
+export interface ProductDocument { type: string; number: string | null; date: string | null; quantity: number | null; status: string | null }
+type DocHeader<D extends string> = { number: string | null; status: string | null } & Record<D, string | null>
+type DocLine<K extends string, D extends string> = { quantity: number | null } & Record<K, DocHeader<D> | null>
+
+export async function getProductDocuments(productId: string): Promise<ProductDocument[]> {
   const tid = await getTenantId()
   if (!tid) return []
   // LOT7-03 : historique documentaire d'un article — doit être exhaustif.
   const [invoices, purchaseOrders, manufacturingOrders, salesOrders] = await Promise.all([
     // LOT7-04 : `invoices.issue_date` → `date`, `manufacturing_orders.planned_date` → `start_date`.
-    fetchAllRows<any>(supabase.from('invoice_lines').select('*, invoices(number, date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/invoice_lines' }),
-    fetchAllRows<any>(supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/purchase_order_lines' }),
-    fetchAllRows<any>(supabase.from('manufacturing_orders').select('number, start_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/manufacturing_orders' }),
-    fetchAllRows<any>(supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/sales_order_lines' }),
+    fetchAllRows<DocLine<'invoices', 'date'>>(supabase.from('invoice_lines').select('*, invoices(number, date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/invoice_lines' }),
+    fetchAllRows<DocLine<'purchase_orders', 'order_date'>>(supabase.from('purchase_order_lines').select('*, purchase_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/purchase_order_lines' }),
+    fetchAllRows<{ number: string | null; start_date: string | null; status: string | null; quantity: number | null }>(supabase.from('manufacturing_orders').select('number, start_date, status, quantity').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/manufacturing_orders' }),
+    fetchAllRows<DocLine<'sales_orders', 'order_date'>>(supabase.from('sales_order_lines').select('*, sales_orders(number, order_date, status)').eq('product_id', productId).eq('tenant_id', tid).order('id'), { label: 'getProductDocuments/sales_order_lines' }),
   ])
 
-  const docs: any[] = []
-  for (const line of invoices as any[]) {
+  const docs: ProductDocument[] = []
+  for (const line of invoices) {
     if (line.invoices) docs.push({ type: 'Facture', number: line.invoices.number, date: line.invoices.date, quantity: line.quantity, status: line.invoices.status })
   }
-  for (const line of purchaseOrders as any[]) {
+  for (const line of purchaseOrders) {
     if (line.purchase_orders) docs.push({ type: 'Commande achat', number: line.purchase_orders.number, date: line.purchase_orders.order_date, quantity: line.quantity, status: line.purchase_orders.status })
   }
-  for (const mo of manufacturingOrders as any[]) {
+  for (const mo of manufacturingOrders) {
     docs.push({ type: 'OF', number: mo.number, date: mo.start_date, quantity: mo.quantity, status: mo.status })
   }
-  for (const line of salesOrders as any[]) {
+  for (const line of salesOrders) {
     if (line.sales_orders) docs.push({ type: 'Commande vente', number: line.sales_orders.number, date: line.sales_orders.order_date, quantity: line.quantity, status: line.sales_orders.status })
   }
   return docs.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
@@ -1460,6 +1465,9 @@ export async function releaseStockReservation(id: string) {
   if (error) throw error
 }
 
+/** 2.16 — un mouvement de stock d'un lot, avec le nom de son article. */
+export type LotMovement = Row<'stock_movements'> & { products: Joined<'products', 'name' | 'sku'> }
+
 export async function traceLotDownstream(lotId: string) {
   const tid = await getTenantId()
   let q = supabase.from('stock_movements').select('*, products(name, sku)').order('created_at', { ascending: false })
@@ -1469,7 +1477,7 @@ export async function traceLotDownstream(lotId: string) {
   q = q.eq('lot_id', lotId)
   const { data, error } = await q
   if (error) throw error
-  return { lotId, movements: data || [], direction: 'downstream' as const }
+  return { lotId, movements: (data || []) as LotMovement[], direction: 'downstream' as const }
 }
 
 export async function traceLotUpstream(lotId: string) {
@@ -1479,5 +1487,5 @@ export async function traceLotUpstream(lotId: string) {
   q = q.eq('lot_id', lotId)
   const { data, error } = await q
   if (error) throw error
-  return { lotId, movements: data || [], direction: 'upstream' as const }
+  return { lotId, movements: (data || []) as LotMovement[], direction: 'upstream' as const }
 }

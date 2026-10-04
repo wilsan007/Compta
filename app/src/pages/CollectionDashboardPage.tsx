@@ -13,7 +13,7 @@ export function CollectionDashboardPage() {
   const { t } = useTranslation('treasury')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-const [data, setData] = useState<any>(null)
+const [data, setData] = useState<Awaited<ReturnType<typeof getCollectionDashboard>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])

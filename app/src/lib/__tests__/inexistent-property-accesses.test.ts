@@ -589,6 +589,14 @@ interface RetoursVerifies {
   getBestSupplierPrice: Verdict<PA['getBestSupplierPrice']>; calculateMealVouchers: Verdict<LA['calculateMealVouchers']>
   getTimesheets: Verdict<PY['getTimesheets']>; getContracts: Verdict<PY['getContracts']>
   getPayrollAccountingEntries: Verdict<PY['getPayrollAccountingEntries']>
+  // tranche 3
+  getPaySlips: Verdict<PY['getPaySlips']>; getTrialBalance: Verdict<Q['getTrialBalance']>
+  getGeneralLedgerFiltered: Verdict<Q['getGeneralLedgerFiltered']>; getAgedBalance: Verdict<Q['getAgedBalance']>
+  getBankTransactions: Verdict<Q['getBankTransactions']>; getProductStock: Verdict<S['getProductStock']>
+  getProductSupplierPrices: Verdict<S['getProductSupplierPrices']>; getProductDocuments: Verdict<S['getProductDocuments']>
+  traceLotDownstream: EstVide<Awaited<ReturnType<S['traceLotDownstream']>>['movements'][number]>
+  gescomInvoices: EstVide<Awaited<ReturnType<Q['getGescomTransferData']>>['invoices'][number]>
+  getCollectionDashboard: Verdict<Q['getCollectionDashboard']>; closeFiscalYear: Verdict<Q['closeFiscalYear']>
 }
 /** Toutes les entrées doivent valoir `false` — c'est cette affectation que `tsc` vérifie. */
 const retoursVerifies: { [K in keyof RetoursVerifies]: false } = {} as RetoursVerifies
@@ -601,5 +609,38 @@ describe('2.16 — les trente fonctions qui nomment un état rendent un type ré
   it('les écrans de stock et de commerce de Phase2Pages ne gardent aucun état non typé', () => {
     const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
     expect(codeSeul(lire('src/pages/Phase2Pages.tsx')).filter((l) => NON_TYPE.test(l))).toEqual([])
+  })
+})
+
+// ============ 2.16, tranche 3 — grand livre, traçabilité des lots, fiche article ============
+
+describe('2.16 — tranche 3 : quatre écrans lisaient des propriétés que leur requête ne rend pas', () => {
+  it('grand livre : le filtre par tiers lit `account_tiers` sur la ligne', () => {
+    // `m.third_party_account` n'existe pas : saisir un tiers vidait le grand livre.
+    const code = codeSeul(lire('src/pages/GeneralLedgerPage.tsx'))
+    expect(code.filter((l) => /third_party_account/.test(l))).toEqual([])
+    expect(code.some((l) => /m\.account_tiers === tiersCode/.test(l))).toBe(true)
+  })
+
+  it("traçabilité des lots : l'article se lit sur la ressource jointe, plus sur des colonnes fantômes", () => {
+    const code = codeSeul(lire('src/pages/LotTraceabilityPage.tsx'))
+    expect(code.filter((l) => /product_name|customer_name|mo_number|quantity_produced/.test(l))).toEqual([])
+    expect(code.some((l) => /r\.products\?\.name/.test(l))).toBe(true)
+  })
+
+  it('fiche article : la devise se lit sur la liste de prix, que la requête sélectionne', () => {
+    const modal = codeSeul(lire('src/components/ArticleInterrogationModal.tsx'))
+    expect(modal.filter((l) => /p\.currency|p\.suppliers/.test(l))).toEqual([])
+    expect(modal.some((l) => /p\.price_lists\?\.currency/.test(l))).toBe(true)
+    expect(corpsDe(lire('src/lib/queries/stock.ts'), 'export async function getProductSupplierPrices'))
+      .toMatch(/price_lists\(name, type, currency\)/)
+  })
+
+  it('les douze écrans de la tranche ne gardent aucun état non typé', () => {
+    const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
+    const ecrans = ['pages/PaySlipsPage', 'pages/GeneralLedgerPage', 'pages/LiasseFiscalePage', 'pages/FiscalYearClosurePage',
+      'pages/AgedBalancePage', 'pages/AccountingDashboardPage', 'pages/LotTraceabilityPage', 'pages/BankAccountsPage',
+      'pages/GescomTransferPage', 'pages/CreditControlPage', 'pages/CollectionDashboardPage', 'components/ArticleInterrogationModal']
+    expect(ecrans.filter((p) => codeSeul(lire(`src/${p}.tsx`)).some((l) => NON_TYPE.test(l)))).toEqual([])
   })
 })

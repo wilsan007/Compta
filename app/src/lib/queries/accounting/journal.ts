@@ -122,7 +122,21 @@ export async function getAnalyticLedgerLines(sectionId?: string, limit = 200) {
 
 
 // ============ Trial Balance (soldes par compte) ============
-export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: string; journalCode?: string }) {
+/** 2.16 — une ligne de la balance générale, telle que `get_trial_balance` la rend puis que les écrans la lisent. */
+export interface TrialBalanceLine {
+  account_code: string
+  account_name: string
+  opening_debit: number
+  opening_credit: number
+  total_debit: number
+  total_credit: number
+  closing_debit: number
+  closing_credit: number
+}
+/** La ligne brute de la RPC : les numériques arrivent en nombre ou en texte. */
+type TrialBalanceRpcRow = { account_code: string; account_name: string } & Record<'opening_debit' | 'opening_credit' | 'period_debit' | 'period_credit' | 'closing_debit' | 'closing_credit', number | string | null>
+
+export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: string; journalCode?: string }): Promise<TrialBalanceLine[]> {
   // SOC-04 : Agrégation côté serveur (évite la truncation silencieuse et l'effondrement navigateur)
   const fiscalYearId = await getCurrentFiscalYearId()
   const { data, error } = await supabase.rpc('get_trial_balance', {
@@ -132,7 +146,7 @@ export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: strin
     p_journal_code: opts?.journalCode ?? null,
   })
   if (error) throw error
-  return (data || []).map((row: any) => ({
+  return ((data || []) as TrialBalanceRpcRow[]).map((row): TrialBalanceLine => ({
     account_code: row.account_code,
     account_name: row.account_name,
     opening_debit: Number(row.opening_debit) || 0,
@@ -141,7 +155,7 @@ export async function getTrialBalance(opts?: { dateFrom?: string; dateTo?: strin
     total_credit: Number(row.period_credit) || 0,
     closing_debit: Number(row.closing_debit) || 0,
     closing_credit: Number(row.closing_credit) || 0,
-  })).sort((a: any, b: any) => a.account_code.localeCompare(b.account_code))
+  })).sort((a, b) => a.account_code.localeCompare(b.account_code))
 }
 
 

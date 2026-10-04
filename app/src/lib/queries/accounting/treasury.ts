@@ -296,7 +296,18 @@ export async function getCollectionDashboard() {
 
 
 // ============ Sprint 6: Gescom Transfer (Compta) ============
-export async function getGescomTransferData(dateFrom?: string, dateTo?: string) {
+/** 2.16 — une pièce de gestion commerciale proposée au transfert, avec son état. */
+export interface GescomDocument { id: string; number: string; date: string; total: number; status: string; transferred: boolean }
+type GescomSource = Omit<GescomDocument, 'transferred'>
+export interface GescomTransferData {
+  invoices: GescomDocument[]
+  purchaseInvoices: GescomDocument[]
+  customerPayments: Row<'customer_payments'>[]
+  supplierPayments: Row<'supplier_payments'>[]
+  pendingCount: number
+}
+
+export async function getGescomTransferData(dateFrom?: string, dateTo?: string): Promise<GescomTransferData> {
   const tid = await getTenantId()
   let invQ = supabase.from('invoices').select('id, number, date, total, status, customer_id').in('status', ['sent', 'paid']).order('date', { ascending: false })
   if (tid) invQ = invQ.eq('tenant_id', tid)
@@ -321,14 +332,17 @@ export async function getGescomTransferData(dateFrom?: string, dateTo?: string) 
   let jeQ = supabase.from('journal_entries').select('invoice_ref').not('invoice_ref', 'is', null)
   if (tid) jeQ = jeQ.eq('tenant_id', tid)
   const { data: existingEntries } = await jeQ
-  const alreadyTransferred = new Set((existingEntries || []).map((e: any) => e.invoice_ref))
+  const alreadyTransferred = new Set(((existingEntries || []) as { invoice_ref: string | null }[]).map((e) => e.invoice_ref))
+  const mark = (docs: GescomSource[] | null): GescomDocument[] => (docs || []).map((d) => ({ ...d, transferred: alreadyTransferred.has(d.number) }))
+  const sales = mark(invoices as GescomSource[] | null)
+  const purchases = mark(purchaseInvoices as GescomSource[] | null)
 
   return {
-    invoices: (invoices || []).map((i: any) => ({ ...i, transferred: alreadyTransferred.has(i.number) })),
-    purchaseInvoices: (purchaseInvoices || []).map((p: any) => ({ ...p, transferred: alreadyTransferred.has(p.number) })),
-    customerPayments: customerPayments || [],
-    supplierPayments: supplierPayments || [],
-    pendingCount: (invoices || []).filter((i: any) => !alreadyTransferred.has(i.number)).length + (purchaseInvoices || []).filter((p: any) => !alreadyTransferred.has(p.number)).length,
+    invoices: sales,
+    purchaseInvoices: purchases,
+    customerPayments: (customerPayments || []) as Row<'customer_payments'>[],
+    supplierPayments: (supplierPayments || []) as Row<'supplier_payments'>[],
+    pendingCount: sales.filter((d) => !d.transferred).length + purchases.filter((d) => !d.transferred).length,
   }
 }
 

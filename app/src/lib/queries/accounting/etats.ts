@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { supabase } from '@/lib/supabase'
-import { type Row } from '@/types/dbRow'
+import { type Row, type Joined } from '@/types/dbRow'
 import { fetchAllRows, getTenantId } from '../core'
 import { buildFECRows, sirenFrom, type FECExport, type FECReferences } from '@/lib/fecValidator'
 import { type JournalEntry, type FiscalYear } from '@/types'
@@ -397,12 +397,17 @@ export async function calcVatFromEntries(dateFrom: string, dateTo: string) {
 }
 
 // --- General Ledger with filters (journal, period, date range) ---
+/** 2.16 — un mouvement du grand livre : la ligne d'écriture et l'en-tête de sa pièce. */
+export type GeneralLedgerMovement = Row<'journal_lines'> & {
+  journal_entries: Joined<'journal_entries', 'number' | 'date' | 'journal_code' | 'description' | 'reference' | 'piece_number' | 'ifrs_mode'>
+}
+
 export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
   journalCode?: string
   dateFrom?: string
   dateTo?: string
   ifrsMode?: boolean
-}) {
+}): Promise<GeneralLedgerMovement[]> {
   if (!/^[0-9A-Za-z._ -]{1,20}$/.test(accountCode)) throw new Error('Invalid account code format')
   const tid = await getTenantId()
   let query = supabase
@@ -420,7 +425,7 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
 
   // LOT7-03 : le `.limit(100000)` d'origine ne servait à rien — PostgREST rabote toujours
   // à max_rows = 1000. Le grand livre s'arrêtait donc à 1 000 lignes sans le dire.
-  return await fetchAllRows<any>(query, { label: 'getGeneralLedgerFiltered/journal_lines' })
+  return await fetchAllRows<GeneralLedgerMovement>(query, { label: 'getGeneralLedgerFiltered/journal_lines' })
 }
 
 // --- Trial Balance with period filter ---

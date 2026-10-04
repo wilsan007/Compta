@@ -15,7 +15,7 @@ export function AccountingDashboardPage() {
   const navigate = useNavigate()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
-  const [trialBalance, setTrialBalance] = useState<any[]>([])
+  const [trialBalance, setTrialBalance] = useState<Awaited<ReturnType<typeof getTrialBalance>>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

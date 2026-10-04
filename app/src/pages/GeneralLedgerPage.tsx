@@ -12,7 +12,7 @@ export function GeneralLedgerPage() {
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [journals, setJournals] = useState<Journal[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
-  const [movements, setMovements] = useState<any[]>([])
+  const [movements, setMovements] = useState<Awaited<ReturnType<typeof getGeneralLedgerFiltered>>>([])
   const [loading, setLoading] = useState(false)
   const [loadingRef, setLoadingRef] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState('')
@@ -48,7 +48,9 @@ export function GeneralLedgerPage() {
         ifrsMode: ifrsMode === 'ifrs' ? true : ifrsMode === 'pcg' ? false : undefined,
       })
       if (tiersCode && data) {
-        data = data.filter((m: any) => m.third_party_account === tiersCode || m.journal_entries?.journal_lines?.some((l: any) => l.third_party_account === tiersCode))
+        // 2.16 : le tiers vit sur la LIGNE (`journal_lines.account_tiers`, cf. AUD-ACCES-03). L'écran
+        // lisait `third_party_account`, qui n'existe pas : saisir un tiers vidait le grand livre.
+        data = data.filter((m) => m.account_tiers === tiersCode)
       }
       setMovements(data || [])
     } catch (err) {

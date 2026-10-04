@@ -108,7 +108,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
   const [closing, setClosing] = useState(false)
   const [selectedYear, setSelectedYear] = useState('')
   const [targetYear, setTargetYear] = useState('')
-  const [closureResult, setClosureResult] = useState<any>(null)
+  const [closureResult, setClosureResult] = useState<Awaited<ReturnType<typeof closeFiscalYear>> | null>(null)
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])

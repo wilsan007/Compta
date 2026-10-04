@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button } from '@/components/ui'
-import { traceLotDownstream, traceLotUpstream } from '@/lib/queries/stock'
+import { traceLotDownstream, traceLotUpstream, type LotMovement } from '@/lib/queries/stock'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -13,7 +13,7 @@ export function LotTraceabilityPage() {
   const { toast } = useToast()
   const [lotId, setLotId] = useState('')
   const [direction, setDirection] = useState<'downstream' | 'upstream'>('downstream')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<LotMovement[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
 
@@ -72,27 +72,19 @@ export function LotTraceabilityPage() {
           <EmptyState icon={<Search className="w-12 h-12" />} title={t('search_lot_to_trace')} />
         ) : results.length === 0 ? (
           <EmptyState icon={<Search className="w-12 h-12" />} title={t('no_results')} />
-        ) : direction === 'downstream' ? (
-          <Table headers={[t('product'), t('movement_type'), t('date'), t('quantity'), t('reference'), t('customer')]}>
-            {results.map((r, i) => (
-              <TableRow key={r.id || i}>
-                <TableCell>{r.product_name || '—'}</TableCell>
-                <TableCell>{r.movement_type}</TableCell>
+        ) : (
+          // 2.16 : les deux sens rendent des MOUVEMENTS de stock (aval : du plus récent au plus
+          // ancien ; amont : l'inverse). L'écran lisait `product_name`, `customer_name`,
+          // `mo_number` et `quantity_produced`, qu'aucun mouvement ne porte : l'article
+          // s'affichait « — » et le tableau amont n'avait que des colonnes vides.
+          <Table headers={[t('product'), t('movement_type'), t('date'), t('quantity'), t('reference')]}>
+            {results.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell>{r.products?.name || '—'}</TableCell>
+                <TableCell>{r.movement_type || r.type}</TableCell>
                 <TableCell className="text-xs">{r.movement_date ? new Date(r.movement_date).toLocaleDateString() : '—'}</TableCell>
                 <TableCell className="font-mono">{r.quantity}</TableCell>
                 <TableCell className="text-xs">{r.reference || '—'}</TableCell>
-                <TableCell>{r.customer_name || '—'}</TableCell>
-              </TableRow>
-            ))}
-          </Table>
-        ) : (
-          <Table headers={[t('mo_number'), t('product'), t('quantity'), t('customer')]}>
-            {results.map((r, i) => (
-              <TableRow key={r.id || i}>
-                <TableCell className="font-mono">{r.mo_number || '—'}</TableCell>
-                <TableCell>{r.product_name || '—'}</TableCell>
-                <TableCell className="font-mono">{r.quantity_produced}</TableCell>
-                <TableCell>{r.customer_name || '—'}</TableCell>
               </TableRow>
             ))}
           </Table>

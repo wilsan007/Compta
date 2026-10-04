@@ -10,7 +10,7 @@ export function AgedBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAgedBalance>>>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
   const [refDate, setRefDate] = useState('')
