@@ -57,7 +57,7 @@ l'expert-comptable (D-G)** avant déploiement — elle est préparée ici, livr�
 |---|---|---|---:|---|
 | 2.10 | **F1 — cpt-001** — plan comptable à solde 0 alors que 512000 porte 10 000 ; **F3** — plan ouvert vide | soldes lus au grand livre ; liste chargée à l'ouverture | 0,5 j | ✅ `347` (04/10) |
 | 2.11 | **F2** — tout compte sans type → « Actifs courants » ; **F6** — modèle : le pourcentage 100 recopié comme montant ; **F7** — date proposée hors période | type déduit de la classe ; pourcentage appliqué ; date dans la période | 0,5 j | ✅ `348` + écran (04/10) |
-| 2.12 | **F4 (= AUD-I04)** — messages SQL bruts à l'écran ; **F5** — libellés sans accents | traduction des erreurs métier (fr/en/ar) ; libellés corrigés | 0,5 j | 🔶 F4 et périodes faits (`349`, 04/10) — libellés du plan comptable à reprendre |
+| 2.12 | **F4 (= AUD-I04)** — messages SQL bruts à l'écran ; **F5** — libellés sans accents | traduction des erreurs métier (fr/en/ar) ; libellés corrigés | 0,5 j | ✅ F4 et périodes (`349`), libellés du plan comptable (`351`) — 04/10 |
 
 ### Bloc G — Analytique, projets, et la dette de types (≈ 2,5 j)
 

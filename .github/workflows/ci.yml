@@ -2144,6 +2144,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.12 (F5, suite) : le plan comptable livré était écrit sans
+      # accents ni apostrophes (« Achats de matieres premieres », « Fournisseurs d
+      # immobilisations ») — 470 comptes, liste relue libellé par libellé. 4 scénarios :
+      # une société neuve (T01), dix libellés témoins (T02), aucun compte perdu (T03),
+      # plus aucun ancien libellé en base (T04).
+      - name: 'Partie 2 (2.12) : les libellés du plan comptable portent leurs accents (351)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/351_chart_account_labels_accents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 2, tâche 2.13 (G2, pil-007) : une grille de ventilation désignait son
       # compte et ses sections en TEXTE LIBRE — « 706999 » vers « ZZZ99 »
       # s'enregistrait et ne ventilait jamais rien. 3 scénarios : compte inexistant
