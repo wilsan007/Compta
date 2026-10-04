@@ -1259,8 +1259,8 @@ et commitent par index privé (`GIT_INDEX_FILE`).
 |---|---|---|---|---|
 | **D-QA-1** | Une facture directe d'article stocké, sans BL, sort-elle le stock ? | (a) oui à la validation ; (b) non, BL obligatoire pour un bien | (a) avec garde anti-double sortie si un BL existe | **TRANCHÉE (30/09, option a)** — 317 : sortie à la validation, une fois par facture, jamais pour une ligne née d'un BL ; sortie impossible = validation refusée avec un message nommé |
 | **D-QA-2** | Facture datée avant la dernière numérotée | (a) refus ; (b) avertissement | (a) : chronologie exigée pour la piste d'audit fiable | **TRANCHÉE (30/09, option a)** — 317 : refus, message nommé ; `180` E12/E13 alignés |
-| **D-QA-3** | Articles existants à prix négatif | (a) remis à 0 ; (b) désactivés | (b) : ne pas inventer de prix | à prendre (lot D) |
-| **D-QA-4** | Contrepartie comptable du stock initial | (a) AN 3x/890000 ; (b) avertissement seulement | (a), cohérent avec la banque (277) | à prendre (lot D) |
+| **D-QA-3** | Articles existants à prix négatif | (a) remis à 0 ; (b) désactivés | (b) : ne pas inventer de prix | **prise le 04/10 : (b)** — migration `346` |
+| **D-QA-4** | Contrepartie comptable du stock initial | (a) AN 3x/890000 ; (b) avertissement seulement | (a), cohérent avec la banque (277) | **prise le 04/10 : (a)** — migration `346` |
 | **D-QA-5** | Transfert entre dépôts | (a) créer l'écran ; (b) hors périmètre | (a) : fonction de base d'un multi-dépôt | à prendre (lot D) |
 | **D-4** (existante) | `generate-pdf` | rebrancher ou PDF navigateur | PDF navigateur (B8), sans service externe | **TRANCHÉE de fait (30/09)** — B8 livre le PDF navigateur, sans service |
 | **D-G** (existante) | Grille paie 276, arrêt maladie, carence | signature de l'expert-comptable | inchangé : ne pas déployer avant | inchangée |

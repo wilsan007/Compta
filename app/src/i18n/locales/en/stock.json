@@ -271,7 +271,7 @@
     "quantity": "Quantity",
     "recentMovements": "Recent movements",
     "initialWarehouse": "Initial stock warehouse",
-    "initialStockHint": "The initial quantity enters the chosen warehouse, valued at the purchase price (\"initial\" movement).",
+    "initialStockHint": "The initial quantity enters the chosen warehouse on the chosen date, valued at the purchase price. An opening entry (stock account / 890000) is posted at the start of the fiscal year.",
     "warehouse": "Warehouse",
     "unitCost": "Unit cost",
     "adjustmentHint": "Adjustment: enter the quantity COUNTED in the warehouse; the difference becomes an entry or an exit."

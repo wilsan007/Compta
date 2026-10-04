@@ -2107,6 +2107,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Décisions D-QA-3 et D-QA-4 (04/10) : les articles à prix négatif sont
+      # désactivés, et un stock initial passe son écriture d'à-nouveau (compte de
+      # stock / 890000). Mesuré avant (4 rouges) : 100 × 12 € entraient au stock
+      # sans aucune écriture — stock valorisé 1 200 €, compte 31x à 0.
+      - name: 'Partie 2 (2.7) : à-nouveau du stock initial et articles à prix négatif (346)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/346_stock_initial_opening_entry_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

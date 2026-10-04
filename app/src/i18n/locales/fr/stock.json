@@ -271,7 +271,7 @@
     "quantity": "Quantité",
     "recentMovements": "Mouvements récents",
     "initialWarehouse": "Dépôt du stock initial",
-    "initialStockHint": "La quantité initiale entre au dépôt choisi, valorisée au prix d'achat (mouvement « initial »).",
+    "initialStockHint": "La quantité initiale entre au dépôt choisi, à la date choisie, valorisée au prix d'achat. Une écriture d'à-nouveau (compte de stock / 890000) est passée au début de l'exercice.",
     "warehouse": "Dépôt",
     "unitCost": "Coût unitaire",
     "adjustmentHint": "Ajustement : saisissez la quantité COMPTÉE au dépôt ; l'écart devient une entrée ou une sortie."
