@@ -142,6 +142,7 @@ interface InputProps {
   required?: boolean
   className?: string
   step?: string
+  min?: string
   disabled?: boolean
   readOnly?: boolean
 }
@@ -151,7 +152,7 @@ interface InputProps {
 // formulaires de l'application. `useId()` produit un identifiant stable côté serveur
 // comme côté client. L'astérisque de champ requis est masqué aux lecteurs d'écran :
 // `aria-required` porte déjà l'information, sans faire lire « étoile ».
-export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, disabled, readOnly }: InputProps) {
+export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, min, disabled, readOnly }: InputProps) {
   const id = useId()
   return (
     <div className={className}>
@@ -164,6 +165,7 @@ export function Input({ label, type = 'text', value, defaultValue, onChange, pla
         id={id}
         type={type}
         step={step}
+        min={min}
         value={value}
         defaultValue={defaultValue}
         onChange={onChange}

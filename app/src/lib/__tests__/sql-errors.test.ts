@@ -30,6 +30,13 @@ describe('traducteur des erreurs de la base — F4', () => {
     expect(check('timesheets_hours_nonneg')).toBe('Un nombre d\'heures ne peut pas être négatif.')
   })
 
+  // G5 (2.14) : un engagement de −50 rendait « Une valeur saisie n'est pas acceptée ».
+  it('engagement budgétaire négatif : le montant est nommé', () => {
+    expect(sqlErrorMessage({ code: '23514',
+      message: 'new row for relation "budget_commitments" violates check constraint "budget_commitments_amount_nonneg"' }))
+      .toBe('Le montant d\'un engagement ne peut pas être négatif.')
+  })
+
   it('repli générique : doublon et contrainte inconnus', () => {
     expect(sqlErrorMessage({ code: '23505', message: 'duplicate key value violates unique constraint "autre_cle"',
       details: 'Key (tenant_id, sku)=(x, ABC-1) already exists.' })).toBe('« ABC-1 » existe déjà.')

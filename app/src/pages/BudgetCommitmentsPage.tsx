@@ -206,7 +206,7 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('budgetCommitments.amount')} type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            <Input label={t('budgetCommitments.amount')} type="number" min="0" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
             <Input label={t('budgetCommitments.commitmentDate')} type="date" required value={commitmentDate} onChange={(e) => setCommitmentDate(e.target.value)} />
           </div>
           <div>

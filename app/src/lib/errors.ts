@@ -27,6 +27,7 @@ const CONSTRAINTS: Record<string, string> = {
   products_cost_price_nonneg: 'priceNegative',
   products_stock_quantity_nonneg: 'stockNegative',
   timesheets_hours_nonneg: 'hoursNegative',
+  budget_commitments_amount_nonneg: 'commitmentAmountNegative',
   distribution_grills_account_fkey: 'grillAccountMissing',
   distribution_grill_lines_section_fkey: 'grillSectionMissing',
 }

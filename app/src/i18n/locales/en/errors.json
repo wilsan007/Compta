@@ -148,7 +148,8 @@
       "emailInvalid": "The email address is not valid.",
       "priceNegative": "A price cannot be negative.",
       "stockNegative": "Stock cannot become negative.",
-      "hoursNegative": "A number of hours cannot be negative."
+      "hoursNegative": "A number of hours cannot be negative.",
+      "commitmentAmountNegative": "A commitment amount cannot be negative."
     }
   }
 }

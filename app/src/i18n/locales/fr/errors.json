@@ -148,7 +148,8 @@
       "emailInvalid": "L'adresse e-mail n'est pas valide.",
       "priceNegative": "Un prix ne peut pas être négatif.",
       "stockNegative": "Le stock ne peut pas devenir négatif.",
-      "hoursNegative": "Un nombre d'heures ne peut pas être négatif."
+      "hoursNegative": "Un nombre d'heures ne peut pas être négatif.",
+      "commitmentAmountNegative": "Le montant d'un engagement ne peut pas être négatif."
     }
   }
 }
