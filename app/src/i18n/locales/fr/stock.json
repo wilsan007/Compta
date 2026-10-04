@@ -77,7 +77,7 @@
     "deleteConfirm": "Supprimer ce dépôt ?",
     "actions": "Actions"
   },
-  "inventory": {
+  "inventory": { "countedHint": "Saisissez la quantité réellement comptée. L'écart enregistré est : quantité comptée − stock théorique.", "varianceResult": "Écarts entre le stock tenu et ses mouvements", "noVariance": "Aucun écart : le stock tenu correspond à la somme de ses mouvements.", "movementsQty": "Somme des mouvements",
     "title": "Inventaire",
     "subtitle": "Réalisez vos inventaires de stock",
     "new": "Nouvel inventaire",

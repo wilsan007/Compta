@@ -47,7 +47,7 @@ l'expert-comptable (D-G)** avant déploiement — elle est préparée ici, livr�
 | 2.5 | **D3 — stk-010** — OF terminé à 0,00 € et « aucune consommation » (*en vol : l'écran doit lire les colonnes de coût posées par la `302` et les sorties `stock_movements` de référence `production`, pas `of_consumptions`*) ; **D10** — nomenclature sans article, coût 0 ; **D11** — OF refusé qui consomme son numéro | l'OF affiche coût et consommations réels ; numéro attribué à la validation | 1 j | ✅ `bc92cf9` + `344` (04/10) |
 | 2.6 | **D5 — stk-014** — caisse : pas d'annulation de ticket à l'écran, statut en anglais, « Virement » non paramétré | l'écran appelle `void_pos_ticket` ; statuts traduits ; moyen de paiement paramétrable | 0,5 j | ✅ écran (04/10) |
 | 2.7 | **D6, D7, D8** — prix négatif accepté, fiche article non modifiable ; sortie affichée à 0,00 € au lieu du CUMP ; stock initial avec dépôt imposé, date du jour, sans écriture | contraintes en base ; valeur de sortie lue au CUMP ; stock initial daté, au dépôt choisi, avec écriture | 0,75 j | ✅ `345` + `346` (04/10) — D-QA-3 (b) et D-QA-4 (a) tranchées |
-| 2.8 | **D9, D12, D13** — inventaire (ajustement absent, libellés, écarts en JSON brut) ; alerte « stock bas » à seuil 0 ; points non testés à couvrir | inventaire lisible ; pas d'alerte à seuil 0 ; D13 inscrit à la recette (partie 4) | 0,25 j | ⬜ |
+| 2.8 | **D9, D12, D13** — inventaire (ajustement absent, libellés, écarts en JSON brut) ; alerte « stock bas » à seuil 0 ; points non testés à couvrir | inventaire lisible ; pas d'alerte à seuil 0 ; D13 inscrit à la recette (partie 4) | 0,25 j | ✅ écran (04/10) — D13 à la recette |
 
 ### Bloc F — Comptabilité générale (≈ 1,5 j)
 

@@ -6,6 +6,7 @@ import { calculateStockValuation, calculateInventoryVariance } from '@/lib/queri
 import { ClipboardList, Plus, X, Calculator } from 'lucide-react'
 import type { Warehouse, Product } from '@/types'
 import { useToast } from '@/lib/toast'
+import { localDateString } from '@/lib/dateRange'
 import { useTranslation } from 'react-i18next'
 import { StockPhantomsPanel } from '@/components/StockPhantomsPanel'
 
@@ -17,6 +18,17 @@ interface StockValuationRow {
   unit_cost: number
   total_value: number
   method: string
+}
+
+/** Une ligne d'écart rendue par `calculate_inventory_variance`. */
+interface VarianceRow {
+  product_id: string
+  product_name?: string | null
+  warehouse_name?: string | null
+  theoretical_qty?: number | null
+  calculated_qty?: number | null
+  variance_qty?: number | null
+  variance_value?: number | null
 }
 
 export function InventoryPage() {
@@ -32,6 +44,8 @@ const [movements, setMovements] = useState<any[]>([])
   const [valuationRows, setValuationRows] = useState<StockValuationRow[]>([])
   const [valuationLoading, setValuationLoading] = useState(false)
   const [showValuation, setShowValuation] = useState(false)
+  // D9 (stk-007) : les écarts se lisent dans un TABLEAU (ils s'affichaient en JSON brut dans une notification).
+  const [varianceRows, setVarianceRows] = useState<VarianceRow[] | null>(null)
   const { toast } = useToast()
   const { t: tCommon } = useTranslation("common")
 
@@ -62,12 +76,19 @@ const [movements, setMovements] = useState<any[]>([])
 
   async function handleVariance() {
     try {
-      const res = await calculateInventoryVariance(selectedWarehouse || undefined)
-      toast('success', t('inventory.title'), JSON.stringify(res))
+      const res = await calculateInventoryVariance(selectedWarehouse || undefined) as { variances?: VarianceRow[] } | null
+      setVarianceRows(res?.variances ?? [])
     } catch (err) { toast('error', t('inventory.title'), errorMessage(err) || 'Erreur') }
   }
 
-  const adjustments = movements.filter((m) => m.movement_type === 'adjustment' || m.movement_type === 'initial')
+  // D9 (stk-006) : un ajustement d'inventaire est ENREGISTRÉ comme une entrée ou une
+  // sortie de l'écart (la base convertit la quantité comptée) : filtrer sur le type
+  // « adjustment » ne montrait donc plus aucun ajustement. On les reconnaît à leur origine.
+  const estInventaire = (m: { movement_type?: string; reference_type?: string | null; reference?: string | null }) =>
+    m.movement_type === 'initial' || m.movement_type === 'adjustment'
+    || m.reference_type === 'inventory' || m.reference_type === 'inventory_adjustment'
+    || (m.reference ?? '').startsWith('INV-')
+  const adjustments = movements.filter(estInventaire)
 
   return (
     <div>
@@ -135,6 +156,31 @@ const [movements, setMovements] = useState<any[]>([])
         </Card>
       )}
 
+      {varianceRows && (
+        <Card className="mb-4">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Calculator className="w-4 h-4" /> {t('inventory.varianceResult')}</h3>
+            <button onClick={() => setVarianceRows(null)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
+          </div>
+          {varianceRows.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-center text-[var(--color-text-secondary)]">{t('inventory.noVariance')}</p>
+          ) : (
+            <Table headers={[t('inventory.product'), t('inventory.warehouse'), t('inventory.theoreticalQty'), t('inventory.movementsQty'), t('inventory.variance'), t('inventory.totalValue')]}>
+              {varianceRows.map((v) => (
+                <TableRow key={v.product_id + (v.warehouse_name || '')}>
+                  <TableCell className="font-medium">{v.product_name || '—'}</TableCell>
+                  <TableCell className="text-sm">{v.warehouse_name || '—'}</TableCell>
+                  <TableCell className="font-mono text-right">{Number(v.theoretical_qty || 0)}</TableCell>
+                  <TableCell className="font-mono text-right">{Number(v.calculated_qty || 0)}</TableCell>
+                  <TableCell className="font-mono text-right font-semibold">{Number(v.variance_qty || 0)}</TableCell>
+                  <TableCell className="font-mono text-right">{formatCurrency(Number(v.variance_value || 0))}</TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )}
+        </Card>
+      )}
+
       {loading ? <SkeletonTable rows={6} cols={5} /> : adjustments.length === 0 ? (
         <EmptyState icon={<ClipboardList className="w-8 h-8" />} title={t('inventory.noAdjustments')} description={t('inventory.noAdjustmentsDescription')}
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('inventory.newAdjustment')}</Button>} />
@@ -146,7 +192,7 @@ const [movements, setMovements] = useState<any[]>([])
                 <TableCell className="text-xs">{formatDate(m.movement_date)}</TableCell>
                 <TableCell className="text-sm">{m.products?.name || '—'}</TableCell>
                 <TableCell className="text-xs">{m.movement_type === 'initial' ? t('inventory.initialStock') : t('inventory.adjustment')}</TableCell>
-                <TableCell className="font-mono text-xs">{Number(m.quantity)}</TableCell>
+                <TableCell className="font-mono text-xs">{m.movement_type === 'out' ? -Number(m.quantity) : Number(m.quantity)}</TableCell>
                 <TableCell className="font-mono text-xs">{m.reference || '—'}</TableCell>
                 <TableCell className="text-xs">{m.notes || '—'}</TableCell>
               </TableRow>
@@ -170,18 +216,20 @@ const [productId, setProductId] = useState('')
   const [quantity, setQuantity] = useState(0)
   const [unitCost, setUnitCost] = useState(0)
   const [movementType, setMovementType] = useState<'adjustment' | 'initial'>('adjustment')
-  const [movementDate, setMovementDate] = useState(new Date().toISOString().split('T')[0])
+  const [movementDate, setMovementDate] = useState(() => localDateString())
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (quantity < 0) { toast('error', tCommon('common.error'), t('products.negativeRefused')); return }
     setSaving(true)
     try {
       await createStockMovement({
         product_id: productId, warehouse_id: warehouseId || null,
         movement_type: movementType, quantity, unit_cost: unitCost,
-        reference: 'INV-' + new Date().toISOString().split('T')[0],
+        // La référence porte la date de l'INVENTAIRE, pas celle de la saisie.
+        reference: 'INV-' + movementDate,
         reference_type: 'inventory', reference_id: null,
         movement_date: movementDate, notes: notes || null,
       } as any)
@@ -202,7 +250,8 @@ const [productId, setProductId] = useState('')
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('inventory.product')}</label>
             <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)} required>
               <option value="">{tCommon('form.selectPlaceholder') || '—'}</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {/* Un service n'a pas de stock : il ne s'inventorie pas. */}
+              {products.filter((p) => p.type === 'stock').map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
@@ -220,8 +269,11 @@ const [productId, setProductId] = useState('')
                 <option value="initial">{t('inventory.initialStock')}</option>
               </select>
             </div>
-            <Input label={t('inventory.quantity')} type="number" step="0.01" required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+            <Input label={movementType === 'adjustment' ? t('inventory.countedQty') : t('inventory.quantity')} type="number" step="0.01" required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
           </div>
+          {movementType === 'adjustment' && (
+            <p className="text-xs text-[var(--color-text-secondary)]">{t('inventory.countedHint')}</p>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('inventory.unitCost', { defaultValue: 'Coût unitaire' })} type="number" step="0.01" value={unitCost} onChange={(e) => setUnitCost(Number(e.target.value))} />
             <Input label={t('inventory.date')} type="date" required value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />

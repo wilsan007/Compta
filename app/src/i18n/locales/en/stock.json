@@ -77,7 +77,7 @@
     "deleteConfirm": "Delete this warehouse?",
     "actions": "Actions"
   },
-  "inventory": {
+  "inventory": { "countedHint": "Enter the quantity actually counted. The recorded variance is: counted quantity − theoretical stock.", "varianceResult": "Variances between recorded stock and its movements", "noVariance": "No variance: recorded stock matches the sum of its movements.", "movementsQty": "Sum of movements",
     "title": "Inventory",
     "subtitle": "Perform stock inventories",
     "new": "New inventory",
