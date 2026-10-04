@@ -65,7 +65,7 @@ l'expert-comptable (D-G)** avant déploiement — elle est préparée ici, livr�
 
 | # | Défaut | Ce qu'il faut obtenir | Charge | État |
 |---|---|---|---:|---|
-| 2.13 | **G1 — pil-008** — impossible d'imputer une section analytique sur une facture ; **G2** — grille de ventilation en texte libre | sélecteur de section sur la ligne (le porteur existe depuis la `304`) ; ventilation structurée, 100 % contrôlé | 1 j | ⬜ |
+| 2.13 | **G1 — pil-008** — impossible d'imputer une section analytique sur une facture ; **G2** — grille de ventilation en texte libre | sélecteur de section sur la ligne (le porteur existe depuis la `304`) ; ventilation structurée, 100 % contrôlé | 1 j | 🔶 `350` + écran (04/10) — avoirs, grille automatique et brouillon restent |
 | 2.14 | **G3** — tâche sans parent ni avancement ; **G4** — clé i18n brute, Gantt et calendrier en anglais ; **G5** — constats projets/budgets | formulaire complet (règle d'avancement de la `303`) ; i18n ; verdict sur G5 | 0,5 j | ⬜ |
 | 2.16 | **Voie C, suite : les types des écrans touchés par cette partie** (paie, stock, caisse, compta, analytique). Continuer `c51d468` : chaque fonction de requête déclare son type de retour, chaque `useState<any[]>` de l'écran corrigé est nommé. L'état des lieux du 01/10 laissait **85 états sur 128** non typés, avec leurs défauts **encore cachés** | `tsc` 0 ; plafond des `any` en baisse à chaque commit ; chaque défaut révélé par un type passe au registre ou se corrige ici | 1 j | ⬜ |
 
