@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
-import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries/accounting'
+import { getChartAccounts, getChartAccountBalances, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries/accounting'
 import { errorMessage, formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
@@ -86,7 +86,8 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ChartAccount | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [hideZeroBalances, setHideZeroBalances] = useState(true)
+  // F3 (cpt-002) : le plan s'ouvre COMPLET. Masquer les soldes nuls reste un choix de l'utilisateur.
+  const [hideZeroBalances, setHideZeroBalances] = useState(false)
   const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set())
   const [showDeprecated, setShowDeprecated] = useState(false)
   const [filterAccountType, setFilterAccountType] = useState('')
@@ -96,8 +97,12 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
 
   async function loadAccounts() {
     try {
-      const [accs, tp] = await Promise.all([getChartAccounts(), getThirdPartyAccounts()])
-      setAccounts(accs || [])
+      const [accs, tp, soldes] = await Promise.all([getChartAccounts(), getThirdPartyAccounts(), getChartAccountBalances()])
+      // F1 (cpt-001) : les soldes viennent du grand livre, pas des colonnes de la fiche.
+      setAccounts((accs || []).map((a) => {
+        const s = soldes.get(a.code)
+        return { ...a, balance: s?.balance ?? 0, current_balance: s?.balance ?? 0, current_debit: s?.debit ?? 0, current_credit: s?.credit ?? 0 }
+      }))
       setTiers(tp || [])
     } catch (err) { console.error('Error loading chart accounts:', err)
     toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))

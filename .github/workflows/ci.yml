@@ -2116,6 +2116,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.10 (F1, cpt-001) : les soldes du plan comptable se lisent
+      # au grand livre. Mesuré avant : l'écran lisait trois colonnes de
+      # `chart_accounts` que rien ne tient — un 512000 portant 10 000 € d'à-nouveau
+      # s'y lisait à 0. 3 scénarios : les soldes (T01), le brouillon exclu (T02),
+      # le cloisonnement (T03).
+      - name: 'Partie 2 (2.10) : les soldes du plan comptable lus au grand livre (347)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/347_chart_account_balances_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

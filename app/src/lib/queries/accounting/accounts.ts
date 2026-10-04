@@ -9,6 +9,21 @@ import { getTenantId, ti, tud } from '../core'
 import { type ChartAccount, type Currency, type Journal, type FiscalYear, type FiscalPeriod, type EntryTemplate, type ThirdPartyAccount, type AnalyticSection, type StandardLabel, type AnalyticPlan, type DistributionGrill, type DistributionGrillLine, type AnalyticJournalCode } from '@/types'
 
 // ============ Chart of Accounts ============
+/**
+ * 347 (F1) : débit, crédit et solde de chaque compte, lus au GRAND LIVRE (écritures
+ * validées). Les colonnes `balance` / `current_debit` / `current_credit` de
+ * `chart_accounts` ne sont tenues par personne : aucun écran ne doit les lire.
+ */
+export async function getChartAccountBalances(): Promise<Map<string, { debit: number; credit: number; balance: number }>> {
+  const { data, error } = await supabase.rpc('chart_account_balances')
+  if (error) throw error
+  const m = new Map<string, { debit: number; credit: number; balance: number }>()
+  for (const r of (data || []) as { code: string; debit: number; credit: number; balance: number }[]) {
+    m.set(r.code, { debit: Number(r.debit) || 0, credit: Number(r.credit) || 0, balance: Number(r.balance) || 0 })
+  }
+  return m
+}
+
 export async function getChartAccounts() {
   const tid = await getTenantId()
   let q = supabase.from('chart_accounts').select('*').order('code', { ascending: true })

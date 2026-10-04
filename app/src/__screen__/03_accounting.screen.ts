@@ -99,5 +99,12 @@ it('Comptabilité générale — saisie, états, TVA, FEC, lettrage', async () =
   const v = await attempt(() => acc.createJournalEntry({ number: '', date: '2026-09-16', description: 'par un lecteur', reference: null, status: 'draft', total_debit: 10, total_credit: 10,
     lines: [{ account_code: '606100', account_name: 'x', debit: 10, credit: 0, description: null }, { account_code: bq, account_name: 'y', debit: 0, credit: 10, description: null }] } as any))
   check('C12', 'un lecteur ne peut pas saisir d\'écriture', !v.ok, v.err ?? 'ACCEPTÉE')
+  // F1 / cpt-001 (347) : ChartAccountsPage lit les soldes au grand livre. Le total des débits
+  // rendu à l'écran doit être celui des écritures validées.
+  await login(0, A)
+  const soldes = await attempt(() => acc.getChartAccountBalances())
+  const ref = (await sql(`select coalesce(sum(l.debit),0)::float d from journal_lines l join journal_entries e on e.id=l.journal_id and e.tenant_id=l.tenant_id where l.tenant_id=$1 and e.status='posted'`, [A]))[0].d
+  const vu = soldes.ok ? [...(soldes.val as Map<string, { debit: number }>).values()].reduce((x, y) => x + y.debit, 0) : -1
+  check('C13', 'plan comptable : les soldes affichés sont ceux du grand livre (total des débits validés)', soldes.ok && ref > 0 && Math.abs(vu - ref) < 0.01, { err: soldes.err, ecran: vu, grandLivre: ref })
   save('s3.json', findings)
 })
