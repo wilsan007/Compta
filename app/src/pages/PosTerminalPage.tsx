@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Input, Select, Badge, EmptyState, SkeletonTable, PageHeader } from '@/components/ui'
-import { getPosTerminals, createPosTerminal, openPosSession, closePosSession, getActiveSession, createPosTicket } from '@/lib/queries/posAdvanced'
+import { getPosTerminals, createPosTerminal, openPosSession, closePosSession, getActiveSession, createPosTicket, getActivePosPaymentMethods } from '@/lib/queries/posAdvanced'
 import { getProducts } from '@/lib/queries/stock'
 import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency } from '@/lib/utils'
@@ -49,6 +49,22 @@ export function PosTerminalPage() {
   }, [toast, tCommon])
   const [showPayment, setShowPayment] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cash')
+  // D5 (stk-014) : l'encaissement ne propose que les moyens de paiement ACTIFS de la
+  // société. « Virement » était offert en dur alors qu'aucun compte n'y est attaché.
+  const [paymentTypes, setPaymentTypes] = useState<string[]>(['cash'])
+  useEffect(() => {
+    (async () => {
+      try {
+        const types = [...new Set((await getActivePosPaymentMethods()).map((m) => m.type))]
+        if (types.length > 0) {
+          setPaymentTypes(types)
+          setPaymentMethod((cur) => (types.includes(cur) ? cur : types[0]))
+        }
+      } catch (err) {
+        toast('error', tCommon('toast.error'), errorMessage(err))
+      }
+    })()
+  }, [toast, tCommon])
   const [amountReceived, setAmountReceived] = useState('0')
   const [showNewTerminal, setShowNewTerminal] = useState(false)
   const [newTerminalName, setNewTerminalName] = useState('')
@@ -357,12 +373,7 @@ export function PosTerminalPage() {
                 <p className="text-3xl font-bold">{formatCurrency(total)}</p>
               </div>
               <Select label={t('sale.paymentMethod')} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
-                options={[
-                  { value: 'cash', label: t('sale.cash') },
-                  { value: 'card', label: t('sale.card') },
-                  { value: 'check', label: t('sale.check') },
-                  { value: 'transfer', label: t('sale.transfer') },
-                ]} />
+                options={paymentTypes.map((type) => ({ value: type, label: t(`type_${type}`, { defaultValue: type }) }))} />
               {paymentMethod === 'cash' && (
                 <>
                   <Input label={t('sale.amountReceived')} type="number" step="0.01" value={amountReceived} onChange={e => setAmountReceived(e.target.value)} />

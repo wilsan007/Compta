@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, SortableTable, Badge, EmptyState, SkeletonTable, Select, PageHeader } from '@/components/ui'
-import { getPosSessions, getPosTickets, getPosStats, getPosTerminals, closePosSession } from '@/lib/queries/posAdvanced'
+import { getPosSessions, getPosTickets, getPosStats, getPosTerminals, closePosSession, cancelPosTicket, refundPosTicket } from '@/lib/queries/posAdvanced'
 import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Clock, Eye } from 'lucide-react'
@@ -24,6 +24,10 @@ export function PosSessionsPage() {
   const [closingSession, setClosingSession] = useState<SessionWithTerminal | null>(null)
   const [closingAmount, setClosingAmount] = useState(0)
   const [actionLoading, setActionLoading] = useState(false)
+  // D5 (stk-014) : corriger une vente. Session ouverte → annulation (`void_pos_ticket`) ;
+  // session clôturée → avoir (`pos_refund_ticket`). Dans les deux cas un motif est demandé.
+  const [ticketAction, setTicketAction] = useState<{ ticket: PosTicket; kind: 'cancel' | 'refund' } | null>(null)
+  const [ticketReason, setTicketReason] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -52,6 +56,22 @@ export function PosSessionsPage() {
       setStats(s)
     } catch (err) {
       toast('error', tCommon('toast.error'), errorMessage(err))
+    }
+  }
+
+  async function handleTicketAction() {
+    if (!ticketAction || !selectedSession) return
+    setActionLoading(true)
+    try {
+      if (ticketAction.kind === 'cancel') await cancelPosTicket(ticketAction.ticket.id, ticketReason.trim() || undefined)
+      else await refundPosTicket(ticketAction.ticket.id, ticketReason.trim() || undefined)
+      toast('success', tCommon('common.success'), t(ticketAction.kind === 'cancel' ? 'sessions.ticketCancelled' : 'sessions.ticketRefunded'))
+      setTicketAction(null); setTicketReason('')
+      await viewSessionDetails(selectedSession)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err))
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -178,8 +198,16 @@ export function PosSessionsPage() {
                     <div className="text-right">
                       <p className="text-sm font-bold">{formatCurrency(ticket.total)}</p>
                       <Badge variant={ticket.status === 'completed' ? 'success' : 'danger'}>
-                        {ticket.status}
+                        {t(`sessions.ticketStatus.${ticket.status}`, { defaultValue: ticket.status })}
                       </Badge>
+                      {ticket.status === 'completed' && (
+                        <div className="mt-2">
+                          <Button size="sm" variant="secondary"
+                            onClick={() => { setTicketReason(''); setTicketAction({ ticket, kind: selectedSession.status === 'open' ? 'cancel' : 'refund' }) }}>
+                            {t(selectedSession.status === 'open' ? 'sessions.cancelTicket' : 'sessions.refundTicket')}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -187,6 +215,28 @@ export function PosSessionsPage() {
             </div>
             <div className="mt-4">
               <Button variant="secondary" onClick={() => setSelectedSession(null)}>{tCommon('actions.close')}</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+      {/* Annulation ou avoir d'un ticket */}
+      {ticketAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <Card title={`${t(ticketAction.kind === 'cancel' ? 'sessions.cancelTicket' : 'sessions.refundTicket')} — ${ticketAction.ticket.number}`} className="w-full max-w-md">
+            <div className="space-y-4">
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                {t(ticketAction.kind === 'cancel' ? 'sessions.cancelTicketHelp' : 'sessions.refundTicketHelp')}
+              </p>
+              <div>
+                <label htmlFor="pos-ticket-reason" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('sessions.reason')}</label>
+                <input id="pos-ticket-reason" className="input" value={ticketReason} onChange={(e) => setTicketReason(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button variant="secondary" onClick={() => setTicketAction(null)}>{tCommon('actions.cancel')}</Button>
+                <Button onClick={handleTicketAction} disabled={actionLoading || !ticketReason.trim()}>
+                  {actionLoading ? tCommon('actions.saving') : tCommon('actions.confirm')}
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

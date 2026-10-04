@@ -52,7 +52,7 @@
     "paymentSuccess": "تم الدفع",
     "insufficientAmount": "مبلغ غير كاف"
   },
-  "sessions": {
+  "sessions": { "ticketStatus": {"completed": "مدفوع", "cancelled": "ملغى", "refunded": "مُستردّ"}, "cancelTicket": "إلغاء التذكرة", "refundTicket": "إصدار إشعار دائن", "cancelTicketHelp": "تُلغى عملية البيع ويُعاد المخزون ويُسجَّل الإلغاء. ممكن ما دامت الجلسة مفتوحة.", "refundTicketHelp": "الجلسة مغلقة: تُصحَّح عملية البيع بإشعار دائن للعميل ويُعاد المخزون.", "reason": "السبب", "ticketCancelled": "تم إلغاء التذكرة", "ticketRefunded": "تم إصدار الإشعار الدائن",
     "title": "جلسات الصندوق",
     "terminal": "الصندوق",
     "user": "المستخدم",

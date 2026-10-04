@@ -52,7 +52,7 @@
     "paymentSuccess": "Paiement effectué",
     "insufficientAmount": "Montant insuffisant"
   },
-  "sessions": {
+  "sessions": { "ticketStatus": {"completed": "Encaissé", "cancelled": "Annulé", "refunded": "Remboursé"}, "cancelTicket": "Annuler le ticket", "refundTicket": "Émettre un avoir", "cancelTicketHelp": "La vente est annulée, le stock est rendu et l'annulation est tracée. Possible tant que la session est ouverte.", "refundTicketHelp": "La session est clôturée : la vente se corrige par un avoir au client, et le stock est rendu.", "reason": "Motif", "ticketCancelled": "Ticket annulé", "ticketRefunded": "Avoir émis",
     "title": "Sessions de caisse",
     "terminal": "Caisse",
     "user": "Utilisateur",

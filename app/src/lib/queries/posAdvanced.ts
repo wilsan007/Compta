@@ -154,6 +154,28 @@ export async function cancelPosTicket(id: string, reason?: string): Promise<void
   if (error) throw error
 }
 
+/**
+ * 255 : après la clôture de la session, une vente ne s'annule plus — elle se
+ * corrige par un AVOIR (pièce commerciale, stock rendu, événement NF-525).
+ */
+export async function refundPosTicket(id: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('pos_refund_ticket', {
+    p_ticket_id: id,
+    p_reason: reason ?? null,
+  })
+  if (error) throw error
+}
+
+/** Les moyens de paiement ACTIFS de la société (Paramètres → Moyens de paiement de caisse). */
+export async function getActivePosPaymentMethods(): Promise<{ id: string; name: string; type: string }[]> {
+  const tid = await getTenantId()
+  let q = supabase.from('pos_payment_methods').select('id, name, type').eq('is_active', true).order('display_order')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return (data || []) as { id: string; name: string; type: string }[]
+}
+
 export async function convertTicketToInvoice(ticketId: string): Promise<string> {
   const tid = await getTenantId()
   let ticketQ = supabase

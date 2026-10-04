@@ -37,5 +37,18 @@ it('Caisse — terminal, session, tickets, clôture, comptabilité, stock', asyn
   await login(2, A)
   const t4 = await attempt(() => pos.openPosSession(term.id, 0))
   check('K10', 'un lecteur ne peut pas ouvrir de session de caisse', !t4.ok, t4.err ?? 'ACCEPTÉ')
+  // D5 (stk-014) : PosSessionsPage annule un ticket tant que la session est ouverte.
+  await login(0, A)
+  const s2 = await attempt(() => pos.openPosSession(term.id, 0))
+  if (s2.ok) {
+    sess.id = (s2.val as { id: string }).id
+    const avant = (await sql(`select stock_quantity::float q from products where id=$1`, [prod.id]))[0].q
+    const t5 = await attempt(() => mk(1, 'cash', 100))
+    const id5 = (t5.val as { id: string } | undefined)?.id
+    const an = id5 ? await attempt(() => pos.cancelPosTicket(id5, 'erreur de saisie')) : { ok: false, err: t5.err }
+    const apres = (await sql(`select stock_quantity::float q from products where id=$1`, [prod.id]))[0].q
+    const st = id5 ? (await sql(`select status from pos_tickets where id=$1`, [id5]))[0]?.status : null
+    check('K11', 'annuler un ticket par l\'écran (session ouverte) : statut « annulé » et stock rendu', an.ok && st === 'cancelled' && apres === avant, { err: an.err, statut: st, avant, apres })
+  }
   save('s7.json', findings)
 })

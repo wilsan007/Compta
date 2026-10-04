@@ -52,7 +52,7 @@
     "paymentSuccess": "Payment completed",
     "insufficientAmount": "Insufficient amount"
   },
-  "sessions": {
+  "sessions": { "ticketStatus": {"completed": "Paid", "cancelled": "Cancelled", "refunded": "Refunded"}, "cancelTicket": "Cancel ticket", "refundTicket": "Issue a credit note", "cancelTicketHelp": "The sale is cancelled, stock is returned and the cancellation is logged. Possible while the session is open.", "refundTicketHelp": "The session is closed: the sale is corrected by a credit note to the customer, and stock is returned.", "reason": "Reason", "ticketCancelled": "Ticket cancelled", "ticketRefunded": "Credit note issued",
     "title": "POS sessions",
     "terminal": "Terminal",
     "user": "User",
