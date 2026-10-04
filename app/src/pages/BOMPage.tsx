@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { errorMessage, formatCurrency } from '@/lib/utils'
-import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts } from '@/lib/queries/stock'
+import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts, getProductCurrentCump } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Layers, ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
 import type { BOM, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -85,7 +85,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('bom.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={['Code', t('bom.name'), t('bom.type'), t('bom.quantity'), t('bom.active'), t('common.actions')]}>
+          <Table headers={['Code', t('bom.name'), t('bom.product'), t('bom.type'), t('bom.quantity'), t('bom.active'), t('common.actions')]}>
             {boms.filter((b) => !typeFilter || (b as any).bom_type === typeFilter).map((b) => (
               <Fragment key={b.id}>
                 <TableRow>
@@ -98,6 +98,8 @@ const [boms, setBOMs] = useState<BOM[]>([])
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{b.name}</TableCell>
+                  {/* D10 : l'article fabriqué — une nomenclature active en porte un (344). */}
+                  <TableCell className="text-sm">{products.find((p) => p.id === b.product_id)?.name ?? '—'}</TableCell>
                   <TableCell>{(b as any).bom_type === 'amalgam' ? <Badge variant="warning"><GitBranch className="w-3 h-3 inline mr-1" />{t('bom.amalgam')}</Badge> : <Badge variant="neutral">{t('bom.standard')}</Badge>}</TableCell>
                   <TableCell className="font-mono text-xs">{Number(b.quantity)} {b.unit}</TableCell>
                   <TableCell><span className={`text-xs px-2 py-0.5 rounded ${b.active ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]'}`}>{b.active ? getStatusLabel('active') : getStatusLabel('inactive')}</span></TableCell>
@@ -167,7 +169,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
     e.preventDefault()
     setSaving(true)
     try {
-      await createBOM({ code, name, product_id: productId || null, quantity, unit, active: true, bom_type: bomType, routing_id: routingId || null } as any)
+      await createBOM({ code, name, product_id: productId, quantity, unit, active: true, bom_type: bomType, routing_id: routingId || null } as any)
       onSaved()
     } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
     finally { setSaving(false) }
@@ -187,7 +189,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('bom.product')}</label>
-            <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)} required>
               <option value="">{t('bom.selectProduct')}</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -225,6 +227,14 @@ function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; pro
   const [position, setPosition] = useState(1)
   const [saving, setSaving] = useState(false)
 
+  // D10 (stk-009) : le coût proposé est le coût moyen pondéré courant du composant,
+  // lu en base. Il reste modifiable ; un échec de lecture laisse le champ tel quel.
+  async function choisirComposant(id: string) {
+    setProductId(id)
+    if (!id) return
+    try { setUnitCost(await getProductCurrentCump(id)) } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -245,7 +255,7 @@ function BOMLineForm({ bomId, products, onClose, onSaved }: { bomId: string; pro
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('bom.component')}</label>
-            <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)} required>
+            <select className="input" value={productId} onChange={(e) => choisirComposant(e.target.value)} required>
               <option value="">{t('bom.selectProduct')}</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>

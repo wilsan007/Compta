@@ -2090,6 +2090,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.5 (D10, D11) : la production. Mesuré avant (3 rouges) :
+      # une nomenclature active pouvait ne porter aucun article, aucun coût moyen
+      # n'était proposé pour un composant, et le numéro d'OF était pris par
+      # l'écran avant l'enregistrement — un OF refusé le consommait.
+      - name: 'Partie 2 (2.5) : nomenclature avec article, coût moyen, numéro d''OF (344)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/344_production_bom_article_of_number_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

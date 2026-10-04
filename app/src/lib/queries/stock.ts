@@ -255,6 +255,13 @@ export async function createBOMLine(bl: Omit<BOMLine, 'id'>) {
   return data as BOMLine
 }
 
+/** 344 : le coût moyen pondéré courant d'un article (stocks détenus, à défaut prix de revient). */
+export async function getProductCurrentCump(productId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('product_current_cump', { p_product_id: productId })
+  if (error) throw error
+  return Number(data) || 0
+}
+
 export async function deleteBOMLine(id: string) {
   const tid = await getTenantId()
   const { error } = await tud(supabase.from('bom_lines').delete(), 'bom_lines', tid).eq('id', id)

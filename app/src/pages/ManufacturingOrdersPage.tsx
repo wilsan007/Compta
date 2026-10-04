@@ -11,7 +11,6 @@ import type { ManufacturingOrder, BOM, Warehouse, Routing } from '@/types'
 import { useToast } from '@/lib/toast'
 import { Badge } from '@/components/ui'
 import { confirmSync } from '@/lib/confirm'
-import { nextDocumentNumber } from '@/lib/queries/core'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
 
@@ -141,7 +140,9 @@ function OFForm({ boms, warehouses, routings, onClose, onSaved }: { boms: BOM[];
     e.preventDefault()
     setSaving(true)
     try {
-      const number = await nextDocumentNumber('OF')
+      // D11 (344) : le numéro est attribué par la base, dans la transaction de
+      // l'enregistrement — un OF refusé ne consomme plus de numéro.
+      const number = ''
       // C11 (281) : l'OF fabrique l'article de sa nomenclature — sans lui, il n'est
       // jamais terminable (la base le déduit aussi, et refuse un OF sans article).
       const productId = boms.find((b) => b.id === bomId)?.product_id ?? null
