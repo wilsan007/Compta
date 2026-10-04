@@ -1,3 +1,4 @@
+import { templateLineAmounts, defaultEntryDate } from '@/lib/entryTemplate'
 import { useEffect, useState, useMemo, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
@@ -425,7 +426,8 @@ function SaisieForm({
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [analyticSections, setAnalyticSections] = useState<AnalyticSection[]>([])
   const [vatCodes, setVatCodes] = useState<VatCode[]>([])
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  // F7 (cpt-008) : aujourd'hui s'il est dans la période choisie, sinon son premier jour.
+  const [date, setDate] = useState(() => defaultEntryDate(period?.start_date, period?.end_date))
   const [description, setDescription] = useState('')
   const [pieceNumber, setPieceNumber] = useState('')
   const [invoiceRef, setInvoiceRef] = useState('')
@@ -586,8 +588,8 @@ function SaisieForm({
       account_name: accounts.find((a) => a.code === tl.account_general)?.name || '',
       account_tiers: tl.account_tiers || '',
       description: tl.label || '',
-      debit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.debit_pct ? String(tl.debit_pct) : ''),
-      credit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.credit_pct ? String(tl.credit_pct) : ''),
+      // F6 (cpt-007) : un pourcentage n'est pas un montant — voir `templateLineAmounts`.
+      ...templateLineAmounts(tl),
       vat_code: tl.vat_code || '',
       analytic_section: tl.analytic_section || '',
     }))

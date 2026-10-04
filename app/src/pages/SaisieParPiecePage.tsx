@@ -1,3 +1,4 @@
+import { templateLineAmounts } from '@/lib/entryTemplate'
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Breadcrumb, Input, Select } from '@/components/ui'
@@ -132,8 +133,8 @@ export function SaisieParPiecePage() {
       account_name: accounts.find((a) => a.code === tl.account_general)?.name || '',
       account_tiers: tl.account_tiers || '',
       description: tl.label || '',
-      debit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.debit_pct ? String(tl.debit_pct) : ''),
-      credit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.credit_pct ? String(tl.credit_pct) : ''),
+      // F6 (cpt-007) : un pourcentage n'est pas un montant — voir `templateLineAmounts`.
+      ...templateLineAmounts(tl),
       vat_code: tl.vat_code || '', vat_amount: '', echeance_date: '',
       analytic_section: tl.analytic_section || '', quantity: '',
     }))
