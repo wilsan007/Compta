@@ -1,4 +1,5 @@
 /* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
+import { sqlErrorTextMessage } from '@/lib/errors'
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle, AlertCircle, Info, XCircle, X } from 'lucide-react'
@@ -41,8 +42,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((t) => t.filter((toast) => toast.id !== id))
   }, [])
 
-  const toast = useCallback((type: ToastType, title: string, message?: string) => {
+  const toast = useCallback((type: ToastType, title: string, rawMessage?: string) => {
     const id = Math.random().toString(36).substring(7)
+    // F4 : dernier filet. Un écran qui passe `err.message` (sans `errorMessage`) ne doit
+    // pas afficher une phrase de PostgreSQL : elle est traduite ici.
+    const message = type === 'error' ? (sqlErrorTextMessage(rawMessage) ?? rawMessage) : rawMessage
     setToasts((t) => [...t, { id, type, title, message }])
     setTimeout(() => remove(id), 5000)
   }, [remove])

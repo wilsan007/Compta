@@ -130,5 +130,25 @@
       "st_shipments": "Subcontracting shipment",
       "supplier_payments": "Supplier payment"
     }
+  },
+  "db": {
+    "duplicate": "This item already exists.",
+    "duplicateValue": "“{{value}}” already exists.",
+    "check": "A value you entered is not accepted. Check the form fields.",
+    "notNull": "A required field is missing ({{column}}).",
+    "stillReferenced": "This item is still used elsewhere: it cannot be deleted or changed this way.",
+    "referenceMissing": "A linked item could not be found. Reload the page and try again.",
+    "forbidden": "You are not allowed to perform this action.",
+    "invalidValue": "A value you entered is invalid.",
+    "constraints": {
+      "chartAccountExists": "Account {{value}} already exists.",
+      "documentNumberExists": "Number {{value}} is already in use.",
+      "salaryNegative": "Salary cannot be negative.",
+      "contractTypeInvalid": "This contract type is not recognised.",
+      "emailInvalid": "The email address is not valid.",
+      "priceNegative": "A price cannot be negative.",
+      "stockNegative": "Stock cannot become negative.",
+      "hoursNegative": "A number of hours cannot be negative."
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import i18n from 'i18next'
+import { sqlErrorMessage } from '@/lib/errors'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -46,6 +47,9 @@ export function chainDeleteRefusalMessage(err: unknown): string | null {
 export function errorMessage(err: unknown): string {
   const refus = chainDeleteRefusalMessage(err)
   if (refus) return refus
+  // F4 : une erreur SQL brute (doublon, contrainte, champ obligatoire, droit) est traduite.
+  const sql = sqlErrorMessage(err)
+  if (sql) return sql
   if (err instanceof Error) return err.message
   if (err && typeof err === 'object' && 'message' in err) {
     const m = (err as { message?: unknown }).message

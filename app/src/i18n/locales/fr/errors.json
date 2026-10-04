@@ -130,5 +130,25 @@
       "st_shipments": "Expédition de sous-traitance",
       "supplier_payments": "Règlement fournisseur"
     }
+  },
+  "db": {
+    "duplicate": "Cet élément existe déjà.",
+    "duplicateValue": "« {{value}} » existe déjà.",
+    "check": "Une valeur saisie n'est pas acceptée. Vérifiez les champs du formulaire.",
+    "notNull": "Un champ obligatoire n'est pas renseigné ({{column}}).",
+    "stillReferenced": "Cet élément est encore utilisé ailleurs : il ne peut pas être supprimé ni modifié ainsi.",
+    "referenceMissing": "Un élément lié est introuvable. Rechargez la page et recommencez.",
+    "forbidden": "Vous n'avez pas le droit d'effectuer cette action.",
+    "invalidValue": "Une valeur saisie est invalide.",
+    "constraints": {
+      "chartAccountExists": "Le compte {{value}} existe déjà.",
+      "documentNumberExists": "Le numéro {{value}} est déjà utilisé.",
+      "salaryNegative": "Le salaire ne peut pas être négatif.",
+      "contractTypeInvalid": "Ce type de contrat n'est pas reconnu.",
+      "emailInvalid": "L'adresse e-mail n'est pas valide.",
+      "priceNegative": "Un prix ne peut pas être négatif.",
+      "stockNegative": "Le stock ne peut pas devenir négatif.",
+      "hoursNegative": "Un nombre d'heures ne peut pas être négatif."
+    }
   }
 }

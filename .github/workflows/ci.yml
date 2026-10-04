@@ -2136,6 +2136,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.12 (F5, cpt-006) : les périodes d'un exercice s'appelaient
+      # « Fevrier », « Aout », « Decembre ». 2 scénarios : une société neuve a ses
+      # accents (T01), plus aucune période sans accent en base (T02).
+      - name: 'Partie 2 (2.12) : les noms de périodes portent leurs accents (349)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/349_fiscal_period_labels_accents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
