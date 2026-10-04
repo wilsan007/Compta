@@ -140,7 +140,7 @@
     "referenceMissing": "A linked item could not be found. Reload the page and try again.",
     "forbidden": "You are not allowed to perform this action.",
     "invalidValue": "A value you entered is invalid.",
-    "constraints": {
+    "constraints": { "grillAccountMissing": "This account does not exist in the chart of accounts.", "grillSectionMissing": "This analytic section does not exist.",
       "chartAccountExists": "Account {{value}} already exists.",
       "documentNumberExists": "Number {{value}} is already in use.",
       "salaryNegative": "Salary cannot be negative.",

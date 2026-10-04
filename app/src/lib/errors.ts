@@ -27,6 +27,8 @@ const CONSTRAINTS: Record<string, string> = {
   products_cost_price_nonneg: 'priceNegative',
   products_stock_quantity_nonneg: 'stockNegative',
   timesheets_hours_nonneg: 'hoursNegative',
+  distribution_grills_account_fkey: 'grillAccountMissing',
+  distribution_grill_lines_section_fkey: 'grillSectionMissing',
 }
 
 const t = (key: string, vars?: Record<string, unknown>) => i18n.t(`errors:db.${key}`, vars) as string
@@ -75,6 +77,8 @@ export function sqlErrorMessage(err: unknown): string | null {
 
   // Référence : élément encore utilisé, ou élément lié introuvable
   if (code === '23503' && message.includes('violates foreign key constraint')) {
+    const fk = CONSTRAINTS[quoted(message, 'foreign key constraint') ?? '']
+    if (fk) return t(`constraints.${fk}`, { value: '' })
     const detail = typeof e.details === 'string' ? e.details : ''
     return t(detail.includes('is still referenced') || message.startsWith('update or delete') ? 'stillReferenced' : 'referenceMissing')
   }

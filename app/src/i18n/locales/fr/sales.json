@@ -16,7 +16,7 @@
     "invoicesByStatus": "Factures par statut",
     "monthlyRevenue": "Chiffre d'affaires mensuel"
   },
-  "invoices": {
+  "invoices": { "analyticSection": "Section analytique",
     "title": "Factures",
     "proFormaNotice": "PRO FORMA — document provisoire, non valable comme facture",
     "subtitle": "Gérez vos factures de vente",

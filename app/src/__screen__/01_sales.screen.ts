@@ -128,5 +128,13 @@ it('Ventes -> trésorerie -> grand livre, par les fonctions des écrans', async 
   // S11 lecture par l'écran
   const list = await attempt(() => sales.getInvoices())
   check('S11', 'getInvoices (liste de l\'écran) rend les factures créées', list.ok && (list.val as any[]).length >= 3, list.err ?? (list.val as any[]).length)
+  // G1 / pil-008 : InvoicesPage impute une ligne de facture sur une section analytique.
+  const secCode = 'PIL' + (Date.now() % 100000)
+  const sec = (await sql(`insert into analytic_sections (tenant_id, code, name, active) values ($1, $2, 'Pilote', true) returning id`, [A, secCode]))[0]
+  const fa = await attempt(() => sales.createInvoice({ customer_id: cust.id, customer_name: cust.name, date: '2026-09-14', due_date: '2026-10-14', status: 'draft', subtotal: 100, vat_total: 20, total: 120, amount_paid: 0, amount_due: 120, notes: '', recurring: false, recurring_frequency: null,
+    lines: [{ product_id: null, description: 'Prestation imputée', quantity: 1, unit_price: 100, vat_rate: 20, total: 100, vat_total: 20, vat_amount: 20, line_order: 0, advance_invoice_id: null, analytic_section_id: sec.id }] } as Parameters<typeof sales.createInvoice>[0]))
+  const idFa = (fa.val as { id: string } | undefined)?.id
+  const porte = idFa ? await sql(`select analytic_section_id from invoice_lines where invoice_id=$1`, [idFa]) : []
+  check('S12', 'une ligne de facture saisie par l\'écran porte sa section analytique', fa.ok && porte.length === 1 && porte[0].analytic_section_id === sec.id, { err: fa.err, lignes: porte })
   save('s1.json', findings)
 })

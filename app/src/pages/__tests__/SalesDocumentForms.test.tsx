@@ -44,7 +44,7 @@ vi.mock('@/lib/queries/core', async (importOriginal) => {
 })
 vi.mock('@/lib/queries/misc', () => ({ transformInvoiceToCreditNote: vi.fn(), createAdvanceInvoice: vi.fn(), transformQuoteToSalesOrder: vi.fn(), getFiscalPositions: vi.fn(async () => []) }))
 vi.mock('@/lib/queries/stock', () => ({ getProducts: vi.fn(async () => []), getProductStock: vi.fn(async () => 0) }))
-vi.mock('@/lib/queries/accounting', () => ({ getCompanySettings: vi.fn(async () => null) }))
+vi.mock('@/lib/queries/accounting', () => ({ getCompanySettings: vi.fn(async () => null), getAnalyticSections: vi.fn(async () => []) }))
 vi.mock('@/lib/legislation', () => ({ useLegislation: () => ({ defaultVatRate: 20 }) }))
 vi.mock('@/hooks/usePermission', () => ({ usePermission: () => ({ canCreate: true, canDelete: true, canEdit: true }) }))
 vi.mock('@/components/cross-module/useModuleAwareAccess', () => ({ useModuleAwareAccess: () => ({ getAccessStrategy: () => 'none' }) }))

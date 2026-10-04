@@ -11,7 +11,7 @@ import { useToast } from '@/lib/toast'
 import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
 import { generateFacturX, downloadXML, isDraftDocument, lineExemptionReason, type EInvoiceOptions } from '@/lib/facturX'
 import { downloadInvoicePdf } from '@/lib/invoicePdf'
-import { getCompanySettings } from '@/lib/queries/accounting'
+import { getCompanySettings, getAnalyticSections } from '@/lib/queries/accounting'
 import { getFiscalPositions } from '@/lib/queries/misc'
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 // I-01 — la Vue Chaîne, réutilisée telle quelle sur la fiche facture.
@@ -449,8 +449,17 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
   const { defaultVatRate } = useLegislation()
   // B2 (ven-008) : la ligne se choisit dans le catalogue (comme sur le devis) ;
   // une ligne libre porte son propre compte de vente.
-  const emptyLine = () => ({ product_id: '', account_code: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
-  const [lines, setLines] = useState<{ product_id: string; account_code: string; description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
+  const emptyLine = () => ({ product_id: '', account_code: '', analytic_section_id: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
+  const [lines, setLines] = useState<{ product_id: string; account_code: string; analytic_section_id: string; description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
+  // G1 (pil-008) : une ligne de facture s'impute sur une section analytique. Le porteur
+  // existe en base depuis la 304 (`invoice_lines.analytic_section_id`) et circule jusqu'à
+  // la ligne d'écriture ; aucun écran ne le renseignait.
+  const [sections, setSections] = useState<{ id: string; code: string; name: string }[]>([])
+  useEffect(() => {
+    getAnalyticSections()
+      .then((all) => setSections(all.filter((s) => s.active !== false && s.section_type !== 'total').map((s) => ({ id: s.id, code: s.code, name: s.name }))))
+      .catch(() => setSections([]))
+  }, [])
   const [saving, setSaving] = useState(false)
   // R-03 : acomptes validés du client à déduire (ligne négative rattachée à l'acompte)
   const [openAdvances, setOpenAdvances] = useState<OpenAdvanceInvoice[]>([])
@@ -475,13 +484,13 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
     description: t('invoices.advanceDeductionLine', { number: a.number }),
     quantity: 1, unit_price: -a.remaining, vat_rate: a.vat_rate, advance_invoice_id: a.id,
   }))
-  const allLines: { description: string; quantity: number; unit_price: number; vat_rate: number; advance_invoice_id?: string; product_id?: string; account_code?: string }[] =
+  const allLines: { description: string; quantity: number; unit_price: number; vat_rate: number; advance_invoice_id?: string; product_id?: string; account_code?: string; analytic_section_id?: string }[] =
     [...filledLines, ...deductionLines]
   const subtotal = round2(allLines.reduce((sum, l) => sum + lineHt(l), 0))
   const vatTotal = round2(allLines.reduce((sum, l) => sum + lineVat(l), 0))
   const total = round2(subtotal + vatTotal)
 
-  function updateLine(idx: number, field: 'product_id' | 'account_code' | 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
+  function updateLine(idx: number, field: 'product_id' | 'account_code' | 'analytic_section_id' | 'description' | 'quantity' | 'unit_price' | 'vat_rate', value: string | number) {
     setLines(prev => prev.map((l, i) => (i === idx ? { ...l, [field]: value } : l)))
   }
 
@@ -568,6 +577,8 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
           // B2 : une ligne libre porte le compte de vente choisi (706/707) ;
           // avec un article, c'est sa fiche qui le donne.
           account_code: l.product_id ? null : (l.account_code || null),
+          // G1 : la section analytique de la ligne (aucune = non imputée).
+          analytic_section_id: l.analytic_section_id || null,
         })),
       })
       toast('success', t('invoices.title'), t('invoices.draftCreated'))
@@ -609,6 +620,7 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
                   <th className="px-3 py-2 text-left text-xs font-semibold w-40">{t('invoices.product')}</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold w-28">{t('invoices.saleAccount')}</th>
+                  {sections.length > 0 && <th className="px-3 py-2 text-left text-xs font-semibold w-32">{t('invoices.analyticSection')}</th>}
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
@@ -641,6 +653,14 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
                         </select>
                       )}
                     </td>
+                    {sections.length > 0 && (
+                      <td className="px-3 py-2">
+                        <select aria-label={t('invoices.analyticSection')} title={t('invoices.analyticSection')} value={line.analytic_section_id} onChange={(e) => updateLine(idx, 'analytic_section_id', e.target.value)} className={cellInput}>
+                          <option value="">—</option>
+                          {sections.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
+                        </select>
+                      </td>
+                    )}
                     <td className="px-3 py-2"><input aria-label={t('invoices.quantity')} type="number" step="0.01" min={0} value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.unitPrice')} type="number" step="0.01" min={0} value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className={cellInput + ' text-right'} /></td>
                     <td className="px-3 py-2"><input aria-label={t('invoices.vatRate')} type="number" step="0.01" min={0} value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className={cellInput + ' text-right'} /></td>

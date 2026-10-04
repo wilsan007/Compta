@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill } from '@/lib/queries/accounting'
+import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill, getChartAccounts, getAnalyticSections } from '@/lib/queries/accounting'
 import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -105,6 +105,18 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [active, setActive] = useState(true)
   const [lines, setLines] = useState<DistributionGrillLine[]>([{ id: '', grill_id: '', section_code: '', percentage: 0, created_at: '' }])
   const [saving, setSaving] = useState(false)
+  // G2 (pil-007) : le compte se choisit dans le plan et la section dans les sections —
+  // la base refuse désormais ce qui n'existe pas (350).
+  const [comptes, setComptes] = useState<{ code: string; name: string }[]>([])
+  const [sections, setSections] = useState<{ code: string; name: string }[]>([])
+  useEffect(() => {
+    Promise.all([getChartAccounts(), getAnalyticSections()])
+      .then(([c, s]) => {
+        setComptes((c || []).map((a) => ({ code: a.code, name: a.name })))
+        setSections((s || []).filter((x) => x.active !== false && x.section_type !== 'total').map((x) => ({ code: x.code, name: x.name })))
+      })
+      .catch((err) => toast('error', tCommon('common.error'), errorMessage(err)))
+  }, [toast, tCommon])
 
   const total = lines.reduce((s, l) => s + Number(l.percentage || 0), 0)
 
@@ -154,7 +166,13 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('grills.name')} value={name} onChange={(e) => setName(e.target.value)} required />
-            <Input label={t('grills.account')} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} required />
+            <div>
+              <label htmlFor="grill-account" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('grills.account')}</label>
+              <select id="grill-account" className="input" value={accountCode} onChange={(e) => setAccountCode(e.target.value)} required>
+                <option value="">{tCommon('form.selectOption')}</option>
+                {comptes.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('grills.journal')} value={journalCode} onChange={(e) => setJournalCode(e.target.value)} placeholder="ACH" />
@@ -173,7 +191,10 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
               {lines.map((line, idx) => (
                 <TableRow key={line.id || idx}>
                   <TableCell>
-                    <input className="input text-xs" placeholder="A001" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)} />
+                    <select aria-label={t('grills.section')} className="input text-xs" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)}>
+                      <option value="">{tCommon('form.selectOption')}</option>
+                      {sections.map((sec) => <option key={sec.code} value={sec.code}>{sec.code} — {sec.name}</option>)}
+                    </select>
                   </TableCell>
                   <TableCell>
                     <input aria-label={t('grills.percentage')} className="input text-xs text-right w-24" type="number" value={line.percentage} onChange={(e) => updateLine(idx, 'percentage', Number(e.target.value))} />

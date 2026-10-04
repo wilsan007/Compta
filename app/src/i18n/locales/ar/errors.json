@@ -140,7 +140,7 @@
     "referenceMissing": "تعذّر العثور على عنصر مرتبط. أعد تحميل الصفحة وحاول مجددًا.",
     "forbidden": "ليس لديك الحق في تنفيذ هذا الإجراء.",
     "invalidValue": "إحدى القيم المدخلة غير صالحة.",
-    "constraints": {
+    "constraints": { "grillAccountMissing": "هذا الحساب غير موجود في دليل الحسابات.", "grillSectionMissing": "هذا القسم التحليلي غير موجود.",
       "chartAccountExists": "الحساب {{value}} موجود مسبقًا.",
       "documentNumberExists": "الرقم {{value}} مستخدم مسبقًا.",
       "salaryNegative": "لا يمكن أن يكون الراتب سالبًا.",

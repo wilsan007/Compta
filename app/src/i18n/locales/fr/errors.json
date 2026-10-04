@@ -140,7 +140,7 @@
     "referenceMissing": "Un élément lié est introuvable. Rechargez la page et recommencez.",
     "forbidden": "Vous n'avez pas le droit d'effectuer cette action.",
     "invalidValue": "Une valeur saisie est invalide.",
-    "constraints": {
+    "constraints": { "grillAccountMissing": "Ce compte n'existe pas dans le plan comptable.", "grillSectionMissing": "Cette section analytique n'existe pas.",
       "chartAccountExists": "Le compte {{value}} existe déjà.",
       "documentNumberExists": "Le numéro {{value}} est déjà utilisé.",
       "salaryNegative": "Le salaire ne peut pas être négatif.",

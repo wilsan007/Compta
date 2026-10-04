@@ -200,6 +200,8 @@ export interface InvoiceLine {
   advance_invoice_id?: string | null
   /** B2 (ven-008) : compte de vente d'une ligne sans article (706000 / 707000) */
   account_code?: string | null
+  /** 304 : section analytique de la ligne ; elle circule jusqu'à la ligne d'écriture. */
+  analytic_section_id?: string | null
 }
 
 export interface Invoice {

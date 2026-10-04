@@ -73,4 +73,10 @@ describe('traducteur des erreurs de la base — F4', () => {
     expect(sqlErrorTextMessage('Le lot est vide : aucun bulletin à approuver')).toBeNull()
     expect(sqlErrorTextMessage(undefined)).toBeNull()
   })
+  it('clés nommées des grilles de ventilation (350) : compte ou section introuvable', () => {
+    expect(sqlErrorMessage({ code: '23503', message: 'insert or update on table "distribution_grills" violates foreign key constraint "distribution_grills_account_fkey"' }))
+      .toBe("Ce compte n'existe pas dans le plan comptable.")
+    expect(sqlErrorMessage({ code: '23503', message: 'insert or update on table "distribution_grill_lines" violates foreign key constraint "distribution_grill_lines_section_fkey"' }))
+      .toBe("Cette section analytique n'existe pas.")
+  })
 })

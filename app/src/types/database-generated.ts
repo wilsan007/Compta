@@ -5745,6 +5745,13 @@ export interface Database {
           referencedColumns: ["tenant_id", "id"]
         },
         {
+          foreignKeyName: "distribution_grill_lines_section_fkey",
+          columns: ["tenant_id", "section_code"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "code"]
+        },
+        {
           foreignKeyName: "distribution_grill_lines_tenant_id_fkey",
           columns: ["tenant_id"],
           isOneToOne: true,
@@ -5788,6 +5795,13 @@ export interface Database {
         updated_at?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "distribution_grills_account_fkey",
+          columns: ["tenant_id", "account_code"],
+          isOneToOne: false,
+          referencedRelation: "chart_accounts",
+          referencedColumns: ["tenant_id", "code"]
+        },
         {
           foreignKeyName: "distribution_grills_tenant_id_fkey",
           columns: ["tenant_id"],

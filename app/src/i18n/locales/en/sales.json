@@ -16,7 +16,7 @@
     "invoicesByStatus": "Invoices by status",
     "monthlyRevenue": "Monthly revenue"
   },
-  "invoices": {
+  "invoices": { "analyticSection": "Analytic section",
     "title": "Invoices",
     "proFormaNotice": "PRO FORMA — provisional document, not valid as an invoice",
     "subtitle": "Manage your sales invoices",

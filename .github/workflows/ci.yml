@@ -2144,6 +2144,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.13 (G2, pil-007) : une grille de ventilation désignait son
+      # compte et ses sections en TEXTE LIBRE — « 706999 » vers « ZZZ99 »
+      # s'enregistrait et ne ventilait jamais rien. 3 scénarios : compte inexistant
+      # refusé (T01), section inexistante refusée (T02), renommage suivi (T03).
+      - name: 'Partie 2 (2.13) : une grille de ventilation désigne ce qui existe (350)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/350_distribution_grill_references_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
