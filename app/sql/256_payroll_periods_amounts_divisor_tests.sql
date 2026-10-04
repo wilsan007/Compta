@@ -84,7 +84,11 @@ BEGIN
   SELECT unit_price INTO v_taux_jour FROM payroll_variable_elements
    WHERE tenant_id = t AND employee_id = e AND element_type = 'unpaid_leave_deduction';
 
-  SELECT ot.gross_amount INTO v_ot FROM calculate_overtime_pay(e, 1) ot LIMIT 1;
+  -- 04/10/2026 (342) : `calculate_overtime_pay` est supprimée (second moteur, sans
+  -- appelant). Le taux d'UNE heure sup se lit désormais par la porte de l'écran,
+  -- `payroll_overtime_preview` — même grandeur, même attendu. Appel précédent :
+  -- SELECT ot.gross_amount FROM calculate_overtime_pay(e, 1) ot LIMIT 1.
+  v_ot := (payroll_overtime_preview(e, 1) ->> 'montant')::numeric;
   v_attendu := round(3000::numeric / 169 * 1.25, 4);
 
   PERFORM _rec('T02', 'retard, congé sans solde et heures supplémentaires lisent le diviseur de la société (169 / 26), pas 4,33 ni 30 ni 151,67',

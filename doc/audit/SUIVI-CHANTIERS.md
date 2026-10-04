@@ -104,7 +104,7 @@
 |---|---|---|---|
 | 2.1 | Titres-restaurant et transport dans le bulletin | ✅ code · 👤 signature | C2 ter — migration `341`, suite `321` **10/10** (dont la part patronale sous 50 % : totalité réintégrée, BOSS 16/03/2023), registre SQL **vide** ; barèmes 2026 relevés sur urssaf.fr le 04/10 ; **déploiement soumis à la signature de l'expert-comptable (D-G)** |
 | 2.2 | Heures sup détectées depuis la feuille de temps | ✅ | C3 (rh-008) — migration `340`, suite `340` **9/9** (4 rouges avant), scénario écran H11/H12, 04/10 |
-| 2.3 | Tranches d'heures sup + exonération | ⬜ | reste de W5 |
+| 2.3 | Tranches d'heures sup + exonération | ✅ code · 👤 signature | reste de W5 — migration `342`, suite `342` **8/8** : 8 h à 25 % puis 50 % sur la semaine civile, réduction salariale 11,31 %, `calculate_overtime_pay` supprimée ; règles relevées sur service-public (F2391) le 04/10. **Non codés, dits** : seuil hebdomadaire (il reste journalier), exonération d'impôt de 7 500 € |
 | 2.4 | Pointage d'absence ; constats bas de paie | ⬜ | C4 (rh-009), C5, C6 |
 | 2.5 | OF terminé à 0,00 €, consommations | 🔶 | D3 — `bc92cf9` sur `qa/lot-d-stock` |
 | 2.6 | Caisse : annulation à l'écran, statuts, « Virement » | ⬜ | D5 (stk-014) |
