@@ -216,7 +216,7 @@
     "createFirst": "Create my first BOM",
     "searchPlaceholder": "Search by product..."
   },
-  "products": {
+  "products": { "initialDate": "Initial stock date", "negativeRefused": "A price or a quantity cannot be negative.",
     "title": "Products & Services",
     "subtitle": "Manage your product and service catalog",
     "new": "New product",

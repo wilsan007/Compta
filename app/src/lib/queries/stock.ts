@@ -1,3 +1,4 @@
+import { localDateString } from '@/lib/dateRange'
 import { supabase } from '@/lib/supabase'
 import type { Joined, Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
@@ -31,7 +32,7 @@ export async function getProducts() {
 }
 
 /** Stock initial saisi à la création d'un article (M6, 280) : un mouvement `initial`. */
-export interface InitialStock { quantity: number; warehouse_id: string | null; unit_cost: number }
+export interface InitialStock { quantity: number; warehouse_id: string | null; unit_cost: number; /** D8 : date du stock initial (AAAA-MM-JJ) ; aujourd'hui par défaut. */ date?: string }
 
 export async function createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>, initial?: InitialStock) {
   const tid = await getTenantId()
@@ -46,7 +47,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'created_at' |
       await createStockMovement({
         product_id: data.id, warehouse_id: initial.warehouse_id, movement_type: 'initial', quantity: Number(initial.quantity),
         unit_cost: Number(initial.unit_cost) || 0, reference: 'Stock initial', reference_type: 'inventory', reference_id: null,
-        movement_date: new Date().toISOString().split('T')[0], notes: null,
+        movement_date: initial.date || localDateString(), notes: null,
       } as Omit<StockMovement, 'id' | 'created_at'>)
     } catch (err) {
       // L'article sans son stock initial n'est pas ce que l'utilisateur a saisi : on le retire.

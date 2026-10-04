@@ -2099,6 +2099,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.7 (D6, D7). Mesuré avant (3 rouges) : un article
+      # s'enregistrait avec un prix négatif, et une sortie de stock s'affichait à
+      # 0,00 € alors que la comptabilité la valorisait au coût moyen pondéré.
+      - name: 'Partie 2 (2.7) : prix non négatifs et coût des sorties de stock (345)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/345_stock_prices_exit_cost_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

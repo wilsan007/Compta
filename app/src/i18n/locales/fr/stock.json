@@ -216,7 +216,7 @@
     "createFirst": "Créer ma première nomenclature",
     "searchPlaceholder": "Rechercher par produit..."
   },
-  "products": {
+  "products": { "initialDate": "Date du stock initial", "negativeRefused": "Un prix ou une quantité ne peut pas être négatif.",
     "title": "Produits & Services",
     "subtitle": "Gérez votre catalogue de produits et services",
     "new": "Nouveau produit",

@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getProducts, createProduct, deleteProduct, getStockMovements, createStockMovement, getWarehouses } from '@/lib/queries/stock'
+import { getProducts, createProduct, updateProduct, deleteProduct, getStockMovements, createStockMovement, getWarehouses } from '@/lib/queries/stock'
+import { localDateString } from '@/lib/dateRange'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
-import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown } from 'lucide-react'
+import { Package, Plus, Trash2, X, AlertTriangle, ArrowUpDown, Pencil } from 'lucide-react'
 import type { Product, StockMovement, Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
@@ -13,13 +14,14 @@ import { usePermission } from '@/hooks/usePermission'
 export function ProductsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('stock')
-  const { canCreate, canDelete } = usePermission('products')
+  const { canCreate, canEdit, canDelete } = usePermission('products')
   const { t: tCommon } = useTranslation('common')
 const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<StockMovement[]>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [showMovementForm, setShowMovementForm] = useState(false)
   const [filterType, setFilterType] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -51,7 +53,9 @@ const [products, setProducts] = useState<Product[]>([])
   }
 
   const filtered = filterType ? products.filter(p => p.type === filterType) : products
-  const lowStockProducts = products.filter(p => p.type === 'stock' && p.stock_quantity <= p.reorder_level)
+  // D12 (ach-005) : un seuil à 0 veut dire « pas de seuil » — pas d'alerte.
+  const estSousSeuil = (p: Product) => Number(p.reorder_level) > 0 && Number(p.stock_quantity) < Number(p.reorder_level)
+  const lowStockProducts = products.filter(p => p.type === 'stock' && estSousSeuil(p))
 
   return (
     <div>
@@ -104,12 +108,15 @@ const [products, setProducts] = useState<Product[]>([])
                 <TableCell className="font-mono text-right">{formatCurrency(Number(p.purchase_price))}</TableCell>
                 <TableCell className="font-mono">
                   {p.type === 'stock' ? (
-                    <span className={Number(p.stock_quantity) <= Number(p.reorder_level) ? 'text-[var(--color-danger)] font-bold' : ''}>
+                    <span className={estSousSeuil(p) ? 'text-[var(--color-danger)] font-bold' : ''}>
                       {p.stock_quantity} {p.unit}
                     </span>
                   ) : '—'}
                 </TableCell>
                 <TableCell>
+                  {/* D6 (stk-002) : la fiche article se modifie (elle ne pouvait qu'être créée ou supprimée). */}
+                  {canEdit && <button onClick={(e) => { e.stopPropagation(); setEditingProduct(p) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                    <Pencil className="w-4 h-4" aria-hidden="true" /></button>}
                   {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
                     <Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                 </TableCell>
@@ -127,6 +134,10 @@ const [products, setProducts] = useState<Product[]>([])
         <ProductForm warehouses={warehouses} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />
       )}
 
+      {editingProduct && (
+        <ProductForm product={editingProduct} warehouses={warehouses} onClose={() => setEditingProduct(null)} onSaved={() => { setEditingProduct(null); loadData() }} />
+      )}
+
       {showMovementForm && (
         <StockMovementForm products={products} warehouses={warehouses} onClose={() => setShowMovementForm(false)} onSaved={() => { setShowMovementForm(false); loadData() }} />
       )}
@@ -134,31 +145,52 @@ const [products, setProducts] = useState<Product[]>([])
   )
 }
 
-function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState('')
+function ProductForm({ product, warehouses, onClose, onSaved }: { product?: Product; warehouses: Warehouse[]; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(product?.name ?? '')
   const { toast } = useToast()
   const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const { defaultVatRate } = useLegislation()
-  const [sku, setSku] = useState('')
-  const [type, setType] = useState('stock')
-  const [salePrice, setSalePrice] = useState(0)
-  const [purchasePrice, setPurchasePrice] = useState(0)
-  const [vatRate, setVatRate] = useState(defaultVatRate)
+  const [sku, setSku] = useState(product?.sku ?? '')
+  const [type, setType] = useState<string>(product?.type ?? 'stock')
+  const [salePrice, setSalePrice] = useState(Number(product?.sale_price ?? 0))
+  const [purchasePrice, setPurchasePrice] = useState(Number(product?.purchase_price ?? 0))
+  const [vatRate, setVatRate] = useState(product ? Number(product.vat_rate ?? defaultVatRate) : defaultVatRate)
   const [stockQty, setStockQty] = useState(0)
+  // D8 (stk-004) : la date du stock initial se choisit (elle était toujours celle du jour).
+  const [initialDate, setInitialDate] = useState(() => localDateString())
   const [initialWarehouseId, setInitialWarehouseId] = useState(warehouses[0]?.id ?? '')
-  const [reorderLevel, setReorderLevel] = useState(0)
-  const [unit, setUnit] = useState('')
-  const [category, setCategory] = useState('')
-  const [saleAccountCode, setSaleAccountCode] = useState('707000')
-  const [purchaseAccountCode, setPurchaseAccountCode] = useState('607000')
-  const [stockAccountCode, setStockAccountCode] = useState('310000')
+  const [reorderLevel, setReorderLevel] = useState(Number(product?.reorder_level ?? 0))
+  const [unit, setUnit] = useState(product?.unit ?? '')
+  const [category, setCategory] = useState(product?.category ?? '')
+  const [saleAccountCode, setSaleAccountCode] = useState(product ? (product.sale_account_code ?? '') : '707000')
+  const [purchaseAccountCode, setPurchaseAccountCode] = useState(product ? (product.purchase_account_code ?? '') : '607000')
+  const [stockAccountCode, setStockAccountCode] = useState(product ? (product.stock_account_code ?? '') : '310000')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    // D6 (stk-001) : la base refuse un prix négatif ; l'écran le dit avant, en clair.
+    if (salePrice < 0 || purchasePrice < 0 || stockQty < 0) {
+      toast('error', tCommon('toast.error'), t('products.negativeRefused'))
+      setSaving(false)
+      return
+    }
     try {
+      if (product) {
+        // Modification : la fiche seule. Le stock ne se corrige pas ici — il naît des mouvements.
+        await updateProduct(product.id, {
+          name, sku: sku || undefined, type: type as Product['type'],
+          sale_price: salePrice, purchase_price: purchasePrice, vat_rate: vatRate,
+          reorder_level: reorderLevel, unit, category,
+          sale_account_code: saleAccountCode || null,
+          purchase_account_code: purchaseAccountCode || null,
+          stock_account_code: stockAccountCode || null,
+        } as Partial<Product>)
+        onSaved()
+        return
+      }
       // M6 (280) : la quantité initiale devient un mouvement `initial` au dépôt
       // choisi, valorisé au prix d'achat — jamais une quantité posée sur la fiche.
       await createProduct({
@@ -170,7 +202,7 @@ function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]
         purchase_account_code: purchaseAccountCode || null,
         stock_account_code: stockAccountCode || null,
       } as any, type === 'stock' && stockQty > 0
-        ? { quantity: stockQty, warehouse_id: initialWarehouseId || null, unit_cost: purchasePrice }
+        ? { quantity: stockQty, warehouse_id: initialWarehouseId || null, unit_cost: purchasePrice, date: initialDate }
         : undefined)
       onSaved()
     } catch (err) {
@@ -184,7 +216,7 @@ function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('products.new')}</h2>
+          <h2 className="text-lg font-semibold">{product ? t('products.edit') : t('products.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -207,12 +239,13 @@ function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]
           </div>
           {type === 'stock' && (
             <div className="grid grid-cols-2 gap-4">
-              <Input label={t('products.initialQty')} type="number" step="0.01" value={stockQty} onChange={(e) => setStockQty(Number(e.target.value))} />
+              {!product && <Input label={t('products.initialQty')} type="number" step="0.01" value={stockQty} onChange={(e) => setStockQty(Number(e.target.value))} />}
               <Input label={t('products.reorderLevel')} type="number" step="0.01" value={reorderLevel} onChange={(e) => setReorderLevel(Number(e.target.value))} />
             </div>
           )}
-          {type === 'stock' && stockQty > 0 && (
-            <div>
+          {!product && type === 'stock' && stockQty > 0 && (
+            <div className="space-y-3">
+              <Input label={t('products.initialDate')} type="date" required value={initialDate} onChange={(e) => setInitialDate(e.target.value)} />
               <Select label={t('products.initialWarehouse')} required value={initialWarehouseId} onChange={(e) => setInitialWarehouseId(e.target.value)} options={[
                 { value: '', label: tCommon('form.selectOption') },
                 ...warehouses.map((w) => ({ value: w.id, label: w.name })),
@@ -227,7 +260,7 @@ function ProductForm({ warehouses, onClose, onSaved }: { warehouses: Warehouse[]
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : product ? tCommon('actions.save') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>
