@@ -12,7 +12,7 @@ export function StockQuantitiesPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [stock, setStock] = useState<any[]>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockQuantities>>>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [whFilter, setWhFilter] = useState('')

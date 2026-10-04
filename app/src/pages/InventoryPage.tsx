@@ -34,7 +34,7 @@ interface VarianceRow {
 export function InventoryPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
-const [movements, setMovements] = useState<any[]>([])
+const [movements, setMovements] = useState<Awaited<ReturnType<typeof getStockMovements>>>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)

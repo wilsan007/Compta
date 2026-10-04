@@ -14,7 +14,7 @@ export function StockMovementsPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [movements, setMovements] = useState<any[]>([])
+  const [movements, setMovements] = useState<Awaited<ReturnType<typeof getStockMovements>>>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [whFilter, setWhFilter] = useState('')

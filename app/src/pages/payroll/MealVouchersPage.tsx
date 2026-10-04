@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
 import { errorMessage, formatCurrency } from '@/lib/utils'
-import { getMealVoucherConfig, updateMealVoucherConfig, calculateMealVouchers, generateMealVoucherElements } from '@/lib/queries/leavesAbsences'
+import { getMealVoucherConfig, updateMealVoucherConfig, calculateMealVouchers, generateMealVoucherElements, type MealVoucherCalculation } from '@/lib/queries/leavesAbsences'
 import { getPayRuns } from '@/lib/queries/payroll'
 import type { MealVoucherConfig, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -14,7 +14,7 @@ export function MealVouchersPage() {
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
   const [config, setConfig] = useState<MealVoucherConfig | null>(null)
-  const [calculations, setCalculations] = useState<any[]>([])
+  const [calculations, setCalculations] = useState<MealVoucherCalculation[]>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(new Date().getMonth() + 1)

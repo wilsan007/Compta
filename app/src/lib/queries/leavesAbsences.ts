@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Joined } from '@/types/dbRow'
+import type { Joined, Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 // W4 (RH-06, RH-09) : bornes de période calculées et intersection des congés.
 import { periodBounds, periodOf, periodOverlapFilter } from '@/lib/payrollPeriods'
@@ -534,7 +534,20 @@ export async function updateMealVoucherConfig(id: string, updates: Partial<MealV
   return data as MealVoucherConfig
 }
 
-export async function calculateMealVouchers(month: number, year: number): Promise<any[]> {
+/** 2.16 — le calcul des titres-restaurant d'un salarié pour un mois. */
+export interface MealVoucherCalculation {
+  employee_id: string
+  employee_name: string
+  department: string | null
+  working_days: number
+  nb_vouchers: number
+  voucher_value: number
+  employer_amount: number
+  employee_amount: number
+  total: number
+}
+
+export async function calculateMealVouchers(month: number, year: number): Promise<MealVoucherCalculation[]> {
   const tid = await getTenantId()
   const config = await getMealVoucherConfig()
   if (!config) return []
@@ -554,7 +567,7 @@ export async function calculateMealVouchers(month: number, year: number): Promis
   const totalValue = nbVouchers * Number(config.voucher_value)
   const employerAmount = totalValue * Number(config.employer_share) / 100
   const employeeAmount = totalValue * Number(config.employee_share) / 100
-  return employees.map((emp: any) => ({
+  return (employees as Pick<Row<'employees'>, 'id' | 'name' | 'department'>[]).map((emp) => ({
     employee_id: emp.id,
     employee_name: emp.name,
     department: emp.department,

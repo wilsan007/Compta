@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Joined, Row } from '@/types/dbRow'
 import { getTenantId, nextDocumentNumber, ti, tud } from './core'
 import type { PurchaseRequest, PurchaseRequestLine, SupplierPriceList, SupplierPriceListLine, SupplierDeliverySchedule } from '@/types'
 
@@ -116,7 +117,18 @@ export async function deleteSupplierPriceList(id: string) {
   if (error) throw error
 }
 
-export async function getBestSupplierPrice(productId: string, qty: number) {
+/** 2.16 — le meilleur prix d'un article : la ligne de tarif la moins chère, remises comprises. */
+export interface BestSupplierPrice {
+  supplier_id: string | null | undefined
+  price_list_name: string | null | undefined
+  unit_price: number
+  effective_price: number
+  discount_percent: number
+  lead_time_days: number | null
+}
+type PriceLineWithList = Row<'supplier_price_list_lines'> & { supplier_price_lists: Joined<'supplier_price_lists', 'supplier_id' | 'name' | 'discount_percent' | 'valid_from' | 'valid_to' | 'active'> }
+
+export async function getBestSupplierPrice(productId: string, qty: number): Promise<BestSupplierPrice | null> {
   const tid = await getTenantId()
   let q = supabase
     .from('supplier_price_list_lines')
@@ -131,7 +143,7 @@ export async function getBestSupplierPrice(productId: string, qty: number) {
   if (error) throw error
   if (!data || data.length === 0) return null
 
-  const priced = data.map((line: any) => {
+  const priced = (data as PriceLineWithList[]).map((line): BestSupplierPrice => {
     const pl = line.supplier_price_lists
     const discount = (Number(line.discount_percent || 0) + Number(pl?.discount_percent || 0)) / 100
     const effectivePrice = Number(line.unit_price) * (1 - discount)

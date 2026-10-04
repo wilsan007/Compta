@@ -20,7 +20,7 @@ export function TimesheetsPage() {
   const { t: tCommon } = useTranslation('common')
   // `t` est masqué par la ligne dans la boucle du tableau : alias pour y traduire.
   const { t: tHr } = useTranslation('hr')
-const [timesheets, setTimesheets] = useState<any[]>([])
+const [timesheets, setTimesheets] = useState<Awaited<ReturnType<typeof getTimesheets>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)

@@ -111,5 +111,10 @@ it('Achats, fournisseurs, stock — par les fonctions des écrans', async () => 
   const bq1 = (await sql(`select stock_quantity::float q from products where id=$1`, [prod.id]))[0].q
   const posted = dn.ok ? await stock.getStockPostedReferences('delivery_note', [(dn.val as any).id]) : new Set()
   check('ST10', 'BL créé depuis la commande puis expédié : −5 en stock, et l\'écran lit « Sorti » sur le mouvement réel', ship.ok && bq1 === bq0 - 5 && posted.size === 1, { err: ship.err ?? soConf.err, avant: bq0, apres: bq1, sorti: posted.size })
+  // 2.16 : l'écran des réservations lit l'article et le dépôt sur la ligne. `select('*')`
+  // ne les rendait pas (aucune clé étrangère à joindre) : « — » pour toutes les réservations.
+  const rs = await attempt(() => stock.getStockReservations())
+  const named = (rs.val ?? []).map((r) => [r.products?.name ?? null, r.warehouses?.name ?? null])
+  check('ST11', 'réservations (StockReservationsPage) : chaque ligne nomme son article et son dépôt', rs.ok && named.length > 0 && named.every(([a, d]) => !!a && !!d), rs.err ?? named)
   save('s2.json', findings)
 })

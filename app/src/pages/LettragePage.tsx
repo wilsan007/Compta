@@ -14,8 +14,8 @@ export function LettragePage() {
   const { t: tCommon } = useTranslation('common')
 const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
-  const [unlettered, setUnlettered] = useState<any[]>([])
-  const [lettered, setLettered] = useState<any[]>([])
+  const [unlettered, setUnlettered] = useState<Awaited<ReturnType<typeof getUnletteredLines>>>([])
+  const [lettered, setLettered] = useState<Awaited<ReturnType<typeof getLetteredLines>>>([])
   const [loading, setLoading] = useState(true)
   const [loadingLines, setLoadingLines] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -138,9 +138,10 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const unletteredBalance = unlettered.reduce((s, l) => s + Number(l.debit) - Number(l.credit), 0)
 
   const letteredGroups = useMemo(() => {
-    const groups: Record<string, any[]> = {}
+    const groups: Record<string, typeof lettered> = {}
     for (const l of lettered) {
       const code = l.lettrage_code
+      if (!code) continue
       if (!groups[code]) groups[code] = []
       groups[code].push(l)
     }

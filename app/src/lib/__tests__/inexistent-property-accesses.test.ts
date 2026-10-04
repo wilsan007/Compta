@@ -472,3 +472,61 @@ describe('AUD-ACCES-06 — saisie OD analytique : le type se lit sur `section_ty
   })
 })
 
+
+// ============ 2.16 — voie C, suite : stock, caisse, compta, paie (2026-10-04) ============
+
+describe('2.16 — les états des écrans stock, caisse, compta et paie sont nommés', () => {
+  // Le portillon du plafond lit le TEXTE : le motif est donc construit, jamais écrit.
+  const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
+  const ECRANS = ['TimesheetsPage', 'InventoryPage', 'ContractsPage', 'StockMovementsPage', 'StockQuantitiesPage',
+    'StockReservationsPage', 'ReorderPage', 'PosPaymentMethodsPage', 'PayrollAccountingPage', 'TrialBalancePage',
+    'SIGPage', 'LettragePage', 'EntryTemplatesPage', 'SupplierPriceListsPage', 'payroll/MealVouchersPage']
+
+  it('aucun des quinze écrans ne garde un état non typé', () => {
+    const fautifs = ECRANS.filter((p) => codeSeul(lire(`src/pages/${p}.tsx`)).some((l) => NON_TYPE.test(l)))
+    expect(fautifs).toEqual([])
+  })
+
+  it('les cinq fonctions de requête déclarent leur retour', () => {
+    const attendu: [string, RegExp][] = [
+      ['src/lib/queries/accounting/etats.ts', /getSIGData\(fiscalYearId\?: string\): Promise<SigRow\[\]>/],
+      ['src/lib/queries/accounting/etats.ts', /\}\): Promise<TrialBalanceRow\[\]>/],
+      ['src/lib/queries/purchaseAdvanced.ts', /getBestSupplierPrice\(productId: string, qty: number\): Promise<BestSupplierPrice \| null>/],
+      ['src/lib/queries/leavesAbsences.ts', /calculateMealVouchers\(month: number, year: number\): Promise<MealVoucherCalculation\[\]>/],
+      ['src/lib/queries/stock.ts', /getStockReservations\(\): Promise<StockReservationRow\[\]>/],
+    ]
+    for (const [fichier, motif] of attendu) expect(lire(fichier), fichier).toMatch(motif)
+  })
+})
+
+describe("2.16 — réservations de stock : l'article et le dépôt arrivent jusqu'à l'écran", () => {
+  // Défaut révélé par le type : l'écran lisait `r.products?.name` et `r.warehouses?.name`
+  // sur le résultat d'un `select('*')`. La table ne porte aucune clé étrangère : la
+  // jointure PostgREST est impossible, les noms sont résolus dans la fonction.
+  it('chaque réservation porte le nom de son article et de son dépôt', async () => {
+    const tables: Record<string, unknown[]> = {
+      stock_reservations: [
+        { id: 'r1', product_id: 'p1', warehouse_id: 'w1', quantity: 3, status: 'active' },
+        { id: 'r2', product_id: 'p2', warehouse_id: null, quantity: 1, status: 'active' },
+      ],
+      products: [{ id: 'p1', name: 'Article A', sku: 'A-1' }],
+      warehouses: [{ id: 'w1', name: 'Dépôt principal' }],
+    }
+    vi.mocked(supabase.from).mockImplementation(((table: string) =>
+      createMockChain({ data: tables[table] ?? [], error: null })) as unknown as typeof supabase.from)
+    const { getStockReservations } = await import('@/lib/queries/stock')
+    const rows = await getStockReservations()
+    expect(rows.map((r) => [r.products?.name ?? null, r.warehouses?.name ?? null])).toEqual([
+      ['Article A', 'Dépôt principal'],
+      [null, null], // article introuvable et dépôt absent : `null`, que l'écran rend « — »
+    ])
+    vi.mocked(supabase.from).mockImplementation((() => mockChain) as unknown as typeof supabase.from)
+  })
+
+  it("l'écran lit ces deux noms sur un état typé", () => {
+    const src = lire('src/pages/StockReservationsPage.tsx')
+    expect(src).toMatch(/useState<StockReservationRow\[\]>/)
+    expect(src).toMatch(/r\.products\?\.name/)
+    expect(src).toMatch(/r\.warehouses\?\.name/)
+  })
+})

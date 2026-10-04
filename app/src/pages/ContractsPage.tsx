@@ -18,7 +18,7 @@ export function ContractsPage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { getStatusLabel } = useStatusLabels()
-const [contracts, setContracts] = useState<any[]>([])
+const [contracts, setContracts] = useState<Awaited<ReturnType<typeof getContracts>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

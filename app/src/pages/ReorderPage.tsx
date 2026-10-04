@@ -11,7 +11,7 @@ export function ReorderPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [stock, setStock] = useState<any[]>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockQuantities>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

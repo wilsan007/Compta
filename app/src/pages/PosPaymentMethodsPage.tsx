@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge, Button } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getTenantId } from '@/lib/queries/core'
+import type { Row } from '@/types/dbRow'
 import { CreditCard, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -12,7 +13,7 @@ export function PosPaymentMethodsPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [methods, setMethods] = useState<any[]>([])
+  const [methods, setMethods] = useState<Row<'pos_payment_methods'>[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

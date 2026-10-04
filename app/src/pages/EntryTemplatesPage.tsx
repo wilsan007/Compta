@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntryTemplate, getJournals, getChartAccounts, getThirdPartyAccounts, getAnalyticSections } from '@/lib/queries'
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
-import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
+import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType, ChartAccount, ThirdPartyAccount, AnalyticSection } from '@/types'
 import { useToast } from '@/lib/toast'
 import { getVatCodes } from '@/lib/queries/businessFunctions'
 import type { VatCode } from '@/lib/vatLines'
@@ -161,9 +161,9 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
     (template?.template_lines as TemplateLine[]) || [{ account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0, amount_type: 'input' as TemplateAmountType, fixed_amount: null, vat_code: null, analytic_section: null }]
   )
   const [saving, setSaving] = useState(false)
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [thirdParties, setThirdParties] = useState<any[]>([])
-  const [analyticSections, setAnalyticSections] = useState<any[]>([])
+  const [accounts, setAccounts] = useState<ChartAccount[]>([])
+  const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
+  const [analyticSections, setAnalyticSections] = useState<AnalyticSection[]>([])
   // 325 : codes du paramétrage TVA (et non plus V0 / V5.5 / V10 / V20, inconnus des déclarations)
   const [vatCodes, setVatCodes] = useState<VatCode[]>([])
 

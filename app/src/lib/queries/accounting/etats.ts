@@ -238,7 +238,12 @@ export async function getFECExport(fiscalYearId: string): Promise<FECExport> {
 // AUD-D09 : agrégation serveur par les dates de l'exercice, écritures validées seulement,
 // hors écritures de clôture (journal CL). L'ancien filtre sur fiscal_period_id rendait
 // un SIG vide dès qu'il existait des périodes, et tout l'historique (brouillards compris) sinon.
-export async function getSIGData(fiscalYearId?: string) {
+/** 2.16 — une ligne du compte de résultat, telle que l'écran des SIG la lit. */
+export interface SigRow { code: string; name: string; debit: number; credit: number; solde: number }
+/** Ce que rend `get_income_statement` (les numériques arrivent en nombre ou en texte). */
+interface IncomeStatementRow { account_code: string; account_name: string | null; debit: number | string | null; credit: number | string | null; balance: number | string | null }
+
+export async function getSIGData(fiscalYearId?: string): Promise<SigRow[]> {
   const fyId = fiscalYearId || await getCurrentFiscalYearId()
   if (!fyId) return []
   const { data, error } = await supabase.rpc('get_income_statement', {
@@ -247,9 +252,9 @@ export async function getSIGData(fiscalYearId?: string) {
     p_date_to: null,
   })
   if (error) throw error
-  return ((data || []) as any[]).map((row) => ({
-    code: row.account_code as string,
-    name: (row.account_name as string) || '—',
+  return ((data || []) as IncomeStatementRow[]).map((row) => ({
+    code: row.account_code,
+    name: row.account_name || '—',
     debit: Number(row.debit) || 0,
     credit: Number(row.credit) || 0,
     solde: Number(row.balance) || 0,
@@ -419,11 +424,14 @@ export async function getGeneralLedgerFiltered(accountCode: string, filters?: {
 }
 
 // --- Trial Balance with period filter ---
+/** 2.16 — une ligne de la balance filtrée : un compte, ses deux totaux. */
+export interface TrialBalanceRow { account_code: string; total_debit: number; total_credit: number }
+
 export async function getTrialBalanceFiltered(filters?: {
   dateFrom?: string
   dateTo?: string
   journalCode?: string
-}) {
+}): Promise<TrialBalanceRow[]> {
   const tid = await getTenantId()
   let query = supabase
     .from('journal_lines')
@@ -437,9 +445,9 @@ export async function getTrialBalanceFiltered(filters?: {
 
   // LOT7-03 : idem, `.limit(100000)` inopérant. Une balance tronquée est une balance FAUSSE
   // (elle ne s'équilibre plus), et rien ne le signalait.
-  const data = await fetchAllRows<any>(query, { label: 'getTrialBalanceFiltered/journal_lines' })
+  const data = await fetchAllRows<Pick<Row<'journal_lines'>, 'account_code' | 'account_general' | 'debit' | 'credit'>>(query, { label: 'getTrialBalanceFiltered/journal_lines' })
 
-  const balances: Record<string, { account_code: string; total_debit: number; total_credit: number }> = {}
+  const balances: Record<string, TrialBalanceRow> = {}
 
   for (const line of data) {
     const code = line.account_general || line.account_code || ''

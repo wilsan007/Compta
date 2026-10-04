@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Button, exportToCSV, exportToExcel } from '@/components/ui'
-import { getTrialBalanceFiltered, getChartAccounts, getJournals } from '@/lib/queries'
+import { getTrialBalanceFiltered, getChartAccounts, getJournals, type TrialBalanceRow } from '@/lib/queries'
 import { formatCurrency } from '@/lib/utils'
 import { Scale, Download, FileSpreadsheet } from 'lucide-react'
 import type { ChartAccount, Journal } from '@/types'
@@ -10,7 +10,7 @@ export function TrialBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
 
-  const [balances, setBalances] = useState<any[]>([])
+  const [balances, setBalances] = useState<TrialBalanceRow[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [journals, setJournals] = useState<Journal[]>([])
   const [loading, setLoading] = useState(true)

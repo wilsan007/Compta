@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
-import { getStockReservations, releaseStockReservation } from '@/lib/queries/stock'
+import { getStockReservations, releaseStockReservation, type StockReservationRow } from '@/lib/queries/stock'
 import { Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
@@ -12,7 +12,7 @@ export function StockReservationsPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [reservations, setReservations] = useState<any[]>([])
+  const [reservations, setReservations] = useState<StockReservationRow[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -54,7 +54,7 @@ export function StockReservationsPage() {
                 <TableCell>
                   <Badge variant={r.status === 'active' ? 'success' : 'neutral'}>{r.status}</Badge>
                 </TableCell>
-                <TableCell className="text-xs">{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-xs">{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</TableCell>
                 <TableCell>
                   {r.status === 'active' && (
                     <button onClick={() => handleRelease(r.id)} className="text-red-600 hover:underline text-sm">

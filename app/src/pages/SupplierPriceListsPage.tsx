@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
-import { getSupplierPriceLists, createSupplierPriceList, deleteSupplierPriceList, getBestSupplierPrice } from '@/lib/queries/purchaseAdvanced'
+import { getSupplierPriceLists, createSupplierPriceList, deleteSupplierPriceList, getBestSupplierPrice, type BestSupplierPrice } from '@/lib/queries/purchaseAdvanced'
 import { getSuppliers } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
@@ -21,7 +21,7 @@ export function SupplierPriceListsPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [compareProduct, setCompareProduct] = useState('')
-  const [compareResult, setCompareResult] = useState<any>(null)
+  const [compareResult, setCompareResult] = useState<BestSupplierPrice | null>(null)
 
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadLists(); loadOptions() }, [])

@@ -16,7 +16,7 @@ export function PayrollAccountingPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-const [entries, setEntries] = useState<any[]>([])
+const [entries, setEntries] = useState<Awaited<ReturnType<typeof getPayrollAccountingEntries>>>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

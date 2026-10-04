@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getSIGData, getFiscalYears } from '@/lib/queries/accounting'
+import { getSIGData, getFiscalYears, type SigRow } from '@/lib/queries/accounting'
 import { generateProfitLoss } from '@/lib/queries/businessFunctions'
 import { TrendingUp } from 'lucide-react'
 import { useToast } from '@/lib/toast'
@@ -14,7 +14,7 @@ export function SIGPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { formatCurrency } = useLocale()
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<SigRow[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
   const [loading, setLoading] = useState(true)
