@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Edit2, Play, Printer, Shield, CheckCircle, AlertTriangle, XCircle, Download } from 'lucide-react'
+import { Plus, Trash2, Edit2, Play, Printer, Shield, CheckCircle, AlertTriangle, XCircle, Download, X } from 'lucide-react'
 import {
   getAutoLabelRules, createAutoLabelRule, updateAutoLabelRule, deleteAutoLabelRule,
   getExtourneLogs, generateExtourne,
@@ -28,6 +28,8 @@ import type {
   IFRSAdjustment, TaxPayment, CustomReportTemplate, DeferredPrintingJob,
   VATOnCollection, BatchEntrySession,
 } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Batch Entry Page (Saisie par lot) ============
 export function BatchEntryPage() {
@@ -36,7 +38,7 @@ export function BatchEntryPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [sessions, setSessions] = useState<BatchEntrySession[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ session_name: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10) })
@@ -47,7 +49,7 @@ export function BatchEntryPage() {
       const [s, j] = await Promise.all([getBatchEntrySessions(), getJournals()])
       setSessions(s || [])
       setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -57,12 +59,12 @@ export function BatchEntryPage() {
       toast('success', tCommon('common.success'), t('batchEntry.created'))
       setShowForm(false); setForm({ session_name: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10) })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteBatchEntrySession(id); toast('success', tCommon('common.success'), t('batchEntry.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -74,7 +76,7 @@ export function BatchEntryPage() {
           <div className="grid grid-cols-3 gap-3">
             <Input label={t('batchEntry.sessionName')} value={form.session_name} onChange={e => setForm({ ...form, session_name: e.target.value })} />
             <Select label={t('batchEntry.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
             <Input type="date" label={t('batchEntry.date')} value={form.session_date} onChange={e => setForm({ ...form, session_date: e.target.value })} />
           </div>
           <div className="flex gap-2">
@@ -84,7 +86,7 @@ export function BatchEntryPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : sessions.length === 0 ? <EmptyState title={t('batchEntry.empty')} /> : (
-        <Table headers={[t('batchEntry.colName'), t('batchEntry.colJournal'), t('batchEntry.colDate'), t('batchEntry.colEntries'), t('batchEntry.colDebit'), t('batchEntry.colCredit'), t('batchEntry.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('batchEntry.colName'), t('batchEntry.colJournal'), t('batchEntry.colDate'), t('batchEntry.colEntries'), t('batchEntry.colDebit'), t('batchEntry.colCredit'), t('batchEntry.colStatus'), tCommon('table.actions')]}>
           {sessions.map(s => (
             <TableRow key={s.id}>
               <TableCell>{s.session_name}</TableCell>
@@ -94,7 +96,7 @@ export function BatchEntryPage() {
               <TableCell>{formatCurrency(s.total_debit)}</TableCell>
               <TableCell>{formatCurrency(s.total_credit)}</TableCell>
               <TableCell><Badge variant={s.status === 'validated' ? 'success' : 'warning'}>{t(`batchEntry.status.${s.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(s.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(s.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -109,7 +111,7 @@ export function AutoLabelRulesPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [rules, setRules] = useState<AutoLabelRule[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<AutoLabelRule | null>(null)
@@ -120,7 +122,7 @@ export function AutoLabelRulesPage() {
     try {
       const [r, j] = await Promise.all([getAutoLabelRules(), getJournals()])
       setRules(r || []); setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -132,12 +134,12 @@ export function AutoLabelRulesPage() {
       if (editing) { await updateAutoLabelRule(editing.id, form); toast('success', tCommon('common.success'), t('autoLabel.updated')) }
       else { await createAutoLabelRule(form as any); toast('success', tCommon('common.success'), t('autoLabel.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteAutoLabelRule(id); toast('success', tCommon('common.success'), t('autoLabel.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -162,7 +164,7 @@ export function AutoLabelRulesPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : rules.length === 0 ? <EmptyState title={t('autoLabel.empty')} /> : (
-        <Table headers={[t('autoLabel.colName'), t('autoLabel.colJournal'), t('autoLabel.colAccount'), t('autoLabel.colPattern'), t('autoLabel.colPriority'), t('autoLabel.colActive'), tCommon('common.actions')]}>
+        <Table headers={[t('autoLabel.colName'), t('autoLabel.colJournal'), t('autoLabel.colAccount'), t('autoLabel.colPattern'), t('autoLabel.colPriority'), t('autoLabel.colActive'), tCommon('table.actions')]}>
           {rules.map(r => (
             <TableRow key={r.id}>
               <TableCell>{r.name}</TableCell>
@@ -171,7 +173,7 @@ export function AutoLabelRulesPage() {
               <TableCell className="font-mono text-xs">{r.label_pattern}</TableCell>
               <TableCell>{r.priority}</TableCell>
               <TableCell>{r.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -187,7 +189,7 @@ export function ExtournePage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [logs, setLogs] = useState<ExtourneLog[]>([])
-  const [entries, setEntries] = useState<any[]>([])
+  const [entries, setEntries] = useState<Awaited<ReturnType<typeof getJournalEntries>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState('')
@@ -197,8 +199,8 @@ export function ExtournePage() {
     setLoading(true)
     try {
       const [l, e] = await Promise.all([getExtourneLogs(), getJournalEntries()])
-      setLogs(l || []); setEntries((e || []).filter((x: any) => x.status === 'posted'))
-    } catch { } finally { setLoading(false) }
+      setLogs(l || []); setEntries((e || []).filter((x) => x.status === 'posted'))
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -208,7 +210,7 @@ export function ExtournePage() {
       await generateExtourne(selectedEntry, reason)
       toast('success', tCommon('common.success'), t('extourne.generated'))
       setShowForm(false); setSelectedEntry(''); setReason(''); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -218,7 +220,7 @@ export function ExtournePage() {
       {showForm && (
         <Card className="p-4 mb-4 space-y-3">
           <Select label={t('extourne.selectEntryLabel')} value={selectedEntry} onChange={e => setSelectedEntry(e.target.value)}
-            options={[{ value: '', label: tCommon('common.select') }, ...entries.map((e: any) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
+            options={[{ value: '', label: tCommon('actions.select') }, ...entries.map((e: any) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
           <Input label={t('extourne.reason')} value={reason} onChange={e => setReason(e.target.value)} />
           <div className="flex gap-2">
             <Button onClick={handleGenerate}><Play className="w-4 h-4" /> {t('extourne.generate')}</Button>
@@ -252,7 +254,7 @@ export function CarryForwardPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [logs, setLogs] = useState<CarryForwardLog[]>([])
-  const [years, setYears] = useState<any[]>([])
+  const [years, setYears] = useState<Awaited<ReturnType<typeof getFiscalYears>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [sourceYear, setSourceYear] = useState('')
@@ -263,7 +265,7 @@ export function CarryForwardPage() {
     try {
       const [l, y] = await Promise.all([getCarryForwardLogs(), getFiscalYears()])
       setLogs(l || []); setYears(y || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -274,7 +276,7 @@ export function CarryForwardPage() {
       if (!result) { toast('info', tCommon('common.info'), t('carryForward.noData')) }
       else { toast('success', tCommon('common.success'), t('carryForward.generated')) }
       setShowForm(false); setSourceYear(''); setTargetYear(''); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -285,9 +287,9 @@ export function CarryForwardPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('carryForward.sourceYear')} value={sourceYear} onChange={e => setSourceYear(e.target.value)}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
             <Select label={t('carryForward.targetYear')} value={targetYear} onChange={e => setTargetYear(e.target.value)}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleGenerate}><Play className="w-4 h-4" /> {t('carryForward.generate')}</Button>
@@ -323,13 +325,13 @@ export function LettrageDifferencesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setDiffs(await getLettrageDifferences() || []) } catch { } finally { setLoading(false) }
+    try { setDiffs(await getLettrageDifferences() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
     try { await deleteLettrageDifference(id); toast('success', tCommon('common.success'), t('lettrageDiff.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -337,7 +339,7 @@ export function LettrageDifferencesPage() {
       <Breadcrumb items={[{ label: t('home.breadcrumb'), path: '/accounting' }, { label: t('lettrageDiff.title') }]} />
       <PageHeader title={t('lettrageDiff.title')} subtitle={t('lettrageDiff.subtitle')} />
       {loading ? <SkeletonTable /> : diffs.length === 0 ? <EmptyState title={t('lettrageDiff.empty')} /> : (
-        <Table headers={[t('lettrageDiff.colThirdParty'), t('lettrageDiff.colCode'), t('lettrageDiff.colDebit'), t('lettrageDiff.colCredit'), t('lettrageDiff.colDifference'), t('lettrageDiff.colAccount'), t('lettrageDiff.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('lettrageDiff.colThirdParty'), t('lettrageDiff.colCode'), t('lettrageDiff.colDebit'), t('lettrageDiff.colCredit'), t('lettrageDiff.colDifference'), t('lettrageDiff.colAccount'), t('lettrageDiff.colStatus'), tCommon('table.actions')]}>
           {diffs.map(d => (
             <TableRow key={d.id}>
               <TableCell>{d.third_party_code}</TableCell>
@@ -347,7 +349,7 @@ export function LettrageDifferencesPage() {
               <TableCell className={d.difference > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{formatCurrency(d.difference)}</TableCell>
               <TableCell>{d.difference_account || '-'}</TableCell>
               <TableCell><Badge variant={d.status === 'resolved' ? 'success' : 'warning'}>{t(`lettrageDiff.status.${d.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(d.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(d.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -369,7 +371,7 @@ export function AccountingControlsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setRuns(await getAccountingControlRuns() || []) } catch { } finally { setLoading(false) }
+    try { setRuns(await getAccountingControlRuns() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -379,7 +381,7 @@ export function AccountingControlsPage() {
       const result = await runAccountingControl('full')
       toast('success', tCommon('common.success'), t('controls.runCompleted', { errors: result.errors_found, warnings: result.warnings_found }))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
     finally { setRunning(false) }
   }
 
@@ -388,7 +390,7 @@ export function AccountingControlsPage() {
       <Breadcrumb items={[{ label: t('home.breadcrumb'), path: '/accounting' }, { label: t('controls.title') }]} />
       <PageHeader title={t('controls.title')} subtitle={t('controls.subtitle')} action={<Button onClick={handleRun} loading={running}><Shield className="w-4 h-4" /> {t('controls.run')}</Button>} />
       {loading ? <SkeletonTable /> : runs.length === 0 ? <EmptyState title={t('controls.empty')} /> : (
-        <Table headers={[t('controls.colDate'), t('controls.colType'), t('controls.colChecks'), t('controls.colErrors'), t('controls.colWarnings'), t('controls.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('controls.colDate'), t('controls.colType'), t('controls.colChecks'), t('controls.colErrors'), t('controls.colWarnings'), t('controls.colStatus'), tCommon('table.actions')]}>
           {runs.map(r => (
             <TableRow key={r.id} onClick={() => setSelectedRun(r)}>
               <TableCell>{formatDate(r.run_date)}</TableCell>
@@ -397,13 +399,13 @@ export function AccountingControlsPage() {
               <TableCell>{r.errors_found > 0 ? <span className="text-red-600 font-semibold">{r.errors_found}</span> : r.errors_found}</TableCell>
               <TableCell>{r.warnings_found > 0 ? <span className="text-orange-600 font-semibold">{r.warnings_found}</span> : r.warnings_found}</TableCell>
               <TableCell><Badge variant="success">{t(`controls.status.${r.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="secondary" size="sm" onClick={() => setSelectedRun(r)}>{tCommon('common.view')}</Button></TableCell>
+              <TableCell><Button variant="secondary" size="sm" onClick={() => setSelectedRun(r)}>{tCommon('actions.view')}</Button></TableCell>
             </TableRow>
           ))}
         </Table>
       )}
       {selectedRun && (
-        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)}>✕</Button>}>
+        <Card className="p-4 mt-4" title={t('controls.detailsTitle')} action={<Button variant="secondary" size="sm" onClick={() => setSelectedRun(null)} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>}>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {selectedRun.details.map((d: any, i: number) => (
               <div key={i} className={`p-3 rounded border ${d.type === 'unbalanced' || d.type === 'duplicate_piece' || d.type === 'missing_account' ? 'border-red-300 bg-red-50' : 'border-orange-300 bg-orange-50'}`}>
@@ -429,7 +431,7 @@ export function CashControlPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [sessions, setSessions] = useState<CashControlSession[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ session_number: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10), theoretical_balance: 0, counted_balance: 0, notes: '' })
@@ -439,7 +441,7 @@ export function CashControlPage() {
     try {
       const [s, j] = await Promise.all([getCashControlSessions(), getJournals()])
       setSessions(s || []); setJournals((j || []).filter(x => x.type === 'cash'))
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -450,17 +452,17 @@ export function CashControlPage() {
       toast('success', tCommon('common.success'), t('cashControl.created'))
       setShowForm(false); setForm({ session_number: '', journal_code: '', session_date: new Date().toISOString().slice(0, 10), theoretical_balance: 0, counted_balance: 0, notes: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleValidate(id: string) {
     try { await updateCashControlSession(id, { status: 'validated', validated_at: new Date().toISOString() }); toast('success', tCommon('common.success'), t('cashControl.validated')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteCashControlSession(id); toast('success', tCommon('common.success'), t('cashControl.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -472,7 +474,7 @@ export function CashControlPage() {
           <div className="grid grid-cols-3 gap-3">
             <Input label={t('cashControl.sessionNumber')} value={form.session_number} onChange={e => setForm({ ...form, session_number: e.target.value })} />
             <Select label={t('cashControl.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
             <Input type="date" label={t('cashControl.date')} value={form.session_date} onChange={e => setForm({ ...form, session_date: e.target.value })} />
             <Input type="number" step="0.01" label={t('cashControl.theoretical')} value={form.theoretical_balance} onChange={e => setForm({ ...form, theoretical_balance: parseFloat(e.target.value) || 0 })} />
             <Input type="number" step="0.01" label={t('cashControl.counted')} value={form.counted_balance} onChange={e => setForm({ ...form, counted_balance: parseFloat(e.target.value) || 0 })} />
@@ -488,7 +490,7 @@ export function CashControlPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : sessions.length === 0 ? <EmptyState title={t('cashControl.empty')} /> : (
-        <Table headers={[t('cashControl.colNumber'), t('cashControl.colJournal'), t('cashControl.colDate'), t('cashControl.colTheoretical'), t('cashControl.colCounted'), t('cashControl.colDifference'), t('cashControl.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('cashControl.colNumber'), t('cashControl.colJournal'), t('cashControl.colDate'), t('cashControl.colTheoretical'), t('cashControl.colCounted'), t('cashControl.colDifference'), t('cashControl.colStatus'), tCommon('table.actions')]}>
           {sessions.map(s => (
             <TableRow key={s.id}>
               <TableCell>{s.session_number}</TableCell>
@@ -499,8 +501,8 @@ export function CashControlPage() {
               <TableCell className={s.difference < 0 ? 'text-red-600 font-semibold' : s.difference > 0 ? 'text-green-600 font-semibold' : ''}>{formatCurrency(s.difference)}</TableCell>
               <TableCell><Badge variant={s.status === 'validated' ? 'success' : 'warning'}>{t(`cashControl.status.${s.status}`)}</Badge></TableCell>
               <TableCell><div className="flex gap-1">
-                {s.status === 'open' && <Button variant="secondary" size="sm" onClick={() => handleValidate(s.id)}><CheckCircle className="w-3 h-3" /></Button>}
-                <Button variant="danger" size="sm" onClick={() => handleDelete(s.id)}><Trash2 className="w-3 h-3" /></Button>
+                {s.status === 'open' && <Button variant="secondary" size="sm" onClick={() => handleValidate(s.id)} ariaLabel={tCommon('actions.validate')}><CheckCircle className="w-3 h-3" aria-hidden="true" /></Button>}
+                <Button variant="danger" size="sm" onClick={() => handleDelete(s.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -517,7 +519,7 @@ export function FECAttestationPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [attestations, setAttestations] = useState<FECAttestation[]>([])
-  const [years, setYears] = useState<any[]>([])
+  const [years, setYears] = useState<Awaited<ReturnType<typeof getFiscalYears>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ fiscal_year_id: '', fec_type: 'definitive' })
@@ -527,14 +529,14 @@ export function FECAttestationPage() {
     try {
       const [a, y] = await Promise.all([getFECAttestations(), getFiscalYears()])
       setAttestations(a || []); setYears(y || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() {
     try {
       const year = years.find(y => y.id === form.fiscal_year_id)
-      const attNumber = `FEC-ATT-${Date.now()}`
+      const attNumber = await nextDocumentNumber('FEC-ATT')
       await createFECAttestation({
         fiscal_year_id: form.fiscal_year_id,
         attestation_number: attNumber,
@@ -550,12 +552,12 @@ export function FECAttestationPage() {
       } as any)
       toast('success', tCommon('common.success'), t('fecAttest.created'))
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteFECAttestation(id); toast('success', tCommon('common.success'), t('fecAttest.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   function handleDownload(a: FECAttestation) {
@@ -575,7 +577,7 @@ export function FECAttestationPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('fecAttest.fiscalYear')} value={form.fiscal_year_id} onChange={e => setForm({ ...form, fiscal_year_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...years.map(y => ({ value: y.id, label: y.code }))]} />
             <Select label={t('fecAttest.type')} value={form.fec_type} onChange={e => setForm({ ...form, fec_type: e.target.value })}
               options={[{ value: 'definitive', label: t('fecAttest.types.definitive') }, { value: 'provisional', label: t('fecAttest.types.provisional') }]} />
           </div>
@@ -586,7 +588,7 @@ export function FECAttestationPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : attestations.length === 0 ? <EmptyState title={t('fecAttest.empty')} /> : (
-        <Table headers={[t('fecAttest.colNumber'), t('fecAttest.colDate'), t('fecAttest.colType'), t('fecAttest.colEntries'), t('fecAttest.colDebit'), t('fecAttest.colCredit'), tCommon('common.actions')]}>
+        <Table headers={[t('fecAttest.colNumber'), t('fecAttest.colDate'), t('fecAttest.colType'), t('fecAttest.colEntries'), t('fecAttest.colDebit'), t('fecAttest.colCredit'), tCommon('table.actions')]}>
           {attestations.map(a => (
             <TableRow key={a.id}>
               <TableCell className="font-mono">{a.attestation_number}</TableCell>
@@ -596,8 +598,8 @@ export function FECAttestationPage() {
               <TableCell>{formatCurrency(a.total_debit)}</TableCell>
               <TableCell>{formatCurrency(a.total_credit)}</TableCell>
               <TableCell><div className="flex gap-1">
-                <Button variant="secondary" size="sm" onClick={() => handleDownload(a)}><Download className="w-3 h-3" /></Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(a.id)}><Trash2 className="w-3 h-3" /></Button>
+                <Button variant="secondary" size="sm" onClick={() => handleDownload(a)} ariaLabel={tCommon('actions.download')}><Download className="w-3 h-3" aria-hidden="true" /></Button>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(a.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -613,7 +615,7 @@ export function TierRIBsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [ribs, setRibs] = useState<TierRIB[]>([])
-  const [thirdParties, setThirdParties] = useState<any[]>([])
+  const [thirdParties, setThirdParties] = useState<Awaited<ReturnType<typeof getThirdPartyAccounts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<TierRIB | null>(null)
@@ -624,7 +626,7 @@ export function TierRIBsPage() {
     try {
       const [r, tp] = await Promise.all([getTierRIBs(), getThirdPartyAccounts()])
       setRibs(r || []); setThirdParties(tp || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -636,12 +638,12 @@ export function TierRIBsPage() {
       if (editing) { await updateTierRIB(editing.id, form); toast('success', tCommon('common.success'), t('tierRIB.updated')) }
       else { await createTierRIB(form as any); toast('success', tCommon('common.success'), t('tierRIB.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteTierRIB(id); toast('success', tCommon('common.success'), t('tierRIB.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   const tpMap = new Map(thirdParties.map(tp => [tp.id, tp]))
@@ -653,7 +655,7 @@ export function TierRIBsPage() {
         <Card className="p-4 mb-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('tierRIB.thirdParty')} value={form.third_party_account_id} onChange={e => setForm({ ...form, third_party_account_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.account_code} - ${tp.name || tp.account_name || ''}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...thirdParties.map(tp => ({ value: tp.id, label: `${tp.code} - ${tp.name}` }))]} />
             <Input label={t('tierRIB.label')} value={form.rib_label} onChange={e => setForm({ ...form, rib_label: e.target.value })} />
             <Input label={t('tierRIB.iban')} value={form.iban} onChange={e => setForm({ ...form, iban: e.target.value })} />
             <Input label={t('tierRIB.bic')} value={form.bic} onChange={e => setForm({ ...form, bic: e.target.value })} />
@@ -670,16 +672,16 @@ export function TierRIBsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : ribs.length === 0 ? <EmptyState title={t('tierRIB.empty')} /> : (
-        <Table headers={[t('tierRIB.colThirdParty'), t('tierRIB.colLabel'), t('tierRIB.colIBAN'), t('tierRIB.colBIC'), t('tierRIB.colBank'), t('tierRIB.colDefault'), tCommon('common.actions')]}>
+        <Table headers={[t('tierRIB.colThirdParty'), t('tierRIB.colLabel'), t('tierRIB.colIBAN'), t('tierRIB.colBIC'), t('tierRIB.colBank'), t('tierRIB.colDefault'), tCommon('table.actions')]}>
           {ribs.map(r => (
             <TableRow key={r.id}>
-              <TableCell>{tpMap.get(r.third_party_account_id)?.account_code || r.third_party_account_id.slice(0, 8)}</TableCell>
+              <TableCell>{tpMap.get(r.third_party_account_id)?.code || r.third_party_account_id.slice(0, 8)}</TableCell>
               <TableCell>{r.rib_label}</TableCell>
               <TableCell className="font-mono text-xs">{r.iban}</TableCell>
               <TableCell className="font-mono text-xs">{r.bic || '-'}</TableCell>
               <TableCell>{r.bank_name || '-'}</TableCell>
               <TableCell>{r.is_default ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -701,7 +703,7 @@ export function IFRSAdjustmentsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getIFRSAdjustments() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getIFRSAdjustments() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -711,12 +713,12 @@ export function IFRSAdjustmentsPage() {
       toast('success', tCommon('common.success'), t('ifrsAdjustments.created'))
       setShowForm(false); setForm({ adjustment_type: 'provision', account_code: '', counter_account_code: '', description: '', amount: 0, adjustment_date: new Date().toISOString().slice(0, 10), ifrs_standard: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteIFRSAdjustment(id); toast('success', tCommon('common.success'), t('ifrsAdjustments.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -742,7 +744,7 @@ export function IFRSAdjustmentsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('ifrsAdjustments.empty')} /> : (
-        <Table headers={[t('ifrsAdjustments.colDate'), t('ifrsAdjustments.colType'), t('ifrsAdjustments.colAccount'), t('ifrsAdjustments.colCounter'), t('ifrsAdjustments.colAmount'), t('ifrsAdjustments.colStandard'), t('ifrsAdjustments.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('ifrsAdjustments.colDate'), t('ifrsAdjustments.colType'), t('ifrsAdjustments.colAccount'), t('ifrsAdjustments.colCounter'), t('ifrsAdjustments.colAmount'), t('ifrsAdjustments.colStandard'), t('ifrsAdjustments.colStatus'), tCommon('table.actions')]}>
           {items.map(i => (
             <TableRow key={i.id}>
               <TableCell>{formatDate(i.adjustment_date)}</TableCell>
@@ -752,7 +754,7 @@ export function IFRSAdjustmentsPage() {
               <TableCell>{formatCurrency(i.amount)}</TableCell>
               <TableCell>{i.ifrs_standard || '-'}</TableCell>
               <TableCell><Badge variant={i.status === 'posted' ? 'success' : 'warning'}>{t(`ifrsAdjustments.status.${i.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(i.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(i.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -768,7 +770,7 @@ export function TaxPaymentsPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [items, setItems] = useState<TaxPayment[]>([])
-  const [bankAccounts, setBankAccounts] = useState<any[]>([])
+  const [bankAccounts, setBankAccounts] = useState<Awaited<ReturnType<typeof getBankAccounts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ payment_number: '', tax_type: 'TVA', period_label: '', period_start: '', period_end: '', amount: 0, payment_date: new Date().toISOString().slice(0, 10), payment_method: 'telepayment', bank_account_id: '' })
@@ -778,7 +780,7 @@ export function TaxPaymentsPage() {
     try {
       const [p, b] = await Promise.all([getTaxPayments(), getBankAccounts()])
       setItems(p || []); setBankAccounts(b || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -788,7 +790,7 @@ export function TaxPaymentsPage() {
       toast('success', tCommon('common.success'), t('taxPayment.created'))
       setShowForm(false); setForm({ payment_number: '', tax_type: 'TVA', period_label: '', period_start: '', period_end: '', amount: 0, payment_date: new Date().toISOString().slice(0, 10), payment_method: 'telepayment', bank_account_id: '' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleConfirm(id: string) {
@@ -797,12 +799,12 @@ export function TaxPaymentsPage() {
       await updateTaxPayment(id, { status: 'confirmed', confirmation_number: conf })
       toast('success', tCommon('common.success'), t('taxPayment.confirmed', { num: conf }))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteTaxPayment(id); toast('success', tCommon('common.success'), t('taxPayment.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -823,7 +825,7 @@ export function TaxPaymentsPage() {
             <Select label={t('taxPayment.method')} value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value })}
               options={[{ value: 'telepayment', label: t('taxPayment.methods.telepayment') }, { value: 'bank_transfer', label: t('taxPayment.methods.bank_transfer') }, { value: 'check', label: t('taxPayment.methods.check') }]} />
             <Select label={t('taxPayment.bankAccount')} value={form.bank_account_id} onChange={e => setForm({ ...form, bank_account_id: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...bankAccounts.map(b => ({ value: b.id, label: b.name }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...bankAccounts.map(b => ({ value: b.id, label: b.name }))]} />
           </div>
           <div className="flex gap-2">
             <Button onClick={handleCreate}>{tCommon('actions.save')}</Button>
@@ -832,7 +834,7 @@ export function TaxPaymentsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('taxPayment.empty')} /> : (
-        <Table headers={[t('taxPayment.colNumber'), t('taxPayment.colType'), t('taxPayment.colPeriod'), t('taxPayment.colAmount'), t('taxPayment.colDate'), t('taxPayment.colMethod'), t('taxPayment.colStatus'), t('taxPayment.colConfirmation'), tCommon('common.actions')]}>
+        <Table headers={[t('taxPayment.colNumber'), t('taxPayment.colType'), t('taxPayment.colPeriod'), t('taxPayment.colAmount'), t('taxPayment.colDate'), t('taxPayment.colMethod'), t('taxPayment.colStatus'), t('taxPayment.colConfirmation'), tCommon('table.actions')]}>
           {items.map(p => (
             <TableRow key={p.id}>
               <TableCell className="font-mono">{p.payment_number}</TableCell>
@@ -844,8 +846,8 @@ export function TaxPaymentsPage() {
               <TableCell><Badge variant={p.status === 'confirmed' ? 'success' : 'warning'}>{t(`taxPayment.status.${p.status}`)}</Badge></TableCell>
               <TableCell className="font-mono text-xs">{p.confirmation_number || '-'}</TableCell>
               <TableCell><div className="flex gap-1">
-                {p.status === 'draft' && <Button variant="secondary" size="sm" onClick={() => handleConfirm(p.id)}><CheckCircle className="w-3 h-3" /></Button>}
-                <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)}><Trash2 className="w-3 h-3" /></Button>
+                {p.status === 'draft' && <Button variant="secondary" size="sm" onClick={() => handleConfirm(p.id)} ariaLabel={tCommon('actions.validate')}><CheckCircle className="w-3 h-3" aria-hidden="true" /></Button>}
+                <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
               </div></TableCell>
             </TableRow>
           ))}
@@ -868,7 +870,7 @@ export function CustomReportTemplatesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getCustomReportTemplates() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getCustomReportTemplates() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -881,12 +883,12 @@ export function CustomReportTemplatesPage() {
       if (editing) { await updateCustomReportTemplate(editing.id, payload); toast('success', tCommon('common.success'), t('customReport.updated')) }
       else { await createCustomReportTemplate(payload as any); toast('success', tCommon('common.success'), t('customReport.created')) }
       setShowForm(false); await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteCustomReportTemplate(id); toast('success', tCommon('common.success'), t('customReport.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -918,7 +920,7 @@ export function CustomReportTemplatesPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('customReport.empty')} /> : (
-        <Table headers={[t('customReport.colName'), t('customReport.colType'), t('customReport.colCategory'), t('customReport.colOrientation'), t('customReport.colPageSize'), t('customReport.colActive'), tCommon('common.actions')]}>
+        <Table headers={[t('customReport.colName'), t('customReport.colType'), t('customReport.colCategory'), t('customReport.colOrientation'), t('customReport.colPageSize'), t('customReport.colActive'), tCommon('table.actions')]}>
           {items.map(r => (
             <TableRow key={r.id}>
               <TableCell>{r.name}</TableCell>
@@ -927,7 +929,7 @@ export function CustomReportTemplatesPage() {
               <TableCell>{t(`customReport.orientations.${r.page_orientation}`)}</TableCell>
               <TableCell>{r.page_size}</TableCell>
               <TableCell>{r.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
-              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)}><Edit2 className="w-3 h-3" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></div></TableCell>
+              <TableCell><div className="flex gap-1"><Button variant="secondary" size="sm" onClick={() => openEdit(r)} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></div></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -949,7 +951,7 @@ export function DeferredPrintingPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getDeferredPrintingJobs() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getDeferredPrintingJobs() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -959,12 +961,12 @@ export function DeferredPrintingPage() {
       toast('success', tCommon('common.success'), t('deferredPrint.created'))
       setShowForm(false); setForm({ job_name: '', report_type: 'trial_balance', scheduled_date: '', output_format: 'pdf' })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteDeferredPrintingJob(id); toast('success', tCommon('common.success'), t('deferredPrint.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -988,7 +990,7 @@ export function DeferredPrintingPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('deferredPrint.empty')} /> : (
-        <Table headers={[t('deferredPrint.colName'), t('deferredPrint.colType'), t('deferredPrint.colScheduled'), t('deferredPrint.colFormat'), t('deferredPrint.colStatus'), t('deferredPrint.colGenerated'), tCommon('common.actions')]}>
+        <Table headers={[t('deferredPrint.colName'), t('deferredPrint.colType'), t('deferredPrint.colScheduled'), t('deferredPrint.colFormat'), t('deferredPrint.colStatus'), t('deferredPrint.colGenerated'), tCommon('table.actions')]}>
           {items.map(j => (
             <TableRow key={j.id}>
               <TableCell>{j.job_name}</TableCell>
@@ -997,7 +999,7 @@ export function DeferredPrintingPage() {
               <TableCell><Badge>{j.output_format.toUpperCase()}</Badge></TableCell>
               <TableCell><Badge variant={j.status === 'completed' ? 'success' : j.status === 'error' ? 'danger' : 'warning'}>{t(`deferredPrint.status.${j.status}`)}</Badge></TableCell>
               <TableCell>{j.generated_at ? formatDate(j.generated_at) : '-'}</TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(j.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(j.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -1011,8 +1013,8 @@ export function JournalAccessRightsPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [items, setItems] = useState<any[]>([])
-  const [journals, setJournals] = useState<any[]>([])
+  const [items, setItems] = useState<Awaited<ReturnType<typeof getJournalAccessRights>>>([])
+  const [journals, setJournals] = useState<Awaited<ReturnType<typeof getJournals>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ user_id: '', journal_code: '', can_view: true, can_create: false, can_edit: false, can_delete: false, can_close: false })
@@ -1022,7 +1024,7 @@ export function JournalAccessRightsPage() {
     try {
       const [r, j] = await Promise.all([getJournalAccessRights(), getJournals()])
       setItems(r || []); setJournals(j || [])
-    } catch { } finally { setLoading(false) }
+    } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -1032,12 +1034,12 @@ export function JournalAccessRightsPage() {
       toast('success', tCommon('common.success'), t('journalAccessRights.created'))
       setShowForm(false); setForm({ user_id: '', journal_code: '', can_view: true, can_create: false, can_edit: false, can_delete: false, can_close: false })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteJournalAccessRight(id); toast('success', tCommon('common.success'), t('journalAccessRights.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -1049,7 +1051,7 @@ export function JournalAccessRightsPage() {
           <div className="grid grid-cols-2 gap-3">
             <Input label={t('journalAccessRights.userId')} value={form.user_id} onChange={e => setForm({ ...form, user_id: e.target.value })} placeholder="UUID" />
             <Select label={t('journalAccessRights.journal')} value={form.journal_code} onChange={e => setForm({ ...form, journal_code: e.target.value })}
-              options={[{ value: '', label: tCommon('common.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
+              options={[{ value: '', label: tCommon('actions.select') }, ...journals.map(j => ({ value: j.code, label: `${j.code} - ${j.name}` }))]} />
           </div>
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view} onChange={e => setForm({ ...form, can_view: e.target.checked })} /> {t('journalAccessRights.canView')}</label>
@@ -1065,7 +1067,7 @@ export function JournalAccessRightsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('journalAccessRights.empty')} /> : (
-        <Table headers={[t('journalAccessRights.colUser'), t('journalAccessRights.colJournal'), t('journalAccessRights.colView'), t('journalAccessRights.colCreate'), t('journalAccessRights.colEdit'), t('journalAccessRights.colDelete'), t('journalAccessRights.colClose'), tCommon('common.actions')]}>
+        <Table headers={[t('journalAccessRights.colUser'), t('journalAccessRights.colJournal'), t('journalAccessRights.colView'), t('journalAccessRights.colCreate'), t('journalAccessRights.colEdit'), t('journalAccessRights.colDelete'), t('journalAccessRights.colClose'), tCommon('table.actions')]}>
           {items.map(r => (
             <TableRow key={r.id}>
               <TableCell className="font-mono text-xs">{r.tenant_users?.email || r.user_id.slice(0, 8)}</TableCell>
@@ -1075,7 +1077,7 @@ export function JournalAccessRightsPage() {
               <TableCell>{r.can_edit ? '✓' : '✗'}</TableCell>
               <TableCell>{r.can_delete ? '✓' : '✗'}</TableCell>
               <TableCell>{r.can_close ? '✓' : '✗'}</TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(r.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>
@@ -1097,7 +1099,7 @@ export function VATOnCollectionsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    try { setItems(await getVATOnCollections() || []) } catch { } finally { setLoading(false) }
+    try { setItems(await getVATOnCollections() || []) } catch (e) { console.error("loadData failed:", e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -1107,12 +1109,12 @@ export function VATOnCollectionsPage() {
       toast('success', tCommon('common.success'), t('vatCollection.created'))
       setShowForm(false); setForm({ period_label: '', period_start: '', period_end: '', vat_base: 0, vat_rate: 20, vat_amount: 0, collected_amount: 0, uncollected_amount: 0, vat_collected: 0, vat_uncollected: 0 })
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDelete(id: string) {
     try { await deleteVATOnCollection(id); toast('success', tCommon('common.success'), t('vatCollection.deleted')); await loadData() }
-    catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -1139,7 +1141,7 @@ export function VATOnCollectionsPage() {
         </Card>
       )}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('vatCollection.empty')} /> : (
-        <Table headers={[t('vatCollection.colPeriod'), t('vatCollection.colBase'), t('vatCollection.colRate'), t('vatCollection.colVATAmount'), t('vatCollection.colCollected'), t('vatCollection.colUncollected'), t('vatCollection.colStatus'), tCommon('common.actions')]}>
+        <Table headers={[t('vatCollection.colPeriod'), t('vatCollection.colBase'), t('vatCollection.colRate'), t('vatCollection.colVATAmount'), t('vatCollection.colCollected'), t('vatCollection.colUncollected'), t('vatCollection.colStatus'), tCommon('table.actions')]}>
           {items.map(v => (
             <TableRow key={v.id}>
               <TableCell>{v.period_label}</TableCell>
@@ -1149,7 +1151,7 @@ export function VATOnCollectionsPage() {
               <TableCell>{formatCurrency(v.vat_collected)}</TableCell>
               <TableCell>{formatCurrency(v.vat_uncollected)}</TableCell>
               <TableCell><Badge variant={v.status === 'filed' ? 'success' : 'warning'}>{t(`vatCollection.status.${v.status}`)}</Badge></TableCell>
-              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(v.id)}><Trash2 className="w-3 h-3" /></Button></TableCell>
+              <TableCell><Button variant="danger" size="sm" onClick={() => handleDelete(v.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button></TableCell>
             </TableRow>
           ))}
         </Table>

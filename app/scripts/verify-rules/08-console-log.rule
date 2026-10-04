@@ -1,0 +1,12 @@
+# rule: console.log left in production code
+# severity: warning
+# pattern: console.log in .tsx/.ts files (not console.error or console.warn)
+# fix: Remove console.log or replace with proper logging
+
+RULE_NAME="console.log"
+RULE_DESC="console.log statements in production code"
+RULE_SEVERITY="warning"
+RULE_GREP_PATTERN="console\.log"
+RULE_GREP_INCLUDES="--include=*.tsx --include=*.ts"
+RULE_GREP_PATHS="src/pages/ src/components/ src/lib/"
+RULE_GREP_EXCLUDES="node_modules|\.test\.|__tests__|console\.logError|console\.logWarn"

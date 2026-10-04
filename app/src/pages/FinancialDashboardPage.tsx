@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, StatCard, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getFinancialDashboard } from '@/lib/queries'
-import { formatCurrency } from '@/lib/utils'
+import { useToast } from '@/lib/toast'
+import { getFinancialDashboard } from '@/lib/queries/accounting'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { TrendingUp, TrendingDown, Wallet, FileText, ArrowRight, Activity } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -20,9 +21,12 @@ interface FinancialData {
 
 export function FinancialDashboardPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -31,13 +35,24 @@ export function FinancialDashboardPage() {
       setData(d)
     } catch (err) {
       console.error('Error loading financial dashboard:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
   }
 
   if (loading) return <SkeletonTable rows={6} />
-  if (!data) return <EmptyState title={t('financialDashboard.noData')} description={t('financialDashboard.noDataDesc')} />
+  // Échec de chargement : l'écran doit garder son titre (l'essaim mesurait un
+  // « ni h1 ni h2 » sur un écran pourtant nommé — 30/09/2026).
+  if (!data) {
+    return (
+      <div>
+        <Breadcrumb items={[{ label: t('financialDashboard.breadcrumb'), path: '/reporting/financial' }, { label: t('financialDashboard.breadcrumb2') }]} />
+        <PageHeader title={t('financialDashboard.title')} subtitle={t('financialDashboard.subtitle')} />
+        <EmptyState title={t('financialDashboard.noData')} description={t('financialDashboard.noDataDesc')} />
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -54,8 +69,10 @@ export function FinancialDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <h3 className="text-lg font-semibold mb-4">{t('financialDashboard.accountingIndicators')}</h3>
+          {/* W-QA (29/09/2026) : le composant Table fournit déjà son <tbody> —
+              le second était imbriqué dans le premier (HTML invalide, signalé
+              par React : « <tbody> cannot be a child of <tbody> »). */}
           <Table headers={[t('financialDashboard.indicator'), t('financialDashboard.value')]}>
-            <tbody>
               <TableRow>
                 <TableCell>{t('financialDashboard.pendingEntries')}</TableCell>
                 <TableCell className="text-right font-medium">{data.pendingEntries}</TableCell>
@@ -72,7 +89,6 @@ export function FinancialDashboardPage() {
                 <TableCell>{t('financialDashboard.paidSupplierInvoices')}</TableCell>
                 <TableCell className="text-right font-medium">{data.supplierInvoiceCount}</TableCell>
               </TableRow>
-            </tbody>
           </Table>
         </Card>
 

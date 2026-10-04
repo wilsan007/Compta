@@ -3,15 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
 import { BookCheck, Plus, Trash2, X, Printer, CheckCircle, Ban } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import {
-  getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook,
-  getChecks, createCheck, updateCheck, deleteCheck,
-} from '@/lib/queries'
+import { useLocale } from '@/hooks/useLocale'
+import { getCheckBooks, createCheckBook, updateCheckBook, deleteCheckBook, getChecks, createCheck, updateCheck, deleteCheck } from '@/lib/queries/accounting'
 import type { CheckBook, Check } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CheckBooksPage() {
   const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
+  const { formatCurrency } = useLocale()
   const [activeTab, setActiveTab] = useState<'checkBooks' | 'checks' | 'print'>('checkBooks')
   const [checkBooks, setCheckBooks] = useState<CheckBook[]>([])
   const [checks, setChecks] = useState<Check[]>([])
@@ -28,8 +29,8 @@ export function CheckBooksPage() {
       const [books, chks] = await Promise.all([getCheckBooks(), getChecks()])
       setCheckBooks(books || [])
       setChecks(chks || [])
-    } catch { } finally { setLoading(false) }
-  }, [])
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setLoading(false) }
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -77,7 +78,7 @@ export function CheckBooksPage() {
                   <TableCell>{book.next_check_number}</TableCell>
                   <TableCell>{statusBadge(book.status)}</TableCell>
                   <TableCell>{book.issued_count}</TableCell>
-                  <TableCell><button onClick={() => setDeleteBookTarget(book)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button></TableCell>
+                  <TableCell><button onClick={() => setDeleteBookTarget(book)} className="p-1 text-red-500 hover:bg-red-50 rounded" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
                 </TableRow>
               ))}
             </Table>
@@ -111,7 +112,7 @@ export function CheckBooksPage() {
                         <button onClick={async () => { await updateCheck(chk.id, { status: 'cancelled' }); toast('success', t('checkBooks.title'), t('checkBooks.checkCancelled')); loadData() }} className="p-1 text-orange-600 hover:bg-orange-50 rounded" title={t('checkBooks.checks.markCancelled')}><Ban className="w-4 h-4" /></button>
                       )}
                       <button onClick={() => setPrintCheck(chk)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" title={t('checkBooks.print.print')}><Printer className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteCheckTarget(chk)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteCheckTarget(chk)} className="p-1 text-red-500 hover:bg-red-50 rounded" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -133,7 +134,7 @@ export function CheckBooksPage() {
                 </div>
                 <div className="text-center py-8">
                   <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('checkBooks.print.amount')}</p>
-                  <p className="text-2xl font-bold">{printCheck.amount.toFixed(2)} €</p>
+                  <p className="text-2xl font-bold">{formatCurrency(printCheck.amount)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t('checkBooks.print.payee')}</p>
@@ -194,8 +195,8 @@ function CheckBookForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       } as any)
       toast('success', t('checkBooks.title'), t('checkBooks.saved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('checkBooks.saveError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('checkBooks.saveError'))
     } finally { setSaving(false) }
   }
 
@@ -204,7 +205,7 @@ function CheckBookForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('checkBooks.checkBooks.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('checkBooks.checkBooks.name')} required value={name} onChange={(e) => setName(e.target.value)} />
@@ -253,8 +254,8 @@ function CheckForm({ checkBooks, onClose, onSaved }: { checkBooks: CheckBook[]; 
       }
       toast('success', t('checkBooks.title'), t('checkBooks.checkSaved'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('checkBooks.checkSaveError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('checkBooks.checkSaveError'))
     } finally { setSaving(false) }
   }
 
@@ -263,7 +264,7 @@ function CheckForm({ checkBooks, onClose, onSaved }: { checkBooks: CheckBook[]; 
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('checkBooks.checks.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select

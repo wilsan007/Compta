@@ -61,7 +61,15 @@
     "amount": "المبلغ",
     "cumulativeBalance": "الرصيد التراكمي",
     "incomingType": "إيراد",
-    "outgoingType": "مصروف"
+    "outgoingType": "مصروف",
+    "runForecast": "توقع نقدية",
+    "cashFlowResult": "توقع التدفق: {{amount}} خلال {{days}} يوم",
+    "productionCommitment": "الالتزام الإنتاجي",
+    "materialToBuy": "مادة يجب شراؤها",
+    "workshopLabor": "أجور الورشة",
+    "commitmentTotal": "إجمالي الالتزام",
+    "netWithProduction": "الصافي مع الإنتاج",
+    "netForecast": "صافي التوقعات"
   },
   "paymentOrders": {
     "title": "أوامر الدفع",
@@ -124,6 +132,7 @@
       "beneficiary": "المستفيد (طرف ثالث)",
       "iban": "IBAN (اختياري)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "IBAN غير صالح: مفتاح التحقق غير مطابق. لم يتم حفظ أمر الدفع.",
       "amount": "المبلغ",
       "paymentDate": "تاريخ الدفع",
       "reference": "المرجع",

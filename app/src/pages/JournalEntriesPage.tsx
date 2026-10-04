@@ -1,11 +1,15 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
+import { getJournalEntries, createJournalEntry, deleteJournalEntry, getChartAccounts, generateExtourne, isSegregationEnforced } from '@/lib/queries/accounting'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw, CheckCircle } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
+import { usePermission } from '@/hooks/usePermission'
+import { useJournalValidation } from '@/hooks/useJournalValidation'
 
 const statusBadge: Record<string, 'warning' | 'success'> = {
   draft: 'warning',
@@ -15,15 +19,18 @@ const statusBadge: Record<string, 'warning' | 'success'> = {
 export function JournalEntriesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('accounting')
+  const { canCreate, canDelete } = usePermission('journal_entries')
   const { t: tCommon } = useTranslation('common')
 const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const { validate, validating } = useJournalValidation(() => loadData())
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -34,8 +41,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       ])
       setEntries(je || [])
       setAccounts(accs || [])
-    } catch (err) {
-      console.error('Error loading journal entries:', err)
+    } catch (err) { console.error('Error loading journal entries:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -51,23 +58,23 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('entries.deleteConfirm'))) return
+    if (!confirmSync(t('entries.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await loadData()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), t('entries.deleteError'))
     }
   }
 
   async function handleExtourne(id: string) {
-    if (!window.confirm(t('writingsEnhancement.extourneConfirm'))) return
+    if (!confirmSync(t('writingsEnhancement.extourneConfirm'))) return
     try {
       await generateExtourne(id, 'Extourne manuelle')
       toast('success', tCommon('toast.success'), t('writingsEnhancement.extourneSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('writingsEnhancement.extourneError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('writingsEnhancement.extourneError'))
     }
   }
 
@@ -80,7 +87,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
       <PageHeader
         title={t('entries.title')}
         subtitle={t('entries.subtitleCount', { count: entries.length, debit: formatCurrency(totalDebit), credit: formatCurrency(totalCredit) })}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button> : undefined}
       />
 
       {loading ? (
@@ -90,7 +97,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
           icon={<BookOpen className="w-8 h-8" />}
           title={t('entries.noEntries')}
           description={t('entries.noEntriesDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button>}
+          action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('entries.new')}</Button> : undefined}
         />
       ) : (
         <Card>
@@ -115,14 +122,18 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                   <TableCell className="font-mono text-right">{formatCurrency(Number(entry.total_credit))}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {entry.status === 'draft' && canCreate && (
+                        <button onClick={(e) => { e.stopPropagation(); validate([entry.id]) }} disabled={validating} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={t('entryValidation.validate')} title={t('entryValidation.validate')}>
+                          <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      )}
                       {entry.status === 'posted' && (
                         <button onClick={(e) => { e.stopPropagation(); handleExtourne(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('writingsEnhancement.extourneBtn')}>
                           <RotateCcw className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canDelete && entry.status === 'draft' && <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -170,7 +181,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [number, setNumber] = useState(`JE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`)
+  // Numéro attribué à l'enregistrement par la séquence si le champ est laissé vide (LOT4-10)
+  const [number, setNumber] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState('')
   const [reference, setReference] = useState('')
@@ -179,6 +191,11 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
     { account_code: '', account_name: '', debit: '', credit: '', description: '' },
   ])
   const [saving, setSaving] = useState(false)
+  // D-A : « Enregistrer et valider » seulement sans séparation des tâches (232)
+  const [segregation, setSegregation] = useState(true)
+  useEffect(() => {
+    isSegregationEnforced().then(setSegregation).catch(() => setSegregation(true))
+  }, [])
 
   function addLine() {
     setLines([...lines, { account_code: '', account_name: '', debit: '', credit: '', description: '' }])
@@ -204,8 +221,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
   const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0)
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent, validate = false) {
+    e?.preventDefault()
     if (!isBalanced) {
       toast('info', tCommon('common.info'), t('saisie.notBalanced'))
       return
@@ -222,18 +239,18 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
           description: l.description || null,
         }))
       await createJournalEntry({
-        number,
+        number: number.trim() || await nextDocumentNumber('JE'),
         date,
         description,
         reference: reference || null,
-        status: 'draft',
+        status: validate ? 'posted' : 'draft',
         total_debit: totalDebit,
         total_credit: totalCredit,
         lines: linesData,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -244,11 +261,11 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('entries.newEntryTitle')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t('entries.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('entries.number')} value={number} placeholder="Auto" onChange={(e) => setNumber(e.target.value)} />
             <Input label={t('entries.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
             <Input label={t('entries.reference')} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t('entries.referenceOptional')} />
           </div>
@@ -270,6 +287,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                   <tr key={idx}>
                     <td className="px-3 py-2">
                       <select
+                        aria-label={t('entries.account')}
                         className="input text-sm py-1"
                         value={line.account_code}
                         onChange={(e) => updateLine(idx, 'account_code', e.target.value)}
@@ -290,6 +308,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={t('entries.debit')}
                         type="number"
                         step="0.01"
                         className="input text-sm py-1 text-right font-mono"
@@ -299,6 +318,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-3 py-2">
                       <input
+                        aria-label={t('entries.credit')}
                         type="number"
                         step="0.01"
                         className="input text-sm py-1 text-right font-mono"
@@ -308,9 +328,8 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
                     </td>
                     <td className="px-2 py-2">
                       {lines.length > 2 && (
-                        <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                          <X className="w-4 h-4" />
-                        </button>
+                        <button type="button" onClick={() => removeLine(idx)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+                          <X className="w-4 h-4" aria-hidden="true" /></button>
                       )}
                     </td>
                   </tr>
@@ -319,7 +338,7 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
               <tfoot>
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={2} className="px-3 py-2">
-                    <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
+                    <button type="button" onClick={addLine} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {t('entries.addLine')}
                     </button>
                   </td>
@@ -345,7 +364,10 @@ function JournalForm({ accounts, onClose, onSaved }: { accounts: ChartAccount[];
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('entries.cancel')}</Button>
-            <Button type="submit" disabled={saving || !isBalanced}>{saving ? t('entries.saving') : t('entries.save')}</Button>
+            <Button type="submit" variant={segregation ? 'primary' : 'secondary'} disabled={saving || !isBalanced}>{saving ? t('entries.saving') : t('entries.save')}</Button>
+            {!segregation && (
+              <Button type="button" disabled={saving || !isBalanced} onClick={() => handleSubmit(undefined, true)}>{t('entryValidation.saveAndValidate')}</Button>
+            )}
           </div>
         </form>
       </div>

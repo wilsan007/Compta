@@ -16,7 +16,8 @@
     "search": "Search",
     "close": "Close",
     "add": "Add",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "code": "Code"
   },
   "dashboard": {
     "title": "Production Dashboard",
@@ -119,6 +120,7 @@
     "capHDay": "Cap. h/day",
     "costH": "Cost/h",
     "confirmDeleteWorkCenter": "Delete this work center?",
+    "codeAndNameRequired": "Code and name are required",
     "export": "Export",
     "import": "Import",
     "statuses": {
@@ -203,7 +205,17 @@
         "expiryDate": "Expiry date",
         "expiryType": "Expiry type",
         "additionalText": "Additional text",
-        "notes": "Notes"
+        "notes": "Notes",
+        "cost": "Production cost",
+        "calculateCost": "Calculate cost",
+        "costFromClosing": "(cost at closing)",
+        "costVariance": "Cost variance",
+        "costVarianceHint": "standard minus actual",
+        "materialCost": "Material cost",
+        "laborCost": "Labor cost",
+        "overheadCost": "Overhead cost",
+        "unitCost": "Unit cost",
+        "totalCost": "Total cost"
       },
       "labels": {
         "count": "Number of labels",
@@ -308,7 +320,13 @@
       "manual": "Manual",
       "mrp": "MRP",
       "sub_level": "Sub-level"
-    }
+    },
+    "count": "{{count}} order(s)",
+    "selectWarehouse": "Select a warehouse",
+    "selectRouting": "Select a routing",
+    "stock": "Stock",
+    "stockGenerated": "Produced",
+    "stockPending": "Pending"
   },
   "subcontracting": {
     "title": "Subcontracting",
@@ -533,6 +551,8 @@
     "operation": "Operation",
     "duration": "Duration",
     "materials": "Materials",
+    "availability": "Operator",
+    "operatorAbsent": "Operator absent",
     "ok": "OK",
     "missing": "Missing",
     "checkMaterials": "Check materials",

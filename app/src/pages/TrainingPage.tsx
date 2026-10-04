@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select } from '@/components/ui'
-import { getEmployees } from '@/lib/queries'
-import { formatDate } from '@/lib/utils'
+import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Input, Select, Badge } from '@/components/ui'
+import { useToast } from '@/lib/toast'
+import { getEmployees } from '@/lib/queries/payroll'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Plus, Pencil, Trash2, X, GraduationCap } from 'lucide-react'
 import type { Employee } from '@/types'
 
@@ -24,6 +25,7 @@ export function TrainingPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
+  const { toast } = useToast()
   const [trainings, setTrainings] = useState<Training[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +33,7 @@ export function TrainingPage() {
   const [editing, setEditing] = useState<Training | null>(null)
   const [form, setForm] = useState<Partial<Training>>({})
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -40,6 +43,7 @@ export function TrainingPage() {
       setTrainings([])
     } catch (err) {
       console.error('Error loading training data:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -93,7 +97,7 @@ export function TrainingPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('training.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('training.title') }]} />
       <PageHeader title={t('training.title')} subtitle={t('training.subtitle')} action={
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> {t('training.new')}</Button>
       } />
@@ -102,7 +106,7 @@ export function TrainingPage() {
         <Card className="mb-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">{editing ? t('training.edit') : t('training.new')}</h3>
-            <button onClick={() => setShowForm(false)}><X className="w-4 h-4" /></button>
+            <button onClick={() => setShowForm(false)} aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select label={t('training.employee')} value={form.employee_id || ''} onChange={(e) => setForm({ ...form, employee_id: e.target.value })} options={[
@@ -134,28 +138,26 @@ export function TrainingPage() {
       ) : (
         <Card>
           <Table headers={[t('training.employee'), t('training.trainingTitle'), t('training.provider'), t('training.startDate'), t('training.cost'), t('training.status'), tCommon('table.actions')]}>
-            <tbody>
               {trainings.map((tr) => (
                 <TableRow key={tr.id}>
                   <TableCell>{tr.employee_name}</TableCell>
                   <TableCell className="font-medium">{tr.title}</TableCell>
                   <TableCell>{tr.provider || '—'}</TableCell>
                   <TableCell className="text-xs">{formatDate(tr.start_date)} → {formatDate(tr.end_date)}</TableCell>
-                  <TableCell className="text-right">{tr.cost > 0 ? `${tr.cost.toFixed(2)} €` : '—'}</TableCell>
+                  <TableCell className="text-right">{tr.cost > 0 ? formatCurrency(tr.cost) : '—'}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                    <Badge variant="neutral">
                       {statusLabels[tr.status] || tr.status}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openEdit(tr)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></button>
+                      <button onClick={() => handleDelete(tr.id)} className="p-1 hover:bg-[var(--color-neutral-100)] rounded text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
-            </tbody>
           </Table>
         </Card>
       )}

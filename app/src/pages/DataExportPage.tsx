@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, Badge } from '@/components/ui'
-import {
-  exportAllData, generateSqlDump, generateCsvForTable,
-  preRegisterMirrorServer, getMirrorServerStatus,
-  generateMacInstaller, generateWindowsInstaller,
-  type ExportResult,
-} from '@/lib/queries'
+import { exportAllData, generateSqlDump, generateCsvForTable, preRegisterMirrorServer, getMirrorServerStatus, generateMacInstaller, generateWindowsInstaller } from '@/lib/queries/misc'
+import { type ExportResult } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
 import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
 import { Download, Database, FileText, Loader2, CheckCircle, AlertTriangle, Monitor, Apple, Server, RefreshCw, XCircle } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -27,6 +24,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function DataExportPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { user } = useAuth()
   const { formatDateTime } = useLocale()
@@ -48,20 +46,21 @@ export function DataExportPage() {
       setMirrorStatus(status)
     } catch (err) {
       console.error('Error loading mirror status:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setMirrorLoading(false)
     }
-  }, [user?.tenantId])
+  }, [user?.tenantId, tCommon, toast])
 
   useEffect(() => {
-    loadMirrorStatus()
+    loadMirrorStatus().catch(err => console.error('loadMirrorStatus:', err))
     const interval = setInterval(loadMirrorStatus, 10000)
     return () => clearInterval(interval)
   }, [loadMirrorStatus])
 
   async function handleInstallMirror(platform: 'mac' | 'windows') {
     if (!user?.tenantId) {
-      toast('error', t('dataExport.loadError'), t('dataExport.noTenant'))
+      toast('error', t('common:toast.error'), t('dataExport.noTenant'))
       return
     }
     setInstalling(true)
@@ -71,7 +70,7 @@ export function DataExportPage() {
         install_platform: platform,
       })
       if (!result.success) {
-        toast('error', t('dataExport.loadError'), result.error || t('dataExport.loadError'))
+        toast('error', t('common:toast.error'), result.error || t('common:toast.error'))
         return
       }
 
@@ -79,7 +78,7 @@ export function DataExportPage() {
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
       if (!supabaseUrl || !supabaseKey) {
-        toast('error', t('dataExport.loadError'), t('dataExport.missingConfig'))
+        toast('error', t('common:toast.error'), t('dataExport.missingConfig'))
         return
       }
 
@@ -98,8 +97,8 @@ export function DataExportPage() {
 
       toast('success', t('dataExport.installerDownloaded'), t('dataExport.executeOnServer', { filename, platform: platform === 'mac' ? 'Mac' : 'Windows' }))
       await loadMirrorStatus()
-    } catch (err: any) {
-      toast('error', t('dataExport.loadError'), err.message || t('dataExport.loadError'))
+    } catch (err) {
+      toast('error', t('common:toast.error'), errorMessage(err) || t('common:toast.error'))
     } finally {
       setInstalling(false)
     }
@@ -120,8 +119,8 @@ export function DataExportPage() {
       setExportedAt(exportedAt)
       setTotalRows(totalRows)
       toast('success', t('dataExport.exportDone'), t('dataExport.rowsRetrieved', { rows: totalRows, tables: tables.filter(t => t.rowCount > 0).length }))
-    } catch (err: any) {
-      toast('error', t('dataExport.exportError'), err.message || t('dataExport.loadError'))
+    } catch (err) {
+      toast('error', t('dataExport.exportError'), errorMessage(err) || t('common:toast.error'))
     } finally {
       setLoading(false)
     }
@@ -195,7 +194,9 @@ export function DataExportPage() {
           <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
           <div className="text-sm space-y-1">
             <p className="font-medium">{t('dataExport.sovereignty')}</p>
-            <p className="text-[var(--color-text-secondary)]">{t('dataExport.sovereigntyDesc')}</p>
+            <p className="text-[var(--color-text-secondary)]">
+              <Trans i18nKey="dataExport.sovereigntyDesc" ns="settings" components={{ strong: <strong /> }} />
+            </p>
           </div>
         </div>
       </div>

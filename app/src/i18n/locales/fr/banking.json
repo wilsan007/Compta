@@ -35,7 +35,7 @@
     "name": "Nom du compte",
     "accountName": "Nom du compte",
     "bankName": "Nom de la banque",
-    "initialBalance": "Solde initial",
+    "initialBalance": "Solde d'ouverture (comptabilisé en à-nouveau)",
     "accountNamePlaceholder": "Compte principal",
     "nameRequired": "Le nom du compte est obligatoire",
     "bank": "Banque",
@@ -60,7 +60,9 @@
     "searchPlaceholder": "Rechercher par nom, IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "compte(s)",
+    "connectedAccounts": "Comptes connectés"
   },
   "transactions": {
     "title": "Transactions bancaires",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "Rapprochement bancaire",
     "subtitle": "Réconciliez vos transactions bancaires",
-    "selectAccount": "Sélectionner un compte",
+    "selectAccount": "Veuillez sélectionner un compte",
     "allAccounts": "Tous les comptes",
     "bankBalance": "Solde bancaire",
     "accountingBalance": "Solde comptable",
@@ -122,7 +124,70 @@
     "reconciledTitle": "Réconciliées ({{count}})",
     "action": "Action",
     "cancel": "Annuler",
-    "reconcileBtn": "Réconcilier"
+    "reconcileBtn": "Réconcilier",
+    "smartMatch": "Rapprochement intelligent",
+    "smartResult": "{{matched}} rapprochements trouvés",
+    "autoMatchResult": "{{matched}} rapprochée(s), {{unmatched}} non rapprochée(s)"
+  },
+  "state": {
+    "title": "État de rapprochement",
+    "subtitle": "Ce que le relevé et le compte 512x disent, à une date",
+    "account": "Compte bancaire",
+    "date": "Au",
+    "statementBalance": "Solde du relevé",
+    "statementHint": "Lignes importées jusqu'à cette date",
+    "accountingBalance": "Solde du compte {{account}}",
+    "accountingHint": "Écritures comptabilisées au compte {{account}}",
+    "difference": "Écart de solde",
+    "explainedDifference": "Expliqué par les écarts : {{amount}}",
+    "reconciliation": "État",
+    "reconciled": "Rapproché",
+    "ecarts": "{{count}} écart(s)",
+    "integrityOk": "Intégrité des pointages vérifiée",
+    "integrityBroken": "Pointages incohérents",
+    "closingBalance": "Solde de clôture du relevé importé",
+    "closingHint": "Comparé aux lignes importées jusqu'à sa date : une clôture qui ne colle pas signale un relevé incomplet.",
+    "closingAmount": "Solde annoncé",
+    "closingDate": "Date de clôture",
+    "saveClosing": "Enregistrer",
+    "closingSaved": "Solde de clôture enregistré",
+    "closingMatches": "Conforme aux lignes importées",
+    "closingGap": "Écart de {{amount}} avec les lignes importées",
+    "statementEcartsTitle": "Relevé — lignes non pointées ({{count}})",
+    "noStatementEcarts": "Aucun écart au relevé",
+    "noStatementEcartsDesc": "Toutes les lignes du relevé sont pointées contre une écriture.",
+    "ledgerEcartsTitle": "Compte — écritures non pointées ({{count}})",
+    "noLedgerEcarts": "Aucun écart au compte",
+    "noLedgerEcartsDesc": "Toutes les écritures du compte sont pointées contre le relevé.",
+    "pairsTitle": "Pointages effectués ({{count}})",
+    "noPairs": "Aucun pointage",
+    "noPairsDesc": "Pointez une ligne du relevé contre l'écriture correspondante.",
+    "label": "Libellé",
+    "amount": "Montant",
+    "action": "Action",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "entry": "Écriture",
+    "matchType": "Origine",
+    "matchTypes": {
+      "ledger_auto": "Automatique",
+      "ledger_manual": "Manuel",
+      "ledger_posted": "Comptabilisé"
+    },
+    "point": "Pointer",
+    "pointTitle": "Pointer la ligne de relevé",
+    "pointDone": "Ligne pointée des deux côtés",
+    "unpoint": "Dépointer",
+    "unpointDone": "Pointage défait",
+    "post": "Comptabiliser",
+    "postTitle": "Comptabiliser la ligne de relevé",
+    "postDone": "Écriture créée et ligne pointée",
+    "postHint": "Le compte bancaire {{account}} portera la contrepartie ; l'écriture est validée immédiatement.",
+    "counterpart": "Compte de charge ou de produit",
+    "candidate": "Écriture du compte de même montant",
+    "noCandidate": "Aucune écriture non pointée de ce montant : comptabilisez la ligne.",
+    "noAccount": "Aucun compte bancaire",
+    "noAccountDesc": "Créez un compte bancaire pour suivre son rapprochement."
   },
   "rules": {
     "title": "Règles bancaires",
@@ -151,8 +216,25 @@
       "startsWith": "Commence par",
       "endsWith": "Se termine par",
       "greaterThan": "Supérieur à",
-      "lessThan": "Inférieur à"
-    }
+      "lessThan": "Inférieur à",
+      "greater_than": "Supérieur à",
+      "less_than": "Inférieur à",
+      "starts_with": "Commence par"
+    },
+    "accountCode": "Compte comptable",
+    "accountCodePlaceholder": "Ex. : 626100",
+    "category": "Catégorie",
+    "categoryPlaceholder": "Ex. : frais bancaires",
+    "condition": "Condition",
+    "field": "Champ",
+    "fields": {
+      "amount": "Montant",
+      "description": "Libellé",
+      "reference": "Référence"
+    },
+    "operator": "Opérateur",
+    "value": "Valeur",
+    "vatRate": "Taux de TVA (%)"
   },
   "pdfReconciliation": {
     "title": "Rapprochement par PDF",
@@ -242,6 +324,7 @@
       "connectionFailed": "Échec de la connexion"
     },
     "syncSuccess": "Synchronisation terminée",
+    "syncImported": "{{count}} opération(s) importée(s)",
     "syncError": "Erreur lors de la synchronisation",
     "autoSynced": "Sync auto",
     "reconcile": "Réconcilier"
@@ -253,7 +336,8 @@
     "reconciliationDiff": "Écart",
     "statementDate": "Date du relevé",
     "noDiff": "Aucun écart",
-    "diffWarning": "Écart détecté"
+    "diffWarning": "Écart détecté",
+    "bookBalance": "solde comptable"
   },
   "multiCurrency": {
     "originalAmount": "Montant d'origine",
@@ -280,6 +364,7 @@
     "noAccounts": "Aucun compte bancaire",
     "noAccountsDesc": "Ajoutez votre premier RIB/IBAN",
     "ibanInvalid": "IBAN invalide",
+    "ibanRefused": "IBAN invalide : la clé de contrôle ne correspond pas. Rien n’a été enregistré — vérifiez le numéro saisi.",
     "ibanValid": "IBAN valide",
     "saved": "Compte bancaire enregistré",
     "saveError": "Erreur lors de l'enregistrement",

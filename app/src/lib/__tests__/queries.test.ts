@@ -47,7 +47,7 @@ vi.mock('@/lib/supabase', () => ({
 import { supabase } from '@/lib/supabase'
 
 describe('Phase 1.1 — Recurring Entries Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getRecurringEntries calls supabase with correct table', async () => {
     const { getRecurringEntries } = await import('@/lib/queries')
@@ -82,7 +82,7 @@ describe('Phase 1.1 — Recurring Entries Queries', () => {
 })
 
 describe('Phase 1.2 — Regularization Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getRegularizationEntries queries regularization_entries table', async () => {
     const { getRegularizationEntries } = await import('@/lib/queries')
@@ -92,7 +92,7 @@ describe('Phase 1.2 — Regularization Queries', () => {
 })
 
 describe('Phase 1.6 — Currency Revaluation Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getCurrencyRevaluations queries currency_revaluations table', async () => {
     const { getCurrencyRevaluations } = await import('@/lib/queries')
@@ -102,7 +102,7 @@ describe('Phase 1.6 — Currency Revaluation Queries', () => {
 })
 
 describe('Phase 1.7 — Collection Reminders Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getCollectionReminders queries collection_reminders table', async () => {
     const { getCollectionReminders } = await import('@/lib/queries')
@@ -112,7 +112,7 @@ describe('Phase 1.7 — Collection Reminders Queries', () => {
 })
 
 describe('Phase 1.9 — Analytic Plans Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getAnalyticPlans queries analytic_plans table', async () => {
     const { getAnalyticPlans } = await import('@/lib/queries')
@@ -122,7 +122,7 @@ describe('Phase 1.9 — Analytic Plans Queries', () => {
 })
 
 describe('Phase 1.10 — Distribution Grills Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getDistributionGrills queries distribution_grills table', async () => {
     const { getDistributionGrills } = await import('@/lib/queries')
@@ -132,7 +132,7 @@ describe('Phase 1.10 — Distribution Grills Queries', () => {
 })
 
 describe('Phase 1.11 — Bank Reconciliation Rules Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getBankReconciliationRules queries bank_reconciliation_rules table', async () => {
     const { getBankReconciliationRules } = await import('@/lib/queries')
@@ -142,7 +142,7 @@ describe('Phase 1.11 — Bank Reconciliation Rules Queries', () => {
 })
 
 describe('Phase 1.12 — Bank Statement Imports Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getBankStatementImports queries bank_statement_imports table', async () => {
     const { getBankStatementImports } = await import('@/lib/queries')
@@ -152,7 +152,7 @@ describe('Phase 1.12 — Bank Statement Imports Queries', () => {
 })
 
 describe('Phase 1.16 — TVS Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getTvsDeclarations queries tvs_declarations table', async () => {
     const { getTvsDeclarations } = await import('@/lib/queries')
@@ -162,7 +162,7 @@ describe('Phase 1.16 — TVS Queries', () => {
 })
 
 describe('Phase 1.22 — Fiscal Backup Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getFiscalBackups queries fiscal_backups table', async () => {
     const { getFiscalBackups } = await import('@/lib/queries')
@@ -191,7 +191,7 @@ describe('Phase 1.22 — Fiscal Backup Queries', () => {
 })
 
 describe('Phase 1.0 — Company Settings Queries', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); (supabase as any).from = vi.fn(() => mockChain) })
 
   it('getCompanySettings queries company_settings table', async () => {
     const { getCompanySettings } = await import('@/lib/queries')

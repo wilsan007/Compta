@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getPayrollAccountingEntries, createPayrollAccountingEntry, transferPayrollToAccounting, deletePayrollAccountingEntry, getPayRuns } from '@/lib/queries/payroll'
 import { Calculator, Plus, Trash2, X, ArrowRightLeft, CheckCircle2 } from 'lucide-react'
 import type { PayRun, PayrollAccountingEntry } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
-const statusLabels: Record<string, string> = { draft: 'Brouillon', transferred: 'Transféré', cancelled: 'Annulé' }
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { draft: 'warning', transferred: 'success', cancelled: 'danger' }
 
 export function PayrollAccountingPage() {
@@ -15,7 +16,7 @@ export function PayrollAccountingPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-const [entries, setEntries] = useState<any[]>([])
+const [entries, setEntries] = useState<Awaited<ReturnType<typeof getPayrollAccountingEntries>>>([])
   const [payRuns, setPayRuns] = useState<PayRun[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -26,9 +27,9 @@ const [entries, setEntries] = useState<any[]>([])
       const [es, prs] = await Promise.all([getPayrollAccountingEntries(), getPayRuns()])
       setEntries(es || [])
       setPayRuns(prs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -38,19 +39,19 @@ const [entries, setEntries] = useState<any[]>([])
       await transferPayrollToAccounting(entry.id, entry)
       await loadData()
       toast('success', tCommon('common.success'), t('payrollAccounting.generatedEntries'))
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setTransferring(null) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePayrollAccountingEntry(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('payrollAccounting.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('payrollAccounting.title') }]} />
       <PageHeader title={t('payrollAccounting.title')} subtitle={t('payrollAccounting.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('payrollAccounting.generate')}</Button>} />
 
@@ -68,7 +69,7 @@ const [entries, setEntries] = useState<any[]>([])
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.gross_total))}</TableCell>
                 <TableCell className="font-mono text-xs text-[var(--color-danger)] text-right">{formatCurrency(Number(e.employer_contributions_total))}</TableCell>
                 <TableCell className="font-mono text-xs font-bold text-right">{formatCurrency(Number(e.net_total))}</TableCell>
-                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{t(`payrollAccounting.statuses.${e.status}`) || statusLabels[e.status] || e.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[e.status] || 'neutral'}>{t(`payrollAccounting.statuses.${e.status}`) || e.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {e.status === 'draft' && (
@@ -77,9 +78,8 @@ const [entries, setEntries] = useState<any[]>([])
                         {transferring === e.id ? <CheckCircle2 className="w-4 h-4" /> : <ArrowRightLeft className="w-4 h-4" />}
                       </button>
                     )}
-                    <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -107,17 +107,17 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `OD-PAIE-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+      const number = await nextDocumentNumber('OD-PAIE')
       await createPayrollAccountingEntry({
         number, pay_run_id: payRunId || null, period_date: periodDate,
         gross_total: Number(selectedRun?.gross_total) || 0,
-        employer_contributions_total: (Number(selectedRun?.gross_total) || 0) * 0.42,
+        employer_contributions_total: Number(selectedRun?.employer_contributions_total) || 0,
         employee_deductions_total: Number(selectedRun?.tax_total) || 0,
         net_total: Number(selectedRun?.net_total) || 0,
         journal_entry_id: null, status: 'draft',
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -126,7 +126,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('payrollAccounting.title')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -147,7 +147,7 @@ function ODForm({ payRuns, onClose, onSaved }: { payRuns: PayRun[]; onClose: () 
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

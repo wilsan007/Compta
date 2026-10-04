@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog, exportToCSV } from '@/components/ui'
-import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getCustomers, getSuppliers, getChartAccounts } from '@/lib/queries'
+import { getThirdPartyAccounts, createThirdPartyAccount, updateThirdPartyAccount, deleteThirdPartyAccount, getChartAccounts } from '@/lib/queries/accounting'
+import { getCustomers, getSuppliers, getPartnerBankAccounts } from '@/lib/queries/partners'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { verifyIban, type IbanCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
 import { Users2, Plus, Pencil, Trash2, X, Search, Link2, MoreVertical, Settings, FilePlus2, Wallet, FileBarChart, Download, Landmark } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import type { ThirdPartyAccount, Customer, Supplier, ChartAccount } from '@/types'
+import type { ThirdPartyAccount, Customer, Supplier, ChartAccount, PartnerBankAccount, PaymentTerm } from '@/types'
 import { PartnerBankAccountsModal } from '@/components/PartnerBankAccountsModal'
 
 const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
@@ -18,6 +22,7 @@ const typeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | '
 
 export function ThirdPartyAccountsPage() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const navigate = useNavigate()
   const [accounts, setAccounts] = useState<ThirdPartyAccount[]>([])
   const { toast } = useToast()
@@ -33,7 +38,8 @@ export function ThirdPartyAccountsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ThirdPartyAccount | null>(null)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -50,6 +56,7 @@ export function ThirdPartyAccountsPage() {
       setChartAccounts(ca || [])
     } catch (err) {
       console.error('Error loading third party accounts:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -78,13 +85,13 @@ export function ThirdPartyAccountsPage() {
       await deleteThirdPartyAccount(id)
       toast('success', t('thirdParty.deleted'))
       await loadData()
-    } catch (err: any) {
-      toast('error', t('thirdParty.deleteError'), err.message || '')
+    } catch (err) {
+      toast('error', t('thirdParty.deleteError'), errorMessage(err) || '')
     }
   }
 
   function handleExportCSV() {
-    const headers = [t('thirdParty.code'), t('thirdParty.name'), t('thirdParty.type'), t('thirdParty.generalAccount'), t('thirdParty.linkedTo'), t('thirdParty.balance'), t('thirdParty.lettrage'), t('thirdParty.siret'), t('thirdParty.vatIntra'), t('thirdParty.iban')]
+    const headers = [t('thirdParty.code'), t('thirdParty.name'), t('thirdParty.type'), t('thirdParty.generalAccount'), t('thirdParty.linkedTo'), t('thirdParty.balance'), t('thirdParty.lettrage'), t('thirdParty.siret'), t('thirdParty.vatIntra')]
     const rows = filtered.map((a) => [
       a.code,
       a.name,
@@ -93,12 +100,18 @@ export function ThirdPartyAccountsPage() {
       getLinkedName(a),
       Number(a.balance || 0),
       a.lettrage_code || '',
-      (a as any).siret || '',
-      (a as any).vat_intra || '',
-      (a as any).iban || '',
+      (linkedPartner(a) as any)?.siret || '',
+      linkedPartner(a)?.vat_number || '',
     ])
     exportToCSV(`plan-tiers-${new Date().toISOString().split('T')[0]}.csv`, headers, rows)
     toast('info', t('thirdParty.exportCSV'), t('thirdParty.exported', { count: filtered.length }))
+  }
+
+  // D-C : SIRET et TVA sont ceux du tiers lié, jamais une copie sur le compte
+  function linkedPartner(a: ThirdPartyAccount): Customer | Supplier | undefined {
+    if (a.customer_id) return customers.find((x) => x.id === a.customer_id)
+    if (a.supplier_id) return suppliers.find((x) => x.id === a.supplier_id)
+    return undefined
   }
 
   function getLinkedName(a: ThirdPartyAccount) {
@@ -188,9 +201,9 @@ export function ThirdPartyAccountsPage() {
               { label: t('thirdParty.vatIntra'), key: 'vat_intra', sortable: true },
               { label: t('thirdParty.actions') },
             ]}
-            data={filtered as any}
+            data={filtered as ThirdPartyAccount[]}
             initialSortKey="code"
-            renderRow={(a: any) => (
+            renderRow={(a: ThirdPartyAccount) => (
               <TableRow key={a.id}>
                 <TableCell className="font-mono font-semibold">{a.code}</TableCell>
                 <TableCell>{a.name}</TableCell>
@@ -203,7 +216,7 @@ export function ThirdPartyAccountsPage() {
                 </TableCell>
                 <TableCell className="font-mono text-right">{formatCurrency(Number(a.balance) || 0)}</TableCell>
                 <TableCell className="font-mono text-xs">{a.lettrage_code || '—'}</TableCell>
-                <TableCell className="font-mono text-xs">{(a as any).vat_intra || '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{linkedPartner(a)?.vat_number || '—'}</TableCell>
                 <TableCell>
                   <div className="relative flex gap-2">
                     <button onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={t('thirdParty.editAccount')}>
@@ -278,6 +291,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   onSaved: () => void
 }) {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [activeTab, setActiveTab] = useState('fiche')
   const { toast } = useToast()
   const [code, setCode] = useState(account?.code || '')
@@ -288,31 +302,54 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
   const [supplierId, setSupplierId] = useState(account?.supplier_id || '')
   const [currency, setCurrency] = useState(account?.currency || 'EUR')
   const [active, setActive] = useState(account?.active ?? true)
-  const [address, setAddress] = useState((account as any)?.address || '')
-  const [postalCode, setPostalCode] = useState((account as any)?.postal_code || '')
-  const [city, setCity] = useState((account as any)?.city || '')
-  const [country, setCountry] = useState((account as any)?.country || 'France')
-  const [siret, setSiret] = useState((account as any)?.siret || '')
-  const [vatIntra, setVatIntra] = useState((account as any)?.vat_intra || '')
-  const [iban, setIban] = useState((account as any)?.iban || '')
-  const [bic, setBic] = useState((account as any)?.bic || '')
-  const [bankCode, setBankCode] = useState((account as any)?.bank_code || '')
-  const [branchCode, setBranchCode] = useState((account as any)?.branch_code || '')
-  const [accountNumber, setAccountNumber] = useState((account as any)?.bank_account_number || '')
-  const [key, setKey] = useState((account as any)?.bank_key || '')
-  const [echeanceModel, setEcheanceModel] = useState((account as any)?.echeance_model || '')
-  const [paymentCondition, setPaymentCondition] = useState((account as any)?.payment_condition || '')
-  const [paymentMode, setPaymentMode] = useState((account as any)?.payment_mode || '')
-  const [encoursAutorise, setEncoursAutorise] = useState((account as any)?.encours_autorise != null ? String((account as any).encours_autorise) : '')
-  const [relanceNiveau, setRelanceNiveau] = useState((account as any)?.relance_niveau || '')
-  const [relanceModel, setRelanceModel] = useState((account as any)?.relance_model || '')
-  const [delaiPaiement, setDelaiPaiement] = useState((account as any)?.delai_paiement || '')
-  const [escompte, setEscompte] = useState((account as any)?.escompte != null ? String((account as any).escompte) : '')
-  const [contactName, setContactName] = useState((account as any)?.contact_name || '')
-  const [zoneGeo, setZoneGeo] = useState((account as any)?.zone_geo || '')
-  const [categorie, setCategorie] = useState((account as any)?.categorie || '')
+  // D-C (X2/C14) : un compte auxiliaire est la vue comptable d'un tiers — il ne
+  // recopie pas sa fiche. Adresse, SIRET, TVA et contact se lisent sur le client
+  // ou le fournisseur lié ; les RIB sont ceux du tiers (`partner_bank_accounts`) ;
+  // les conditions sont un modèle de règlement (`payment_term_id`, lu par la
+  // saisie pour l'échéance) ; l'encours autorisé est `credit_limit`. La relance
+  // est une politique de société (`reminder_levels`), pas une donnée du compte.
+  const [paymentTermId, setPaymentTermId] = useState(account?.payment_term_id || '')
+  const [creditLimit, setCreditLimit] = useState(account?.credit_limit ? String(account.credit_limit) : '')
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([])
   const [saving, setSaving] = useState(false)
   const [showPartnerBankModal, setShowPartnerBankModal] = useState(false)
+  const [partnerBanks, setPartnerBanks] = useState<PartnerBankAccount[]>([])
+  const [ibanChecks, setIbanChecks] = useState<Record<string, IbanCheck>>({})
+  const [checkingIban, setCheckingIban] = useState<string | null>(null)
+
+  const partnerType = type === 'customer' || type === 'supplier' ? type : null
+  const partnerId = type === 'customer' ? customerId : type === 'supplier' ? supplierId : ''
+  const partner: Customer | Supplier | undefined = type === 'customer'
+    ? customers.find((c) => c.id === customerId)
+    : type === 'supplier' ? suppliers.find((s) => s.id === supplierId) : undefined
+
+  useEffect(() => {
+    getPaymentTerms().then(setPaymentTerms).catch(() => setPaymentTerms([]))
+  }, [])
+
+  const loadPartnerBanks = useCallback(async () => {
+    if (!partnerType || !partnerId) { setPartnerBanks([]); return }
+    try {
+      setPartnerBanks(await getPartnerBankAccounts(partnerType, partnerId))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
+    }
+  }, [partnerType, partnerId, tCommon, toast])
+
+  useEffect(() => { loadPartnerBanks() }, [loadPartnerBanks])
+
+  // W6 — `verify-iban` : l'IBAN d'un tiers se vérifie ici, sur les RIB du tiers.
+  async function handleCheckIban(bank: PartnerBankAccount) {
+    setCheckingIban(bank.id)
+    try {
+      const res = await verifyIban(bank.account_number.trim())
+      setIbanChecks((prev) => ({ ...prev, [bank.id]: res }))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingIban(null)
+    }
+  }
 
   const tierAccounts = chartAccounts.filter((a) => a.code.startsWith('4'))
 
@@ -325,47 +362,26 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
         name,
         type,
         account_general_code: accountGeneralCode || null,
-        customer_id: customerId || null,
-        supplier_id: supplierId || null,
+        customer_id: type === 'customer' ? customerId || null : null,
+        supplier_id: type === 'supplier' ? supplierId || null : null,
         employee_id: null,
         balance: account?.balance || 0,
         lettrage_code: account?.lettrage_code || null,
         currency,
         active,
-        address,
-        postal_code: postalCode,
-        city,
-        country,
-        siret,
-        vat_intra: vatIntra,
-        iban,
-        bic,
-        bank_code: bankCode,
-        branch_code: branchCode,
-        bank_account_number: accountNumber,
-        bank_key: key,
-        echeance_model: echeanceModel,
-        payment_condition: paymentCondition,
-        payment_mode: paymentMode,
-        encours_autorise: encoursAutorise ? Number(encoursAutorise) : null,
-        relance_niveau: relanceNiveau,
-        relance_model: relanceModel,
-        delai_paiement: delaiPaiement,
-        escompte: escompte ? Number(escompte) : null,
-        contact_name: contactName,
-        zone_geo: zoneGeo,
-        categorie,
+        payment_term_id: paymentTermId || null,
+        credit_limit: creditLimit ? Number(creditLimit) : 0,
       }
       if (account) {
         await updateThirdPartyAccount(account.id, data)
         toast('success', t('thirdParty.updated'))
       } else {
-        await createThirdPartyAccount(data as any)
+        await createThirdPartyAccount(data as Omit<ThirdPartyAccount, 'id' | 'created_at' | 'updated_at'>)
         toast('success', t('thirdParty.saved'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', t('thirdParty.saveError'), err.message || '')
+    } catch (err) {
+      toast('error', t('thirdParty.saveError'), errorMessage(err) || '')
     } finally {
       setSaving(false)
     }
@@ -376,8 +392,6 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
     { id: 'banques', label: t('thirdParty.tabs.banques') },
     { id: 'modeles', label: t('thirdParty.tabs.modeles') },
     { id: 'complement', label: t('thirdParty.tabs.complement') },
-    { id: 'statistiques', label: t('thirdParty.tabs.statistiques') },
-    { id: 'free', label: t('thirdParty.tabs.freeInfo') },
   ]
 
   return (
@@ -385,7 +399,7 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{account ? t('thirdParty.edit') : t('thirdParty.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="flex border-b border-[var(--color-border)] px-6 overflow-x-auto">
@@ -424,16 +438,6 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
                     ...tierAccounts.map((a) => ({ value: a.code, label: `${a.code} — ${a.name}` })),
                   ]} />
                 </div>
-                <Input label={t('thirdParty.address')} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue du Commerce" />
-                <div className="grid grid-cols-3 gap-4">
-                  <Input label={t('thirdParty.postalCode')} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="75001" />
-                  <Input label={t('thirdParty.city')} value={city} onChange={(e) => setCity(e.target.value)} placeholder="Paris" />
-                  <Input label={t('thirdParty.country')} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="France" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('thirdParty.siret')} value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="123 456 789 00012" />
-                  <Input label={t('thirdParty.vatIntra')} value={vatIntra} onChange={(e) => setVatIntra(e.target.value)} placeholder="FR12345678901" />
-                </div>
                 {type === 'customer' && (
                   <Select label={t('thirdParty.linkedCustomer')} value={customerId} onChange={(e) => setCustomerId(e.target.value)} options={[
                     { value: '', label: t('thirdParty.none') },
@@ -450,84 +454,76 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
                       .map((s) => ({ value: s.id, label: s.name })),
                   ]} />
                 )}
+                {partner && (
+                  <div className="text-sm space-y-1 p-3 rounded-lg bg-[var(--color-neutral-50)] border border-[var(--color-border)]">
+                    <p className="font-medium">{partner.name}</p>
+                    {(partner.address || partner.city) && (
+                      <p className="text-[var(--color-text-secondary)]">{[partner.address, [partner.postal_code, partner.city].filter(Boolean).join(' '), partner.country].filter(Boolean).join(', ')}</p>
+                    )}
+                    <p className="text-[var(--color-text-secondary)]">
+                      {t('thirdParty.siret')} : {(partner as any).siret || '—'} · {t('thirdParty.vatIntra')} : {partner.vat_number || '—'} · {t('thirdParty.contactName')} : {partner.contact_name || '—'}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('thirdParty.partnerDataHint')}</p>
+                  </div>
+                )}
               </>
             )}
 
             {activeTab === 'banques' && (
               <>
-                <Input label={t('thirdParty.iban')} value={iban} onChange={(e) => setIban(e.target.value)} placeholder="FR76 1234 5678 9012 3456 7890 123" />
-                <Input label={t('thirdParty.bic')} value={bic} onChange={(e) => setBic(e.target.value)} placeholder="ABCDEFGHXXX" />
-                <div className="grid grid-cols-4 gap-4">
-                  <Input label={t('thirdParty.bankCode')} value={bankCode} onChange={(e) => setBankCode(e.target.value)} placeholder="12345" />
-                  <Input label={t('thirdParty.branchCode')} value={branchCode} onChange={(e) => setBranchCode(e.target.value)} placeholder="67890" />
-                  <Input label={t('thirdParty.accountNumber')} value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="12345678901" />
-                  <Input label={t('thirdParty.key')} value={key} onChange={(e) => setKey(e.target.value)} placeholder="23" />
-                </div>
-                <p className="text-xs text-[var(--color-text-secondary)]">{t('thirdParty.multiRibHint')}</p>
-                {account && (type === 'customer' || type === 'supplier') && (
-                  <div className="pt-4 border-t border-[var(--color-border)]">
-                    <Button type="button" variant="secondary" onClick={() => setShowPartnerBankModal(true)}>
-                      <Landmark className="w-4 h-4" /> {t('partnerBankAccounts.title', { ns: 'banking' })}
-                    </Button>
-                  </div>
+                {!partnerType || !partnerId ? (
+                  <p className="text-sm text-[var(--color-text-secondary)]">{t('thirdParty.banksNeedPartner')}</p>
+                ) : (
+                  <>
+                    {partnerBanks.length === 0 && <p className="text-sm text-[var(--color-text-secondary)]">{t('thirdParty.noPartnerBank')}</p>}
+                    {partnerBanks.map((bank) => (
+                      <div key={bank.id} className="p-3 rounded-lg border border-[var(--color-border)] space-y-1">
+                        <p className="font-mono text-sm">{bank.account_number}{bank.bic ? ` — ${bank.bic}` : ''}{bank.is_default ? ` (${t('thirdParty.defaultBank')})` : ''}</p>
+                        <VerificationLine
+                          busy={checkingIban === bank.id}
+                          disabled={!bank.account_number.trim()}
+                          onCheck={() => handleCheckIban(bank)}
+                          result={ibanChecks[bank.id] ?? null}
+                          labels={{
+                            check: t('thirdParty.verifyIban'),
+                            checking: t('thirdParty.verifyingIban'),
+                            atSource: t('thirdParty.ibanChecked'),
+                            formatOnly: t('thirdParty.ibanChecked'),
+                            invalid: t('thirdParty.ibanInvalid'),
+                          }}
+                        />
+                      </div>
+                    ))}
+                    <div className="pt-2">
+                      <Button type="button" variant="secondary" onClick={() => setShowPartnerBankModal(true)}>
+                        <Landmark className="w-4 h-4" /> {t('partnerBankAccounts.title', { ns: 'banking' })}
+                      </Button>
+                    </div>
+                  </>
                 )}
               </>
             )}
 
             {activeTab === 'modeles' && (
               <>
-                <Input label={t('thirdParty.echeanceModel')} value={echeanceModel} onChange={(e) => setEcheanceModel(e.target.value)} placeholder="" />
-                <Input label={t('thirdParty.paymentCondition')} value={paymentCondition} onChange={(e) => setPaymentCondition(e.target.value)} placeholder="30 jours fin de mois" />
-                <Input label={t('thirdParty.paymentMode')} value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} placeholder="Virement" />
+                <Select label={t('thirdParty.paymentCondition')} value={paymentTermId} onChange={(e) => setPaymentTermId(e.target.value)} options={[
+                  { value: '', label: t('thirdParty.none') },
+                  ...paymentTerms.filter((pt) => pt.active || pt.id === paymentTermId).map((pt) => ({ value: pt.id, label: `${pt.code} — ${pt.name}` })),
+                ]} />
+                <p className="text-xs text-[var(--color-text-secondary)]">{t('thirdParty.paymentTermHint')}</p>
               </>
             )}
 
             {activeTab === 'complement' && (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('thirdParty.encoursAutorise')} type="number" value={encoursAutorise} onChange={(e) => setEncoursAutorise(e.target.value)} placeholder="10000" />
-                  <Input label={t('thirdParty.relanceNiveau')} value={relanceNiveau} onChange={(e) => setRelanceNiveau(e.target.value)} placeholder="1" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('thirdParty.relanceModel')} value={relanceModel} onChange={(e) => setRelanceModel(e.target.value)} placeholder="" />
-                  <Input label={t('thirdParty.delaiPaiement')} value={delaiPaiement} onChange={(e) => setDelaiPaiement(e.target.value)} placeholder="30" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('thirdParty.escompte')} type="number" value={escompte} onChange={(e) => setEscompte(e.target.value)} placeholder="0" />
-                  <Input label={t('thirdParty.contactName')} value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t('thirdParty.placeholders.contactName')} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                  <Input label={t('thirdParty.encoursAutorise')} type="number" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="10000" />
                   <Input label={t('thirdParty.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} />
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-                      {t('thirdParty.active')}
-                    </label>
-                  </div>
                 </div>
-              </>
-            )}
-
-            {activeTab === 'statistiques' && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('thirdParty.zoneGeo')} value={zoneGeo} onChange={(e) => setZoneGeo(e.target.value)} placeholder="Île-de-France" />
-                  <Input label={t('thirdParty.categorie')} value={categorie} onChange={(e) => setCategorie(e.target.value)} placeholder="PME" />
-                </div>
-              </>
-            )}
-
-            {activeTab === 'free' && (
-              <>
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <div key={i} className="grid grid-cols-2 gap-4">
-                      <Input label={t('thirdParty.freeFieldLabel', { n: i + 1 })} value="" onChange={() => {}} placeholder="" />
-                      <Input label={t('thirdParty.freeFieldValue', { n: i + 1 })} value="" onChange={() => {}} placeholder="" />
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-[var(--color-text-secondary)]">{t('thirdParty.freeInfoHint')}</p>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+                  {t('thirdParty.active')}
+                </label>
               </>
             )}
           </div>
@@ -539,11 +535,11 @@ function ThirdPartyForm({ account, accounts, customers, suppliers, chartAccounts
         </form>
       </div>
 
-      {showPartnerBankModal && account && (type === 'customer' || type === 'supplier') && (
+      {showPartnerBankModal && partnerType && partnerId && (
         <PartnerBankAccountsModal
-          partnerType={type as 'customer' | 'supplier'}
-          partnerId={account.id}
-          onClose={() => setShowPartnerBankModal(false)}
+          partnerType={partnerType}
+          partnerId={partnerId}
+          onClose={() => { setShowPartnerBankModal(false); loadPartnerBanks() }}
         />
       )}
     </div>

@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
-import { getAuditLog } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { errorMessage, formatDate } from '@/lib/utils'
+import { getAuditLog } from '@/lib/queries/accounting'
 import { useTranslation } from 'react-i18next'
 
 export function AuditLogPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [entityFilter, setEntityFilter] = useState('')
   const [actionFilter, setActionFilter] = useState('')
   const [search, setSearch] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -20,6 +24,7 @@ export function AuditLogPage() {
       setLogs(data || [])
     } catch (err) {
       console.error('Error loading audit log:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

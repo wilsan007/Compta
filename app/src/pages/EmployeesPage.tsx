@@ -1,16 +1,20 @@
+import { localDateString } from '@/lib/dateRange'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries/payroll'
+import { errorMessage, formatCurrency, formatDate} from '@/lib/utils'
 import { Users, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 export function EmployeesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
+  const { canCreate, canDelete } = usePermission('employees')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { getStatusLabel } = useStatusLabels()
@@ -22,17 +26,17 @@ const [employees, setEmployees] = useState<Employee[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try { setEmployees(await getEmployees()) } catch (err) { console.error(err); toast('error', tCommon('common.error'), tCommon('common.error')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
-    try { await deleteEmployee(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
+    try { await deleteEmployee(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleStatusChange(id: string, status: string) {
-    try { await updateEmployee(id, { status: status as any }); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    try { await updateEmployee(id, { status: status as any }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))]
@@ -41,11 +45,11 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('employees.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('employees.title') }]} />
       <PageHeader
         title={t('employees.title')}
         subtitle={t('employees.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button> : undefined}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -56,7 +60,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
 
       <div className="mb-4 flex items-center gap-3">
         <Select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="max-w-xs" options={[
-          { value: '', label: tCommon('all') },
+          { value: '', label: tCommon('table.all') },
           ...departments.map(d => ({ value: d, label: d })),
         ]} />
         <span className="text-sm text-[var(--color-text-secondary)]">{filtered.length} {t('employees.title').toLowerCase()}</span>
@@ -65,7 +69,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
       {loading ? (
         <SkeletonTable rows={5} cols={6} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Users className="w-8 h-8" />} title={t('employees.noEmployees')} description={t('employees.noEmployeesDescription')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button>} />
+        <EmptyState icon={<Users className="w-8 h-8" />} title={t('employees.noEmployees')} description={t('employees.noEmployeesDescription')} action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('employees.new')}</Button> : undefined} />
       ) : (
         <Card>
           <Table headers={[t('employees.fullName'), t('employees.employeeNumber'), t('employees.position'), t('employees.department'), t('employees.contractType'), t('employees.salary'), t('employees.hireDate'), t('employees.status'), tCommon('table.actions')]}>
@@ -75,7 +79,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
                 <TableCell className="font-mono text-xs">{e.employee_number || '—'}</TableCell>
                 <TableCell className="text-sm">{e.position || '—'}</TableCell>
                 <TableCell className="text-sm">{e.department || '—'}</TableCell>
-                <TableCell className="text-sm">{e.contract_type || 'CDI'}</TableCell>
+                <TableCell className="text-sm">{e.contract_type ? (t(`employees.contractTypes.${e.contract_type}`) as string) : t('employees.contractTypes.cdi') as string}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(e.salary))}</TableCell>
                 <TableCell className="text-xs">{formatDate(e.hire_date)}</TableCell>
                 <TableCell>
@@ -84,7 +88,7 @@ const [employees, setEmployees] = useState<Employee[]>([])
                   </select>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  {canDelete && <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>}
                 </TableCell>
               </TableRow>
             ))}
@@ -107,16 +111,23 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [position, setPosition] = useState('')
   const [department, setDepartment] = useState('')
   const [salary, setSalary] = useState(0)
-  const [hireDate, setHireDate] = useState(new Date().toISOString().split('T')[0])
+  const [hireDate, setHireDate] = useState(() => localDateString())
+  // rh-003 : l'horaire hebdomadaire fonde le taux horaire et le seuil des heures sup (340).
+  const [weeklyHours, setWeeklyHours] = useState(35)
   const [saving, setSaving] = useState(false)
   const [employeeNumber, setEmployeeNumber] = useState('')
   const [ssNumber, setSsNumber] = useState('')
   const [birthDate, setBirthDate] = useState('')
+  // G16 : sexe, collecté uniquement pour la DSN et les indicateurs d'égalité de la BDES.
+  // Facultatif — '' est enregistré en NULL.
+  const [gender, setGender] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [postalCode, setPostalCode] = useState('')
-  const [contractType, setContractType] = useState('CDI')
+  const [contractType, setContractType] = useState('cdi')
   const [contractEndDate, setContractEndDate] = useState('')
+  // C6 (276) : la catégorie de paie décide des cotisations propres aux cadres (Apec)
+  const [payrollCategory, setPayrollCategory] = useState<'non_cadre' | 'cadre'>('non_cadre')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -124,17 +135,20 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     try {
       await createEmployee({
         name, email, phone, position, department, salary, hire_date: hireDate, status: 'active',
+        weekly_hours: weeklyHours,
         employee_number: employeeNumber || null,
         social_security_number: ssNumber || null,
         birth_date: birthDate || null,
+        gender: gender || null,
         address: address || null,
         city: city || null,
         postal_code: postalCode || null,
         contract_type: contractType as any,
         contract_end_date: contractEndDate || null,
+        payroll_category: payrollCategory,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (
@@ -142,7 +156,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('employees.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <Input label={t('employees.fullName')} required value={name} onChange={(e) => setName(e.target.value)} />
@@ -162,17 +176,27 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             <Input label={t('employees.salary')} type="number" step="0.01" value={salary} onChange={(e) => setSalary(Number(e.target.value))} />
             <Input label={t('employees.hireDate')} type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <Input label={t('employees.weeklyHours')} type="number" step="0.5" value={weeklyHours} onChange={(e) => setWeeklyHours(Number(e.target.value))} />
+          <div className="grid grid-cols-3 gap-4">
             <Input label={t('employees.birthDate')} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+            <Select label={t('employees.gender')} value={gender} onChange={(e) => setGender(e.target.value)} options={[
+              { value: '', label: t('employees.genders.notSpecified') as string },
+              { value: 'F', label: t('employees.genders.F') as string },
+              { value: 'M', label: t('employees.genders.M') as string },
+            ]} />
             <Select label={t('employees.contractType')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
-              { value: 'CDI', label: 'CDI' },
-              { value: 'CDD', label: 'CDD' },
-              { value: 'Apprentissage', label: t('employees.contractTypes.apprentissage') },
-              { value: 'Stage', label: t('employees.contractTypes.stage') },
-              { value: 'Interim', label: t('employees.contractTypes.interim') },
+              { value: 'cdi', label: t('employees.contractTypes.cdi') as string },
+              { value: 'cdd', label: t('employees.contractTypes.cdd') as string },
+              { value: 'apprentissage', label: t('employees.contractTypes.apprentissage') as string },
+              { value: 'stage', label: t('employees.contractTypes.stage') as string },
+              { value: 'interim', label: t('employees.contractTypes.interim') as string },
             ]} />
           </div>
-          {contractType !== 'CDI' && (
+          <Select label={t('employees.payrollCategory')} value={payrollCategory} onChange={(e) => setPayrollCategory(e.target.value as 'non_cadre' | 'cadre')} options={[
+            { value: 'non_cadre', label: t('employees.payrollCategories.non_cadre') as string },
+            { value: 'cadre', label: t('employees.payrollCategories.cadre') as string },
+          ]} />
+          {contractType !== 'cdi' && (
             <Input label={t('employees.contractEndDate')} type="date" value={contractEndDate} onChange={(e) => setContractEndDate(e.target.value)} />
           )}
           <Input label={t('employees.address')} value={address} onChange={(e) => setAddress(e.target.value)} />
@@ -182,7 +206,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

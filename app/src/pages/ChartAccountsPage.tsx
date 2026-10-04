@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select, exportToCSV, exportToExcel } from '@/components/ui'
-import { getChartAccounts, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries'
-import { formatCurrency } from '@/lib/utils'
+import { getChartAccounts, getChartAccountBalances, createChartAccount, updateChartAccount, deleteChartAccount, getThirdPartyAccounts } from '@/lib/queries/accounting'
+import { errorMessage, formatCurrency } from '@/lib/utils'
 import { BookOpen, Plus, Pencil, Trash2, X, Search, ChevronDown, ChevronRight, Link2, Eye, EyeOff, Download, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import type { ChartAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const accountTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   asset: 'primary',
@@ -85,20 +86,26 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ChartAccount | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [hideZeroBalances, setHideZeroBalances] = useState(true)
+  // F3 (cpt-002) : le plan s'ouvre COMPLET. Masquer les soldes nuls reste un choix de l'utilisateur.
+  const [hideZeroBalances, setHideZeroBalances] = useState(false)
   const [collapsedClasses, setCollapsedClasses] = useState<Set<string>>(new Set())
   const [showDeprecated, setShowDeprecated] = useState(false)
   const [filterAccountType, setFilterAccountType] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadAccounts() }, [])
 
   async function loadAccounts() {
     try {
-      const [accs, tp] = await Promise.all([getChartAccounts(), getThirdPartyAccounts()])
-      setAccounts(accs || [])
+      const [accs, tp, soldes] = await Promise.all([getChartAccounts(), getThirdPartyAccounts(), getChartAccountBalances()])
+      // F1 (cpt-001) : les soldes viennent du grand livre, pas des colonnes de la fiche.
+      setAccounts((accs || []).map((a) => {
+        const s = soldes.get(a.code)
+        return { ...a, balance: s?.balance ?? 0, current_balance: s?.balance ?? 0, current_debit: s?.debit ?? 0, current_credit: s?.credit ?? 0 }
+      }))
       setTiers(tp || [])
-    } catch (err) {
-      console.error('Error loading chart accounts:', err)
+    } catch (err) { console.error('Error loading chart accounts:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -234,12 +241,10 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
           </TableCell>
           <TableCell>
             <div className="flex gap-2">
-              <button onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button onClick={() => handleDelete(account.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <button onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+              <button onClick={() => handleDelete(account.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
             </div>
           </TableCell>
         </TableRow>
@@ -270,12 +275,11 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('chartAccounts.deleteConfirm'))) return
+    if (!confirmSync(t('chartAccounts.deleteConfirm'))) return
     try {
       await deleteChartAccount(id)
       await loadAccounts()
-    } catch (err) {
-      console.error('Error deleting account:', err)
+    } catch (err) { console.error('Error deleting account:', err)
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
@@ -398,7 +402,7 @@ const [accounts, setAccounts] = useState<ChartAccount[]>([])
         </button>
         <button
           onClick={() => setShowDeprecated(!showDeprecated)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${showDeprecated ? 'border-[var(--color-warning)] text-[var(--color-warning)] bg-[var(--color-warning)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${showDeprecated ? 'border-[var(--color-warning)] text-[var(--color-warning-text)] bg-[var(--color-warning)]/5' : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-50)]'}`}
         >
           <AlertCircle className="w-4 h-4" />
           {showDeprecated ? t('chartAccounts.hideDeprecated') : t('chartAccounts.showDeprecated')}
@@ -505,8 +509,8 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
         await createChartAccount(data as any)
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -526,7 +530,7 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{account ? t('chartAccounts.edit') : t('chartAccounts.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="flex border-b border-[var(--color-border)] px-6">
@@ -613,28 +617,9 @@ function AccountForm({ account, accounts, onClose, onSaved }: { account: ChartAc
 
             {activeTab === 'complement' && (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
-                  <Input label={t('chartAccounts.nbLines')} type="number" defaultValue="" placeholder="0" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('chartAccounts.pageBreak')} type="number" defaultValue="" placeholder="0" />
-                  <Input label={t('chartAccounts.regrouping')} defaultValue="" placeholder="" />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.analyticEntry')}
-                  </label>
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.echeanceEntry')}
-                  </label>
-                  <label className="flex items-center gap-2 text-sm pt-6">
-                    <input type="checkbox" defaultChecked />
-                    {t('chartAccounts.tiersEntry')}
-                  </label>
-                </div>
+                {/* 1.10 (AUD-I02) : six champs factices retirés d'ici — voir
+                    src/lib/__tests__/chart-accounts-no-placebo.test.ts. */}
+                <Input label={t('chartAccounts.defaultTaxCode')} value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="20" />
                 <Input label={tCommon('common.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
               </>
             )}

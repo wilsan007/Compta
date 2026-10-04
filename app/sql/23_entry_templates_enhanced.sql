@@ -1,6 +1,6 @@
 -- ============================================================
 -- 23_entry_templates_enhanced.sql
--- Enhance entry_templates to match Sage 100 modèle de saisie
+-- Enhance entry_templates to support advanced modèle de saisie
 -- Adds: counterpart_account, payment_terms to header
 -- template_lines is a jsonb column already — no schema change needed
 -- This migration just ensures the table exists and adds helpful indexes
@@ -21,6 +21,7 @@ DO $$ BEGIN
       created_at timestamptz default now()
     );
     alter table entry_templates enable row level security;
+    DROP POLICY IF EXISTS "allow_all_entry_templates" ON entry_templates;
     CREATE POLICY "allow_all_entry_templates" ON entry_templates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

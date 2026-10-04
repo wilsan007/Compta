@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS idx_distribution_grill_lines_grill ON distribution_gr
 ALTER TABLE distribution_grills ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_distribution_grills') THEN
+    DROP POLICY IF EXISTS "allow_all_distribution_grills" ON distribution_grills;
     CREATE POLICY "allow_all_distribution_grills" ON distribution_grills FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -39,6 +40,7 @@ END $$;
 ALTER TABLE distribution_grill_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_distribution_grill_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_distribution_grill_lines" ON distribution_grill_lines;
     CREATE POLICY "allow_all_distribution_grill_lines" ON distribution_grill_lines FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

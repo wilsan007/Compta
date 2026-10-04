@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, Input, Select } from '@/components/ui'
-import {
-  getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, deletePayrollTaxGrid,
-  getCorporateTaxGrids, getCorporateTaxGridLines, createCorporateTaxGrid, deleteCorporateTaxGrid,
-} from '@/lib/queries'
+import { getPayrollTaxGrids, getPayrollTaxGridLines, createPayrollTaxGrid, deletePayrollTaxGrid, getCorporateTaxGrids, getCorporateTaxGridLines, createCorporateTaxGrid, deleteCorporateTaxGrid } from '@/lib/queries/accounting'
 import type { PayrollTaxGrid, PayrollTaxGridLine, CorporateTaxGrid, CorporateTaxGridLine } from '@/types'
 import { Plus, Trash2, FileText, AlertCircle } from 'lucide-react'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function TaxGridSettingsPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [tab, setTab] = useState<'payroll' | 'corporate'>('payroll')
   const [payrollGrids, setPayrollGrids] = useState<PayrollTaxGrid[]>([])
   const [corporateGrids, setCorporateGrids] = useState<CorporateTaxGrid[]>([])
@@ -20,7 +22,7 @@ export function TaxGridSettingsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [])
 
   async function loadData() {
@@ -47,7 +49,7 @@ export function TaxGridSettingsPage() {
 
   async function handleDeleteGrid(id: string, isPlatform: boolean) {
     if (isPlatform) return
-    if (!confirm(t('taxGrids.confirmDelete'))) return
+    if (!confirmSync(t('taxGrids.confirmDelete'))) return
     try {
       if (tab === 'payroll') {
         await deletePayrollTaxGrid(id)
@@ -57,8 +59,7 @@ export function TaxGridSettingsPage() {
         setCorporateGrids((prev) => prev.filter((g) => g.id !== id))
       }
       if (selectedGridId === id) setSelectedGridId(null)
-    } catch (err) {
-      console.error('Failed to delete grid:', err)
+    } catch (err) { console.error('Failed to delete grid:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -148,10 +149,8 @@ export function TaxGridSettingsPage() {
                         {!isPlatform && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteGrid(grid.id, false) }}
-                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] p-1" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                            <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         )}
                       </div>
                     </div>
@@ -231,6 +230,7 @@ export function TaxGridSettingsPage() {
 
 function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corporate'; onCancel: () => void; onCreated: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
   const [countryCode, setCountryCode] = useState('')
   const [gridType, setGridType] = useState('')
@@ -292,8 +292,8 @@ function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corpor
         })
       }
       onCreated()
-    } catch (err: any) {
-      setError(err.message || t('taxGrids.createError'))
+    } catch (err) {
+      setError(errorMessage(err) || t('taxGrids.createError'))
     } finally {
       setSaving(false)
     }
@@ -312,7 +312,7 @@ function CreateGridForm({ tab, onCancel, onCreated }: { tab: 'payroll' | 'corpor
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel}>{t('taxGrids.cancel')}</Button>
           <Button variant="primary" size="sm" onClick={handleCreate} disabled={saving}>
-            {saving ? '...' : t('taxGrids.create')}
+            {saving ? tCommon('actions.saving') : t('taxGrids.create')}
           </Button>
         </div>
       </div>

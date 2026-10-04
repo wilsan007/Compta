@@ -61,7 +61,15 @@
     "amount": "Montant",
     "cumulativeBalance": "Solde cumulé",
     "incomingType": "Encaissement",
-    "outgoingType": "Décaissement"
+    "outgoingType": "Décaissement",
+    "runForecast": "Prévision à N jours",
+    "cashFlowResult": "Prévision de flux: {{amount}} sur {{days}} jours",
+    "productionCommitment": "Engagement de production",
+    "materialToBuy": "Matière à acheter",
+    "workshopLabor": "Salaires d'atelier",
+    "commitmentTotal": "Total engagement",
+    "netWithProduction": "Net avec production",
+    "netForecast": "Net prévisionnel"
   },
   "paymentOrders": {
     "title": "Ordres de paiement",
@@ -124,6 +132,7 @@
       "beneficiary": "Bénéficiaire (tiers)",
       "iban": "IBAN (optionnel)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "IBAN invalide : la clé de contrôle ne correspond pas. L’ordre de paiement n’est pas enregistré.",
       "amount": "Montant",
       "paymentDate": "Date de paiement",
       "reference": "Référence",

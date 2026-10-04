@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getContracts, createContract, updateContract, deleteContract, getEmployees } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getContracts, createContract, updateContract, deleteContract, getEmployees } from '@/lib/queries/payroll'
 import { FileSignature, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
-const typeLabels: Record<string, string> = { cdi: 'CDI', cdd: 'CDD', apprentissage: 'Apprentissage', stage: 'Stage', interim: 'Intérim', freelance: 'Freelance' }
+const contractTypeKeys: Record<string, string> = { cdi: 'cdi', cdd: 'cdd', apprentissage: 'apprentissage', stage: 'stage', interim: 'interim', freelance: 'freelance' }
 
 export function ContractsPage() {
   const { toast } = useToast()
@@ -16,7 +18,7 @@ export function ContractsPage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { getStatusLabel } = useStatusLabels()
-const [contracts, setContracts] = useState<any[]>([])
+const [contracts, setContracts] = useState<Awaited<ReturnType<typeof getContracts>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -27,35 +29,35 @@ const [contracts, setContracts] = useState<any[]>([])
       const [cs, emps] = await Promise.all([getContracts(), getEmployees()])
       setContracts(cs || [])
       setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updateContract(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteContract(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const filtered = typeFilter ? contracts.filter((c) => c.contract_type === typeFilter) : contracts
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('contracts.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('contracts.title') }]} />
       <PageHeader title={t('contracts.title')} subtitle={t('contracts.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('contracts.new')}</Button>} />
 
       <div className="flex gap-3 mb-4 items-end">
         <div className="w-48">
           <Select label={t('contracts.type')} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} options={[
-            { value: '', label: tCommon('table.all') }, ...Object.entries(typeLabels).map(([k, v]) => ({ value: k, label: v })),
+            { value: '', label: tCommon('table.all') }, ...Object.entries(contractTypeKeys).map(([k, v]) => ({ value: k, label: t(`contracts.types.${v}`) as string })),
           ]} />
         </div>
       </div>
@@ -65,12 +67,12 @@ const [contracts, setContracts] = useState<any[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('contracts.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('payRuns.number'), t('contracts.employee'), t('contracts.type'), t('contracts.startDate'), t('contracts.endDate'), t('contracts.salary'), t('contracts.workingHours'), t('contracts.status'), tCommon('table.actions')]}>
+          <Table headers={[t('contracts.number'), t('contracts.employee'), t('contracts.type'), t('contracts.startDate'), t('contracts.endDate'), t('contracts.salary'), t('contracts.workingHours'), t('contracts.status'), tCommon('table.actions')]}>
             {filtered.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono text-xs">{c.number}</TableCell>
                 <TableCell className="text-sm">{c.employees?.name || '—'}</TableCell>
-                <TableCell className="text-xs">{typeLabels[c.contract_type] || t(`contracts.types.${c.contract_type}`) || c.contract_type}</TableCell>
+                <TableCell className="text-xs">{t(`contracts.types.${c.contract_type}`) || c.contract_type}</TableCell>
                 <TableCell className="text-xs">{formatDate(c.start_date)}</TableCell>
                 <TableCell className="text-xs">{c.end_date ? formatDate(c.end_date) : '—'}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(c.monthly_salary))}</TableCell>
@@ -82,9 +84,8 @@ const [contracts, setContracts] = useState<any[]>([])
                   </select>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -117,7 +118,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `CTR-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+      const number = await nextDocumentNumber('CTR')
       await createContract({
         number, employee_id: employeeId, contract_type: contractType as any,
         start_date: startDate, end_date: endDate || null,
@@ -126,7 +127,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
         trial_period_days: trialPeriodDays, status: 'active', notes: notes || null,
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -135,7 +136,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('contracts.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -147,8 +148,8 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select label={t('contracts.type')} value={contractType} onChange={(e) => setContractType(e.target.value)} options={[
-              { value: 'cdi', label: 'CDI' }, { value: 'cdd', label: 'CDD' }, { value: 'apprentissage', label: t('contracts.types.apprenticeship') },
-              { value: 'stage', label: t('contracts.types.internship') }, { value: 'interim', label: 'Intérim' }, { value: 'freelance', label: t('contracts.types.freelance') },
+              { value: 'cdi', label: t('contracts.types.cdi') }, { value: 'cdd', label: t('contracts.types.cdd') }, { value: 'apprentissage', label: t('contracts.types.apprentissage') },
+              { value: 'stage', label: t('contracts.types.stage') }, { value: 'interim', label: t('contracts.types.interim') }, { value: 'freelance', label: t('contracts.types.freelance') },
             ]} />
             <Input label={t('contracts.trialPeriod')} type="number" value={trialPeriodDays} onChange={(e) => setTrialPeriodDays(Number(e.target.value))} />
           </div>
@@ -167,7 +168,7 @@ function ContractForm({ employees, onClose, onSaved }: { employees: Employee[]; 
           <Input label={tCommon('common.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

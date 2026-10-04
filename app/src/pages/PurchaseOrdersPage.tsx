@@ -1,11 +1,19 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder, getSuppliers, getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, deletePurchaseOrder } from '@/lib/queries/purchases'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
+import { OrderLinesEditor } from '@/components/OrderLinesEditor'
+import { emptyOrderLine, orderLinesPayload, orderLinesTotals, type OrderLineDraft } from '@/lib/orderLines'
+import { useLegislation } from '@/lib/legislation'
+import { getChartAccounts, getFiscalYears, checkBudgetAvailability, createBudgetCommitment } from '@/lib/queries/accounting'
 import { Plus, Trash2, X, FileText, AlertTriangle } from 'lucide-react'
-import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
+import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function PurchaseOrdersPage() {
   const { t } = useTranslation('purchases')
@@ -16,39 +24,41 @@ export function PurchaseOrdersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
 
   const loadData = useCallback(async () => {
     try {
-      const [ords, sups, accs, fys] = await Promise.all([getPurchaseOrders(statusFilter || undefined), getSuppliers(), getChartAccounts(), getFiscalYears()])
+      const [ords, sups, accs, fys, prods] = await Promise.all([getPurchaseOrders(statusFilter || undefined), getSuppliers(), getChartAccounts(), getFiscalYears(), getProducts()])
+      setProducts((prods || []).filter((p) => p.active !== false))
       setOrders(ords || [])
       setSuppliers(sups || [])
       setAccounts(accs || [])
       setYears(fys || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleStatusChange(id: string, status: string) {
   try { await updatePurchaseOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('orders.deleteConfirm'))) return
+    if (!confirmSync(t('orders.deleteConfirm'))) return
     try { await deletePurchaseOrder(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.total), 0)
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('orders.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('orders.title') }]} />
       <PageHeader title={t('orders.title')} subtitle={`${orders.length} ${t('orders.title').toLowerCase()} — ${formatCurrency(totalAmount)}`}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('orders.new')}</Button>} />
 
@@ -80,13 +90,12 @@ export function PurchaseOrdersPage() {
                   <TableCell>
                     <select value={o.status} onChange={(e) => handleStatusChange(o.id, e.target.value)}
                       className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]">
-                      {['draft', 'confirmed', 'received', 'cancelled'].map((k) => <option key={k} value={k}>{t(`orders.statuses.${k}`) as string}</option>)}
+                      {['draft', 'confirmed', 'partial', 'received', 'cancelled'].map((k) => <option key={k} value={k}>{t(`orders.statuses.${k}`) as string}</option>)}
                     </select>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               )
@@ -95,19 +104,22 @@ export function PurchaseOrdersPage() {
         </Card>
       )}
 
-      {showForm && <POForm suppliers={suppliers} accounts={accounts} years={years} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {showForm && <POForm suppliers={suppliers} products={products} accounts={accounts} years={years} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
     </div>
   )
 }
 
-function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: Supplier[]; accounts: ChartAccount[]; years: FiscalYear[]; onClose: () => void; onSaved: () => void }) {
+function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { suppliers: Supplier[]; products: Product[]; accounts: ChartAccount[]; years: FiscalYear[]; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const [supplierId, setSupplierId] = useState('')
   const { toast } = useToast()
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0])
   const [expectedDate, setExpectedDate] = useState('')
-  const [total, setTotal] = useState(0)
+  const { defaultVatRate } = useLegislation()
+  const [lines, setLines] = useState<OrderLineDraft[]>([emptyOrderLine(defaultVatRate)])
+  // Le budget s'engage sur le montant HT de la commande : la somme de ses lignes.
+  const total = orderLinesTotals(lines).ht
   const [notes, setNotes] = useState('')
   const [accountCode, setAccountCode] = useState('')
   const [fiscalYearId, setFiscalYearId] = useState('')
@@ -117,37 +129,38 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
 
   const expenseAccounts = accounts.filter(a => a.type === 'expense')
 
-  async function checkBudget() {
-    if (!accountCode || total <= 0) return
-    setChecking(true)
-    try {
-      const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
-      setBudgetCheck(result)
-    } catch (err) { console.error('Budget check error:', err) }
-    finally { setChecking(false) }
-  }
-
+  // Contrôle budgétaire différé de 300 ms après la dernière saisie
   useEffect(() => {
-    if (accountCode && total > 0) {
-      const t = setTimeout(checkBudget, 300)
-      return () => clearTimeout(t)
-    } else {
+    if (!accountCode || total <= 0) {
       setBudgetCheck(null)
+      return
     }
-  }, [accountCode, total, fiscalYearId])
+    const t = setTimeout(async () => {
+      setChecking(true)
+      try {
+        const result = await checkBudgetAvailability(accountCode, total, fiscalYearId || undefined)
+        setBudgetCheck(result)
+      } catch (err) { console.error('Budget check error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+      finally { setChecking(false) }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [accountCode, total, fiscalYearId, tCommon, toast])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!window.confirm(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!confirmSync(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
           setSaving(false)
           return
         }
       }
-      const number = `CF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
-      const po = await createPurchaseOrder({ number, supplier_id: supplierId || null, order_date: orderDate, expected_date: expectedDate || null, status: 'draft', subtotal: total, vat: 0, total, notes: notes || null } as any)
+      const payload = orderLinesPayload(lines)
+      if (payload.length === 0) { toast('error', tCommon('common.error'), tCommon('orderLines.required')); setSaving(false); return }
+      const number = await nextDocumentNumber('CF')
+      // C9 (280) : en-tête + lignes en un appel ; les totaux sont ceux de la base.
+      const po = await createPurchaseOrder({ number, supplier_id: supplierId || null, order_date: orderDate, expected_date: expectedDate || null, notes: notes || null }, payload)
       if (accountCode) {
         await createBudgetCommitment({
           description: `Commande ${number}`,
@@ -163,16 +176,16 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
         })
       }
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
-      <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
+    <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '56rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('orders.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -186,7 +199,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
             <Input label={t('orders.orderDate')} type="date" required value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             <Input label={t('orders.expectedDate')} type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
           </div>
-          <Input label={t('orders.totalAmount')} type="number" step="0.01" required value={total} onChange={(e) => setTotal(Number(e.target.value))} />
+          <OrderLinesEditor lines={lines} onChange={setLines} products={products} priceField="purchase_price" defaultVatRate={defaultVatRate} />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('orders.budgetAccount')}</label>
@@ -223,7 +236,7 @@ function POForm({ suppliers, accounts, years, onClose, onSaved }: { suppliers: S
           <Input label={t('orders.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

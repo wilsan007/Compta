@@ -2,14 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getGridTemplates, createGridTemplate, updateGridTemplate, deleteGridTemplate,
-  getPaymentTemplatesCompta, createPaymentTemplateCompta, updatePaymentTemplateCompta, deletePaymentTemplateCompta,
-  getStandardLabels, createStandardLabel, deleteStandardLabel,
-  getAnalyticJournalCodes, createAnalyticJournalCode, updateAnalyticJournalCode, deleteAnalyticJournalCode,
-} from '@/lib/queries'
+import { getGridTemplates, createGridTemplate, updateGridTemplate, deleteGridTemplate } from '@/lib/queries/misc'
+import { getPaymentTemplatesCompta, createPaymentTemplateCompta, updatePaymentTemplateCompta, deletePaymentTemplateCompta } from '@/lib/queries/payroll'
+import { getStandardLabels, createStandardLabel, deleteStandardLabel, getAnalyticJournalCodes, createAnalyticJournalCode, updateAnalyticJournalCode, deleteAnalyticJournalCode } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import type { GridTemplate, PaymentTemplateCompta, StandardLabel, AnalyticJournalCode } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Grid Templates Page (Modèles de grille) ============
 export function GridTemplatesPage() {
@@ -60,18 +59,18 @@ export function GridTemplatesPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteGridTemplate(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -104,8 +103,8 @@ export function GridTemplatesPage() {
               <TableCell className="font-mono text-xs">{item.default_account || '-'}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>
@@ -165,18 +164,18 @@ export function PaymentTemplatesComptaPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deletePaymentTemplateCompta(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -214,8 +213,8 @@ export function PaymentTemplatesComptaPage() {
               <TableCell className="font-mono text-xs">{item.day_count}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>
@@ -262,18 +261,18 @@ export function StandardLabelsPage() {
       toast('success', tCommon('common.success'), tCommon('toast.created'))
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteStandardLabel(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -303,7 +302,7 @@ export function StandardLabelsPage() {
               <TableCell>{item.label}</TableCell>
               <TableCell><Badge variant="neutral">{t(`standardLabels.categories.${item.category}`, { defaultValue: item.category })}</Badge></TableCell>
               <TableCell>
-                <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
               </TableCell>
             </TableRow>
           ))}
@@ -362,18 +361,18 @@ export function AnalyticJournalCodesPage() {
       }
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteAnalyticJournalCode(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -403,8 +402,8 @@ export function AnalyticJournalCodesPage() {
               <TableCell><Badge variant="primary">{item.type}</Badge></TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => startEdit(item)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </TableCell>
             </TableRow>

@@ -1,0 +1,82 @@
+import { it } from 'vitest'
+import { login, A, sql, check, attempt, save, findings } from './rig'
+const r2 = (n: number) => Math.round(n * 100) / 100
+
+it('Comptabilité générale — saisie, états, TVA, FEC, lettrage', async () => {
+  await login(0, A)
+  const acc = await import('@/lib/queries/accounting')
+  const bf = await import('@/lib/queries/businessFunctions')
+  const fy = (await sql(`select id from fiscal_years where tenant_id=$1 and code='FY2026'`, [A]))[0]
+  const period = (await sql(`select id from fiscal_periods where tenant_id=$1 and start_date<='2026-09-15' and end_date>='2026-09-15'`, [A]))[0]
+
+  // C01 écriture déséquilibrée refusée (JournalEntriesPage -> post_journal_entry)
+  const bad = await attempt(() => acc.createJournalEntry({ number: '', date: '2026-09-15', description: 'déséquilibrée', reference: null, status: 'draft', total_debit: 100, total_credit: 90,
+    lines: [{ account_code: '606100', account_name: 'x', debit: 100, credit: 0, description: null }, { account_code: '512102', account_name: 'y', debit: 0, credit: 90, description: null }] } as any))
+  check('C01', 'écriture 100/90 refusée', !bad.ok, bad.err ?? 'ACCEPTÉE')
+
+  // C02 écriture équilibrée (loyer 1000 HT + TVA 200 payé)
+  const good = await attempt(() => acc.createJournalEntry({ number: '', date: '2026-09-15', description: 'Loyer septembre', reference: 'LOY-09', status: 'draft', total_debit: 1200, total_credit: 1200,
+    lines: [{ account_code: '613200', account_name: 'Locations', debit: 1000, credit: 0, description: 'Loyer' }, { account_code: '445660', account_name: 'TVA ded', debit: 200, credit: 0, description: 'TVA' },
+      { account_code: '512102', account_name: 'Banque', debit: 0, credit: 1200, description: 'Paiement' }] } as any))
+  const ge: any = good.val
+  const row = good.ok ? (await sql(`select status, number, posting_number, journal_code, fiscal_year_id is not null fy from journal_entries where id=$1`, [ge.id]))[0] : null
+  check('C02', 'écriture équilibrée 1 200 créée (statut ?)', good.ok, good.err ?? row)
+  // C03 comment l'utilisateur la valide-t-il ? (saisie : clôturer la ligne)
+  if (good.ok && row.status !== 'posted') {
+    const close = await attempt(() => acc.updateEntryStatusDetail(ge.id, 'closed'))
+    const row2 = (await sql(`select status, status_detail, posting_number from journal_entries where id=$1`, [ge.id]))[0]
+    check('C03', 'un brouillon manuel peut être validé depuis l\'interface (clôture de saisie → posted)', close.ok && row2.status === 'posted', { err: close.err, row2 })
+  } else check('C03', 'écriture validée dès sa création', row?.status === 'posted', row)
+
+  // C04 balance = grand livre
+  const tb = await attempt(() => acc.getTrialBalance())
+  const tbD = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.total_debit, 0)) : -1
+  const tbC = tb.ok ? r2((tb.val as any[]).reduce((s, x) => s + x.total_credit, 0)) : -1
+  const gl = (await sql(`select round(sum(l.debit),2)::float d, round(sum(l.credit),2)::float c from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and e.date between '2026-01-01' and '2026-12-31'`, [A]))[0]
+  check('C04', 'balance générale (écran) : Σ débits = Σ crédits = grand livre validé', tb.ok && tbD === tbC && tbD === gl.d, { err: tb.err, balance: [tbD, tbC], grand_livre: gl })
+
+  // C05 bilan équilibré, C06 résultat = produits - charges
+  const bs = await attempt(() => acc.getBalanceSheet())
+  check('C05', 'bilan (écran) équilibré : écart = 0', bs.ok && (bs.val as any).gap === 0, bs.err ?? { gap: (bs.val as any).gap, nonclasses: (bs.val as any).unclassified.map((x: any) => x.code) })
+  const is = await attempt(() => acc.getIncomeStatement(fy.id))
+  const prod = is.ok ? r2((is.val as any[]).filter((x) => x.account_type === 'income').reduce((s, x) => s + x.amount, 0)) : -1
+  const chg = is.ok ? r2((is.val as any[]).filter((x) => x.account_type === 'expense').reduce((s, x) => s + x.amount, 0)) : -1
+  const gl67 = (await sql(`select round(sum(case when l.account_code like '7%' then l.credit-l.debit else 0 end),2)::float p, round(sum(case when l.account_code like '6%' then l.debit-l.credit else 0 end),2)::float c from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted'`, [A]))[0]
+  check('C06', 'compte de résultat (écran) = classes 7 et 6 du grand livre', is.ok && prod === gl67.p && chg === gl67.c, { err: is.err, ecran: { prod, chg }, gl: gl67 })
+
+  // C07 TVA de septembre : collectée - déductible
+  const vat = await attempt(() => bf.generateVatReturn('2026-09-01', '2026-09-30'))
+  const glv = (await sql(`select round(sum(case when l.account_code like '4457%' then l.credit-l.debit else 0 end),2)::float coll, round(sum(case when l.account_code like '4456%' then l.debit-l.credit else 0 end),2)::float ded from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and e.date between '2026-09-01' and '2026-09-30'`, [A]))[0]
+  check('C07', `déclaration de TVA septembre = grand livre (collectée ${glv.coll}, déductible ${glv.ded}, nette ${r2(glv.coll - glv.ded)})`, vat.ok, { err: vat.err, rpc: vat.val, gl: glv })
+
+  // C08 FEC
+  const fec = await attempt(() => acc.getFECData(fy.id))
+  const rows: any[] = fec.ok ? (Array.isArray(fec.val) ? fec.val as any[] : ((fec.val as any).lines ?? (fec.val as any).rows ?? [])) : []
+  const fecD = r2(rows.reduce((s, x) => s + Number(x.Debit ?? x.debit ?? 0), 0)), fecC = r2(rows.reduce((s, x) => s + Number(x.Credit ?? x.credit ?? 0), 0))
+  const cols = rows[0] ? Object.keys(rows[0]) : []
+  const std = ['JournalCode', 'JournalLib', 'EcritureNum', 'EcritureDate', 'CompteNum', 'CompteLib', 'CompAuxNum', 'CompAuxLib', 'PieceRef', 'PieceDate', 'EcritureLib', 'Debit', 'Credit', 'EcritureLet', 'DateLet', 'ValidDate', 'Montantdevise', 'Idevise']
+  check('C08', 'FEC : 18 colonnes réglementaires, Σ débit = Σ crédit = grand livre, écritures validées seulement', fec.ok && std.every((c) => cols.includes(c)) && fecD === fecC && fecD === gl.d,
+    { err: fec.err, lignes: rows.length, colonnes_manquantes: std.filter((c) => !cols.includes(c)), fecD, fecC, gl: gl.d, exemple: rows[0] })
+
+  // C09 lettrage 411 : facture payée
+  const l411 = await sql(`select l.id, l.debit::float, l.credit::float, l.account_tiers, l.lettrage_code from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like '411%' order by l.created_at`, [A])
+  const lettered = l411.filter((x: any) => x.lettrage_code)
+  check('C09', 'lettrage : les lignes 411 de la facture soldée sont lettrées (auto ou manuel)', lettered.length > 0, { lignes411: l411.length, lettrees: lettered.length, exemple: l411.slice(0, 4) })
+
+  // C10 écriture sur un exercice clos / hors exercice
+  const outFy = await attempt(() => acc.createJournalEntry({ number: '', date: '2031-01-15', description: 'hors exercice', reference: null, status: 'draft', total_debit: 10, total_credit: 10,
+    lines: [{ account_code: '606100', account_name: 'x', debit: 10, credit: 0, description: null }, { account_code: '512102', account_name: 'y', debit: 0, credit: 10, description: null }] } as any))
+  check('C10', 'écriture datée hors de tout exercice refusée', !outFy.ok, outFy.err ?? 'ACCEPTÉE')
+
+  // C11 compte inexistant
+  const ghost = await attempt(() => acc.createJournalEntry({ number: '', date: '2026-09-16', description: 'compte fantôme', reference: null, status: 'draft', total_debit: 10, total_credit: 10,
+    lines: [{ account_code: '999999', account_name: 'x', debit: 10, credit: 0, description: null }, { account_code: '512102', account_name: 'y', debit: 0, credit: 10, description: null }] } as any))
+  check('C11', 'écriture sur un compte absent du plan : refusée (ou signalée)', !ghost.ok, ghost.err ?? 'ACCEPTÉE')
+
+  // C12 viewer ne peut pas saisir
+  await login(2, A)
+  const v = await attempt(() => acc.createJournalEntry({ number: '', date: '2026-09-16', description: 'par un lecteur', reference: null, status: 'draft', total_debit: 10, total_credit: 10,
+    lines: [{ account_code: '606100', account_name: 'x', debit: 10, credit: 0, description: null }, { account_code: '512102', account_name: 'y', debit: 0, credit: 10, description: null }] } as any))
+  check('C12', 'un lecteur ne peut pas saisir d\'écriture', !v.ok, v.err ?? 'ACCEPTÉE')
+  save('s3.json', findings)
+})

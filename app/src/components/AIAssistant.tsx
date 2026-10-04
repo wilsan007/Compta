@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, X, Send, TrendingUp, AlertCircle, Receipt, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +25,7 @@ const initialMessages: Message[] = [
 ]
 
 export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t: tCommon } = useTranslation('common')
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -44,10 +46,10 @@ export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => v
 
     setTimeout(() => {
       const responses: Record<string, string> = {
-        'trésorerie': 'Votre trésorerie est saine. Solde bancaire: 45 200 €. Encaissements ce mois: +12 500 €. Décaissements: -8 300 €. Flux net positif de +4 200 €. 💡 Conseil: 3 factures sont en retard pour un total de 3 800 €, relancez-les pour améliorer votre cash.',
-        'retard': '⚠️ Vous avez 3 factures en retard:\n\n• FAC-2024-042 - Client ABC - 1 200 € (15 jours)\n• FAC-2024-039 - Société XYZ - 1 800 € (8 jours)\n• FAC-2024-035 - Entreprise DEF - 800 € (22 jours)\n\nTotal: 3 800 €. Voulez-vous que je prépare des emails de relance ?',
+        'trésorerie': 'Votre trésorerie est saine. Solde bancaire: 45 200. Encaissements ce mois: +12 500. Décaissements: -8 300. Flux net positif de +4 200. 💡 Conseil: 3 factures sont en retard pour un total de 3 800, relancez-les pour améliorer votre cash.',
+        'retard': '⚠️ Vous avez 3 factures en retard:\n\n• FAC-2024-042 - Client ABC - 1 200 (15 jours)\n• FAC-2024-039 - Société XYZ - 1 800 (8 jours)\n• FAC-2024-035 - Entreprise DEF - 800 (22 jours)\n\nTotal: 3 800. Voulez-vous que je prépare des emails de relance ?',
         'facture': 'Pour créer une facture:\n1. Sélectionnez un client (ou créez-en un)\n2. Ajoutez vos lignes (produits/services)\n3. Vérifiez la TVA (20% par défaut)\n4. Envoyez par email ou téléchargez en PDF\n\nJe peux pré-remplir certaines informations si vous me donnez le nom du client et les prestations.',
-        'réconcil': 'Rapprochement bancaire: 12 transactions en attente. 8 ont été auto-catégorisées par les règles bancaires. 4 nécessitent votre attention:\n\n• Virement reçu - 2 500 € → Client à identifier\n• Prélèvement - 180 € → Fournisseur inconnu\n• Frais bancaires - 15 € → Compte 627\n• Remboursement - 340 € → À catégoriser',
+        'réconcil': 'Rapprochement bancaire: 12 transactions en attente. 8 ont été auto-catégorisées par les règles bancaires. 4 nécessitent votre attention:\n\n• Virement reçu - 2 500 → Client à identifier\n• Prélèvement - 180 → Fournisseur inconnu\n• Frais bancaires - 15 → Compte 627\n• Remboursement - 340 → À catégoriser',
       }
 
       const lower = content.toLowerCase()
@@ -85,7 +87,7 @@ export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => v
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]">
+          <button onClick={onClose} aria-label={tCommon('actions.close')} title={tCommon('actions.close')} className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -149,10 +151,8 @@ export function AIAssistant({ open, onClose }: { open: boolean; onClose: () => v
             <button
               onClick={() => send(input)}
               disabled={!input.trim()}
-              className="p-2 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 hover:bg-[var(--color-primary-dark)] transition-colors"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+              className="p-2 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 hover:bg-[var(--color-primary-dark)] transition-colors" aria-label={tCommon('actions.send')} title={tCommon('actions.send')}>
+              <Send className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           <p className="text-xs text-[var(--color-text-secondary)] mt-2 text-center">
             L'IA peut faire des erreurs. Vérifiez les informations importantes.

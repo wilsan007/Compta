@@ -1,0 +1,5 @@
+{
+  "_comment": "LOT7-04 — requêtes que PostgREST refuse et qui sont TOLÉRÉES. Vidée le 21/09/2026 (vague V3, AUD-G06 à G08, AUD-F04) : toute requête refusée fait désormais échouer la CI. Une entrée ne s'ajoute ici qu'avec une décision produit datée.",
+  "_frozenAt": "2026-09-18",
+  "allowed": []
+}

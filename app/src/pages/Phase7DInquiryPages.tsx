@@ -3,15 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { getReimputationLogs, createReimputationLog, getJournalEntries, getChartAccounts, getAnalyticSections, getGeneralLedger } from '@/lib/queries'
+import { getReimputationLogs, createReimputationLog } from '@/lib/queries/misc'
+import { getJournalEntries, getChartAccounts, getAnalyticSections, getAnalyticLedgerLines } from '@/lib/queries/accounting'
 import { Plus, Search } from 'lucide-react'
-import type { ReimputationLog } from '@/types'
+import type { ReimputationLog, JournalEntry } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Analytic OD Entry Page (Saisie OD analytiques) ============
 export function AnalyticODEntryPage() {
   const { t } = useTranslation('accounting')
   const { toast } = useToast()
-  const [sections, setSections] = useState<any[]>([])
+  const [sections, setSections] = useState<Awaited<ReturnType<typeof getAnalyticSections>>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
@@ -50,7 +52,18 @@ export function AnalyticODEntryPage() {
             <TableRow key={s.id}>
               <TableCell className="font-mono text-xs">{s.code}</TableCell>
               <TableCell>{s.name}</TableCell>
-              <TableCell><Badge variant="primary">{s.type || 'section'}</Badge></TableCell>
+              {/* AUD-ACCES-06 : la colonne réelle est `section_type` (posée par la
+                  274, déclarée dans `AnalyticSection`) — l'écran lisait `s.type`,
+                  qui n'existe ni en base ni dans le type : le badge affichait
+                  « section » pour TOUTES les lignes, y compris les sections
+                  « total » qui ne sont jamais imputables. Mesuré en base le
+                  2026-10-02 : 5 sections `total` sur 40 étaient donc mal dites.
+                  Libellés repris de l'écran de gestion (mêmes clés i18n). */}
+              <TableCell>
+                <Badge variant={s.section_type === 'total' ? 'neutral' : 'primary'}>
+                  {s.section_type === 'total' ? t('analyticSections.typeTotal') : t('analyticSections.typeSection')}
+                </Badge>
+              </TableCell>
               <TableCell className="font-mono text-xs">{s.parent_id ? sections.find(p => p.id === s.parent_id)?.code : '-'}</TableCell>
             </TableRow>
           ))}
@@ -61,11 +74,35 @@ export function AnalyticODEntryPage() {
 }
 
 // ============ Third Party Inquiry Page (Interrogation tiers) ============
+
+/**
+ * AUD-ACCES-03 : le compte de tiers d'une écriture vit sur ses **lignes**
+ * (`journal_lines.account_tiers`), jamais sur l'en-tête. `getJournalEntries()`
+ * sélectionne `'*, journal_lines(*)'` : la donnée arrive bien, mais l'écran
+ * lisait `e.third_party_account`, une propriété qui n'existe sur aucune colonne
+ * de `journal_entries` (vérifié dans `information_schema`). La colonne « tiers »
+ * rendait donc toujours `-`, et le filtre de compte ne filtrait **rien**
+ * (`undefined?.includes()` n'est jamais atteint).
+ *
+ * Même famille que le défaut corrigé dans `GrandLivreTiersPage` (`c43621e`) :
+ * le métier d'un auxiliaire vit sur les lignes, pas sur les en-têtes.
+ */
+function entryThirdPartyAccounts(entry: JournalEntry): string[] {
+  const codes = (entry.journal_lines || [])
+    .map((l) => l.account_tiers)
+    .filter((c): c is string => Boolean(c))
+  // Une écriture peut porter plusieurs tiers (échéancier, TVA sur encaissement) :
+  // la colonne les montre tous, le filtre en atteint un seul.
+  return Array.from(new Set(codes))
+}
+
 export function ThirdPartyInquiryPage() {
   const { t } = useTranslation('accounting')
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
-  const [entries, setEntries] = useState<any[]>([])
+  // AUD-ACCES-04 : type nommé depuis la fonction de requête (`JournalEntry[]`,
+  // qui déclare `journal_lines`) — l'accès à une propriété absente est refusé.
+  const [entries, setEntries] = useState<Awaited<ReturnType<typeof getJournalEntries>>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [accountFilter, setAccountFilter] = useState('')
@@ -85,10 +122,14 @@ export function ThirdPartyInquiryPage() {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = entries.filter(e =>
-    (!search || e.description?.toLowerCase().includes(search.toLowerCase()) || e.number?.toLowerCase().includes(search.toLowerCase())) &&
-    (!accountFilter || e.third_party_account?.includes(accountFilter))
-  )
+  // Le compte de tiers est résolu UNE fois par écriture, puis servi à la colonne
+  // et au filtre (AUD-ACCES-03).
+  const filtered = entries
+    .map(e => ({ entry: e, tiers: entryThirdPartyAccounts(e) }))
+    .filter(({ entry: e, tiers }) =>
+      (!search || e.description?.toLowerCase().includes(search.toLowerCase()) || e.number?.toLowerCase().includes(search.toLowerCase())) &&
+      (!accountFilter || tiers.some(c => c.includes(accountFilter)))
+    )
 
   return (
     <div>
@@ -102,12 +143,12 @@ export function ThirdPartyInquiryPage() {
       </Card>
       {loading ? <SkeletonTable /> : filtered.length === 0 ? <EmptyState title={t('thirdPartyInquiry.empty')} /> : (
         <Table headers={[t('thirdPartyInquiry.date'), t('thirdPartyInquiry.number'), t('thirdPartyInquiry.description'), t('thirdPartyInquiry.thirdParty'), t('thirdPartyInquiry.debit'), t('thirdPartyInquiry.credit')]}>
-          {filtered.slice(0, 100).map(e => (
+          {filtered.slice(0, 100).map(({ entry: e, tiers }) => (
             <TableRow key={e.id}>
               <TableCell>{formatDate(e.date)}</TableCell>
               <TableCell className="font-mono text-xs">{e.number}</TableCell>
               <TableCell>{e.description}</TableCell>
-              <TableCell className="font-mono text-xs">{e.third_party_account || '-'}</TableCell>
+              <TableCell className="font-mono text-xs">{tiers.join(', ') || '-'}</TableCell>
               <TableCell className="text-right">{formatCurrency(e.total_debit || 0)}</TableCell>
               <TableCell className="text-right">{formatCurrency(e.total_credit || 0)}</TableCell>
             </TableRow>
@@ -123,15 +164,16 @@ export function AnalyticInquiryPage() {
   const { t } = useTranslation('accounting')
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
-  const [lines, setLines] = useState<any[]>([])
+  const [lines, setLines] = useState<Awaited<ReturnType<typeof getAnalyticLedgerLines>>>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getGeneralLedger()
-      setLines((data || []).filter((l: any) => l.analytic_section_id))
+      // ACC-04 : lignes imputées analytiquement, requête bornée dédiée
+      const data = await getAnalyticLedgerLines()
+      setLines(data || [])
     } catch (err) {
       console.error('Error loading analytic lines:', err)
       toast('error', t('analyticInquiry.title'), t('analyticInquiry.loadError'))
@@ -180,8 +222,8 @@ export function ReimputationPage() {
   const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const [logs, setLogs] = useState<ReimputationLog[]>([])
-  const [entries, setEntries] = useState<any[]>([])
-  const [accounts, setAccounts] = useState<any[]>([])
+  const [entries, setEntries] = useState<Awaited<ReturnType<typeof getJournalEntries>>>([])
+  const [accounts, setAccounts] = useState<Awaited<ReturnType<typeof getChartAccounts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ original_entry_id: '', from_account: '', to_account: '', amount: 0, reason: '' })
@@ -191,7 +233,7 @@ export function ReimputationPage() {
       setLoading(true)
       const [l, e, a] = await Promise.all([getReimputationLogs(), getJournalEntries(), getChartAccounts()])
       setLogs(l || [])
-      setEntries((e || []).filter((x: any) => x.status === 'posted'))
+      setEntries((e || []).filter((x) => x.status === 'posted'))
       setAccounts(a || [])
     } catch (err) {
       console.error('Error loading reimputation logs:', err)
@@ -214,8 +256,8 @@ export function ReimputationPage() {
       toast('success', tCommon('common.success'), tCommon('toast.created'))
       resetForm()
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err))
     }
   }
 
@@ -226,7 +268,7 @@ export function ReimputationPage() {
       {showForm && (
         <Card className="p-4 mb-4 space-y-3">
           <Select label={t('reimputation.selectEntry')} value={form.original_entry_id} onChange={e => setForm({ ...form, original_entry_id: e.target.value })}
-            options={[{ value: '', label: tCommon('actions.select') }, ...entries.map((e: any) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
+            options={[{ value: '', label: tCommon('actions.select') }, ...entries.map((e) => ({ value: e.id, label: `${e.number} - ${e.description} (${e.date})` }))]} />
           <div className="grid grid-cols-2 gap-3">
             <Select label={t('reimputation.fromAccount')} value={form.from_account} onChange={e => setForm({ ...form, from_account: e.target.value })}
               options={[{ value: '', label: tCommon('actions.select') }, ...accounts.map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))]} />

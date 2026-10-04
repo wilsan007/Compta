@@ -2,13 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getFiscalPositions, createFiscalPosition, updateFiscalPosition, deleteFiscalPosition,
-  getFiscalPositionMappings, createFiscalPositionMapping, deleteFiscalPositionMapping,
-  getTaxRates,
-} from '@/lib/queries'
+import { getFiscalPositions, createFiscalPosition, updateFiscalPosition, deleteFiscalPosition, getFiscalPositionMappings, createFiscalPositionMapping, deleteFiscalPositionMapping } from '@/lib/queries/misc'
+import { getTaxRates } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2, X, MapPin, ArrowRight } from 'lucide-react'
 import type { FiscalPosition, FiscalPositionMapping, TaxRate } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 type Tab = 'general' | 'mappings'
 
@@ -46,8 +45,7 @@ export function FiscalPositionsPage() {
     try {
       setLoading(true)
       setPositions(await getFiscalPositions())
-    } catch (err) {
-      console.error('Error loading fiscal positions:', err)
+    } catch (err) { console.error('Error loading fiscal positions:', err)
       toast('error', t('fiscalPositions.title'), t('fiscalPositions.loadError'))
     } finally {
       setLoading(false)
@@ -99,20 +97,19 @@ export function FiscalPositionsPage() {
       }
       resetForm()
       await load()
-    } catch (err) {
-      console.error('Error saving fiscal position:', err)
+    } catch (err) { console.error('Error saving fiscal position:', err)
       toast('error', t('fiscalPositions.title'), t('fiscalPositions.saveError'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('fiscalPositions.deleteConfirm'))) return
+    if (!confirmSync(t('fiscalPositions.deleteConfirm'))) return
     try {
       await deleteFiscalPosition(id)
       toast('success', t('fiscalPositions.title'), t('fiscalPositions.deleteSuccess'))
       await load()
-    } catch (err) {
-      console.error('Error deleting fiscal position:', err)
+    } catch (err) { console.error('Error deleting fiscal position:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -121,8 +118,8 @@ export function FiscalPositionsPage() {
     setActiveTab('mappings')
     try {
       setMappings(await getFiscalPositionMappings(fp.id))
-    } catch (err) {
-      console.error('Error loading mappings:', err)
+    } catch (err) { console.error('Error loading mappings:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -139,19 +136,19 @@ export function FiscalPositionsPage() {
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingCreateSuccess'))
       setMappingForm({ source_tax_id: '', target_tax_id: '', source_account_code: '', target_account_code: '' })
       setMappings(await getFiscalPositionMappings(selectedPosition.id))
-    } catch (err) {
-      console.error('Error creating mapping:', err)
+    } catch (err) { console.error('Error creating mapping:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
   async function handleDeleteMapping(id: string) {
-    if (!confirm(t('fiscalPositions.mappingDeleteConfirm'))) return
+    if (!confirmSync(t('fiscalPositions.mappingDeleteConfirm'))) return
     try {
       await deleteFiscalPositionMapping(id)
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingDeleteSuccess'))
       if (selectedPosition) setMappings(await getFiscalPositionMappings(selectedPosition.id))
-    } catch (err) {
-      console.error('Error deleting mapping:', err)
+    } catch (err) { console.error('Error deleting mapping:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -175,7 +172,7 @@ export function FiscalPositionsPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('fiscalPositions.edit') : t('fiscalPositions.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <Input label={t('fiscalPositions.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -210,7 +207,7 @@ export function FiscalPositionsPage() {
                 <h3 className="text-lg font-semibold">{selectedPosition.name}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">{selectedPosition.country_code || '—'}</p>
               </div>
-              <Button variant="secondary" onClick={() => { setSelectedPosition(null); setActiveTab('general') }}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={() => { setSelectedPosition(null); setActiveTab('general') }} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
 
             <div className="flex gap-1 mb-4 border-b border-[var(--color-border)]">
@@ -270,7 +267,7 @@ export function FiscalPositionsPage() {
                           <TableCell className="font-mono text-xs">{m.source_account_code || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{m.target_account_code || '—'}</TableCell>
                           <TableCell>
-                            <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                           </TableCell>
                         </TableRow>
                       )
@@ -315,9 +312,9 @@ export function FiscalPositionsPage() {
                 <TableCell><Badge variant={fp.active ? 'success' : 'neutral'}>{fp.active ? tCommon('common.yes') : tCommon('common.no')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => loadMappings(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><ArrowRight className="w-4 h-4" /></button>
-                    <button onClick={() => startEdit(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(fp.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => loadMappings(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.next')} title={tCommon('actions.next')}><ArrowRight className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => startEdit(fp)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(fp.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

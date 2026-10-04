@@ -1,14 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
-import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, deleteLeaveRequest, getEmployees } from '@/lib/queries'
+import { errorMessage, formatDate } from '@/lib/utils'
+import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, deleteLeaveRequest, getEmployees } from '@/lib/queries/payroll'
 import { CalendarDays, Plus, Trash2, X, Check, XCircle } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
-const typeLabels: Record<string, string> = { annual: 'Congé payé', sick: 'Maladie', maternity: 'Maternité', paternity: 'Paternité', unpaid: 'Sans solde', other: 'Autre' }
-const statusLabels: Record<string, string> = { pending: 'En attente', approved: 'Approuvé', rejected: 'Refusé', cancelled: 'Annulé' }
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'neutral' }
 
 export function LeaveRequestsPage() {
@@ -27,31 +26,31 @@ const [requests, setRequests] = useState<any[]>([])
       const [reqs, emps] = await Promise.all([getLeaveRequests(statusFilter || undefined), getEmployees()])
       setRequests(reqs || [])
       setEmployees(emps || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [statusFilter])
+  }, [statusFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleApprove(id: string) {
   try { await updateLeaveRequest(id, { status: 'approved', approved_at: new Date().toISOString() } as any); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleReject(id: string) {
     try { await updateLeaveRequest(id, { status: 'rejected' }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteLeaveRequest(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.hr') }, { label: t('leaveRequests.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.hr') }, { label: t('leaveRequests.title') }]} />
       <PageHeader title={t('leaveRequests.title')} subtitle={t('leaveRequests.subtitle')}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('leaveRequests.new')}</Button>} />
 
@@ -73,12 +72,12 @@ const [requests, setRequests] = useState<any[]>([])
             {requests.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="text-sm">{r.employees?.name || '—'}</TableCell>
-                <TableCell className="text-xs">{t(`leaveRequests.types.${r.leave_type}`) || typeLabels[r.leave_type] || r.leave_type}</TableCell>
+                <TableCell className="text-xs">{t(`leaveRequests.types.${r.leave_type}`) || r.leave_type}</TableCell>
                 <TableCell className="text-xs">{formatDate(r.start_date)}</TableCell>
                 <TableCell className="text-xs">{formatDate(r.end_date)}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(r.days)}</TableCell>
                 <TableCell className="text-xs">{r.reason || '—'}</TableCell>
-                <TableCell><Badge variant={statusBadge[r.status] || 'neutral'}>{t(`leaveRequests.statuses.${r.status}`) || statusLabels[r.status] || r.status}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge[r.status] || 'neutral'}>{t(`leaveRequests.statuses.${r.status}`) || r.status}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     {r.status === 'pending' && (
@@ -87,7 +86,7 @@ const [requests, setRequests] = useState<any[]>([])
                         <button onClick={() => handleReject(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={t('leaveRequests.reject')}><XCircle className="w-4 h-4" /></button>
                       </>
                     )}
-                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -120,7 +119,7 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
     try {
       await createLeaveRequest({ employee_id: employeeId, leave_type: leaveType as any, start_date: startDate, end_date: endDate, days, status: 'pending', reason: reason || null } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -129,7 +128,7 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('leaveRequests.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -140,8 +139,12 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
             </select>
           </div>
           <Select label={t('leaveRequests.type')} value={leaveType} onChange={(e) => setLeaveType(e.target.value)} options={[
-            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'sick', label: t('leaveRequests.types.sick') }, { value: 'maternity', label: t('leaveRequests.types.maternity') },
-            { value: 'paternity', label: t('leaveRequests.types.paternity') }, { value: 'unpaid', label: t('leaveRequests.types.unpaid') }, { value: 'other', label: t('leaveRequests.types.other') },
+            { value: 'annual', label: t('leaveRequests.types.annual') }, { value: 'rtt', label: t('leaveRequests.types.rtt') },
+            { value: 'recovery', label: t('leaveRequests.types.recovery') }, { value: 'sick', label: t('leaveRequests.types.sick') },
+            { value: 'maternity', label: t('leaveRequests.types.maternity') },
+            { value: 'paternity', label: t('leaveRequests.types.paternity') }, { value: 'parental', label: t('leaveRequests.types.parental') },
+            { value: 'unpaid', label: t('leaveRequests.types.unpaid') }, { value: 'personal', label: t('leaveRequests.types.personal') },
+            { value: 'mission', label: t('leaveRequests.types.mission') }, { value: 'other', label: t('leaveRequests.types.other') },
           ]} />
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('leaveRequests.startDate')} type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -151,7 +154,7 @@ function LeaveForm({ employees, onClose, onSaved }: { employees: Employee[]; onC
           <Input label={t('leaveRequests.reason')} value={reason} onChange={(e) => setReason(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

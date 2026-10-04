@@ -98,5 +98,58 @@
     "operationCancelled": "Operation cancelled",
     "tryAgain": "Please try again",
     "contactSupport": "If the problem persists, contact support"
+  },
+  "chain": {
+    "deleteRefused": "Deletion refused: this document ({{document}}) is linked to {{count}} document(s) in the chain ({{vers}}). Cancel it first: cancelling closes these links.",
+    "types": {
+      "bank_accounts": "Bank account",
+      "bank_transactions": "Bank transaction",
+      "chart_accounts": "Ledger account",
+      "credit_notes": "Credit note",
+      "customer_payments": "Customer payment",
+      "delivery_notes": "Delivery note",
+      "expense_reports": "Expense report",
+      "goods_receipts": "Goods receipt",
+      "invoice_lines": "Invoice line",
+      "invoices": "Customer invoice",
+      "journal_entries": "Journal entry",
+      "journal_lines": "Journal line",
+      "journals": "Journal",
+      "manufacturing_orders": "Manufacturing order",
+      "payroll_variable_elements": "Variable payroll item",
+      "pay_runs": "Pay run",
+      "pos_payments": "POS payment",
+      "pos_sessions": "POS session",
+      "pos_tickets": "POS receipt",
+      "project_time_entries": "Project time entry",
+      "purchase_invoices": "Supplier invoice",
+      "sales_orders": "Sales order",
+      "stock_movements": "Stock movement",
+      "stock_reservations": "Stock reservation",
+      "st_receipts": "Subcontracting receipt",
+      "st_shipments": "Subcontracting shipment",
+      "supplier_payments": "Supplier payment"
+    }
+  },
+  "db": {
+    "duplicate": "This item already exists.",
+    "duplicateValue": "“{{value}}” already exists.",
+    "check": "A value you entered is not accepted. Check the form fields.",
+    "notNull": "A required field is missing ({{column}}).",
+    "stillReferenced": "This item is still used elsewhere: it cannot be deleted or changed this way.",
+    "referenceMissing": "A linked item could not be found. Reload the page and try again.",
+    "forbidden": "You are not allowed to perform this action.",
+    "invalidValue": "A value you entered is invalid.",
+    "constraints": { "grillAccountMissing": "This account does not exist in the chart of accounts.", "grillSectionMissing": "This analytic section does not exist.",
+      "chartAccountExists": "Account {{value}} already exists.",
+      "documentNumberExists": "Number {{value}} is already in use.",
+      "salaryNegative": "Salary cannot be negative.",
+      "contractTypeInvalid": "This contract type is not recognised.",
+      "emailInvalid": "The email address is not valid.",
+      "priceNegative": "A price cannot be negative.",
+      "stockNegative": "Stock cannot become negative.",
+      "hoursNegative": "A number of hours cannot be negative.",
+      "commitmentAmountNegative": "A commitment amount cannot be negative."
+    }
   }
 }

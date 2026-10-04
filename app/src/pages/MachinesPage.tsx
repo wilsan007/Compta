@@ -3,13 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Cog, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter } from '@/lib/queries'
+import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function MachinesPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const { getStatusLabel, getStatusVariant } = useStatusLabels()
   const [machines, setMachines] = useState<Machine[]>([])
@@ -23,22 +26,22 @@ export function MachinesPage() {
       const [macs, wcs] = await Promise.all([getMachines(), getWorkCenters()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('machines.confirmDelete'))) return
+    if (!confirmSync(t('machines.confirmDelete'))) return
     try { await deleteMachine(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDeleteWc(id: string) {
-    if (!window.confirm(t('machines.confirmDeleteWorkCenter'))) return
+    if (!confirmSync(t('machines.confirmDeleteWorkCenter'))) return
     try { await deleteWorkCenter(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   function handleExport() {
@@ -55,7 +58,7 @@ export function MachinesPage() {
     try {
       const rows = await importFromExcel(file)
       toast('success', t('machines.import'), t('routings.importSuccess', { count: rows.length }))
-    } catch (err: any) { toast('error', t('routings.importError'), err.message) }
+    } catch (err) { toast('error', t('routings.importError'), errorMessage(err)) }
   }
 
   return (
@@ -88,7 +91,7 @@ export function MachinesPage() {
                   <TableCell className="font-mono text-xs">{Number(m.capacity_per_hour)}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(m.status)}>{getStatusLabel(m.status)}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -99,7 +102,7 @@ export function MachinesPage() {
         <Card>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold">{t('machines.workCenters')}</h3>
-            <button onClick={() => setShowWcForm(true)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"><Plus className="w-4 h-4" /></button>
+            <button onClick={() => setShowWcForm(true)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.add')} title={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></button>
           </div>
           {workCenters.length === 0 ? (
             <p className="text-xs text-[var(--color-text-secondary)]">{t('machines.noWorkCenters')}</p>
@@ -111,7 +114,7 @@ export function MachinesPage() {
                   <TableCell className="text-sm">{wc.name}</TableCell>
                   <TableCell className="font-mono text-xs">{Number(wc.capacity_hours_per_day)}h</TableCell>
                   <TableCell className="font-mono text-xs">{Number(wc.cost_per_hour)}</TableCell>
-                  <TableCell><button onClick={() => handleDeleteWc(wc.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                  <TableCell><button onClick={() => handleDeleteWc(wc.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                 </TableRow>
               ))}
             </Table>
@@ -139,11 +142,11 @@ function MachineFormModal({ workCenters, onClose, onSaved }: { workCenters: Work
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code || !name) { toast('error', t('common.required'), 'Code & ' + t('machines.name')); return }
+    if (!code || !name) { toast('error', t('common.required'), t('machines.codeAndNameRequired')); return }
     try {
       await createMachine({ code, name, work_center_id: workCenterId || null, capacity_per_hour: capacity, status: status as any, purchase_date: purchaseDate || null, notes })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (
@@ -178,11 +181,11 @@ function WorkCenterFormModal({ onClose, onSaved }: { onClose: () => void; onSave
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code || !name) { toast('error', t('common.required'), 'Code & ' + t('machines.name')); return }
+    if (!code || !name) { toast('error', t('common.required'), t('machines.codeAndNameRequired')); return }
     try {
       await createWorkCenter({ code, name, capacity_hours_per_day: capacity, cost_per_hour: costPerHour, active: true })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (

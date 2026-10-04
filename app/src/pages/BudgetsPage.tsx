@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getBudgets, createBudget, updateBudget, deleteBudget, getFiscalYears, getChartAccounts, getTrialBalanceFiltered } from '@/lib/queries/accounting'
 import { Plus, Pencil, Trash2, X, Target } from 'lucide-react'
 import type { Budget, FiscalYear, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BudgetsPage() {
   const { toast } = useToast()
@@ -19,6 +20,7 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   const [editing, setEditing] = useState<Budget | null>(null)
   const [realized, setRealized] = useState<Record<string, number[]>>({})
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -40,12 +42,12 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                 return total / 12
               })
             }
-          } catch {}
+          } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) }
         }
       }
       setRealized(realizedMap)
-    } catch (err) {
-      console.error('Error loading budgets:', err)
+    } catch (err) { console.error('Error loading budgets:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -55,9 +57,9 @@ const [budgets, setBudgets] = useState<Budget[]>([])
   function openEdit(b: Budget) { setEditing(b); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('budgets.deleteConfirm'))) return
+  if (!confirmSync(t('budgets.deleteConfirm'))) return
     try { await deleteBudget(id); await load() }
-    catch (err) { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
+    catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }
 
   const periodLabels = [
@@ -101,12 +103,10 @@ const [budgets, setBudgets] = useState<Budget[]>([])
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(b)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => openEdit(b)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </div>
                 <Table headers={periodLabels}>
@@ -188,8 +188,8 @@ function BudgetForm({ budget, years, accounts, onClose, onSaved }: {
       if (budget) await updateBudget(budget.id, data)
       else await createBudget(data)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -202,7 +202,7 @@ function BudgetForm({ budget, years, accounts, onClose, onSaved }: {
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{budget ? t('budgets.edit') : t('budgets.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('budgets.name')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('budgets.namePlaceholder')} />

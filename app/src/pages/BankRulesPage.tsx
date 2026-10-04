@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getBankRules, createBankRule, updateBankRule, deleteBankRule } from '@/lib/queries'
+import { getBankRules, createBankRule, updateBankRule, deleteBankRule } from '@/lib/queries/banking'
 import { Plus, Trash2, X, Power, PowerOff } from 'lucide-react'
 import type { BankRule } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function BankRulesPage() {
   const { toast } = useToast()
@@ -19,12 +21,12 @@ const [rules, setRules] = useState<BankRule[]>([])
     setLoading(true)
     try {
       setRules(await getBankRules())
-    } catch (err) {
-      console.error('Failed to load rules:', err)
+    } catch (err) { console.error('Failed to load rules:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -32,18 +34,18 @@ const [rules, setRules] = useState<BankRule[]>([])
   try {
       await updateBankRule(id, { active: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteBankRule(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -86,9 +88,8 @@ const [rules, setRules] = useState<BankRule[]>([])
                     <button onClick={() => handleToggle(r.id, r.active)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)]" title={r.active ? tCommon('actions.disable') : tCommon('actions.enable')}>
                       {r.active ? <PowerOff className="w-4 h-4 text-[var(--color-danger)]" /> : <Power className="w-4 h-4 text-[var(--color-success)]" />}
                     </button>
-                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -130,8 +131,8 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
         priority, active: true,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -142,7 +143,7 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('rules.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('rules.name')} required value={name} onChange={(e) => setName(e.target.value)} />
@@ -171,7 +172,7 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

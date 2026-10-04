@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocale } from '@/hooks/useLocale'
-import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock } from 'lucide-react'
+import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock, UserX } from 'lucide-react'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getPlanningSlots, deletePlanningSlot, checkMaterialAvailability, autoScheduleMOs } from '@/lib/queries'
+import { getPlanningSlots, deletePlanningSlot, checkMaterialAvailability, autoScheduleMOs } from '@/lib/queries/stock'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 const statusVariants: Record<string, 'neutral' | 'warning' | 'success'> = { planned: 'neutral', scheduled: 'warning', in_progress: 'warning', completed: 'success' }
 
@@ -19,16 +21,16 @@ export function PlanningPage() {
 
   const loadData = useCallback(async () => {
     try { setSlots(await getPlanningSlots() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('planning.confirmDelete'))) return
+    if (!confirmSync(t('planning.confirmDelete'))) return
     try { await deletePlanningSlot(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleMaterialCheck(id: string) {
@@ -37,7 +39,7 @@ export function PlanningPage() {
       if (result.available) { toast('success', t('planning.materialsAvailable'), t('planning.allComponentsInStock')) }
       else { toast('warning', t('planning.materialsMissing'), t('planning.componentsMissing', { count: result.missing.length })) }
       await loadData()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleAutoSchedule() {
@@ -46,7 +48,7 @@ export function PlanningPage() {
       const count = await autoScheduleMOs()
       toast('success', t('planning.schedulingDone'), t('planning.ofScheduled', { count }))
       await loadData()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
     finally { setScheduling(false) }
   }
 
@@ -91,7 +93,7 @@ export function PlanningPage() {
           </Card>
 
           <Card>
-            <Table headers={[t('planning.of'), t('planning.operation'), t('planning.machine'), t('planning.start'), t('planning.end'), t('planning.duration'), t('planning.materials'), tCommon('common.status'), tCommon('table.actions')]}>
+            <Table headers={[t('planning.of'), t('planning.operation'), t('planning.machine'), t('planning.start'), t('planning.end'), t('planning.duration'), t('planning.materials'), t('planning.availability'), tCommon('common.status'), tCommon('table.actions')]}>
               {slots.map((s) => {
                 const duration = s.planned_start && s.planned_end
                   ? Math.round((new Date(s.planned_end).getTime() - new Date(s.planned_start).getTime()) / 60000)
@@ -111,11 +113,26 @@ export function PlanningPage() {
                         <Badge variant="danger"><PackageX className="w-3 h-3 inline mr-1" />{t('planning.missing')}</Badge>
                       )}
                     </TableCell>
+                    {/* L17/416 — le constat vient de la base : le créneau est
+                        planifié, mais son opérateur est absent ce jour-là. On
+                        ne l'annule pas (c'est une décision du chef d'atelier) :
+                        on le SIGNALE, sinon l'écran afficherait un créneau
+                        vert alors que personne ne peut le faire. */}
+                    <TableCell>
+                      {s.bloque_par_absence ? (
+                        <Badge variant="danger">
+                          <UserX className="w-3 h-3 inline mr-1" />
+                          {t('planning.operatorAbsent')}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted text-xs">—</span>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant={statusVariants[s.status] || 'neutral'}>{t(`planning.statuses.${s.status}`, { defaultValue: s.status })}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <button onClick={() => handleMaterialCheck(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('planning.checkMaterials')}><Clock className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDelete(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(s.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                       </div>
                     </TableCell>
                   </TableRow>

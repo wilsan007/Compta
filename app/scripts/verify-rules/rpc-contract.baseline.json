@@ -1,0 +1,6 @@
+{
+  "frozenAt": "2026-09-27",
+  "note": "VAGUE W10 (27/09/2026) — BASELINE À ZÉRO. Le contrôle confronte chaque `.rpc('nom', { … })` du front et des Edge Functions aux signatures réelles : nom inconnu, argument inconnu, arité, et fonction de déclencheur (`RETURNS trigger`, jamais exposée par PostgREST). Mesure d'entrée du 27/09/2026 sur le schéma réel (235 migrations) : 14 contrats rompus sur 117 appels littéraux, dont 4 fonctions de déclencheur appelées depuis des écrans vivants et 2 appels au stock qui auraient compté deux fois le même mouvement. Tous ont été alignés sur la base (c'est la base qui a raison) avant le gel ; le plafond ne peut que baisser (`--update-baseline` refuse d'ajouter) : tout appel nouveau qui ne viserait pas une fonction réelle et appelable fait échouer la CI.",
+  "total": 0,
+  "findings": []
+}

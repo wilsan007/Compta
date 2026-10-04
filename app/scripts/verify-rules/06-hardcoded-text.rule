@@ -1,0 +1,65 @@
+# rule: Hardcoded text in .tsx files (ANY language: fr, en, ar)
+# severity: error
+# pattern: Text in JSX labels, headings, subtitles that is NOT wrapped in t() or tCommon()
+# fix: Use useTranslation and t() for all UI text
+# note: Placeholders are excluded (they are example data, not UI labels)
+# note: Demo/prototype components excluded (AIAssistant, ArticleInterrogationModal, etc.)
+# note: Brand names excluded (LandingPage "Onusuite")
+#
+# Patterns detect:
+#   - French: accented chars ÀÂÉÈÊËÏÎÔÖÙÛÜŸÇàâéèêëïîôöùûüÿç
+#   - English: two-word CamelCase in JSX (e.g. >Save Changes<)
+#   - Arabic: literal Arabic characters in JSX
+
+RULE_NAME="Hardcoded text"
+RULE_DESC="Hardcoded text in .tsx files (fr/en/ar — use t() instead)"
+RULE_SEVERITY="error"
+RULE_USE_MULTI_PATTERN=true
+RULE_GREP_PATTERNS=(
+  # French text in JSX (accented chars)
+  "label=['\"][A-ZÀÂÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâéèêëïîôöùûüÿç]*['\"]"
+  ">[A-ZÀÂÉÈÊËÏÎÔÖÙÛÜŸÇ][a-zàâéèêëïîôöùûüÿç ]\+<"
+  "subtitle=['\"][A-ZÀÂÉÈÊËÏÎÔÖÙÛÜŸÇ]"
+  # English text in JSX (two-word CamelCase)
+  ">[A-Z][a-z]\+ [A-Z][a-z]\+<"
+  "label=\"[A-Z][a-z]\+ [A-Z][a-z]\+\""
+  # Arabic text in JSX (using Perl-style \x{} for Unicode range)
+  # grep -P supports \x{0600}-\x{06FF} for Arabic script
+)
+RULE_GREP_INCLUDES="--include=*.tsx"
+RULE_GREP_PATHS="src/pages/ src/components/"
+RULE_GREP_EXCLUDES="node_modules|//.*|import |console\.|placeholder=|AIAssistant|ArticleInterrogationModal|OnboardingModal|LandingPage"
+
+# Additional Arabic check using grep -P (Perl regex) for Unicode ranges
+# This is run separately as a custom post-check
+RULE_USE_CUSTOM=true
+
+run_custom_rule() {
+  # Count from the main multi-pattern grep
+  local main_count=0
+  local pattern_args=""
+  for pat in "${RULE_GREP_PATTERNS[@]}"; do
+    pattern_args="$pattern_args -e \"$pat\""
+  done
+  local exclude_chain=""
+  IFS='|' read -ra EXCLUDES_ARR <<< "$RULE_GREP_EXCLUDES"
+  for excl in "${EXCLUDES_ARR[@]}"; do
+    exclude_chain="$exclude_chain | grep -v \"$excl\""
+  done
+  local cmd="grep -rn $pattern_args $RULE_GREP_INCLUDES $RULE_GREP_PATHS$exclude_chain"
+  main_count=$(eval "$cmd" 2>/dev/null | wc -l | tr -d ' ')
+
+  # Arabic check with grep -P (if available)
+  local arabic_count=0
+  if grep -P "" /dev/null 2>/dev/null; then
+    arabic_count=$(grep -rPn ">[\x{0600}-\x{06FF}]" $RULE_GREP_INCLUDES $RULE_GREP_PATHS 2>/dev/null \
+      | grep -v "node_modules" \
+      | grep -v "placeholder=" \
+      | grep -v "AIAssistant" \
+      | grep -v "ArticleInterrogationModal" \
+      | grep -v "LandingPage" \
+      | wc -l | tr -d ' ')
+  fi
+
+  echo $((main_count + arabic_count))
+}

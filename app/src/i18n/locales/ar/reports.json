@@ -101,7 +101,8 @@
     "noDeclarations": "لا توجد تصريحات",
     "noDeclarationsDescription": "أنشئ أول تصريح ضريبي.",
     "createFirst": "إنشاء أول تصريح",
-    "searchPlaceholder": "البحث بفترة..."
+    "searchPlaceholder": "البحث بفترة...",
+    "generated": "تم إنشاء التصريح بالضريبة على القيمة المضافة"
   },
   "journals": {
     "title": "اليوميات",

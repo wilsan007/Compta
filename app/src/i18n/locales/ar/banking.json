@@ -35,7 +35,7 @@
     "name": "اسم الحساب",
     "accountName": "اسم الحساب",
     "bankName": "اسم البنك",
-    "initialBalance": "الرصيد الافتتاحي",
+    "initialBalance": "الرصيد الافتتاحي (يُقيَّد كقيد افتتاحي)",
     "accountNamePlaceholder": "الحساب الرئيسي",
     "nameRequired": "اسم الحساب مطلوب",
     "bank": "البنك",
@@ -60,7 +60,9 @@
     "searchPlaceholder": "البحث بالاسم، IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "حساب(ات)",
+    "connectedAccounts": "الحسابات المتصلة"
   },
   "transactions": {
     "title": "المعاملات البنكية",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "التسوية البنكية",
     "subtitle": "سوِّ معاملاتك البنكية",
-    "selectAccount": "اختر حساباً",
+    "selectAccount": "يرجى اختيار حساب",
     "allAccounts": "جميع الحسابات",
     "bankBalance": "الرصيد البنكي",
     "accountingBalance": "الرصيد المحاسبي",
@@ -122,7 +124,70 @@
     "reconciledTitle": "مسواة ({{count}})",
     "action": "إجراء",
     "cancel": "إلغاء",
-    "reconcileBtn": "تسوية"
+    "reconcileBtn": "تسوية",
+    "smartMatch": "تسوية ذكية",
+    "smartResult": "تم العثور على {{matched}} تطابق",
+    "autoMatchResult": "{{matched}} مطابقة، {{unmatched}} غير مطابقة"
+  },
+  "state": {
+    "title": "كشف التسوية",
+    "subtitle": "ما يقوله كشف الحساب والحساب 512x في تاريخ معين",
+    "account": "الحساب البنكي",
+    "date": "حتى",
+    "statementBalance": "رصيد كشف الحساب",
+    "statementHint": "البنود المستوردة حتى هذا التاريخ",
+    "accountingBalance": "رصيد الحساب {{account}}",
+    "accountingHint": "القيود المرحّلة إلى الحساب {{account}}",
+    "difference": "فرق الرصيد",
+    "explainedDifference": "مفسَّر بالفروقات: {{amount}}",
+    "reconciliation": "الحالة",
+    "reconciled": "مُسوّى",
+    "ecarts": "{{count}} فرق",
+    "integrityOk": "تم التحقق من تماسك المطابقات",
+    "integrityBroken": "مطابقات غير متناسقة",
+    "closingBalance": "رصيد إقفال كشف الحساب المستورد",
+    "closingHint": "يُقارن بالبنود المستوردة حتى تاريخه: الرصيد الذي لا يتوافق يشير إلى كشف ناقص.",
+    "closingAmount": "الرصيد المعلن",
+    "closingDate": "تاريخ الإقفال",
+    "saveClosing": "حفظ",
+    "closingSaved": "تم حفظ رصيد الإقفال",
+    "closingMatches": "مطابق للبنود المستوردة",
+    "closingGap": "فرق {{amount}} مع البنود المستوردة",
+    "statementEcartsTitle": "كشف الحساب — بنود غير مطابقة ({{count}})",
+    "noStatementEcarts": "لا فروقات في الكشف",
+    "noStatementEcartsDesc": "كل بنود الكشف مطابقة مع قيد.",
+    "ledgerEcartsTitle": "الحساب — قيود غير مطابقة ({{count}})",
+    "noLedgerEcarts": "لا فروقات في الحساب",
+    "noLedgerEcartsDesc": "كل قيود الحساب مطابقة مع الكشف.",
+    "pairsTitle": "المطابقات المنفذة ({{count}})",
+    "noPairs": "لا مطابقات",
+    "noPairsDesc": "طابق بند الكشف مع القيد المقابل.",
+    "label": "البيان",
+    "amount": "المبلغ",
+    "action": "الإجراء",
+    "debit": "مدين",
+    "credit": "دائن",
+    "entry": "القيد",
+    "matchType": "المصدر",
+    "matchTypes": {
+      "ledger_auto": "تلقائي",
+      "ledger_manual": "يدوي",
+      "ledger_posted": "مُرحَّل"
+    },
+    "point": "مطابقة",
+    "pointTitle": "مطابقة بند الكشف",
+    "pointDone": "تمت المطابقة من الجانبين",
+    "unpoint": "إلغاء المطابقة",
+    "unpointDone": "تم إلغاء المطابقة",
+    "post": "ترحيل إلى الدفاتر",
+    "postTitle": "ترحيل بند الكشف إلى الدفاتر",
+    "postDone": "تم إنشاء القيد ومطابقة البند",
+    "postHint": "الحساب البنكي {{account}} يحمل الطرف المقابل؛ يُرحَّل القيد فورًا.",
+    "counterpart": "حساب مصروف أو إيراد",
+    "candidate": "قيد بنفس المبلغ",
+    "noCandidate": "لا قيد غير مطابق بهذا المبلغ: رحّل البند.",
+    "noAccount": "لا حساب بنكي",
+    "noAccountDesc": "أنشئ حسابًا بنكيًا لمتابعة تسويته."
   },
   "rules": {
     "title": "قواعد بنكية",
@@ -151,8 +216,25 @@
       "startsWith": "يبدأ بـ",
       "endsWith": "ينتهي بـ",
       "greaterThan": "أكبر من",
-      "lessThan": "أقل من"
-    }
+      "lessThan": "أقل من",
+      "greater_than": "أكبر من",
+      "less_than": "أصغر من",
+      "starts_with": "يبدأ بـ"
+    },
+    "accountCode": "رمز الحساب",
+    "accountCodePlaceholder": "مثال: 626100",
+    "category": "الفئة",
+    "categoryPlaceholder": "مثال: مصاريف بنكية",
+    "condition": "الشرط",
+    "field": "الحقل",
+    "fields": {
+      "amount": "المبلغ",
+      "description": "البيان",
+      "reference": "المرجع"
+    },
+    "operator": "العامل",
+    "value": "القيمة",
+    "vatRate": "نسبة الضريبة على القيمة المضافة (%)"
   },
   "pdfReconciliation": {
     "title": "مطابقة عبر PDF",
@@ -242,6 +324,7 @@
       "connectionFailed": "فشل الاتصال"
     },
     "syncSuccess": "اكتملت المزامنة",
+    "syncImported": "{{count}} عملية مستوردة",
     "syncError": "خطأ في المزامنة",
     "autoSynced": "مزامنة تلقائية",
     "reconcile": "تسوية"
@@ -253,7 +336,8 @@
     "reconciliationDiff": "الفرق",
     "statementDate": "تاريخ الكشف",
     "noDiff": "لا يوجد فرق",
-    "diffWarning": "تم اكتشاف فرق"
+    "diffWarning": "تم اكتشاف فرق",
+    "bookBalance": "الرصيد المحاسبي"
   },
   "multiCurrency": {
     "originalAmount": "المبلغ الأصلي",
@@ -280,6 +364,7 @@
     "noAccounts": "لا يوجد حساب بنكي",
     "noAccountsDesc": "أضف أول RIB/IBAN",
     "ibanInvalid": "IBAN غير صالح",
+    "ibanRefused": "IBAN غير صالح: مفتاح التحقق غير مطابق. لم يتم حفظ أي شيء — راجع الرقم المُدخل.",
     "ibanValid": "IBAN صالح",
     "saved": "تم حفظ الحساب البنكي",
     "saveError": "خطأ في حفظ الحساب",

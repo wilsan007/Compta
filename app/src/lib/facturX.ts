@@ -19,13 +19,85 @@ function formatDateISO(date: string): string {
   return date.split('T')[0]
 }
 
+// ============ R-11 : un document provisoire n'est pas une facture ============
+//
+// Un brouillon peut être téléchargé (il porte alors la mention PRO FORMA), mais
+// il ne peut pas devenir une facture électronique : Factur-X et UBL sont des
+// pièces opposables, et l'écran ne suffisait pas à l'interdire — un appel direct
+// produisait un XML au numéro BROUILLON-FAC-…. La garde est donc au niveau de la
+// génération, pas seulement du bouton.
+//
+// `validation_status` absent (donnée ancienne) est traité comme provisoire : dans
+// le doute, on refuse d'émettre une pièce, on n'en émet pas une douteuse.
+// ============ B3 (ven-009) : opérations non taxées en France ============
+//
+// Un code TVA d'exonération ne dit pas à lui seul quelle catégorie EN 16931
+// écrire, ni quel motif porter : pour la même opération non taxée, une
+// **livraison intracommunautaire de biens** est `K` (art. 262 ter I CGI) et une
+// **prestation autoliquidée par le preneur** est `AE` (art. 283-2 CGI). Un
+// export hors UE est `G` (art. 262 I CGI). La distinction biens/services se lit
+// sur l'article de la ligne (`products.type`), que l'appelant fournit.
+//
+// Les motifs sont des mentions **légales françaises** : elles ne se traduisent
+// pas (même doctrine que les codes de compte 706000 / 707000 du dépôt).
+export type EInvoiceOptions = {
+  /** product_id → type d'article ('stock' = bien, sinon prestation) */
+  productTypes?: Record<string, string>
+}
+
+/** Catégorie EN 16931 d'une ligne non taxée en France. */
+export function exemptionCategory(vatCode: string | null | undefined, isGoods: boolean): string {
+  const code = (vatCode || '').trim().toUpperCase()
+  if (code === 'UE') return isGoods ? 'K' : 'AE'
+  if (code === 'EXO') return 'G'
+  return 'Z'
+}
+
+/** Motif légal porté par la catégorie (texte français, opposable). */
+export function exemptionReason(category: string): string {
+  switch (category) {
+    case 'AE': return 'Autoliquidation par le preneur — art. 283-2 CGI'
+    case 'K': return 'Exonération de TVA — livraison intracommunautaire, art. 262 ter I CGI'
+    case 'G': return 'Exonération de TVA — exportation, art. 262 I CGI'
+    default: return ''
+  }
+}
+
+function isGoodsLine(line: { product_id?: string | null }, options?: EInvoiceOptions): boolean {
+  if (!line.product_id || !options?.productTypes) return false
+  return options.productTypes[line.product_id] === 'stock'
+}
+
+/** Motif légal d'une ligne, ou '' si elle est taxée normalement. */
+export function lineExemptionReason(
+  line: { vat_code?: string | null; product_id?: string | null },
+  productTypes?: Record<string, string>,
+): string {
+  const isGoods = !!(line.product_id && productTypes?.[line.product_id] === 'stock')
+  return exemptionReason(exemptionCategory(line.vat_code, isGoods))
+}
+
+export function isDraftDocument(doc: { validation_status?: string | null } | null | undefined): boolean {
+  return doc?.validation_status !== 'validated'
+}
+
+function assertEInvoiceAllowed(doc: { validation_status?: string | null } | null | undefined): void {
+  if (isDraftDocument(doc)) {
+    throw new Error(
+      'Document provisoire : une facture électronique (Factur-X, UBL) ne peut être générée que sur une facture validée.',
+    )
+  }
+}
+
 // ============ Factur-X (CII / EN 16931) ============
 
 export function generateFacturX(
   invoice: Invoice,
   customer: Customer | null,
   company: CompanySettings | null,
+  options?: EInvoiceOptions,
 ): string {
+  assertEInvoiceAllowed(invoice)   // R-11 : jamais sur un brouillon
   const invDate = formatDateISO(invoice.date)
   const dueDate = formatDateISO(invoice.due_date)
   const invNumber = escapeXml(invoice.number)
@@ -58,6 +130,9 @@ export function generateFacturX(
     const lineTotal = Number(line.total || 0).toFixed(2)
     const unitPrice = Number(line.unit_price || 0).toFixed(2)
     const vatRate = Number(line.vat_rate || 0).toFixed(2)
+    // B3 (ven-009) : la catégorie et son motif portent l'opération non taxée
+    const category = exemptionCategory(line.vat_code, isGoodsLine(line, options))
+    const reason = exemptionReason(category)
     return `          <ram:IncludedSupplyChainTradeLineItem>
             <ram:AssociatedDocumentLineDocument>
               <ram:LineID>${idx + 1}</ram:LineID>
@@ -76,8 +151,9 @@ export function generateFacturX(
             <ram:SpecifiedLineTradeSettlement>
               <ram:ApplicableTradeTax>
                 <ram:TypeCode>VAT</ram:TypeCode>
-                <ram:CategoryCode>${vatRate === '0.00' ? 'Z' : 'S'}</ram:CategoryCode>
-                <ram:RateApplicablePercent>${vatRate}</ram:RateApplicablePercent>
+                <ram:CategoryCode>${category}</ram:CategoryCode>
+                <ram:RateApplicablePercent>${vatRate}</ram:RateApplicablePercent>${reason ? `
+                <ram:ExemptionReason>${escapeXml(reason)}</ram:ExemptionReason>` : ''}
               </ram:ApplicableTradeTax>
               <ram:SpecifiedTradeSettlementLineMonetarySummation>
                 <ram:LineTotalAmount>${lineTotal}</ram:LineTotalAmount>
@@ -174,7 +250,9 @@ export function generateUBL(
   invoice: Invoice,
   customer: Customer | null,
   company: CompanySettings | null,
+  options?: EInvoiceOptions,
 ): string {
+  assertEInvoiceAllowed(invoice)   // R-11 : jamais sur un brouillon
   const invDate = formatDateISO(invoice.date)
   const dueDate = formatDateISO(invoice.due_date)
   const invNumber = escapeXml(invoice.number)
@@ -204,6 +282,8 @@ export function generateUBL(
     const lineTotal = Number(line.total || 0).toFixed(2)
     const unitPrice = Number(line.unit_price || 0).toFixed(2)
     const vatRate = Number(line.vat_rate || 0).toFixed(2)
+    // B3 (ven-009) : même catégorie que Factur-X
+    const category = exemptionCategory((line as { vat_code?: string | null }).vat_code, isGoodsLine(line, options))
     return `    <cac:InvoiceLine>
       <cbc:ID>${idx + 1}</cbc:ID>
       <cbc:InvoicedQuantity unitCode="C62">${Number(line.quantity || 0)}</cbc:InvoicedQuantity>
@@ -211,7 +291,7 @@ export function generateUBL(
       <cac:Item>
         <cbc:Description>${escapeXml(line.description)}</cbc:Description>
         <cac:ClassifiedTaxCategory>
-          <cbc:ID>${vatRate === '0.00' ? 'Z' : 'S'}</cbc:ID>
+          <cbc:ID>${category}</cbc:ID>
           <cbc:Percent>${vatRate}</cbc:Percent>
           <cac:TaxScheme>
             <cbc:ID>VAT</cbc:ID>

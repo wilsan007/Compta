@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, getFiscalPeriods, createFiscalPeriodsForYear, updateFiscalPeriod } from '@/lib/queries'
+import { getFiscalYears, createFiscalYear, updateFiscalYear, deleteFiscalYear, getFiscalPeriods, createFiscalPeriodsForYear, updateFiscalPeriod } from '@/lib/queries/accounting'
 import { Calendar, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight, Lock, Unlock } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function FiscalYearsPage() {
   const { toast } = useToast()
@@ -20,7 +22,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
   const [editing, setEditing] = useState<FiscalYear | null>(null)
 
   useEffect(() => {
-    loadYears()
+    loadYears().catch(err => console.error('loadYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadYears() {
@@ -35,8 +38,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
         } catch { periodsMap[y.id] = [] }
       }
       setPeriods(periodsMap)
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -53,11 +56,11 @@ const [years, setYears] = useState<FiscalYear[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('fiscalYears.deleteConfirm'))) return
+    if (!confirmSync(t('fiscalYears.deleteConfirm'))) return
     try {
       await deleteFiscalYear(id)
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
@@ -67,7 +70,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
     try {
       await updateFiscalPeriod(period.id, { status: newStatus })
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.updateError'))
     }
   }
@@ -77,7 +80,7 @@ const [years, setYears] = useState<FiscalYear[]>([])
     try {
       await updateFiscalYear(y.id, { status: newStatus, closed_at: newStatus === 'closed' ? new Date().toISOString() : null })
       await loadYears()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.updateError'))
     }
   }
@@ -113,6 +116,8 @@ const [years, setYears] = useState<FiscalYear[]>([])
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setExpandedId(expandedId === y.id ? null : y.id)}
+                  aria-label={tCommon(expandedId === y.id ? 'actions.collapse' : 'actions.expand')}
+                  title={tCommon(expandedId === y.id ? 'actions.collapse' : 'actions.expand')}
                   className="p-1 rounded hover:bg-[var(--color-neutral-100)]"
                 >
                   {expandedId === y.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -126,12 +131,10 @@ const [years, setYears] = useState<FiscalYear[]>([])
                   <button onClick={() => toggleYearStatus(y)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" title={y.status === 'open' ? t('fiscalYears.close') : t('fiscalYears.reopen')}>
                     {y.status === 'open' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                   </button>
-                  <button onClick={() => openEdit(y)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(y.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => openEdit(y)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                    <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                  <button onClick={() => handleDelete(y.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </div>
 
@@ -199,8 +202,8 @@ function FiscalYearForm({ year, onClose, onSaved }: {
         }
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -211,7 +214,7 @@ function FiscalYearForm({ year, onClose, onSaved }: {
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{year ? t('fiscalYears.edit') : t('fiscalYears.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('fiscalYears.code')} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="EX2025" />

@@ -1,34 +1,17 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test'
+import { loginViaUI, assertAuthenticated, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON, assertWorkspaceReady } from './helpers'
 
 test.describe.configure({ mode: 'serial' })
+test.skip(!E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON)
 
-const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@test.com'
-const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || ''
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ndtaedcgwnaopopugiql.supabase.co'
-const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
 
-let cachedSession: { access_token: string; refresh_token: string; expires_in: number } | null = null
-
-async function getAuthSession(apiContext: APIRequestContext) {
-  if (cachedSession) return cachedSession
-  const response = await apiContext.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-    data: { email: TEST_EMAIL, password: TEST_PASSWORD },
-  })
-  const data = await response.json()
-  if (data.access_token) { cachedSession = data; return data }
-  throw new Error(`Auth failed: ${data.error_description || data.msg || 'Unknown'}`)
-}
-
-async function login(page: Page, request: APIRequestContext) {
-  await page.goto('/login')
-  await page.waitForTimeout(2000)
-  const emailInput = page.locator('input[type="email"]')
-  await emailInput.waitFor({ state: 'visible', timeout: 15000 })
-  await emailInput.fill(TEST_EMAIL)
-  await page.locator('input[type="password"]').fill(TEST_PASSWORD)
-  await page.locator('button[type="submit"]').click()
-  await page.waitForTimeout(5000)
+// Trois implémentations de connexion coexistaient, toutes basées sur un
+// `waitForTimeout(5000)` fixe : trop court dès que le premier rendu ralentit, et
+// le test partait alors sur /login. Une seule implémentation désormais, qui
+// attend la navigation réelle (`loginViaUI` dans helpers.ts).
+async function login(page: Page, _request?: APIRequestContext) {
+  await loginViaUI(page)
+  await assertWorkspaceReady(page)
 }
 
 // ============ Phase 6 Routes E2E Tests ============
@@ -71,18 +54,17 @@ for (const route of phase6Routes) {
 test('Phase 6 — Batch Entry page shows new session button', async ({ page, request }) => {
   await login(page, request)
   await page.goto('/accounting/batch-entry')
-  await page.waitForTimeout(3000)
-  // Look for any button element
-  const buttons = page.locator('button')
-  await expect(buttons.first()).toBeVisible()
+  // `locator('button').first()` tombait sur un bouton masqué du DOM (menu replié).
+  // On vise un bouton réellement visible, et on lui laisse le temps d'arriver.
+  const button = page.locator('button:visible').first()
+  await expect(button).toBeVisible({ timeout: 30000 })
 })
 
 test('Phase 6 — Accounting Controls page shows run control button', async ({ page, request }) => {
   await login(page, request)
   await page.goto('/accounting/controls')
-  await page.waitForTimeout(3000)
-  const buttons = page.locator('button')
-  await expect(buttons.first()).toBeVisible()
+  const button = page.locator('button:visible').first()
+  await expect(button).toBeVisible({ timeout: 30000 })
 })
 
 test('Phase 6 — Cash Control page loads form', async ({ page, request }) => {
@@ -121,13 +103,15 @@ test('Phase 6 — All 15 routes are accessible from sidebar navigation', async (
   await login(page, request)
   // Navigate to accounting home
   await page.goto('/accounting/home')
-  await page.waitForTimeout(2000)
 
-  // Verify the accounting module is visible in sidebar
-  const sidebar = page.locator('nav, [class*="sidebar"]')
-  if (await sidebar.isVisible()) {
-    const sidebarText = await sidebar.textContent()
-    // At least some accounting nav items should be visible
-    expect(sidebarText).toContain('Comptabilité')
-  }
+  // Trois défauts dans ce test :
+  //  - `locator('nav, [class*="sidebar"]')` visait 4 éléments (l'aside, le
+  //    champ de filtre, la nav latérale et le fil d'Ariane) : violation du
+  //    mode strict, `isVisible()` levait avant toute vérification ;
+  //  - l'assertion était enfermée dans un `if` — sidebar absente, test vert ;
+  //  - elle attendait « Comptabilité » alors que l'interface tourne en anglais.
+  await assertAuthenticated(page)
+  const sidebar = page.locator('aside').first()
+  await expect(sidebar).toBeVisible({ timeout: 30000 })
+  await expect(sidebar).toContainText(/Comptabilité|Accounting/, { timeout: 30000 })
 })

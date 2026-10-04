@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { shouldSetDefaultRange } from './supabaseRange'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -7,10 +8,39 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set in environment variables')
 }
 
+// SEC-03: Tenant actif déclaré avant createClient pour être disponible
+// dans les headers de chaque requête (x-tenant-id transmis à PostgREST).
+let _tenantId: string | null | undefined = undefined
+let _userName: string | null = null
+
+// DAT-01 : Limite par défaut pour les requêtes non paginées.
+// PostgREST respecte le header Range pour limiter les résultats. Cette limite s'ajoute
+// à `max_rows = 1000` de supabase/config.toml : les deux tronquent, sans erreur.
+// Une requête qui doit être exhaustive passe par `fetchAllRows` (queries/core.ts).
+const DEFAULT_PAGE_SIZE = 1000  // Limite sûre pour éviter les payloads énormes
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    // SEC-03: supabase-js n'accepte pas une fonction pour `headers`.
+    // On injecte x-tenant-id dynamiquement via un fetch custom,
+    // lu par current_tenant_id() via request.headers en base.
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers || {})
+      if (_tenantId) headers.set('x-tenant-id', _tenantId)
+      // DAT-01 : Ajouter un Range par défaut pour les requêtes GET sans pagination explicite
+      // PostgREST utilise Range: 0-999 pour limiter à 1000 résultats
+      // Les requêtes avec .range() ou .limit() explicites écrasent ce header
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      if (shouldSetDefaultRange(url, init?.method, headers)) {
+        headers.set('Range', `0-${DEFAULT_PAGE_SIZE - 1}`)
+        headers.set('Range-Unit', 'items')
+      }
+      return fetch(input, { ...init, headers })
+    },
   },
 })
 
@@ -92,6 +122,61 @@ const TENANT_TABLES = new Set([
   'analytic_distribution_lines',
   // Sprint 8: Exchange Gain/Loss + Check Books
   'exchange_gain_loss_entries', 'check_books', 'checks',
+  // Sprint A: Commercial Transformations
+  'document_charges', 'document_transformations',
+  // Sprint B: Customer Advanced
+  'customer_contacts', 'supplier_contacts',
+  // Sprint C: Purchase Advanced
+  'purchase_requests', 'purchase_request_lines',
+  'supplier_price_lists', 'supplier_price_list_lines',
+  'supplier_delivery_schedules',
+  // Sprint D: Catalog Extended
+  'product_grids', 'product_grid_combinations', 'product_packagings', 'product_links', 'promotions',
+  // Sprint E: Stock Advanced
+  'warehouse_users', 'stock_alerts',
+  // Sprint F: CRM Sales
+  'crm_opportunities', 'crm_activities', 'crm_campaigns', 'crm_campaign_recipients', 'crm_territories', 'crm_forecasts',
+  // Sprint G: CRM Service
+  'service_tickets', 'service_ticket_messages', 'service_contracts', 'knowledge_base_articles',
+  // Sprint H: POS
+  'pos_terminals', 'pos_sessions', 'pos_tickets', 'pos_ticket_lines',
+  // Sprint I: Dématérialisation
+  'electronic_signatures', 'online_payments', 'document_shares',
+  // Sprint J: Pilotage
+  'saved_filters',
+  // Sprint B: Leaves & Absences
+  'leave_balances', 'public_holidays', 'leave_rules', 'approval_workflows', 'leave_provisions', 'staff_requirements',
+  // Sprint C: Payroll Advanced
+  'meal_voucher_config', 'payroll_variable_elements', 'sepa_payment_orders', 'pay_slip_clarified',
+  // Sprint D: Admin & Arrêts
+  'work_stoppages', 'ijss_history', 'work_hardship_records', 'cpf_transactions',
+  'medical_exams', 'expense_categories', 'interview_campaigns', 'employee_objectives',
+  // Sprint E: Sortie & Entretiens
+  'employee_exit_processes',
+  // Sprint F: Social Declarations
+  'social_declarations', 'cice_config', 'pas_rates', 'at_rates', 'bdes_indicators', 'honorarium_records',
+  // Sprint G: Dématérialisation RH
+  'employee_documents', 'document_distribution_logs', 'rh_requests', 'rh_knowledge_base',
+  // Project Management & Task Management
+  'project_tasks', 'project_task_dependencies', 'project_stages', 'project_milestones',
+  'project_tags', 'project_task_tags', 'project_task_assignees',
+  'project_members',
+  'notification_email_queue', 'notification_preferences',
+  'task_actions', 'task_action_attachments', 'task_documents', 'task_comments',
+  // Document Management System
+  'module_documents', 'module_document_access_log', 'module_document_shares',
+  // Migration 84: Missing tenant-scoped tables (32 tables identified by audit)
+  'accounting_control_runs', 'auto_label_rules', 'bank_connections',
+  'batch_entry_sessions', 'carry_forward_log', 'cash_control_sessions',
+  'custom_report_templates', 'deferred_printing_jobs', 'employee_activity_logs',
+  'extourne_log', 'fec_attestations', 'ifrs_adjustments',
+  'journal_access_rights', 'lettrage_differences',
+  'partner_bank_accounts', 'partner_categories', 'partner_category_mappings', 'partner_contacts',
+  'project_activity_log', 'project_docs', 'project_notifications',
+  'project_task_templates', 'project_task_watchers', 'project_time_entries',
+  'rh_dashboard_configs', 'rh_reports',
+  'tax_cash_basis_entries', 'tax_groups', 'tax_payments', 'tax_repartition_lines',
+  'tier_ribs', 'vat_on_collections',
 ])
 
 const EXEMPT_TABLES = new Set([
@@ -100,23 +185,32 @@ const EXEMPT_TABLES = new Set([
   'banks',
 ])
 
-let _tenantId: string | null | undefined = undefined
-
 export async function setTenantId(id: string | null) {
   _tenantId = id
   if (id) {
-    // Set the active tenant in the database session so RLS policies use it
-    try {
-      const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: id })
-      if (error) {
-        console.error('[SECURITY] set_active_tenant RPC failed:', error.message,
-          '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
-      }
-    } catch (err: any) {
-      console.error('[SECURITY] set_active_tenant RPC threw:', err?.message || err,
-        '— RLS policies may not isolate tenant data correctly. Tenant ID:', id)
+    const { error } = await supabase.rpc('set_active_tenant', { p_tenant_id: id })
+    if (error) {
+      _tenantId = null
+      throw new Error(`SECURITY: set_active_tenant failed for tenant ${id}: ${error.message}`)
+    }
+    const { data: verifyId, error: verifyErr } = await supabase.rpc('current_tenant_id')
+    if (verifyErr || verifyId !== id) {
+      _tenantId = null
+      throw new Error(`SECURITY: Tenant verification failed. Expected ${id}, got ${verifyId}`)
+    }
+    // Set user name for trigger context (best-effort, ignore errors)
+    // Note: set_user_name RPC may not exist yet if migration 71 hasn't been applied
+    if (_userName) {
+      try {
+        const { error: nameErr } = await supabase.rpc('set_user_name', { p_name: _userName })
+        if (nameErr) { /* best-effort — silently ignore */ }
+      } catch { /* ignore */ }
     }
   }
+}
+
+export function setUserName(name: string | null) {
+  _userName = name
 }
 
 export function getCachedTenantId(): string | null {

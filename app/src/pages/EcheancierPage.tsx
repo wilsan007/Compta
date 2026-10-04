@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
-import { getEcheancier } from '@/lib/queries'
+import { getEcheancier } from '@/lib/queries/accounting'
 import { CalendarClock, AlertTriangle } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 export function EcheancierPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
-  const [data, setData] = useState<any[]>([])
+  // AUD-ACCES-05 : type nommé depuis la fonction de requête — l'accès à une
+  // propriété absente est désormais refusé par `tsc`.
+  const [data, setData] = useState<Awaited<ReturnType<typeof getEcheancier>>>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -22,6 +28,7 @@ export function EcheancierPage() {
       setData(res)
     } catch (err) {
       console.error('Error loading echeancier:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -70,8 +77,8 @@ export function EcheancierPage() {
       ) : (
         <Card>
           <Table headers={[t('echeancier.type'), t('echeancier.number'), t('echeancier.thirdParty'), t('echeancier.date'), t('echeancier.dueDate'), t('echeancier.amount'), t('echeancier.remaining'), t('echeancier.daysOverdue')]}>
-            {data.map((r, i) => (
-              <TableRow key={i}>
+            {data.map((r) => (
+              <TableRow key={r.id}>
                 <TableCell>
                   <Badge variant={r.type === 'customer' ? 'success' : 'warning'}>
                     {r.type === 'customer' ? t('echeancier.customer') : t('echeancier.supplier')}

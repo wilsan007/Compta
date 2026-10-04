@@ -1,0 +1,25 @@
+# TEMPLATE — Copy this file to create a new verification rule
+# Naming: NN-description.rule (NN = order number, e.g. 09-my-rule.rule)
+#
+# Required variables:
+#   RULE_NAME        — Short name for display
+#   RULE_DESC        — Description shown in pass/fail message
+#   RULE_SEVERITY    — "error" or "warning"
+#
+# For single-pattern grep rules:
+#   RULE_GREP_PATTERN  — The grep pattern to search for
+#   RULE_GREP_INCLUDES — File type filters (e.g. "--include=*.tsx --include=*.ts")
+#   RULE_GREP_PATHS    — Directories to search (e.g. "src/pages/ src/components/")
+#   RULE_GREP_EXCLUDES — Pipe-separated exclusions (e.g. "node_modules|\.test\.|import ")
+#
+# For multi-pattern grep rules:
+#   RULE_USE_MULTI_PATTERN=true
+#   RULE_GREP_PATTERNS=( "pattern1" "pattern2" "pattern3" )
+#
+# For inverse match (files NOT containing a pattern):
+#   RULE_USE_GREP_L=true
+#   RULE_GREP_SEARCH="useTranslation"
+#
+# For non-grep rules (custom logic):
+#   RULE_USE_CUSTOM=true
+#   Then define a function run_custom_rule() in the rule file

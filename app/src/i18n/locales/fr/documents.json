@@ -1,0 +1,54 @@
+{
+  "uploader": {
+    "title": "Téléverser un document",
+    "dropzone": "Glissez-déposez un fichier ici ou cliquez pour parcourir",
+    "formats": "Formats acceptés: PDF, PNG, JPG, WEBP, DOCX, XLSX, PPTX, DOC, XLS, TXT, CSV, ZIP (max 50 MB)",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Titre du document",
+    "typeLabel": "Type de document",
+    "typePlaceholder": "ex: note_frais, certificat_medical, facture",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Description optionnelle",
+    "confidentialityLabel": "Niveau de confidentialité",
+    "upload": "Téléverser",
+    "uploading": "Téléversement en cours..."
+  },
+  "list": {
+    "searchPlaceholder": "Rechercher un document...",
+    "allStatuses": "Tous les statuts",
+    "allConfidentiality": "Toutes les confidentialités",
+    "empty": "Aucun document trouvé",
+    "downloads": "{{count}} téléchargement",
+    "downloads_other": "{{count}} téléchargements",
+    "rejectedReason": "Motif de rejet",
+    "preview": "Aperçu",
+    "download": "Télécharger",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "archive": "Archiver",
+    "delete": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.",
+    "rejectTitle": "Rejeter le document",
+    "rejectPlaceholder": "Veuillez indiquer le motif du rejet",
+    "confirmReject": "Confirmer le rejet"
+  },
+  "confidentiality": {
+    "public": "Public",
+    "restricted": "Restreint",
+    "confidential": "Confidentiel",
+    "private": "Privé"
+  },
+  "status": {
+    "pending": "En attente",
+    "approved": "Approuvé",
+    "rejected": "Rejeté",
+    "archived": "Archivé"
+  },
+  "errors": {
+    "uploadFailed": "Échec du téléversement du document",
+    "downloadFailed": "Échec du téléchargement",
+    "permissionDenied": "Vous n'avez pas la permission d'effectuer cette action"
+  },
+  "title": "Gestion des documents",
+  "subtitle": "Téléversez, gérez et partagez vos documents en toute sécurité"
+}

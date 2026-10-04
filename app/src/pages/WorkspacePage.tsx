@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Breadcrumb, Button, Table, TableRow, TableCell, Badge, SkeletonTable } from '@/components/ui'
-import { getInvoices, getQuotes, getBankAccounts, getBankTransactions, getProducts, getEmployees, getProjects, getPurchaseInvoices } from '@/lib/queries'
+import { getInvoices, getQuotes, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getBankAccounts, getBankTransactions } from '@/lib/queries/banking'
+import { getProducts } from '@/lib/queries/stock'
+import { getEmployees } from '@/lib/queries/payroll'
+import { getProjects } from '@/lib/queries/accounting'
 import { formatCurrency, translateStatus } from '@/lib/utils'
 import { LayoutGrid, TrendingUp, TrendingDown, Wallet, Users, Package, FolderKanban, ShoppingCart, X, Plus } from 'lucide-react'
 import type { Invoice, Quote, BankAccount, BankTransaction, Product, Employee, Project, PurchaseInvoice } from '@/types'
@@ -89,7 +93,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
   const totalPaid = invoices.reduce((s, i) => s + Number(i.amount_paid), 0)
   const totalOutstanding = invoices.reduce((s, i) => s + Number(i.amount_due), 0)
   const totalPurchases = purchaseInvoices.reduce((s, i) => s + Number(i.total), 0)
-  const totalBankBalance = bankAccounts.reduce((s, a) => s + Number(a.balance), 0)
+  const totalBankBalance = bankAccounts.reduce((s, a) => s + Number(a.calculated_balance), 0)
   const lowStockProducts = products.filter(p => p.type === 'stock' && Number(p.stock_quantity) <= Number(p.reorder_level))
   const activeProjects = projects.filter(p => p.status === 'active')
   const activeEmployees = employees.filter(e => e.status === 'active')
@@ -103,7 +107,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalBilled')}</span><span className="font-mono font-bold">{formatCurrency(totalSales)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.collected')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.pending')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.pending')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.invoices')}</span><span className="font-bold">{invoices.length}</span></div>
           </div>
         )
@@ -112,7 +116,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalPurchases')}</span><span className="font-mono font-bold">{formatCurrency(totalPurchases)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.paid')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_paid), 0))}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.toPay')}</span><span className="font-mono text-[var(--color-warning)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.toPay')}</span><span className="font-mono text-[var(--color-warning-text)]">{formatCurrency(purchaseInvoices.reduce((s, i) => s + Number(i.amount_due), 0))}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.purchaseInvoices')}</span><span className="font-bold">{purchaseInvoices.length}</span></div>
           </div>
         )
@@ -121,7 +125,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalBalance')}</span><span className="font-mono font-bold text-base">{formatCurrency(totalBankBalance)}</span></div>
             {bankAccounts.slice(0, 3).map(a => (
-              <div key={a.id} className="flex justify-between text-xs"><span className="text-[var(--color-text-secondary)]">{a.name}</span><span className="font-mono">{formatCurrency(Number(a.balance))}</span></div>
+              <div key={a.id} className="flex justify-between text-xs"><span className="text-[var(--color-text-secondary)]">{a.name}</span><span className="font-mono">{formatCurrency(Number(a.calculated_balance))}</span></div>
             ))}
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.transactions')}</span><span className="font-bold">{transactions.length}</span></div>
           </div>
@@ -158,7 +162,7 @@ const [widgetVisible, setWidgetVisible] = useState<Record<string, boolean>>(() =
           <div className="space-y-2 p-4">
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.totalEmployees')}</span><span className="font-bold">{employees.length}</span></div>
             <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.active')}</span><span className="font-bold text-[var(--color-success)]">{activeEmployees.length}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.onLeave')}</span><span className="font-bold text-[var(--color-warning)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('workspace.onLeave')}</span><span className="font-bold text-[var(--color-warning-text)]">{employees.filter(e => e.status === 'on_leave').length}</span></div>
             <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-2"><span className="text-[var(--color-text-secondary)]">{t('workspace.payroll')}</span><span className="font-mono font-bold">{formatCurrency(activeEmployees.reduce((s, e) => s + Number(e.salary), 0))}</span></div>
           </div>
         )

@@ -2,9 +2,11 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getAccountTags, createAccountTag, updateAccountTag, deleteAccountTag, getAccountTagMappings, createAccountTagMapping, deleteAccountTagMapping } from '@/lib/queries'
+import { getAccountTags, createAccountTag, updateAccountTag, deleteAccountTag, getAccountTagMappings, createAccountTagMapping, deleteAccountTagMapping } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, Tag, Link2 } from 'lucide-react'
 import type { AccountTag, AccountTagMapping } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 type Tab = 'list' | 'application'
 
@@ -36,8 +38,7 @@ export function AccountTagsPage() {
     try {
       setLoading(true)
       setTags(await getAccountTags())
-    } catch (err) {
-      console.error('Error loading account tags:', err)
+    } catch (err) { console.error('Error loading account tags:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     } finally {
       setLoading(false)
@@ -80,20 +81,19 @@ export function AccountTagsPage() {
       }
       resetForm()
       await load()
-    } catch (err) {
-      console.error('Error saving tag:', err)
+    } catch (err) { console.error('Error saving tag:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('accountTags.deleteConfirm'))) return
+    if (!confirmSync(t('accountTags.deleteConfirm'))) return
     try {
       await deleteAccountTag(id)
       toast('success', t('accountTags.title'), t('accountTags.deleteSuccess'))
       await load()
-    } catch (err) {
-      console.error('Error deleting tag:', err)
+    } catch (err) { console.error('Error deleting tag:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -102,8 +102,8 @@ export function AccountTagsPage() {
     setActiveTab('application')
     try {
       setMappings(await getAccountTagMappings(tag.id))
-    } catch (err) {
-      console.error('Error loading tag mappings:', err)
+    } catch (err) { console.error('Error loading tag mappings:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -118,20 +118,19 @@ export function AccountTagsPage() {
       setMappingForm({ entity_type: 'account', entity_id: '' })
       setMappings(await getAccountTagMappings(selectedTag.id))
       toast('success', t('accountTags.title'), t('accountTags.mappingCreateSuccess'))
-    } catch (err) {
-      console.error('Error creating tag mapping:', err)
+    } catch (err) { console.error('Error creating tag mapping:', err)
       toast('error', t('accountTags.title'), t('accountTags.saveError'))
     }
   }
 
   async function handleDeleteMapping(id: string) {
-    if (!confirm(t('accountTags.mappingDeleteConfirm'))) return
+    if (!confirmSync(t('accountTags.mappingDeleteConfirm'))) return
     try {
       await deleteAccountTagMapping(id)
       if (selectedTag) setMappings(await getAccountTagMappings(selectedTag.id))
       toast('success', t('accountTags.title'), t('accountTags.mappingDeleteSuccess'))
-    } catch (err) {
-      console.error('Error deleting tag mapping:', err)
+    } catch (err) { console.error('Error deleting tag mapping:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
@@ -164,7 +163,7 @@ export function AccountTagsPage() {
                 <h3 className="text-lg font-semibold">{selectedTag.name}</h3>
                 <p className="text-sm text-[var(--color-text-secondary)]">{selectedTag.applicability}</p>
               </div>
-              <Button variant="secondary" onClick={() => { setSelectedTag(null); setActiveTab('list') }}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={() => { setSelectedTag(null); setActiveTab('list') }} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
 
             <div className="flex gap-1 mb-4 border-b border-[var(--color-border)]">
@@ -192,12 +191,12 @@ export function AccountTagsPage() {
                   <div>
                     <label className="block text-xs text-[var(--color-text-secondary)] mb-1">{t('accountTags.applicability')}</label>
                     <select className="input" value={mappingForm.entity_type} onChange={(e) => setMappingForm({ ...mappingForm, entity_type: e.target.value as any })}>
-                      <option value="account">{tCommon('common.account', 'Account')}</option>
+                      <option value="account">{tCommon('common.account')}</option>
                       <option value="tax">{t('taxRates.title')}</option>
                       <option value="journal_line">{t('title')}</option>
                     </select>
                   </div>
-                  <Input label={tCommon('common.code', 'Code')} value={mappingForm.entity_id} onChange={(e) => setMappingForm({ ...mappingForm, entity_id: e.target.value })} />
+                  <Input label={tCommon('common.code')} value={mappingForm.entity_id} onChange={(e) => setMappingForm({ ...mappingForm, entity_id: e.target.value })} />
                   <div className="flex items-end">
                     <Button onClick={handleCreateMapping} disabled={!mappingForm.entity_id}><Plus className="w-4 h-4" /> {t('fiscalPositions.mappingAdd')}</Button>
                   </div>
@@ -206,13 +205,13 @@ export function AccountTagsPage() {
                 {mappings.length === 0 ? (
                   <EmptyState icon={<Link2 className="w-8 h-8" />} title={t('fiscalPositions.mappingEmpty')} />
                 ) : (
-                  <Table headers={[t('accountTags.applicability'), tCommon('common.code', 'Code'), '']}>
+                  <Table headers={[t('accountTags.applicability'), tCommon('common.code'), '']}>
                     {mappings.map((m) => (
                       <TableRow key={m.id}>
                         <TableCell className="text-xs">{m.entity_type}</TableCell>
                         <TableCell className="font-mono text-xs">{m.entity_id}</TableCell>
                         <TableCell>
-                          <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteMapping(m.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -229,16 +228,16 @@ export function AccountTagsPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('accountTags.edit') : t('accountTags.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input label={t('accountTags.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('accountTags.applicability')}</label>
                 <select className="input" value={form.applicability} onChange={(e) => setForm({ ...form, applicability: e.target.value as any })}>
-                  <option value="accounts">{tCommon('common.accounts', 'Accounts')}</option>
+                  <option value="accounts">{tCommon('common.accounts')}</option>
                   <option value="taxes">{t('taxRates.title')}</option>
-                  <option value="operations">{tCommon('common.operations', 'Operations')}</option>
+                  <option value="operations">{tCommon('common.operations')}</option>
                 </select>
               </div>
               <Input label={t('accountTags.color')} value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="#3b82f6" />
@@ -274,9 +273,9 @@ export function AccountTagsPage() {
                 <TableCell className="text-xs">{tag.country_code || '—'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => loadMappings(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Link2 className="w-4 h-4" /></button>
-                    <button onClick={() => startEdit(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(tag.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => loadMappings(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.link')} title={tCommon('actions.link')}><Link2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => startEdit(tag)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(tag.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

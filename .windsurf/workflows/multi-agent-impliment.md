@@ -33,7 +33,7 @@ Use code_search to audit:
 ### Step 4: Fix & Validate
 - Super Agent collects findings
 - Fixes bugs
-- Runs `npx tsc --noEmit` in `/app`
+- Runs `npm run typecheck` (`tsc -b --noEmit`) in `/app`
 - Runs `npm run dev` + browser_preview
 - Advances to next sprint
 
@@ -50,4 +50,4 @@ Use code_search to audit:
 ## Rules
 - All new pages must use useTranslation (fr/en/ar)
 - All new SQL tables must have RLS policies
-- Validate with tsc --noEmit after each sprint
+- Validate with `npm run typecheck` (`tsc -b --noEmit`) after each sprint

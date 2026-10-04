@@ -1,0 +1,48 @@
+{
+  "signatures": {
+    "title": "التواقيع الإلكترونية",
+    "subtitle": "إدارة تواقيع المستندات",
+    "documentType": "نوع المستند",
+    "documentId": "معرف المستند",
+    "signerName": "الموقع",
+    "signerEmail": "بريد الموقع",
+    "signedAt": "وقعت في",
+    "ipAddress": "عنوان IP",
+    "noSignatures": "لا توجد تواقيع",
+    "noSignaturesDescription": "لا توجد تواقيع إلكترونية مسجلة",
+    "new": "توقيع جديد"
+  },
+  "payments": {
+    "title": "المدفوعات الإلكترونية",
+    "subtitle": "تتبع مدفوعات العملاء عبر الإنترنت",
+    "invoice": "الفاتورة",
+    "customer": "العميل",
+    "provider": "المزود",
+    "amount": "المبلغ",
+    "currency": "العملة",
+    "status": "الحالة",
+    "pending": "قيد الانتظار",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    "refunded": "مسترد",
+    "paidAt": "دفع في",
+    "noPayments": "لا توجد مدفوعات",
+    "noPaymentsDescription": "لا توجد مدفوعات إلكترونية مسجلة"
+  },
+  "shares": {
+    "title": "مشاركة المستندات",
+    "subtitle": "إدارة روابط مشاركة المستندات",
+    "documentType": "نوع المستند",
+    "sharedWith": "تمت مشاركته مع",
+    "shareToken": "رمز المشاركة",
+    "expiresAt": "ينتهي في",
+    "viewed": "تمت المشاهدة",
+    "viewedAt": "شوهد في",
+    "notViewed": "لم يُشاهد",
+    "noShares": "لا توجد مشاركات",
+    "noSharesDescription": "لا توجد مشاركات مستندات مسجلة",
+    "new": "مشاركة جديدة",
+    "createLink": "إنشاء رابط",
+    "copyLink": "نسخ الرابط"
+  }
+}

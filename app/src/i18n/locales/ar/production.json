@@ -16,7 +16,8 @@
     "search": "بحث",
     "close": "إغلاق",
     "add": "إضافة",
-    "loading": "جار التحميل..."
+    "loading": "جار التحميل...",
+    "code": "الرمز"
   },
   "dashboard": {
     "title": "لوحة تحكم الإنتاج",
@@ -119,6 +120,7 @@
     "capHDay": "سعة/يوم",
     "costH": "تكلفة/ساعة",
     "confirmDeleteWorkCenter": "حذف هذا مركز العمل؟",
+    "codeAndNameRequired": "الرمز والاسم مطلوبان",
     "export": "تصدير",
     "import": "استيراد",
     "statuses": {
@@ -203,7 +205,17 @@
         "expiryDate": "تاريخ الصلاحية",
         "expiryType": "نوع الصلاحية",
         "additionalText": "نص إضافي",
-        "notes": "ملاحظات"
+        "notes": "ملاحظات",
+        "cost": "تكلفة الإنتاج",
+        "calculateCost": "حساب التكلفة",
+        "costFromClosing": "(تكلفة الإقفال)",
+        "costVariance": "انحراف التكلفة",
+        "costVarianceHint": "المعياري ناقص الفعلي",
+        "materialCost": "تكلفة المواد",
+        "laborCost": "تكلفة العمالة",
+        "overheadCost": "التكاليف غير المباشرة",
+        "unitCost": "تكلفة الوحدة",
+        "totalCost": "التكلفة الإجمالية"
       },
       "labels": {
         "count": "عدد الملصقات",
@@ -308,7 +320,13 @@
       "manual": "يدوي",
       "mrp": "تخطيط الاحتياجات",
       "sub_level": "مستوى فرعي"
-    }
+    },
+    "count": "{{count}} أمر",
+    "selectWarehouse": "اختر مستودعاً",
+    "selectRouting": "اختر مساراً",
+    "stock": "المخزون",
+    "stockGenerated": "أُنتج",
+    "stockPending": "قيد الانتظار"
   },
   "subcontracting": {
     "title": "التعهيد",
@@ -533,6 +551,8 @@
     "operation": "العملية",
     "duration": "المدة",
     "materials": "المواد",
+    "availability": "المشغّل",
+    "operatorAbsent": "المشغّل غائب",
     "ok": "موافق",
     "missing": "ناقص",
     "checkMaterials": "فحص المواد",

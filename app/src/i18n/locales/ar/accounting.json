@@ -55,6 +55,7 @@
     "structure": "الهيكل",
     "processing": "المعالجة",
     "states": "الكشوفات",
+    "reports": "التقارير",
     "quickActions": "إجراءات سريعة",
     "newEntry": "قيد جديد",
     "newJournal": "يومية جديدة",
@@ -152,12 +153,6 @@
       "expense": "مصروف"
     },
     "defaultTaxCode": "رمز الضريبة الافتراضي",
-    "nbLines": "عدد الأسطر",
-    "pageBreak": "أسطر لكل صفحة",
-    "regrouping": "تجميع",
-    "analyticEntry": "إدخال تحليلي",
-    "echeanceEntry": "إدخال تاريخ الاستحقاق",
-    "tiersEntry": "إدخال حساب طرف ثالث",
     "debitN1": "مدين N-1",
     "creditN1": "دائن N-1",
     "exerciseHint": "تقارير الأرصدة الافتتاحية تنشئ قيوداً في يومية العمليات المتنوعة.",
@@ -280,6 +275,10 @@
     "siret": "سيري (SIRET)",
     "vatIntra": "الرقم الضريبي الأوروبي",
     "iban": "آيبان (IBAN)",
+    "verifyIban": "تحقّق من IBAN",
+    "verifyingIban": "جارٍ التحقّق…",
+    "ibanChecked": "IBAN صالح (التنسيق وطول البلد ومفتاح التحقّق ISO 13616)",
+    "ibanInvalid": "IBAN غير صالح: {{reason}}",
     "bic": "بيك/SWIFT",
     "bankCode": "رمز البنك",
     "branchCode": "رمز الفرع",
@@ -302,7 +301,12 @@
     "freeInfoHint": "حقول مخصصة إضافية.",
     "placeholders": {
       "contactName": "جان دوبون"
-    }
+    },
+    "partnerDataHint": "يُعدَّل العنوان ورقم التسجيل ورقم الضريبة وجهة الاتصال في بطاقة العميل أو المورد: لا يحتفظ الحساب بنسخة منها.",
+    "banksNeedPartner": "اربط أولاً عميلاً أو مورداً: الحسابات البنكية تخص الطرف.",
+    "noPartnerBank": "لا توجد حسابات بنكية مسجلة لهذا الطرف.",
+    "defaultBank": "افتراضي",
+    "paymentTermHint": "يحسب نموذج السداد تاريخ استحقاق القيود المسجلة على هذا الحساب."
   },
   "journals": {
     "title": "رموز اليوميات",
@@ -388,7 +392,8 @@
     "end": "النهاية",
     "autoPeriodsHint": "سيتم إنشاء 12 فترة شهرية تلقائياً عند إنشاء السنة المالية.",
     "maxYears": "الحد الأقصى للسنوات المالية القابلة للاستعلام",
-    "maxYearsDescription": "حتى 10 سنوات مالية قابلة للاستعلام في وقت واحد"
+    "maxYearsDescription": "حتى 10 سنوات مالية قابلة للاستعلام في وقت واحد",
+    "description": "إدارة السنوات المالية وفتراتها"
   },
   "entries": {
     "title": "القيود المحاسبية",
@@ -510,7 +515,9 @@
     "thirdParty": "الطرف الثالث",
     "debitBalance": "رصيد مدين",
     "creditBalance": "رصيد دائن",
-    "export": "تصدير دفتر الأستاذ"
+    "export": "تصدير دفتر الأستاذ",
+    "generate": "إنشاء",
+    "generated": "تم إنشاء دفتر الأستاذ بنجاح"
   },
   "trialBalance": {
     "title": "ميزان المراجعة",
@@ -530,6 +537,8 @@
     "exportCSV": "تصدير CSV",
     "showZeroBalances": "عرض الأرصدة الصفرية",
     "groupByClass": "تجميع حسب الفئة",
+    "generate": "إنشاء",
+    "generated": "تم إنشاء ميزان المراجعة بنجاح",
     "classLabels": {
       "1": "الفئة 1 — رأس المال",
       "2": "الفئة 2 — الأصول الثابتة",
@@ -606,7 +615,8 @@
     "bapError": "خطأ في تعليم الموافقة",
     "marking": "التعليم",
     "markingApplied": "تم تطبيق التعليم",
-    "markingError": "خطأ في تطبيق التعليم"
+    "markingError": "خطأ في تطبيق التعليم",
+    "searchError": "فشل البحث"
   },
   "journalsReport": {
     "breadcrumb": "التقارير",
@@ -658,7 +668,11 @@
     "totalJournals": "إجمالي اليوميات",
     "totalPeriods": "إجمالي الفترات",
     "closedJournals": "يوميات مقفلة",
-    "openJournals": "يوميات مفتوحة"
+    "openJournals": "يوميات مفتوحة",
+    "activeJournals": "اليوميات النشطة",
+    "closedEntries": "القيود المقفلة",
+    "periods": "الفترات",
+    "totalEntries": "إجمالي القيود"
   },
   "saisie": {
     "title": "إدخال اليوميات",
@@ -797,7 +811,35 @@
     "openingLines": "بنود الافتتاح",
     "closingLines": "بنود الإقفال",
     "resultAmount": "نتيجة السنة المالية",
-    "openingEntriesPreview": "معاينة قيود الافتتاح"
+    "openingEntriesPreview": "معاينة قيود الافتتاح",
+    "allocation": {
+      "title": "توزيع نتيجة السنة {{code}}",
+      "introProfit": "ربح قدره {{amount}}: وزّعه بين الاحتياطيات والأرباح المرحّلة وتوزيعات الأرباح. لا يمكن إقفال السنة التالية قبل ذلك.",
+      "introLoss": "خسارة قدرها {{amount}}: خصّصها للخسائر المرحّلة أو حمّلها على الاحتياطيات. لا يمكن إقفال السنة التالية قبل ذلك.",
+      "account": "الحساب",
+      "amount": "المبلغ",
+      "addLine": "إضافة سطر",
+      "removeLine": "حذف السطر",
+      "date": "تاريخ قيد التوزيع",
+      "remaining": "المتبقي للتوزيع: {{amount}}",
+      "submit": "توزيع النتيجة",
+      "saving": "جارٍ التوزيع…",
+      "done": "تم توزيع نتيجة السنة {{code}}",
+      "blocking": "لا يمكن الإقفال: وزّع أولاً نتيجة السنة {{codes}} (بطاقة «توزيع النتيجة» أعلاه).",
+      "accounts": {
+        "106100": "الاحتياطي القانوني",
+        "106800": "احتياطيات أخرى",
+        "110000": "أرباح مرحّلة",
+        "457000": "أرباح مستحقة التوزيع",
+        "108000": "حساب المستغل",
+        "119000": "خسائر مرحّلة (مدين)"
+      }
+    },
+    "carryForwardEntry": "قيد الأرصدة الافتتاحية",
+    "closeEntry": "قيد الإقفال",
+    "integrityHash": "بصمة السلامة",
+    "resultAccount": "حساب النتيجة",
+    "resultComputed": "نتيجة السنة المالية: {{amount}}"
   },
   "brouillard": {
     "title": "مسودة اليومية",
@@ -945,7 +987,10 @@
     "financialCharges": "المصاريف المالية (66)",
     "netResultFinal": "النتيجة الصافية",
     "category": "البند",
-    "amountCol": "المبلغ"
+    "amountCol": "المبلغ",
+    "generate": "إنشاء حساب النتائج",
+    "generated": "تم إنشاء حساب النتائج بنجاح",
+    "exceptionalCharges": "الأعباء الاستثنائية"
   },
   "analytic": {
     "title": "الأقسام التحليلية",
@@ -1026,9 +1071,11 @@
     "variancePct": "الانحراف %",
     "status": "الحالة",
     "withinBudget": "ضمن الميزانية",
-    "overrun": "تجاوز"
+    "overrun": "تجاوز",
+    "name": "اسم الميزانية"
   },
   "budgetCommitments": {
+    "chooseSupplier": "— اختر موردًا —",
     "title": "الالتزامات الميزانية",
     "subtitle": "{{count}} التزام — {{total}} نشط",
     "new": "التزام جديد",
@@ -1187,10 +1234,44 @@
     "calculateDepreciation": "حساب الإهلاك",
     "derogatoryDepreciation": "إهلاك استثنائي",
     "subventionAmount": "مبلغ الإعانة",
-    "subventionAccount": "حساب الإعانة"
+    "subventionAccount": "حساب الإعانة",
+    "amount": "المبلغ",
+    "capitalGain": "فائض القيمة",
+    "capitalLoss": "ناقص القيمة",
+    "category": "الفئة",
+    "categoryPlaceholder": "مثال: معدات معلوماتية",
+    "confirmDisposal": "تأكيد التنازل",
+    "cumulative": "المجموع التراكمي",
+    "cumulativeDepreciation": "مجمع الاهتلاكات",
+    "currentNetValue": "القيمة الصافية الحالية",
+    "depMethods": {
+      "declining_balance": "متناقص",
+      "straight_line": "خطي",
+      "units_of_production": "وحدات الإنتاج"
+    },
+    "depreciation": "الاهتلاك",
+    "depreciationHistory": "سجل الاهتلاكات",
+    "disposal": "التنازل",
+    "disposalDate": "تاريخ التنازل",
+    "disposalPrice": "سعر التنازل",
+    "entryNumber": "رقم القيد",
+    "estimatedCurrentValue": "القيمة الحالية المقدرة",
+    "netValue": "القيمة الصافية",
+    "noDepreciation": "لا توجد اهتلاكات مسجلة",
+    "period": "الفترة",
+    "purchaseDate": "تاريخ الاقتناء",
+    "purchaseValue": "قيمة الاقتناء",
+    "recalcComplete": "تمت إعادة حساب الاهتلاكات",
+    "recalcCompleteMsg": "تم ترحيل {{count}} من الأصول الثابتة",
+    "depreciationFailures": "فشل {{count}} من الأصول الثابتة — لم يُسجَّل أي قيد إهلاك لها",
+    "noOpenYear": "لا توجد سنة مالية مفتوحة: أنشئ السنة المالية قبل حساب الإهلاك",
+    "residualValue": "القيمة المتبقية",
+    "totalPurchaseValue": "إجمالي قيمة الاقتناء",
+    "usefulLifeYears": "العمر الإنتاجي (بالسنوات)"
   },
   "analyticBalance": {
     "title": "الميزان التحليلي",
+    "fiscalYear": "السنة المالية",
     "subtitle": "التوزيع حسب القسم التحليلي",
     "breadcrumb": "الكشوفات",
     "code": "الرمز",
@@ -1240,7 +1321,10 @@
     "type": "النوع",
     "typeSection": "قسم",
     "typeTotal": "إجمالي",
-    "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي."
+    "complementHint": "تفعيل أو إلغاء تفعيل هذا القسم. الأقسام غير النشطة لا تظهر في الإدخال التحليلي.",
+    "deleteSuccess": "تم حذف القسم التحليلي",
+    "saveSuccess": "تم حفظ القسم التحليلي",
+    "totalNotImputable": "القسم «الإجمالي» يجمع أقساماً أخرى: لا يستقبل أي توزيع."
   },
   "balanceSheet": {
     "title": "الميزانية",
@@ -1252,7 +1336,13 @@
     "account": "الحساب",
     "amount": "المبلغ",
     "totalAssets": "إجمالي الأصول",
-    "totalLiabilitiesEquity": "إجمالي الخصوم + حقوق الملكية"
+    "totalLiabilitiesEquity": "إجمالي الخصوم + حقوق الملكية",
+    "generate": "إنشاء الميزانية",
+    "generated": "تم إنشاء الميزانية بنجاح",
+    "unclassified": "حسابات غير مصنفة",
+    "unclassifiedHint": "حسابات غير موجودة في دليل الحسابات: أضفها إلى الدليل لتظهر في الأصول أو الخصوم.",
+    "unbalanced": "الميزانية غير متوازنة: الأصول ({{assets}}) تختلف عن الخصوم وحقوق الملكية ({{liabilities}})، الفرق {{gap}}. تحقق من الحسابات غير المصنفة وقيود السنة.",
+    "balanced": "الميزانية متوازنة"
   },
   "cashFlow": {
     "title": "التدفق النقدي",
@@ -1290,7 +1380,10 @@
     "vat": "ضريبة القيمة المضافة",
     "legendRevenues": "الإيرادات",
     "legendExpenses": "المصاريف",
-    "legendProfit": "الربح"
+    "legendProfit": "الربح",
+    "generateAnnex": "إنشاء الملحق المحاسبي",
+    "annexGenerated": "تم إنشاء الملحق المحاسبي بنجاح",
+    "noData": "لا توجد قيود مُرحَّلة في هذه السنة المالية."
   },
   "reports": {
     "paymentDelay": {
@@ -1383,7 +1476,13 @@
       "extourned": "معكوس"
     },
     "filterByType": "تصفية حسب النوع",
-    "all": "الكل"
+    "all": "الكل",
+    "generateAdjusting": "تسوية",
+    "calculateProvisions": "مخصصات",
+    "adjustingGenerated": "تم إنشاء قيود التسوية",
+    "provisionsCalculated": "تم حساب المخصصات بنجاح",
+    "postDeferred": "ترحيل المصروفات المؤجلة",
+    "deferredPosted": "تم ترحيل المصروفات المؤجلة بنجاح"
   },
   "gdpr": {
     "title": "الامتثال لـ RGPD",
@@ -1499,7 +1598,7 @@
   },
   "bankImport": {
     "title": "استيراد كشوف الحساب البنكي",
-    "subtitle": "استورد كشوفك (CFONB, MT940, Camt.053)",
+    "subtitle": "استورد كشوفك (CFONB, MT940, Camt.053, OFX)",
     "breadcrumb": "استيراد الكشوف",
     "upload": "رفع",
     "uploading": "جار الرفع...",
@@ -1518,7 +1617,12 @@
       "processing": "قيد المعالجة",
       "completed": "مكتمل",
       "failed": "فشل"
-    }
+    },
+    "autoDetect": "اكتشاف تلقائي",
+    "nothingRead": "تعذّرت قراءة أي عملية من هذا الملف.",
+    "importSummary": "تم استيراد {{imported}} عملية، وتجاهل {{duplicates}} موجودة مسبقًا.",
+    "currencyMismatch": "هذا الكشف بعملة {{statement}} بينما الحساب بعملة {{account}}: المبالغ ليست بالوحدة نفسها. استورد كشفًا بعملة {{account}}، أو اختر الحساب المطابق.",
+    "closingBalanceSaved": "تم تسجيل الرصيد الختامي للكشف على الحساب: {{amount}} بتاريخ {{date}}."
   },
   "ediTva": {
     "title": "التصريح الإلكتروني للضريبة (EDI-TVA)",
@@ -1598,6 +1702,8 @@
   "revaluation": {
     "title": "إعادة تقييم العملات",
     "subtitle": "أعد تقييم ذممك المدينة والدائنة بالعملات الأجنبية",
+    "run": "أعد تقييم الفترة",
+    "runDone": "تمت إعادة تقييم {{lines}} سطر، فرق الصرف {{amount}}",
     "breadcrumb": "إعادة تقييم العملات",
     "new": "إعادة تقييم جديدة",
     "create": "إنشاء إعادة تقييم",
@@ -1633,6 +1739,7 @@
     "title": "التذكيرات وروابط الدفع",
     "subtitle": "إدارة التذكيرات وإنشاء روابط الدفع عبر الإنترنت",
     "breadcrumb": "التذكيرات",
+    "reminder": "تذكير",
     "customer": "العميل",
     "invoice": "الفاتورة",
     "amount": "المبلغ",
@@ -1687,6 +1794,8 @@
     "deleteConfirm": "حذف هذا الاشتراك؟",
     "deleteSuccess": "تم حذف الاشتراك",
     "saveSuccess": "تم حفظ الاشتراك",
+    "fillRequired": "يرجى ملء جميع الحقول المطلوبة",
+    "unbalanced": "القيد غير متوازن (مدين ≠ دائن)",
     "noEntries": "لا يوجد اشتراك",
     "noEntriesDescription": "أنشئ أول اشتراك لك لأتمتة القيود المتكررة.",
     "frequencies": {
@@ -1715,7 +1824,10 @@
     "description": "تكوين خيارات الإدخال المحاسبي",
     "saisieNegative": "السماح بالإدخال السلبي (مدين سلبي / دائن سلبي)",
     "multiCurrency": "عملة مزدوجة (إدخال بالعملة الأجنبية + تحويل)",
-    "showQuantities": "إظهار الكميات في الإدخال"
+    "showQuantities": "إظهار الكميات في الإدخال",
+    "ocrConsent": "إرسال المستندات إلى مزوّد تعرّف ضوئي / ذكاء اصطناعي (قراءة الفواتير تلقائياً)",
+    "ocrConsentHint": "بدون هذه الموافقة، تُرفض القراءة التلقائية لفاتورة المورد: لا يُرسل المستند، والشاشة توضح ذلك. الموافقة مؤرَّخة وموقَّعة من البرنامج.",
+    "ocrConsentSince": "تمت الموافقة في {{date}}"
   },
   "vatParams": {
     "title": "معلمات الضريبة على القيمة المضافة",
@@ -2777,6 +2889,27 @@
     "saved": "تم حفظ الحسابات المرتبطة بنجاح",
     "generateDepreciationEntry": "إنشاء قيد الإهلاك",
     "entryGenerated": "تم إنشاء قيد الإهلاك بنجاح",
-    "entryError": "خطأ في إنشاء قيد الإهلاك"
+    "entryError": "خطأ في إنشاء قيد الإهلاك",
+    "noOpenYear": "لا توجد سنة مالية مفتوحة: افتح سنة قبل تسجيل قيد الإهلاك"
+  },
+  "currencyCode": "العملة",
+  "etats": {
+    "breadcrumb": "القوائم"
+  },
+  "structure": {
+    "breadcrumb": "الهيكل"
+  },
+  "treatment": {
+    "breadcrumb": "المعالجة"
+  },
+  "entryValidation": {
+    "validate": "تصديق",
+    "validateSelection": "تصديق المحدد ({{count}})",
+    "validated": "تم تصديق {{count}} قيد",
+    "refused": "{{number}} غير مصدق: {{error}}",
+    "saveAndValidate": "حفظ وتصديق",
+    "draft": "مسودة",
+    "posted": "مصدق",
+    "selectAll": "تحديد الكل"
   }
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <Stmt>
+      <Id>RELEVE-EXEMPLE-0001</Id>
+      <ElctrncSeqNb>1</ElctrncSeqNb>
+      <CreDtTm>2025-01-03T18:00:00</CreDtTm>
+      <Acct>
+        <Id><IBAN>FR7630004000030000000000123</IBAN></Id>
+        <Ccy>EUR</Ccy>
+      </Acct>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>OPBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="EUR">1000.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2025-01-01</Dt></Dt>
+      </Bal>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="EUR">1107.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2025-01-03</Dt></Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="EUR">500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><Dt>2025-01-01</Dt></BookgDt>
+        <ValDt><Dt>2025-01-01</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>REF-2025-0001</EndToEndId></Refs>
+            <RmtInf><Ustrd>VIREMENT RECU CLIENT EXEMPLE</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>VIREMENT RECU CLIENT EXEMPLE</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">120.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <BookgDt><Dt>2025-01-02</Dt></BookgDt>
+        <ValDt><Dt>2025-01-02</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>FRAIS-2025-01</EndToEndId></Refs>
+            <RmtInf><Ustrd>FRAIS BANCAIRES TENUE DE COMPTE</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>FRAIS BANCAIRES TENUE DE COMPTE</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">273.00</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <BookgDt><Dt>2025-01-03</Dt></BookgDt>
+        <ValDt><Dt>2025-01-03</Dt></ValDt>
+        <NtryDtls>
+          <TxDtls>
+            <Refs><EndToEndId>PRLV-2025-0001</EndToEndId></Refs>
+            <RmtInf><Ustrd>PRLV FOURNISSEUR EXEMPLE</Ustrd></RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>PRLV FOURNISSEUR EXEMPLE</AddtlNtryInf>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

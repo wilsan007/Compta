@@ -20,36 +20,42 @@
 -- ============================================
 -- current_tenant_id(): returns the active tenant
 -- ============================================
--- 1. Check if app.active_tenant_id is set (via set_config)
--- 2. Validate that the user is actually a member of that tenant
--- 3. Fall back to the first active tenant for this user
+-- SEC-03: Suppression du fallback "premier tenant".
+--   Si aucun tenant n'est explicitement défini, renvoie NULL
+--   → RLS bloque toutes les requêtes (fail-closed).
+--
+-- Ordre de résolution :
+-- 1. En-tête x-tenant-id (request.headers, fiable derrière pooler)
+-- 2. GUC app.active_tenant_id (set_config, session locale)
+-- 3. NULL (aucun tenant → aucune donnée)
+--
+-- Dans les deux cas, valide que l'utilisateur est membre du tenant.
 CREATE OR REPLACE FUNCTION current_tenant_id()
 RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  WITH active_tenant AS (
-    -- Try the GUC first
+  WITH candidates AS (
+    -- 1. En-tête x-tenant-id (transmis par PostgREST depuis le client)
+    SELECT NULLIF(
+      current_setting('request.headers', true)::json->>'x-tenant-id',
+      ''
+    )::uuid AS tid
+    UNION ALL
+    -- 2. GUC de session (set_config via set_active_tenant)
     SELECT NULLIF(current_setting('app.active_tenant_id', true), '')::uuid AS tid
   )
-  SELECT COALESCE(
-    -- If GUC is set AND user is a member of that tenant, use it
-    (SELECT at.tid FROM active_tenant at
-     WHERE at.tid IS NOT NULL
-       AND EXISTS (
-         SELECT 1 FROM tenant_users
-         WHERE auth_id = auth.uid()
-           AND status = 'active'
-           AND tenant_id = at.tid
-       )),
-    -- Otherwise return the first active tenant for this user
-    (SELECT tenant_id FROM tenant_users
-     WHERE auth_id = auth.uid()
-       AND status = 'active'
-     ORDER BY created_at ASC
-     LIMIT 1)
-  )
+  SELECT c.tid
+  FROM candidates c
+  WHERE c.tid IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM tenant_users
+      WHERE auth_id = auth.uid()
+        AND status = 'active'
+        AND tenant_id = c.tid
+    )
+  LIMIT 1
 $$;
 
 -- ============================================

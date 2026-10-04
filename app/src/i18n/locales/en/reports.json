@@ -101,7 +101,8 @@
     "noDeclarations": "No return",
     "noDeclarationsDescription": "Create your first VAT return.",
     "createFirst": "Create my first return",
-    "searchPlaceholder": "Search by period..."
+    "searchPlaceholder": "Search by period...",
+    "generated": "VAT return generated"
   },
   "journals": {
     "title": "Journals",

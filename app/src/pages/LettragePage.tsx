@@ -1,14 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  getThirdPartyAccounts, getUnletteredLines, getLetteredLines,
-  applyLettrage, removeLettrage, getNextLettrageCode,
-} from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getThirdPartyAccounts, getUnletteredLines, getLetteredLines, applyLettrage, removeLettrage, getNextLettrageCode } from '@/lib/queries/accounting'
 import { Link2, Unlink, Search, Wand2 } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function LettragePage() {
   const { toast } = useToast()
@@ -16,8 +14,8 @@ export function LettragePage() {
   const { t: tCommon } = useTranslation('common')
 const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
-  const [unlettered, setUnlettered] = useState<any[]>([])
-  const [lettered, setLettered] = useState<any[]>([])
+  const [unlettered, setUnlettered] = useState<Awaited<ReturnType<typeof getUnletteredLines>>>([])
+  const [lettered, setLettered] = useState<Awaited<ReturnType<typeof getLetteredLines>>>([])
   const [loading, setLoading] = useState(true)
   const [loadingLines, setLoadingLines] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -25,14 +23,15 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [filterType, setFilterType] = useState('')
   const [tolerance, setTolerance] = useState('0.01')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadThirdParties() }, [])
 
   async function loadThirdParties() {
     try {
       const tp = await getThirdPartyAccounts()
       setThirdParties(tp || [])
-    } catch (err) {
-      console.error('Error loading third parties:', err)
+    } catch (err) { console.error('Error loading third parties:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -41,6 +40,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   useEffect(() => {
     if (selectedTiers) { loadLines() }
     else { setUnlettered([]); setLettered([]) }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedTiers])
 
   async function loadLines() {
@@ -53,8 +53,8 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       ])
       setUnlettered(ul || [])
       setLettered(l || [])
-    } catch (err) {
-      console.error('Error loading lines:', err)
+    } catch (err) { console.error('Error loading lines:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingLines(false)
     }
@@ -82,18 +82,18 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       const code = await getNextLettrageCode()
       await applyLettrage(Array.from(selected), code)
       await loadLines()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
   async function handleDelettrer(lineIds: string[]) {
-    if (!window.confirm(t('lettrage.unletterConfirm'))) return
+    if (!confirmSync(t('lettrage.unletterConfirm'))) return
     try {
       await removeLettrage(lineIds)
       await loadLines()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
@@ -138,9 +138,10 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const unletteredBalance = unlettered.reduce((s, l) => s + Number(l.debit) - Number(l.credit), 0)
 
   const letteredGroups = useMemo(() => {
-    const groups: Record<string, any[]> = {}
+    const groups: Record<string, typeof lettered> = {}
     for (const l of lettered) {
       const code = l.lettrage_code
+      if (!code) continue
       if (!groups[code]) groups[code] = []
       groups[code].push(l)
     }
@@ -162,9 +163,9 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.processing') }, { label: t('lettrage.title') }]} />
       <PageHeader title={t('lettrage.title')} subtitle={t('lettrage.subtitle')} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Third party selector */}
-        <div className="col-span-1">
+        <div className="lg:col-span-1">
           <Card>
             <div className="p-4 space-y-3">
               <div className="relative">
@@ -201,7 +202,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
         </div>
 
         {/* Right: Lines for selected third party */}
-        <div className="col-span-2">
+        <div className="col-span-2 lg:col-span-2">
           {!selectedTiers ? (
             <EmptyState icon={<Link2 className="w-8 h-8" />} title={t('lettrage.selectThirdParty')}
               description={t('lettrage.selectThirdPartyDescription')} />

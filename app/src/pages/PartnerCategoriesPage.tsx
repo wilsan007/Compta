@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select, ConfirmDialog } from '@/components/ui'
 import { Tag, Plus, Trash2, Edit2, X } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import {
-  getPartnerCategories, createPartnerCategory, updatePartnerCategory, deletePartnerCategory,
-} from '@/lib/queries'
+import { getPartnerCategories, createPartnerCategory, updatePartnerCategory, deletePartnerCategory } from '@/lib/queries/partners'
 import type { PartnerCategory } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function PartnerCategoriesPage() {
   const { t } = useTranslation('accounting')
@@ -23,8 +22,8 @@ export function PartnerCategoriesPage() {
     try {
       const data = await getPartnerCategories()
       setCategories(data || [])
-    } catch { } finally { setLoading(false) }
-  }, [])
+    } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) }
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -33,7 +32,7 @@ export function PartnerCategoriesPage() {
       await deletePartnerCategory(id)
       toast('success', tCommon('common.success'), t('partnerCategories.deleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   const colorClass: Record<string, string> = {
@@ -63,7 +62,7 @@ export function PartnerCategoriesPage() {
         />
       ) : (
         <Card>
-          <Table headers={[t('partnerCategories.colName'), t('partnerCategories.colColor'), t('partnerCategories.colParent'), tCommon('common.actions')]}>
+          <Table headers={[t('partnerCategories.colName'), t('partnerCategories.colColor'), t('partnerCategories.colParent'), tCommon('table.actions')]}>
             {categories.map((c) => {
               const parent = categories.find((p) => p.id === c.parent_id)
               return (
@@ -77,8 +76,8 @@ export function PartnerCategoriesPage() {
                   <TableCell className="text-xs">{parent?.name || '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="secondary" size="sm" onClick={() => { setEditing(c); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(c)}><Trash2 className="w-3 h-3" /></Button>
+                      <Button variant="secondary" size="sm" onClick={() => { setEditing(c); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(c)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -136,8 +135,8 @@ function CategoryForm({ category, categories, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('partnerCategories.created'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 
@@ -148,7 +147,7 @@ function CategoryForm({ category, categories, onClose, onSaved }: {
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{category ? t('partnerCategories.edit') : t('partnerCategories.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('partnerCategories.colName')} required value={name} onChange={e => setName(e.target.value)} />
@@ -165,7 +164,7 @@ function CategoryForm({ category, categories, onClose, onSaved }: {
             options={[{ value: '', label: t('partnerCategories.noParent') }, ...availableParents.map((c) => ({ value: c.id, label: c.name }))]} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

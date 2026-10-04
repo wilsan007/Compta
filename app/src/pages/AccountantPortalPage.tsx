@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Card, PageHeader, AutoBreadcrumb, EmptyState } from '@/components/ui'
+import { useToast } from '@/lib/toast'
 import { useAuth } from '@/lib/auth'
-import { getCompanySettings, getFiscalYears, getJournalEntries } from '@/lib/queries'
-import { formatDate } from '@/lib/utils'
+import { getCompanySettings, getFiscalYears, getJournalEntries } from '@/lib/queries/accounting'
+import { errorMessage, formatDate } from '@/lib/utils'
 import {
   FileText, BookOpen, Scale, Library, Receipt, BarChart3, FolderOpen, Lock, ArrowRight,
 } from 'lucide-react'
@@ -12,6 +13,8 @@ import type { CompanySettings, FiscalYear, JournalEntry } from '@/types'
 
 export function AccountantPortalPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { user, hasRole } = useAuth()
   const [company, setCompany] = useState<CompanySettings | null>(null)
   const [currentYear, setCurrentYear] = useState<FiscalYear | null>(null)
@@ -21,7 +24,8 @@ export function AccountantPortalPage() {
 
   useEffect(() => {
     if (!allowed) return
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [allowed])
 
   async function loadData() {
@@ -36,6 +40,7 @@ export function AccountantPortalPage() {
       setEntries((ent || []).slice(0, 5))
     } catch (err) {
       console.error('Error loading accountant portal:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 

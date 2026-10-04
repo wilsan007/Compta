@@ -1,0 +1,17 @@
+# Cloudflare Workers Static Assets (l'hébergement réel : worker « projet-compta »)
+# n'accepte que ces codes de statut en redirection : 200, 301, 302, 303, 307, 308.
+# Les règles de blocage qui renvoyaient un 404 ont donc été retirées : l'API les
+# refuse (« Valid status codes are 200, 301, 302 (default), 303, 307, or 308. Got
+# 404 ») et le déploiement échoue entièrement — mesuré le 23/09.
+#
+# Elles ne protégeaient d'ailleurs rien ici : `dist/` ne contient que
+# `index.html`, `assets/`, et les fichiers de `public/`. Ni `.git/`, ni `.env`,
+# ni `sql/`, ni `supabase/` ne sont publiés.
+#
+# Le repli SPA est assuré par `not_found_handling: "single-page-application"`
+# (wrangler.jsonc) : une règle `/* /index.html 200` est refusée comme boucle
+# infinie et n'a rien à faire ici.
+#
+# Netlify, s'il resservait un jour, garde les siennes dans `netlify.toml`
+# ([[redirects]]), indépendantes de ce fichier.
+

@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui'
-import { createTenantForUser, getLegislationPacks, getApplicableVatRates } from '@/lib/queries'
+import { createTenantForUser } from '@/lib/queries/misc'
+import { setTenantId } from '@/lib/supabase'
+import { getLegislationPacks, getApplicableVatRates } from '@/lib/queries/accounting'
 import type { LegislationPack, TaxRate } from '@/types'
 import { Building2, AlertCircle, CheckCircle2, MapPin, FileText, Phone, Scale, LayoutGrid } from 'lucide-react'
 import { COUNTRIES, CURRENCIES, getCurrencyForCountry, getCountryCode } from '@/lib/countries'
 import { SearchableSelect } from '@/components/SearchableSelect'
+import { getAvailableSignupCountries, type SignupCountry } from '@/lib/queries/chartPacks'
 
 export function OnboardingPage() {
   const { t } = useTranslation('auth')
@@ -20,9 +23,20 @@ export function OnboardingPage() {
   const [selectedPack, setSelectedPack] = useState<LegislationPack | null>(null)
   const [packTaxRates, setPackTaxRates] = useState<TaxRate[]>([])
 
+  // Pays ouverts à l'inscription : ceux qui ont un plan comptable publié (ou provisoire)
+  // null : liste indisponible (serveur antérieur à la migration 201) — le serveur reste juge
+  const [signupCountries, setSignupCountries] = useState<SignupCountry[] | null>([])
+
   useEffect(() => {
     getLegislationPacks().then(setLegislationPacks).catch(() => {})
+    getAvailableSignupCountries().then(setSignupCountries)
   }, [])
+
+  const availableCodes = new Set((signupCountries ?? []).map((c) => c.country_code))
+  const signupCountryOf = (country: string) => (signupCountries ?? []).find(
+    (c) => c.country_code === getCountryCode(country) || c.country_name.toLowerCase() === country.toLowerCase(),
+  )
+  const isCountryAvailable = (country: string) => signupCountries === null || !!signupCountryOf(country)
 
   // When a legislation pack is selected, auto-fill currency/country and fetch VAT rates
   useEffect(() => {
@@ -62,6 +76,10 @@ export function OnboardingPage() {
     { id: 'stock', icon: '📦', color: 'violet' },
     { id: 'production', icon: '🏭', color: 'rose' },
     { id: 'hr', icon: '👥', color: 'cyan' },
+    // W-QA (29/09/2026) : la navigation déclare « projectManagement » (18 écrans),
+    // mais l'assistant ne l'offrait pas — aucune société neuve ne pouvait donc
+    // l'activer. La tuile manquante est ajoutée.
+    { id: 'projectManagement', icon: '📋', color: 'lime' },
     { id: 'dashboards', icon: '📊', color: 'teal' },
     { id: 'reporting', icon: '📈', color: 'fuchsia' },
   ]
@@ -111,7 +129,8 @@ export function OnboardingPage() {
       return
     }
     setLoading(true)
-    const { success, error: createError } = await createTenantForUser({
+    try {
+      const { success, error: createError, tenantId: newTenantId } = await createTenantForUser({
       name: form.name.trim(),
       legal_name: form.legal_name.trim() || form.name.trim(),
       siren: form.siren.trim() || undefined,
@@ -124,23 +143,61 @@ export function OnboardingPage() {
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
       legislation_pack_code: form.legislation_pack_code || undefined,
-      enabled_modules: ['home', ...selectedModules, 'system'],
+      // `home` et `system` figurent déjà dans la sélection par défaut : on
+      // dédoublonne, sans quoi la société naît avec `['home','home',…,'system',
+      // 'system']` en base (mesuré le 29/09/2026).
+      enabled_modules: [...new Set(['home', ...selectedModules, 'system'])],
     })
     if (!success || createError) {
-      setError(createError || t('onboarding.createError'))
+      setError(createError === 'PAYS_NON_DISPONIBLE'
+        ? t('onboarding.countryUnavailable')
+        : createError || t('onboarding.createError'))
       setLoading(false)
       return
     }
-    await reloadUser()
-    setCreated(true)
+    // La société qui vient d'être créée doit devenir la société ACTIVE avant la
+    // relecture de l'utilisateur : toutes les lectures et écritures suivantes
+    // portent l'en-tête `x-tenant-id`, que lit `current_tenant_id()` — donc
+    // `can_perform()` et la RLS. Sans ce pas, l'assistant restait bloqué sur
+    // « Création… » alors que la société existait bel et bien en base (mesuré
+    // deux fois le 29/09/2026 : RPC 200 en 75 ms, écran figé ≥ 90 s).
+    if (newTenantId) {
+      try {
+        await setTenantId(newTenantId)
+      } catch (e) {
+        console.error('société créée mais non activée :', e)
+      }
+    }
+      await reloadUser()
+      setCreated(true)
+    } catch (e) {
+      // Un échec doit se DIRE. Sans cela l'écran restait sur « Création… »
+      // indéfiniment : mesuré le 29/09/2026 — aucune requête en attente, jeton
+      // valide, la RPC répond 200 en 11 ms, et la promesse rejetée n'était
+      // écoutée par personne.
+      console.error('onboarding : création de société en échec', e)
+      setError((e as Error)?.message || t('onboarding.createError'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Redirect to dashboard only after user state has been refreshed with tenantId
   useEffect(() => {
     if (created && user?.tenantId) {
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
   }, [created, user, navigate])
+
+  // … et si la relecture ne donne pas de société, on ne laisse pas l'écran figé
+  // sur « Création… » : le bouton redevient actif au bout de 4 s, l'utilisateur
+  // peut réessayer au lieu d'attendre un tourniquet éternel (défaut mesuré le
+  // 29/09/2026 : plus de 90 s sans fin ni message).
+  useEffect(() => {
+    if (!created) return
+    const timer = setTimeout(() => setLoading(false), 4000)
+    return () => clearTimeout(timer)
+  }, [created])
 
   function nextStep() {
     if (step === 1 && !form.name.trim()) {
@@ -149,6 +206,10 @@ export function OnboardingPage() {
     }
     if (step === 1 && !form.country) {
       setError(t('onboarding.countryRequired'))
+      return
+    }
+    if (step === 1 && !isCountryAvailable(form.country)) {
+      setError(t('onboarding.countryUnavailable'))
       return
     }
     if (step === 4 && selectedModules.length === 0) {
@@ -298,11 +359,19 @@ export function OnboardingPage() {
                   <SearchableSelect
                     value={form.country}
                     onChange={(v) => update('country', v)}
-                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                    options={[
+                      ...COUNTRIES.filter(isCountryAvailable).map((c) => ({ value: c, label: c })),
+                      ...COUNTRIES.filter((c) => !isCountryAvailable(c)).map((c) => ({
+                        value: c, label: c, disabled: true, hint: t('onboarding.countryComingSoon'),
+                      })),
+                    ]}
                     searchPlaceholder={t('onboarding.searchCountry')}
                     placeholder={t('onboarding.selectCountry')}
                     className="w-full"
                   />
+                  {signupCountryOf(form.country)?.provisional && (
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('onboarding.chartProvisional')}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -326,7 +395,7 @@ export function OnboardingPage() {
                     if (pack) setSelectedPack(pack)
                     update('legislation_pack_code', code)
                   }}
-                  options={legislationPacks.map((p) => ({
+                  options={legislationPacks.filter((p) => signupCountries === null || availableCodes.has(p.country_code)).map((p) => ({
                     value: p.code,
                     label: `${p.country_name} — ${p.accounting_standard} (${p.currency})`,
                   }))}

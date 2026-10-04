@@ -1,21 +1,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getStockQuantities } from '@/lib/queries'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getStockQuantities } from '@/lib/queries/stock'
 import { AlertTriangle, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 
 export function ReorderPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
-  const [stock, setStock] = useState<any[]>([])
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockQuantities>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     try { setStock(await getStockQuantities()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -24,7 +27,7 @@ export function ReorderPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('reorder.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('reorder.title') }]} />
       <PageHeader title={t('reorder.title')} subtitle={`${reorderItems.length} ${t('reorder.product').toLowerCase()}(s)`} />
 
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -46,7 +49,7 @@ export function ReorderPage() {
                   <TableCell className="text-xs">{q.warehouses?.name || '—'}</TableCell>
                   <TableCell className="font-mono text-xs text-[var(--color-danger)]">{Number(q.quantity)}</TableCell>
                   <TableCell className="font-mono text-xs">{Number(q.reorder_point)}</TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-[var(--color-warning)]">{toOrder}</TableCell>
+                  <TableCell className="font-mono text-xs font-bold text-[var(--color-warning-text)]">{toOrder}</TableCell>
                   <TableCell className="font-mono text-xs text-right">{formatCurrency(toOrder * Number(q.unit_cost))}</TableCell>
                 </TableRow>
               )

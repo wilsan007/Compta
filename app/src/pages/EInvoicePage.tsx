@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Badge, Select } from '@/components/ui'
-import { getInvoices, getCustomers, getCompanySettings } from '@/lib/queries'
+import { getInvoices } from '@/lib/queries/sales'
+import { submitEInvoice } from '@/lib/queries/misc'
+import { getCustomers } from '@/lib/queries/partners'
+import { getCompanySettings } from '@/lib/queries/accounting'
 import { generateFacturX, generateUBL, downloadXML } from '@/lib/facturX'
 import { useToast } from '@/lib/toast'
-import { FileCode, Download, FileText, CheckCircle2 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { FileCode, Download, FileText, CheckCircle2, Send } from 'lucide-react'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import type { Invoice, Customer, CompanySettings } from '@/types'
 
 export function EInvoicePage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -19,9 +23,14 @@ export function EInvoicePage() {
   const [format, setFormat] = useState<'facturx' | 'ubl'>('facturx')
   const [generated, setGenerated] = useState(false)
   const [preview, setPreview] = useState('')
+  // W6 / EF-06 : la soumission est un acte à part, qui passe par la fonction
+  // Edge. L'écran ne se contentait que de générer et télécharger le XML.
+  const [submitting, setSubmitting] = useState(false)
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -36,6 +45,7 @@ export function EInvoicePage() {
       setCompany(comp)
     } catch (err) {
       console.error('Error loading data:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -66,6 +76,44 @@ export function EInvoicePage() {
     const ext = format === 'facturx' ? 'factur-x' : 'ubl'
     downloadXML(xml, `${invoice.number}.${ext}.xml`)
     toast('info', t('eInvoice.downloadToast'), t('eInvoice.downloadToastDesc', { ext }))
+  }
+
+  // W6 / EF-06 : déposer réellement la facture. L'écran ne dit « déposée » que
+  // si la fonction Edge a confirmé le dépôt — et un dépôt déjà effectué n'est
+  // pas rejoué (la fonction le refuse et le dit).
+  async function handleSubmit() {
+    const invoice = invoices.find((i) => i.id === selectedInvoice)
+    if (!invoice) {
+      toast('error', t('eInvoice.selectInvoice'))
+      return
+    }
+    setSubmitting(true)
+    try {
+      // L'écran envoie **le XML qu'il vient de faire valider à l'utilisateur** :
+      // la pièce déposée est celle de l'aperçu, pas une seconde génération.
+      const invoice = invoices.find((i) => i.id === selectedInvoice)!
+      const customer = customers.find((c) => c.id === invoice.customer_id) || null
+      const xml = preview || (format === 'facturx'
+        ? generateFacturX(invoice, customer, company)
+        : generateUBL(invoice, customer, company))
+
+      const result = await submitEInvoice(
+        invoice.id,
+        'chorus_pro',
+        format === 'facturx' ? 'factur-x' : 'ubl',
+        xml
+      )
+      setSubmissionId(result.transaction_id || null)
+      if (result.already_submitted) {
+        toast('info', t('eInvoice.submitted'), t('eInvoice.alreadySubmitted'))
+      } else {
+        toast('success', t('eInvoice.submitted'), t('eInvoice.submittedDesc', { id: result.transaction_id || '—' }))
+      }
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('eInvoice.submitNotConfigured'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const sentInvoices = invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled')
@@ -121,6 +169,11 @@ export function EInvoicePage() {
                 <Download className="w-4 h-4" /> {t('eInvoice.download')}
               </Button>
             )}
+            {generated && (
+              <Button onClick={handleSubmit} disabled={submitting}>
+                <Send className="w-4 h-4" /> {submitting ? t('eInvoice.submitting') : t('eInvoice.submit')}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -152,6 +205,11 @@ export function EInvoicePage() {
           <div className="p-3 rounded-lg bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 text-sm text-[var(--color-success)] flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" /> {t('eInvoice.xmlValid')}
           </div>
+          {submissionId && (
+            <div className="p-3 rounded-lg bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-sm flex items-center gap-2">
+              <Send className="w-4 h-4" aria-hidden="true" /> {t('eInvoice.submittedDesc', { id: submissionId })}
+            </div>
+          )}
           <Card>
             <div className="p-4">
               <h3 className="text-sm font-semibold mb-2">{t('eInvoice.xmlPreview')}</h3>

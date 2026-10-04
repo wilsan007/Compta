@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <Stmt>
+      <Id>RELEVE-EXEMPLE-USD</Id>
+      <CreDtTm>2025-01-03T18:00:00</CreDtTm>
+      <Acct>
+        <Id><IBAN>FR7630004000030000000000123</IBAN></Id>
+        <Ccy>USD</Ccy>
+      </Acct>
+      <Bal>
+        <Tp><CdOrPrtry><Cd>CLBD</Cd></CdOrPrtry></Tp>
+        <Amt Ccy="USD">1107.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt><Dt>2025-01-03</Dt></Dt>
+      </Bal>
+      <Ntry>
+        <Amt Ccy="USD">500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><Dt>2025-01-02</Dt></BookgDt>
+        <AddtlNtryInf>VIREMENT RECU CLIENT EXEMPLE</AddtlNtryInf>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

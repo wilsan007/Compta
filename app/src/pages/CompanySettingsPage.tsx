@@ -5,6 +5,7 @@ import { getCompanySettings, updateCompanySettings } from '@/lib/queries'
 import { useToast } from '@/lib/toast'
 import { Save, Shield, Calculator, FileText, Lock, Settings } from 'lucide-react'
 import type { CompanySettings } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CompanySettingsPage() {
   const { t } = useTranslation('accounting')
@@ -34,8 +35,8 @@ export function CompanySettingsPage() {
     try {
       await updateCompanySettings(settings.id, settings)
       toast('success', tCommon('common.success'), tCommon('toast.saved'))
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -51,7 +52,7 @@ export function CompanySettingsPage() {
       <PageHeader
         title={t('companySettings.title', 'Paramètres société')}
         subtitle={t('companySettings.subtitle', 'Configuration comptable, fiscale et RGPD')}
-        action={<Button onClick={handleSave} disabled={saving || loading}><Save className="w-4 h-4" /> {saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>}
+        action={<Button onClick={handleSave} disabled={saving || loading}><Save className="w-4 h-4" /> {saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>}
       />
 
       {loading || !settings ? (
@@ -173,6 +174,36 @@ export function CompanySettingsPage() {
                   {t('companyPrefs.showQuantities', 'Afficher les quantités dans la saisie')}
                 </label>
               </div>
+            </div>
+          </Card>
+
+          {/* D-5 — LE CONSENTEMENT À L'ENVOI DE DOCUMENTS À UN TIERS.
+              Ce n'est pas une préférence d'affichage : c'est une décision sur les
+              données de la société, et c'est la BASE qui la date et la signe (le
+              client ne peut ni l'antidater ni se l'attribuer). Sans elle, la
+              fonction d'OCR refuse — le document ne part pas. */}
+          <Card>
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-[var(--color-primary)]" />
+                <h3 className="text-sm font-semibold">{t('companyPrefs.ocrConsent', 'Envoi des documents à un prestataire d’OCR / d’IA')}</h3>
+              </div>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.ocr_consent || false}
+                  onChange={(e) => update('ocr_consent', e.target.checked)}
+                  className="w-4 h-4 mt-0.5 rounded border-[var(--color-border)]"
+                />
+                <span className="text-[var(--color-text-secondary)]">
+                  {t('companyPrefs.ocrConsentHint', 'Sans ce consentement, la lecture automatique d’une facture fournisseur est refusée : le document ne part pas.')}
+                </span>
+              </label>
+              {settings.ocr_consent && settings.ocr_consent_at && (
+                <p className="text-xs text-[var(--color-text-secondary)] mt-3">
+                  {t('companyPrefs.ocrConsentSince', { date: new Date(settings.ocr_consent_at).toLocaleDateString(), defaultValue: 'Consenti le {{date}}' })}
+                </p>
+              )}
             </div>
           </Card>
 

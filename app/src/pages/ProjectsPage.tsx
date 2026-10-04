@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getProjects, createProject, updateProject, deleteProject, getCustomers } from '@/lib/queries'
-import { formatCurrency } from '@/lib/utils'
-import { FolderKanban, Plus, Trash2, X } from 'lucide-react'
+import { getProjects, createProject, updateProject, deleteProject } from '@/lib/queries/accounting'
+import { getCustomers } from '@/lib/queries/partners'
+import { calculateProjectProfitability } from '@/lib/queries/businessFunctions'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { FolderKanban, Plus, Trash2, X, Calculator } from 'lucide-react'
 import type { Project, Customer } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
+import { confirmSync } from '@/lib/confirm'
 
 export function ProjectsPage() {
   const { toast } = useToast()
@@ -24,22 +27,22 @@ const [projects, setProjects] = useState<Project[]>([])
       const [p, c] = await Promise.all([getProjects(), getCustomers()])
       setProjects(p)
       setCustomers(c)
-    } catch (err) {
-      console.error('Failed to load projects:', err)
+    } catch (err) { console.error('Failed to load projects:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('projects.deleteConfirm'))) return
+  if (!confirmSync(t('projects.deleteConfirm'))) return
     try {
       await deleteProject(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -47,8 +50,21 @@ const [projects, setProjects] = useState<Project[]>([])
     try {
       await updateProject(id, { status: status as any })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    }
+  }
+
+  async function handleProfitability(id: string) {
+    try {
+      const r: any = await calculateProjectProfitability(id)
+      const eac = Number(r?.eac ?? 0)
+      const etc = Number(r?.etc ?? 0)
+      const cpi = Number(r?.cpi ?? 0)
+      const margin = Number(r?.margin ?? 0)
+      toast('success', t('projects.title'), `EAC: ${formatCurrency(eac)} • ETC: ${formatCurrency(etc)} • CPI: ${cpi.toFixed(2)} • ${t('projects.profitability')}: ${formatCurrency(margin)}`)
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -72,7 +88,7 @@ const [projects, setProjects] = useState<Project[]>([])
         />
       ) : (
         <Card>
-          <Table headers={[t('projects.name'), t('projects.customerName'), t('projects.budget'), t('projects.actualCost'), t('projects.profitability'), t('projects.status'), tCommon('actions')]}>
+          <Table headers={[t('projects.name'), t('projects.customerName'), t('projects.budget'), t('projects.actualCost'), t('projects.profitability'), t('projects.status'), tCommon('table.actions')]}>
             {projects.map((p) => {
               const customerName = customers.find(c => c.id === p.customer_id)?.name || t('projects.noCustomer')
               const profit = Number(p.budget) - Number(p.actual_cost)
@@ -98,9 +114,13 @@ const [projects, setProjects] = useState<Project[]>([])
                     </select>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => handleProfitability(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-info)]" title={t('projects.profitability')}>
+                        <Calculator className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )
@@ -138,8 +158,8 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
         start_date: startDate, end_date: endDate || null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -150,7 +170,7 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('projects.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('projects.name')} required value={name} onChange={(e) => setName(e.target.value)} />
@@ -166,7 +186,7 @@ function ProjectForm({ customers, onClose, onSaved }: { customers: Customer[]; o
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{t('projects.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('projects.createBtn')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('projects.createBtn')}</Button>
           </div>
         </form>
       </div>

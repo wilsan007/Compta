@@ -3,15 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Send, Truck, PackageCheck, Eye } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getSTOrders, createSTOrder, deleteSTOrder, updateSTOrder,
-  getSTShipments, deleteSTShipment,
-  getSTReceipts, deleteSTReceipt,
-  getSTSupervisorData,
-  getSuppliers, getProducts, getManufacturingOrders,
-} from '@/lib/queries'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { getSTOrders, createSTOrder, deleteSTOrder, updateSTOrder, getSTShipments, deleteSTShipment, getSTReceipts, deleteSTReceipt, getSTSupervisorData, getProducts } from '@/lib/queries/stock'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getManufacturingOrders } from '@/lib/queries/production'
+import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import type { Supplier, Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function SubcontractingOrdersPage() {
   const { toast } = useToast()
@@ -31,21 +29,21 @@ export function SubcontractingOrdersPage() {
       setSuppliers(sups || [])
       setProducts(prods || [])
       setMOs(moList || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTOrder(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleStatusChange(id: string, status: string) {
     try { await updateSTOrder(id, { status: status as any }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -75,7 +73,7 @@ export function SubcontractingOrdersPage() {
                   </select>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -105,7 +103,7 @@ function STOrderFormModal({ suppliers, products, mos, onClose, onSaved }: { supp
     e.preventDefault()
     if (!supplierId) { toast('error', tCommon('toast.error'), t('subcontracting.supplierRequired')); return }
     try {
-      const number = `ST-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('ST')
       await createSTOrder({
         number, supplier_id: supplierId, manufacturing_order_id: moId || null,
         routing_operation_id: null, product_id: productId || null,
@@ -114,7 +112,7 @@ function STOrderFormModal({ suppliers, products, mos, onClose, onSaved }: { supp
         expected_date: expectedDate || null, notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -153,16 +151,16 @@ export function SubcontractingShipmentsPage() {
 
   const loadData = useCallback(async () => {
     try { setShipments(await getSTShipments() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTShipment(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const shipStatusVariants: Record<string, 'neutral' | 'warning' | 'success'> = { pending: 'neutral', shipped: 'warning', returned: 'success' }
@@ -184,7 +182,7 @@ export function SubcontractingShipmentsPage() {
                 <TableCell className="text-xs">{formatDate(s.shipment_date)}</TableCell>
                 <TableCell className="text-sm">{s.warehouses?.name || '—'}</TableCell>
                 <TableCell><Badge variant={shipStatusVariants[s.status] || 'neutral'}>{t(`subcontracting.shipStatusLabels.${s.status}`, { defaultValue: s.status })}</Badge></TableCell>
-                <TableCell><button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -205,16 +203,16 @@ export function SubcontractingReceiptsPage() {
 
   const loadData = useCallback(async () => {
     try { setReceipts(await getSTReceipts() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteSTReceipt(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const receiptStatusVariants: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = { pending: 'neutral', received: 'success', partial: 'warning', cancelled: 'danger' }
@@ -237,7 +235,7 @@ export function SubcontractingReceiptsPage() {
                 <TableCell className="font-mono text-xs">{Number(r.quantity_received)}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(r.quantity_returned)}</TableCell>
                 <TableCell><Badge variant={receiptStatusVariants[r.status] || 'neutral'}>{t(`subcontracting.receiptStatusLabels.${r.status}`, { defaultValue: r.status })}</Badge></TableCell>
-                <TableCell><button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -252,14 +250,15 @@ export function SubcontractingReceiptsPage() {
 export function SubcontractingSupervisorPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     try { setData(await getSTSupervisorData() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 

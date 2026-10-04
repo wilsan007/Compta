@@ -16,7 +16,8 @@
     "search": "Rechercher",
     "close": "Fermer",
     "add": "Ajouter",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "code": "Code"
   },
   "dashboard": {
     "title": "Tableau de bord production",
@@ -119,6 +120,7 @@
     "capHDay": "Cap. h/j",
     "costH": "Coût/h",
     "confirmDeleteWorkCenter": "Supprimer ce centre de charge ?",
+    "codeAndNameRequired": "Le code et le nom sont requis",
     "export": "Export",
     "import": "Import",
     "statuses": {
@@ -203,7 +205,17 @@
         "expiryDate": "Date péremption",
         "expiryType": "Type péremption",
         "additionalText": "Texte complémentaire",
-        "notes": "Notes"
+        "notes": "Notes",
+        "cost": "Coût de production",
+        "calculateCost": "Calculer le coût",
+        "costFromClosing": "(coût de la clôture)",
+        "costVariance": "Écart de coût",
+        "costVarianceHint": "standard moins réel",
+        "materialCost": "Coût matières",
+        "laborCost": "Coût main-d'œuvre",
+        "overheadCost": "Frais généraux",
+        "unitCost": "Coût unitaire",
+        "totalCost": "Coût total"
       },
       "labels": {
         "count": "Nombre d'étiquettes",
@@ -308,7 +320,13 @@
       "manual": "Manuel",
       "mrp": "CBN",
       "sub_level": "Sous-niveau"
-    }
+    },
+    "count": "{{count}} ordre(s)",
+    "selectWarehouse": "Sélectionner un dépôt",
+    "selectRouting": "Sélectionner une gamme",
+    "stock": "Stock",
+    "stockGenerated": "Généré",
+    "stockPending": "En attente"
   },
   "subcontracting": {
     "title": "Sous-traitance",
@@ -533,6 +551,8 @@
     "operation": "Opération",
     "duration": "Durée",
     "materials": "Matières",
+    "availability": "Opérateur",
+    "operatorAbsent": "Opérateur absent",
     "ok": "OK",
     "missing": "Manquant",
     "checkMaterials": "Vérifier matières",

@@ -1,11 +1,13 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries'
-import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight } from 'lucide-react'
+import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select, Button } from '@/components/ui'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/lib/queries/accounting'
+import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react'
 import type { JournalEntry } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { useJournalValidation } from '@/hooks/useJournalValidation'
 
 export function BrouillardPage() {
   const { t } = useTranslation('accounting')
@@ -15,7 +17,11 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [journalFilter, setJournalFilter] = useState('')
+  // X2/C4 (D-A) : « Valider la sélection » — verdict par écriture
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const { validate, validating } = useJournalValidation(async () => { setSelected(new Set()); await load() })
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -23,8 +29,8 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       const data = await getBrouillard()
       setEntries(data || [])
-    } catch (err) {
-      console.error('Error loading brouillard:', err)
+    } catch (err) { console.error('Error loading brouillard:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -43,24 +49,36 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
     try {
       await updateEntryStatusDetail(id, 'printed')
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('brouillard.deleteConfirm'))) return
+    if (!confirmSync(t('brouillard.deleteConfirm'))) return
     try {
       await deleteJournalEntry(id)
       await load()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
   const filtered = journalFilter
     ? entries.filter((e) => e.journal_code === journalFilter)
     : entries
+
+  const drafts = filtered.filter((e) => e.status === 'draft')
+  const selectedDrafts = drafts.filter((e) => selected.has(e.id)).map((e) => e.id)
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const journals = [...new Set(entries.map((e) => e.journal_code).filter(Boolean))] as string[]
 
@@ -81,6 +99,19 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
             options={[{ value: '', label: tCommon('common.all') }, ...journals.map((j: string) => ({ value: j, label: j }))]}
           />
         </div>
+        {drafts.length > 0 && (
+          <label className="flex items-center gap-2 text-sm pb-2">
+            <input
+              type="checkbox"
+              checked={selectedDrafts.length === drafts.length}
+              onChange={(e) => setSelected(e.target.checked ? new Set(drafts.map((d) => d.id)) : new Set())}
+            />
+            {t('entryValidation.selectAll')}
+          </label>
+        )}
+        <Button disabled={!selectedDrafts.length || validating} onClick={() => validate(selectedDrafts)}>
+          <CheckCircle2 className="w-4 h-4" /> {t('entryValidation.validateSelection', { count: selectedDrafts.length })}
+        </Button>
         <div className="flex gap-4 ml-auto text-sm">
           <span className="text-[var(--color-text-secondary)]">{t('brouillard.totalDebit')}: <strong className="font-mono">{formatCurrency(totalDebit)}</strong></span>
           <span className="text-[var(--color-text-secondary)]">{t('brouillard.totalCredit')}: <strong className="font-mono">{formatCurrency(totalCredit)}</strong></span>
@@ -101,7 +132,17 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
             {filtered.map((entry) => (
               <Fragment key={entry.id}>
                 <TableRow onClick={() => toggle(entry.id)}>
-                  <TableCell className="w-8">
+                  <TableCell className="w-14">
+                    {entry.status === 'draft' && (
+                      <input
+                        type="checkbox"
+                        className="mr-1 align-middle"
+                        aria-label={t('entryValidation.validate')}
+                        checked={selected.has(entry.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleSelect(entry.id)}
+                      />
+                    )}
                     {entry.journal_lines && entry.journal_lines.length > 0
                       ? (expanded.has(entry.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />)
                       : <span className="w-4 inline-block" />}
@@ -122,9 +163,11 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
                       <button onClick={(e) => { e.stopPropagation(); handlePrint(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('brouillard.print')}>
                         <Printer className="w-4 h-4" />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {entry.status === 'draft' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

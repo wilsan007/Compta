@@ -22,9 +22,11 @@ CREATE INDEX IF NOT EXISTS idx_tax_groups_tenant ON tax_groups(tenant_id);
 
 ALTER TABLE tax_groups ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_groups_select ON tax_groups;
   CREATE POLICY tax_groups_select ON tax_groups FOR SELECT USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_groups_all ON tax_groups;
   CREATE POLICY tax_groups_all ON tax_groups FOR ALL USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -47,9 +49,11 @@ CREATE INDEX IF NOT EXISTS idx_tax_repartition_tax ON tax_repartition_lines(tax_
 
 ALTER TABLE tax_repartition_lines ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_repartition_select ON tax_repartition_lines;
   CREATE POLICY tax_repartition_select ON tax_repartition_lines FOR SELECT USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_repartition_all ON tax_repartition_lines;
   CREATE POLICY tax_repartition_all ON tax_repartition_lines FOR ALL USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -77,9 +81,11 @@ CREATE INDEX IF NOT EXISTS idx_tax_cash_basis_payment ON tax_cash_basis_entries(
 
 ALTER TABLE tax_cash_basis_entries ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_cash_basis_select ON tax_cash_basis_entries;
   CREATE POLICY tax_cash_basis_select ON tax_cash_basis_entries FOR SELECT USING (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tax_cash_basis_all ON tax_cash_basis_entries;
   CREATE POLICY tax_cash_basis_all ON tax_cash_basis_entries FOR ALL USING (true) WITH CHECK (true);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 

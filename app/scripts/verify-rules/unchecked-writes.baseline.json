@@ -1,0 +1,6 @@
+{
+  "frozenAt": "2026-09-26",
+  "note": "VAGUE W6 (26/09/2026) — BASELINE À ZÉRO. Gelée le 24/09 par W0 avec 25 occurrences (l'audit du 23/09 en comptait 29 ; quatre étaient déjà réparées). Toutes ont été corrigées : les fonctions Edge lisent désormais l'erreur de chacune de leurs écritures (`{ error }` — un `try/catch` ne suffisait pas, PostgREST ne lève pas), et les treize écritures du front attribuées aux autres vagues ont reçu la même lecture, chacune selon sa nature : `throw` quand la donnée est indispensable (soldes de congés, taux PAS/AT, propositions MRP, prévisions, créneaux, sous-tâches, journaux d'action, suppression d'un document) ou `console.error` explicite quand l'écriture est réellement best-effort (compteur de vues, journal d'accès aux documents). Le plafond ne peut que baisser : l'occurrence d'une instruction est gelée elle aussi.",
+  "total": 0,
+  "findings": []
+}

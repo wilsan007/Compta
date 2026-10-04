@@ -1,0 +1,94 @@
+{
+  "_schema": "skill-registry-v1",
+  "project": "compta",
+  "mandatory": true,
+  "rule": "AUCUNE tâche ne doit être exécutée sans qu'au moins un skill soit activé.",
+  "task_routing": {
+    "qa_testing": {
+      "match": ["test", "qa", "qualité", "vérifier", "auditer", "contrôler", "bug visuel", "table", "formulaire", "modal", "skeleton", "empty state"],
+      "skills": ["qa"],
+      "fallback": "qa-only"
+    },
+    "audit_only": {
+      "match": ["audit", "rapport", "inspecter", "diagnostic", "trouver bugs"],
+      "skills": ["qa-only"],
+      "fallback": "qa"
+    },
+    "code_review": {
+      "match": ["review", "pr", "pull request", "code review", "avant merge", "diff"],
+      "skills": ["review"],
+      "fallback": null
+    },
+    "debugging": {
+      "match": ["bug", "debug", "erreur", "crash", "ne marche pas", "cassé", "problème", "fix", "root cause"],
+      "skills": ["investigate"],
+      "fallback": "qa"
+    },
+    "security": {
+      "match": ["sécurité", "security", "rls", "injection", "xss", "auth", "tenant isolation", "vulnérabilité"],
+      "skills": ["cso"],
+      "fallback": "careful"
+    },
+    "destructive_ops": {
+      "match": ["drop", "delete", "truncate", "supprimer table", "commande destructive", "migration dangereuse"],
+      "skills": ["careful"],
+      "fallback": "guard"
+    },
+    "design_ui": {
+      "match": ["design", "ui", "visuel", "spacing", "layout", "couleur", "inconsistance", "responsive"],
+      "skills": ["design-review"],
+      "fallback": "design-consultation"
+    },
+    "design_system": {
+      "match": ["design system", "refonte ui", "charte graphique", "typographie", "palette"],
+      "skills": ["design-consultation"],
+      "fallback": "design-review"
+    },
+    "performance": {
+      "match": ["performance", "lenteur", "lcp", "inp", "cls", "bundle", "load time", "core web vitals", "optimiser"],
+      "skills": ["web-perf"],
+      "fallback": null
+    },
+    "spec_planning": {
+      "match": ["spec", "spécification", "cahier des charges", "décrire feature", "planifier feature", "requirements"],
+      "skills": ["spec"],
+      "fallback": null
+    },
+    "shipping": {
+      "match": ["ship", "déployer", "merge", "publier", "release", "version", "changelog"],
+      "skills": ["ship"],
+      "fallback": null
+    },
+    "code_health": {
+      "match": ["dette technique", "code quality", "health", "santé code", "qualité globale"],
+      "skills": ["health"],
+      "fallback": null
+    },
+    "retrospective": {
+      "match": ["rétro", "retrospective", "bilan semaine", "leçons", "post-mortem"],
+      "skills": ["retro"],
+      "fallback": null
+    },
+    "documentation": {
+      "match": ["documentation", "doc", "readme", "documenter"],
+      "skills": ["document-generate"],
+      "fallback": "document-release"
+    },
+    "cloudflare_dev": {
+      "match": ["cloudflare", "workers", "pages", "kv", "d1", "r2", "edge function", "wrangler"],
+      "skills": ["cloudflare"],
+      "fallback": "wrangler"
+    },
+    "implementation": {
+      "match": ["implémenter", "créer page", "ajouter feature", "nouveau module", "développer", "coder"],
+      "skills": ["spec"],
+      "fallback": "review"
+    },
+    "multi_agent": {
+      "match": ["multi agent", "multi-agent", "sprint", "parallèle", "42 éléments"],
+      "skills": ["spec"],
+      "fallback": "review"
+    }
+  },
+  "all_skills": ["qa", "qa-only", "review", "investigate", "cso", "careful", "guard", "design-review", "design-consultation", "web-perf", "spec", "ship", "health", "retro", "document-generate", "document-release", "cloudflare", "workers-best-practices", "wrangler"]
+}

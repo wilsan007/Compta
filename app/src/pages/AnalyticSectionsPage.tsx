@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getAnalyticSections, createAnalyticSection, updateAnalyticSection, deleteAnalyticSection, getAnalyticPlans } from '@/lib/queries'
+import { getAnalyticSections, createAnalyticSection, updateAnalyticSection, deleteAnalyticSection, getAnalyticPlans } from '@/lib/queries/accounting'
 import { Plus, Pencil, Trash2, X, PieChart } from 'lucide-react'
 import type { AnalyticSection, AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function AnalyticSectionsPage() {
   const { t } = useTranslation('accounting')
@@ -16,6 +18,7 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<AnalyticSection | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -24,8 +27,8 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
       const pl = await getAnalyticPlans().catch(() => [])
       setSections(data || [])
       setPlans(pl || [])
-    } catch (err) {
-      console.error('Error loading analytic sections:', err)
+    } catch (err) { console.error('Error loading analytic sections:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -35,9 +38,9 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
   function openEdit(s: AnalyticSection) { setEditing(s); setShowForm(true) }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('analyticSections.deleteConfirm'))) return
+  if (!confirmSync(t('analyticSections.deleteConfirm'))) return
     try { await deleteAnalyticSection(id); toast('success', tCommon('common.success'), t('analyticSections.deleteSuccess')); await load() }
-    catch (err) { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
+    catch { toast('error', tCommon('toast.error'), tCommon('toast.deleteError')) }
   }
 
   return (
@@ -69,12 +72,10 @@ const [sections, setSections] = useState<AnalyticSection[]>([])
                 <TableCell><Badge variant={s.active ? 'success' : 'danger'}>{s.active ? tCommon('common.yes') : tCommon('common.no')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -107,7 +108,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
   const [active, setActive] = useState(section?.active !== false)
   const [parentId, setParentId] = useState(section?.parent_id || '')
   const [level, setLevel] = useState(String(section?.level || 1))
-  const [sectionType, setSectionType] = useState((section as any)?.section_type || 'section')
+  const [sectionType, setSectionType] = useState<'section' | 'total'>(section?.section_type || 'section')
   const [plan, setPlan] = useState((section as any)?.plan_id || '')
   const [saving, setSaving] = useState(false)
 
@@ -122,8 +123,8 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
       else await createAnalyticSection(data as any)
       toast('success', tCommon('common.success'), t('analyticSections.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -139,7 +140,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{section ? t('analyticSections.edit') : t('analyticSections.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="flex border-b border-[var(--color-border)] px-6">
@@ -188,11 +189,14 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Input label={t('analyticSections.level')} type="number" value={level} onChange={(e) => setLevel(e.target.value)} placeholder="1" />
-                  <Select label={t('analyticSections.type')} value={sectionType} onChange={(e) => setSectionType(e.target.value)} options={[
+                  <Select label={t('analyticSections.type')} value={sectionType} onChange={(e) => setSectionType(e.target.value as 'section' | 'total')} options={[
                     { value: 'section', label: t('analyticSections.typeSection') },
                     { value: 'total', label: t('analyticSections.typeTotal') },
                   ]} />
                 </div>
+                {sectionType === 'total' && (
+                  <p className="text-xs text-[var(--color-text-secondary)]">{t('analyticSections.totalNotImputable')}</p>
+                )}
               </>
             )}
 
@@ -211,7 +215,7 @@ function SectionForm({ section, sections, plans, onClose, onSaved }: { section: 
 
           <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

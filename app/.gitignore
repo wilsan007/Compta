@@ -24,6 +24,10 @@ dist-ssr
 *.sw?
 .gstack/
 
+# Playwright
+test-results
+playwright-report
+
 # Security: Never commit credentials, secrets, or env files
 .env
 .env.*
@@ -32,3 +36,12 @@ dist-ssr
 !**/config.example.json
 mirror-daemon/config.json
 mirror-daemon/.machine-id
+
+# X0 : banc « chemin de l'écran » — secrets et comptes régénérés à chaque montage
+.screen-rig/
+
+# QA : l'essaim (scripts/qa) — comptes, sessions, captures et rapports sont des
+# artefacts de tournée : ils se régénèrent, ils ne se versionnent pas.
+.qa/
+.qa-out/
+

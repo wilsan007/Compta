@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import {
-  getFiscalYears, getJournalPeriodStatus,
-  closeJournalPeriod, reopenJournalPeriod,
-  closeFiscalPeriod, reopenFiscalPeriod,
-} from '@/lib/queries'
+import { getFiscalYears, getJournalPeriodStatus, closeJournalPeriod, reopenJournalPeriod, closeFiscalPeriod, reopenFiscalPeriod } from '@/lib/queries/accounting'
 import { Lock, Unlock, AlertTriangle } from 'lucide-react'
 import type { FiscalYear, FiscalPeriod, Journal } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 interface ClosureEntry {
   id: string
@@ -33,7 +31,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   useEffect(() => {
-    loadFiscalYears()
+    loadFiscalYears().catch(err => console.error('loadFiscalYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadFiscalYears() {
@@ -41,15 +40,16 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       const fy = await getFiscalYears()
       setFiscalYears(fy || [])
       if (fy && fy.length > 0) setSelectedYear(fy[0].id)
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err) { console.error('Error loading fiscal years:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (selectedYear) loadMatrix()
+    if (selectedYear) loadMatrix().catch(err => console.error('loadMatrix:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [selectedYear])
 
   async function loadMatrix() {
@@ -59,8 +59,8 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       setJournals(data.journals)
       setPeriods(data.periods)
       setEntries(data.entries as ClosureEntry[])
-    } catch (err) {
-      console.error('Error loading closure matrix:', err)
+    } catch (err) { console.error('Error loading closure matrix:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingMatrix(false)
     }
@@ -95,26 +95,26 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.entriesNotBalanced'))
       return
     }
-    if (!confirm(t('closure.closeJournalConfirm', { code: journalCode }))) return
+    if (!confirmSync(t('closure.closeJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await closeJournalPeriod(journalCode, periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
   }
 
   async function handleReopenJournal(journalCode: string, periodId: string) {
-    if (!confirm(t('closure.reopenJournalConfirm', { code: journalCode }))) return
+    if (!confirmSync(t('closure.reopenJournalConfirm', { code: journalCode }))) return
     setActionLoading(`${journalCode}-${periodId}`)
     try {
       await reopenJournalPeriod(journalCode, periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
@@ -129,26 +129,26 @@ const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
       toast('info', tCommon('toast.info'), t('closure.allJournalsMustBeClosed'))
       return
     }
-    if (!confirm(t('closure.closePeriodConfirm', { label: period.period_label }))) return
+    if (!confirmSync(t('closure.closePeriodConfirm', { label: period.period_label }))) return
     setActionLoading(`period-${periodId}`)
     try {
       await closeFiscalPeriod(periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }
   }
 
   async function handleReopenPeriod(periodId: string) {
-    if (!window.confirm(t('closure.reopenPeriodConfirm'))) return
+    if (!confirmSync(t('closure.reopenPeriodConfirm'))) return
     setActionLoading(`period-${periodId}`)
     try {
       await reopenFiscalPeriod(periodId)
       await loadMatrix()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setActionLoading(null)
     }

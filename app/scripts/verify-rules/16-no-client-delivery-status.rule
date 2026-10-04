@@ -1,0 +1,24 @@
+# rule: écriture du statut de livraison par l'écran
+# severity: error
+# pattern: `delivery_status:` / `fully_delivered:` — des CLÉS d'objet, donc des
+#          écritures (les lectures s'écrivent `.delivery_status`).
+# pourquoi: B1 (ven-005) — l'écran posait `delivery_status = 'delivered'` et
+#          `fully_delivered = true` dès la CRÉATION du bon de livraison, avant
+#          que la marchandise ne quitte le dépôt : la commande se disait livrée
+#          alors que le stock ne bougeait pas. Ces deux colonnes sont posées par
+#          la base, une seule fois, à la sortie réelle
+#          (`create_stock_out_on_delivery`, 314) — pour les bonnes PARTIELLES
+#          comme pour les complètes.
+# fix: ne pas écrire ces colonnes côté client ; lire `delivery_status` en
+#      revanche reste normal (affichage, filtrer les commandes à livrer).
+# note: `src/types/database-generated.ts` déclare ces colonnes ; le domaine
+#       surveillé est donc limité aux requêtes et aux écrans.
+
+RULE_NAME="Statut de livraison écrit par l'écran"
+RULE_DESC="delivery_status / fully_delivered écrits côté client (la base en est la seule autorité — B1)"
+RULE_SEVERITY="error"
+RULE_USE_MULTI_PATTERN=true
+RULE_GREP_PATTERNS=( "delivery_status:" "fully_delivered:" )
+RULE_GREP_INCLUDES="--include=*.ts --include=*.tsx"
+RULE_GREP_PATHS="src/lib/queries/ src/pages/ src/components/"
+RULE_GREP_EXCLUDES="node_modules"

@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getInvoices, getQuotes, getCreditNotes } from '@/lib/queries'
-import { formatCurrency, translateStatus } from '@/lib/utils'
+import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge, Button } from '@/components/ui'
+import { getInvoices, getQuotes, getCreditNotes } from '@/lib/queries/sales'
+import { calculateSalesCommissions } from '@/lib/queries/businessFunctions'
+import { errorMessage, formatCurrency, translateStatus } from '@/lib/utils'
 import type { Invoice, Quote, CreditNote } from '@/types'
 import { useToast } from '@/lib/toast'
+import { Calculator } from 'lucide-react'
 
 export function SalesDashboardPage() {
   const { toast } = useToast()
@@ -14,6 +16,23 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([])
   const [loading, setLoading] = useState(true)
+  const [calculatingCommissions, setCalculatingCommissions] = useState(false)
+
+  async function handleCalcCommissions() {
+    const period = new Date().toISOString().slice(0, 7)
+    setCalculatingCommissions(true)
+    try {
+      const result = await calculateSalesCommissions(period)
+      const summary = Array.isArray(result)
+        ? result.map((r: any) => `${r.rep_name || r.name || r.rep_id}: ${formatCurrency(r.commission || r.amount || 0)}`).join(' | ')
+        : JSON.stringify(result)
+      toast('success', tCommon('common.success'), `Commissions: ${summary}`)
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setCalculatingCommissions(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -23,7 +42,7 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
       setQuotes(q)
       setCreditNotes(cn)
     } catch (err) { console.error(err); toast('error', tCommon('toast.error'), tCommon('toast.loadingError')) } finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -37,7 +56,11 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
   return (
     <div>
       <Breadcrumb items={[{ label: t('dashboard.title') }]} />
-      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+      <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} action={
+        <Button variant="secondary" onClick={handleCalcCommissions} disabled={calculatingCommissions}>
+          <Calculator className="w-4 h-4" /> {calculatingCommissions ? '…' : 'Calculer les commissions'}
+        </Button>
+      } />
 
       {loading ? (
         <SkeletonTable rows={4} cols={4} />
@@ -46,7 +69,7 @@ const [invoices, setInvoices] = useState<Invoice[]>([])
           <div className="grid grid-cols-4 gap-4 mb-6">
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalInvoices')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalInvoiced)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.paidInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.pendingInvoices')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('creditNotes.title')}</p><p className="text-2xl font-bold font-mono text-[var(--color-danger)]">{formatCurrency(totalCreditNotes)}</p></div></Card>
           </div>
 

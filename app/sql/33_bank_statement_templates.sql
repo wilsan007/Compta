@@ -41,19 +41,23 @@ DROP POLICY IF EXISTS tenant_delete_bank_statement_templates ON bank_statement_t
 
 -- SECURITY: Use current_tenant_id() not auth.uid() — auth.uid() returns the Supabase auth user ID, not the tenant_id
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_select_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_select_bank_statement_templates ON bank_statement_templates
     FOR SELECT USING (tenant_id = current_tenant_id() OR tenant_id IS NULL);
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'select policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_insert_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_insert_bank_statement_templates ON bank_statement_templates
     FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'insert policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_update_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_update_bank_statement_templates ON bank_statement_templates
     FOR UPDATE USING (tenant_id = current_tenant_id())
     WITH CHECK (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'update policy: %', SQLERRM; END $$;
 DO $$ BEGIN
+  DROP POLICY IF EXISTS tenant_delete_bank_statement_templates ON bank_statement_templates;
   CREATE POLICY tenant_delete_bank_statement_templates ON bank_statement_templates
     FOR DELETE USING (tenant_id = current_tenant_id());
 EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'delete policy: %', SQLERRM; END $$;

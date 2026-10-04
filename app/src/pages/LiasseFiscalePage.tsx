@@ -1,30 +1,34 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select } from '@/components/ui'
-import { getFiscalYears, getBalanceSheet, getTrialBalance } from '@/lib/queries'
-import { formatCurrency } from '@/lib/utils'
+import { getFiscalYears, getBalanceSheet, getTrialBalance } from '@/lib/queries/accounting'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { incomeFromTrialBalance } from '@/lib/liasse'
 import { FileText, FileBarChart } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 
 export function LiasseFiscalePage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([])
   const [selectedYear, setSelectedYear] = useState('')
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [data, setData] = useState<{ assets: any[]; liabilities: any[]; equity: any[] } | null>(null)
-  const [trialBalance, setTrialBalance] = useState<any[]>([])
+  const [trialBalance, setTrialBalance] = useState<Awaited<ReturnType<typeof getTrialBalance>>>([])
 
   useEffect(() => {
-    loadFiscalYears()
+    loadFiscalYears().catch(err => console.error('loadFiscalYears:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadFiscalYears() {
     try {
       const years = await getFiscalYears()
       setFiscalYears(years || [])
-    } catch (err) {
-      console.error('Error loading fiscal years:', err)
+    } catch (err) { console.error('Error loading fiscal years:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -40,8 +44,7 @@ export function LiasseFiscalePage() {
       ])
       setData(bs)
       setTrialBalance(tb || [])
-    } catch (err) {
-      console.error('Error generating liasse:', err)
+    } catch (err) { console.error('Error generating liasse:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setGenerating(false)
     }
@@ -52,11 +55,9 @@ export function LiasseFiscalePage() {
   const totalEquity = (data?.equity || []).reduce((s, a) => s + (a.credit - a.debit), 0)
 
   // Income statement from trial balance (class 6 & 7)
-  const revenueAccounts = trialBalance.filter((a) => a.code?.startsWith('7'))
-  const expenseAccounts = trialBalance.filter((a) => a.code?.startsWith('6'))
-  const totalRevenue = revenueAccounts.reduce((s, a) => s + (a.credit - a.debit), 0)
-  const totalExpenses = expenseAccounts.reduce((s, a) => s + (a.debit - a.credit), 0)
-  const netResult = totalRevenue - totalExpenses
+  // 2.16 : la balance porte `account_code` / `total_debit` / `total_credit` — l'écran lisait
+  // `code` / `debit` / `credit` et son compte de résultat valait toujours 0.
+  const { revenueAccounts, expenseAccounts, totalRevenue, totalExpenses, netResult } = incomeFromTrialBalance(trialBalance)
 
   return (
     <div className="animate-fade-in">
@@ -107,7 +108,7 @@ export function LiasseFiscalePage() {
                     {data.assets.map((a) => (
                       <div key={a.code} className="flex justify-between text-sm py-1">
                         <span className="text-[var(--color-text-secondary)]">{a.code} — {a.name}</span>
-                        <span className="font-mono">{formatCurrency(a.debit - a.credit)}</span>
+                        <span className="font-mono">{formatCurrency(a.amount)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t border-[var(--color-border)]">
@@ -123,13 +124,13 @@ export function LiasseFiscalePage() {
                     {data.equity.map((a) => (
                       <div key={a.code} className="flex justify-between text-sm py-1">
                         <span className="text-[var(--color-text-secondary)]">{a.code} — {a.name}</span>
-                        <span className="font-mono">{formatCurrency(a.credit - a.debit)}</span>
+                        <span className="font-mono">{formatCurrency(a.amount)}</span>
                       </div>
                     ))}
                     {data.liabilities.map((a) => (
                       <div key={a.code} className="flex justify-between text-sm py-1">
                         <span className="text-[var(--color-text-secondary)]">{a.code} — {a.name}</span>
-                        <span className="font-mono">{formatCurrency(a.credit - a.debit)}</span>
+                        <span className="font-mono">{formatCurrency(a.amount)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t border-[var(--color-border)]">
@@ -153,7 +154,7 @@ export function LiasseFiscalePage() {
                     {revenueAccounts.map((a) => (
                       <div key={a.code} className="flex justify-between text-sm py-1">
                         <span className="text-[var(--color-text-secondary)]">{a.code} — {a.name}</span>
-                        <span className="font-mono">{formatCurrency(a.credit - a.debit)}</span>
+                        <span className="font-mono">{formatCurrency(a.amount)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t border-[var(--color-border)]">
@@ -168,7 +169,7 @@ export function LiasseFiscalePage() {
                     {expenseAccounts.map((a) => (
                       <div key={a.code} className="flex justify-between text-sm py-1">
                         <span className="text-[var(--color-text-secondary)]">{a.code} — {a.name}</span>
-                        <span className="font-mono">{formatCurrency(a.debit - a.credit)}</span>
+                        <span className="font-mono">{formatCurrency(a.amount)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-bold pt-2 border-t border-[var(--color-border)]">

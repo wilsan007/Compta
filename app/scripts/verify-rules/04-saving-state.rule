@@ -1,0 +1,12 @@
+# rule: Hardcoded '...' for saving state
+# severity: error
+# pattern: saving ? '...'
+# fix: Use tCommon('actions.saving') i18n key
+
+RULE_NAME="Saving state"
+RULE_DESC="Hardcoded '...' saving state (use tCommon('actions.saving'))"
+RULE_SEVERITY="error"
+RULE_GREP_PATTERN="saving ? '\.\.\.'"
+RULE_GREP_INCLUDES="--include=*.tsx"
+RULE_GREP_PATHS="src/pages/"
+RULE_GREP_EXCLUDES="node_modules"

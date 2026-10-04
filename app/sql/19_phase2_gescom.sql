@@ -18,6 +18,7 @@ create index if not exists idx_product_attributes_name on product_attributes(nam
 alter table product_attributes enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_attributes') THEN
+    DROP POLICY IF EXISTS "allow_all_product_attributes" ON product_attributes;
     CREATE POLICY "allow_all_product_attributes" ON product_attributes FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -39,6 +40,7 @@ create index if not exists idx_product_variants_sku on product_variants(sku);
 alter table product_variants enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_variants') THEN
+    DROP POLICY IF EXISTS "allow_all_product_variants" ON product_variants;
     CREATE POLICY "allow_all_product_variants" ON product_variants FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -59,6 +61,7 @@ create index if not exists idx_product_serials_number on product_serial_numbers(
 alter table product_serial_numbers enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_serial_numbers') THEN
+    DROP POLICY IF EXISTS "allow_all_product_serial_numbers" ON product_serial_numbers;
     CREATE POLICY "allow_all_product_serial_numbers" ON product_serial_numbers FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -79,6 +82,7 @@ create index if not exists idx_product_batches_number on product_batches(batch_n
 alter table product_batches enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_batches') THEN
+    DROP POLICY IF EXISTS "allow_all_product_batches" ON product_batches;
     CREATE POLICY "allow_all_product_batches" ON product_batches FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -100,6 +104,7 @@ create index if not exists idx_warehouse_locations_code on warehouse_locations(c
 alter table warehouse_locations enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_warehouse_locations') THEN
+    DROP POLICY IF EXISTS "allow_all_warehouse_locations" ON warehouse_locations;
     CREATE POLICY "allow_all_warehouse_locations" ON warehouse_locations FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -125,6 +130,7 @@ create index if not exists idx_quality_checks_status on quality_checks(status);
 alter table quality_checks enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_quality_checks') THEN
+    DROP POLICY IF EXISTS "allow_all_quality_checks" ON quality_checks;
     CREATE POLICY "allow_all_quality_checks" ON quality_checks FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -147,6 +153,7 @@ create index if not exists idx_pick_lists_status on pick_lists(status);
 alter table pick_lists enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_pick_lists') THEN
+    DROP POLICY IF EXISTS "allow_all_pick_lists" ON pick_lists;
     CREATE POLICY "allow_all_pick_lists" ON pick_lists FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -167,6 +174,7 @@ create index if not exists idx_pick_list_lines_pick on pick_list_lines(pick_list
 alter table pick_list_lines enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_pick_list_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_pick_list_lines" ON pick_list_lines;
     CREATE POLICY "allow_all_pick_list_lines" ON pick_list_lines FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -187,6 +195,7 @@ create index if not exists idx_sales_reps_name on sales_representatives(name);
 alter table sales_representatives enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_sales_representatives') THEN
+    DROP POLICY IF EXISTS "allow_all_sales_representatives" ON sales_representatives;
     CREATE POLICY "allow_all_sales_representatives" ON sales_representatives FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -216,6 +225,7 @@ create index if not exists idx_prospects_status on prospects(status);
 alter table prospects enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_prospects') THEN
+    DROP POLICY IF EXISTS "allow_all_prospects" ON prospects;
     CREATE POLICY "allow_all_prospects" ON prospects FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -233,6 +243,7 @@ create index if not exists idx_product_substitutes_product on product_substitute
 alter table product_substitutes enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_product_substitutes') THEN
+    DROP POLICY IF EXISTS "allow_all_product_substitutes" ON product_substitutes;
     CREATE POLICY "allow_all_product_substitutes" ON product_substitutes FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -255,6 +266,7 @@ create index if not exists idx_delivery_schedules_product on delivery_schedules(
 alter table delivery_schedules enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_delivery_schedules') THEN
+    DROP POLICY IF EXISTS "allow_all_delivery_schedules" ON delivery_schedules;
     CREATE POLICY "allow_all_delivery_schedules" ON delivery_schedules FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -275,6 +287,7 @@ create index if not exists idx_recurring_inv_templates_customer on recurring_inv
 alter table recurring_invoice_templates enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_recurring_invoice_templates') THEN
+    DROP POLICY IF EXISTS "allow_all_recurring_invoice_templates" ON recurring_invoice_templates;
     CREATE POLICY "allow_all_recurring_invoice_templates" ON recurring_invoice_templates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -296,6 +309,7 @@ create index if not exists idx_document_templates_type on document_templates(doc
 alter table document_templates enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_document_templates') THEN
+    DROP POLICY IF EXISTS "allow_all_document_templates" ON document_templates;
     CREATE POLICY "allow_all_document_templates" ON document_templates FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

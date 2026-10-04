@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatDate } from '@/lib/utils'
+import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { getChartAccounts, getFusionLogs, fuseAccounts } from '@/lib/queries'
+import { getChartAccounts } from '@/lib/queries/accounting'
+import { getFusionLogs, fuseAccounts } from '@/lib/queries/misc'
 import { GitMerge, ArrowRight } from 'lucide-react'
 import type { ChartAccount, FusionLog } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function FusionComptesPage() {
   const { t } = useTranslation('accounting')
@@ -43,7 +45,7 @@ export function FusionComptesPage() {
       toast('warning', t('fusionComptes.title'), t('fusionComptes.sameAccount'))
       return
     }
-    if (!confirm(t('fusionComptes.confirm', { source: sourceCode, target: targetCode }))) return
+    if (!confirmSync(t('fusionComptes.confirm', { source: sourceCode, target: targetCode }))) return
     setFusing(true)
     try {
       const log = await fuseAccounts(sourceCode, targetCode)
@@ -51,8 +53,8 @@ export function FusionComptesPage() {
       setSourceCode('')
       setTargetCode('')
       await load()
-    } catch (err: any) {
-      toast('error', t('fusionComptes.title'), err.message || t('fusionComptes.fuseError'))
+    } catch (err) {
+      toast('error', t('fusionComptes.title'), errorMessage(err) || t('fusionComptes.fuseError'))
     } finally {
       setFusing(false)
     }

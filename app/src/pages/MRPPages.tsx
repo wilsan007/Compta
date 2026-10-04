@@ -3,12 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Calculator, Trash2, Check, X, Eye, Clock, Factory, ShoppingCart } from 'lucide-react'
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getMRPRuns, runMRPCalculation, deleteMRPRun,
-  getMRPProposals, updateMRPProposal, deleteMRPProposal,
-  getMRPPendingDocs, deleteMRPPendingDoc,
-} from '@/lib/queries'
-import { formatDate } from '@/lib/utils'
+import { getMRPRuns, runMRPCalculation, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
+import { runMRP } from '@/lib/queries/businessFunctions'
+import { errorMessage, formatDate } from '@/lib/utils'
+import { confirmSync } from '@/lib/confirm'
 
 const proposalTypeIcons: Record<string, any> = { purchase: ShoppingCart, manufacture: Factory, subcontract: Factory }
 const proposalStatusVariants: Record<string, 'neutral' | 'success' | 'danger' | 'warning'> = { pending: 'neutral', approved: 'success', rejected: 'danger', converted: 'warning' }
@@ -20,14 +18,15 @@ export function MRPPage() {
   const [runs, setRuns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
+  const [mrpLoading, setMrpLoading] = useState(false)
   const [selectedRun, setSelectedRun] = useState<any>(null)
   const [proposals, setProposals] = useState<any[]>([])
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,42 +38,64 @@ export function MRPPage() {
       await loadData()
       setSelectedRun(run)
       setProposals(await getMRPProposals(run.id))
-    } catch (err: any) { toast('error', t('mrp.mrpError'), err.message) }
+    } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
     finally { setCalculating(false) }
+  }
+
+  async function handleRunMRP() {
+    setMrpLoading(true)
+    try {
+      // W10 : `run_mrp` ne prend pas de produit — elle parcourt les besoins de la
+      // société sur un HORIZON en jours (défaut 90). L'ancien appel
+      // `runMRP('', 5)` envoyait une chaîne vide dans `p_product_id`, un argument
+      // qui n'existe dans aucune signature : il ne pouvait pas aboutir.
+      const result = await runMRP(90)
+      const count = Array.isArray(result) ? result.length : 0
+      toast('success', t('mrp.mrpCalculated'), `${count} besoin(s) net(s) calculé(s)`)
+      await loadData()
+    } catch (err) { toast('error', t('mrp.mrpError'), errorMessage(err)) }
+    finally { setMrpLoading(false) }
   }
 
   async function handleSelectRun(run: any) {
     setSelectedRun(run)
     try { setProposals(await getMRPProposals(run.id)) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleDeleteRun(id: string) {
-    if (!window.confirm(t('mrp.confirmDeleteRun'))) return
+    if (!confirmSync(t('mrp.confirmDeleteRun'))) return
     try { await deleteMRPRun(id); await loadData(); setSelectedRun(null) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleApprove(id: string) {
     try { await updateMRPProposal(id, { status: 'approved' }); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleReject(id: string) {
     try { await updateMRPProposal(id, { status: 'rejected' }); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleDeleteProposal(id: string) {
     try { await deleteMRPProposal(id); if (selectedRun) setProposals(await getMRPProposals(selectedRun.id)) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
     <div>
       <Breadcrumb items={[{ label: t('mrp.title'), path: '/production' }, { label: t('mrp.titleFull') }]} />
       <PageHeader title={t('mrp.titleFull')} subtitle={`${runs.length} ${t('mrp.runsCount')}`}
-        action={<Button onClick={handleCalculate} disabled={calculating}><Calculator className="w-4 h-4" /> {calculating ? t('mrp.calculating') : t('mrp.launchCalculation')}</Button>} />
+        action={
+          <div className="flex items-center gap-2">
+            <Button onClick={handleRunMRP} disabled={mrpLoading} variant="secondary">
+              <Calculator className="w-4 h-4" /> {mrpLoading ? t('mrp.calculating') : 'Lancer le MRP'}
+            </Button>
+            <Button onClick={handleCalculate} disabled={calculating}><Calculator className="w-4 h-4" /> {calculating ? t('mrp.calculating') : t('mrp.launchCalculation')}</Button>
+          </div>
+        } />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1">
@@ -109,7 +130,7 @@ export function MRPPage() {
             <Card>
               <div className="flex items-center justify-between px-4 pt-4 mb-3">
                 <h3 className="text-sm font-semibold">{t('mrp.proposals')} — {selectedRun.run_number}</h3>
-                <button onClick={() => handleDeleteRun(selectedRun.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDeleteRun(selectedRun.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
               </div>
               {proposals.length === 0 ? (
                 <EmptyState icon={<ShoppingCart className="w-8 h-8" />} title={t('mrp.noProposals')} description={t('mrp.noProposalsDescription')} />
@@ -131,11 +152,11 @@ export function MRPPage() {
                           <div className="flex gap-1">
                             {p.status === 'pending' && (
                               <>
-                                <button onClick={() => handleApprove(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]"><Check className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => handleReject(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><X className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleApprove(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={tCommon('actions.confirm')} title={tCommon('actions.confirm')}><Check className="w-3.5 h-3.5" aria-hidden="true" /></button>
+                                <button onClick={() => handleReject(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3.5 h-3.5" aria-hidden="true" /></button>
                               </>
                             )}
-                            <button onClick={() => handleDeleteProposal(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDeleteProposal(p.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -166,15 +187,15 @@ export function MRPPendingDocsPage() {
 
   const loadData = useCallback(async () => {
     try { setDocs(await getMRPPendingDocs() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
     try { await deleteMRPPendingDoc(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   const docStatusVariants: Record<string, 'neutral' | 'success' | 'danger'> = { pending: 'neutral', processed: 'success', cancelled: 'danger' }
@@ -195,7 +216,7 @@ export function MRPPendingDocsPage() {
                 <TableCell className="font-mono text-xs">{Number(d.quantity)}</TableCell>
                 <TableCell><Badge variant={docStatusVariants[d.status] || 'neutral'}>{d.status}</Badge></TableCell>
                 <TableCell className="text-xs">{formatDate(d.created_at)}</TableCell>
-                <TableCell><button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(d.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>

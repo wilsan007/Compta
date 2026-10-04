@@ -40,6 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_tvs_fiscal_year ON tvs_declarations(fiscal_year);
 ALTER TABLE tvs_declarations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_tvs_declarations') THEN
+    DROP POLICY IF EXISTS "allow_all_tvs_declarations" ON tvs_declarations;
     CREATE POLICY "allow_all_tvs_declarations" ON tvs_declarations FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

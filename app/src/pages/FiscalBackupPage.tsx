@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getFiscalBackups, createFiscalBackup, deleteFiscalBackup } from '@/lib/queries'
+import { getFiscalBackups, createFiscalBackup, deleteFiscalBackup } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Archive, Download } from 'lucide-react'
 import type { FiscalBackup } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function FiscalBackupPage() {
   const { t } = useTranslation('accounting')
@@ -20,12 +22,12 @@ export function FiscalBackupPage() {
     try {
       const data = await getFiscalBackups()
       setBackups(data || [])
-    } catch (err) {
-      console.error('Failed to load fiscal backups:', err)
+    } catch (err) { console.error('Failed to load fiscal backups:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -41,19 +43,19 @@ export function FiscalBackupPage() {
       })
       toast('success', tCommon('common.success'), t('fiscalBackup.create'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteFiscalBackup(id)
       toast('success', tCommon('common.success'), tCommon('toast.deleted'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -99,9 +101,8 @@ export function FiscalBackupPage() {
                         <Download className="w-4 h-4" />
                       </a>
                     )}
-                    <button onClick={() => handleDelete(backup.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(backup.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

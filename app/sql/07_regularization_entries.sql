@@ -40,6 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_regularization_fiscal_year ON regularization_entr
 ALTER TABLE regularization_entries ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_regularization_entries') THEN
+    DROP POLICY IF EXISTS "allow_all_regularization_entries" ON regularization_entries;
     CREATE POLICY "allow_all_regularization_entries" ON regularization_entries FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

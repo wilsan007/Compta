@@ -1,0 +1,4 @@
+PATTERN_1="WHOIS|whois|example\.com|Target"
+PATTERN_2="lookup|Lookup|domain|Domain|type"
+ANTIPATTERN_1="command not found|permission denied"
+ANTIPATTERN_2="Set the SECSKILL_"

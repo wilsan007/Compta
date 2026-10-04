@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankTransactions, getBankAccounts, updateBankTransaction, deleteBankTransaction } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { getBankTransactions, getBankAccounts, updateBankTransaction, deleteBankTransaction } from '@/lib/queries/banking'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowLeftRight, Trash2, CheckCircle } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function BankTransactionsPage() {
   const { toast } = useToast()
@@ -23,12 +24,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(filterAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err) {
-      console.error('Failed to load transactions:', err)
+    } catch (err) { console.error('Failed to load transactions:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [filterAccount])
+  }, [filterAccount, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -36,18 +37,18 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   try {
       await updateBankTransaction(id, { reconciled: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('transactions.deleteConfirm'))) return
+    if (!confirmSync(t('transactions.deleteConfirm'))) return
     try {
       await deleteBankTransaction(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -99,9 +100,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
                   </button>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(tx.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(tx.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}

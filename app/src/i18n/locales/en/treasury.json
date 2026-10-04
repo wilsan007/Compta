@@ -61,7 +61,15 @@
     "amount": "Amount",
     "cumulativeBalance": "Cumulative balance",
     "incomingType": "Inflow",
-    "outgoingType": "Outflow"
+    "outgoingType": "Outflow",
+    "runForecast": "Run forecast",
+    "cashFlowResult": "Cash flow forecast: {{amount}} over {{days}} days",
+    "productionCommitment": "Production commitment",
+    "materialToBuy": "Material to buy",
+    "workshopLabor": "Workshop labor",
+    "commitmentTotal": "Total commitment",
+    "netWithProduction": "Net with production",
+    "netForecast": "Forecast net"
   },
   "paymentOrders": {
     "title": "Payment orders",
@@ -124,6 +132,7 @@
       "beneficiary": "Beneficiary (third party)",
       "iban": "IBAN (optional)",
       "ibanPlaceholder": "FR76...",
+      "ibanRefused": "Invalid IBAN: the check digits do not match. The payment order was not saved.",
       "amount": "Amount",
       "paymentDate": "Payment date",
       "reference": "Reference",

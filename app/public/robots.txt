@@ -1,42 +1,60 @@
-# SECURITY: Disallow all crawling and indexing
-# This prevents search engines from indexing the application
-# and makes it harder for scrapers to discover routes
+# Onusuite — robots.txt
+# Public pages are crawlable. Dashboard and auth routes are blocked.
 
 User-agent: *
-Disallow: /
+Allow: /
+Allow: /en/
+Allow: /ar/
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /login
+Disallow: /signup
+Disallow: /api
+Disallow: /auth
+Disallow: /employee
+Disallow: /hr
+Disallow: /accounting
+Disallow: /sales
+Disallow: /banking
+Disallow: /inventory
+Disallow: /production
+Disallow: /projects
+Disallow: /settings
+Disallow: /reports
+Disallow: /treasury
+Disallow: /payroll
+Disallow: /supabase
+Disallow: /sql
+Disallow: /mirror-daemon
+Disallow: /.git
+Disallow: /.env
+Disallow: /package.json
+Disallow: /tsconfig
+Disallow: /vite.config
 
-# Block known AI training crawlers
+# Allow AI crawlers for visibility (ChatGPT, Perplexity, Claude)
 User-agent: GPTBot
-Disallow: /
+Allow: /
 
 User-agent: ChatGPT-User
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: Google-Extended
-Disallow: /
+Allow: /
 
 User-agent: PerplexityBot
-Disallow: /
+Allow: /
 
 User-agent: ClaudeBot
-Disallow: /
-
-User-agent: Claude-Web
-Disallow: /
+Allow: /
 
 User-agent: anthropic-ai
-Disallow: /
+Allow: /
 
-User-agent: Bytespider
-Disallow: /
+User-agent: Google-Extended
+Allow: /
 
-User-agent: FacebookBot
-Disallow: /
+User-agent: CCBot
+Allow: /
 
-# Block aggressive scrapers
+# Block aggressive scrapers (not useful for SEO)
 User-agent: SemrushBot
 Disallow: /
 
@@ -52,4 +70,5 @@ Disallow: /
 User-agent: YandexBot
 Disallow: /
 
-# No sitemap exposed
+# Sitemap
+Sitemap: https://onusuite.com/sitemap.xml

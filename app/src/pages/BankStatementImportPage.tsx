@@ -1,23 +1,26 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankStatementImports, createBankStatementImport, getBankAccounts } from '@/lib/queries'
+import { getBankStatementImports } from '@/lib/queries/accounting'
+import { getBankAccounts, importBankStatement, BankStatementCurrencyError } from '@/lib/queries/banking'
+import type { BankStatementFormat } from '@/lib/bankParsers'
 import { useLocale } from '@/hooks/useLocale'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import { Upload, FileText } from 'lucide-react'
 import type { BankStatementImport, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function BankStatementImportPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const { formatDate } = useLocale()
+  const { formatDate, formatCurrency } = useLocale()
   const [imports, setImports] = useState<BankStatementImport[]>([])
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState('')
-  const [selectedFormat, setSelectedFormat] = useState('CFONB')
+  const [selectedFormat, setSelectedFormat] = useState<BankStatementFormat>('unknown')
   const [uploading, setUploading] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -26,12 +29,12 @@ export function BankStatementImportPage() {
       const [imps, accs] = await Promise.all([getBankStatementImports(), getBankAccounts()])
       setImports(imps || [])
       setAccounts(accs || [])
-    } catch (err) {
-      console.error('Failed to load bank statement imports:', err)
+    } catch (err) { console.error('Failed to load bank statement imports:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -42,7 +45,7 @@ export function BankStatementImportPage() {
       return
     }
     // SECURITY: Validate file before processing
-    const validation = await validateFileUpload(file, FILE_PROFILES.spreadsheet)
+    const validation = await validateFileUpload(file, FILE_PROFILES.bankStatement)
     if (!validation.ok) {
       toast('error', tCommon('common.error'), validation.error || 'Invalid file')
       e.target.value = ''
@@ -50,21 +53,38 @@ export function BankStatementImportPage() {
     }
     setUploading(true)
     try {
-      await createBankStatementImport({
-        bank_account_id: selectedAccount,
-        filename: file.name,
-        format: selectedFormat,
-        file_size: file.size,
-        status: 'pending',
-        imported_count: 0,
-        error_message: null,
-      })
-      toast('success', tCommon('common.success'), t('bankImport.uploadSuccess'))
+      // AUD-G03 : le relevé est lu et ses opérations importées (avant : seul le nom
+      // du fichier était enregistré, en « pending », et rien ne le traitait)
+      const summary = await importBankStatement(selectedAccount, file.name, await file.text(), selectedFormat)
+      if (summary.parsed === 0) {
+        toast('error', tCommon('common.error'), summary.warnings.join(' ') || t('bankImport.nothingRead'))
+      } else {
+        toast('success', tCommon('common.success'), t('bankImport.importSummary', { imported: summary.imported, duplicates: summary.duplicates }))
+        // R-10 : le solde de clôture repris du relevé est ce qui rend l'état de
+        // rapprochement comparable à la banque — le taire laisserait croire qu'il faut
+        // le saisir à la main dans l'écran des comptes.
+        if (summary.closingBalance != null && summary.closingBalanceDate) {
+          toast('success', tCommon('common.success'), t('bankImport.closingBalanceSaved', {
+            amount: formatCurrency(summary.closingBalance),
+            date: formatDate(summary.closingBalanceDate),
+          }))
+        }
+      }
       await loadData()
     } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      // R-10 : le refus de devise est traduit, sinon l'utilisateur lit un message
+      // technique qui ne dit pas quel compte est en cause.
+      if (err instanceof BankStatementCurrencyError) {
+        toast('error', tCommon('common.error'), t('bankImport.currencyMismatch', {
+          statement: err.statementCurrency,
+          account: err.accountCurrency,
+        }))
+      } else {
+        toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+      }
     } finally {
       setUploading(false)
+      e.target.value = ''
     }
   }
 
@@ -92,18 +112,20 @@ export function BankStatementImportPage() {
           <Select
             label={t('bankImport.format')}
             value={selectedFormat}
-            onChange={(e) => setSelectedFormat(e.target.value)}
+            onChange={(e) => setSelectedFormat(e.target.value as BankStatementFormat)}
             options={[
-              { value: 'CFONB', label: 'CFONB' },
-              { value: 'MT940', label: 'MT940' },
-              { value: 'Camt.053', label: 'Camt.053' },
+              { value: 'unknown', label: t('bankImport.autoDetect') },
+              { value: 'cfonb120', label: 'CFONB 120' },
+              { value: 'mt940', label: 'MT940' },
+              { value: 'camt053', label: 'CAMT.053' },
+              { value: 'ofx', label: 'OFX' },
             ]}
           />
           <Button disabled={uploading || !selectedAccount}>
             <label className="flex items-center gap-2 cursor-pointer">
               <Upload className="w-4 h-4" />
               {uploading ? t('bankImport.uploading') : t('bankImport.upload')}
-              <input type="file" className="hidden" onChange={handleFileUpload} accept=".txt,.csv,.xml,.sta" />
+              <input type="file" className="hidden" onChange={handleFileUpload} accept=".xml,.txt,.sta,.940,.mt940,.cfonb,.dat,.ofx,.qfx" />
             </label>
           </Button>
         </div>

@@ -153,12 +153,6 @@
       "expense": "Charge"
     },
     "defaultTaxCode": "Code taxe par défaut",
-    "nbLines": "Nb lignes",
-    "pageBreak": "Saut lignes/page",
-    "regrouping": "Regroupement",
-    "analyticEntry": "Saisie analytique",
-    "echeanceEntry": "Saisie échéance",
-    "tiersEntry": "Saisie compte tiers",
     "debitN1": "Débit N-1",
     "creditN1": "Crédit N-1",
     "exerciseHint": "Les reports à nouveaux génèrent des écritures dans le journal d'OD.",
@@ -281,6 +275,10 @@
     "siret": "SIRET",
     "vatIntra": "TVA intracommunautaire",
     "iban": "IBAN",
+    "verifyIban": "Vérifier l'IBAN",
+    "verifyingIban": "Vérification…",
+    "ibanChecked": "IBAN valide (format, longueur du pays et clé ISO 13616)",
+    "ibanInvalid": "IBAN invalide : {{reason}}",
     "bic": "BIC/SWIFT",
     "bankCode": "Code banque",
     "branchCode": "Code guichet",
@@ -303,7 +301,12 @@
     "freeInfoHint": "Champs personnalisés supplémentaires.",
     "placeholders": {
       "contactName": "Jean Dupont"
-    }
+    },
+    "partnerDataHint": "Adresse, SIRET, TVA et contact se modifient sur la fiche du client ou du fournisseur : le compte tiers n'en garde pas de copie.",
+    "banksNeedPartner": "Liez d'abord un client ou un fournisseur : les RIB sont ceux du tiers.",
+    "noPartnerBank": "Aucun RIB enregistré pour ce tiers.",
+    "defaultBank": "par défaut",
+    "paymentTermHint": "Le modèle de règlement calcule l'échéance des lignes saisies sur ce compte (délais, fin de mois, escompte)."
   },
   "journals": {
     "title": "Codes journaux",
@@ -389,7 +392,8 @@
     "end": "Fin",
     "autoPeriodsHint": "Les 12 périodes mensuelles seront créées automatiquement à la création de l'exercice.",
     "maxYears": "Nombre maximum d'exercices consultables",
-    "maxYearsDescription": "Jusqu'à 10 exercices consultables simultanément"
+    "maxYearsDescription": "Jusqu'à 10 exercices consultables simultanément",
+    "description": "Gérez les exercices comptables et leurs périodes"
   },
   "entries": {
     "title": "Écritures comptables",
@@ -508,9 +512,12 @@
     "balance": "Solde",
     "noMovements": "Aucun mouvement sur cette période",
     "noMovementsDescription": "Le compte {{code}} — {{name}} n'a aucun mouvement avec ces filtres.",
+    "thirdParty": "Tiers",
     "debitBalance": "Solde débiteur",
     "creditBalance": "Solde créditeur",
-    "export": "Exporter le grand livre"
+    "export": "Exporter le grand livre",
+    "generate": "Générer",
+    "generated": "Grand livre généré avec succès"
   },
   "trialBalance": {
     "title": "Balance générale",
@@ -530,6 +537,8 @@
     "exportCSV": "Export CSV",
     "showZeroBalances": "Afficher les soldes nuls",
     "groupByClass": "Regrouper par classe",
+    "generate": "Générer",
+    "generated": "Balance générée avec succès",
     "classLabels": {
       "1": "Classe 1 — Capitaux",
       "2": "Classe 2 — Immobilisations",
@@ -606,7 +615,8 @@
     "bapError": "Erreur lors du marquage BAP",
     "marking": "Marquage",
     "markingApplied": "Marquage appliqué",
-    "markingError": "Erreur lors du marquage"
+    "markingError": "Erreur lors du marquage",
+    "searchError": "Échec de la recherche"
   },
   "journalsReport": {
     "breadcrumb": "Rapports",
@@ -658,7 +668,11 @@
     "totalJournals": "Total journaux",
     "totalPeriods": "Total périodes",
     "closedJournals": "Journaux clôturés",
-    "openJournals": "Journaux ouverts"
+    "openJournals": "Journaux ouverts",
+    "activeJournals": "Journaux actifs",
+    "closedEntries": "Écritures clôturées",
+    "periods": "Périodes",
+    "totalEntries": "Écritures totales"
   },
   "saisie": {
     "title": "Saisie des journaux",
@@ -738,6 +752,7 @@
       "rate10": "10%",
       "rate20": "20%"
     },
+    "calculatorHint": "Astuce : tapez = suivi d'une expression (ex. =1000+200*1.2) pour auto-calculer",
     "vatCalc": "Calcul TVA",
     "currency": "Devise",
     "exchangeRate": "Taux de change",
@@ -796,7 +811,35 @@
     "openingLines": "Lignes d'ouverture",
     "closingLines": "Lignes de clôture",
     "resultAmount": "Résultat de l'exercice",
-    "openingEntriesPreview": "Aperçu des écritures d'ouverture"
+    "openingEntriesPreview": "Aperçu des écritures d'ouverture",
+    "allocation": {
+      "title": "Affectation du résultat {{code}}",
+      "introProfit": "Bénéfice de {{amount}} : répartissez-le entre réserves, report à nouveau et dividendes. L'exercice suivant ne peut pas être clôturé avant.",
+      "introLoss": "Perte de {{amount}} : affectez-la en report à nouveau débiteur ou imputez-la sur les réserves. L'exercice suivant ne peut pas être clôturé avant.",
+      "account": "Compte",
+      "amount": "Montant",
+      "addLine": "Ajouter une ligne",
+      "removeLine": "Retirer la ligne",
+      "date": "Date de l'écriture d'affectation",
+      "remaining": "Reste à affecter : {{amount}}",
+      "submit": "Affecter le résultat",
+      "saving": "Affectation…",
+      "done": "Résultat de l'exercice {{code}} affecté",
+      "blocking": "Clôture impossible : affectez d'abord le résultat de l'exercice {{codes}} (carte « Affectation du résultat » ci-dessus).",
+      "accounts": {
+        "106100": "Réserve légale",
+        "106800": "Autres réserves",
+        "110000": "Report à nouveau",
+        "457000": "Dividendes à payer",
+        "108000": "Compte de l'exploitant",
+        "119000": "Report à nouveau (débiteur)"
+      }
+    },
+    "carryForwardEntry": "Écriture d'à-nouveaux",
+    "closeEntry": "Écriture de clôture",
+    "integrityHash": "Empreinte d'intégrité",
+    "resultAccount": "Compte de résultat",
+    "resultComputed": "Résultat de l'exercice : {{amount}}"
   },
   "brouillard": {
     "title": "Brouillard",
@@ -944,7 +987,10 @@
     "financialCharges": "Charges financières (66)",
     "netResultFinal": "RÉSULTAT NET",
     "category": "Rubrique",
-    "amountCol": "Montant"
+    "amountCol": "Montant",
+    "generate": "Générer le compte de résultat",
+    "generated": "Compte de résultat généré avec succès",
+    "exceptionalCharges": "Charges exceptionnelles"
   },
   "analytic": {
     "title": "Sections analytiques",
@@ -1025,9 +1071,11 @@
     "variancePct": "Écart %",
     "status": "Statut",
     "withinBudget": "Dans le budget",
-    "overrun": "Dépassement"
+    "overrun": "Dépassement",
+    "name": "Nom du budget"
   },
   "budgetCommitments": {
+    "chooseSupplier": "— Choisir un fournisseur —",
     "title": "Engagements budgétaires",
     "subtitle": "{{count}} engagement(s) — {{total}} actif(s)",
     "new": "Nouvel engagement",
@@ -1186,10 +1234,44 @@
     "calculateDepreciation": "Calculer les amortissements",
     "derogatoryDepreciation": "Amortissement dérogatoire",
     "subventionAmount": "Montant subvention",
-    "subventionAccount": "Compte de subvention"
+    "subventionAccount": "Compte de subvention",
+    "amount": "Montant",
+    "capitalGain": "Plus-value",
+    "capitalLoss": "Moins-value",
+    "category": "Catégorie",
+    "categoryPlaceholder": "Ex. : matériel informatique",
+    "confirmDisposal": "Confirmer la cession",
+    "cumulative": "Cumul",
+    "cumulativeDepreciation": "Amortissements cumulés",
+    "currentNetValue": "Valeur nette actuelle",
+    "depMethods": {
+      "declining_balance": "Dégressif",
+      "straight_line": "Linéaire",
+      "units_of_production": "Unités d'œuvre"
+    },
+    "depreciation": "Amortissement",
+    "depreciationHistory": "Historique des amortissements",
+    "disposal": "Cession",
+    "disposalDate": "Date de cession",
+    "disposalPrice": "Prix de cession",
+    "entryNumber": "N° écriture",
+    "estimatedCurrentValue": "Valeur actuelle estimée",
+    "netValue": "Valeur nette",
+    "noDepreciation": "Aucun amortissement enregistré",
+    "period": "Période",
+    "purchaseDate": "Date d'acquisition",
+    "purchaseValue": "Valeur d'acquisition",
+    "recalcComplete": "Amortissements recalculés",
+    "recalcCompleteMsg": "{{count}} immobilisation(s) comptabilisée(s)",
+    "depreciationFailures": "{{count}} immobilisation(s) en échec — aucune dotation n'a été écrite pour elles",
+    "noOpenYear": "Aucun exercice ouvert : créez l'exercice avant de calculer une dotation",
+    "residualValue": "Valeur résiduelle",
+    "totalPurchaseValue": "Valeur d'acquisition totale",
+    "usefulLifeYears": "Durée d'utilité (années)"
   },
   "analyticBalance": {
     "title": "Balance analytique",
+    "fiscalYear": "Exercice",
     "subtitle": "Répartition par section analytique",
     "breadcrumb": "États",
     "code": "Code",
@@ -1239,7 +1321,10 @@
     "type": "Type",
     "typeSection": "Section",
     "typeTotal": "Total",
-    "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique."
+    "complementHint": "Activez ou désactivez cette section. Les sections inactives n'apparaissent plus dans la saisie analytique.",
+    "deleteSuccess": "Section analytique supprimée",
+    "saveSuccess": "Section analytique enregistrée",
+    "totalNotImputable": "Une section « total » regroupe d'autres sections : elle ne reçoit pas d'imputation."
   },
   "balanceSheet": {
     "title": "Bilan",
@@ -1251,7 +1336,13 @@
     "account": "Compte",
     "amount": "Montant",
     "totalAssets": "Total Actif",
-    "totalLiabilitiesEquity": "Total Passif + Capitaux"
+    "totalLiabilitiesEquity": "Total Passif + Capitaux",
+    "generate": "Générer le bilan",
+    "generated": "Bilan généré avec succès",
+    "unclassified": "Comptes non classés",
+    "unclassifiedHint": "Comptes absents du plan comptable : à rattacher au plan pour qu'ils apparaissent à l'actif ou au passif.",
+    "unbalanced": "Bilan déséquilibré : l'actif ({{assets}}) diffère du passif et des capitaux propres ({{liabilities}}), écart {{gap}}. Vérifiez les comptes non classés et les écritures de l'exercice.",
+    "balanced": "Bilan équilibré"
   },
   "cashFlow": {
     "title": "Flux de trésorerie",
@@ -1289,7 +1380,10 @@
     "vat": "TVA",
     "legendRevenues": "Revenus",
     "legendExpenses": "Dépenses",
-    "legendProfit": "Profit"
+    "legendProfit": "Profit",
+    "generateAnnex": "Générer l'annexe comptable",
+    "annexGenerated": "Annexe comptable générée avec succès",
+    "noData": "Aucune écriture validée sur cet exercice."
   },
   "reports": {
     "paymentDelay": {
@@ -1382,7 +1476,13 @@
       "extourned": "Extourné"
     },
     "filterByType": "Filtrer par type",
-    "all": "Tous"
+    "all": "Tous",
+    "generateAdjusting": "Régulariser",
+    "calculateProvisions": "Provisions",
+    "adjustingGenerated": "Écritures de régularisation générées",
+    "provisionsCalculated": "Provisions calculées avec succès",
+    "postDeferred": "Poster le CCA/PCA",
+    "deferredPosted": "Charge/produit reporté avec succès"
   },
   "gdpr": {
     "title": "Conformité RGPD",
@@ -1498,7 +1598,7 @@
   },
   "bankImport": {
     "title": "Import d'extraits bancaires",
-    "subtitle": "Importez vos extraits (CFONB, MT940, Camt.053)",
+    "subtitle": "Importez vos extraits (CFONB, MT940, Camt.053, OFX)",
     "breadcrumb": "Import extraits",
     "upload": "Téléverser",
     "uploading": "Téléversement...",
@@ -1517,7 +1617,12 @@
       "processing": "Traitement",
       "completed": "Terminé",
       "failed": "Échec"
-    }
+    },
+    "autoDetect": "Détection automatique",
+    "nothingRead": "Aucune opération lue dans ce fichier.",
+    "importSummary": "{{imported}} opération(s) importée(s), {{duplicates}} déjà présente(s) écartée(s).",
+    "currencyMismatch": "Ce relevé est libellé en {{statement}} alors que le compte est en {{account}} : les montants ne sont pas dans la même unité. Importez un relevé en {{account}}, ou choisissez le compte correspondant.",
+    "closingBalanceSaved": "Solde de clôture du relevé repris sur le compte : {{amount}} au {{date}}."
   },
   "ediTva": {
     "title": "Télé-déclaration TVA (EDI-TVA)",
@@ -1597,6 +1702,8 @@
   "revaluation": {
     "title": "Réévaluation des devises",
     "subtitle": "Réévaluez vos créances et dettes en devises",
+    "run": "Réévaluer la période",
+    "runDone": "{{lines}} ligne(s) réévaluée(s), écart de change {{amount}}",
     "breadcrumb": "Réévaluation devises",
     "new": "Nouvelle réévaluation",
     "create": "Créer une réévaluation",
@@ -1632,6 +1739,7 @@
     "title": "Relances & liens de paiement",
     "subtitle": "Gérez vos relances et générez des liens de paiement en ligne",
     "breadcrumb": "Relances",
+    "reminder": "Relance",
     "customer": "Client",
     "invoice": "Facture",
     "amount": "Montant",
@@ -1686,6 +1794,8 @@
     "deleteConfirm": "Supprimer cet abonnement ?",
     "deleteSuccess": "Abonnement supprimé",
     "saveSuccess": "Abonnement enregistré",
+    "fillRequired": "Veuillez remplir tous les champs requis",
+    "unbalanced": "L'écriture n'est pas équilibrée (débit ≠ crédit)",
     "noEntries": "Aucun abonnement",
     "noEntriesDescription": "Créez votre premier abonnement pour automatiser vos écritures récurrentes.",
     "frequencies": {
@@ -1714,7 +1824,10 @@
     "description": "Configuration des options de saisie comptable",
     "saisieNegative": "Autoriser la saisie négative (débit négatif / crédit négatif)",
     "multiCurrency": "Double monnaie (saisie en devise + conversion)",
-    "showQuantities": "Afficher les quantités dans la saisie"
+    "showQuantities": "Afficher les quantités dans la saisie",
+    "ocrConsent": "Envoi des documents à un prestataire d'OCR / d'IA (lecture automatique des factures)",
+    "ocrConsentHint": "Sans ce consentement, la lecture automatique d'une facture fournisseur est REFUSÉE : le document ne part pas, et l'écran le dit. Le consentement est daté et signé par le logiciel.",
+    "ocrConsentSince": "Consenti le {{date}}"
   },
   "vatParams": {
     "title": "Paramètres TVA",
@@ -2776,6 +2889,27 @@
     "saved": "Comptes liés enregistrés avec succès",
     "generateDepreciationEntry": "Générer l'écriture d'amortissement",
     "entryGenerated": "Écriture d'amortissement générée avec succès",
-    "entryError": "Erreur lors de la génération de l'écriture"
+    "entryError": "Erreur lors de la génération de l'écriture",
+    "noOpenYear": "Aucun exercice ouvert : ouvrez un exercice avant de comptabiliser la dotation"
+  },
+  "currencyCode": "Devise",
+  "etats": {
+    "breadcrumb": "États"
+  },
+  "structure": {
+    "breadcrumb": "Structure"
+  },
+  "treatment": {
+    "breadcrumb": "Traitement"
+  },
+  "entryValidation": {
+    "validate": "Valider",
+    "validateSelection": "Valider la sélection ({{count}})",
+    "validated": "{{count}} écriture(s) validée(s)",
+    "refused": "{{number}} non validée : {{error}}",
+    "saveAndValidate": "Enregistrer et valider",
+    "draft": "Brouillon",
+    "posted": "Validée",
+    "selectAll": "Tout sélectionner"
   }
 }

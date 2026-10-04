@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { X, Plus, Trash2, CheckCircle, Layers } from 'lucide-react'
 import { Button, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getAnalyticPlans } from '@/lib/queries'
-import { getAnalyticSections } from '@/lib/queries'
+import { getAnalyticPlans } from '@/lib/queries/accounting'
+import { getAnalyticSections } from '@/lib/queries/accounting'
 import {
   validateDistribution,
   distributeEvenly,
@@ -50,15 +50,15 @@ export function AnalyticDistributionEditor({
         const existing = await getDistributionLines(journalLineId)
         setDist(existing)
       }
-    } catch {
+    } catch (err: any) { console.error("catch:", err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
       // ignore
     } finally {
       setLoading(false)
     }
-  }, [journalLineId])
+  }, [journalLineId, tCommon, toast])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [loadData])
 
   function getSectionsForPlan(planId: string): AnalyticSection[] {
@@ -150,8 +150,8 @@ export function AnalyticDistributionEditor({
             <Layers className="w-5 h-5 text-[var(--color-primary)]" />
             <h2 className="text-lg font-bold">{t('analyticDistribution.title')}</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}>
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -258,10 +258,8 @@ export function AnalyticDistributionEditor({
                               <td className="py-1.5 text-center">
                                 <button
                                   onClick={() => removeSectionFromPlan(plan.id, sectionId)}
-                                  className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                               </td>
                             </tr>
                           )

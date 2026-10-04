@@ -1,0 +1,54 @@
+{
+  "uploader": {
+    "title": "تحميل وثيقة",
+    "dropzone": "اسحب وأفلت ملفًا هنا أو انقر للتصفح",
+    "formats": "الصيغ المقبولة: PDF، PNG، JPG، WEBP، DOCX، XLSX، PPTX، DOC، XLS، TXT، CSV، ZIP (الحد الأقصى 50 ميجابايت)",
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "عنوان الوثيقة",
+    "typeLabel": "نوع الوثيقة",
+    "typePlaceholder": "مثال: تقرير_مصاريف، شهادة_طبية، فاتورة",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "وصف اختياري",
+    "confidentialityLabel": "مستوى السرية",
+    "upload": "تحميل",
+    "uploading": "جاري التحميل..."
+  },
+  "list": {
+    "searchPlaceholder": "البحث عن وثيقة...",
+    "allStatuses": "جميع الحالات",
+    "allConfidentiality": "جميع مستويات السرية",
+    "empty": "لم يتم العثور على وثائق",
+    "downloads": "{{count}} تحميل",
+    "downloads_other": "{{count}} تحميلات",
+    "rejectedReason": "سبب الرفض",
+    "preview": "معاينة",
+    "download": "تحميل",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "archive": "أرشفة",
+    "delete": "حذف",
+    "confirmDelete": "هل أنت متأكد من حذف هذه الوثيقة؟ لا يمكن التراجع عن هذا الإجراء.",
+    "rejectTitle": "رفض الوثيقة",
+    "rejectPlaceholder": "يرجى تقديم سبب الرفض",
+    "confirmReject": "تأكيد الرفض"
+  },
+  "confidentiality": {
+    "public": "عام",
+    "restricted": "مقيد",
+    "confidential": "سري",
+    "private": "خاص"
+  },
+  "status": {
+    "pending": "في الانتظار",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "archived": "مؤرشف"
+  },
+  "errors": {
+    "uploadFailed": "فشل تحميل الوثيقة",
+    "downloadFailed": "فشل التحميل",
+    "permissionDenied": "ليس لديك إذن لتنفيذ هذا الإجراء"
+  },
+  "title": "إدارة الوثائق",
+  "subtitle": "قم بتحميل وإدارة ومشاركة وثائقك بأمان"
+}

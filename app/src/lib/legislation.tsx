@@ -1,6 +1,7 @@
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { useAuth } from './auth'
-import { getActiveLegislationPack, getApplicableVatRates } from './queries'
+import { getActiveLegislationPack, getApplicableVatRates } from './queries/accounting'
 import type { LegislationPack, TaxRate } from '@/types'
 
 interface LegislationContextValue {

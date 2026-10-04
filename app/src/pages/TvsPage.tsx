@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getTvsDeclarations, createTvsDeclaration, deleteTvsDeclaration } from '@/lib/queries'
+import { getTvsDeclarations, createTvsDeclaration, deleteTvsDeclaration } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Car } from 'lucide-react'
+import { Plus, Trash2, Car, X } from 'lucide-react'
 import type { TvsDeclaration } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function TvsPage() {
   const { t } = useTranslation('accounting')
@@ -21,23 +23,23 @@ export function TvsPage() {
     try {
       const data = await getTvsDeclarations()
       setDecls(data || [])
-    } catch (err) {
-      console.error('Failed to load TVS declarations:', err)
+    } catch (err) { console.error('Failed to load TVS declarations:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('tvs.deleteConfirm'))) return
+    if (!confirmSync(t('tvs.deleteConfirm'))) return
     try {
       await deleteTvsDeclaration(id)
       toast('success', tCommon('common.success'), t('tvs.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -49,7 +51,7 @@ export function TvsPage() {
     t('tvs.amountAge'),
     t('tvs.amountTotal'),
     t('tvs.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (
@@ -87,9 +89,8 @@ export function TvsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(decl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(decl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -138,8 +139,8 @@ function TvsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       })
       toast('success', tCommon('common.success'), t('tvs.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -150,7 +151,7 @@ function TvsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('tvs.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4">
           <Input label={t('tvs.fiscalYear')} type="number" value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))} required />
@@ -164,8 +165,8 @@ function TvsForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
           </div>
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
         </div>
       </div>
     </div>

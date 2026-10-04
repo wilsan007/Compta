@@ -27,6 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_bank_recon_rules_active ON bank_reconciliation_ru
 ALTER TABLE bank_reconciliation_rules ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_bank_recon_rules') THEN
+    DROP POLICY IF EXISTS "allow_all_bank_recon_rules" ON bank_reconciliation_rules;
     CREATE POLICY "allow_all_bank_recon_rules" ON bank_reconciliation_rules FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

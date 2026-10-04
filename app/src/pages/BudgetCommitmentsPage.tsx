@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getBudgetCommitments, createBudgetCommitment, updateBudgetCommitment, deleteBudgetCommitment, getChartAccounts, getFiscalYears, getSuppliers } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getBudgetCommitments, createBudgetCommitment, updateBudgetCommitment, deleteBudgetCommitment, getChartAccounts, getFiscalYears } from '@/lib/queries/accounting'
+import { getSuppliers } from '@/lib/queries/partners'
 import { Plus, Trash2, X, FileText } from 'lucide-react'
 import type { BudgetCommitment, ChartAccount, FiscalYear, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusVariants: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'warning',
@@ -25,6 +27,7 @@ export function BudgetCommitmentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [yearFilter, setYearFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -39,8 +42,8 @@ export function BudgetCommitmentsPage() {
       setAccounts(accs || [])
       setYears(fys || [])
       setSuppliers(sups || [])
-    } catch (err) {
-      console.error('Error loading commitments:', err)
+    } catch (err) { console.error('Error loading commitments:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -52,14 +55,14 @@ export function BudgetCommitmentsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('budgetCommitments.deleteConfirm'))) return
+    if (!confirmSync(t('budgetCommitments.deleteConfirm'))) return
     try { await deleteBudgetCommitment(id); await load() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleCancel(id: string) {
     try { await updateBudgetCommitment(id, { status: 'cancelled' }); await load() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError')) }
   }
 
   const totalActive = commitments.filter(c => c.status === 'active').reduce((s, c) => s + Number(c.amount), 0)
@@ -88,8 +91,9 @@ export function BudgetCommitmentsPage() {
       ) : (
         <Card>
           <Table headers={[tCommon('common.date'), tCommon('common.description'), t('budgetCommitments.account'), t('budgetCommitments.supplier'), tCommon('common.amount'), t('budgetCommitments.source'), tCommon('common.status'), tCommon('table.actions')]}>
-            <tbody>
-              {commitments.map((c) => {
+            {/* X8 (balayage des routes) : `Table` porte déjà le <tbody> — un second
+                imbriqué faisait un DOM invalide. */}
+            {commitments.map((c) => {
                 const sup = suppliers.find(s => s.id === c.supplier_id)
                 const st = { variant: statusVariants[c.status] || 'neutral' as const, label: t(`budgetCommitments.statusLabels.${c.status}`, { defaultValue: c.status }) }
                 return (
@@ -116,7 +120,6 @@ export function BudgetCommitmentsPage() {
                   </TableRow>
                 )
               })}
-            </tbody>
           </Table>
         </Card>
       )}
@@ -170,8 +173,8 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
         notes: notes || null,
       })
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -182,7 +185,7 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('budgetCommitments.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('budgetCommitments.description')} required value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('budgetCommitments.descriptionPlaceholder')} />
@@ -203,13 +206,13 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('budgetCommitments.amount')} type="number" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            <Input label={t('budgetCommitments.amount')} type="number" min="0" step="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
             <Input label={t('budgetCommitments.commitmentDate')} type="date" required value={commitmentDate} onChange={(e) => setCommitmentDate(e.target.value)} />
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('budgetCommitments.supplierOptional')}</label>
             <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-              <option value="">{t('budgetCommitments.none')}</option>
+              <option value="">{t('budgetCommitments.chooseSupplier')}</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>

@@ -1,0 +1,106 @@
+-- Registre des défauts prouvés et encore ouverts (AUD-A02).
+--
+-- Tant qu'un couple (fichier, identifiant) figure ici, son test PEUT échouer sans
+-- casser la CI. Dès qu'il passe, `_audit_assert` fait échouer la CI : le commit du
+-- correctif doit supprimer la ligne. Un test qui échoue sans figurer ici casse la CI.
+-- Une ligne par défaut : on en supprime une sans toucher aux autres.
+--
+-- AUD-X01 : la clé est le couple (file, test_id), jamais le seul test_id. Treize
+-- fichiers emploient les identifiants `T01`…`T07` ; indexer sur `test_id` seul
+-- blanchirait le `T01` de tous les autres fichiers.
+--
+-- Plan : doc/audit/PLAN-CORRECTIF-AUDIT-2026-09-21.md
+
+-- 178 — noyau de saisie (lot C)
+-- 180 — ventes (lot E)
+-- 181 — paie (lot F)
+-- 182 — inscription (lot B)
+
+-- 231 — temps passés (M-17)
+-- 245 — déclaration de TVA (M-10)
+--
+-- Ces deux lignes portaient les deux derniers défauts ouverts du plan correctif.
+-- Elles sont fermées par les migrations 301 et 300 (voir l'historique ci-dessus).
+--
+-- Le registre ne porte plus que `321 T02`, `T03` et `T05` — réinscrites le
+-- 03/10/2026, avec leur raison, plus bas. Les autres défauts sont tous corrigés.
+--
+--   • `231 M-17-01` — la refacturation des temps n'existait pas
+--     (`create_billable_line_on_timesheet_stop` ne créait qu'une notification).
+--     Fermé le 28/09/2026 par la **301** : brouillon de facture par projet,
+--     ligne rattachée au temps (unicité société + temps), branchement sur
+--     l'INSERT pour la saisie directe et sur l'arrêt du chronomètre.
+--   • `245 T08` — le chiffre d'affaires non taxé (exonéré, export, livraison
+--     intracommunautaire) n'entrait pas dans le CA déclaré, reconstitué depuis
+--     la TVA. Fermé le 28/09/2026 par la **300** : le CA se lit sur les comptes
+--     de produits (classe 70), la TVA reste lue sur les comptes 445x.
+--
+-- HISTORIQUE — la vacance du 02/10/2026, et pourquoi elle a pris fin le 03/10.
+-- Le registre avait été déclaré VOLONTAIREMENT VIDE : les trois lignes qu'il
+-- portait (`321 T02`, `T03`, `T05`) avaient été retirées au motif que « la suite
+-- 411 donne 6 scénarios verts ». Ce motif ne tenait pas — la 411 mesure la
+-- CONTRAPASSATION d'un bulletin validé, elle ne calcule aucun élément variable.
+-- Elles ont donc été RÉINSCRITES, avec la même raison qu'avant (voir l'INSERT
+-- plus bas) : les taux des avantages en nature changent chaque année et doivent
+-- être SOURCÉS.
+--
+-- `INSERT INTO _audit_expected (file, test_id, reason) VALUES` reste ici, vide :
+-- la table existe, l'auto-test `audit_registry_selftest.sql` s'appuie dessus
+-- pour vérifier que le registre porte bien le couple (fichier, identifiant).
+--
+-- `321 T02`, `T03` et `T05` sont de RETOUR dans le registre, et pourquoi.
+--
+-- Elles en étaient sorties le 02/10/2026 au motif que « la suite 411 donne 6
+-- scénarios verts ». Ce motif ne tenait pas : la 411 mesure la CONTRAPASSATION
+-- d'un bulletin validé, elle ne fait aucun calcul d'élément variable. Un
+-- correctif écrit dans le corps de la 319 — que la 320 a ensuite réduite à une
+-- enveloppe déléguant à `payroll_compute_slip` — ne pouvait d'ailleurs rien
+-- prouver. Remesuré le 03/10/2026 sur base neuve : brut 2 500,00 € au lieu de
+-- 2 660,00 €, 2 500,00 au lieu de 2 575,00, 3 000,00 au lieu de 3 235.
+--
+-- Le raisonnement qui les justifiait est donc restauré tel quel : un avantage en
+-- nature est un salaire, sa valeur faciale entre dans le brut, et seule la part
+-- exonérée échappe aux cotisations. La grille 2026 n'a AUCUNE ligne pour ces
+-- deux postes : il manque le paramétrage, pas la formule. Les deux montants
+-- (valeur du titre-restaurant, plafond d'exonération de l'indemnité de
+-- transport) changent chaque année et doivent être SOURCÉS — la 276 le fait
+-- explicitement (« [URSSAF-PSS] », « [URSSAF-TAUX] »). Écrire un taux de
+-- mémoire serait exactement le défaut que ce dépôt combat.
+--
+-- (vide depuis le 04/10/2026 : `321 T02 / T03 / T05` fermés par la 341 — tâche 2.1)
+
+-- Un défaut connu doit s'inscrire ici AVEC SA RAISON, puis disparaître avec son
+-- correctif. Une suite qui reste rouge sans être inscrite casse la CI — c'est
+-- voulu.
+
+-- Réouvert le 30/09/2026 — un défaut PROUVÉ, trouvé en portant la couverture des
+-- éléments variables du second moteur vers le moteur réel (321) :
+--   • `321 T02` — les TITRES-RESTAURANT n'entrent ni dans le brut, ni dans les
+--     cotisations, ni dans le net. Mesuré : un titre de 160 € sur un brut de
+--     2 500 € laisse le brut à 2 500,00 €. Un avantage en nature est un salaire :
+--     sa valeur faciale entre dans le brut, et seule la part exonérée (la valeur
+--     du titre) échappe aux cotisations. La grille 2026 **n'a aucune ligne** pour
+--     ce poste — il manque le paramétrage, pas seulement la formule.
+--   • `321 T03` — l'INDEMNITÉ DE TRANSPORT, même constat : mesuré 2 500,00 €
+--     au lieu de 2 575,00 €.
+--   • `321 T05` — les deux ci-dessus cumulés.
+--
+-- Pourquoi ils ne sont pas corrigés ici : les deux montants à paramétrer
+-- (valeur faciale du titre-restaurant, plafond d'exonération de l'indemnité de
+-- transport) changent chaque année et doivent être SOURCÉS — la 276 le fait
+-- explicitement (`[URSSAF-PSS]`, « [URSSAF-TAUX] »). Écrire un taux de mémoire
+-- serait exactement le défaut que ce dépôt combat. Le correctif est un chantier
+-- à part, avec ses sources.
+--
+-- RÉTABLISSÉ le 03/10/2026. Elles étaient sorties le 02/10 au motif que la
+-- `411_chain_l1_paie_contrepassation_tests` donnait 6 scénarios verts : or la
+-- 411 mesure la contrepassation d'un bulletin validé, elle ne calcule aucun
+-- élément variable. La suite 321, elle, reste rouge sur les trois lignes.
+--
+-- Le registre ne contient que ces trois entrées. « Un défaut connu doit
+-- s'inscrire ici avec sa raison, puis disparaître avec son correctif » : elles
+-- sortiront le jour où la grille 2026 portera les deux postes à SOURCER.
+--
+-- Plus aucun autre scénario n'a le droit d'échouer : un échec hors registre
+-- casse la CI, et un défaut connu doit s'inscrire ici avec sa raison — puis
+-- disparaître avec son correctif.

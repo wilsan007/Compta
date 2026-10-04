@@ -1,10 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
-import * as XLSX from 'xlsx'
 import { Card, PageHeader, Button, Breadcrumb, Badge, Select } from '@/components/ui'
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
-import { getTenantId } from '@/lib/queries'
+import { getTenantId } from '@/lib/queries/core'
 import { checkClientRateLimit, CLIENT_LIMITS, getRateLimitResetSeconds } from '@/lib/clientRateLimit'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
 import {
@@ -19,6 +18,7 @@ import {
   AlertCircle, Loader2, ListOrdered, Sparkles, Eye, Columns3, Brain,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { errorMessage } from '@/lib/utils'
 
 type Step = 'select' | 'upload' | 'map' | 'result'
 
@@ -72,7 +72,8 @@ export function ImportPage() {
     setStep('upload')
   }
 
-  function downloadTemplate(mod: ImportModule) {
+  async function downloadTemplate(mod: ImportModule) {
+    const XLSX = await import('xlsx')
     const headerRow = mod.fields.map((f) => f.label + (f.required ? ' *' : ''))
     const sampleRow = mod.fields.map((f) => f.sample)
     const ws = XLSX.utils.aoa_to_sheet([headerRow, sampleRow])
@@ -92,9 +93,10 @@ export function ImportPage() {
       return
     }
     const reader = new FileReader()
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target!.result as ArrayBuffer)
+        const XLSX = await import('xlsx')
         const wb = XLSX.read(data, { type: 'array' })
         const ws = wb.Sheets[wb.SheetNames[0]]
         const json = XLSX.utils.sheet_to_json<ParsedRow>(ws, { defval: '' })
@@ -127,8 +129,8 @@ export function ImportPage() {
           toast('warning', t('import.manualMappingRequired'), t('import.manualMappingRequired'))
         }
         setStep('map')
-      } catch (err: any) {
-        toast('error', t('import.readError'), err.message || t('import.readError'))
+      } catch (err) {
+        toast('error', t('import.readError'), errorMessage(err) || t('import.readError'))
       }
     }
     reader.readAsArrayBuffer(file)
@@ -222,7 +224,7 @@ export function ImportPage() {
         return
       }
       // Merge AI mapping with existing heuristic mapping (AI takes priority for new fields)
-      const mergedMapping = { ...mapping, ...result.mapping }
+      const mergedMapping = { ...mapping, ...(result.mapping || {}) }
       setMapping(mergedMapping)
       setAiReasoning(result.reasoning)
       // Update auto-mapping confidence
@@ -249,8 +251,8 @@ export function ImportPage() {
         unmappedColumns: headers.filter((h) => !Object.values(mergedMapping).includes(h)),
       })
       toast('success', t('import.aiDone'), `${Object.keys(result.mapping).length}`)
-    } catch (err: any) {
-      toast('error', t('import.aiError'), err.message || t('import.aiError'))
+    } catch (err) {
+      toast('error', t('import.aiError'), errorMessage(err) || t('import.aiError'))
     }
     setAiLoading(false)
   }
@@ -426,7 +428,7 @@ export function ImportPage() {
                     </thead>
                     <tbody>
                       {rows.slice(0, 5).map((row, i) => (
-                        <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                        <tr key={row.id || i} className="border-b border-[var(--color-border)] last:border-0">
                           <td className="p-2 text-[var(--color-text-secondary)]">{i + 1}</td>
                           {headers.map((h) => (
                             <td key={h} className="p-2 text-[var(--color-text)] max-w-[180px] truncate">

@@ -102,8 +102,10 @@
     "total": "Total",
     "statuses": {
       "applied": "Appliqué",
-      "draft": "Brouillon"
-    }
+      "draft": "Brouillon",
+      "validated": "Validé"
+    },
+    "supplierReference": "N° d'avoir du fournisseur (facultatif)"
   },
   "orders": {
     "title": "Commandes fournisseurs",
@@ -149,7 +151,8 @@
       "draft": "Brouillon",
       "confirmed": "Confirmée",
       "received": "Reçue",
-      "cancelled": "Annulée"
+      "cancelled": "Annulée",
+      "partial": "Partiellement reçue"
     }
   },
   "goodsReceipts": {
@@ -180,7 +183,13 @@
       "received": "Reçu",
       "partial": "Partiel",
       "cancelled": "Annulé"
-    }
+    },
+    "purchaseOrder": "Commande fournisseur",
+    "stock": "Stock",
+    "stockIn": "Entré",
+    "stockPending": "En attente",
+    "warehouse": "Dépôt de réception",
+    "fromOrderHint": "La réception reprend les lignes de la commande confirmée, au reste à recevoir. Passez-la à « Reçue » pour faire entrer la marchandise."
   },
   "payments": {
     "title": "Règlements fournisseurs",
@@ -200,6 +209,7 @@
     "status": "Statut",
     "noPayments": "Aucun règlement",
     "noPaymentsDescription": "Aucun règlement enregistré",
+    "count": "{{count}} règlement(s) — {{total}}",
     "createFirst": "Enregistrer mon premier règlement",
     "searchPlaceholder": "Rechercher par numéro, fournisseur, facture...",
     "methods": {
@@ -216,7 +226,9 @@
     "currency": "Devise",
     "exchangeRate": "Taux de change",
     "refreshRate": "Actualiser le taux",
-    "amountCurrency": "Montant en devise"
+    "amountCurrency": "Montant en devise",
+    "recordFor": "Régler la facture fournisseur {{number}}",
+    "overpaidNotice": "Excédent de {{amount}} : il sera comptabilisé en avance fournisseur (4091)."
   },
   "suppliers": {
     "title": "Fournisseurs",
@@ -256,6 +268,8 @@
     "parentIdPlaceholder": "UUID de la société parente",
     "salesRepId": "Commercial assigné (ID)",
     "salesRepIdPlaceholder": "UUID du commercial",
+    "accountTiers": "Compte auxiliaire",
+    "accountCollectif": "Compte collectif",
     "nameLabel": "Nom du fournisseur",
     "nameRequired": "Le nom est obligatoire",
     "deleted": "Fournisseur supprimé avec succès",
@@ -269,8 +283,21 @@
       "email": "contact@supplier.fr",
       "phone": "0612345678",
       "address": "15 rue du Commerce, 75011 Paris",
-      "vatNumber": "FR98765432109"
-    }
+      "vatNumber": "FR98765432109",
+      "city": "Paris"
+    },
+    "checkSiret": "Vérifier",
+    "checkingSiret": "Vérification…",
+    "siretAtSource": "Vérifié à la source",
+    "siretFormatOnly": "Format et clé de contrôle valides — vérification à la source non configurée",
+    "siretInvalidKey": "Invalide : {{reason}}",
+    "siretInvalid": "SIRET invalide : 14 chiffres et clé de contrôle (Luhn) exigés",
+    "countryUnset": "— non renseigné —",
+    "countryInvalid": "Pays invalide : deux lettres de code ISO (ex. BE)",
+    "paymentTermsUnset": "— non renseignées —",
+    "parentIdUnset": "— aucune —",
+    "salesRepIdUnset": "— aucun —",
+    "cityPlaceholder": "Paris"
   },
   "automation": {
     "title": "Automatisation des factures",
@@ -297,7 +324,7 @@
     "processed": "Factures traitées",
     "pending": "Factures en attente",
     "rejected": "Factures rejetées",
-    "uploadTitle": "Importer une facture (OCR simulé)",
+    "uploadTitle": "Importer une facture (OCR)",
     "dragDropText": "Glissez une facture PDF ou image, ou cliquez pour parcourir",
     "fileTypes": "PDF, PNG, JPG — 10 Mo max",
     "browse": "Parcourir",
@@ -315,7 +342,9 @@
       "paid": "Payée",
       "overdue": "En retard",
       "received": "Reçue"
-    }
+    },
+    "subtotalAmount": "Montant HT",
+    "totalMismatch": "Le total lu sur la facture ({{total}}) diffère de HT + TVA : vérifiez les montants."
   },
   "approval": {
     "title": "Bon à payer",
@@ -337,5 +366,120 @@
       "approved": "Approuvé",
       "rejected": "Rejeté"
     }
+  },
+  "purchaseRequests": {
+    "title": "Demandes d'achat",
+    "new": "Nouvelle demande",
+    "number": "N° demande",
+    "requester": "Demandeur",
+    "department": "Département",
+    "status": "Statut",
+    "priority": "Priorité",
+    "expectedDate": "Date prévue",
+    "notes": "Notes",
+    "lines": "Lignes",
+    "addLine": "Ajouter une ligne",
+    "description": "Description",
+    "quantity": "Quantité",
+    "estimatedPrice": "Prix estimé",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "convert": "Convertir en commande",
+    "statusChanged": "Statut modifié",
+    "converted": "Demande convertie en commande",
+    "searchPlaceholder": "Rechercher par numéro, demandeur...",
+    "noRequests": "Aucune demande d'achat",
+    "noRequestsDescription": "Vous n'avez créé aucune demande d'achat",
+    "statusDraft": "Brouillon",
+    "statusSubmitted": "Soumise",
+    "statusApproved": "Approuvée",
+    "statusRejected": "Rejetée",
+    "statusConverted": "Convertie",
+    "priorityLow": "Basse",
+    "priorityNormal": "Normale",
+    "priorityHigh": "Haute",
+    "priorityUrgent": "Urgente"
+  },
+  "supplierPrices": {
+    "title": "Tarifs fournisseurs",
+    "new": "Nouvelle grille tarifaire",
+    "name": "Nom",
+    "supplier": "Fournisseur",
+    "validFrom": "Valable depuis",
+    "validTo": "Valable jusqu'au",
+    "discount": "Remise",
+    "currency": "Devise",
+    "compare": "Comparer les prix",
+    "bestPrice": "Meilleur prix",
+    "leadTime": "Délai de livraison",
+    "noPriceFound": "Aucun prix trouvé pour ce produit",
+    "searchPlaceholder": "Rechercher par nom, fournisseur...",
+    "noLists": "Aucune grille tarifaire",
+    "noListsDescription": "Vous n'avez créé aucune grille tarifaire",
+    "days": "jours"
+  },
+  "deliverySchedule": {
+    "title": "Cadencier livraisons",
+    "new": "Nouveau cadencier",
+    "supplier": "Fournisseur",
+    "product": "Produit",
+    "frequency": "Fréquence",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "active": "Actif",
+    "weekly": "Hebdomadaire",
+    "biweekly": "Bimensuel",
+    "monthly": "Mensuel",
+    "monday": "Lun",
+    "tuesday": "Mar",
+    "wednesday": "Mer",
+    "thursday": "Jeu",
+    "friday": "Ven",
+    "saturday": "Sam",
+    "sunday": "Dim",
+    "generateForDate": "Générer pour le",
+    "generateOrders": "Générer les commandes",
+    "ordersGenerated": "{{count}} commande(s) générée(s)",
+    "searchPlaceholder": "Rechercher par fournisseur, produit...",
+    "noSchedules": "Aucun cadencier",
+    "noSchedulesDescription": "Vous n'avez créé aucun cadencier"
+  },
+  "purchaseInvoices": {
+    "title": "Factures d'achat",
+    "invoices": "Factures",
+    "invoice": "Facture",
+    "new": "Nouvelle facture fournisseur",
+    "recordPurchase": "Enregistrer un achat",
+    "number": "N° interne",
+    "supplier": "Fournisseur",
+    "dueDate": "Échéance",
+    "total": "Total TTC",
+    "toPay": "Reste à payer",
+    "remainingToPay": "Reste à payer",
+    "paid": "Payé",
+    "markPaid": "Marquer payée",
+    "markedPaid": "Facture marquée payée",
+    "created": "Facture enregistrée",
+    "createdMsg": "Facture {{number}} enregistrée en brouillon",
+    "noInvoices": "Aucune facture d'achat",
+    "noInvoicesDescription": "Enregistrez votre première facture fournisseur.",
+    "searchPlaceholder": "Rechercher une facture…",
+    "selectSupplier": "Sélectionnez un fournisseur",
+    "selectSupplierPlaceholder": "Choisir un fournisseur",
+    "invalidAmount": "Montant invalide",
+    "totalAmount": "Montant total",
+    "budgetAccount": "Compte budgétaire",
+    "fiscalYear": "Exercice",
+    "budgetChecking": "Contrôle budgétaire…",
+    "budgetTotal": "Budget",
+    "realized": "Réalisé",
+    "committed": "Engagé",
+    "available": "Disponible",
+    "overshoot": "Dépassement",
+    "budgetExceedWarning": "Cet achat de {{amount}} dépasse le budget de {{overshoot}}. Continuer ?",
+    "supplierReference": "N° de facture du fournisseur",
+    "supplierReferenceRequired": "Saisissez le numéro de la facture du fournisseur.",
+    "numberAssigned": "Le numéro interne (ACH-exercice-n°) est attribué à l'approbation.",
+    "atLeastOneLine": "Ajoutez au moins une ligne avec une désignation et un montant."
   }
 }

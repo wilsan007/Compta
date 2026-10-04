@@ -1,0 +1,14 @@
+# rule: Hardcoded hex colors in .tsx files (should use CSS variables)
+# severity: warning
+# pattern: hex color like #FFAABB in style or className
+# fix: Use CSS variable or Tailwind class
+# note: Excludes visualization components (graphs, kanban, gantt, mindmap) where hex colors are legitimate palette values
+# note: Excludes default color values (rule?.color || '#...') as they are DB fallbacks
+
+RULE_NAME="Hardcoded colors"
+RULE_DESC="Hardcoded hex colors in .tsx (use CSS variables or Tailwind)"
+RULE_SEVERITY="warning"
+RULE_GREP_PATTERN='#[0-9A-Fa-f]\{6\}'
+RULE_GREP_INCLUDES="--include=*.tsx"
+RULE_GREP_PATHS="src/pages/ src/components/"
+RULE_GREP_EXCLUDES="node_modules|\.test\.|__tests__|gradient|chartConfig|color:|colors\.|colorMap|color_|LandingPage|MindMapView|GraphView|BoxView|Avatar|TaskTableBody|MyTasksView|LargeScreenView|KanbanColumn|GanttTimeline|GanttTaskList|CalendarView|defaultColor|DEFAULT_COLOR"

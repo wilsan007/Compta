@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation } from '@/lib/queries'
+import { getCurrencyRevaluations, createCurrencyRevaluation, updateCurrencyRevaluation, deleteCurrencyRevaluation, revaluateCurrencyBalances } from '@/lib/queries/accounting'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Pencil, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, Trash2, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function CurrencyRevaluationPage() {
   const { t } = useTranslation('accounting')
@@ -16,20 +18,42 @@ export function CurrencyRevaluationPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CurrencyRevaluation | null>(null)
+  // M01-03 (309) : la réévaluation se **calcule** (soldes en devise au taux du
+  // jour, écart en 666/766) — l'écran ne se remplit plus à la main seulement.
+  const [periodDate, setPeriodDate] = useState(new Date().toISOString().slice(0, 10))
+  const [running, setRunning] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getCurrencyRevaluations()
       setEntries(data || [])
-    } catch (err) {
-      console.error('Failed to load currency revaluations:', err)
+    } catch (err) { console.error('Failed to load currency revaluations:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // M01-03 (309) : le calcul de la réévaluation, à la date choisie.
+  const handleRevaluate = useCallback(async () => {
+    setRunning(true)
+    try {
+      const verdict = await revaluateCurrencyBalances(periodDate)
+      toast('success', tCommon('common.success'),
+        t('revaluation.runDone', {
+          lines: Number(verdict?.lines ?? 0),
+          amount: Number(verdict?.gain_loss ?? 0),
+        }))
+      await loadData()
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setRunning(false)
+    }
+  }, [periodDate, loadData, t, tCommon, toast])
 
   function startEdit(entry: CurrencyRevaluation) {
     setEditing(entry)
@@ -42,13 +66,13 @@ export function CurrencyRevaluationPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('revaluation.deleteConfirm'))) return
+    if (!confirmSync(t('revaluation.deleteConfirm'))) return
     try {
       await deleteCurrencyRevaluation(id)
       toast('success', tCommon('common.success'), t('revaluation.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -63,7 +87,7 @@ export function CurrencyRevaluationPage() {
     t('revaluation.gainLoss'),
     t('revaluation.type'),
     t('revaluation.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (
@@ -72,7 +96,20 @@ export function CurrencyRevaluationPage() {
       <PageHeader
         title={t('revaluation.title')}
         subtitle={t('revaluation.subtitle')}
-        action={<Button onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>}
+        action={
+          <div className="flex items-end gap-2">
+            <Input
+              label={t('revaluation.date')}
+              type="date"
+              value={periodDate}
+              onChange={(e) => setPeriodDate(e.target.value)}
+            />
+            <Button onClick={handleRevaluate} disabled={running}>
+              <TrendingUp className="w-4 h-4" /> {t('revaluation.run')}
+            </Button>
+            <Button variant="secondary" onClick={openCreate}><Plus className="w-4 h-4" /> {t('revaluation.new')}</Button>
+          </div>
+        }
       />
 
       {loading ? (
@@ -117,14 +154,14 @@ export function CurrencyRevaluationPage() {
                     <button
                       onClick={() => startEdit(entry)}
                       className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
-                      title={tCommon('common.actions.edit')}
+                      title={tCommon('actions.edit')}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(entry.id)}
                       className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
-                      title={tCommon('common.actions.delete')}
+                      title={tCommon('actions.delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -195,8 +232,8 @@ function RevaluationForm({ entry, onClose, onSaved }: { entry: CurrencyRevaluati
       }
       toast('success', tCommon('common.success'), t('revaluation.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -207,7 +244,7 @@ function RevaluationForm({ entry, onClose, onSaved }: { entry: CurrencyRevaluati
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{entry ? t('revaluation.edit') : t('revaluation.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -237,9 +274,9 @@ function RevaluationForm({ entry, onClose, onSaved }: { entry: CurrencyRevaluati
           </div>
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? tCommon('common.saving') : tCommon('common.actions.save')}
+            {saving ? tCommon('common.saving') : tCommon('actions.save')}
           </Button>
         </div>
       </div>

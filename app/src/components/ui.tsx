@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
+import { useState, useEffect, useMemo, useRef, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { useFocusTrap, useLockBodyScroll } from '@/lib/hooks/accessibility'
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Loader2, X, Search, Check } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -95,9 +97,14 @@ interface ButtonProps {
   disabled?: boolean
   loading?: boolean
   className?: string
+  /**
+   * LOT7-07 : obligatoire dès que le bouton n'affiche qu'une icône. Sans lui, un
+   * lecteur d'écran annonce « bouton » sans dire ce qu'il fait. Sert aussi d'infobulle.
+   */
+  ariaLabel?: string
 }
 
-export function Button({ variant = 'primary', size = 'md', children, onClick, type = 'button', disabled, loading, className }: ButtonProps) {
+export function Button({ variant = 'primary', size = 'md', children, onClick, type = 'button', disabled, loading, className, ariaLabel }: ButtonProps) {
   const variantMap = {
     primary: 'btn-primary',
     secondary: 'btn-secondary',
@@ -114,9 +121,12 @@ export function Button({ variant = 'primary', size = 'md', children, onClick, ty
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      aria-busy={loading || undefined}
       className={cn('btn', variantMap[variant], sizeMap[size], (disabled || loading) && 'opacity-50 cursor-not-allowed', 'inline-flex items-center gap-2', className)}
     >
-      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+      {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
       {children}
     </button>
   )
@@ -132,26 +142,38 @@ interface InputProps {
   required?: boolean
   className?: string
   step?: string
+  min?: string
   disabled?: boolean
+  readOnly?: boolean
 }
 
-export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, disabled }: InputProps) {
+// LOT7-07 : le <label> n'était lié à aucun champ (ni htmlFor, ni id). Un lecteur
+// d'écran annonçait donc « champ de saisie » sans dire lequel — sur TOUS les
+// formulaires de l'application. `useId()` produit un identifiant stable côté serveur
+// comme côté client. L'astérisque de champ requis est masqué aux lecteurs d'écran :
+// `aria-required` porte déjà l'information, sans faire lire « étoile ».
+export function Input({ label, type = 'text', value, defaultValue, onChange, placeholder, required, className, step, min, disabled, readOnly }: InputProps) {
+  const id = useId()
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
         </label>
       )}
       <input
+        id={id}
         type={type}
         step={step}
+        min={min}
         value={value}
         defaultValue={defaultValue}
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
+        readOnly={readOnly}
         required={required}
+        aria-required={required || undefined}
         className="input"
       />
     </div>
@@ -162,23 +184,29 @@ interface SelectProps {
   label?: string
   value?: string
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void
-  options: { value: string; label: string }[]
+  // M11 (audit du 28/09/2026) : quatre écrans (NF-525, API, webhooks, modèles d'e-mail)
+  // passaient des <option> en enfants et aucun `options` : `options.map` levait et
+  // faisait tomber toute l'application. Les deux formes sont acceptées.
+  options?: { value: string; label: string }[]
+  children?: ReactNode
   required?: boolean
   className?: string
 }
 
-export function Select({ label, value, onChange, options, required, className }: SelectProps) {
+export function Select({ label, value, onChange, options, children, required, className }: SelectProps) {
+  const id = useId()
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
         </label>
       )}
-      <select value={value} onChange={onChange} required={required} className="input cursor-pointer">
-        {options.map((opt, i) => (
+      <select id={id} value={value} onChange={onChange} required={required} aria-required={required || undefined} className="input cursor-pointer">
+        {(options ?? []).map((opt, i) => (
           <option key={`${opt.value}-${i}`} value={opt.value}>{opt.label}</option>
         ))}
+        {children}
       </select>
     </div>
   )
@@ -195,8 +223,10 @@ export function Table({ headers, children }: TableProps) {
       <table className="app-table">
         <thead>
           <tr className="border-b border-[var(--color-border)]">
+            {/* LOT7-07 : `scope="col"` rattache chaque cellule à son en-tête — sans lui,
+                un lecteur d'écran lit les valeurs sans dire de quelle colonne elles viennent. */}
             {headers.map((h, i) => (
-              <th key={i} className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3">
+              <th key={i} scope="col" className="text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3">
                 {h}
               </th>
             ))}
@@ -239,7 +269,7 @@ export function SortableTable<T extends Record<string, any>>({
 
   const sorted = useMemo(() => {
     if (!sortKey) return data
-    const sortedData = [...data].sort((a, b) => {
+    const sortedData = [...(data || [])].sort((a, b) => {
       const av = a[sortKey]
       const bv = b[sortKey]
       if (av == null && bv == null) return 0
@@ -273,27 +303,44 @@ export function SortableTable<T extends Record<string, any>>({
           <thead>
             <tr className="border-b border-[var(--color-border)]">
               {headers.map((h, i) => (
+                /* LOT7-07 : l'en-tête était un <th> cliquable — donc le tri était
+                   INACCESSIBLE au clavier (pas de focus, pas d'activation par Entrée
+                   ou Espace) et le sens du tri n'était annoncé à aucun lecteur
+                   d'écran. `aria-sort` porte l'état, et un vrai <button> rend la
+                   colonne activable au clavier. Les chevrons sont décoratifs. */
                 <th
                   key={i}
+                  scope="col"
+                  aria-sort={
+                    h.sortable
+                      ? sortKey === h.key
+                        ? sortDir === 'asc' ? 'ascending' : 'descending'
+                        : 'none'
+                      : undefined
+                  }
                   className={cn(
                     'text-left text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-4 py-3 select-none',
-                    h.sortable && 'cursor-pointer hover:text-[var(--color-text)] transition-colors',
                     h.className,
                   )}
-                  onClick={() => h.sortable && handleSort(h.key)}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {h.label}
-                    {h.sortable && (
-                      <span className="flex-shrink-0">
+                  {h.sortable ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSort(h.key)}
+                      className="inline-flex items-center gap-1 min-h-6 uppercase tracking-wider font-semibold cursor-pointer hover:text-[var(--color-text)] transition-colors"
+                    >
+                      {h.label}
+                      <span className="flex-shrink-0" aria-hidden="true">
                         {sortKey === h.key ? (
                           sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                         ) : (
                           <ChevronsUpDown className="w-3 h-3 opacity-40" />
                         )}
                       </span>
-                    )}
-                  </span>
+                    </button>
+                  ) : (
+                    h.label
+                  )}
                 </th>
               ))}
             </tr>
@@ -320,20 +367,16 @@ export function SortableTable<T extends Record<string, any>>({
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label={t('actions.previous')} title={t('actions.previous')}>
+              <ChevronLeft className="w-4 h-4" aria-hidden="true" /></button>
             <span className="text-xs text-[var(--color-text-secondary)] px-2">
               {currentPage + 1} / {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage >= totalPages - 1}
-              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              className="p-1.5 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-neutral-100)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors" aria-label={t('actions.next')} title={t('actions.next')}>
+              <ChevronRight className="w-4 h-4" aria-hidden="true" /></button>
           </div>
         </div>
       )}
@@ -648,8 +691,8 @@ export function ConfirmDialog({
       <div className="card shadow-2xl max-w-md w-full animate-scale-in">
         <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
           <h3 className="text-base font-semibold text-[var(--color-text)]">{title}</h3>
-          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">
-            <X className="w-4 h-4" />
+          <button onClick={onCancel} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)]" aria-label={t('actions.close')} title={t('actions.close')}>
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <div className="px-6 py-4">
@@ -678,6 +721,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({ label, value, onChange, options, placeholder, required, className }: ComboboxProps) {
+  const labelId = useId()
   const { t } = useTranslation('common')
   const ph = placeholder || t('common.searchPlaceholder')
   const [open, setOpen] = useState(false)
@@ -703,19 +747,27 @@ export function Combobox({ label, value, onChange, options, placeholder, require
 
   return (
     <div className={className} ref={ref}>
+      {/* LOT7-07 : ce n'est pas un <select>, mais un bouton qui ouvre une liste.
+          `aria-labelledby` rattache le libellé, et `role="combobox"` + `aria-expanded`
+          annoncent qu'il s'agit d'une liste déroulante et si elle est ouverte. */}
       {label && (
-        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
-          {label} {required && <span className="text-[var(--color-danger)]">*</span>}
-        </label>
+        <span id={labelId} className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
+          {label} {required && <span className="text-[var(--color-danger)]" aria-hidden="true">*</span>}
+        </span>
       )}
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-labelledby={label ? labelId : undefined}
+          aria-required={required || undefined}
           className="input w-full text-left flex items-center justify-between"
         >
           <span className={cn(!selected && 'text-[var(--color-text-secondary)]')}>{selected?.label || ph}</span>
-          <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-[var(--color-text-secondary)] flex-shrink-0" aria-hidden="true" />
         </button>
         {open && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl z-50 max-h-[260px] overflow-hidden flex flex-col">
@@ -814,4 +866,156 @@ export function exportToExcel(filename: string, headers: string[], rows: (string
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ============================================================
+// Modal
+// ============================================================
+interface ModalProps {
+  open: boolean
+  onClose: () => void
+  title?: string
+  children: ReactNode
+  /** Actions de la fenêtre (boutons) — posées dans un pied fixe, hors zone de défilement. */
+  footer?: ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+}
+
+// LOT7-07 : la boîte de dialogue n'était qu'un <div>. Sans `role="dialog"` ni
+// `aria-modal`, un lecteur d'écran continue de lire la page derrière ; sans
+// `aria-labelledby`, il n'annonce pas de quoi il s'agit à l'ouverture. Le bouton de
+// fermeture n'affichait qu'une croix, sans libellé.
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: ModalProps) {
+  const titleId = useId()
+  const { t } = useTranslation('common')
+  // LOT7-07 : au clavier, la boîte n'était pas une boîte — Tab sortait derrière elle,
+  // Échap ne fermait pas, et à la fermeture le focus repartait du haut de la page.
+  const dialogRef = useFocusTrap(open, onClose)
+  useLockBodyScroll(open)
+  if (!open) return null
+  const sizeClass = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+  }[size]
+  // E1 (ach-001, stk-015) : `max-h-[90vh]` laissait la fenêtre plus haute que
+  // l'écran dès que son contenu était long, et TOUT défilait — titre, champs et
+  // boutons. « Créer » restait alors hors de l'écran (mesuré : top = 840 px pour
+  // un écran de 720) et le clic était impossible. Le cadre tient désormais dans
+  // la fenêtre (1 rem de marge), l'en-tête et le pied ne bougent pas, et seul le
+  // corps défile : le bouton de validation est toujours atteignable.
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        className={`relative bg-[var(--color-surface)] rounded-lg shadow-xl w-full ${sizeClass} flex flex-col max-h-[calc(100vh-2rem)]`}
+      >
+        {title && (
+          <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)] shrink-0">
+            <h2 id={titleId} className="font-semibold">{title}</h2>
+            <button
+              onClick={onClose}
+              aria-label={t('actions.close')}
+              title={t('actions.close')}
+              className="p-1 rounded hover:bg-[var(--color-neutral-100)]"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        <div className="p-4 flex-1 overflow-y-auto">{children}</div>
+        {footer && (
+          <div className="p-4 border-t border-[var(--color-border)] shrink-0">{footer}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// Textarea
+// ============================================================
+interface TextareaProps {
+  value?: string
+  defaultValue?: string
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  rows?: number
+  placeholder?: string
+  className?: string
+  label?: string
+  required?: boolean
+}
+
+export function Textarea({ value, defaultValue, onChange, rows = 4, placeholder, className, label, required }: TextareaProps) {
+  const id = useId()
+  return (
+    <div className={className}>
+      {label && <label htmlFor={id} className="text-sm font-medium">{label}{required && <span className="text-[var(--color-danger)]" aria-hidden="true"> *</span>}</label>}
+      <textarea
+        id={id}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        rows={rows}
+        placeholder={placeholder}
+        required={required}
+        aria-required={required || undefined}
+        className="w-full px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-y"
+      />
+    </div>
+  )
+}
+
+// ============================================================
+// Tabs
+// ============================================================
+import { createContext, useContext } from 'react'
+
+interface TabsProps {
+  defaultValue: string
+  children: ReactNode
+  className?: string
+}
+export function Tabs({ defaultValue, children, className }: TabsProps) {
+  const [value, setValue] = useState(defaultValue)
+  return (
+    <TabsContext.Provider value={{ value, setValue }}>
+      <div className={className}>{children}</div>
+    </TabsContext.Provider>
+  )
+}
+
+const TabsContext = createContext<{ value: string; setValue: (v: string) => void }>({ value: '', setValue: () => {} })
+
+export function TabsList({ children }: { children: ReactNode }) {
+  return <div className="flex gap-1 border-b border-[var(--color-border)] mb-4">{children}</div>
+}
+
+export function TabsTrigger({ value, children }: { value: string; children: ReactNode }) {
+  const ctx = useContext(TabsContext)
+  const active = ctx.value === value
+  return (
+    <button
+      onClick={() => ctx.setValue(value)}
+      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+        active
+          ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+          : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text)]'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function TabsContent({ value, children, className }: { value: string; children: ReactNode; className?: string }) {
+  const ctx = useContext(TabsContext)
+  if (ctx.value !== value) return null
+  return <div className={className}>{children}</div>
 }

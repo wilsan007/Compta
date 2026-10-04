@@ -26,6 +26,7 @@ create index if not exists idx_mcf_incorporated on future_accounting_movements(i
 alter table future_accounting_movements enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_future_accounting_movements') THEN
+    DROP POLICY IF EXISTS "allow_all_future_accounting_movements" ON future_accounting_movements;
     CREATE POLICY "allow_all_future_accounting_movements" ON future_accounting_movements FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -50,6 +51,7 @@ create index if not exists idx_treasury_transfers_status on treasury_transfers(s
 alter table treasury_transfers enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_treasury_transfers') THEN
+    DROP POLICY IF EXISTS "allow_all_treasury_transfers" ON treasury_transfers;
     CREATE POLICY "allow_all_treasury_transfers" ON treasury_transfers FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -76,6 +78,7 @@ create index if not exists idx_credit_lines_status on credit_lines(status);
 alter table credit_lines enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_credit_lines') THEN
+    DROP POLICY IF EXISTS "allow_all_credit_lines" ON credit_lines;
     CREATE POLICY "allow_all_credit_lines" ON credit_lines FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -101,6 +104,7 @@ create index if not exists idx_investments_status on investments(status);
 alter table investments enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_investments') THEN
+    DROP POLICY IF EXISTS "allow_all_investments" ON investments;
     CREATE POLICY "allow_all_investments" ON investments FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -123,6 +127,7 @@ create index if not exists idx_value_dates_value_date on value_date_tracking(val
 alter table value_date_tracking enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_value_date_tracking') THEN
+    DROP POLICY IF EXISTS "allow_all_value_date_tracking" ON value_date_tracking;
     CREATE POLICY "allow_all_value_date_tracking" ON value_date_tracking FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -145,6 +150,7 @@ create index if not exists idx_treasury_recurring_next on treasury_recurring(nex
 alter table treasury_recurring enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_treasury_recurring') THEN
+    DROP POLICY IF EXISTS "allow_all_treasury_recurring" ON treasury_recurring;
     CREATE POLICY "allow_all_treasury_recurring" ON treasury_recurring FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
@@ -164,6 +170,7 @@ create index if not exists idx_consolidated_treasury_date on consolidated_treasu
 alter table consolidated_treasury enable row level security;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_consolidated_treasury') THEN
+    DROP POLICY IF EXISTS "allow_all_consolidated_treasury" ON consolidated_treasury;
     CREATE POLICY "allow_all_consolidated_treasury" ON consolidated_treasury FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

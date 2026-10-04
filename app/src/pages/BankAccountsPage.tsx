@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, StatCard, Breadcrumb, SkeletonCard, Input, Select } from '@/components/ui'
-import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { getBankAccounts, getBankTransactions, createBankAccount } from '@/lib/queries/banking'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Banknote, Plus, Landmark, CreditCard, Wallet, TrendingDown, TrendingUp, X, AlertTriangle } from 'lucide-react'
 import type { BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -10,14 +10,16 @@ import { useToast } from '@/lib/toast'
 export function BankAccountsPage() {
   const { t } = useTranslation('banking')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
 const [accounts, setAccounts] = useState<BankAccount[]>([])
-  const [transactions, setTransactions] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<Awaited<ReturnType<typeof getBankTransactions>>>([])
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    loadAccounts()
+    loadAccounts().catch(err => console.error('loadAccounts:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadAccounts() {
@@ -29,8 +31,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
         const txns = await getBankTransactions(data[0].id)
         setTransactions(txns || [])
       }
-    } catch (err) {
-      console.error('Error loading bank accounts:', err)
+    } catch (err) { console.error('Error loading bank accounts:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -41,12 +42,14 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
     try {
       const txns = await getBankTransactions(id)
       setTransactions(txns || [])
-    } catch (err) {
-      console.error('Error loading transactions:', err)
+    } catch (err) { console.error('Error loading transactions:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     }
   }
 
-  const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0)
+  // M3 (277, D-F) : le solde affiché est le solde COMPTABLE (512x au grand livre),
+  // la référence de tous les états ; le relevé et l'écart sont montrés à côté.
+  // `balance` (solde d'ouverture saisi) n'est plus lue.
+  const totalBalance = accounts.reduce((sum, a) => sum + Number(a.calculated_balance || 0), 0)
 
   const accountTypeIcons: Record<string, React.ReactNode> = {
     chequing: <Landmark className="w-5 h-5" />,
@@ -62,7 +65,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       <Breadcrumb items={[{ label: t('accounts.title'), path: '/banking' }]} />
       <PageHeader
         title={t('accounts.title')}
-        subtitle={`${accounts.length} ${t('accounts.accounts')} • ${t('accounts.totalBalance')}: ${formatCurrency(totalBalance)}`}
+        subtitle={`${accounts.length} ${t('accounts.accounts')} • ${t('dashboard.totalBalance')}: ${formatCurrency(totalBalance)}`}
         action={<Button variant="primary" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('accounts.new')}</Button>}
       />
 
@@ -75,7 +78,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-            <StatCard label={t('accounts.totalBalance')} value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
+            <StatCard label={t('dashboard.totalBalance')} value={formatCurrency(totalBalance)} icon={<Banknote className="w-5 h-5" />} color="primary" />
             <StatCard label={tCommon('common.transactions')} value={String(transactions.length)} icon={<TrendingUp className="w-5 h-5" />} color="success" />
             <StatCard label={t('accounts.connectedAccounts')} value={String(accounts.filter((a) => a.connected).length)} icon={<Landmark className="w-5 h-5" />} color="warning" />
           </div>
@@ -101,9 +104,9 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                     <div>
                       <p className="text-sm font-medium text-[var(--color-text)]">{acc.name}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{acc.bank_name || acc.type}</p>
-                      {acc.statement_balance != null && (
+                      {acc.statement_balance_date && (
                         <div className="mt-1 flex items-center gap-2 text-xs">
-                          <span className="text-[var(--color-text-secondary)]">{t('statementBalances.statementBalance')}:</span>
+                          <span className="text-[var(--color-text-secondary)]">{t('statementBalances.statementBalance')} ({formatDate(acc.statement_balance_date)}):</span>
                           <span className="font-mono">{formatCurrency(Number(acc.statement_balance))}</span>
                           {Number(acc.reconciliation_diff || 0) !== 0 && (
                             <span className="flex items-center gap-0.5 text-[var(--color-danger)]">
@@ -115,7 +118,10 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                       )}
                     </div>
                   </div>
-                  <span className="font-semibold text-[var(--color-text)]">{formatCurrency(Number(acc.balance) || 0)}</span>
+                  <span className="text-right">
+                    <span className="block font-semibold text-[var(--color-text)]">{formatCurrency(Number(acc.calculated_balance) || 0)}</span>
+                    <span className="block text-xs text-[var(--color-text-secondary)]">{t('statementBalances.bookBalance')}</span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -143,7 +149,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   <TableCell>
                     <span className={`flex items-center gap-1 text-xs ${txn.type === 'credit' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                       {txn.type === 'credit' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {txn.type === 'credit' ? t('accounts.credit') : t('accounts.debit')}
+                      {txn.type === 'credit' ? t('accounting:entries.credit') : t('accounting:entries.debit')}
                     </span>
                   </TableCell>
                   <TableCell className={txn.type === 'credit' ? 'text-[var(--color-success)] font-medium text-right' : 'text-[var(--color-danger)] font-medium text-right'}>
@@ -151,7 +157,7 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
                   </TableCell>
                   <TableCell>
                     <Badge variant={txn.reconciled ? 'success' : 'neutral'}>
-                      {txn.reconciled ? t('accounts.reconciled') : tCommon('status.pending')}
+                      {txn.reconciled ? t('transactions.reconciled') : tCommon('status.pending')}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -160,8 +166,8 @@ const [accounts, setAccounts] = useState<BankAccount[]>([])
           ) : (
             <EmptyState
               icon={<TrendingUp className="w-8 h-8" />}
-              title={t('accounts.noTransactions')}
-              description={t('accounts.noTransactionsDescription')}
+              title={t('transactions.noTransactions')}
+              description={t('transactions.noTransactionsDescription')}
             />
           )}
         </Card>
@@ -203,8 +209,8 @@ const [name, setName] = useState('')
         account_number: '',
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -215,7 +221,7 @@ const [name, setName] = useState('')
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('accounts.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('accounts.accountName')} required value={name} onChange={(e) => setName(e.target.value)} placeholder={t('accounts.accountNamePlaceholder')} />
@@ -230,7 +236,7 @@ const [name, setName] = useState('')
           ]} />
           <Input label={t('accounts.initialBalance')} type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" />
           <Select label={tCommon('common.currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} options={[
-            { value: 'EUR', label: 'EUR (€)' },
+            { value: 'EUR', label: 'EUR' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'GBP', label: 'GBP (£)' },
           ]} />

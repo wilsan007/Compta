@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select, Input, Button } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getAgedBalance } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getAgedBalance } from '@/lib/queries/accounting'
 import { Clock } from 'lucide-react'
 
 export function AgedBalancePage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
-  const [data, setData] = useState<any[]>([])
+  const { toast } = useToast()
+  const [data, setData] = useState<Awaited<ReturnType<typeof getAgedBalance>>>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
   const [refDate, setRefDate] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -22,6 +25,7 @@ export function AgedBalancePage() {
       setData(res)
     } catch (err) {
       console.error('Error loading aged balance:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -86,7 +90,7 @@ export function AgedBalancePage() {
             </div>
             <div className="card p-3">
               <p className="text-xs text-[var(--color-text-secondary)]">{t('agedBalance.61-90')}</p>
-              <p className="text-lg font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totals.b61_90)}</p>
+              <p className="text-lg font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totals.b61_90)}</p>
             </div>
             <div className="card p-3">
               <p className="text-xs text-[var(--color-text-secondary)]">{t('agedBalance.90+')}</p>

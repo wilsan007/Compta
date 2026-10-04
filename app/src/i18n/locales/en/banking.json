@@ -35,7 +35,7 @@
     "name": "Account name",
     "accountName": "Account name",
     "bankName": "Bank name",
-    "initialBalance": "Initial balance",
+    "initialBalance": "Opening balance (posted as opening entry)",
     "accountNamePlaceholder": "Main account",
     "nameRequired": "Account name is required",
     "bank": "Bank",
@@ -60,7 +60,9 @@
     "searchPlaceholder": "Search by name, IBAN...",
     "placeholders": {
       "bankName": "BNP Paribas"
-    }
+    },
+    "accounts": "account(s)",
+    "connectedAccounts": "Connected accounts"
   },
   "transactions": {
     "title": "Bank transactions",
@@ -99,7 +101,7 @@
   "reconciliation": {
     "title": "Bank reconciliation",
     "subtitle": "Reconcile your bank transactions",
-    "selectAccount": "Select an account",
+    "selectAccount": "Please select an account",
     "allAccounts": "All accounts",
     "bankBalance": "Bank balance",
     "accountingBalance": "Accounting balance",
@@ -122,7 +124,70 @@
     "reconciledTitle": "Reconciled ({{count}})",
     "action": "Action",
     "cancel": "Cancel",
-    "reconcileBtn": "Reconcile"
+    "reconcileBtn": "Reconcile",
+    "smartMatch": "Smart reconciliation",
+    "smartResult": "{{matched}} matches found",
+    "autoMatchResult": "{{matched}} matched, {{unmatched}} unmatched"
+  },
+  "state": {
+    "title": "Reconciliation statement",
+    "subtitle": "What the statement and the 512x account say, at a date",
+    "account": "Bank account",
+    "date": "As of",
+    "statementBalance": "Statement balance",
+    "statementHint": "Lines imported up to this date",
+    "accountingBalance": "{{account}} account balance",
+    "accountingHint": "Posted entries on account {{account}}",
+    "difference": "Balance difference",
+    "explainedDifference": "Explained by the gaps: {{amount}}",
+    "reconciliation": "Status",
+    "reconciled": "Reconciled",
+    "ecarts": "{{count}} gap(s)",
+    "integrityOk": "Matching integrity verified",
+    "integrityBroken": "Inconsistent matches",
+    "closingBalance": "Closing balance of the imported statement",
+    "closingHint": "Compared with the lines imported up to its date: a closing balance that does not add up means an incomplete statement.",
+    "closingAmount": "Stated balance",
+    "closingDate": "Closing date",
+    "saveClosing": "Save",
+    "closingSaved": "Closing balance saved",
+    "closingMatches": "Matches the imported lines",
+    "closingGap": "{{amount}} away from the imported lines",
+    "statementEcartsTitle": "Statement — unmatched lines ({{count}})",
+    "noStatementEcarts": "No statement gap",
+    "noStatementEcartsDesc": "Every statement line is matched to an entry.",
+    "ledgerEcartsTitle": "Account — unmatched entries ({{count}})",
+    "noLedgerEcarts": "No account gap",
+    "noLedgerEcartsDesc": "Every account entry is matched to the statement.",
+    "pairsTitle": "Matches made ({{count}})",
+    "noPairs": "No match yet",
+    "noPairsDesc": "Match a statement line with its entry.",
+    "label": "Label",
+    "amount": "Amount",
+    "action": "Action",
+    "debit": "Debit",
+    "credit": "Credit",
+    "entry": "Entry",
+    "matchType": "Source",
+    "matchTypes": {
+      "ledger_auto": "Automatic",
+      "ledger_manual": "Manual",
+      "ledger_posted": "Posted"
+    },
+    "point": "Match",
+    "pointTitle": "Match the statement line",
+    "pointDone": "Line matched on both sides",
+    "unpoint": "Unmatch",
+    "unpointDone": "Match undone",
+    "post": "Post to ledger",
+    "postTitle": "Post the statement line to the ledger",
+    "postDone": "Entry created and line matched",
+    "postHint": "Bank account {{account}} carries the counterpart; the entry is posted immediately.",
+    "counterpart": "Expense or income account",
+    "candidate": "Account entry with the same amount",
+    "noCandidate": "No unmatched entry of that amount: post the line instead.",
+    "noAccount": "No bank account",
+    "noAccountDesc": "Create a bank account to follow its reconciliation."
   },
   "rules": {
     "title": "Bank rules",
@@ -151,8 +216,25 @@
       "startsWith": "Starts with",
       "endsWith": "Ends with",
       "greaterThan": "Greater than",
-      "lessThan": "Less than"
-    }
+      "lessThan": "Less than",
+      "greater_than": "Greater than",
+      "less_than": "Less than",
+      "starts_with": "Starts with"
+    },
+    "accountCode": "Account code",
+    "accountCodePlaceholder": "E.g. 626100",
+    "category": "Category",
+    "categoryPlaceholder": "E.g. bank fees",
+    "condition": "Condition",
+    "field": "Field",
+    "fields": {
+      "amount": "Amount",
+      "description": "Description",
+      "reference": "Reference"
+    },
+    "operator": "Operator",
+    "value": "Value",
+    "vatRate": "VAT rate (%)"
   },
   "pdfReconciliation": {
     "title": "PDF Reconciliation",
@@ -242,6 +324,7 @@
       "connectionFailed": "Connection failed"
     },
     "syncSuccess": "Synchronization complete",
+    "syncImported": "{{count}} transaction(s) imported",
     "syncError": "Synchronization error",
     "autoSynced": "Auto-synced",
     "reconcile": "Reconcile"
@@ -253,7 +336,8 @@
     "reconciliationDiff": "Variance",
     "statementDate": "Statement date",
     "noDiff": "No variance",
-    "diffWarning": "Variance detected"
+    "diffWarning": "Variance detected",
+    "bookBalance": "book balance"
   },
   "multiCurrency": {
     "originalAmount": "Original amount",
@@ -280,6 +364,7 @@
     "noAccounts": "No bank account",
     "noAccountsDesc": "Add your first RIB/IBAN",
     "ibanInvalid": "Invalid IBAN",
+    "ibanRefused": "Invalid IBAN: the check digits do not match. Nothing was saved — check the number entered.",
     "ibanValid": "Valid IBAN",
     "saved": "Bank account saved",
     "saveError": "Error saving bank account",

@@ -42,6 +42,8 @@ function chainWith(data: any, error: any = null): any {
   c.single = vi.fn(() => Promise.resolve({ data, error }))
   c.maybeSingle = vi.fn(() => Promise.resolve({ data, error }))
   c.then = vi.fn((resolve: any) => Promise.resolve({ data, error }).then(resolve))
+  // LOT7-03 : fetchAllRows lit via .range() — il doit voir la même réponse que `then`.
+  c.range = vi.fn(() => Promise.resolve({ data, error }))
   return c
 }
 
@@ -84,6 +86,8 @@ function resetMock() {
   ;(supabase as any).functions.invoke = vi.fn(() => Promise.resolve({
     data: { success: true }, error: null
   }))
+  // ACC-01: Réinitialiser rpc au mock par défaut
+  ;(supabase as any).rpc = vi.fn(() => Promise.resolve({ data: null, error: null }))
 }
 
 // ============================================================
@@ -215,7 +219,7 @@ describe('checkMaterialAvailability', () => {
     }
 
     const { checkMaterialAvailability } = await import('@/lib/queries')
-    const result = await checkMaterialAvailability('bom1', 2)
+    const result = await checkMaterialAvailability('bom1')
     expect(result).toBeDefined()
     expect(result.available).toBeDefined()
     expect(result.missing).toBeDefined()
@@ -229,14 +233,17 @@ describe('transferGescomToAccounting', () => {
   beforeEach(() => resetMock())
 
   it('transfers items to accounting', async () => {
-    let callIdx = 0
+    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
     _fromOverride = () => {
-      const c = chainWith({ id: 'entry-' + callIdx++ })
-      c.insert = vi.fn(() => c)
+      const c = chainWith({ id: 'entry-1', transferred_entry_id: null })
       c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { id: 'entry-' + callIdx++ }, error: null }))
+      c.eq = vi.fn(() => c)
+      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
+      c.update = vi.fn(() => c)
       return c
     }
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, entry_id: 'entry-1', number: 'VTE-0001' }, error: null }))
 
     const { transferGescomToAccounting } = await import('@/lib/queries')
     const results = await transferGescomToAccounting([
@@ -250,13 +257,17 @@ describe('transferGescomToAccounting', () => {
   })
 
   it('handles errors per item', async () => {
+    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
     _fromOverride = () => {
-      const c = chainWith(null, { message: 'Insert failed' })
-      c.insert = vi.fn(() => c)
+      const c = chainWith({ transferred_entry_id: null })
       c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: null, error: { message: 'Insert failed' } }))
+      c.eq = vi.fn(() => c)
+      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
+      c.update = vi.fn(() => c)
       return c
     }
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: false, error: 'Insert failed' }, error: null }))
 
     const { transferGescomToAccounting } = await import('@/lib/queries')
     const results = await transferGescomToAccounting([
@@ -300,22 +311,22 @@ describe('Pay Slips & Payroll', () => {
     await expect(deletePaySlip('ps1')).resolves.not.toThrow()
   })
 
-  it('generatePaySlipsForRun generates for active employees only', async () => {
-    let callIdx = 0
-    _fromOverride = () => {
-      const c = chainWith({ id: 'ps-' + callIdx++, number: 'BS-PR-001-ALI' })
-      c.insert = vi.fn(() => c)
-      c.select = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { id: 'ps-' + callIdx++ }, error: null }))
-      return c
+  it('generatePayRunSlips rend le verdict de la base, refus nommés compris', async () => {
+    // rh-006 (311) : la génération est UN appel — la base appelle le moteur
+    // unique et rend un verdict par salarié ; l'écran ne boucle plus.
+    const verdict = {
+      pay_run_id: 'run1', number: 'PR-001', period: '2026-02', total: 2, generes: 1,
+      echecs: [{ employee_id: 'e2', employee: 'Bob', message: 'contrat absent' }],
+      bulletins: [{ employee_id: 'e1', employee: 'Alice', pay_slip_id: 'ps1', total_gross: 2500, net_salary: 1919.53 }],
     }
+    const rpc = vi.fn(() => Promise.resolve({ data: verdict, error: null }))
+    ;(supabase as any).rpc = rpc
 
-    const { generatePaySlipsForRun } = await import('@/lib/queries')
-    const results = await generatePaySlipsForRun('run1', [
-      { id: 'e1', name: 'Alice', salary: 3000, status: 'active' },
-      { id: 'e2', name: 'Bob', salary: 2500, status: 'inactive' },
-    ] as any, { number: 'PR-001', period_start: '2024-01-01', period_end: '2024-01-31' } as any)
-    expect(results).toHaveLength(1)
+    const { generatePayRunSlips } = await import('@/lib/queries')
+    const res = await generatePayRunSlips('run1')
+    expect(rpc).toHaveBeenCalledWith('generate_pay_run_slips', { p_pay_run_id: 'run1' })
+    expect(res.generes).toBe(1)
+    expect(res.echecs[0].employee).toBe('Bob')
   })
 
   it('getPayrollAccountingEntries fetches entries', async () => {
@@ -382,22 +393,27 @@ describe('getJournalPeriodBalance', () => {
 describe('getNextPieceNumber', () => {
   beforeEach(() => resetMock())
 
+  // ACC-01: getNextPieceNumber utilise maintenant le RPC get_next_piece_number
+
   it('returns default when no entries', async () => {
-    setMockData([])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0001', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0001')
   })
 
   it('increments last piece number', async () => {
-    setMockData([{ piece_number: 'VTE-0023' }])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0024', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0024')
   })
 
   it('returns default when no numeric suffix', async () => {
-    setMockData([{ piece_number: 'VTE-ABC' }])
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: 'VTE-0001', error: null }))
     const { getNextPieceNumber } = await import('@/lib/queries')
     const result = await getNextPieceNumber('VTE')
     expect(result).toBe('VTE-0001')
@@ -459,6 +475,47 @@ describe('autoMatchBankTransactions', () => {
 // ============================================================
 describe('getAgedBalance', () => {
   beforeEach(() => resetMock())
+
+  it('le type et le nom du tiers viennent de son compte (ven-014) : « Clients » ne vide plus la balance', async () => {
+    const now = new Date()
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 86400000).toISOString().split('T')[0]
+
+    let callIdx = 0
+    _fromOverride = () => {
+      callIdx++
+      // 1er appel : les lignes de grand livre non lettrées ; 2e : les comptes de tiers
+      const data = callIdx % 2 === 1
+        ? [
+            { account_tiers: 'CLI00002', debit: 162.2, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+            { account_tiers: 'FOU00001', debit: 360, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+            { account_tiers: 'ZZZ999', debit: 99, credit: 0, journal_entries: { date: daysAgo(10) }, created_at: daysAgo(10) },
+          ]
+        : [
+            { code: 'CLI00002', name: 'Dubois Industrie SAS', type: 'customer' },
+            { code: 'FOU00001', name: 'Gants & Fournitures SA', type: 'supplier' },
+          ]
+      return chainWith(data)
+    }
+
+    const { getAgedBalance } = await import('@/lib/queries')
+
+    const clients = await getAgedBalance('customer')
+    expect(clients).toHaveLength(1)
+    expect(clients[0].code).toBe('CLI00002')
+    expect(clients[0].name).toBe('Dubois Industrie SAS')
+    expect(clients[0].type).toBe('customer')
+    expect(clients[0].total).toBeCloseTo(162.2, 2)
+
+    const fournisseurs = await getAgedBalance('supplier')
+    expect(fournisseurs).toHaveLength(1)
+    expect(fournisseurs[0].code).toBe('FOU00001')
+    expect(fournisseurs[0].name).toBe('Gants & Fournitures SA')
+
+    // sans compte de tiers, un code n'est PAS rangé de force dans les clients
+    const tous = await getAgedBalance()
+    expect(tous.map((b) => b.code).sort()).toEqual(['CLI00002', 'FOU00001', 'ZZZ999'])
+    expect(tous.find((b) => b.code === 'ZZZ999')?.type).toBe('other')
+  })
 
   it('categorizes lines into age buckets', async () => {
     const now = new Date()
@@ -804,22 +861,65 @@ describe('createTenant', () => {
     expect(result.success).toBe(false)
   })
 
-  it('creates tenant and tenant_users entry', async () => {
+  it('crée la société par la RPC atomique, sans insertion directe (AUD-B02)', async () => {
+    const tablesTouched: string[] = []
     _fromOverride = (table: string) => {
-      const c = chainWith({ id: 't1', name: 'Test Co' })
-      if (table === 'tenants' || table === 'tenant_users') {
-        c.insert = vi.fn(() => c)
-        c.select = vi.fn(() => c)
-        c.single = vi.fn(() => Promise.resolve({ data: { id: 't1', name: 'Test Co' }, error: null }))
-      }
-      if (table === 'company_settings') c.insert = vi.fn(() => c)
-      return c
+      tablesTouched.push(table)
+      return chainWith(null)
     }
+    const supabaseMock = await import('@/lib/supabase')
+    const rpc = vi.fn((fn: string) => {
+      if (fn === 'create_tenant_for_current_user') {
+        return Promise.resolve({ data: { success: true, tenant_id: 't1', tenant: { id: 't1', name: 'Test Co' } }, error: null })
+      }
+      return Promise.resolve({ data: null, error: { message: `RPC inattendue : ${fn}` } })
+    })
+    ;(supabaseMock.supabase as any).rpc = rpc
 
     const queries = await import('@/lib/queries')
-    expect(queries.createTenantForUser).toBeDefined()
     const result = await queries.createTenantForUser({ name: 'Test Co' })
+
+    // W-QA (29/09/2026) : la RPC rend aussi `tenantId` — l'écran doit pouvoir
+    // rendre la société créée ACTIVE avant toute lecture, sinon l'assistant reste
+    // bloqué sur « Création… » (défaut mesuré à l'écran).
+    expect(result).toEqual({ success: true, tenant: { id: 't1', name: 'Test Co' }, tenantId: 't1' })
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith('create_tenant_for_current_user', {
+      p_data: expect.objectContaining({ name: 'Test Co', legal_name: 'Test Co', country: 'France', currency: 'EUR' }),
+    })
+    // L'ancien enchaînement (tenants → tenant_users → employees → bootstrap_tenant) est refusé par la RLS
+    expect(tablesTouched).not.toContain('tenants')
+    expect(tablesTouched).not.toContain('tenant_users')
+  })
+
+  it('remonte l\'échec de mise en service au lieu de le masquer (AUD-B02)', async () => {
+    const supabaseMock = await import('@/lib/supabase')
+    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: { success: false, error: 'Société incomplète après mise en service : plan comptable' },
+      error: null,
+    }))
+    const queries = await import('@/lib/queries')
+    const result = await queries.createTenantForUser({ name: 'Test Co' })
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('plan comptable')
+  })
+
+  it('crée un site par la même RPC, avec les données de la société courante', async () => {
+    let call = 0
+    _fromOverride = () => {
+      call++
+      const c = chainWith([{ tenant_id: 'cur', tenants: { id: 'cur', name: 'Mère', currency: 'DJF', country: 'Djibouti', enabled_modules: null } }])
+      return c
+    }
+    const supabaseMock = await import('@/lib/supabase')
+    const rpc = vi.fn(() => Promise.resolve({ data: { success: true, tenant_id: 's1', tenant: { id: 's1' } }, error: null }))
+    ;(supabaseMock.supabase as any).rpc = rpc
+    const queries = await import('@/lib/queries')
+    const result = await queries.createSiteForCurrentTenant({ siteName: 'Site Nord', address: '1 rue' })
+    expect(call).toBeGreaterThan(0)
     expect(result.success).toBe(true)
-    expect(result.tenant).toBeDefined()
+    expect(rpc).toHaveBeenCalledWith('create_tenant_for_current_user', {
+      p_data: expect.objectContaining({ name: 'Site Nord', address: '1 rue', currency: 'DJF', country: 'Djibouti' }),
+    })
   })
 })

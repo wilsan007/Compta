@@ -1,0 +1,2363 @@
+name: CI - Tests & Quality
+
+on:
+  push:
+    # ⚠️ 02/10/2026 — `qa/**` et `partie-*` n'étaient PAS dans cette liste, et
+    # la branche `qa/recette-2026-09-29` n'avait donc jamais été jouée par la
+    # CI : **0 passage**, sur une branche de 49 commits. Le plan le disait
+    # (« 0 passage sur la branche QA ») ; `gh run list --branch
+    # qa/recette-2026-09-29` ne renvoie toujours rien, et il en va de même
+    # pour `partie-1-stabiliser`.
+    #
+    # Une branche de travail qui n'est pas jouée n'est pas vérifiée : on y
+    # travaille, on la fusionne, et la porte se découvre à la fusion — après
+    # avoir fusionné. Les sessions multiples du dépôt ont besoin que la
+    # recette et les parties soient jouées à chaque push.
+    #
+    # `fusion-*` a été ajouté le 02/10/2026 avec la fusion 1.6 : une branche de
+    # fusion qui n'est pas jouée est une fusion dont on ne saura qu'après coup
+    # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
+    # branche de travail, pas seulement pour celles dont le nom commence par
+    # « partie ».
+    branches:
+      - main
+      - master
+      - develop
+      - commercial-hr-paie
+      - 'qa/**'
+      - 'partie-*'
+      - 'fusion-*'
+      - harmonisation
+  pull_request:
+    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*']
+  schedule:
+    # Every night at 2:00 AM UTC (regular regression testing)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Run E2e tests (Playwright)'
+        type: boolean
+        default: true
+      run_full_suite:
+        description: 'Run full test suite (unit + e2e + security)'
+        type: boolean
+        default: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Lint + Type Check (fast, always runs)
+  # ─────────────────────────────────────────────
+  lint-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # SOC-06, avant la fusion : un numéro de migration de cette branche ne
+      # doit porter AUCUN autre nom sur une autre branche distante. Le runner
+      # ne voit le doublon qu'après la fusion ; le 02/10, 310→321, puis 415,
+      # puis 416 (trois fois) ont été pris deux fois par des sessions parallèles.
+      # En local, le crochet pre-commit (npm run hooks:install) fait le même
+      # contrôle, plus les fichiers non suivis des worktrees et le registre.
+      - name: 'SOC-06 : numéros de migration uniques sur toutes les branches'
+        run: |
+          git fetch --no-tags --depth=1 origin '+refs/heads/*:refs/remotes/origin/*'
+          node scripts/migration-numero.mjs verifier --ci
+
+      - name: Lint (oxlint)
+        run: npx oxlint --max-warnings=0
+
+      - name: 'UX-03 : No window.confirm'
+        run: |
+          if grep -rn "window\.confirm" src/ --include="*.tsx" --include="*.ts" | grep -v "confirm.tsx" | grep -v "useConfirm.tsx"; then
+            echo "ERROR: window.confirm is forbidden. Use confirmSync() from '@/lib/confirm' instead."
+            exit 1
+          fi
+          # X7 (audit du 28/09/2026) : un `confirm(` nu échappait au motif ci-dessus
+          # (19 appels dans 13 écrans). Les tests et le module de confirmation sont exclus.
+          if grep -rnE "(^|[^a-zA-Z_.])confirm\(" src/ --include="*.tsx" --include="*.ts" | grep -v "__tests__" | grep -v "src/lib/confirm"; then
+            echo "ERROR: bare confirm() is forbidden. Use confirmSync() from '@/lib/confirm' instead."
+            exit 1
+          fi
+
+      - name: Type check (tsc -b)
+        run: npx tsc -b --noEmit --pretty
+
+      - name: 'LOT7-07 : Boutons icône avec libellé accessible'
+        run: node scripts/check-a11y-icon-buttons.mjs
+
+      - name: 'LOT7-07 : Contraste des couleurs (WCAG AA)'
+        run: node scripts/check-contrast.mjs
+
+      - name: 'LOT6-04 : Dead code ceiling (knip)'
+        run: node scripts/check-knip-ceiling.mjs
+
+      - name: 'LOT6-04 : Unused tables ceiling'
+        run: node scripts/check-unused-tables.mjs
+
+      # Dette de types et d'erreurs avalées — gelée le 2026-10-01, mesurée :
+      # 1811 `any` en production (+ 796 dans les tests) et 486 `console.error` en
+      # production. Les cibles de remplacement existent déjà (`Row<'table'>` de
+      # @/types/dbRow, et `toast()` / `reportSilentFailure()`). Comme pour knip,
+      # une hausse casse la CI et une baisse abaisse le plafond automatiquement :
+      # le compteur ne peut que descendre.
+      - name: 'Dette : plafond des `any` explicites'
+        run: node scripts/check-any-ceiling.mjs
+
+      - name: 'Dette : plafond des `console.error`'
+        run: node scripts/check-console-error-ceiling.mjs
+
+      # L2 / G5 — le câblage ET le verdict des suites. Trois moitiés de la règle
+      # du dépôt (« un défaut = un test rouge avant, le câblage CI dans le même
+      # commit ») : le registre des échecs attendus (AUD-X01), le refus d'un
+      # fichier sans verdict, et le refus d'une suite que PERSONNE ne joue.
+      # Mesuré le 30/09/2026 : 89 suites, 89 branchées.
+      #
+      # La troisième moitié a été comblée le 02/10/2026, après la mesure du
+      # faux vert de la 412 : cette suite écrivait 8 scénarios, les lisait en
+      # base (8/8) et ne les relisait jamais — rejouée avec T03 en échec, elle
+      # ressortait en 0. Le contrôle refuse désormais une suite qui ne peut
+      # JAMAIS échouer (ni `_audit_assert`, ni `RAISE EXCEPTION` de verdict).
+      - name: 'L2 : toutes les suites sont branchées ET peuvent échouer (G5)'
+        run: node scripts/check-test-suites.mjs
+
+  # ─────────────────────────────────────────────
+  # Job 2: i18n Key Parity Check
+  # ─────────────────────────────────────────────
+  i18n-check:
+    name: i18n (parité fr/en/ar + clés utilisées)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      # check-i18n-usage.mjs analyse le code avec le compilateur TypeScript
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check i18n key parity
+        run: node scripts/check-i18n.mjs
+
+      # AUD lot I : toute clé littérale t('…') doit exister en fr dans l'espace
+      # de noms de son useTranslation (la parité seule ne le voit pas)
+      - name: 'Lot I : clés i18n utilisées dans le code'
+        run: node scripts/check-i18n-usage.mjs
+
+  # ─────────────────────────────────────────────
+  # Job 3: Unit Tests + Coverage
+  # ─────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    # 02/10/2026 — Cette suite SALTait en CI sans jamais rien vérifier :
+    # `db-integration.test.ts` fait `it_db = DB_URL ? it : it.skip`, et le
+    # job n'avait ni service Postgres ni DATABASE_URL. Les 13 scénarios
+    # étaient donc comptés « skipped » et le fichier ne disait rien — un
+    # vert qui ne prouve rien. Le service est donc monté ICI, pas dans un
+    # autre job : c'est le seul endroit où `DATABASE_URL` existe pour la
+    # suite Vitest.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 02/10/2026 — La base, pour que les tests d'intégration aient un
+      # schéma à vérifier. Sans ces trois étapes, `db-integration.test.ts`
+      # tournerait contre une base VIDE et ses 13 scénarios tomberaient
+      # tous : mieux vaut qu'ils tournent pour de vrai.
+      - name: 'Base pour les tests d’intégration (stubs, schéma, migrations)'
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+          node run-sql-migrations.mjs
+
+      - name: 'LOT5-05 : Garde SSRF webhook (bypass IP encodés)'
+        run: npx vitest run src/lib/__tests__/ssrfGuard.test.ts
+
+      - name: Run unit tests with coverage
+        run: npx vitest run --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/coverage/
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # Job 2 bis: Edge Functions (contrat d'entrée)
+  #
+  # W6 — « un jeton, une réponse » : les 20 fonctions sont importées et leur
+  # gestionnaire est appelé SANS identité ; chacune doit refuser par un code
+  # explicite (401/400/405), jamais en rendant `null`. Les vérifications qui
+  # trouvent leur verdict dans le code (clé de Luhn d'un SIRET, clé ISO 13616
+  # d'un IBAN, format TVA) sont couvertes dans le même mouvement, ainsi que le
+  # refus du HTML fourni par le client dans `generate-pdf` (SSRF, AUD-H03).
+  #
+  # Deno est le runtime des fonctions : le harnais remplace `serve` et le client
+  # Supabase par des `stubs/`, il n'y a donc ni base ni réseau dans ces tests.
+  # ─────────────────────────────────────────────
+  edge-functions:
+    name: Edge Functions (contrat d'entrée)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: 'W6 : un jeton, une réponse (20 fonctions)'
+        run: |
+          deno test --allow-env --allow-read \
+            --import-map=supabase/functions/__tests__/import_map.json \
+            supabase/functions/__tests__/
+
+  # ─────────────────────────────────────────────
+  # Job 3: E2E Tests (Playwright)
+  # Runs: nightly, manual, or on PR with label
+  # ─────────────────────────────────────────────
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=html
+        env:
+          CI: 'true'
+          # Sans ces secrets, les tests authentifiés s'abstiennent explicitement
+          # (E2E_CREDENTIALS_CONFIGURED dans e2e/helpers.ts) au lieu de passer
+          # au vert contre l'écran de connexion. À renseigner dans
+          # Settings > Secrets > Actions pour que la suite prouve quelque chose.
+          SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.E2E_SUPABASE_KEY }}
+          # `src/lib/supabase.ts` lève à l'import si ces deux variables
+          # manquent : sans elles le serveur de développement sert une
+          # application qui ne démarre pas, et même la page de connexion est
+          # vide. Trouvé au premier passage réel de la CI.
+          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_KEY }}
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: app/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: app/test-results/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # Job 4: Security Audit (nightly + manual)
+  # ─────────────────────────────────────────────
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # SEC-01: gitleaks needs full history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (high + critical)
+        run: npm audit --audit-level=high
+        # OPS-01: Retirer continue-on-error — le CI doit échouer sur les vulnérabilités
+
+      - name: Gitleaks — scan for secrets in code and git history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # SEC-01: Remplace le grep manuel par gitleaks (détecte plus de patterns)
+
+  # ─────────────────────────────────────────────
+  # Job 5: DB Integration Tests (SOC-02)
+  # Teste les triggers, fonctions PL/pgSQL et politiques RLS en CI
+  # ─────────────────────────────────────────────
+  db-integration:
+    name: DB Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Charger le schéma de base
+        run: |
+          # Objets Supabase absents d'un PostgreSQL nu (auth, storage, rôles, pg_cron)
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Appliquer les migrations
+        run: node run-sql-migrations.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Installer plpgsql_check
+        run: |
+          # Le conteneur de service GitHub Actions a un nom aléatoire : le retrouver par son image
+          PG_CONTAINER=$(docker ps -q --filter "ancestor=postgres:16" | head -1)
+          docker exec "$PG_CONTAINER" apt-get update -qq
+          docker exec "$PG_CONTAINER" apt-get install -y -qq postgresql-16-plpgsql-check
+          psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS plpgsql_check;"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Valider toutes les fonctions PL/pgSQL
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_plpgsql.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Contrôle de trigger atteignable
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_trigger_reachability.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Une fonction SECURITY DEFINER exposée à `authenticated` qui reçoit un uuid
+      # du client doit vérifier que l'appelant appartient à la société visée.
+      # Ce contrôle a trouvé six fonctions qui ne le faisaient pas (227), dont une
+      # qui supprimait des données et une qui insérait des écritures comptables.
+      - name: Garde de société sur les fonctions exposées
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_tenant_guard.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 332 des 389 fonctions étaient exécutables par `anon`, le rôle du visiteur
+      # non connecté — dont trois fonctions SECURITY DEFINER qui écrivent,
+      # lancées sans jeton pour le prouver (228). Le droit PUBLIC de
+      # CREATE FUNCTION revient à chaque fonction créée : ce contrôle est le
+      # seul garde-fou permanent. Il passe AVANT les suites, qui créent leur
+      # propre outillage dans `public`.
+      - name: Droits du visiteur non connecté sur les fonctions et les tables
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_anon_grants.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # X1-urgent (audit fonctionnel exécuté du 28/09/2026, C1/C2) : trois
+      # politiques d'écriture ne vérifiaient rien (USING true, tenant_id IS NULL,
+      # rôle sans société) — un visiteur non connecté mettait le SMIC global à
+      # 1 €. Toute politique d'écriture passe par current_tenant_id() ou
+      # auth.uid(), et toute lecture d'une table de société aussi (M12).
+      - name: 'X1 : aucune politique n''atteint une ligne globale ou une autre société'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_global_rows_writable.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Une valeur littérale écrite dans une colonne que la contrainte CHECK
+      # n'admet pas fait échouer la transaction sur toutes les données. Ce
+      # contrôle a été écrit après la 230 : release_stock_on_delivery écrivait
+      # 'fulfilled' dans stock_reservations.status, et aucune commande confirmée
+      # ne pouvait passer à « livrée ». check_trigger_reachability ne le voyait
+      # pas : il décide des comparaisons, pas des affectations.
+      - name: Écritures de statut impossibles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_status_writes.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-03 / ISO-04 : 495 couples (table, commande) portent DEUX politiques
+      # permissives — une générique `tenant_select` et une par table qui porte la
+      # garde `can_perform`. Deux politiques permissives sont OU-ées : la plus
+      # large gagne, et les 57 gardes de droits deviennent inopérantes, y compris
+      # par appel direct à PostgREST. La 238 a retiré les 506 politiques en trop
+      # (495 couples, dont 11 en portaient trois) et vidé le registre gelé : le
+      # contrôle ne garde plus que la règle et son auto-test.
+      - name: Politiques RLS permissives jumelles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_policy_duplicates.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-02 : une clé étrangère mono-colonne relie encore deux tables
+      # cloisonnées — la société A peut désigner une ligne de la société B, que la
+      # RLS lui cache pourtant en lecture, et ni `service_role` ni un déclencheur
+      # `SECURITY DEFINER` ne s'y opposent : seule une clé composite le fait,
+      # parce qu'elle vit dans les DONNÉES. Mesuré avant la 237 : 411 clés de ce
+      # type sur 219 tables. Le contrôle refuse la moindre clé mono-colonne et
+      # échoue si le relevé ne trouve plus les clés composites.
+      - name: Clés étrangères composites (isolation des données)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_composite_fks.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PERM-01 : la matrice des rôles n'est opposable que si la politique RLS la
+      # porte. Avant la 239, un `viewer` créait une facture et supprimait un
+      # client par appel direct (7 politiques sur 2 296 regardaient le rôle). La
+      # 239 a posé la garde `can_perform` sur les 41 tables du périmètre de la
+      # décision `D-6` ; ce contrôle exige la garde sur TOUTES leurs politiques
+      # d'écriture, et publie le nombre de tables qui restent sous la garde de
+      # société seule — un état daté, jamais silencieux.
+      - name: Rôles opposables sur le périmètre sensible
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_roles_opposables.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G1 — la grille BT (plan d'implémentation des chaînages §4.2). Ce qui
+      # manquait aux contrôles de structure : les DEUX moitiés qui n'étaient
+      # gardées par rien — RLS activée et FORCÉE, et l'index de société sur les
+      # 360 tables qui portent tenant_id. « Une politique par commande » (ISO-03)
+      # et les clés composites (ISO-02) restent tenues par les deux contrôles
+      # ci-dessus : ce fichier ne les rejoue pas. Les nombres sont ceux du
+      # 30/09/2026 sur base neuve (55 sans RLS forcée, 79 sans index de société) :
+      # un nombre qui MONTE casse la CI, un nombre qui BAISSE aussi tant que le
+      # plafond daté n'est pas réinscrit — un plafond qui ne se met pas à jour ment.
+      - name: 'L2 : grille BT — RLS forcée et index de société (G1)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_bt_grid.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G2 — le contrat d'effet, confronté au réel. Le socle est fermé par
+      # défaut (`chain_autorise` rend faux sans déclaration) et AUCUN des 14 effets
+      # tracés par L1 n'était déclaré : chaque exécution traçait donc `tolere` puis
+      # `applique`. Ce contrôle lit `pg_proc` — pas les fichiers — et exige que tout
+      # effet appelé (`chain_avant`, `link_documents`) soit déclaré dans
+      # `document_effects` OU inscrit au registre du fichier, qui ne peut que
+      # rétrécir (lot L7 = celui qui déclarera). Un maillon neuf sans contrat casse
+      # donc la CI, ce que rien ne faisait avant.
+      # L3, tâche 3.1 du plan de la partie 3 — LA LISTE DES MAILLONS RPC, TENUE.
+      # L'inventaire tranche 4 (30/09) rangeait neuf maillons « à tracer — lot
+      # L3 ». C'est un tableau dans un document : vrai le jour où on l'écrit,
+      # muet le lendemain. Une fonction nouvelle peut écrire dans deux modules
+      # sans que personne ne le voie, et « 5 / 7 tracés » devient « 5 / 8 »
+      # sans qu'aucun chiffre ne bouge ailleurs.
+      # Ce contrôle lit `pg_proc` — ce qui est COMPILÉ, pas les fichiers — et
+      # exige que tout maillon RPC transverse soit tracé par son chemin d'appel
+      # (doctrine 412) ou inscrit au registre avec la raison de son écart. Il a
+      # deux sens, comme G2 : ce qui protège (un maillon neuf non tracé casse),
+      # et ce qui empêche le registre de pourrir (une entrée devenue inutile
+      # casse aussi, et doit disparaître dans le même commit).
+      # Il publie l'inventaire daté — c'est la preuve attendue de la tâche 3.1.
+      - name: 'L3 : la liste des maillons RPC est tenue (3.1)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_chain_rpc_inventory.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'L2 : contrat d''effet confronté au code (G2)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_effects_contract.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ⚠️ LA SUITE 318 EST CÂBLÉE PLUS BAS, AVEC LES AUTRES SUITES — et pas ici.
+      # Une suite placée dans cette section s'exécuterait **AVANT** l'étape
+      # « Vérifier que les types sont à jour », créerait `_audit_results` (via
+      # `ci/audit_helpers.sql`), et ferait entrer ces tables d'outillage dans les
+      # types générés : la comparaison échoue. C'est mesuré — la CI l'a dit au
+      # premier passage de la 318, le 30/09, avant le merge.
+
+      # G7 — « le socle peut-il écrire ? » La trouvaille de L1 tranche 3 :
+      # `FORCE ROW LEVEL SECURITY` s'applique AUSSI au propriétaire, et les tables
+      # du socle n'ont qu'UNE politique (la LECTURE) — donc aucune politique
+      # d'écriture. Si leur propriétaire n'est ni superutilisateur ni BYPASSRLS,
+      # le socle ne peut pas écrire, et `link_documents` non plus (une fonction
+      # SECURITY DEFINER s'exécute en tant que son propriétaire). Mesuré le 30/09
+      # sur base neuve : 311 tables sous FORCE RLS, dont 12 sans aucune politique
+      # d'écriture, dont les six du socle. L'expérience à une seule variable (le
+      # propriétaire) donne 42501 pour un rôle nu, et l'écriture pour un rôle
+      # BYPASSRLS ou superutilisateur.
+      #
+      # CE CONTRÔLE A UNE PARTICULARITÉ : la CI ne peut pas voir le défaut (son
+      # `postgres` est superutilisateur). Il publie donc le VERDICT DE
+      # L'ENVIRONNEMENT et échoue si cet environnement est muet — c'est le
+      # diagnostic de la copie de production, en une commande. Les deux nombres
+      # sont datés : à la hausse c'est une exposition neuve, à la baisse c'est une
+      # amélioration à inscrire dans le même commit (règle du plafond, comme G1).
+      - name: 'L1 : le socle peut-il écrire sous RLS forcée ? (G7)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_forced_rls_writers.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L2 / G6 — le banc des chaînages : 1 000 tours du chemin que tous les
+      # maillons partagent (chain_avant, link_documents, emit_domain_event,
+      # chain_apres), p95 comparé au budget §3.3 (50 ms pour un maillon simple).
+      # Mesuré le 30/09/2026 : p95 total 1,002 ms — et, index d'arbitrage retiré
+      # pour l'éprouver, le banc échoue immédiatement. Les limites sont écrites
+      # dans l'en-tête (il ne voit pas la perte du seul index d'historique à
+      # N = 1 000 : l'échelle réelle est le banc L4, sur copie de production).
+      # Le banc se déroule dans une transaction ANNULÉE : il ne laisse rien.
+      - name: 'L2 : banc des chaînages — 1 000 tours dans le budget (G6)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/check_chain_performance.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Générer les types TypeScript depuis PostgreSQL
+        run: node scripts/generate-db-types.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Vérifier que les types sont à jour
+        run: |
+          if git diff --name-only src/types/database-generated.ts | grep -q .; then
+            echo "ERROR: Les types générés diffèrent. Exécutez localement: node scripts/generate-db-types.mjs"
+            git diff src/types/database-generated.ts
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: LOT7-04 — Vérifier les colonnes et jointures contre PostgREST
+        run: |
+          # Les selects Supabase sont des chaînes de caractères : ni tsc ni les tests
+          # unitaires (où Supabase est mocké) ne voient une colonne inexistante ou un
+          # embed ambigu. Seul un vrai PostgREST les refuse — 19 requêtes cassées ont
+          # été trouvées ainsi le 17/09/2026.
+          # `--network host` : le service PostgreSQL du job est publié sur localhost.
+          docker run -d --name pgrst --network host \
+            -e PGRST_DB_URI="postgres://postgres:postgres@localhost:5432/test_compta" \
+            -e PGRST_DB_SCHEMAS=public \
+            -e PGRST_DB_ANON_ROLE=postgres \
+            -e PGRST_DB_MAX_ROWS=1000 \
+            -e PGRST_SERVER_PORT=3333 \
+            postgrest/postgrest:v16.3
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null "http://localhost:3333/employees?limit=1" && break
+            sleep 2
+          done
+          curl -sf -o /dev/null "http://localhost:3333/employees?limit=1" || {
+            echo "PostgREST n'a pas démarré :"; docker logs pgrst; exit 1; }
+          node scripts/check-embeds.mjs
+        env:
+          PGRST_URL: http://localhost:3333
+
+      # `check-embeds` ne regarde que les LECTURES. Une colonne inexistante dans
+      # un `.insert()` / `.update()` n'est vue ni par tsc, ni par les tests
+      # (Supabase y est simulé), ni par PostgREST tant que la requête n'est pas
+      # jouée : 20 écritures impossibles subsistent, toutes en baseline avec la
+      # vague qui les corrige (W6). Une écriture NOUVELLE casse la CI, et une
+      # ligne de baseline devenue fausse la casse aussi (plafond qui ne peut que
+      # baisser) — sans quoi la baseline se remplirait de dettes périmées.
+      - name: W0 — Colonnes écrites confrontées au schéma réel
+        run: node scripts/check-written-columns.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # `audit-silent-failures` cherche une déstructuration INCOMPLÈTE
+      # (`const { data } = …` sans `error`). Il ne voit pas l'absence TOTALE de
+      # déstructuration : 29 écritures (19 instructions) dont l'erreur n'est
+      # jamais lue, dont quatre alimentations de la paie.
+      - name: W0 — Écritures dont l'erreur n'est jamais lue
+        run: node scripts/check-unchecked-writes.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # `check-unchecked-writes` voit l'absence de lecture d'erreur, pas le
+      # CONTRAT de l'appel. Un `.rpc('nom', { arguments })` faux n'est vu ni par
+      # `tsc` (client typé « any »), ni par les tests (Supabase y est simulé), ni
+      # par PostgREST tant qu'il n'est pas joué : PostgREST répond 404 pour un nom
+      # inconnu, un argument inconnu, une arité incomplète — et jamais pour une
+      # fonction `RETURNS trigger`, qu'il n'expose pas. Mesuré le 27/09/2026 :
+      # **14 contrats rompus** sur 117 appels, dont 4 fonctions de déclencheur
+      # appelées depuis des écrans vivants. La baseline est à ZÉRO (W10) : tout
+      # appel nouveau qui ne viserait pas une fonction réelle fait échouer la CI.
+      - name: W10 — Appels RPC confrontés aux signatures réelles
+        run: node scripts/check-rpc-contract.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # AUD-X01 — le registre des échecs attendus est indexé sur le COUPLE
+      # (fichier, identifiant). Tant qu'il l'était sur `test_id` seul, inscrire
+      # `T01` blanchissait le `T01` de treize fichiers, y compris verts. Cet
+      # auto-test monte deux fichiers homonymes et exige qu'un seul soit blanchi ;
+      # il échoue si l'ancienne clé revient. Il tourne APRÈS `check_anon_grants`,
+      # parce que `audit_helpers.sql` crée ses fonctions dans `public`.
+      - name: AUD-X01 — le registre porte le couple (fichier, identifiant)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/audit_registry_selftest.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests de triggers (SOC-01)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/102_trigger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests RLS (SOC-02)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/105_rls_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'Tests de permissions (has_permission)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/166_permission_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Tests de rapprochement des règlements (B3)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/170_payment_reconciliation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOT5-05 : Bypass SSRF sur is_allowed_webhook_url'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/168_ssrf_bypass_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Valorisation du stock bout en bout (B8)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/173_stock_valuation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Lettrage bout en bout (B10)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/175_lettrage_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: Coût de revient et production bout en bout (B9)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/177_manufacturing_cost_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # AUD-A01/A03 — scénarios de l'audit du 21/09 (doc/audit/PLAN-CORRECTIF-AUDIT-2026-09-21.md).
+      # Les défauts encore ouverts sont listés dans sql/ci/expected_failures.sql : un échec
+      # hors registre casse la CI, et un défaut corrigé encore inscrit la casse aussi.
+      - name: 'AUD : noyau de saisie comptable (178)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/178_accounting_kernel_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : clôture et états financiers (179)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/179_closing_and_statements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : ventes vers comptabilité (180)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/180_sales_to_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : paie vers comptabilité (181)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/181_payroll_to_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : inscription et mise en service (182)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/182_signup_provisioning_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Plan comptable par pays (201) : France = PCG, Djibouti = PCG provisoire puis plan DJ
+      # publié (bascule automatique), autres pays refusés. Transaction annulée en fin de fichier.
+      - name: 'Plan comptable par pays (202)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/202_chart_by_country_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'AUD : achats et trésorerie vers comptabilité (192)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/192_purchases_treasury_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # TVA autoliquidée (AUTOLIQ, UE) sur des comptes propres, déclaration par le grand livre
+      - name: 'AUD : TVA autoliquidée séparée (197)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/197_vat_reverse_charge_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 325 — les CODES de TVA de la saisie manuelle, et les cases A/B de la CA3.
+      # Mesuré le 02/10/2026 : la saisie offrait un code `20` là où le
+      # paramétrage déclare `FR20`, et la vente disparaissait de la synthèse
+      # (base 0, taux 0, sans case). La normalisation et les cases sont ici.
+      - name: 'AUD : codes de TVA de la saisie et cases de la CA3 (325)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/325_vat_codes_ca3_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-03 — acomptes : D 411 / C 4191 / C 4457, déduction sur la facture finale, lettrage 4191.
+      - name: 'AUD : factures d''acompte et déduction (210)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/210_advance_invoices_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-01 — amortissements, écarts de lettrage, charges/produits constatés d'avance :
+      # écriture en brouillard puis validation, comptes du plan, idempotence.
+      - name: 'AUD : amortissements, écarts et reports (211)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/211_asset_deferred_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-04 — paiement de la paie : D 421 par salarié (lettré) / C banque,
+      # D 431 et D 447 / C banque, acomptes 425, idempotence et statut du lot.
+      - name: 'AUD : paiement de la paie (212)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/212_payroll_payment_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-05 — avoirs sans article : contrepassation des comptes de la facture d'origine.
+      - name: 'AUD : avoirs sans article (213)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/213_credit_note_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Le numéro légal porte l'ANNÉE de l'exercice, jamais son libellé libre
+      # (trouvé sur copie de prod : FAC-FY2026-000001 au lieu de FAC-2026-000001)
+      - name: 'AUD : année du numéro de pièce (216)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/216_document_number_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Suite de la 216 — MÊME défaut sur le numéro d'ÉCRITURE (posting_number),
+      # qui est exporté au FEC comme numéro de pièce : AN-EX2024-000001,
+      # VT-FY2026-000001 au lieu de VT-2026-000001.
+      - name: 'AUD : année du numéro d''écriture (217)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/217_posting_number_year_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D-12 — la numérotation reprend après le plus grand numéro déjà attribué
+      # à la société : une société reprise ne réattribue pas un numéro existant.
+      - name: 'AUD : reprise de la numérotation (218)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/218_document_number_seed_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-13 — clôture de caisse : TVA ventilée par taux, écart de caisse en
+      # 658/758 contre le compte du moyen de paiement espèces.
+      - name: 'AUD : clôture de caisse, TVA et écart (219)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/219_pos_vat_cash_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-17 — les RPC de paie gardent le rôle : payroll.post et payroll.pay,
+      # socle du comptable, et le corps renommé n'est plus exposé.
+      - name: 'AUD : droits des RPC de paie (220)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/220_payroll_permission_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-12 — une facture créée par l'API a des lignes : refus explicite sinon,
+      # et totaux recalculés depuis les lignes.
+      - name: 'AUD : facture créée par l''API (221)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/221_invoice_api_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-07 — la même opération saisie puis importée n'est comptée qu'une fois :
+      # nature « book » / « statement », solde recalculé, suppression rattrapée.
+      - name: 'AUD : nature des lignes bancaires et solde (222)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/222_bank_transaction_kind_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-09 — l'état de rapprochement : écarts des deux côtés, solde de clôture
+      # comparé, pointage à deux côtés, comptabilisation d'une ligne non pointée.
+      - name: 'AUD : état de rapprochement bancaire (223)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/223_bank_reconciliation_state_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Vérification en profondeur de R-01 à R-08 (23/09) — trois défauts mesurés
+      # sur base neuve, rouges avant ces migrations.
+
+      # R-04 — le versement de la paie n'accepte qu'un lot de la société active,
+      # et solde chaque compte de dette sociale, pas seulement le premier.
+      - name: 'AUD : périmètre du versement de la paie (224)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/224_payroll_payment_scope_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-06 — l'ordre des lignes d'une commande est total : deux lignes ne
+      # peuvent plus porter le même, sinon une réception compterait deux fois.
+      - name: 'AUD : ordre total des lignes de commande (225)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/225_purchase_line_order_unique_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-01 — la VNC de l'historique d'amortissement ne retranche plus deux fois
+      # la valeur résiduelle : elle dit le même chiffre que la fiche.
+      - name: 'AUD : valeur nette et valeur résiduelle (226)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/226_asset_net_book_value_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Agir au nom d'une autre société : import annulé ou validé, rapprochement
+      # à trois voies, écriture récurrente — quatre scénarios vus rouges avant.
+      - name: 'AUD : garde de société sur les RPC exposées (227)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/227_tenant_guard_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'H09 : droits des fonctions (228)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/228_function_grants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # H06 — séparation des tâches : l'auteur d'une écriture saisie ne la valide
+      # pas lui-même. created_by n'était jamais renseigné : le contrôle rendait
+      # « vrai » sans rien comparer (T01, T02, T03, T05 vus rouges).
+      - name: 'H06 : séparation des tâches (232)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/232_segregation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # H11 — journal fiscal NF-525 : le contrôle d'intégrité déclarait invalide
+      # toute chaîne, même intacte (id comparé à lui-même). T01, T02, T03 et T05
+      # vus rouges sur la version d'avant.
+      - name: 'H11 : intégrité du journal NF-525 (233)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/233_nf525_chain_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # H10 — file de webhooks : rien n'y entrait (event_name NOT NULL jamais
+      # écrit), rien n'en sortait (colonne de retard inexistante), et le cron
+      # brûlait les tentatives sans envoyer. T01 à T07 vus rouges.
+      - name: 'H10 : file de livraison des webhooks (234)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/234_webhook_queue_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-06 — allocation d'une réception partielle : ordre de saisie (line_order),
+      # plus jamais l'ordre des uuid.
+      - name: 'AUD : ordre des lignes de commande à la réception (214)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/214_purchase_receipt_order_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-08 — production : rebuts déduits des pièces entrées en stock, coût unitaire
+      # réparti sur les pièces bonnes, seconde clôture refusée (le stock doublait).
+      - name: 'AUD : ordres de fabrication, rebuts et reclôture (229)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/229_manufacturing_order_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W8 — PROD-01/02/03 : la nomenclature est explosée sur tous ses niveaux
+      # (un composant fabriqué n'est plus consommé tel quel), la quantité produite
+      # déclarée prime (l'écart n'est plus écrasé), un rebut supérieur au lancé est
+      # refusé, l'écart de coût est chiffré (`cost_variance`) et l'écriture est
+      # datée de l'ordre, pas du jour de clôture. T01 à T07 vus rouges avant la 302.
+      - name: 'AUD : nomenclature multi-niveaux et écarts de production (302)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/302_manufacturing_multilevel_and_variances_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W8 — PROJ-02/03 : l'avancement est **pondéré** par les heures prévues, par
+      # une seule règle appelée aux deux niveaux (parent et projet) — la moyenne
+      # simple donnait 50 % là où 10 % est juste — et une tâche ne peut plus être
+      # son propre parent ni former un cycle (la récursion des treize déclencheurs
+      # épuisait la pile). T01/T02/T04/T05 vus rouges avant la 303.
+      - name: 'AUD : avancement pondéré et anti-cycle des tâches (303)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/303_project_progress_and_cycle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-05 analytique : les deux déclencheurs de `journal_lines` étaient
+      # **vides** et aucune écriture engendrée ne portait de section. La 304 fait
+      # circuler la section de la **ligne de document** (facture de vente, facture
+      # d'achat) vers la ligne d'écriture, dérive la section d'une ventilation
+      # multi-axes, et refuse une ventilation qui ne fait pas 100 %. T01/T02/T03/
+      # T04 vus rouges avant.
+      - name: 'AUD : propagation analytique des écritures engendrées (304)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/304_analytic_propagation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-11 FEC : une **seconde** implémentation du FEC (9 colonnes sur 18,
+      # numéro provisoire) vivait en base. La 305 la supprime ; T01 rouge avant.
+      - name: 'AUD : une seule implémentation du FEC (305)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/305_single_fec_implementation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-01 devises : une facture en devise était comptabilisée **au montant
+      # en devise** (1 000 USD au taux 0,90 → 1 000 EUR), `journal_lines` n'avait
+      # aucune colonne de devise, et un taux manquant valait 1 en silence. La 306
+      # convertit dans la devise de tenue, garde le montant d'origine sur la ligne
+      # (devise, montant, taux) et refuse une pièce en devise sans taux. T01 à T06
+      # vus rouges avant.
+      - name: 'AUD : devise des pièces et taux de change appliqué (306)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/306_currency_posting_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-04 budgets : le réalisé n'était borné par **rien** (ni date, ni
+      # statut, ni journal) : il cumulait depuis la création de la société,
+      # comptait les brouillons et les à-nouveaux, et faisait deux requêtes
+      # paginées par budget (N+1). Côté base, BUD-03 : les engagements d'une
+      # commande n'étaient ni créés ni soldés à la facturation (double
+      # déduction). T01 à T04 vus rouges avant la 307 ; le test Vitest vérifie
+      # les bornes, les exclusions et l'absence de N+1.
+      - name: 'AUD : engagements budgétaires d''une commande (307)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/307_budget_commitments_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-19 import Sage : les écritures importées restaient en **brouillon**
+      # (jamais validées), l'équilibre n'était pas contrôlé, les soldes du plan
+      # étaient **écrasés** et chaque écriture était tentée dans son propre
+      # try/catch (import partiel). La 308 fait de l'import **un acte unique** :
+      # équilibre global, comptes créés, validation par le noyau, soldes cumulés,
+      # et rien n'est écrit si une pièce échoue. T01 à T05 vus rouges avant.
+      - name: 'AUD : import d''écritures en une transaction (308)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/308_sage_import_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W7 — M-01 (fin) : `ExchangeGainLossPage` et `CurrencyRevaluationPage`
+      # lisaient deux tables que **personne** n'écrivait. La 309 constate l'écart
+      # de change au règlement (666/766, `exchange_gain_loss_entries`) et calcule
+      # la réévaluation de clôture (`currency_revaluations` + écriture), sans
+      # inventer de taux. T01 à T05 vus rouges avant.
+      - name: 'AUD : écart de change au règlement et réévaluation de clôture (309)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/309_exchange_gain_loss_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # QA-01 (recette /qa du 29/09) : le référentiel `legislation_packs` est rangé
+      # sous la société technique …0001 et n'était lisible par personne —
+      # l'inscription s'arrêtait sur une liste de pays vide. T01, T02 vus rouges avant.
+      - name: 'QA : le référentiel des législations est lisible à l''inscription (310)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/310_legislation_packs_readable_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # rh-006 (recette /qa du 29/09) : aucun écran ne produisait de bulletin —
+      # « Générer les bulletins » créait un lot VIDE et « Valider la préparation »
+      # n'émettait aucune requête, donc un lot vide s'approuvait. La 311 génère les
+      # bulletins d'un lot par UN appel (verdict par salarié, refus nommés) et
+      # refuse l'approbation d'un lot sans bulletin. T01, T02, T04 vus rouges avant.
+      - name: 'QA : les bulletins de paie se génèrent, et un lot vide ne s''approuve pas (311)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/311_pay_run_slip_generation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A1 (recette /qa du 29/09) : créer un client ou un fournisseur ne
+      # l'inscrivait pas au plan des tiers (`third_party_accounts` restait vide) —
+      # lettrage sans tiers, plan tiers vide, balance âgée en « other », FEC sans
+      # libellé. Le déclencheur inscrit le compte, le rattrapage couvre les tiers
+      # existants. T01/T02/T03 vus rouges avant (mesuré : 0 compte pour un client
+      # + un fournisseur + un salarié créés par le chemin écran, 3 après).
+      - name: 'QA : un tiers créé a son compte au plan des tiers (312)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/312_third_party_accounts_from_partners_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A3 : le « Solde dû » lisait `customers.balance` / `suppliers.balance` /
+      # `credit_used`, trois colonnes que RIEN ne tient (mesuré : 540,00 au 411 et
+      # 0,00 à l'écran). Les vues `customer_balances` / `supplier_balances` lisent
+      # le grand livre, écritures validées seulement.
+      - name: 'QA : le solde dû d''un tiers se lit au grand livre (313)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/313_customer_balances_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # B1 (recette /qa du 29/09) : un bon de livraison ne sortait le stock qu'au
+      # passage à « Expédié » — choisir « Livré » directement laissait la
+      # marchandise partir sans mouvement — et il sortait TOUTES les lignes : un
+      # bon mêlant article et prestation était refusé
+      # (« Stock insuffisant: disponible=0, demandé=1 », le « 1 » du service).
+      # La sortie suit désormais les deux chemins, les articles de type `stock`
+      # seulement, et la commande ne se déclare livrée qu'à la sortie réelle.
+      - name: 'QA : le bon de livraison sort le stock (articles, expédié ou livré) (314)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/314_delivery_stock_out_on_ship_or_deliver_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D1 (recette /qa du 29/09) : la sortie de stock d'un produit FINI vendu
+      # passait en matières — D 603000 / C 310000 — alors que son entrée (l'OF)
+      # l'avait porté en 355000 / 713500. Le compte d'une sortie est celui de
+      # l'entrée qui a nourri la couche consommée.
+      - name: 'QA : le compte d''une sortie de stock est celui de son entrée (315)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/315_stock_exit_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D2 (recette /qa du 29/09) : « Valoriser le stock » échouait en 300 — deux
+      # surcharges de `calculate_stock_valuation` — et, avec un dépôt, affichait
+      # une ligne unique valorisée au prix de la FICHE. Une seule fonction
+      # désormais, adossée aux couches de valorisation.
+      - name: 'QA : une seule valorisation de stock, lue sur les couches (316)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/316_stock_valuation_single_function_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot B (recette /qa du 29/09) : facture directe (B2, ven-008), décision
+      # D-QA-1 (une facture directe d'un article stocké sort le stock, avec garde
+      # anti-double), avoir d'article (B4, ven-012), nom du client et date
+      # d'origine (B6, ven-006), numérotation chronologique (B7, ven-007 / D-QA-2).
+      - name: 'QA : facture directe, avoir et chronologie (317)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/317_invoice_direct_stock_and_line_accounts_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot A (recette /qa du 29/09) : A4 (ven-001, ach-002) — la fiche client et
+      # la fiche fournisseur portent SIRET, pays (code ISO 3166-1 alpha-2, pas de
+      # nom et pas de défaut « France »), code postal, ville et conditions de
+      # paiement choisies dans la liste ; la référence est composite (237).
+      - name: 'QA : identité et pays des tiers (318)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/318_partner_identity_country_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot C (recette /qa du 29/09) : C2 (rh-005) — le simulateur de paie
+      # appelle le moteur (`simulate_payslip`) au lieu de son propre barème :
+      # les trois bulletins d'or de la 276 y sont rejoués au centime, et une
+      # simulation n'écrit aucun bulletin.
+      - name: 'QA : le simulateur appelle le moteur de la paie (319)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/319_payslip_simulation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Le prorata d'entrée / sortie (320) : un salarié embauché ou sorti en
+      # cours de mois est payé au prorata de sa présence dans le mois
+      # (Code du travail L1234-9 ; même règle que Sage 100 §12 et Odoo).
+      - name: 'QA : prorata d''entrée et de sortie (320)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/320_payroll_prorata_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot C de la paie — 108 invariants qui vivaient sur les chiffres du
+      # SECOND moteur de paie (`src/lib/payroll.ts`, supprimé) sont rejoués en
+      # DIFFÉRENCE (avec / sans élément variable) contre `payroll_compute_slip`,
+      # le moteur qui fait foi. Aucun test n'est perdu : il change de support.
+      #
+      # ⚠️ La suite portait le numéro 322, qui n'appartenait à aucune migration :
+      # c'était un NOM LIBRE, et il aurait collide avec la série des
+      # chaînages, où 322 désigne la caisse et les invariants. Elle est renumérotée 326, la
+      # première valeur libre de la plage inscrite pour cette fusion (`326 -> 339`,
+      # NUMEROTATION-MIGRATIONS.md), et son `audit.file` suit.
+      - name: 'QA : éléments de bulletin contre le moteur (326)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/326_payslip_elements_invariants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Les avantages en nature (titres-restaurant, indemnité de transport) :
+      # 3 scénarios ROUGES ATTENDUS, inscrits au registre — un avantage en nature
+      # est un salaire et son absence de la grille 2026 est un défaut prouvé
+      # (321 T02/T03/T05). Ils se ferment avec le paramétrage sourcé.
+      - name: 'QA : éléments variables — dont les avantages en nature (321)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/321_payroll_variable_elements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # B3 (recette /qa du 29/09) : un client UE assujetti — position fiscale
+      # déduite du pays et du n° de TVA, code UE (0 % de TVA), CA3 qui déclare
+      # le CA sans TVA collectée, client français et hors UE inchangés.
+      - name: 'QA : client UE, autoliquidation et exonération (323)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/323_eu_customer_reverse_charge_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # A5 (ach-003) : un IBAN à clé de contrôle fausse était enregistré malgré
+      # le message rouge de l'écran. La base refuse (324), les comptes ordinaires
+      # qui ne sont pas des IBAN passent toujours.
+      - name: 'QA : clé de contrôle des IBAN et comptes tiers (324)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/324_partner_bank_account_iban_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-06 — commande → livraison : une seule sortie de stock, réexpédition refusée
+      # avec un message, et cycle de réservation (livrer échouait sur la contrainte).
+      - name: 'AUD : livraisons, sorties de stock et réservations (230)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/230_delivery_stock_out_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-17 — temps passés : isolation entre sociétés, devise, refacturation.
+      # M-17-01 est FERMÉ (301, 28/09/2026) : les heures facturables atteignent
+      # une ligne de facture de 240 dans un brouillon du projet, la saisie
+      # directe (« temps manuel », INSERT avec end_time) est couverte (T07),
+      # l'idempotence est tenue par un index unique (T08) et la suppression d'une
+      # feuille de temps suit la chaîne des pièces (T09/T09b).
+      - name: 'AUD : temps passés et refacturation projet (231)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/231_project_time_billing_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Audit des modules hors comptabilité (doc/audit/AUDIT-MODULES-HORS-COMPTA-2026-09-23.md).
+      # S-08/S-09 — les RPC de stock suivaient la société de la SESSION et non celle
+      # du mouvement, et la quantité d'une transaction concurrente était perdue sans
+      # bruit (ON CONFLICT DO NOTHING). T01, T02, T03 et T04 vus rouges.
+      - name: 'AUD : société du mouvement et addition atomique (240)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/240_stock_movement_tenant_and_upsert_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-01 à S-04, S-10, S-11 — la réception n'entrait nulle part (pas de dépôt),
+      # ne valait rien (pas de couche) et ne s'écrivait pas ; les comptes étaient
+      # codés en dur et la traçabilité des lots était décorative. T01 à T07 rouges.
+      - name: 'AUD : réceptions, valorisation et écriture de stock (241)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/241_receipt_stock_and_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-05 à S-07 — la livraison décrémentait l'article sans son dépôt, ne
+      # consommait aucune couche et ne libérait jamais la réservation de la
+      # commande (le déclencheur écoutait un statut que l'écran n'écrit pas).
+      - name: 'AUD : livraisons, dépôt et réservations (242)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/242_delivery_warehouse_and_reservation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # RH-01 à RH-04 — les écrans affichaient « null null » (first_name/last_name
+      # jamais remplis), deux calculate_payslip coexistaient (les taux fictifs
+      # étaient atteignables), les heures d'un pointage se dupliquaient à chaque
+      # réapprobation et les heures supplémentaires étaient comptées deux fois.
+      - name: 'AUD : fiches salariés, paie et pointages (243)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/243_payroll_and_employee_name_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # SUP-01 à SUP-03 — supprimer un salarié effaçait ses bulletins, un compte
+      # bancaire ses opérations, un article son historique de mouvements.
+      - name: 'AUD : suppressions qui préservent l''historique (244)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/244_preserve_history_delete_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # M-10 (TVA) — la base hors taxe de la CA3 était reconstituée depuis la TVA
+      # (montant ÷ taux) : un chiffre d'affaires non taxé — exonéré, export,
+      # livraison intracommunautaire — n'entrait dans aucune base (cases A2, E1,
+      # E2). La 300 (W7, 28/09/2026) tire le CA des **comptes de produits**
+      # (classe 70) : T08 est FERMÉ, avec 1 750 déclarés pour 1 000 taxés,
+      # 500 exonérés et 250 intracommunautaires. La ventilation par code de TVA
+      # de la 246 reste en place pour la TVA et la synthèse du formulaire.
+      - name: 'AUD : déclaration de TVA, bases de la CA3 (245)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/245_vat_return_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Audit fonctionnel exécuté du 28/09/2026 — partie 1 du plan correctif.
+      # 270 (X1-urgent, C1/C2) : un visiteur non connecté réécrivait le SMIC
+      # global et le catalogue des webhooks ; anon détenait TRUNCATE sur 72 tables.
+      - name: 'X1-urgent : écriture anonyme et lignes globales fermées (270)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/270_anon_and_global_rows_write_closed_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 271 (X1, C3/M8/M9/M12/H10) : un lecteur bloquait la facturation par la
+      # numérotation, modifiait 21 tables, saisissait des écritures ; l'auteur
+      # d'un achat l'approuvait lui-même.
+      - name: 'X1 : ce qu''un lecteur ne peut pas faire, approbation tracée (271)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/271_viewer_writes_and_approval_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 272 (X7, M2/M13) : tiers sans e-mail impossibles, facture DJF en EUR,
+      # société neuve sans taux de TVA.
+      - name: 'X7 : e-mail vide, devise et taux de TVA de la société (272)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/272_master_data_defaults_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2 du plan correctif — X2 (comptabilité).
+      # 273 (C4, C14 journaux) : une écriture saisie ne pouvait pas être validée
+      # depuis l'interface ; la clôture passait sur des brouillons ; la fiche
+      # journal et la saisie depuis un modèle étaient refusées.
+      - name: 'X2 : valider une écriture saisie, clôture sans brouillon, racines du journal (273)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/273_journal_entry_validation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 274 (C14 sections, M8 masqué) : section analytique non créable ; neuf
+      # tables de données de base comptables (tiers, RIB, sections…) écrites par
+      # un lecteur.
+      - name: 'X2 : type de section analytique et données de base sous le rôle (274)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/274_accounting_master_data_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # X3 (paie). 275 (C5/C7) : lot non créable, totaux calculés par l'écran
+      # (barème marocain) ; 276 (C6) : grille France 2026 sourcée, bulletins d'or.
+      - name: 'X3 : totaux du lot tenus par la base, tables de paie sous le rôle (275)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/275_pay_run_totals_from_slips_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X3 : grille France 2026 et bulletins d''or (276)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/276_payroll_france_2026_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # X6 (trésorerie, tableaux de bord). 277 (M3, D-F) : solde initial jamais
+      # comptabilisé, solde affiché figé ; 278 (M5) : trois tableaux de bord, trois
+      # vérités — désormais le grand livre, par get_kpis.
+      - name: 'X6 : solde bancaire comptable et à-nouveau d''ouverture (277)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/277_bank_balance_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X6 : indicateurs lus au grand livre, facture validée émise (278)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/278_kpis_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 3 du plan d'audit fonctionnel. X4 (280) : un mouvement de stock
+      # porte son type (C8), le stock initial est un mouvement (M6), les
+      # commandes ont des lignes et des totaux de la base, la réception naît de
+      # la commande (C9, C10), les fantômes se décident un par un (D-B).
+      # X5 (281) : encaissement atomique (ticket, lignes, paiements, sortie de
+      # stock), clôture comptabilisée, moyens de paiement par défaut (D-E), OF
+      # avec l'article de sa nomenclature (C11). 280 : 10/10 et 281 : 8/8 rouges
+      # avant leur migration.
+      - name: 'X4 : documents de stock à lignes, mouvement typé, stock initial (280)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/280_stock_documents_with_lines_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'X5 : encaissement atomique, clôture de caisse, OF (281)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/281_pos_ticket_atomic_and_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # RH — les cumuls annuels suivis par `payroll_cumulative`, et le pont
+      # `payroll_accounting_entries` vers le grand livre. Trois défauts trouvés en
+      # exécutant la suite, corrigés par la 248 : un bulletin supprimé laissait son
+      # cumul (assiette fausse jusqu'au 31 décembre, et en DSN) ; le cumul
+      # s'écrivait par un appel direct, sans bulletin ni droit de paie ; annuler un
+      # lot comptabilisé laissait le pont à « transferred » et l'écriture au grand
+      # livre. Le dernier scénario mesure la **contrepassation** (et non la
+      # réécriture de l'écriture d'origine, que le noyau de saisie interdit) et
+      # l'idempotence de l'annulation.
+      - name: 'AUD : cumuls de paie et pont comptable (247)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/247_payroll_cumulative_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # POS-01 à POS-04 — le ticket de caisse « inaltérable » se réécrivait
+      # (120 € → 12 €, empreinte inchangée), ses lignes se supprimaient, le numéro
+      # était attribué par MAX+1 sans verrou, `created_at` venait du client (et un
+      # ticket dont le client omettait la société recevait un hachage calculé sur
+      # NULL, donc une chaîne invalide) ; aucune contrainte ne bornait le statut,
+      # donc une vente pouvait sortir de la clôture en silence. La 250 rend les
+      # montants, la date, le numéro et l'empreinte immuables — pour l'appel
+      # direct comme pour le propriétaire de la table —, pose l'unicité et le
+      # verrou par caisse, répare les doublons en recalculant les empreintes, et
+      # ouvre la sortie honnête : `void_pos_ticket()`, tracée et refusée après
+      # clôture (l'avoir corrige alors). 11 scénarios vus rouges avant, verts après.
+      - name: 'POS : inaltérabilité NF-525 du ticket de caisse (250)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/250_pos_nf525_immutability_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-12/S-13 — annuler une réception reçue ne remettait ni le stock, ni la
+      # couche de valorisation, ni l'écriture ; et un contrôle qualité en échec
+      # rebutait la TOTALITÉ de la ligne reçue (10 rebutés pour 3 contrôlés), sur
+      # un mouvement sans dépôt (l'article baissait, le dépôt non). La 251
+      # contrepasse l'annulation — sortie miroir au même coût, écriture inverse au
+      # journal ST, écriture d'origine intacte —, refuse la réédition d'une
+      # réception comme la double contrepassation, et ne rebute que la quantité
+      # contrôlée (ou rebutée), au dépôt de la réception.
+      - name: 'AUD : chemins d''annulation et quantité contrôlée (251)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/251_cancel_paths_and_quality_quantity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # S-12, côté vente — la 230 refusait la réexpédition d'un BL annulé et
+      # laissait l'annulation sans effet : annuler un BL expédié ou livré ne
+      # remettait ni le stock, ni la couche, ni l'écriture. La 253 écrit la sortie
+      # miroir (au coût que la comptabilité a sorti) et son écriture inverse au
+      # journal ST, et refuse la double contrepassation. T02, T03, T05 rouges avant.
+      - name: 'AUD : annulation d''un bon de livraison expédié (253)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/253_delivery_cancel_reversal_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Valorisation — la comptabilité sortait au CUMP (50 × 12 = 600) pendant que
+      # les couches consommaient en FIFO (50 × 10 = 500) : 100 € d'écart entre
+      # deux tables décrivant le même stock. La 254 aligne les couches sur le CUMP
+      # que la comptabilité applique (la quantité consommée reste FIFO). Le TEST 3
+      # de 173 est réécrit dans le même commit — doctrine changée, pas test vidé.
+      - name: 'AUD : une seule vérité de valorisation, CUMP et couches (254)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/254_stock_valuation_single_truth_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # POS-01, la suite — la 250 refuse d'annuler un ticket clôturé et renvoie
+      # vers « un avoir » qui n'existait pas. La 255 le crée : un avoir commercial
+      # (le schéma interdit les montants négatifs sur un ticket de caisse), validé
+      # quand il peut l'être, le stock rendu au CUMP, la vente marquée « refunded »
+      # avec ses montants et son empreinte intacts, et l'événement NF-525.
+      - name: 'POS : l''avoir d''un ticket de caisse clôturé (255)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/255_pos_refund_ticket_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W4 — la paie et les RH : quatre façons de compter un mois (RH-05 → RH-10).
+      # Mesuré avant : trois diviseurs contradictoires dans les déclencheurs
+      # (weekly_hours × 4,33 pour le retard, / 30 pour le congé sans solde, / 151,67
+      # pour les heures supplémentaires) ; la note de frais entrait en paie pour 0
+      # (`exp.amount`, colonne inexistante sur `expense_reports`) sans écriture ni
+      # TVA ; aucune contrainte ne liait un élément de paie à son document source.
+      # 256 pose UN diviseur par société (paramétré), la clé d'unicité
+      # (tenant, salarié, période, type, source, source_id) et l'écriture
+      # D charge HT + D TVA récupérable / C 421. 8 scénarios.
+      - name: 'W4 : paie — diviseur unique, un élément par source, notes de frais au grand livre (256)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/256_payroll_periods_amounts_divisor_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L0 — le socle des chaînages transverses (252) : les cinq tables du plan
+      # (document_links, document_effects, domain_events, chain_regeneration_log,
+      # chain_traces), le drapeau chain_settings, les six fonctions utilitaires et
+      # le gabarit de maillon. Le référentiel a mesuré, sur les 62 chaînages
+      # existants, 15 % d'idempotence et 11 % de trace : sans ce socle, chaque
+      # maillon réinvente sa clé et sa mesure. Ce fichier mesure les propriétés
+      # du socle (idempotence structurelle, contrat fermé par défaut, cloisonnement,
+      # partitions) et, quand c'est le cas, les limites — dont celle dite dans
+      # l'en-tête : la trace d'un refus ne survit pas au rollback de l'opération
+      # refusée. 16 scénarios.
+      - name: 'L0 : socle des chaînages (252)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/252_chain_socle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 1 — la rétro-instrumentation : les maillons de la chaîne
+      # ventes → trésorerie → comptabilité sont TRACÉS. Le référentiel avait
+      # mesuré, sur les 62 chaînages existants, idempotence 9/62 (15 %) et trace
+      # 7/62 (11 %) ; le socle (252) était en place et VIDE. La 310 pose cinq
+      # déclencheurs compagnons (`zz_l1_…`, exécutés après le déclencheur métier
+      # par ordre alphabétique) qui appellent le socle — `chain_avant`,
+      # `link_documents`, `emit_domain_event`, `chain_apres` — sans réécrire un
+      # seul corps de maillon : six effets tracés (facture, avoir, décaissement,
+      # encaissement, journal de trésorerie, compte de trésorerie). La suite
+      # mesure le lien, l'événement, la trace, le rejeu sans doublon, le refus
+      # nominatif en mode `refuse` et le cloisonnement. 15 scénarios.
+      - name: 'L1 : les maillons ventes → trésorerie → comptabilité sont tracés (310)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/400_chain_l1_maillons_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 2 — les effets à N LIGNES et les maillons multi-effets. La
+      # 311 réécrit QUATRE corps de maillon (commande confirmée, BL expédié,
+      # expédition et réception de sous-traitance) parce que la correspondance
+      # ligne → ligne ne se devine pas de l'extérieur — c'est ce que le socle
+      # appelle `amont_ligne_id` (M-09) — et pose TROIS déclencheurs compagnons
+      # pour les maillons dont l'aval est unique (clôture de caisse, rapprochement
+      # bancaire automatique, ordre de fabrication). La suite mesure : un lien par
+      # ligne qui pointe le bon aval, l'annulation/reconfirmation d'une commande
+      # (trouvaille : la clé du socle n'a pas de notion de tour), le refus avant
+      # effet en mode `refuse`, et ce qui n'est PAS lié faute de ligne amont
+      # (composants d'OF calculés, sorties de caisse agrégées par produit) — compté
+      # au payload plutôt qu'inventé. 12 scénarios.
+      - name: 'L1 : les effets à N lignes et les maillons multi-effets sont tracés (311)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/401_chain_l1_tranche2_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 3 — LE CYCLE DE VIE DU LIEN (312). La trouvaille de la
+      # tranche 2 est ici levée : la clé d'idempotence du socle ne distinguait pas
+      # « le même effet REJOUÉ » de « le même effet LÉGITIMEMENT REPRODUIT après
+      # annulation » — mesuré par un ROUGE de la suite 230 (T04 : une commande
+      # annulée puis reconfirmée ne réservait plus rien, réservé = 0 au lieu de 10).
+      # La 312 ajoute le cycle (actif → remplace | rompu, avec motif, auteur et
+      # date), rend l'index d'idempotence PARTIEL (seuls les liens actifs sont
+      # uniques), compte les tours, et laisse `chain_avant` rendre VRAI après une
+      # fermeture : c'est le prérequis pour le poser partout. La suite mesure les
+      # 12 propriétés, dont le scénario C12 — le rouge de la 230 rejoué sur le vrai
+      # flux, historique à deux tours compris. 12 scénarios.
+      - name: 'L1 : le cycle de vie du lien — actif, remplacé, rompu (312)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/402_chain_lien_cycle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L7 — LES CONTRATS D'EFFET DÉCLARÉS. Le socle était fermé par défaut et
+      # AUCUN des 14 effets tracés n'était déclaré : chaque exécution écrivait une
+      # trace `tolere` (« contrat manquant ») PUIS `applique` — mesuré sur la base
+      # de test le 30/09/2026 : 1 132 `tolere` pour 1 117 `applique`. La 313
+      # déclare les 14 contrats standard, drapeaux adossés à la mesure des
+      # écritures réelles de chaque maillon (`ecrit_comptable`, `touche_stock`,
+      # `reversible`, `obligatoire`). Effet immédiat et mesuré : `chain_autorise`
+      # rend vrai, une exécution n'écrit plus qu'UNE trace `applique`, et la porte
+      # G2 (contrat d'effet) voit son registre se vider — ses 25 lignes périmées
+      # ont été refusées puis retirées dans le même commit. 11 scénarios.
+      - name: 'L7 : les contrats d''effet déclarés (313)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/403_chain_effects_contract_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 4 — LA CHAÎNE ACHATS → COMPTABILITÉ ET LES NOTES DE FRAIS. La
+      # méthode de l'inventaire §3 a été rejouée sur la base du 30/09 : 99
+      # fonctions touchent ≥ 2 modules, dont 32 ÉCRIVENT dans ≥ 2 modules. La 314
+      # trace trois de ces effets par déclencheur compagnon (doctrine 310) —
+      # facture d'achat approuvée → écriture « AC », note de frais approuvée →
+      # écriture « OD » ET élément de paie — et déclare leurs trois contrats dans
+      # le même fichier (la porte G2 l'exige depuis L7). Le classement des 32, avec
+      # le verdict et la raison de chacun, est dans
+      # doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-2026-09-30.md. 10 scénarios.
+      - name: 'L1 : la chaîne achats et les notes de frais sont tracées (314)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/404_chain_l1_achats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 5 — LES CINQ CANDIDATS DIRECTS de l'inventaire §2, ceux qui
+      # remplissent les deux conditions de la doctrine compagnon. La 316 les couvre
+      # par déclencheur compagnon : écart de change au règlement, facturation des
+      # temps, rappels de paie, acomptes de paie, appariement d'une ligne de relevé.
+      # Deux points de méthode, mesurés par la suite au premier passage :
+      #   • le compagnon RELIT le marqueur dans la table, jamais dans `NEW` — le
+      #     maillon métier le pose par un `UPDATE` à l'intérieur de SON déclencheur
+      #     `AFTER`, et la copie `NEW` ne le porte pas (l'écart de change et
+      #     l'appariement bancaire échouaient ainsi) ;
+      #   • `min(uuid)` n'existe pas en PostgreSQL, et l'aval de référence des
+      #     rappels/acomptes est obtenu par tri explicite.
+      # La valeur `sans_effet` ajoutée au vocabulaire par la 315 sert ici au cas
+      # pour lequel elle a été conçue : un effet ATTENDU qui n'existe pas (écart de
+      # change marqué sans écriture, rappel marqué traité sans élément de paie).
+      # 12 scénarios.
+      - name: 'L1 : les cinq candidats directs sont tracés (316)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/406_chain_l1_candidats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D-4 (option A) — le bucket d'ARCHIVE des PDF produits par le serveur. Le
+      # défaut fermé : `generate-pdf` rangeait dans `storage.from("documents")`,
+      # un bucket qui n'existe nulle part ; l'upload échouait, l'erreur n'était
+      # pas lue, et la fonction rendait `success: true` avec `url: null`. La 317
+      # pose le bucket `generated-pdfs` (privé, PDF seulement) et UNE politique :
+      # la LECTURE, bornée à la société ET au module porté par le chemin
+      # `{société}/{module}/{type}/{fichier}.pdf`. L'absence des trois autres
+      # commandes est une DÉCISION (seule la clé de service écrit, ne réécrit pas,
+      # et purge), et c'est ce que la suite mesure — y compris que l'absence est
+      # bien une absence, et que ce qui n'est pas nommé n'est pas permis. 9
+      # scénarios.
+      - name: 'D-4 : le bucket d''archive des PDF serveur (317)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/407_pdf_archive_bucket_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # D-5 (migration 318) — le consentement à l'envoi de documents à un tiers.
+      # Le défaut (AUD-H04) : l'image d'une facture fournisseur partait chez un
+      # prestataire d'OCR sans consentement — et il n'y avait nulle part où le
+      # donner. La 318 pose la trace (date + auteur), écrite par un DÉCLENCHEUR :
+      # un booléen qu'un client écrit ne prouve rien. La suite mesure les cinq
+      # propriétés qui font qu'elle vaut comme preuve : rien par défaut, la date
+      # et l'auteur imposés par la base (les valeurs du client sont ignorées),
+      # le retrait effectif, la preuve non réécrite par un simple « Enregistrer »
+      # des paramètres, et le cloisonnement par société. 5 scénarios.
+      #
+      # ⚠️ CETTE ÉTAPE DOIT RESTER ICI, APRÈS « types à jour » : une suite crée
+      # `_audit_results` (via `ci/audit_helpers.sql`), et câblée plus haut elle
+      # ferait entrer ces tables d'outillage dans les types générés. Mesuré le
+      # 30/09 — la CI l'a refusé.
+      - name: 'D-5 : le consentement OCR est daté et signé (318)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/408_ocr_consent_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 (migration 319) — LA RÉCEPTION DE MARCHANDISE, tracée PAR LIGNE. C'est
+      # le seul maillon de la liste que l'inventaire de L1 rangeait « réécriture du
+      # corps » : N mouvements à partir de N lignes, et la correspondance ligne →
+      # ligne ne se devine pas de l'extérieur (les N mouvements portent le même
+      # `reference_id`, et l'ordre d'insertion n'est pas une garantie) — c'est la
+      # seule justification admise par la doctrine 311.
+      # La suite mesure les sept propriétés qui font que le maillon est PILOTÉ et
+      # pas seulement exécuté : deux liens pour deux lignes, chacun sur SA ligne,
+      # la bonne quantité, la trace `applique` et l'événement, la ligne à zéro qui
+      # n'existe pas, le rejeu qui ne double rien, le contrat déclaré, et le
+      # cloisonnement. La non-régression est mesurée sur la suite 241 (7/7 avant et
+      # après : le corps réécrit garde exactement le comportement de la 241).
+      # 7 scénarios.
+      - name: 'L3 : la réception de marchandise est tracée par ligne (319)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/409_chain_reception_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 (migration 320) — LES CHEMINS D'ANNULATION FERMENT LEURS LIENS, et le
+      # maillon des réservations REGAGNE son entrée. C'est le reste que la 319
+      # avait nommé en toutes lettres (« il n'appelle pas le cycle du lien
+      # (`chain_lien_fermer`) sur le chemin d'annulation : c'est le reste de L3 »),
+      # et le §8 de la 312 (« le geste que les maillons ajouteront »). L'état
+      # d'entrée, MESURÉ sur la base compilée : deux fonctions seulement
+      # mentionnaient `chain_lien_fermer` — les deux portes de la 312 elle-même.
+      # Aucun maillon métier ne fermait, donc, et le mensonge était nommé : une
+      # commande annulée gardait ses liens `actif` alors que ses réservations sont
+      # libérées, une livraison gardait le sien alors que sa sortie est
+      # contrepassee (253), une réception aussi (251).
+      # La 320 pose TROIS déclencheurs compagnons `zz_l3_` (un par chemin
+      # d'annulation qui CONTRÉPASSE un effet tracé) — un compagnon suffit ici
+      # parce que la fermeture CONSTATE un effet, elle ne décide de rien — et
+      # RÉÉCRIT le seul corps qui devait l'être : `reserve_stock_on_sales_order_
+      # confirm`, dont l'entrée `chain_avant` avait été retirée par la 311 (le rouge
+      # de la suite 230 T04 : la clé du socle n'avait pas de notion de tour). La
+      # 312 a levé cela ; la 320 tient la promesse.
+      # La suite mesure les huit propriétés qui font que la fermeture est un ACTE
+      # et pas un effet de bord : les liens rompus, datés, motivés, signés et
+      # journalisés (M-03 : ils ne sont plus « intacts ») ; l'aval qui reste celui
+      # de l'origine (la contrepassation est un fait neuf) ; la réception PAR LIGNE
+      # de la 319 rompue ligne par ligne ; le rejeu qui ne double rien ; l'entrée
+      # retrouvée (confirmer deux fois ne réserve qu'une fois, traces `ignore`) ;
+      # aucun lien à fermer comme cas ORDINAIRE (la fermeture globale rapporte 0) ;
+      # le cloisonnement ; et la structure (trois compagnons APRÈS leur maillon,
+      # jamais exposés). 8 scénarios.
+      - name: 'L3 : les chemins d''annulation ferment leurs liens (320)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/410_chain_lien_fermetures_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L1, tranche 6 — LA CONTRAPASSATION DE PAIE, le SIXIÈME candidat direct.
+      # L'inventaire de la tranche 4 (doc/audit/INVENTAIRE-CHAINAGES-L1-TRANCHE4-
+      # 2026-09-30.md §2) marque SIX lignes « candidat direct » ; la tranche 5
+      # (316) en a tracé CINQ, et son compte (§2, §5) répète ce chiffre. La ligne
+      # 22 — `payroll_reverse_posted_run` (248) — portait pourtant le verdict
+      # « candidat direct » sans trace ni contrat : c'est l'écart que la 321 ferme.
+      # Le maillon est un déclencheur APRÈS dont l'aval est identifiable par la clé
+      # qu'il écrit lui-même (`journal_entries.reference = 'PAYROLL-REV-' || <n° du
+      # lot>`). Le compagnon (`zz_l1_payroll_run_reversal`, trié après lui) lie le
+      # lot à sa contrepassation. Doctrine de la 316, appliquée : le cas ORDINAIRE
+      # (lot jamais comptabilisé) ne se trace pas ; l'ANOMALIE (écriture de paie
+      # « posted » sans contrepassation) trace `sans_effet` (valeur de la 315).
+      # 6 scénarios (T01 le lien, T02 le cas ordinaire, T03 l'anomalie, T04 le
+      # rejeu, T05 la structure, T06 l'isolation).
+      - name: 'L1 : la contrepassation de paie est tracée (321)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/411_chain_l1_paie_contrepassation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 2 — LA CAISSE TRACÉE PAR SON CHEMIN D'APPEL (412). Les tranches
+      # précédentes n'ont tracé que des maillons que DEUX VOISINS peuvent voir. La
+      # caisse n'a pas de voisin : `create_pos_ticket`, `pos_refund_ticket` et
+      # `void_pos_ticket` sont appelées par des écrans, et rien d'observable ne
+      # subsiste entre l'appel et les tables — un compagnon ne peut pas s'y
+      # accrocher. Les trois corps sont donc RENOMMÉS en `_inner` et trois
+      # wrappers SECURITY DEFINER portent les noms d'écran : le wrapper est le
+      # seul chemin, et c'est lui qui tisse la chaîne.
+      # 8 scénarios : T01 deux liens et deux traces `applique` (le maillon est
+      # PILOTÉ, pas seulement exécuté) ; T02 les avals sont exacts et le payload
+      # porte les identifiants (agrégation par produit dite, pas cachée) ; T03 le
+      # cas ORDINAIRE ne se trace pas (un ticket de services ne sort rien) ; T04
+      # l'avoir lie le ticket (`adjusted_by`) et ses rentrées, et ROMPT le lien de
+      # sa sortie d'origine tout en laissant le PAIEMENT actif (limite de la 255) ;
+      # T05 l'annulation rend le stock et la fermeture n'écrit AUCUNE trace
+      # (doctrine 312) ; T06 le mode `refuse` ne laisse RIEN persister ; T07
+      # STRUCTURE — les corps ne sont exécutables par PERSONNE (leçon R-17) ;
+      # T08 CLOISONNEMENT, avec contrôle POSITIF.
+      - name: 'L3 : la caisse est tracée par son chemin d''appel (412)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/412_chain_l1_caisse_rpc_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 3 — LA PAIE TRACÉE PAR SON CHEMIN D'APPEL (430). La 430 a
+      # choisi le POINT DE CONVERGENCE de la comptabilisation : `payroll_post_run`
+      # est appelé par la porte R-17, par le versement, et par un déclencheur au
+      # passage du lot à `paid`. T04 éprouve les TROIS chemins séparément — c'est
+      # la promesse que seule une façade n'aurait pas tenue.
+      # 11 scénarios : le lien et la trace de la comptabilisation, le refus d'un
+      # lot en brouillon (sans trace : un refus est une absence), le rejeu, les
+      # trois chemins, le versement N:1 (lien au lot, aval de référence, payload),
+      # le versement PARTIEL (le lien désigne SA écriture, pas celle de paie), le
+      # mode refuse (rien ne persiste), la structure (corps `_inner` non exposés)
+      # et le cloisonnement.
+      - name: 'L3 : la paie est tracée par son chemin d''appel (430)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/430_chain_l3_paie_rpc_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 4 — LE RELEVÉ BANCAIRE MANUEL (432). Trois maillons, deux
+      # effets, et le troisième qui ne produit RIEN : `unreconcile_bank_
+      # statement_line` RETIRE un pointage, il n'en crée pas — il ferme donc
+      # ses liens (doctrine 320) au lieu d'ouvrir une trace `applique`, qui
+      # dirait le contraire de ce qu'il fait. T03 et T04 le prouvent.
+      # 8 scénarios : la comptabilisation (lien + trace + événement), le
+      # pointage manuel, la fermeture du lien de comptabilisation, celle du
+      # pointage manuel, la distinction manuel/automatique, le refus d'un
+      # montant différent (rien n'est lié), la structure, le cloisonnement.
+      - name: 'L3 : le relevé bancaire manuel est tracé (432)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/432_chain_l3_releve_bancaire_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 5 — LE BANC D'ÉPREUVES (434). La 433 rendait huit verdicts
+      # par maillon, tous `non_joue` : un cadre honnête, mais un cadre vide — on
+      # comptait des preuves sans en avoir pris aucune. Ici les huit épreuves
+      # SONT jouées, et le verdict écrit est celui qui a été mesuré.
+      #
+      # Cinq verdicts sont réellement `tenu`, chacun sur une mesure : le rejeu
+      # (+0 lien, +0 trace, refus métier 23505), l'annulation par geste DÉDIÉ
+      # (et non en rejouant le producteur), le retour arrière, le p95 sur
+      # 19 stimuli DISTINCTS, et l'isolation — mesurée depuis une session
+      # réelle en `authenticated`, seule façon de faire jouer la RLS.
+      # Trois restent `non_joue` avec leur raison : D2 exige une seconde
+      # connexion, D3 un point d'échec instrumenté, D5 bute sur
+      # `uniq_journal_entry_number_tenant` — le numéro d'écriture étant dérivé de
+      # la ligne, la réouverture est impossible. T07 vérifie que ces trois-là ne
+      # deviennent jamais vertes par défaut.
+      - name: 'L3 : le banc d''épreuves rend huit verdicts mesurés (434)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/434_chain_banc_epreuves_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4 — LES INVARIANTS PAR AGRÉGATION (435). Quatre des sept invariants
+      # qui n'étaient pas mesurables le deviennent SANS nouvelle colonne : le
+      # reproche « la donnée n'est pas stockée » est souvent sans objet quand
+      # les deux côtés de l'égalité se répondent. Le côté manquant se CALCULE
+      # (reste à facturer, réalisé, solde de relevé, amont existant) au lieu
+      # d'être dupliqué dans une colonne que personne ne tiendrait à jour.
+      #
+      # L'indice passe de 13/20 à 17/20. INV-07, INV-10 et INV-12 restent non
+      # mesurables, et INV-12 est verrouillé par un test : le rendre mesurable
+      # en comparant « facturé − temps » au coût publié aurait mesuré un
+      # invariant plus faible sous le même nom. 8 scénarios.
+      - name: 'L4 : quatre invariants mesurés par agrégation (435)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/435_chain_l4_invariants_agregation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L3 tranche 6 — LES SIX AUTRES MAILLONS ÉPROUVÉS (436). La 434 écrivait
+      # le cadre et n'éprouvait qu'UN maillon sur sept : « cinq verdicts `tenu`
+      # sur huit » était le score d'un seul maillon, et le rapport pouvait le
+      # laisser croire à un score de sept. Ici les six autres portent leur décor
+      # réel — un ticket de caisse, un avoir, un lot de paie, un versement, une
+      # ligne de relevé, un dé-lettrage — et les quatre épreuves jouables sur
+      # chacun.
+      #
+      # ⚠️ CE QUE LA 436 A TROUVÉ EN ÉCRIVANT SES DÉCORS, ET QUI EST DANS LA
+      # MIGRATION : quatre défauts de l'INSTRUMENT, tous mesurés, tous corrigés
+      # dans le même fichier que le test qui les a produits.
+      #   • un geste d'annulation n'a pas la signature de l'appel nominal
+      #     (`void_pos_ticket` prend un ticket, `create_pos_ticket` un contenu) :
+      #     le moteur n'avait qu'un seul jeu d'arguments — `arg_valeurs_annul` ;
+      #   • le vocabulaire des refus était faux : le dépôt écrit ses refus
+      #     d'affaires en `42501`, `P0002` et `23503`, autant de codes que le
+      #     moteur ne connaissait pas. `caisse.avoir` rendait `rompu` un rejeu
+      #     CORRECTEMENT refusé ;
+      #   • D1 comptait les traces `ignore` comme des duplications : les deux
+      #     maillons de paie sortaient `rompu` alors que leur rejeu est tenu
+      #     (0 lien, 0 ligne, et une trace qui le dit) ;
+      #   • D1 n'a pas d'objet sur un maillon de CRÉATION : rejouer
+      #     `create_pos_ticket` crée un second ticket, par définition. La
+      #     colonne `nature` le dit, et l'épreuve est rendue `non_joue`.
+      # 9 scénarios : la structure du catalogue, les quatre épreuves de chacun
+      # des six maillons, le rapport daté (7 × 8 = 56 verdicts), et le contrôle
+      # qu'aucun `tenu` ne soit publié sans mesure.
+      - name: 'L3 : les six maillons restants sont éprouvés (436)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/436_chain_banc_six_maillons_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4 — LES 20 INVARIANTS TRANSVERSAUX, ET L'INDICE DE COHÉRENCE (413).
+      # Le référentiel (§E.3) nomme 20 invariants — une égalité entre deux
+      # modules qui doit être vraie en permanence — et disait « de l'ordre de 4
+      # à 6 sur 20 ». Ce chiffre n'était MESURÉ NULLE PART.
+      # Doctrine : un invariant NON MESURABLE ne compte ni au numérateur ni au
+      # dénominateur. Afficher « 13/20 » quand sept ne le sont pas serait un
+      # mensonge ; l'indice dit « tant tenus sur 13 mesurés, 7 non mesurables
+      # sur 20 inscrits ». Un invariant absent du registre serait un invariant
+      # oublié ; un invariant inscrit non mesurable est un invariant NOMMÉ.
+      # 8 scénarios : le registre et son héritage (standard / société), le
+      # dénominateur honnête, le refus d'un relevé vide, l'isolation
+      # multi-société, la date et le TenantIndex que la porte G1 exige.
+      - name: 'L4 : les 20 invariants transversaux et l''indice (413)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/413_chain_l4_invariants_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L23 tranche 1 (415) : le journal d'événements UNIFIÉ — lot L23 du plan des
+      # chaînages (« journal unique + webhooks branchés sur les MÊMES événements »,
+      # dépendances L0 + L2 livrées). Mesuré avant : 27 événements du socle
+      # n'atteignaient JAMAIS la file de livraison (0 pont), les 2 seuls
+      # déclencheurs historiques écrivaient dans le journal des envois (pas la
+      # file), et 13 des 15 événements promis au catalogue n'avaient AUCUN
+      # producteur. 8 scénarios : le chemin réel (T01), le rejeu borné par une
+      # clé (T02), la non-réversibilité déclarée (T03), l'isolation par
+      # l'événement (T04), le catalogue vrai dans les DEUX sens (T05), le refus
+      # nommé d'un abonnement inexistant (T06), le p95 mesuré (T07), la file
+      # RLS forcée (T08).
+      - name: 'L23 : le journal d''événements unifié (415)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/415_chain_l23_evenements_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L17 (tranche 1) : le couple `production ↔ RH`, qui était VIDE.
+      # Mesuré avant : `planning_slots` ne portait AUCUNE colonne d'opérateur
+      # (0 parmi employee_id / operator_id / assigned_to), 0 fonction ne lisait
+      # à la fois le planning et le registre d'absences, et la capacité d'un
+      # poste se comparait à un `capacity_hours_per_day` théorique — un calcul
+      # FAUX affiché comme vrai. 8 scénarios : le porteur et sa clé composite
+      # (T01), l'absence déclarée APRÈS le planning qui marque chaque créneau
+      # (T02), le cycle — le constat tombe avec sa cause et l'historique garde
+      # les DEUX faits (T03), le rejeu borné structurellement (T04), le refus
+      # rédigé de la garde et son contre-exemple « mission » (T05), la capacité
+      # ajustée (T06), l'isolation par la ligne (T07), le p95 mesuré (T08).
+      - name: 'L17 : le planning de production connaît l''absence (416)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/416_chain_l17_capacite_absence_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L17 (tranche 2) : les deux exigences que la 416 avait dites
+      # ouvertes. Mesuré avant : AUCUNE proposition de remplacement
+      # n'existait (0 fonction « réaffect » / « candidat » / « remplac »)
+      # et AUCUN prévisionnel RH ne lisait `planning_slots` — les deux
+      # sens du couple étaient vides. Deux LECTURES, aucun schéma : le
+      # porteur et la garde sont ceux de la 416, cette tranche rend la
+      # DÉCISION faisable sans la prendre. 8 scénarios : la proposition
+      # avec son motif (T01), un candidat lui-même ABSENT jamais proposé
+      # (T02), le moins chargé d'abord (T03), aucun critère porté → aucun
+      # candidat plutôt que les 40 employés (T04), le prévisionnel qui
+      # retire ce que l'absence rend inexploitable (T05), l'isolation sur
+      # les DEUX sens (T06), le refus nommé d'un créneau inexistant
+      # (T07), le p95 des deux lectures (T08).
+      - name: 'L17 : la proposition de réaffectation et le prévisionnel RH (417)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/417_l17_reaffectation_previsionnel_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L18 : le projet consomme le stock, et la marge le sait. Mesuré
+      # avant : ZÉRO lecture croisée entre `stock_movements` et
+      # `projects`, et `projects.actual_cost` n'est ÉCRITE PAR PERSONNE
+      # (0 fonction ne la met à jour, 0 ne la lit) — la marge d'un
+      # projet vaut donc 0 quoi qu'il dépense. Un indicateur faux
+      # affiché comme vrai, plus grave qu'une capacité théorique.
+      # 8 scénarios : le porteur générique (T01), l'imputation (T02), le
+      # coût MATIERE et non le prix de vente (T03), la correction qui
+      # REMPLACE et n'ajoute pas (T04), une ENTRÉE n'impute rien (T05),
+      # l'isolation (T06), le retrait borné à 0 (T07), le p95 (T08).
+      - name: 'L18 : la consommation de chantier et le coût du projet (418)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/418_l18_consommation_chantier_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L19 : l'engagement de production alimente le prévisionnel. Mesuré
+      # avant : `cash_flow_forecast` — la SEULE prévision de trésorerie du
+      # dépôt — ne lisait aucune donnée de production, et l'écran
+      # `TreasuryForecastPage` lisait trois clés (currentBalance,
+      # totalIncoming, totalOutgoing) qu'aucune fonction ne rendait :
+      # ZÉRO clé commune, donc un écran entier affichait 0 en toutes
+      # circonstances. 8 scénarios : le CONTRAT DES CLÉS de l'écran (T01),
+      # les quatre clés historiques inchangées (T02), l'engagement
+      # matière (T03), net du stock (T04), les salaires d'atelier (T05),
+      # le cycle d'une OF close (T06), l'isolation (T07), le p95 (T08).
+      - name: 'L19 : l''engagement de production dans le prévisionnel (420)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/420_l19_engagement_production_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # 462 — I-08, la moitié visible du dictionnaire : dérouler la chaîne
+      # qui produit un montant. Elle ne CALCULE rien et n'INVENTE aucun
+      # lien : elle ne rend que ce que les maillons de la 460 ont tracé, et
+      # un montant dont aucune chaîne ne le porte revient VIDE, avec le
+      # motif — jamais un chiffre fabriqué. Rendue ici parce que le fichier
+      # était écrit mais non branché (porte G5 rouge).
+      - name: '462 : dérouler la chaîne qui produit un montant (I-08)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/462_chain_expliquer_montant_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L20, tranche 1 : le RETOUR EN ARRIÈRE des régénérations. Mesuré
+      # avant : `chain_regeneration_log` existe depuis la 252 et
+      # `chain_regenerate` écrit dedans, mais ZÉRO fonction n'atteint ce
+      # `avant` — la moitié « possibilité de revenir à la version
+      # précédente » du plan (M-04) n'était pas livrée. 8 scénarios : la
+      # restauration (T01), le refus sans société (T02), l'id inconnu et
+      # l'autre société (T03), le CONFLIT qui refuse d'écraser un travail
+      # plus récent (T04), le retour journalisé et son événement (T05), le
+      # double retour refusé (T06), le lien ROMPU qui ne ressuscite pas
+      # (T07), et la relecture de l'historique (T08).
+      - name: 'L20 : le retour arrière des régénérations (422)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/422_l20_retour_arriere_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 5 (450 → 455) : l'intégrité référentielle des chaînages. Un lien ne
+      # se pose que vers des documents qui existent (registre des types + contrôle
+      # d'existence), un document relié par un lien ACTIF ne se supprime pas, une
+      # réservation se libère sans être supprimée, et INV-19 se mesure.
+      - name: 'Partie 5 : intégrité référentielle des chaînages (450)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/450_chain_integrite_referentielle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # I-01 (460) — la « Vue Chaîne » : tout document ouvert sur son amont
+      # et son aval. La fonction `chain_document_arborescence` parcourt
+      # `document_links` récursivement : la racine, puis la descendance
+      # (ce que le document a produit) ou l'ascendance (ce qui l'a produit),
+      # avec profondeur, effet, état du lien et le libellé du registre (450).
+      # Profondeur bornée et chemin déjà visité : un cycle ne boucle pas.
+      # 8 scénarios : structure, racine, descente, montée, lien fermé,
+      # cloisonnement, cycle, document inconnu.
+      - name: 'I-01 : la Vue Chaîne, amont et aval (460)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/460_chain_arborescence_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # I-08 (461) — le dictionnaire de données : un indicateur est une
+      # requête NOMMÉE et DATÉE, écrite une fois. Deux définitions ne
+      # peuvent pas se chevaucher pour le même indicateur et la même
+      # période : le remède structurel aux « définitions concurrentes »
+      # (5 fichiers calculaient une marge projet, 8 un suivi budgétaire,
+      # chacun avec sa formule).
+      # 6 scénarios : structure, résolution, datation, chevauchement
+      # refusé, indicateur inconnu, priorité de la société.
+      - name: 'I-08 : le dictionnaire de données (461)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/461_metric_definitions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4, tranche 2 — L'ALERTE EN CAS DE DÉGRADATION (414). La 413 produit un
+      # historique que personne ne regarde : l'indice peut tomber en silence et
+      # l'éditeur découvre le lendemain qu'un maillon s'est cassé. La 414 compare
+      # le relevé du jour au relevé PRÉCÉDENT et alerte sur une perte, un
+      # agravement, ou un invariant redevenu mesurable et rompu. Elle n'alerte
+      # PAS sur une amélioration (alerter sur une bonne nouvelle est un défaut de
+      # conception), ni sur un écart déjà rompu et stationnaire.
+      # 7 scénarios : le premier passage n'alerte pas, la perte est détectée,
+      # écrite et notifiée, le rejeu est sans effet (unicité posée en BASE),
+      # l'aggravation d'un écart déjà signalé est notifiée, les fonctions et
+      # les index sont en place, et le job nocturne est inscrit quand pg_cron
+      # existe. Sans ce branchement (G5), la suite passerait et ne protégerait
+      # rien.
+      - name: 'L4 : l''alerte en cas de dégradation (414)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/414_chain_l4_alerte_degradation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4, tranche 3 — LE DERNIER INVARIANT MESURABLE (431). La 413 inscription
+      # treize invariants mesurables et SEPT nommés sans contrôle, faute de
+      # donnée et non faute de méthode — mesuré le 02/10 : `purchase_orders`
+      # n'a aucun montant facturé, `budgets` aucun réalisé, `dsn_declarations`
+      # aucun montant du tout. La 431 conserve ce refus (un invariant mesuré
+      # par un agrégat inventé afficherait une santé inexistante) et transforme
+      # les six raisons en PREUVES mesurées, datées, opposables.
+      # Le septième, INV-19, était mesurable : sa raison disait « Devient
+      # mesurable dès qu'un registre des types de documents est écrit (c'est la
+      # matière de la vue chaîne, lot L6) ». La 431 écrit ce registre
+      # (`chain_document_types`) et INV-19 devient mesuré : 13 → 14. L6 n'aura
+      # plus à l'inventer.
+      # 7 scénarios : le relevé mesure 14, un orphelin RÉEL est compté, ⚠️ le
+      # garde anti-faux-vert (un lien de type NON ENREGISTRÉ fait rompre
+      # l'invariant et nomme le type — jamais « tenu » sur ce qu'il n'a pas su
+      # regarder), la délégation aux treize branches de la 413 est intacte ET la
+      # garde « mesurable sans branche LÈVE » survit au wrapper, les six
+      # raisons portent leur mesure, la table est RLS forcée en lecture seule
+      # (une écriture de client ferait verdir INV-19 à volonté), et le registre
+      # est cloisonné par société. Sans ce branchement (G5), la suite passerait
+      # et ne protégerait rien — l'angle mort que le commit 5b7d915 reprochait
+      # à la 414.
+      - name: 'L4 : le dernier invariant mesurable et les six preuves (431)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/431_chain_l4_invariants_mesurables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # L4 — LES TROIS FUITES ENTRE SOCIÉTÉS, ET LEUR NON-RÉGRESSION (437).
+      # Le 02/10, en validant la 414, trois défauts d'isolation ont été trouvés et
+      # corrigés. Les corrections n'étaient prouvées que par des MESURES
+      # MANUELLES — rien ne les rejouait. Cette suite les rend opposables :
+      #   T01 `_mk_tenant_contexte` (helper de test, SECURITY DEFINER) n'est plus
+      #        exécutable par `authenticated` ni `anon` — sans le REVOKE, un client
+      #        choisissait sa société et la RLS s'appliquait dessus ;
+      #   T02 `chain_degradation_detectee` refuse la société d'autrui ET répond
+      #        pour la sienne (une garde, pas une fonction cassée) ;
+      #   T03 `releve_id` est une clé COMPOSITE (tenant_id, releve_id) : une alerte
+      #        de SEPT ne peut pas viser le relevé de SIX (porte ISO-02).
+      # Les trois exigent un REFUS, pas un compte : un compte de zéro passerait
+      # aussi sur une base vide. T01 vérifie en plus que la fonction existe —
+      # sans quoi il passerait sur une absence (faux vert mesuré le 02/10).
+      # Placée APRÈS la 431, qui crée le helper, et APRÈS la 414, qui crée les
+      # tables : jouée seule, T01 dirait honnêtement qu'il ne peut rien prouver.
+      - name: 'L4 : les trois fuites entre sociétés restent fermées (437)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/437_chain_l4_fuites_fermees_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W9 — le chaînage de l'absence, quatre étages. La 263 pose le registre
+      # (`employee_absence_days`) où convergent les QUATRE sources (congé approuvé,
+      # arrêt de maladie, arrêt de travail, pointage d'absence — la colonne
+      # `timesheets.absence_type` que personne n'écrivait) ; la 264 rend ce registre
+      # OPPOSABLE (pointage, heures supplémentaires, temps projet, frais, tâches) et
+      # pose le contrôle quotidien ; la 265 ramène la paie à UN seul chemin de
+      # retenue (deux déclencheurs écrivaient pour la même journée, et le second
+      # écrivait un type qu'aucun moteur de bulletin ne lit) ; la 266 vérifie la
+      # chaîne de bout en bout — une absence d'un jour apparaît UNE fois dans la
+      # paie, la DSN, le coût projet et le plafond, et une absence annulée n'y est
+      # plus appliquée. 13 + 11 + 10 + 34 scénarios.
+      - name: 'W9 : le registre d''absence (263)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/263_absence_registry_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : les gardes en aval et le contrôle quotidien (264)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/264_absence_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : une seule retenue de paie par jour d''absence (265)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/265_absence_payroll_single_path_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W9 : la chaîne de l''absence, 34 assertions transverses (266)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/266_absence_transverse_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W10 — le contrat d'appel front ↔ base, et la clôture NF-525. Le contrôle
+      # `check-rpc-contract.mjs` trouvait 14 appels que la base ne pouvait pas
+      # servir (4 fonctions de DÉCLENCHEUR appelées depuis des écrans, un stock
+      # compté deux fois, la période NF-525 envoyée comme une date, une paie IJSS
+      # calculée sur un couple (salarié, jours)) ; la 267 rend la CLÔTURE possible :
+      # elle n'écrit plus dans le journal inaltérable (`UPDATE … SET closed`, qui
+      # levait toujours « NF525: Le journal d'événements est inaltérable ») mais
+      # AJOUTE l'événement de clôture et inscrit la clôture dans
+      # `nf525_period_closures` — la table que lit l'attestation, et que rien ne
+      # remplissait : l'attestation levait « Période non clôturée ». 6 scénarios,
+      # dont T04 et T05 ROUGES avant la 267.
+      - name: 'W10 : le contrat d''appel et la clôture NF-525 (267)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/267_nf525_closure_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W6 — les fonctions Edge et les écrans placebos. Le scanner W0.2 (colonnes
+      # écrites) trouvait 20 écritures impossibles, toutes dans les fonctions Edge
+      # sauf deux dans le front : les écrans écrivaient des colonnes qui n'existent
+      # pas, `cron-payment-reminders` échouait dès la première facture puis
+      # relançait le client **tous les jours**, le bouton « Synchroniser » ne
+      # synchronisait rien, la facture électronique n'était jamais enregistrée
+      # (double envoi) et l'EDI-TVA n'envoyait rien. La 257 pose les colonnes
+      # réelles avec leurs garanties, la 258 rend la relance idempotente, la 259
+      # interdit à un client de tamponner une transmission. Les deux baselines
+      # gelées par W0 sont à **zéro** dans ce commit.
+      - name: 'W6 : les colonnes réelles des fonctions Edge (257)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/257_edge_columns_and_errors_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W6 : une relance de paiement part une seule fois (258)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/258_payment_reminders_idempotent_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'W6 : un écran ne tamponne plus un succès (259)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/259_placebos_removed_or_wired_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # W5 — un seul moteur par grandeur (IMMO-01 → IMMO-05, RH-04). Mesuré
+      # avant : TROIS moteurs d'amortissement se contredisaient (le moteur SQL
+      # qui comptabilise, la RPC `calculate_depreciation`, le calcul du front en
+      # `floor(jours / 365,25)`), les trois méthodes offertes à l'écran n'avaient
+      # aucun effet, un recalcul partait de `Date.now()` (il écrasait la valeur
+      # d'un exercice clos) et le lot du front avalait les dotations en échec
+      # (`console.error`) ; les heures supplémentaires avaient trois moteurs,
+      # deux seuils (7 h et 8 h) et un montant NUL. La 260 n'en garde qu'un de
+      # chaque : la méthode est LUE (linéaire, dégressif paramétré, et
+      # `units_of_production` RETIRÉE faute de compteur d'unités), l'exercice est
+      # borné, le lot rend un verdict PAR immobilisation (`echecs` nommés), et le
+      # pointage écrit ses heures sup avec un MONTANT (taux horaire de la société
+      # × majoration paramétrée). 10 scénarios, 9 rouges avant.
+      # Le miroir côté front (aucun écran ne réintroduit un moteur) est mesuré par
+      # `src/lib/__tests__/single-engine.test.ts` (Vitest).
+      - name: 'W5 : un seul moteur par grandeur — amortissement et heures sup (260)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/260_single_depreciation_engine_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.2 (C3, rh-008) : une feuille de temps saisie en HEURES
+      # (ce que l'écran envoie) ne produisait aucune heure supplémentaire — le
+      # déclencheur ne calculait que sur une heure de départ. 9 scénarios :
+      # 12 h pour 7 h prévues → 300 min (T01) et l'élément de paie au taux majoré
+      # (T02), 7 h → rien (T03), le pointage horaire inchangé (T04), l'horaire
+      # du salarié (T05), l'approbation signée par la base (T06), l'absence qui
+      # ne fabrique rien (T07), la correction des heures qui recalcule (T08), la
+      # valeur fournie qui est respectée (T09).
+      - name: 'Partie 2 (2.2) : les heures sup d''une feuille saisie en heures (340)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/340_timesheet_overtime_from_hours_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.3 : les heures sup par TRANCHES sur la semaine civile.
+      # Mesuré avant : chaque heure sup était payée au taux de la première
+      # tranche (15 h dans la semaine = 15 h à 25 %), aucune réduction de
+      # cotisations, et `calculate_overtime_pay` n'avait plus d'appelant.
+      # 8 scénarios : 8 h à 25 % puis 50 % (T01), l'ordre d'approbation qui ne
+      # change rien (T02), la semaine suivante qui repart (T03), les tranches de
+      # la société (T04), les paramètres sourcés (T05), la réduction salariale
+      # de 11,31 % au bulletin (T06), un seul moteur (T07), la feuille isolée
+      # inchangée (T08).
+      - name: 'Partie 2 (2.3) : les heures sup par tranches hebdomadaires (342)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/342_overtime_weekly_tiers_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.4 (C5, C6) : les constats de bas de paie. Mesuré avant
+      # (4 rouges) : « CDI » et « cdi » coexistaient sans contrainte, une date
+      # d'embauche en 2099 passait, changer le salaire de la fiche ne changeait
+      # pas le salaire payé (`base_salary` restait à l'ancienne valeur), et les
+      # droits à congés valaient 25 jours quel que soit le mois d'embauche.
+      - name: 'Partie 2 (2.4) : fiche salarié cohérente et droits à congés au prorata (343)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/343_hr_small_defects_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.5 (D10, D11) : la production. Mesuré avant (3 rouges) :
+      # une nomenclature active pouvait ne porter aucun article, aucun coût moyen
+      # n'était proposé pour un composant, et le numéro d'OF était pris par
+      # l'écran avant l'enregistrement — un OF refusé le consommait.
+      - name: 'Partie 2 (2.5) : nomenclature avec article, coût moyen, numéro d''OF (344)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/344_production_bom_article_of_number_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.7 (D6, D7). Mesuré avant (3 rouges) : un article
+      # s'enregistrait avec un prix négatif, et une sortie de stock s'affichait à
+      # 0,00 € alors que la comptabilité la valorisait au coût moyen pondéré.
+      - name: 'Partie 2 (2.7) : prix non négatifs et coût des sorties de stock (345)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/345_stock_prices_exit_cost_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Décisions D-QA-3 et D-QA-4 (04/10) : les articles à prix négatif sont
+      # désactivés, et un stock initial passe son écriture d'à-nouveau (compte de
+      # stock / 890000). Mesuré avant (4 rouges) : 100 × 12 € entraient au stock
+      # sans aucune écriture — stock valorisé 1 200 €, compte 31x à 0.
+      - name: 'Partie 2 (2.7) : à-nouveau du stock initial et articles à prix négatif (346)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/346_stock_initial_opening_entry_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.10 (F1, cpt-001) : les soldes du plan comptable se lisent
+      # au grand livre. Mesuré avant : l'écran lisait trois colonnes de
+      # `chart_accounts` que rien ne tient — un 512000 portant 10 000 € d'à-nouveau
+      # s'y lisait à 0. 3 scénarios : les soldes (T01), le brouillon exclu (T02),
+      # le cloisonnement (T03).
+      - name: 'Partie 2 (2.10) : les soldes du plan comptable lus au grand livre (347)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/347_chart_account_balances_from_ledger_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.11 (F2, cpt-004) : le type d'un compte se déduit de sa
+      # classe. Mesuré avant : la valeur par défaut 'asset_current' classait à
+      # l'actif tout compte créé sans type — charges et produits compris.
+      # 5 scénarios : la déduction (T01), classe et racine (T02), le type choisi
+      # respecté (T03), plus aucun 6/7 à l'actif (T04), le plan livré (T05).
+      - name: 'Partie 2 (2.11) : le type de compte déduit de sa classe (348)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/348_chart_account_type_from_class_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.12 (F5, cpt-006) : les périodes d'un exercice s'appelaient
+      # « Fevrier », « Aout », « Decembre ». 2 scénarios : une société neuve a ses
+      # accents (T01), plus aucune période sans accent en base (T02).
+      - name: 'Partie 2 (2.12) : les noms de périodes portent leurs accents (349)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/349_fiscal_period_labels_accents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.12 (F5, suite) : le plan comptable livré était écrit sans
+      # accents ni apostrophes (« Achats de matieres premieres », « Fournisseurs d
+      # immobilisations ») — 470 comptes, liste relue libellé par libellé. 4 scénarios :
+      # une société neuve (T01), dix libellés témoins (T02), aucun compte perdu (T03),
+      # plus aucun ancien libellé en base (T04).
+      - name: 'Partie 2 (2.12) : les libellés du plan comptable portent leurs accents (351)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/351_chart_account_labels_accents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.13 (G2, pil-007) : une grille de ventilation désignait son
+      # compte et ses sections en TEXTE LIBRE — « 706999 » vers « ZZZ99 »
+      # s'enregistrait et ne ventilait jamais rien. 3 scénarios : compte inexistant
+      # refusé (T01), section inexistante refusée (T02), renommage suivi (T03).
+      - name: 'Partie 2 (2.13) : une grille de ventilation désigne ce qui existe (350)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/350_distribution_grill_references_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
+      # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
+      # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
+      # de la société B, dont elle ne voyait même pas la ligne (SECURITY DEFINER
+      # contourne la RLS). La 236 filtre les dix-huit fonctions d'écriture relevées
+      # (sept scénarios vus rouges avant) ; ce fichier prouve l'effet dans les deux
+      # sens — la donnée de B intacte, l'action légitime de A toujours faite — et
+      # porte le T02 resté rouge au registre : l'insertion inter-sociétés attend les
+      # clés étrangères composites (ISO-02, vague 237).
+      - name: 'ISO-01 : écritures des déclencheurs SECURITY DEFINER (236)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/236_security_definer_tenant_writes_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-02 — une clé étrangère mono-colonne ne regarde pas la société : la
+      # facture de A pouvait désigner le client de B, que A ne voyait même pas en
+      # lecture. La 237 a converti les 408 clés relevées en clés composites
+      # `(tenant_id, colonne)` — dont 200 en `ON DELETE SET NULL (colonne)`, sans
+      # quoi la clé annulerait aussi `tenant_id`, NOT NULL, et la suppression
+      # légitime échouerait. La 249 reprend les 2 clés nées APRÈS la 237 (241 en
+      # ajoute une avec sa colonne, 244 recrée la seconde mono-colonne), que seul
+      # le contrôle permanent, qui mesure l'état final, pouvait trouver. Le T02 de
+      # la 236 (l'insertion inter-sociétés encore acceptée) est passé au vert et sa
+      # ligne a quitté le registre des échecs attendus dans le même commit.
+      - name: 'ISO-02 : clés étrangères composites (237)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/237_composite_foreign_keys_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ISO-03 / ISO-04 — 495 couples (table, commande) portaient deux politiques
+      # permissives : la plus large gagnait, et les 57 gardes `can_perform` des
+      # politiques par table n'étaient jamais atteintes. La 238 a retiré les 506
+      # politiques en trop et 12 index en double. Le scénario décisif est T03 :
+      # un `viewer` ne peut plus insérer par appel direct, et un administrateur
+      # le peut toujours.
+      - name: 'ISO-03/ISO-04 : dédoublonnage des politiques et des index (238)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/238_policy_dedup_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PERM-01 — un `viewer` créait une facture et supprimait un client par appel
+      # direct : la matrice des rôles n'était opposable nulle part. La 239 a posé
+      # `can_perform` sur les 41 tables où l'argent, les personnes et la
+      # comptabilité circulent (décision D-6, tranche assumée et chiffrée). Le
+      # fichier rejoue le constat `M18_role_non_opposable.sql` et mesure, dans le
+      # même geste, que chaque rôle garde ce qu'il doit pouvoir faire.
+      - name: 'PERM-01 : rôles opposables (239)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/239_roles_opposables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot D — 3 exercices, 100 000 écritures aléatoires (graine fixe) : balance, compte de
+      # résultat, bilan, à-nouveaux après deux clôtures, numérotation continue, clôture < 30 s.
+      # ≈ 70 s sur PostgreSQL 16 local.
+      - name: 'AUD : test de propriété comptable, 100 000 écritures (189)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/189_accounting_property_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'LOT6-05 : Scénarios métier E2E (10 parcours)'
+        run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+  # ─────────────────────────────────────────────
+  # Job 6: Build verification
+  # ─────────────────────────────────────────────
+  build:
+    name: Production Build
+    runs-on: ubuntu-latest
+    needs: [lint-typecheck, i18n-check, unit-tests]
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: app/dist/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # X0 — le chemin de l'écran (audit fonctionnel exécuté du 28/09/2026)
+  # Tout était vert, et 14 défauts critiques existaient : les tests unitaires
+  # simulent Supabase, les suites SQL insèrent en base sans passer par l'écran.
+  # Ce job fait tourner les VRAIES fonctions de requête des écrans, avec leur
+  # charge utile, à travers PostgREST réel et des JWT réels (4 comptes créés par
+  # l'inscription réelle). Les défauts encore ouverts sont inscrits au registre
+  # src/__screen__/expected_failures.json : un rouge hors registre casse la CI,
+  # un vert encore inscrit aussi.
+  # ─────────────────────────────────────────────
+  screen-path:
+    name: Chemin de l'écran (PostgREST réel)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_compta
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+    defaults:
+      run:
+        working-directory: app
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Schéma et migrations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+          node run-sql-migrations.mjs
+
+      - name: 'X0 : colonnes écrites par les écrans à travers les fonctions (baseline gelée)'
+        run: node scripts/check-screen-writes.mjs
+
+      - name: Comptes du banc (inscription réelle) et secrets éphémères
+        run: node scripts/screen-rig/setup.mjs
+
+      - name: PostgREST réel et passerelle JWT
+        run: |
+          SECRET=$(node -e "console.log(require('./.screen-rig/rig.json').jwtSecret)")
+          docker run -d --name pgrst --network host \
+            -e PGRST_DB_URI="postgres://authenticator:screen-rig@localhost:5432/test_compta" \
+            -e PGRST_DB_SCHEMAS=public -e PGRST_DB_ANON_ROLE=anon \
+            -e PGRST_JWT_SECRET="$SECRET" -e PGRST_DB_MAX_ROWS=1000 -e PGRST_SERVER_PORT=3399 \
+            postgrest/postgrest:v16.3
+          for i in $(seq 1 30); do curl -sf http://localhost:3399/ >/dev/null && break; sleep 1; done
+          curl -sf http://localhost:3399/ >/dev/null || { docker logs pgrst; exit 1; }
+          nohup node scripts/screen-rig/gateway.mjs > .screen-rig/gateway.out 2>&1 &
+          for i in $(seq 1 15); do curl -s http://localhost:54399/auth/v1/health >/dev/null && break; sleep 1; done
+
+      - name: 'X0 : scénarios s1–s15 par les fonctions des écrans'
+        run: npx vitest run -c vitest.screen.config.ts
+
+      - name: Journal de la passerelle et verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-path
+          path: |
+            app/.screen-rig/out/
+            app/.screen-rig/gateway.log
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # Summary job for branch protection
+  # ─────────────────────────────────────────────
+  ci-success:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint-typecheck, i18n-check, unit-tests, db-integration, screen-path, build]
+    if: always()
+    steps:
+      - name: Check job results
+        run: |
+          echo "lint-typecheck: ${{ needs.lint-typecheck.result }}"
+          echo "i18n-check: ${{ needs.i18n-check.result }}"
+          echo "unit-tests: ${{ needs.unit-tests.result }}"
+          echo "db-integration: ${{ needs.db-integration.result }}"
+          echo "screen-path: ${{ needs.screen-path.result }}"
+          echo "build: ${{ needs.build.result }}"
+          if [[ "${{ needs.lint-typecheck.result }}" != "success" || "${{ needs.i18n-check.result }}" != "success" || "${{ needs.unit-tests.result }}" != "success" || "${{ needs.db-integration.result }}" != "success" || "${{ needs.screen-path.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
+            echo "CI FAILED — one or more required jobs did not pass"
+            exit 1
+          fi
+          echo "CI PASSED — all required jobs succeeded"

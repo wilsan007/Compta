@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill } from '@/lib/queries'
-import { Plus, Trash2, Grid3x3 } from 'lucide-react'
+import { getDistributionGrills, createDistributionGrill, deleteDistributionGrill, getChartAccounts, getAnalyticSections } from '@/lib/queries/accounting'
+import { Plus, Trash2, Grid3x3, X } from 'lucide-react'
 import type { DistributionGrill, DistributionGrillLine } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function DistributionGrillsPage() {
   const { t } = useTranslation('accounting')
@@ -19,27 +21,27 @@ export function DistributionGrillsPage() {
     try {
       const data = await getDistributionGrills()
       setGrills(data || [])
-    } catch (err) {
-      console.error('Failed to load distribution grills:', err)
+    } catch (err) { console.error('Failed to load distribution grills:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('grills.deleteConfirm'))) return
+    if (!confirmSync(t('grills.deleteConfirm'))) return
     try {
       await deleteDistributionGrill(id)
       toast('success', tCommon('common.success'), t('grills.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
-  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.journal'), t('grills.lines'), t('grills.total'), t('grills.active'), tCommon('common.table.actions')]
+  const tableHeaders = [t('grills.name'), t('grills.account'), t('grills.journal'), t('grills.lines'), t('grills.total'), t('grills.active'), tCommon('table.actions')]
 
   return (
     <div>
@@ -77,9 +79,8 @@ export function DistributionGrillsPage() {
                     <Badge variant={grill.active ? 'success' : 'neutral'}>{grill.active ? t('grills.yes') : t('grills.no')}</Badge>
                   </TableCell>
                   <TableCell>
-                    <button onClick={() => handleDelete(grill.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(grill.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </TableCell>
                 </TableRow>
               )
@@ -104,6 +105,18 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
   const [active, setActive] = useState(true)
   const [lines, setLines] = useState<DistributionGrillLine[]>([{ id: '', grill_id: '', section_code: '', percentage: 0, created_at: '' }])
   const [saving, setSaving] = useState(false)
+  // G2 (pil-007) : le compte se choisit dans le plan et la section dans les sections —
+  // la base refuse désormais ce qui n'existe pas (350).
+  const [comptes, setComptes] = useState<{ code: string; name: string }[]>([])
+  const [sections, setSections] = useState<{ code: string; name: string }[]>([])
+  useEffect(() => {
+    Promise.all([getChartAccounts(), getAnalyticSections()])
+      .then(([c, s]) => {
+        setComptes((c || []).map((a) => ({ code: a.code, name: a.name })))
+        setSections((s || []).filter((x) => x.active !== false && x.section_type !== 'total').map((x) => ({ code: x.code, name: x.name })))
+      })
+      .catch((err) => toast('error', tCommon('common.error'), errorMessage(err)))
+  }, [toast, tCommon])
 
   const total = lines.reduce((s, l) => s + Number(l.percentage || 0), 0)
 
@@ -136,8 +149,8 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       })
       toast('success', tCommon('common.success'), t('grills.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -148,12 +161,18 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '40rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('grills.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('grills.name')} value={name} onChange={(e) => setName(e.target.value)} required />
-            <Input label={t('grills.account')} value={accountCode} onChange={(e) => setAccountCode(e.target.value)} required />
+            <div>
+              <label htmlFor="grill-account" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('grills.account')}</label>
+              <select id="grill-account" className="input" value={accountCode} onChange={(e) => setAccountCode(e.target.value)} required>
+                <option value="">{tCommon('form.selectOption')}</option>
+                {comptes.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t('grills.journal')} value={journalCode} onChange={(e) => setJournalCode(e.target.value)} placeholder="ACH" />
@@ -170,18 +189,20 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
             </div>
             <Table headers={[t('grills.section'), t('grills.percentage'), '']}>
               {lines.map((line, idx) => (
-                <TableRow key={idx}>
+                <TableRow key={line.id || idx}>
                   <TableCell>
-                    <input className="input text-xs" placeholder="A001" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)} />
+                    <select aria-label={t('grills.section')} className="input text-xs" value={line.section_code} onChange={(e) => updateLine(idx, 'section_code', e.target.value)}>
+                      <option value="">{tCommon('form.selectOption')}</option>
+                      {sections.map((sec) => <option key={sec.code} value={sec.code}>{sec.code} — {sec.name}</option>)}
+                    </select>
                   </TableCell>
                   <TableCell>
-                    <input className="input text-xs text-right w-24" type="number" value={line.percentage} onChange={(e) => updateLine(idx, 'percentage', Number(e.target.value))} />
+                    <input aria-label={t('grills.percentage')} className="input text-xs text-right w-24" type="number" value={line.percentage} onChange={(e) => updateLine(idx, 'percentage', Number(e.target.value))} />
                   </TableCell>
                   <TableCell>
                     {lines.length > 1 && (
-                      <button onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="p-1 text-[var(--color-danger)]">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="p-1 text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     )}
                   </TableCell>
                 </TableRow>
@@ -195,8 +216,8 @@ function GrillForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => v
           </div>
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
         </div>
       </div>
     </div>

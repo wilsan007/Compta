@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getTreasuryDashboard } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getTreasuryDashboard } from '@/lib/queries/accounting'
 import { Wallet, TrendingUp, TrendingDown, Clock } from 'lucide-react'
 
 export function TreasuryDashboardPage() {
   const { t } = useTranslation('treasury')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -18,6 +22,7 @@ export function TreasuryDashboardPage() {
       setData(res)
     } catch (err) {
       console.error('Error loading treasury dashboard:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -90,7 +95,7 @@ export function TreasuryDashboardPage() {
               <TableRow key={acc.id}>
                 <TableCell className="font-medium">{acc.name}</TableCell>
                 <TableCell className="text-xs">{acc.type}</TableCell>
-                <TableCell className="font-mono text-right">{formatCurrency(Number(acc.balance))}</TableCell>
+                <TableCell className="font-mono text-right">{formatCurrency(Number(acc.calculated_balance))}</TableCell>
               </TableRow>
             ))}
           </Table>

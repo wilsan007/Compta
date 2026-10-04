@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { supabase, setTenantId } from '@/lib/supabase'
+/* oxlint-disable react/only-export-components -- composants et hooks/constantes associes exportes ensemble */
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { supabase, setTenantId, setUserName } from '@/lib/supabase'
 import { resetModuleCache } from '@/lib/useTenantModules'
-import { clearTenantCache } from '@/lib/queries'
-import type { TenantUser } from '@/lib/queries'
+import { clearTenantCache } from '@/lib/queries/core'
+import { hasPermission, type TenantUser } from '@/lib/queries/misc'
 
 interface AuthUser {
   id: string
@@ -12,13 +13,15 @@ interface AuthUser {
   tenantId: string | null
   tenantName: string | null
   permissions: Record<string, string[]>
+  module_roles?: Record<string, string>
+  guest_permissions?: Record<string, any>
 }
 
 interface AuthContextType {
   user: AuthUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
+  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean; emailSent?: boolean }>
   signOut: () => Promise<void>
   reloadUser: () => Promise<void>
   hasRole: (...roles: TenantUser['role'][]) => boolean
@@ -33,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [availableTenants, setAvailableTenants] = useState<{ tenantId: string; tenantName: string; role: TenantUser['role'] }[]>([])
+  // loadUser et l'abonnement auth sont créés une seule fois : ils lisent l'utilisateur
+  // courant via une ref, sinon ils verraient toujours la valeur initiale (null).
+  const userRef = useRef<AuthUser | null>(null)
+  useEffect(() => { userRef.current = user }, [user])
 
   const loadUser = useCallback(async () => {
     try {
@@ -77,12 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (matchedTenant) {
           // Stored preference found — use it
-          const prevTenantId = user?.tenantId
+          const prevTenantId = userRef.current?.tenantId
           const newTenantId = matchedTenant.tenant_id
           if (prevTenantId && prevTenantId !== newTenantId) {
             resetModuleCache()
           }
-          setTenantId(newTenantId)
+          // SEC-03: await setTenantId() avant setUser() pour garantir
+          // que le tenant est actif côté serveur avant toute requête.
+          await setTenantId(newTenantId)
+          setUserName(matchedTenant.name)
           setUser({
             id: matchedTenant.id,
             email: matchedTenant.email,
@@ -91,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             tenantId: matchedTenant.tenant_id,
             tenantName: (matchedTenant as any).tenants?.name || null,
             permissions: matchedTenant.permissions || {},
+            module_roles: (matchedTenant as any).module_roles || {},
+            guest_permissions: (matchedTenant as any).guest_permissions || {},
           })
           return
         }
@@ -99,7 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (validTenantUsers.length === 1) {
           // Only one tenant — auto-select it
           const tu = validTenantUsers[0]
-          setTenantId(tu.tenant_id)
+          // SEC-03: await setTenantId() avant setUser()
+          await setTenantId(tu.tenant_id)
+          setUserName(tu.name)
           setUser({
             id: tu.id,
             email: tu.email,
@@ -108,6 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             tenantId: tu.tenant_id,
             tenantName: (tu as any).tenants?.name || null,
             permissions: tu.permissions || {},
+            module_roles: (tu as any).module_roles || {},
+            guest_permissions: (tu as any).guest_permissions || {},
           })
           return
         }
@@ -133,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('users')
         .select('id, email, name, role, active')
         .eq('auth_id', session.user.id)
-        .single()
+        .maybeSingle()   // aucun compte hérité est le cas normal : pas de 406
 
       if (!error && userData) {
         if (!userData.active) {
@@ -144,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // SECURITY: Old users table fallback — use 'viewer' role, force onboarding flow
         setTenantId(null)
+        setUserName(userData.name)
         setUser({
           id: userData.id,
           email: userData.email,
@@ -159,12 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check if there's a pending invitation for this email
       const userEmail = session.user.email
       if (userEmail) {
-        const { data: pendingInvite } = await supabase
+        const { data: pendingInvite, error: inviteError } = await supabase
           .from('tenant_users')
           .select('id, tenant_id, status, tenants:tenant_id (name)')
           .eq('email', userEmail)
           .eq('status', 'pending')
           .maybeSingle()
+        if (inviteError) { console.error('checkPendingInvite:', inviteError); }
 
         if (pendingInvite) {
           // User has a pending invitation — redirect to accept page
@@ -180,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
           // Redirect to accept-invitation page
           if (window.location.pathname !== '/accept-invitation') {
-            window.location.href = '/accept-invitation'
+            window.location.replace('/accept-invitation')
           }
           return
         }
@@ -211,9 +229,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadUser().finally(() => setLoading(false))
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, _session) => {
-      setLoading(true)
-      loadUser().finally(() => setLoading(false))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
+      // APP-02: Only set loading=true on events that change the user identity.
+      // TOKEN_REFRESHED and other events must NOT touch loading when a user
+      // is already loaded, otherwise pages unmount and lose form state.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        setLoading(true)
+        loadUser().finally(() => setLoading(false))
+      } else if (!userRef.current) {
+        // No user loaded yet — still need to load on initial session
+        setLoading(true)
+        loadUser().finally(() => setLoading(false))
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -230,7 +257,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: 'Trop de tentatives. Réessayez dans 1 minute.' }
     }
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const signInPromise = supabase.auth.signInWithPassword({ email, password })
+      // Prevent unhandled rejection if timeout wins the race
+      signInPromise.catch(() => {})
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Connexion trop longue. Vérifiez votre réseau.')), 15000)
+      )
+      const { error } = await Promise.race([signInPromise, timeoutPromise]) as any
       if (error) {
         const updated = [...uniqueRecent, now]
         localStorage.setItem('_auth_attempts', JSON.stringify(updated))
@@ -248,32 +281,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean }> => {
+  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; needsConfirmation: boolean; emailSent?: boolean }> => {
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
       return { error: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 digit.', needsConfirmation: false }
     }
     try {
-      // Pre-check: block signup if email already exists in auth.users
-      const { data: emailExists, error: rpcErr } = await supabase
-        .rpc('auth_email_exists', { p_email: email })
-      if (rpcErr) {
-        // If RPC fails (e.g. function not deployed yet), fall through to signUp
-        console.warn('auth_email_exists RPC failed, falling back to signUp:', rpcErr.message)
-      } else if (emailExists) {
-        return { error: 'Un compte existe déjà avec cet email. Veuillez vous connecter avec vos identifiants actuels.', needsConfirmation: false }
+      const locale = localStorage.getItem('i18nextLng')?.split('-')[0] || 'en'
+
+      const { data: result, error: fnError } = await supabase.functions.invoke('auth-signup', {
+        body: { email, password, locale },
+      })
+
+      if (fnError || result?.error) {
+        // W-QA (29/09/2026) : l'inscription ne doit pas dépendre d'un SEUL
+        // déploiement. La fonction Edge a répondu 503 « name resolution failed »
+        // sur la pile locale — et sans repli, l'écran d'inscription était un
+        // cul-de-sac. On retombe sur l'inscription native de Supabase : elle crée
+        // le compte, et ouvre la session quand la confirmation d'e-mail est
+        // désactivée. L'incident n'est pas tu, il est journalisé.
+        console.warn('auth-signup indisponible — repli sur auth.signUp :', fnError?.message || result?.error)
+        const { data, error } = await supabase.auth.signUp({ email, password })
+        if (error) return { error: error.message, needsConfirmation: false }
+        return { error: null, needsConfirmation: !data.session }
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`,
-        },
-      })
-      if (error) return { error: error.message, needsConfirmation: false }
-      // If no session is returned, email confirmation is required before login
-      const needsConfirmation = !data.session
-      return { error: null, needsConfirmation }
+      if (result?.email_sent === false) {
+        // Le compte est créé mais l'e-mail n'est PAS parti (clé Resend absente,
+        // cas documenté du dépôt) : dire « vérifiez votre boîte » serait faux —
+        // l'utilisateur attendrait un message qui n'arrivera jamais.
+        return {
+          error: "Compte créé, mais l'e-mail de confirmation n'a pas pu être envoyé. Contactez le support pour activer votre accès.",
+          needsConfirmation: false,
+        }
+      }
+
+      // La fonction dit si l'e-mail de confirmation est réellement parti
+      // (`email_sent`) : sans cette lecture, l'écran annonçait un envoi qui
+      // n'avait pas eu lieu et le compte restait inactivable.
+      return { error: null, needsConfirmation: true, emailSent: result?.email_sent !== false }
     } catch (err: any) {
       return { error: err.message || "Erreur lors de l'inscription", needsConfirmation: false }
     }
@@ -302,30 +347,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(user.role)
   }, [user])
 
+  // LOT7-01 : cette matrice existait en TROIS exemplaires — ici, dans
+  // `queries/misc.ts` (`hasPermission`) et, sous une autre forme, dans la RPC
+  // `has_permission`. Les deux copies TypeScript avaient déjà divergé : la liste
+  // des tables commerciales du rôle `manager` comptait 14 entrées ici contre 34
+  // dans misc.ts, si bien qu'un même utilisateur obtenait deux réponses
+  // différentes selon l'appelant. `canPerform` délègue désormais à l'unique
+  // implémentation.
   const canPerform = useCallback((table: string, action: 'select' | 'insert' | 'update' | 'delete') => {
-    if (!user) return false
-    if (user.role === 'admin') return true
-    if (user.role === 'accountant') {
-      if (action === 'select' || action === 'insert' || action === 'update') return true
-      if (action === 'delete' && ['journal_entries', 'journal_lines', 'invoice_lines', 'quote_lines', 'credit_note_lines'].includes(table)) return true
-      return false
-    }
-    if (user.role === 'manager') {
-      if (action === 'select') return true
-      if (action === 'insert' || action === 'update') {
-        const commercialTables = ['invoices', 'invoice_lines', 'quotes', 'quote_lines', 'credit_notes', 'credit_note_lines', 'customers', 'products', 'delivery_notes', 'delivery_note_lines', 'sales_orders', 'sales_order_lines', 'purchase_orders', 'purchase_order_lines']
-        return commercialTables.includes(table)
-      }
-      return false
-    }
-    if (user.role === 'viewer') return action === 'select'
-    if (user.role === 'auditor') return action === 'select'
-    if (user.role === 'custom') {
-      const perms = user.permissions[table]
-      if (!perms) return false
-      return perms.includes(action)
-    }
-    return false
+    return hasPermission(user, table, action)
   }, [user])
 
   return (

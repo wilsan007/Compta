@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Select, Input } from '@/components/ui'
-import { getCompanySettings } from '@/lib/queries'
+import { getCompanySettings } from '@/lib/queries/accounting'
 import { useToast } from '@/lib/toast'
 import { Building2, Plus, Check } from 'lucide-react'
+import { errorMessage } from '@/lib/utils'
 
 interface Entity {
   id: string
@@ -27,7 +28,8 @@ export function MultiCompanyPage() {
   const [form, setForm] = useState({ name: '', siret: '', vatNumber: '', type: 'subsidiary', currency: 'EUR', country: 'FR' })
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -47,8 +49,8 @@ export function MultiCompanyPage() {
         setEntities([primary])
         setActiveEntity(comp.id)
       }
-    } catch (err) {
-      console.error('Error loading company data:', err)
+    } catch (err) { console.error('Error loading company data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

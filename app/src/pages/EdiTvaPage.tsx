@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getVatReturns, submitEdiTva } from '@/lib/queries'
+import { getVatReturns } from '@/lib/queries/accounting'
+import { submitEdiTva } from '@/lib/queries/misc'
 import { useLocale } from '@/hooks/useLocale'
 import { Send, FileCheck } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function EdiTvaPage() {
   const { t } = useTranslation('accounting')
@@ -20,27 +23,27 @@ export function EdiTvaPage() {
     try {
       const data = await getVatReturns()
       setReturns(data || [])
-    } catch (err) {
-      console.error('Failed to load VAT returns:', err)
+    } catch (err) { console.error('Failed to load VAT returns:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleSubmit(id: string) {
-    if (!window.confirm(t('ediTva.submitConfirm'))) return
+    if (!confirmSync(t('ediTva.submitConfirm'))) return
     try {
       await submitEdiTva(id)
       toast('success', tCommon('common.success'), t('ediTva.submitSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
-  const tableHeaders = [t('ediTva.period'), t('ediTva.amount'), t('ediTva.ediId'), t('ediTva.status'), t('ediTva.submittedAt'), tCommon('common.table.actions')]
+  const tableHeaders = [t('ediTva.period'), t('ediTva.amount'), t('ediTva.ediId'), t('ediTva.status'), t('ediTva.submittedAt'), tCommon('table.actions')]
 
   return (
     <div>

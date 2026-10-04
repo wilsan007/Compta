@@ -13,7 +13,9 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     single: vi.fn(() => Promise.resolve(resolvedValue)),
     maybeSingle: vi.fn(() => Promise.resolve(resolvedValue)),
     limit: vi.fn(() => chain),
-    range: vi.fn(() => Promise.resolve(resolvedValue)),
+    // LOT7-03 : fetchAllRows pagine via .range() ; le mock doit renvoyer les mêmes
+    // données que `then`, y compris après un setMockData qui réassigne `then`.
+    range: vi.fn(() => new Promise((resolve) => chain.then(resolve))),
     in: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),
@@ -84,13 +86,11 @@ describe('Sales Orders CRUD', () => {
     expect(mockChain.eq).toHaveBeenCalledWith('status', 'pending')
   })
 
-  it('createSalesOrder inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'SO-001' })
+  it('createSalesOrder crée en-tête et lignes en un appel (C10, 280)', async () => {
     const { createSalesOrder } = await import('@/lib/queries')
-    await createSalesOrder({ number: 'SO-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+    const line = { product_id: 'p1', description: 'A', quantity: 2, unit_price: 10, vat_rate: 20 }
+    await createSalesOrder({ number: 'SO-001' } as any, [line])
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_sales_order', { p_order: { number: 'SO-001' }, p_lines: [line] })
   })
 
   it('deleteSalesOrder calls delete with id', async () => {
@@ -167,13 +167,11 @@ describe('Purchase Orders CRUD', () => {
     expect(result).toHaveLength(1)
   })
 
-  it('createPurchaseOrder inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'PO-001' })
+  it('createPurchaseOrder crée en-tête et lignes en un appel (C9, 280)', async () => {
     const { createPurchaseOrder } = await import('@/lib/queries')
-    await createPurchaseOrder({ number: 'PO-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+    const line = { product_id: 'p1', description: 'A', quantity: 3, unit_price: 12, vat_rate: 20 }
+    await createPurchaseOrder({ number: 'PO-001' } as any, [line])
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_purchase_order', { p_order: { number: 'PO-001' }, p_lines: [line] })
   })
 
   it('deletePurchaseOrder calls delete', async () => {
@@ -197,13 +195,12 @@ describe('Goods Receipts CRUD', () => {
     expect(result).toHaveLength(1)
   })
 
-  it('createGoodsReceipt inserts with tenant_id', async () => {
-    setMockData({ id: '1', number: 'GR-001' })
-    const { createGoodsReceipt } = await import('@/lib/queries')
-    await createGoodsReceipt({ number: 'GR-001' } as any)
-    expect(mockChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ tenant_id: 'test-tenant-id' })
-    )
+  it('createGoodsReceiptFromOrder naît de la commande (C9, 280)', async () => {
+    const { createGoodsReceiptFromOrder } = await import('@/lib/queries')
+    await createGoodsReceiptFromOrder('po1', { number: 'GR-001', receipt_date: '2026-09-28', warehouse_id: 'w1' })
+    expect((supabase as any).rpc).toHaveBeenCalledWith('create_goods_receipt_from_order', {
+      p_order_id: 'po1', p_number: 'GR-001', p_receipt_date: '2026-09-28', p_warehouse_id: 'w1',
+    })
   })
 })
 
@@ -490,9 +487,9 @@ describe('Treasury Dashboard', () => {
     const { getTreasuryDashboard } = await import('@/lib/queries')
     const result = await getTreasuryDashboard()
     expect(result).toBeDefined()
-    expect(result.accounts).toBeDefined()
-    expect(result.forecastBuckets).toHaveLength(3)
-    expect(result.forecastBuckets[0].label).toBe('0-30j')
+    expect(result?.accounts).toBeDefined()
+    expect(result?.forecastBuckets).toHaveLength(3)
+    expect(result?.forecastBuckets[0].label).toBe('0-30j')
   })
 })
 
@@ -502,13 +499,45 @@ describe('Treasury Forecast', () => {
   beforeEach(() => resetMock())
 
   it('getTreasuryForecast returns timeline with events', async () => {
-    setMockData([{ id: '1', balance: 5000, due_date: '2025-01-15', number: 'INV-001', total: 1000 }])
+    // ⚠️ ASSERTION CHANGÉE LE 03/10/2026 (L19), ET LES DEUX VERDICTS
+    // SONT CONSERVÉS CI-DESSOUS.
+    //
+    // AVANT : le solde venait de `bank_accounts.calculated_balance`, lu en
+    // JavaScript, et le test affirmait 5 000 parce que c'était ce que le
+    // mock renvoyait. Il ne prouvait que le mock.
+    //
+    // APRÈS : le prévisionnel a UN moteur, `cash_flow_forecast` (SQL), et
+    // il rend le solde, les entrées et les sorties. L'écran ne récalcule
+    // plus rien — c'est le défaut « un seul moteur par grandeur » (W5),
+    // et les deux moteurs divergeaient de 4 000 € sur le même libellé
+    // (mesuré : la preuve de la 422).
+    //
+    // On fait donc dire au mock BANCAIRE un chiffre FAUX (9 999) et au
+    // MOTEUR le bon (5 000) : si la fonction relisait encore la banque,
+    // le test rougirait. C'est plus fort que l'ancien, qui ne pouvait
+    // échouer que si le mock changeait.
+    const { supabase: sb } = await import('@/lib/supabase')
+    setMockData([{ id: '1', calculated_balance: 9999, due_date: '2025-01-15', number: 'INV-001', total: 1000, amount_due: 400 }])
+    ;(sb.rpc as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: {
+        days: 90, expected_inflows: 400, expected_outflows: 0, net_forecast: 400,
+        currentBalance: 5000, totalIncoming: 400, totalOutgoing: 0,
+        production_material_commitment: 0, production_labor_commitment: 0,
+        production_commitment: 0, net_with_production: 400,
+      },
+      error: null,
+    })
+
     const { getTreasuryForecast } = await import('@/lib/queries')
     const result = await getTreasuryForecast(90)
     expect(result).toBeDefined()
-    expect(result.currentBalance).toBe(5000)
-    expect(result.timeline).toBeDefined()
+    expect(result?.currentBalance).toBe(5000)
+    // le chiffre du MOTEUR, pas celui de la banque (9 999)
+    expect(result?.currentBalance).not.toBe(9999)
+    expect(result?.timeline).toBeDefined()
     expect(typeof result.totalIncoming).toBe('number')
+    // et l'ENGAGEMENT DE PRODUCTION, rendu par le moteur
+    expect(result?.productionCommitment).toBe(0)
   })
 })
 
@@ -522,7 +551,7 @@ describe('Collection Dashboard', () => {
     const { getCollectionDashboard } = await import('@/lib/queries')
     const result = await getCollectionDashboard()
     expect(result).toBeDefined()
-    expect(result.overdueInvoices).toBeDefined()
+    expect(result?.overdueInvoices).toBeDefined()
     expect(typeof result.totalOverdue).toBe('number')
   })
 })
@@ -537,7 +566,7 @@ describe('Gescom Transfer', () => {
     const { getGescomTransferData } = await import('@/lib/queries')
     const result = await getGescomTransferData()
     expect(result).toBeDefined()
-    expect(result.invoices).toBeDefined()
+    expect(result?.invoices).toBeDefined()
     expect(typeof result.pendingCount).toBe('number')
   })
 
@@ -588,7 +617,7 @@ describe('Tenant Management', () => {
     const { getCurrentTenant } = await import('@/lib/queries')
     const result = await getCurrentTenant()
     expect(result).toBeDefined()
-    expect(result.name).toBe('Company A')
+    expect(result?.name).toBe('Company A')
   })
 
   it('getCurrentTenant returns null when no session', async () => {
@@ -735,8 +764,8 @@ describe('Product BOMs', () => {
     const { getProductBOMs } = await import('@/lib/queries')
     const result = await getProductBOMs('p1')
     expect(result).toBeDefined()
-    expect(result.asFinished).toBeDefined()
-    expect(result.asComponent).toBeDefined()
+    expect(result?.asFinished).toBeDefined()
+    expect(result?.asComponent).toBeDefined()
   })
 })
 

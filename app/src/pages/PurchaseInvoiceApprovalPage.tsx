@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getPurchaseInvoices, updatePurchaseInvoiceApproval } from '@/lib/queries'
+import { getPurchaseInvoices, updatePurchaseInvoiceApproval } from '@/lib/queries/sales'
 import { useLocale } from '@/hooks/useLocale'
 import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 import type { PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
+import { errorMessage } from '@/lib/utils'
 
 export function PurchaseInvoiceApprovalPage() {
   const { t } = useTranslation('purchases')
@@ -22,12 +23,12 @@ export function PurchaseInvoiceApprovalPage() {
       const data = await getPurchaseInvoices()
       const filtered = filter === 'all' ? data : data.filter((inv: any) => (inv.approval_status || 'pending') === filter)
       setInvoices(filtered as PurchaseInvoice[])
-    } catch (err) {
-      console.error('Failed to load purchase invoices:', err)
+    } catch (err) { console.error('Failed to load purchase invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [filter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -36,8 +37,8 @@ export function PurchaseInvoiceApprovalPage() {
       await updatePurchaseInvoiceApproval(id, 'approved')
       toast('success', tCommon('common.success'), t('approval.approvedSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -46,8 +47,8 @@ export function PurchaseInvoiceApprovalPage() {
       await updatePurchaseInvoiceApproval(id, 'rejected')
       toast('success', tCommon('common.success'), t('approval.rejectedSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -59,7 +60,7 @@ export function PurchaseInvoiceApprovalPage() {
     t('invoices.total'),
     t('approval.status'),
     t('approval.approvedAt'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   const filterButtons = [

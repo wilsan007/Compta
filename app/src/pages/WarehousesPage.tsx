@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '@/lib/queries'
+import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Warehouse as WarehouseIcon } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function WarehousesPage() {
   const { t } = useTranslation('stock')
@@ -17,26 +19,26 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
 
   const loadData = useCallback(async () => {
     try { setWarehouses(await getWarehouses()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleToggleActive(w: Warehouse) {
   try { await updateWarehouse(w.id, { active: !w.active }); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('warehouses.deleteConfirm'))) return
+    if (!confirmSync(t('warehouses.deleteConfirm'))) return
     try { await deleteWarehouse(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('warehouses.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('warehouses.title') }]} />
       <PageHeader title={t('warehouses.title')} subtitle={`${warehouses.length} ${t('warehouses.title').toLowerCase()}`}
         action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('warehouses.new')}</Button>} />
 
@@ -58,9 +60,8 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
                   </button>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(w.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(w.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -90,7 +91,7 @@ function WarehouseForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     try {
       await createWarehouse({ code, name, address: address || null, city: city || null, postal_code: postalCode || null, country: 'France', active: true } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setSaving(false) }
   }
 
@@ -99,7 +100,7 @@ function WarehouseForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('warehouses.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -113,7 +114,7 @@ function WarehouseForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, Breadcrumb, SkeletonTable, StatCard } from '@/components/ui'
-import { getJournalEntries, getChartAccounts, getTrialBalance } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { useToast } from '@/lib/toast'
+import { getJournalEntries, getChartAccounts, getTrialBalance } from '@/lib/queries/accounting'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { CalendarDays, FileText, TrendingUp, AlertTriangle, Plus, BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { JournalEntry, ChartAccount } from '@/types'
@@ -10,14 +11,16 @@ import type { JournalEntry, ChartAccount } from '@/types'
 export function AccountingDashboardPage() {
   const { t } = useTranslation('accounting')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const navigate = useNavigate()
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
-  const [trialBalance, setTrialBalance] = useState<any[]>([])
+  const [trialBalance, setTrialBalance] = useState<Awaited<ReturnType<typeof getTrialBalance>>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -32,6 +35,7 @@ export function AccountingDashboardPage() {
       setTrialBalance(tb || [])
     } catch (err) {
       console.error('Error loading accounting dashboard:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }

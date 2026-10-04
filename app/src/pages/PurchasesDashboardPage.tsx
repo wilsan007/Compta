@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, SkeletonTable, Breadcrumb, Table, TableRow, TableCell, Badge } from '@/components/ui'
-import { getPurchaseInvoices, getSuppliers, getProducts } from '@/lib/queries'
+import { getPurchaseInvoices } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { formatCurrency, translateStatus } from '@/lib/utils'
 import type { PurchaseInvoice, Supplier, Product } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -24,7 +26,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
       setSuppliers(s)
       setProducts(p)
     } catch (err) { console.error(err); toast('error', tCommon('common.error'), t('dashboard.loadError')) } finally { setLoading(false) }
-  }, [])
+  }, [t, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -35,7 +37,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.dashboard') }, { label: t('title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.dashboard') }, { label: t('title') }]} />
       <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       {loading ? (
@@ -45,7 +47,7 @@ const [invoices, setInvoices] = useState<PurchaseInvoice[]>([])
           <div className="grid grid-cols-4 gap-4 mb-6">
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.totalBills')}</p><p className="text-2xl font-bold font-mono">{formatCurrency(totalBills)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.paid')}</p><p className="text-2xl font-bold font-mono text-[var(--color-success)]">{formatCurrency(totalPaid)}</p></div></Card>
-            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.toPay')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(totalOutstanding)}</p></div></Card>
+            <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.toPay')}</p><p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(totalOutstanding)}</p></div></Card>
             <Card><div className="p-4"><p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.suppliersCount')}</p><p className="text-2xl font-bold">{suppliers.length}</p></div></Card>
           </div>
 

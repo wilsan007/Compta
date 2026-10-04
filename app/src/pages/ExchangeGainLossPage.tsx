@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable } from '@/components/ui'
 import { TrendingUp, TrendingDown } from 'lucide-react'
-import { getExchangeGainLossEntries } from '@/lib/queries'
+import { getExchangeGainLossEntries } from '@/lib/queries/accounting'
 import type { ExchangeGainLossEntry } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function ExchangeGainLossPage() {
   const { t } = useTranslation('banking')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [entries, setEntries] = useState<ExchangeGainLossEntry[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -15,8 +19,8 @@ export function ExchangeGainLossPage() {
     try {
       const data = await getExchangeGainLossEntries()
       setEntries(data || [])
-    } catch { } finally { setLoading(false) }
-  }, [])
+    } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setLoading(false) }
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 

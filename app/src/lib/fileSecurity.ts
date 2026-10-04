@@ -20,8 +20,11 @@ export interface FileValidationResult {
 }
 
 // Magic bytes signatures for common file types
-const MAGIC_BYTES: Record<string, number[]> = {
+const MAGIC_BYTES: Record<string, number[] | null> = {
   pdf: [0x25, 0x50, 0x44, 0x46], // %PDF
+  png: [0x89, 0x50, 0x4E, 0x47], // \x89PNG
+  jpg: [0xFF, 0xD8, 0xFF],
+  jpeg: [0xFF, 0xD8, 0xFF],
   xlsx: [0x50, 0x4B, 0x03, 0x04], // PK (ZIP-based, also matches .docx, .xlsx)
   xls: [0xD0, 0xCF, 0x11, 0xE0], // OLE2 compound document
   csv: null, // Text-based, no magic bytes
@@ -88,11 +91,17 @@ export async function validateFileUpload(
     }
 
     // Verify magic bytes match the claimed extension
-    if (ext === '.pdf' && !bytesStartsWith(bytes, MAGIC_BYTES.pdf)) {
+    if (ext === '.pdf' && MAGIC_BYTES.pdf && !bytesStartsWith(bytes, MAGIC_BYTES.pdf)) {
       return { ok: false, error: 'File claims to be PDF but magic bytes do not match' }
     }
-    if (ext === '.xlsx' && !bytesStartsWith(bytes, MAGIC_BYTES.xlsx)) {
+    if (ext === '.xlsx' && MAGIC_BYTES.xlsx && !bytesStartsWith(bytes, MAGIC_BYTES.xlsx)) {
       return { ok: false, error: 'File claims to be XLSX but magic bytes do not match' }
+    }
+    if (ext === '.png' && MAGIC_BYTES.png && !bytesStartsWith(bytes, MAGIC_BYTES.png)) {
+      return { ok: false, error: 'File claims to be PNG but magic bytes do not match' }
+    }
+    if ((ext === '.jpg' || ext === '.jpeg') && MAGIC_BYTES.jpg && !bytesStartsWith(bytes, MAGIC_BYTES.jpg)) {
+      return { ok: false, error: 'File claims to be JPEG but magic bytes do not match' }
     }
   }
 
@@ -115,7 +124,7 @@ export function sanitizeFilename(filename: string): string {
   // Remove directory traversal
   name = name.replace(/\.\./g, '')
   // Remove null bytes and control characters
-  name = name.replace(/[\x00-\x1f\x7f]/g, '')
+  name = Array.from(name).filter(c => { const code = c.charCodeAt(0); return code > 0x1f && code !== 0x7f }).join('')
   // Limit length
   if (name.length > 255) {
     const ext = name.match(/\.[^.]+$/)?.[0] || ''
@@ -151,11 +160,25 @@ export const FILE_PROFILES = {
     ],
     checkMagicBytes: true,
   },
+  /** Relevés bancaires normés : CAMT.053 (XML), MT940, CFONB 120 (texte) — AUD-G03 */
+  bankStatement: {
+    maxSize: 10 * 1024 * 1024, // 10 MB
+    allowedExtensions: ['.xml', '.txt', '.sta', '.940', '.mt940', '.cfonb', '.dat'],
+    allowedMimeTypes: ['text/plain', 'text/xml', 'application/xml', 'application/octet-stream'],
+    checkMagicBytes: false, // formats texte, sans signature
+  },
   /** PDF bank statements */
   pdf: {
     maxSize: 5 * 1024 * 1024, // 5 MB
     allowedExtensions: ['.pdf'],
     allowedMimeTypes: ['application/pdf', 'application/octet-stream'],
+    checkMagicBytes: true,
+  },
+  /** Factures fournisseurs scannées (OCR) */
+  invoiceScan: {
+    maxSize: 10 * 1024 * 1024, // 10 MB
+    allowedExtensions: ['.pdf', '.png', '.jpg', '.jpeg'],
+    allowedMimeTypes: ['application/pdf', 'image/png', 'image/jpeg', 'application/octet-stream'],
     checkMagicBytes: true,
   },
   /** Sage/MAE accounting files */

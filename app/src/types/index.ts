@@ -2,7 +2,7 @@
 
 export type InvoiceStatus = 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue' | 'cancelled'
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired'
-export type CreditStatus = 'draft' | 'applied'
+export type CreditStatus = 'draft' | 'validated' | 'applied'
 export type AccountType = 'chequing' | 'savings' | 'credit_card' | 'cash' | 'loan' | 'other'
 export type ReportPeriod = 'month' | 'quarter' | 'year' | 'custom'
 
@@ -14,8 +14,14 @@ export interface Customer {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du client : FR / UE assujetti / hors UE.
+   *  Déduite du pays et du n° de TVA par `partner_apply_fiscal_position`,
+   *  jamais écrasée quand elle est posée à la main. `vat_codes` reste
+   *  l'ancien codage par ligne. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   credit_limit: number
@@ -28,6 +34,31 @@ export interface Customer {
   parent_id?: string | null
   is_company?: boolean
   sales_rep_id?: string | null
+  bank_account_id?: string | null
+  price_list_id?: string | null
+  email_settings?: Record<string, any> | null
+  credit_used?: number
+  credit_blocked?: boolean
+  account_tiers?: string | null
+  account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
+}
+
+export interface CustomerContact {
+  id: string
+  customer_id: string
+  name: string
+  role: 'billing' | 'delivery' | 'technical' | 'sales' | 'other' | null
+  email: string | null
+  phone: string | null
+  mobile: string | null
+  is_default: boolean
+  active: boolean
+  notes: string | null
+  created_at: string
 }
 
 export interface Supplier {
@@ -38,8 +69,12 @@ export interface Supplier {
   address: string
   city: string
   postal_code: string
-  country: string
+  /** A4 (318) — code ISO 3166-1 alpha-2, ou `null` si le pays nest pas connu. */
+  country: string | null
   vat_number: string
+  /** B3 (323) — position fiscale du fournisseur, même règle que le client :
+   *  déduite du pays et du n° de TVA, jamais écrasée si posée à la main. */
+  fiscal_position_id?: string | null
   contact_name: string
   balance: number
   payment_terms: string
@@ -51,6 +86,98 @@ export interface Supplier {
   parent_id?: string | null
   is_company?: boolean
   sales_rep_id?: string | null
+  bank_account_id?: string | null
+  price_list_id?: string | null
+  email_settings?: Record<string, any> | null
+  account_tiers?: string | null
+  account_collectif?: string | null
+  /** A4 (318) — SIRET de l'établissement, clé de Luhn contrôlée à la saisie. */
+  siret?: string | null
+  /** A4 (318) — conditions de paiement choisies dans la liste (migration 318). */
+  payment_term_id?: string | null
+}
+
+export interface SupplierContact {
+  id: string
+  supplier_id: string
+  name: string
+  role: 'billing' | 'delivery' | 'technical' | 'sales' | 'other' | null
+  email: string | null
+  phone: string | null
+  mobile: string | null
+  is_default: boolean
+  active: boolean
+  notes: string | null
+  created_at: string
+}
+
+export interface PurchaseRequest {
+  id: string
+  number: string
+  requester: string | null
+  department: string | null
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'converted'
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  expected_date: string | null
+  notes: string | null
+  approved_by: string | null
+  approved_at: string | null
+  created_at: string
+  purchase_request_lines?: PurchaseRequestLine[]
+}
+
+export interface PurchaseRequestLine {
+  id: string
+  purchase_request_id: string
+  product_id: string | null
+  description: string
+  quantity: number
+  unit: string | null
+  estimated_price: number | null
+  preferred_supplier_id: string | null
+  notes: string | null
+}
+
+export interface SupplierPriceList {
+  id: string
+  supplier_id: string
+  name: string
+  valid_from: string
+  valid_to: string | null
+  currency_code: string
+  min_quantity: number
+  discount_percent: number
+  active: boolean
+  supplier_price_list_lines?: SupplierPriceListLine[]
+}
+
+export interface SupplierPriceListLine {
+  id: string
+  price_list_id: string
+  product_id: string
+  supplier_ref: string | null
+  unit_price: number
+  min_quantity: number
+  discount_percent: number
+  lead_time_days: number | null
+}
+
+export interface SupplierDeliverySchedule {
+  id: string
+  supplier_id: string
+  product_id: string
+  warehouse_id: string | null
+  frequency: 'weekly' | 'biweekly' | 'monthly'
+  monday_qty: number
+  tuesday_qty: number
+  wednesday_qty: number
+  thursday_qty: number
+  friday_qty: number
+  saturday_qty: number
+  sunday_qty: number
+  start_date: string
+  end_date: string | null
+  active: boolean
 }
 
 export interface InvoiceLine {
@@ -65,6 +192,16 @@ export interface InvoiceLine {
   vat_total: number
   line_order: number
   created_at: string
+  delivery_note_line_id?: string | null
+  sales_order_line_id?: string | null
+  vat_code?: string | null
+  vat_amount?: number
+  /** Ligne de déduction d'acompte (montant négatif) : facture d'acompte déduite */
+  advance_invoice_id?: string | null
+  /** B2 (ven-008) : compte de vente d'une ligne sans article (706000 / 707000) */
+  account_code?: string | null
+  /** 304 : section analytique de la ligne ; elle circule jusqu'à la ligne d'écriture. */
+  analytic_section_id?: string | null
 }
 
 export interface Invoice {
@@ -93,6 +230,16 @@ export interface Invoice {
   amount_untaxed_currency?: number | null
   amount_tax_currency?: number | null
   amount_total_currency?: number | null
+  delivery_note_id?: string | null
+  sales_order_id?: string | null
+  quote_id?: string | null
+  is_advance_invoice?: boolean
+  advance_amount?: number | null
+  invoice_type?: 'standard' | 'advance' | 'balance' | 'proforma'
+  parent_invoice_id?: string | null
+  validation_status?: 'draft' | 'pending' | 'validated' | 'rejected' | null
+  /** Écriture de vente passée à la validation */
+  transferred_entry_id?: string | null
 }
 
 export interface QuoteLine {
@@ -124,17 +271,24 @@ export interface Quote {
   created_at: string
   updated_at: string
   quote_lines?: QuoteLine[]
+  transformed_to_order_id?: string | null
+  transformation_status?: 'pending' | 'transformed' | 'partial'
 }
 
 export interface CreditNoteLine {
   id: string
   credit_note_id: string
+  product_id?: string | null
   description: string
   quantity: number
   unit_price: number
   vat_rate: number
   total: number
   vat_total: number
+  vat_code?: string | null
+  vat_amount?: number
+  /** B4 (ven-012) : compte de vente d'une ligne sans article */
+  account_code?: string | null
   line_order: number
   created_at: string
 }
@@ -158,6 +312,7 @@ export interface CreditNote {
   amount_untaxed_currency?: number | null
   amount_tax_currency?: number | null
   amount_total_currency?: number | null
+  source_invoice_id?: string | null
 }
 
 export interface PurchaseInvoiceLine {
@@ -172,11 +327,16 @@ export interface PurchaseInvoiceLine {
   vat_total: number
   line_order: number
   created_at: string
+  vat_code?: string | null
+  vat_amount?: number
 }
 
 export interface PurchaseInvoice {
   id: string
   number: string
+  supplier_reference?: string | null
+  approval_status?: 'pending' | 'approved' | 'rejected'
+  transferred_entry_id?: string | null
   supplier_id: string | null
   supplier_name: string | null
   date: string
@@ -239,6 +399,12 @@ export interface BankTransaction {
   exchange_rate?: number | null
   exchange_gain_loss?: number | null
   source?: string | null
+  /**
+   * R-07 : nature de la ligne. « book » = mouvement de trésorerie saisi (reflet
+   * d'un règlement), « statement » = ligne du relevé. Seul « book » alimente le
+   * solde du compte : une opération saisie puis importée n'est comptée qu'une fois.
+   */
+  kind?: 'book' | 'statement'
 }
 
 export interface BankConnection {
@@ -289,6 +455,16 @@ export interface Product {
   active: boolean
   created_at: string
   updated_at: string
+  barcode?: string | null
+  weight?: number | null
+  photo_url?: string | null
+  supplier_ref?: string | null
+  criticality_level?: 'normal' | 'critical' | 'essential' | null
+  cost_price?: number | null
+  sale_account_code?: string | null
+  purchase_account_code?: string | null
+  stock_account_code?: string | null
+  category_id?: string | null
 }
 
 export interface JournalLine {
@@ -353,6 +529,11 @@ export interface JournalEntry {
   journal_lines?: JournalLine[]
   journal_code?: string | null
   fiscal_period_id?: string | null
+  /** AUD-C08 — renseigné par le serveur depuis la date */
+  fiscal_year_id?: string | null
+  /** AUD-C11 — numéro définitif attribué à la validation (EcritureNum du FEC) */
+  posting_number?: string | null
+  posting_seq?: number | null
   piece_number?: string | null
   invoice_ref?: string | null
   entry_template_id?: string | null
@@ -448,8 +629,9 @@ export interface Project {
   status: 'active' | 'completed' | 'on_hold' | 'cancelled'
   budget: number
   actual_cost: number
-  start_date: string
-  end_date: string
+  start_date: string | null
+  end_date: string | null
+  manager_id: string | null
   created_at: string
   updated_at: string
 }
@@ -496,8 +678,15 @@ export interface CompanySettings {
   saisie_negative?: boolean
   multi_currency?: boolean
   show_quantities?: boolean
+  /** D-5 (318) : consentement à l'envoi de documents à un prestataire d'OCR/IA.
+   *  Faux par défaut ; la date et l'auteur sont écrits par la BASE (déclencheur). */
+  ocr_consent?: boolean
+  ocr_consent_at?: string | null
+  ocr_consent_by?: string | null
   vat_regime?: string | null
   vat_periodicity?: string | null
+  iban?: string | null
+  bic?: string | null
   created_at: string
   updated_at: string
 }
@@ -595,6 +784,8 @@ export interface FiscalPosition {
   zip_to?: string | null
   auto_apply: boolean
   active: boolean
+  /** B3 (323) — fr | eu_vat | non_eu pour une position standard ; null sinon */
+  regime?: string | null
   created_at: string
 }
 
@@ -659,7 +850,8 @@ export interface PurchaseCreditNote {
   supplier_id: string | null
   supplier_name: string | null
   date: string
-  status: 'draft' | 'applied'
+  status: 'draft' | 'validated' | 'applied'
+  supplier_reference?: string | null
   subtotal: number
   vat_total: number
   total: number
@@ -695,9 +887,6 @@ export interface FixedAsset {
   journal_id?: string | null
   partner_id?: string | null
   currency_code?: string
-  derogatory_depreciation?: boolean
-  subvention_amount?: number | null
-  subvention_account?: string | null
 }
 
 // ============ Sprint 6: Partner Contacts (#62) ============
@@ -753,6 +942,20 @@ export interface PartnerBankAccount {
 export interface Employee {
   id: string
   name: string
+  /**
+   * AUD-IDENTITE : `first_name` / `last_name` EXISTENT en base et étaient absents
+   * d'ici — mesuré le 2026-10-02 (`information_schema` : `text`, `null=YES`, donc
+   * `string | null` comme le type généré). **19 sites** les lisaient sur une
+   * ressource jointe, sous le `any` que le repli `Record<string, unknown>[]`
+   * laissait passer ; `tsc` ne pouvait donc pas les voir.
+   *
+   * Ils sont donc déclarés ici, **nullables** : PostgREST renvoie toujours la
+   * propriété (`null` quand la case est vide), jamais absente. Déclarer
+   * `first_name: string` aurait menti sur le schéma — c'est le type généré
+   * (`database-generated.ts`) qui fait foi.
+   */
+  first_name?: string | null
+  last_name?: string | null
   email: string
   phone: string
   position: string
@@ -763,11 +966,18 @@ export interface Employee {
   employee_number?: string | null
   social_security_number?: string | null
   birth_date?: string | null
+  /** G16 : 'F' | 'M' | null. DSN et indicateurs d'égalité de la BDES uniquement. */
+  gender?: 'F' | 'M' | null
   address?: string | null
   city?: string | null
   postal_code?: string | null
-  contract_type?: 'CDI' | 'CDD' | 'Apprentissage' | 'Stage' | 'Interim' | null
+  // rh-002 : les valeurs de la base, en minuscules (contrainte `employees_contract_type_check`, 343).
+  contract_type?: 'cdi' | 'cdd' | 'apprentissage' | 'stage' | 'interim' | 'freelance' | null
   contract_end_date?: string | null
+  /** 276 : catégorie de paie (Apec pour les cadres) */
+  payroll_category?: 'non_cadre' | 'cadre'
+  withholding_tax_rate?: number | null
+  withholding_rate_source?: string | null
   created_at: string
   updated_at: string
 }
@@ -779,10 +989,12 @@ export interface PayRun {
   period_start: string
   period_end: string
   pay_date: string
-  status: 'draft' | 'approved' | 'paid'
+  // R-04 : statuts réellement utilisés (contrainte élargie par la 212)
+  status: 'draft' | 'processing' | 'approved' | 'closed' | 'paid' | 'cancelled'
   gross_total: number
   tax_total: number
   net_total: number
+  employer_contributions_total?: number
   employee_count: number
   created_at: string
 }
@@ -796,6 +1008,11 @@ export interface Timesheet {
   description: string
   project_id: string | null
   status: 'pending' | 'approved' | 'rejected'
+  /** Calculé par la base (340) : minutes au-delà de l'horaire prévu du jour. */
+  overtime_minutes?: number | null
+  /** Pointage d'absence (263) : 'none' pour un jour travaillé. */
+  absence_type?: string | null
+  absence_reason?: string | null
   created_at: string
 }
 
@@ -841,6 +1058,8 @@ export interface Journal {
   updated_at: string
   numbering_mode?: string | null
   account_attente?: string | null
+  /** 273 : préfixes de comptes admis (« 512, 411 ») — vide = tous */
+  racines_autorisees?: string | null
   is_analytic?: boolean
   analytic_plan_id?: string | null
   currency_code?: string
@@ -857,6 +1076,11 @@ export interface FiscalYear {
   closed_at: string | null
   closed_by: string | null
   created_at: string
+  /** Résultat déterminé à la clôture (bénéfice > 0, perte < 0) ; null avant clôture */
+  closing_result?: number | null
+  /** Décision n° 3 : l'affectation est exigée avant de clôturer l'exercice suivant */
+  result_allocated_at?: string | null
+  result_allocation_entry_id?: string | null
 }
 
 export interface FiscalPeriod {
@@ -928,6 +1152,8 @@ export interface AnalyticSection {
   active: boolean
   created_at: string
   plan_id?: string | null
+  /** 274 : « section » (imputable) ou « total » (regroupement, jamais imputé) */
+  section_type?: 'section' | 'total'
 }
 
 // ============ Budgets ============
@@ -1026,6 +1252,387 @@ export interface CollectionReminder {
   status: 'draft' | 'sent' | 'paid' | 'cancelled'
   notes: string | null
   created_at: string
+  /** B9 (ven-015) : la table ne porte ni le nom du client ni le numéro de la
+   *  facture — ils viennent des jointures demandées par `getCollectionReminders`. */
+  customers?: { name: string } | null
+  invoices?: { number: string } | null
+  payment_status?: 'unpaid' | 'pending' | 'paid' | null
+  payment_link_url?: string | null
+  payment_link_expires_at?: string | null
+  reminder_level_id?: string | null
+  dispute_id?: string | null
+}
+
+// ============ Sprint A: Commercial Transformations ============
+
+export interface DocumentCharge {
+  id: string
+  tenant_id: string | null
+  document_type: 'quote' | 'sales_order' | 'delivery_note' | 'invoice' | 'credit_note' | 'purchase_order' | 'purchase_invoice'
+  document_id: string
+  charge_type: 'shipping' | 'handling' | 'insurance' | 'packaging' | 'other'
+  label: string
+  amount: number
+  vat_rate: number
+  vat_amount: number
+  total_amount: number
+  supplier_id: string | null
+  created_at: string
+}
+
+export interface DocumentTransformation {
+  id: string
+  tenant_id: string | null
+  source_type: 'quote' | 'sales_order' | 'delivery_note' | 'invoice'
+  source_id: string
+  target_type: 'sales_order' | 'delivery_note' | 'invoice' | 'credit_note'
+  target_id: string
+  transformation_type: 'full' | 'partial'
+  transformed_by: string | null
+  transformed_at: string
+  notes: string | null
+}
+
+// ============ Sprint D: Catalog Extended ============
+
+export interface ProductGrid {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  name: string
+  axis: 'size' | 'color' | 'material' | 'style'
+  values: string[]
+  active: boolean
+  created_at: string
+}
+
+export interface ProductGridCombination {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  combination: Record<string, string>
+  sku: string | null
+  barcode: string | null
+  price_override: number | null
+  stock_quantity: number
+  active: boolean
+  created_at: string
+}
+
+export interface ProductPackaging {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  name: string
+  quantity: number
+  unit: 'box' | 'pallet' | 'pack' | 'case' | null
+  barcode: string | null
+  weight: number | null
+  active: boolean
+  created_at: string
+}
+
+export interface ProductLink {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  linked_product_id: string
+  link_type: 'accessory' | 'complement' | 'substitute' | 'bundle' | 'cross_sell'
+  quantity: number
+  created_at: string
+}
+
+export interface Promotion {
+  id: string
+  tenant_id: string | null
+  name: string
+  description: string | null
+  promo_type: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'free_shipping'
+  value: number | null
+  product_id: string | null
+  category: string | null
+  customer_id: string | null
+  start_date: string
+  end_date: string
+  min_quantity: number
+  free_product_id: string | null
+  free_product_qty: number
+  active: boolean
+  created_at: string
+}
+
+// ============ Sprint E: Stock Advanced ============
+
+export interface WarehouseUser {
+  id: string
+  tenant_id: string | null
+  warehouse_id: string
+  user_email: string
+  role: 'manager' | 'operator' | 'viewer'
+  active: boolean
+  created_at: string
+}
+
+export interface StockAlert {
+  id: string
+  tenant_id: string | null
+  product_id: string
+  warehouse_id: string | null
+  alert_type: 'low_stock' | 'out_of_stock' | 'overstock' | 'expiry'
+  threshold: number | null
+  current_value: number | null
+  status: 'active' | 'acknowledged' | 'resolved'
+  triggered_at: string
+  resolved_at: string | null
+  created_at: string
+}
+
+// ============ Sprint F: CRM Sales ============
+
+export interface CrmOpportunity {
+  id: string
+  tenant_id: string | null
+  number: string
+  customer_id: string | null
+  prospect_id: string | null
+  title: string
+  description: string | null
+  stage: 'new' | 'qualified' | 'proposition' | 'negotiation' | 'won' | 'lost'
+  probability: number
+  expected_amount: number
+  expected_close_date: string | null
+  actual_amount: number | null
+  actual_close_date: string | null
+  sales_rep_id: string | null
+  source: string | null
+  lost_reason: string | null
+  tags: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CrmActivity {
+  id: string
+  tenant_id: string | null
+  opportunity_id: string | null
+  customer_id: string | null
+  activity_type: 'call' | 'meeting' | 'email' | 'task' | 'visit'
+  subject: string
+  description: string | null
+  scheduled_date: string | null
+  completed_date: string | null
+  duration_minutes: number | null
+  status: 'planned' | 'done' | 'cancelled' | 'postponed'
+  assigned_to: string | null
+  created_at: string
+}
+
+export interface CrmCampaign {
+  id: string
+  tenant_id: string | null
+  name: string
+  description: string | null
+  campaign_type: 'email' | 'sms' | 'social' | 'event' | 'print'
+  status: 'draft' | 'scheduled' | 'running' | 'completed' | 'cancelled'
+  start_date: string | null
+  end_date: string | null
+  budget: number
+  actual_cost: number
+  target_audience: string | null
+  segment_criteria: Record<string, any> | null
+  sent_count: number
+  open_count: number
+  click_count: number
+  response_count: number
+  conversion_count: number
+  created_at: string
+}
+
+export interface CrmCampaignRecipient {
+  id: string
+  tenant_id: string | null
+  campaign_id: string
+  customer_id: string | null
+  prospect_id: string | null
+  email: string | null
+  phone: string | null
+  sent: boolean
+  sent_at: string | null
+  opened: boolean
+  opened_at: string | null
+  clicked: boolean
+  responded: boolean
+  created_at: string
+}
+
+export interface CrmTerritory {
+  id: string
+  tenant_id: string | null
+  name: string
+  code: string | null
+  parent_id: string | null
+  sales_rep_id: string | null
+  regions: string[] | null
+  active: boolean
+  created_at: string
+}
+
+export interface CrmForecast {
+  id: string
+  tenant_id: string | null
+  period: string
+  sales_rep_id: string | null
+  target_amount: number
+  committed_amount: number
+  best_case_amount: number
+  pipeline_amount: number
+  closed_amount: number
+  notes: string | null
+  created_at: string
+}
+
+// ============ Sprint G: CRM Service ============
+
+export interface ServiceTicket {
+  id: string
+  tenant_id: string | null
+  number: string
+  customer_id: string
+  contact_id: string | null
+  subject: string
+  description: string | null
+  category: 'technical' | 'billing' | 'delivery' | 'product' | 'other' | null
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  status: 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed'
+  assigned_to: string | null
+  sla_due_date: string | null
+  first_response_at: string | null
+  resolved_at: string | null
+  closed_at: string | null
+  satisfaction_rating: number | null
+  satisfaction_comment: string | null
+  tags: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ServiceTicketMessage {
+  id: string
+  tenant_id: string | null
+  ticket_id: string
+  author: string
+  author_type: 'agent' | 'customer' | 'system'
+  message: string
+  attachments: { filename: string; url: string; size: number }[] | null
+  is_internal: boolean
+  created_at: string
+}
+
+export interface ServiceContract {
+  id: string
+  tenant_id: string | null
+  number: string
+  customer_id: string
+  name: string
+  contract_type: 'support' | 'maintenance' | 'warranty' | 'sla' | null
+  start_date: string
+  end_date: string | null
+  status: 'active' | 'expired' | 'terminated' | 'draft'
+  sla_response_hours: number | null
+  sla_resolution_hours: number | null
+  coverage: 'business_hours' | '24_7' | null
+  max_tickets: number | null
+  used_tickets: number
+  amount: number | null
+  notes: string | null
+  created_at: string
+}
+
+export interface KnowledgeBaseArticle {
+  id: string
+  tenant_id: string | null
+  title: string
+  category: 'faq' | 'guide' | 'troubleshooting' | 'policy' | null
+  content: string
+  tags: string[] | null
+  author: string | null
+  status: 'draft' | 'published' | 'archived'
+  views: number
+  helpful_count: number
+  not_helpful_count: number
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
+
+// ============ Sprint J: Pilotage ============
+
+export interface SavedFilter {
+  id: string
+  tenant_id: string | null
+  user_email: string
+  page_name: string
+  filter_name: string
+  filter_criteria: Record<string, any>
+  is_default: boolean
+  created_at: string
+}
+
+// ============ Sprint H: POS ============
+
+export interface PosTerminal {
+  id: string
+  tenant_id: string | null
+  name: string
+  warehouse_id: string | null
+  location: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface PosSession {
+  id: string
+  tenant_id: string | null
+  terminal_id: string
+  user_email: string
+  opening_amount: number
+  closing_amount: number | null
+  expected_amount: number | null
+  difference: number | null
+  status: 'open' | 'closed'
+  opened_at: string
+  closed_at: string | null
+  notes: string | null
+}
+
+// ============ Sprint I: Dématérialisation ============
+
+export interface ElectronicSignature {
+  id: string
+  tenant_id: string | null
+  document_type: string
+  document_id: string
+  signer_name: string
+  signer_email: string | null
+  signature_hash: string | null
+  signature_data: string | null
+  ip_address: string | null
+  signed_at: string
+  created_at: string
+}
+
+export interface DocumentShare {
+  id: string
+  tenant_id: string | null
+  document_type: string
+  document_id: string
+  shared_with_email: string
+  share_token: string
+  share_url: string | null
+  expires_at: string | null
+  viewed: boolean
+  viewed_at: string | null
+  created_at: string
 }
 
 // ============ Sprint 6: GesCom Types ============
@@ -1043,6 +1650,9 @@ export interface SalesOrder {
   notes: string | null
   created_at: string
   updated_at: string
+  quote_id?: string | null
+  fully_delivered?: boolean
+  delivery_status?: 'pending' | 'partial' | 'delivered'
 }
 
 export interface SalesOrderLine {
@@ -1054,6 +1664,8 @@ export interface SalesOrderLine {
   unit_price: number
   vat_rate: number
   line_total: number
+  delivered_quantity?: number
+  remaining_quantity?: number
 }
 
 export interface DeliveryNote {
@@ -1067,6 +1679,8 @@ export interface DeliveryNote {
   tracking_number: string | null
   notes: string | null
   created_at: string
+  fully_invoiced?: boolean
+  invoice_status?: 'pending' | 'partial' | 'invoiced'
 }
 
 export interface DeliveryNoteLine {
@@ -1075,6 +1689,9 @@ export interface DeliveryNoteLine {
   product_id: string | null
   description: string
   quantity: number
+  invoiced_quantity?: number
+  remaining_quantity?: number
+  sales_order_line_id?: string | null
 }
 
 export interface CustomerPayment {
@@ -1093,6 +1710,9 @@ export interface CustomerPayment {
   exchange_rate?: number
   amount_currency?: number | null
   exchange_gain_loss?: number
+  journal_entry_id?: string | null
+  journal_posted?: boolean
+  bank_transaction_id?: string | null
 }
 
 export interface PurchaseOrder {
@@ -1119,6 +1739,8 @@ export interface PurchaseOrderLine {
   unit_price: number
   vat_rate: number
   line_total: number
+  /** R-06 : ordre de la ligne dans la commande (décide l'allocation d'une réception partielle) */
+  line_order?: number
 }
 
 export interface GoodsReceipt {
@@ -1157,6 +1779,9 @@ export interface SupplierPayment {
   exchange_rate?: number
   amount_currency?: number | null
   exchange_gain_loss?: number
+  journal_entry_id?: string | null
+  journal_posted?: boolean
+  bank_transaction_id?: string | null
 }
 
 export interface Warehouse {
@@ -1606,6 +2231,14 @@ export interface PlanningSlot {
   material_available: boolean
   material_check_date: string | null
   created_at: string
+  /** L17/416 — l'opérateur du créneau. C'est le porteur qui rend le
+   *  couple `production ↔ RH` possible. NULL = créneau non attribué. */
+  employee_id?: string | null
+  /** L17/416 — CONSTAT posé par la base : l'opérateur est absent ce
+   *  jour-là avec une absence qui bloque le travail. Le créneau reste
+   *  planifié (la réaffectation est une décision du chef d'atelier),
+   *  mais il ne doit plus compter dans la capacité du poste. */
+  bloque_par_absence?: boolean
 }
 
 // ============ Production Module: Complémentaires ============
@@ -1871,6 +2504,11 @@ export interface QualityCheck {
   checked_at: string | null
   notes: string | null
   created_at: string
+  // 251 (S-13) : la quantité réellement contrôlée, et celle rebutée. NULL sur
+  // `quantity_checked` = tout ce qui est entré (comportement d'avant la 251) ;
+  // NULL sur `quantity_rejected` = tout le contrôlé sur un échec.
+  quantity_checked: number | null
+  quantity_rejected: number | null
 }
 
 export interface PickList {
@@ -2244,11 +2882,25 @@ export interface EmployeeDocument {
   id: string
   tenant_id: string | null
   employee_id: string
-  document_type: 'payslip' | 'contract' | 'dpae' | 'dsn' | 'certificate' | 'other'
+  document_type: 'payslip' | 'contract' | 'dpae' | 'dsn' | 'certificate' | 'work_certificate' | 'settlement_receipt' | 'pole_emploi_attestation' | 'medical_cert' | 'other'
+  title: string
   file_url: string
   file_name: string | null
-  distributed_at: string | null
+  file_size: number | null
+  mime_type: string | null
+  period: string | null
+  uploaded_by: string | null
+  visible_to_employee: boolean
+  requires_acknowledgment: boolean
+  acknowledged: boolean
   acknowledged_at: string | null
+  distributed_at: string | null
+  e_signed: boolean
+  e_signed_at: string | null
+  e_signature_hash: string | null
+  archived: boolean
+  archive_date: string | null
+  retention_years: number
   created_at: string
 }
 
@@ -2260,10 +2912,14 @@ export interface ExpenseReport {
   period: string | null
   total_amount: number
   total_vat: number
+  total_ttc: number
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed'
   submitted_at: string | null
   approved_by: string | null
   approved_at: string | null
+  manager_id: string | null
+  manager_comment: string | null
+  reimbursement_date: string | null
   notes: string | null
   created_at: string
 }
@@ -2272,13 +2928,19 @@ export interface ExpenseReportLine {
   id: string
   tenant_id: string | null
   expense_report_id: string
+  category_id: string | null
   date: string
   description: string
   category: string | null
   amount: number
+  amount_ht: number
+  amount_ttc: number
   vat_rate: number
   vat_amount: number
   receipt_url: string | null
+  ocr_data: any
+  ocr_processed: boolean
+  ceiling_exceeded: boolean
   created_at: string
 }
 
@@ -2412,7 +3074,7 @@ export interface AssetSplitComponent {
   created_at: string
 }
 
-// ============ Phase 6: Sage 100 Accounting Features ============
+// ============ Phase 6: Accounting Features ============
 
 export interface AutoLabelRule {
   id: string
@@ -3081,5 +3743,593 @@ export interface Check {
   journal_entry_id: string | null
   payment_id: string | null
   notes: string | null
+  created_at: string
+}
+
+// ============ Sprint H: POS ============
+
+export interface PosTerminal {
+  id: string
+  tenant_id: string | null
+  name: string
+  warehouse_id: string | null
+  location: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface PosSession {
+  id: string
+  tenant_id: string | null
+  terminal_id: string
+  user_email: string
+  opening_amount: number
+  closing_amount: number | null
+  expected_amount: number | null
+  difference: number | null
+  status: 'open' | 'closed'
+  opened_at: string
+  closed_at: string | null
+  notes: string | null
+}
+
+export interface PosTicket {
+  id: string
+  tenant_id: string | null
+  number: string
+  session_id: string
+  terminal_id: string
+  customer_id: string | null
+  date: string
+  subtotal: number
+  vat_total: number
+  total: number
+  payment_method: 'cash' | 'card' | 'check' | 'transfer' | 'mixed' | null
+  amount_paid: number
+  change_given: number
+  status: 'completed' | 'cancelled' | 'refunded'
+  invoice_id: string | null
+  notes: string | null
+  created_at: string
+  pos_ticket_lines?: PosTicketLine[]
+}
+
+export interface PosTicketLine {
+  id: string
+  tenant_id: string | null
+  ticket_id: string
+  product_id: string | null
+  description: string
+  quantity: number
+  unit_price: number
+  vat_rate: number
+  line_total: number
+  created_at: string
+}
+
+// ============ Sprint I: Dématérialisation (types étendus) ============
+
+export interface OnlinePayment {
+  id: string
+  tenant_id: string | null
+  invoice_id: string | null
+  customer_id: string | null
+  payment_provider: 'stripe' | 'paypal' | 'paystack' | 'other' | null
+  provider_transaction_id: string | null
+  amount: number
+  currency_code: string
+  status: 'pending' | 'completed' | 'failed' | 'refunded'
+  payment_url: string | null
+  paid_at: string | null
+  created_at: string
+}
+
+export interface DocumentShare {
+  id: string
+  tenant_id: string | null
+  document_type: string
+  document_id: string
+  shared_with_email: string
+  share_token: string
+  share_url: string | null
+  expires_at: string | null
+  viewed: boolean
+  viewed_at: string | null
+  created_at: string
+}
+
+// ============ Sprint B: Leaves & Absences ============
+export interface LeaveBalance {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  leave_type: string
+  year: number
+  acquired: number
+  taken: number
+  pending: number
+  remaining: number
+  carry_over: number
+  provision: number
+  provision_calculated_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PublicHoliday {
+  id: string
+  tenant_id: string | null
+  name: string
+  holiday_date: string
+  region: string
+  country: string
+  is_working_day: boolean
+  created_at: string
+}
+
+export interface LeaveRule {
+  id: string
+  tenant_id: string | null
+  leave_type: string
+  label: string
+  accrual_rate: number
+  max_carry_over: number
+  carry_over_expiry_months: number
+  requires_justification: boolean
+  requires_manager_approval: boolean
+  min_notice_days: number
+  max_consecutive_days: number
+  color: string
+  count_method: 'working_days' | 'working_days_excl_saturday' | 'calendar_days'
+  affects_pay: boolean
+  deduction_rate: number
+  active: boolean
+  created_at: string
+}
+
+export interface ApprovalWorkflow {
+  id: string
+  tenant_id: string | null
+  name: string
+  entity_type: 'leave_request' | 'expense_report' | 'timesheet'
+  steps: { role: string; order: number }[]
+  active: boolean
+  created_at: string
+}
+
+export interface LeaveProvision {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  period: string
+  cp_remaining_days: number
+  rtt_remaining_days: number
+  recovery_remaining_days: number
+  daily_rate: number
+  cp_provision: number
+  rtt_provision: number
+  recovery_provision: number
+  total_provision: number
+  accounting_entry_id: string | null
+  status: 'draft' | 'calculated' | 'posted'
+  created_at: string
+}
+
+export interface StaffRequirement {
+  id: string
+  tenant_id: string | null
+  department: string
+  min_staff: number
+  days_of_week: string[]
+  start_date: string | null
+  end_date: string | null
+  active: boolean
+  created_at: string
+}
+
+// ============ Sprint C: Payroll Advanced ============
+export interface MealVoucherConfig {
+  id: string
+  tenant_id: string | null
+  voucher_value: number
+  employer_share: number
+  employee_share: number
+  eligible_days: string[]
+  max_per_month: number
+  active: boolean
+  created_at: string
+}
+
+export interface PayrollVariableElement {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  pay_run_id: string | null
+  period: string
+  // `meal_vouchers` et `transport_allowance` sont les types lus par le moteur de bulletin (341).
+  element_type: 'overtime' | 'bonus' | 'commission' | 'absence' | 'meal_voucher' | 'meal_vouchers' | 'transport' | 'transport_allowance' | 'other'
+  description: string | null
+  quantity: number | null
+  unit_price: number | null
+  amount: number
+  source: 'manual' | 'timesheet' | 'leave_request' | 'expense_report' | 'import'
+  source_id: string | null
+  integrated: boolean
+  created_at: string
+}
+
+export interface SepaPaymentOrder {
+  id: string
+  tenant_id: string | null
+  pay_run_id: string | null
+  number: string
+  execution_date: string
+  total_amount: number
+  currency: string
+  employee_count: number
+  file_url: string | null
+  file_generated_at: string | null
+  status: 'draft' | 'generated' | 'transmitted' | 'processed' | 'rejected'
+  transmitted_at: string | null
+  processed_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface PaySlipClarified {
+  id: string
+  tenant_id: string | null
+  pay_slip_id: string
+  employee_id: string
+  period: string
+  gross_salary: number
+  social_charges_employee: number
+  social_charges_employer: number
+  income_tax: number
+  net_before_tax: number
+  net_after_tax: number
+  total_deductions: number
+  lines: any[]
+  created_at: string
+}
+
+// ============ Sprint D: Admin & Arrêts ============
+
+export interface WorkStoppage {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  stoppage_type: 'maladie' | 'accident_travail' | 'maladie_professionnelle' | 'maternite' | 'paternite' | 'accident_vie_privee'
+  start_date: string
+  end_date: string | null
+  expected_end_date: string | null
+  reprise_date: string | null
+  reprise_type: 'plein_temps' | 'mi_temps_therapeutique' | 'temps_partiel' | null
+  days_count: number | null
+  working_days_count: number | null
+  subrogation: boolean
+  net_guarantee: boolean
+  ijss_net_amount: number
+  ijss_brut_amount: number
+  ijss_daily_rate: number
+  ijss_days_count: number
+  ijss_care_days: number
+  pas_days_count: number
+  employer_maintenance_amount: number
+  employer_maintenance_rate: number
+  bpij_number: string | null
+  bpij_imported_at: string | null
+  regularization_amount: number
+  regularization_type: 'positive' | 'negative' | null
+  medical_certificate_url: string | null
+  notes: string | null
+  status: 'active' | 'closed' | 'regularized'
+  created_at: string
+  updated_at: string
+}
+
+export interface IjssHistory {
+  id: string
+  tenant_id: string | null
+  work_stoppage_id: string
+  employee_id: string
+  period: string
+  ijss_net_received: number
+  ijss_brut_calculated: number
+  days_paid: number
+  pas_amount: number
+  pas_rate: number
+  integrated_in_payslip: boolean
+  payslip_id: string | null
+  created_at: string
+}
+
+export interface WorkHardshipRecord {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  exposure_type: string
+  exposure_level: 'low' | 'medium' | 'high'
+  exposure_start: string | null
+  exposure_end: string | null
+  duration_months: number | null
+  points: number
+  declaration_status: 'pending' | 'declared' | 'rejected'
+  declared_at: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface CpfTransaction {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  transaction_type: 'acquisition' | 'usage' | 'adjustment' | 'expiry'
+  hours: number
+  amount: number
+  training_label: string | null
+  training_start_date: string | null
+  training_end_date: string | null
+  training_provider: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface MedicalExam {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  exam_type: 'initial' | 'periodic' | 'reprise' | 'post_hazard' | 'pre_employment'
+  scheduled_date: string
+  completed_date: string | null
+  result: 'apt' | 'apt_with_restrictions' | 'unapt' | 'pending' | null
+  restrictions: string | null
+  next_exam_date: string | null
+  occupational_doctor: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface ExpenseCategory {
+  id: string
+  tenant_id: string | null
+  code: string
+  label: string
+  account_code: string | null
+  vat_rate: number
+  max_amount: number | null
+  max_monthly: number | null
+  requires_receipt: boolean
+  active: boolean
+  created_at: string
+}
+
+export interface InterviewCampaign {
+  id: string
+  tenant_id: string | null
+  name: string
+  campaign_type: 'annual' | 'mid_year' | 'professional' | 'exit' | 'other'
+  start_date: string
+  end_date: string | null
+  reminder_days: number
+  status: 'draft' | 'active' | 'closed'
+  form_template: any
+  created_at: string
+}
+
+export interface EmployeeObjective {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  campaign_id: string | null
+  title: string
+  description: string | null
+  target_value: number | null
+  current_value: number
+  unit: 'percent' | 'count' | 'currency' | 'days' | null
+  period: string | null
+  frequency: 'annual' | 'quarterly' | 'monthly'
+  status: 'active' | 'achieved' | 'missed' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
+// ============ Sprint E: Sortie & Entretiens ============
+
+export interface EmployeeExitProcess {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  exit_date: string
+  exit_reason: 'resignation' | 'dismissal' | 'end_cdd' | 'retirement' | 'mutual_agreement' | 'probation_fail'
+  step: number
+  status: 'in_progress' | 'completed' | 'cancelled'
+  cp_indemnity: number
+  rtt_indemnity: number
+  recovery_indemnity: number
+  bonus_amount: number
+  advance_deduction: number
+  overtime_amount: number
+  total_gross: number
+  total_net: number
+  work_certificate_url: string | null
+  settlement_receipt_url: string | null
+  pole_emploi_attestation_url: string | null
+  dsn_exit_url: string | null
+  documents_generated: boolean
+  dsn_exit_generated: boolean
+  dsn_exit_transmitted: boolean
+  exit_payslip_id: string | null
+  notes: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+// ============ Sprint F: Social Declarations ============
+export interface SocialDeclaration {
+  id: string
+  tenant_id: string | null
+  number: string
+  declaration_type: 'dsn' | 'dads_u' | 'ducs' | 'aed' | 'dpae' | 'dts_msa' | 'cibtp' | 'conges_payes_btp' | 'cice' | 'refus_cdi' | 'ct2025' | 'pasrau' | 'other'
+  subtype: string | null
+  period_month: number | null
+  period_year: number | null
+  period: string | null
+  due_date: string | null
+  status: 'draft' | 'generated' | 'transmitted' | 'accepted' | 'rejected' | 'regularized'
+  file_url: string | null
+  file_format: string | null
+  generated_at: string | null
+  transmitted_at: string | null
+  response_code: string | null
+  response_message: string | null
+  anomalies: any[]
+  amount: number | null
+  employee_count: number | null
+  details: Record<string, any>
+  notes: string | null
+  created_at: string
+}
+
+export interface CiceConfig {
+  id: string
+  tenant_id: string | null
+  year: number
+  smic_threshold: number
+  rate: number
+  eligible_salary_cap: number | null
+  active: boolean
+  created_at: string
+}
+
+export interface PasRate {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  rate: number
+  effective_date: string
+  expiry_date: string | null
+  source: 'import' | 'manual' | 'api'
+  created_at: string
+}
+
+export interface AtRate {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  rate: number
+  bonus_malus_rate: number
+  effective_date: string
+  expiry_date: string | null
+  risk_category: string | null
+  created_at: string
+}
+
+export interface BdesIndicator {
+  id: string
+  tenant_id: string | null
+  year: number
+  category: string
+  indicator_name: string
+  indicator_value: number | null
+  indicator_unit: string | null
+  breakdown: Record<string, any>
+  target_value: number | null
+  previous_year_value: number | null
+  notes: string | null
+  created_at: string
+}
+
+export interface HonorariumRecord {
+  id: string
+  tenant_id: string | null
+  employee_id: string | null
+  recipient_name: string
+  recipient_type: 'employee' | 'external' | 'intern'
+  period: string | null
+  amount: number
+  description: string | null
+  accounting_entry_id: string | null
+  status: 'pending' | 'paid' | 'accounted'
+  created_at: string
+}
+
+// ============ Sprint G: Dématérialisation RH ============
+export interface DocumentDistributionLog {
+  id: string
+  tenant_id: string | null
+  batch_id: string | null
+  employee_document_id: string
+  employee_id: string
+  document_type: string
+  period: string | null
+  distributed_at: string | null
+  acknowledged_at: string | null
+  status: 'distributed' | 'acknowledged' | 'bounced' | 'failed'
+  created_at: string
+}
+
+export interface RhRequest {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  request_type: 'document_copy' | 'certificate' | 'leave_info' | 'salary_change' | 'address_change' | 'other'
+  subject: string
+  description: string | null
+  status: 'pending' | 'in_progress' | 'resolved' | 'rejected'
+  assigned_to: string | null
+  response: string | null
+  resolved_at: string | null
+  created_at: string
+}
+
+export interface RhKnowledgeBaseArticle {
+  id: string
+  tenant_id: string | null
+  title: string
+  content: string
+  category: string | null
+  tags: string[]
+  author_id: string | null
+  published: boolean
+  views: number
+  created_at: string
+  updated_at: string
+}
+
+// ============ Sprint H: Pilotage RH ============
+
+export interface RhDashboardConfig {
+  id: string
+  tenant_id: string | null
+  user_email: string
+  dashboard_type: 'hr_admin' | 'manager' | 'employee'
+  widgets: { widget: string; position: number; size: 'small' | 'medium' | 'large' }[]
+  filters: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+export interface RhReport {
+  id: string
+  tenant_id: string | null
+  name: string
+  report_type: 'effectifs' | 'remuneration' | 'absenteeism' | 'turnover' | 'training' | 'costs' | 'custom'
+  parameters: Record<string, any>
+  chart_type: string | null
+  data: any
+  data_calculated_at: string | null
+  created_by: string | null
+  shared: boolean
+  created_at: string
+}
+
+export interface EmployeeActivityLog {
+  id: string
+  tenant_id: string | null
+  employee_id: string
+  activity_type: 'leave_request' | 'leave_approved' | 'leave_rejected' | 'expense_submitted' | 'expense_approved' | 'document_received' | 'document_signed' | 'interview_scheduled' | 'objective_updated' | 'contract_change' | 'salary_change'
+  description: string | null
+  metadata: Record<string, any>
   created_at: string
 }

@@ -1,13 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getCurrencies, createCurrency, updateCurrency, deleteCurrency } from '@/lib/queries'
+import { getCurrencies, createCurrency, updateCurrency, deleteCurrency } from '@/lib/queries/accounting'
 import { Plus, Trash2, X, Coins } from 'lucide-react'
 import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function CurrenciesPage() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
 const [currencies, setCurrencies] = useState<Currency[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,13 +19,13 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
   const loadData = useCallback(async () => {
     setLoading(true)
     try { setCurrencies(await getCurrencies()) } catch (err) { console.error(err); toast('error', t('currencies.loadError'), t('currencies.loadError')) } finally { setLoading(false) }
-  }, [])
+  }, [t, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-  if (!window.confirm(t('currencies.deleteConfirm'))) return
-    try { await deleteCurrency(id); await loadData() } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) }
+  if (!confirmSync(t('currencies.deleteConfirm'))) return
+    try { await deleteCurrency(id); await loadData() } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) }
   }
 
   async function handleSetBase(id: string) {
@@ -31,7 +34,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
         await updateCurrency(c.id, { is_base: c.id === id })
       }
       await loadData()
-    } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) }
+    } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) }
   }
 
   return (
@@ -68,7 +71,7 @@ const [currencies, setCurrencies] = useState<Currency[]>([])
                   <Badge variant={(c as any).active !== false ? 'success' : 'neutral'}>{(c as any).active !== false ? t('currencies.yes') : t('currencies.no')}</Badge>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -101,7 +104,7 @@ function CurrencyForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     try {
       await createCurrency({ code: code.toUpperCase(), name, symbol, exchange_rate: exchangeRate, is_base: isBase, decimal_places: decimalPlaces, position, active } as any)
       onSaved()
-    } catch (err: any) { toast('error', t('currencies.loadError'), err.message || t('currencies.loadError')) } finally { setSaving(false) }
+    } catch (err) { toast('error', t('currencies.loadError'), errorMessage(err) || t('currencies.loadError')) } finally { setSaving(false) }
   }
 
   return (
@@ -109,7 +112,7 @@ function CurrencyForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '28rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('currencies.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">

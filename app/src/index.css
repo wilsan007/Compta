@@ -5,17 +5,26 @@
   --color-primary: #0066cc;
   --color-primary-light: #3d8bff;
   --color-primary-dark: #004d99;
-  --color-success: #00875a;
+  /* LOT7-07 : 4,17:1 sur le fond de page, sous le seuil WCAG AA de 4,5:1.
+     Assombri d'un cran — l'écart est imperceptible, le contraste passe à 4,74:1. */
+  --color-success: #007d53;
   --color-success-light: #36b37e;
   --color-warning: #ff9500;
   --color-warning-light: #ffc94d;
-  --color-danger: #de350b;
+  /* LOT7-07 / H1 : un orange vif ne peut PAS atteindre 4,5:1 sur fond clair
+     (#ff9500 = 2,02:1). Plutôt que de brunir l'orange partout, le jeton ci-dessous
+     ne sert qu'au TEXTE ; --color-warning reste la couleur de marque pour les fonds,
+     les bordures et les icônes, qui sont décoratives (aria-hidden) et sans seuil. */
+  --color-warning-text: #a35f00;
+  /* LOT7-07 : idem, 4,17:1 → 4,50:1. */
+  --color-danger: #d4330b;
   --color-danger-light: #ff5c3a;
   --color-neutral-50: #f4f5f7;
   --color-neutral-100: #ebecf0;
   --color-neutral-200: #dfe1e6;
   --color-neutral-300: #c1c7d0;
-  --color-neutral-400: #97a0af;
+  /* LOT7-07 : 2,42:1 en texte — assombri à 4,52:1. */
+  --color-neutral-400: #667184;
   --color-neutral-500: #6b778c;
   --color-neutral-600: #5e6c84;
   --color-neutral-700: #42526e;
@@ -158,6 +167,46 @@
     overscroll-behavior-x: contain;
   }
 
+  /* W-QA (29/09/2026) : les boutons d'icône compacts (p-0.5, p-1) et les boutons
+     d'en-tête de tri mesuraient 16 à 22 px — sous le minimum WCAG 2.2 AA
+     (2.5.8 : cible de 24 px). Une seule règle les relève partout, au lieu de
+     vingt correctifs d'écran qui laisseraient le vingt-et-unième aussi petit. */
+  button.p-0\.5,
+  button.p-1,
+  th button {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  /* W-QA (29/09/2026) : douze écrans écrivent leur tableau à la main, sans le
+     conteneur défilant du composant partagé — le tableau dépassait alors la
+     page (mesuré : 1 427 px dans une fenêtre de 1 280). Ils reçoivent le
+     défilement ici, une fois pour toutes. `:has()` est requis
+     (Chrome 105+, Safari 15.4+, Firefox 121+). */
+  div:has(> table.app-table):not(.table-container) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  /* Certains écrans posent le tableau dans un <form>, un <section> ou un <td> :
+     le défilement vaut pour tout parent, pas seulement pour un <div>. */
+  *:has(> table.app-table):not(.table-container) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  /* W-QA (29/09/2026) : les liens et boutons en `text-xs` (pieds de page, filtres
+     compacts) mesuraient 16 px de haut — sous le minimum WCAG 2.2 AA (2.5.8 : 24).
+     On relève la cible sans changer la typographie, donc sans casser les barres
+     d'outils denses. La LARGEUR compte aussi : la bascule « Oui / Non » du
+     rapprochement bancaire mesurait 23×24 après la première règle — un mot de
+     trois lettres ne fait pas 24 px. */
+  a.text-xs,
+  button.text-xs {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
   .app-table {
     width: 100%;
     min-width: 760px;
@@ -242,6 +291,31 @@
   50% { box-shadow: 0 0 0 8px rgba(0, 102, 204, 0); }
 }
 
+@keyframes marquee-rtl {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+@keyframes marquee-ltr {
+  0% { transform: translateX(-33.333%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-marquee-rtl {
+  animation: marquee-rtl linear infinite;
+  width: max-content;
+}
+
+.animate-marquee-ltr {
+  animation: marquee-ltr linear infinite;
+  width: max-content;
+}
+
+.animate-marquee-rtl:hover,
+.animate-marquee-ltr:hover {
+  animation-play-state: paused;
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
@@ -295,7 +369,7 @@
   background: rgba(255, 255, 255, 0.7);
 }
 
-.dark .glass {
+:root.dark .glass {
   background: rgba(26, 27, 35, 0.7);
 }
 
@@ -329,7 +403,32 @@
   --mod-lime-bg: rgba(101, 163, 13, 0.08);
 }
 
-.dark {
+:root.dark {
+  --color-neutral-50: #1a1b26;
+  --color-neutral-100: #252636;
+  --color-neutral-200: #2e2f42;
+  --color-neutral-300: #3e3f55;
+  --color-neutral-400: #6b6d85;
+  --color-neutral-500: #8b8da3;
+  --color-neutral-600: #a5a7bc;
+  --color-neutral-700: #c2c4d5;
+  --color-neutral-800: #e0e1ee;
+  --color-neutral-900: #f0f1f8;
+  --color-surface: #252636;
+  --color-background: #1a1b26;
+  --color-text: #e0e1ee;
+  --color-text-secondary: #a5a7bc;
+  --color-border: #2e2f42;
+  --color-neutral-400: #8b8da2;
+  /* LOT7-07 : le thème sombre ne redéfinissait AUCUNE couleur sémantique — il
+     héritait des valeurs pensées pour un fond blanc, d'où des contrastes de 2,68:1
+     (primary), 3,27:1 (success) et 3,28:1 (danger) sur fond sombre, très en dessous
+     du seuil AA. Mêmes tonalité et saturation, éclaircies pour atteindre 4,5:1. */
+  --color-primary: #1f8fff;
+  --color-success: #00a66e;
+  --color-danger: #f55c36;
+  /* Sur fond sombre l'orange atteint 7,9:1 : le texte garde la couleur de marque. */
+  --color-warning-text: #ff9500;
   --mod-blue-bg: rgba(61, 139, 255, 0.12);
   --mod-indigo-bg: rgba(99, 102, 241, 0.12);
   --mod-emerald-bg: rgba(52, 211, 153, 0.12);
@@ -353,7 +452,7 @@
   background: rgba(255, 255, 255, 0.82);
 }
 
-.dark .sidebar-glass {
+:root.dark .sidebar-glass {
   background: rgba(26, 27, 35, 0.82);
 }
 
@@ -549,34 +648,57 @@
   flex-shrink: 0;
 }
 
-/* Collapsed rail flyout */
-.flyout-panel {
-  animation: flyout-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+/* Sidebar peek overlay (collapsed rail hover) */
+.sidebar-peek {
+  animation: peek-in 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes flyout-in {
+@keyframes peek-in {
   from {
     opacity: 0;
-    transform: translateX(-8px) scale(0.96);
+    transform: translateX(-12px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
   }
 }
 
-[dir="rtl"] .flyout-panel {
-  animation-name: flyout-in-rtl;
+[dir="rtl"] .sidebar-peek {
+  animation-name: peek-in-rtl;
 }
 
-@keyframes flyout-in-rtl {
+@keyframes peek-in-rtl {
   from {
     opacity: 0;
-    transform: translateX(8px) scale(0.96);
+    transform: translateX(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
+  }
+}
+
+/* Mobile overlay fade-in */
+.sidebar-overlay-anim {
+  animation: overlay-fade-in 0.2s ease-out forwards;
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-peek,
+  .sidebar-overlay-anim,
+  .accordion-content,
+  .stagger-item,
+  .mod-icon svg,
+  .chevron-rotate {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

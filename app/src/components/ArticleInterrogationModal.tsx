@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, RefreshCw, Package, Truck, FileText, Layers } from 'lucide-react'
 import { Button, Table, TableRow, TableCell, Badge, SkeletonTable } from '@/components/ui'
-import { getProductStock, getProductSupplierPrices, getProductDocuments, getProductBOMs } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getProductStock, getProductSupplierPrices, getProductDocuments, getProductBOMs } from '@/lib/queries/stock'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface ArticleInterrogationModalProps {
@@ -22,11 +24,13 @@ const tabs: { key: TabKey; label: string; icon: any }[] = [
 ]
 
 export function ArticleInterrogationModal({ productId, productName, productSku, open, onClose }: ArticleInterrogationModalProps) {
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<TabKey>('stock')
   const [loading, setLoading] = useState(true)
-  const [stock, setStock] = useState<any[]>([])
-  const [supplierPrices, setSupplierPrices] = useState<any[]>([])
-  const [documents, setDocuments] = useState<any[]>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getProductStock>>>([])
+  const [supplierPrices, setSupplierPrices] = useState<Awaited<ReturnType<typeof getProductSupplierPrices>>>([])
+  const [documents, setDocuments] = useState<Awaited<ReturnType<typeof getProductDocuments>>>([])
   const [bomsData, setBomsData] = useState<{ asFinished: any[]; asComponent: any[] }>({ asFinished: [], asComponent: [] })
 
   const loadData = useCallback(async () => {
@@ -42,12 +46,12 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
       } else if (activeTab === 'boms') {
         setBomsData(await getProductBOMs(productId))
       }
-    } catch (err) { console.error('Error loading article data:', err) }
+    } catch (err: any) { console.error('Error loading article data:', err); toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [productId, activeTab])
+  }, [productId, activeTab, toast, tCommon])
 
   useEffect(() => {
-    if (open) loadData()
+    if (open) loadData().catch(err => console.error('loadData:', err))
   }, [open, loadData])
 
   function handleRefresh() { loadData() }
@@ -67,7 +71,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleRefresh}><RefreshCw className="w-3.5 h-3.5" /> Actualiser</Button>
-            <button onClick={onClose} className="p-2 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="p-2 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
           </div>
         </div>
 
@@ -129,10 +133,11 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
                     <Table headers={['Fournisseur', 'Liste de prix', 'Prix unitaire', 'Devise', 'Qté min', 'Remise %']}>
                       {supplierPrices.map((p) => (
                         <TableRow key={p.id}>
-                          <TableCell className="text-sm">{p.suppliers?.name || '—'}</TableCell>
+                          {/* 2.16 : aucune liste de prix n'est rattachée à un fournisseur dans le modèle (LOT7-04) — la colonne ne peut pas être renseignée. */}
+                          <TableCell className="text-sm">—</TableCell>
                           <TableCell className="text-sm">{p.price_lists?.name || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{formatCurrency(Number(p.unit_price || 0))}</TableCell>
-                          <TableCell className="text-xs">{p.currency || 'EUR'}</TableCell>
+                          <TableCell className="text-xs">{p.price_lists?.currency || '—'}</TableCell>
                           <TableCell className="font-mono text-xs">{Number(p.min_quantity || 0)}</TableCell>
                           <TableCell className="font-mono text-xs">{Number(p.discount_percent || 0)}%</TableCell>
                         </TableRow>
@@ -149,7 +154,7 @@ export function ArticleInterrogationModal({ productId, productName, productSku, 
                   ) : (
                     <Table headers={['Type', 'N°', 'Date', 'Quantité', 'Statut']}>
                       {documents.map((d, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={`${d.type}-${d.number}-${i}`}>
                           <TableCell className="text-sm">{d.type}</TableCell>
                           <TableCell className="font-mono text-xs">{d.number || '—'}</TableCell>
                           <TableCell className="text-xs">{d.date ? formatDate(d.date) : '—'}</TableCell>

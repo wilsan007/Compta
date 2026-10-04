@@ -1,15 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getStockQuantities, getWarehouses } from '@/lib/queries'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getStockQuantities, getWarehouses } from '@/lib/queries/stock'
 import { Boxes } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 
 export function StockQuantitiesPage() {
   const { t } = useTranslation('stock')
   const { t: tNav } = useTranslation('nav')
-  const [stock, setStock] = useState<any[]>([])
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockQuantities>>>([])
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [whFilter, setWhFilter] = useState('')
@@ -19,9 +22,9 @@ export function StockQuantitiesPage() {
       const [stk, whs] = await Promise.all([getStockQuantities(whFilter || undefined), getWarehouses()])
       setStock(stk || [])
       setWarehouses(whs || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [whFilter])
+  }, [whFilter, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -31,7 +34,7 @@ export function StockQuantitiesPage() {
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('quantities.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('quantities.title') }]} />
       <PageHeader title={t('quantities.title')} subtitle={`${stock.length} ligne(s) — ${totalQty} unités`} />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -59,7 +62,7 @@ export function StockQuantitiesPage() {
                 <TableCell className="font-mono text-xs">{q.products?.sku || '—'}</TableCell>
                 <TableCell className="text-xs">{q.warehouses?.name || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(q.quantity)}</TableCell>
-                <TableCell className="font-mono text-xs text-[var(--color-warning)]">{Number(q.reserved_quantity)}</TableCell>
+                <TableCell className="font-mono text-xs text-[var(--color-warning-text)]">{Number(q.reserved_quantity)}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(q.unit_cost))}</TableCell>
                 <TableCell className="font-mono text-xs font-semibold text-right">{formatCurrency(Number(q.quantity) * Number(q.unit_cost))}</TableCell>
                 <TableCell className={`font-mono text-xs ${Number(q.quantity) <= Number(q.reorder_point) && q.reorder_point > 0 ? 'text-[var(--color-danger)] font-bold' : ''}`}>

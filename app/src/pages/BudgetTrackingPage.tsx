@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getBudgetTracking, getFiscalYears } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { errorMessage, formatCurrency, formatPercent } from '@/lib/utils'
+import { getBudgetTracking, getFiscalYears } from '@/lib/queries/accounting'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import type { FiscalYear } from '@/types'
 import { useTranslation } from 'react-i18next'
@@ -21,11 +22,14 @@ interface BudgetItem {
 
 export function BudgetTrackingPage() {
   const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [items, setItems] = useState<BudgetItem[]>([])
   const [years, setYears] = useState<FiscalYear[]>([])
   const [loading, setLoading] = useState(true)
   const [yearFilter, setYearFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -35,6 +39,7 @@ export function BudgetTrackingPage() {
       setYears(fy || [])
     } catch (err) {
       console.error('Error loading budget tracking:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -100,7 +105,8 @@ export function BudgetTrackingPage() {
                   {formatCurrency(item.variance)}
                 </TableCell>
                 <TableCell className={`text-right ${item.variance_pct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {item.variance_pct.toFixed(1)}%
+                  {/* G5 : « 100,0 % » en français, pas « 100.0% ». */}
+                  {formatPercent(item.variance_pct)}
                 </TableCell>
                 <TableCell>
                   {(item.available || 0) >= 0 ? (

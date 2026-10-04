@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getRegularizationEntries, createRegularizationEntry, updateRegularizationEntry, deleteRegularizationEntry } from '@/lib/queries'
+import { getRegularizationEntries, createRegularizationEntry, updateRegularizationEntry, deleteRegularizationEntry, getFiscalYears } from '@/lib/queries/accounting'
+import { generateAdjustingEntries, calculateProvisions, postDeferredCharge } from '@/lib/queries/businessFunctions'
 import { useLocale } from '@/hooks/useLocale'
-import { Plus, Trash2, Pencil, Zap } from 'lucide-react'
-import type { RegularizationEntry } from '@/types'
+import { Plus, Trash2, Pencil, Zap, X } from 'lucide-react'
+import type { RegularizationEntry, FiscalYear } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function RegularizationPage() {
   const { t } = useTranslation('accounting')
@@ -17,29 +20,40 @@ export function RegularizationPage() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<RegularizationEntry | null>(null)
   const [filterType, setFilterType] = useState('')
+  const [years, setYears] = useState<FiscalYear[]>([])
+  const [selectedYear, setSelectedYear] = useState('')
+  const [generating, setGenerating] = useState(false)
+
+  useEffect(() => {
+    getFiscalYears().then((fy) => {
+      setYears(fy || [])
+      const open = (fy || []).find((y) => y.status === 'open')
+      if (open) setSelectedYear(open.id)
+    }).catch(() => {})
+  }, [])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getRegularizationEntries(filterType || undefined)
       setEntries(data || [])
-    } catch (err) {
-      console.error('Failed to load regularization entries:', err)
+    } catch (err) { console.error('Failed to load regularization entries:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [filterType])
+  }, [filterType, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('regularization.deleteConfirm'))) return
+    if (!confirmSync(t('regularization.deleteConfirm'))) return
     try {
       await deleteRegularizationEntry(id)
       toast('success', tCommon('common.success'), t('regularization.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -53,6 +67,47 @@ export function RegularizationPage() {
     setShowForm(true)
   }
 
+  async function handleGenerateAdjusting() {
+    if (!selectedYear) return
+    setGenerating(true)
+    try {
+      await generateAdjustingEntries(selectedYear)
+      toast('success', tCommon('common.success'), t('regularization.adjustingGenerated'))
+      await loadData()
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handleCalculateProvisions() {
+    if (!selectedYear) return
+    setGenerating(true)
+    try {
+      await calculateProvisions(selectedYear)
+      toast('success', tCommon('common.success'), t('regularization.provisionsCalculated'))
+      await loadData()
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handlePostDeferred(entry: RegularizationEntry) {
+    setGenerating(true)
+    try {
+      await postDeferredCharge(entry.id, entry.type === 'CCA' ? 'cca' : 'pca', Number(entry.remaining_amount))
+      toast('success', tCommon('common.success'), t('regularization.deferredPosted'))
+      await loadData()
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const tableHeaders = [
     t('regularization.type'),
     t('regularization.account'),
@@ -62,7 +117,7 @@ export function RegularizationPage() {
     t('regularization.amount'),
     t('regularization.remainingAmount'),
     t('regularization.status'),
-    tCommon('common.table.actions'),
+    tCommon('table.actions'),
   ]
 
   return (
@@ -71,7 +126,22 @@ export function RegularizationPage() {
       <PageHeader
         title={t('regularization.title')}
         subtitle={t('regularization.subtitle')}
-        action={<Button onClick={handleCreate}><Plus className="w-4 h-4" /> {t('regularization.new')}</Button>}
+        action={
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              options={years.map((y) => ({ value: y.id, label: y.code }))}
+            />
+            <Button variant="secondary" onClick={handleGenerateAdjusting} disabled={generating || !selectedYear}>
+              {t('regularization.generateAdjusting')}
+            </Button>
+            <Button variant="secondary" onClick={handleCalculateProvisions} disabled={generating || !selectedYear}>
+              {t('regularization.calculateProvisions')}
+            </Button>
+            <Button onClick={handleCreate}><Plus className="w-4 h-4" /> {t('regularization.new')}</Button>
+          </div>
+        }
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -119,10 +189,20 @@ export function RegularizationPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
+                    {(entry.type === 'CCA' || entry.type === 'PCA') && (
+                      <button
+                        onClick={() => handlePostDeferred(entry)}
+                        disabled={generating}
+                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]"
+                        title={t('regularization.postDeferred')}
+                      >
+                        <Zap className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleEdit(entry)}
                       className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]"
-                      title={tCommon('common.actions.edit')}
+                      title={tCommon('actions.edit')}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -214,8 +294,8 @@ function RegularizationForm({ editing, onClose, onSaved }: {
       }
       toast('success', tCommon('common.success'), t('regularization.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -226,7 +306,7 @@ function RegularizationForm({ editing, onClose, onSaved }: {
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '40rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{editing ? t('regularization.edit') : t('regularization.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
@@ -254,9 +334,9 @@ function RegularizationForm({ editing, onClose, onSaved }: {
           <Input label={t('regularization.description')} value={description} onChange={(e) => setDescription(e.target.value)} required />
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? tCommon('common.saving') : tCommon('common.actions.save')}
+            {saving ? tCommon('common.saving') : tCommon('actions.save')}
           </Button>
         </div>
       </div>

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import { getInvoices, getPurchaseInvoices, getBankAccounts, getJournalEntries, getCustomers, getSuppliers, getProducts } from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getInvoices, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getBankAccounts } from '@/lib/queries/banking'
+import { getJournalEntries } from '@/lib/queries/accounting'
+import { getCustomers, getSuppliers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { Download, FileSpreadsheet, BarChart3, TrendingUp, TrendingDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -20,10 +25,13 @@ interface ReportData {
 
 export function BIReportingPage() {
   const { t } = useTranslation('reports')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [data, setData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [reportType, setReportType] = useState('summary')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -34,7 +42,7 @@ export function BIReportingPage() {
       ])
       const totalRevenue = (inv || []).filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + Number(i.total), 0)
       const totalExpenses = (pur || []).filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + Number(i.total), 0)
-      const bankBalance = (banks || []).reduce((s: number, a: any) => s + Number(a.balance), 0)
+      const bankBalance = (banks || []).reduce((s: number, a: any) => s + Number(a.calculated_balance), 0)
       setData({
         totalRevenue, totalExpenses, grossMargin: totalRevenue - totalExpenses,
         customerCount: (custs || []).length, supplierCount: (sups || []).length,
@@ -44,6 +52,7 @@ export function BIReportingPage() {
       })
     } catch (err) {
       console.error('Error loading BI report:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -124,7 +133,6 @@ export function BIReportingPage() {
       <Card>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileSpreadsheet className="w-5 h-5" /> {t('bi.detailedData')}</h3>
         <Table headers={[t('bi.indicator'), t('bi.value')]}>
-          <tbody>
             <TableRow><TableCell>{t('bi.customers')}</TableCell><TableCell className="text-right font-medium">{data.customerCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.suppliers')}</TableCell><TableCell className="text-right font-medium">{data.supplierCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.products')}</TableCell><TableCell className="text-right font-medium">{data.productCount}</TableCell></TableRow>
@@ -132,7 +140,6 @@ export function BIReportingPage() {
             <TableRow><TableCell>{t('bi.supplierInvoices')}</TableCell><TableCell className="text-right font-medium">{data.purchaseInvoiceCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.journalEntries')}</TableCell><TableCell className="text-right font-medium">{data.journalEntryCount}</TableCell></TableRow>
             <TableRow><TableCell>{t('bi.bankBalance')}</TableCell><TableCell className="text-right font-medium">{formatCurrency(data.bankBalance)}</TableCell></TableRow>
-          </tbody>
         </Table>
       </Card>
     </div>

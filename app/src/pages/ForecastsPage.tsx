@@ -3,8 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, TrendingUp, Upload, Calculator } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries'
+import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries/stock'
 import type { Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
+import { errorMessage } from '@/lib/utils'
 
 export function ForecastsPage() {
   const { toast } = useToast()
@@ -21,21 +24,21 @@ export function ForecastsPage() {
       const [f, p] = await Promise.all([getProductionForecasts(), getProducts()])
       setForecasts(f || [])
       setProducts(p || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteProductionForecast(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleReliability(id: string) {
     try { await calculateForecastReliability(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   function getReliabilityVariant(rate: number): 'success' | 'warning' | 'danger' {
@@ -72,7 +75,7 @@ export function ForecastsPage() {
                   {Number(f.reliability_rate) > 0 ? (
                     <div className="flex items-center gap-2">
                       <Badge variant={getReliabilityVariant(Number(f.reliability_rate))}>{Number(f.reliability_rate)}%</Badge>
-                      <button onClick={() => handleReliability(f.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><Calculator className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleReliability(f.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.calculate')} title={tCommon('actions.calculate')}><Calculator className="w-3.5 h-3.5" aria-hidden="true" /></button>
                     </div>
                   ) : (
                     <button onClick={() => handleReliability(f.id)} className="text-xs text-[var(--color-primary)] hover:underline">{t('forecasts.calculate')}</button>
@@ -80,7 +83,7 @@ export function ForecastsPage() {
                 </TableCell>
                 <TableCell><Badge variant="neutral">{t(`forecasts.sources.${f.source}`) || f.source}</Badge></TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -109,14 +112,14 @@ function ForecastFormModal({ products, onClose, onSaved }: { products: Product[]
     e.preventDefault()
     if (!period || !startDate || !endDate) { toast('error', tCommon('toast.error'), t('forecasts.periodRequired')); return }
     try {
-      const num = `PREV-${period}-${String(Date.now()).slice(-4)}`
+      const num = await nextDocumentNumber('PREV')
       await createProductionForecast({
         forecast_number: num, period, start_date: startDate, end_date: endDate,
         product_id: productId || null, forecasted_quantity: quantity, actual_quantity: 0,
         reliability_rate: 0, source: 'manual', notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -159,7 +162,7 @@ function ImportFormModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
       const count = await importForecastsFromInvoices(period, startDate, endDate)
       toast('success', t('forecasts.importComplete'), t('forecasts.importCompleteMsg', { count }))
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
     finally { setImporting(false) }
   }
 

@@ -1,9 +1,61 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import i18n from '@/i18n'
+import i18n from 'i18next'
+import { sqlErrorMessage } from '@/lib/errors'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/**
+ * Message d'une erreur attrapée — `catch` reçoit `unknown` en TypeScript
+ * (useUnknownInCatchVariables), donc `err.message` ne compile pas sans
+ * rétrécissement. Ce helper est LE rétrécissement, écrit une fois.
+ *
+ * Permet de remplacer `catch (err: any) { … err.message … }` — qui désactivait
+ * le contrôle sur TOUT le corps — par `catch (err) { … errorMessage(err) … }`.
+ * Le comportement est identique : `err.message` quand la valeur en porte un,
+ * `String(err)` sinon (au lieu de `undefined` affiché à l'utilisateur).
+ */
+/**
+ * Partie 5 (migration 453) : la base refuse de supprimer un document qu'un lien
+ * de chaînage ACTIF relie à un autre (message `CHAIN_DELETE_REFUSED`, code
+ * 23503, détail JSON `{ type, mode, id, liens: [{ effet, vers, vers_id }] }`).
+ * Rend la phrase traduite, ou `null` si l'erreur n'est pas ce refus.
+ */
+export function chainDeleteRefusalMessage(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null
+  const e = err as { message?: unknown; details?: unknown }
+  if (e.message !== 'CHAIN_DELETE_REFUSED') return null
+  let detail: { type?: string; liens?: { vers?: string }[] } = {}
+  try {
+    detail = typeof e.details === 'string' ? JSON.parse(e.details) : {}
+  } catch {
+    detail = {}
+  }
+  const libelle = (code?: string) =>
+    code ? i18n.t(`errors:chain.types.${code}`, { defaultValue: code }) : ''
+  const liens = Array.isArray(detail.liens) ? detail.liens : []
+  const vers = Array.from(new Set(liens.map((l) => libelle(l.vers)))).join(', ')
+  return i18n.t('errors:chain.deleteRefused', {
+    document: libelle(detail.type),
+    count: liens.length,
+    vers,
+  })
+}
+
+export function errorMessage(err: unknown): string {
+  const refus = chainDeleteRefusalMessage(err)
+  if (refus) return refus
+  // F4 : une erreur SQL brute (doublon, contrainte, champ obligatoire, droit) est traduite.
+  const sql = sqlErrorMessage(err)
+  if (sql) return sql
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object' && 'message' in err) {
+    const m = (err as { message?: unknown }).message
+    if (typeof m === 'string') return m
+  }
+  return typeof err === 'string' ? err : String(err)
 }
 
 const LOCALE_MAP: Record<string, string> = {
@@ -12,7 +64,7 @@ const LOCALE_MAP: Record<string, string> = {
   ar: 'ar-MA',
 }
 
-function getCurrentLocale(): string {
+export function getCurrentLocale(): string {
   const lang = (i18n.language || 'fr').split('-')[0]
   return LOCALE_MAP[lang] || 'fr-FR'
 }
@@ -23,6 +75,13 @@ export function formatCurrency(amount: number, currency = 'EUR'): string {
     currency,
     minimumFractionDigits: 2,
   }).format(amount)
+}
+
+/** Un pourcentage dans la langue de l'application : `formatPercent(12.5)` → « 12,5 % » en français. */
+export function formatPercent(value: number, digits = 1): string {
+  return new Intl.NumberFormat(getCurrentLocale(), {
+    style: 'percent', minimumFractionDigits: digits, maximumFractionDigits: digits,
+  }).format((Number(value) || 0) / 100)
 }
 
 export function formatDate(date: string | Date): string {
@@ -66,7 +125,8 @@ export function evaluateExpression(expr: string): number | null {
       return Math.round(result * 100) / 100
     }
     return null
-  } catch {
+  } catch (err) {
+    console.error('safeEvalNumber:', err)
     return null
   }
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Table, TableRow, TableCell, Badge, EmptyState, Input, Select } from '@/components/ui'
-import { getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount, validateIBAN } from '@/lib/queries'
+import { getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount } from '@/lib/queries/partners'
+import { validateIBAN, isIbanRejected } from '@/lib/iban'
 import { Plus, Trash2, X, Pencil, CheckCircle, XCircle, Landmark } from 'lucide-react'
 import type { PartnerBankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 interface Props {
   partnerType: 'customer' | 'supplier'
@@ -31,12 +33,12 @@ export function PartnerBankAccountsModal({ partnerType, partnerId, onClose }: Pr
     } finally {
       setLoading(false)
     }
-  }, [partnerType, partnerId])
+  }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('partnerBankAccounts.deleteConfirm'))) return
+    if (!confirmSync(t('partnerBankAccounts.deleteConfirm'))) return
     try {
       await deletePartnerBankAccount(id)
       toast('success', tCommon('common.success'), t('partnerBankAccounts.deleted'))
@@ -61,7 +63,7 @@ export function PartnerBankAccountsModal({ partnerType, partnerId, onClose }: Pr
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('partnerBankAccounts.title')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
 
         <div className="p-6">
@@ -99,12 +101,10 @@ export function PartnerBankAccountsModal({ partnerType, partnerId, onClose }: Pr
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(acc)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={() => openEdit(acc)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                        <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                      <button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -157,8 +157,18 @@ function PartnerBankAccountForm({ partnerType, partnerId, account, onClose, onSa
     }
   }
 
+  // A5 (ach-003) : « IBAN invalide » n'était qu'un avertissement — l'enregistrement
+  // passait quand même. La décision est dans `isIbanRejected` : un IBAN se reconnaît
+  // à sa FORME (2 lettres + 2 chiffres), donc un numéro de compte ordinaire n'est
+  // pas bloqué, mais un IBAN dont la clé de contrôle est fausse ne part pas en base.
+  const ibanRejected = isIbanRejected(accountNumber)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (ibanRejected) {
+      toast('warning', tCommon('form.requiredField'), t('partnerBankAccounts.ibanRefused'))
+      return
+    }
     setSaving(true)
     try {
       const data = {
@@ -193,7 +203,7 @@ function PartnerBankAccountForm({ partnerType, partnerId, account, onClose, onSa
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h3 className="text-lg font-semibold">{account ? t('partnerBankAccounts.edit') : t('partnerBankAccounts.new')}</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
           <div>
@@ -217,7 +227,7 @@ function PartnerBankAccountForm({ partnerType, partnerId, account, onClose, onSa
             <Input label={t('partnerBankAccounts.accountKey')} value={accountKey} onChange={(e) => setAccountKey(e.target.value)} placeholder="23" />
           </div>
           <Select label={t('partnerBankAccounts.currency')} value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} options={[
-            { value: 'EUR', label: 'EUR (€)' },
+            { value: 'EUR', label: 'EUR' },
             { value: 'USD', label: 'USD ($)' },
             { value: 'GBP', label: 'GBP (£)' },
             { value: 'MAD', label: 'MAD' },
@@ -228,7 +238,7 @@ function PartnerBankAccountForm({ partnerType, partnerId, account, onClose, onSa
           </label>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving || ibanRejected}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

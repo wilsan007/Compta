@@ -1,17 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Input, Badge } from '@/components/ui'
-import {
-  getActiveLegislationPack,
-  getActiveCorporateTaxGrid,
-  getCorporateTaxGridLines,
-} from '@/lib/queries'
+import { useToast } from '@/lib/toast'
+import { getActiveLegislationPack, getActiveCorporateTaxGrid, getCorporateTaxGridLines } from '@/lib/queries/accounting'
 import { calculateCorporateTax, type CorporateTaxResult } from '@/lib/taxCalculator'
 import { Calculator, Building2, Globe } from 'lucide-react'
 import type { CorporateTaxGridLine, LegislationPack } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function CorporateTaxCalcPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [result, setResult] = useState<CorporateTaxResult | null>(null)
   const [isLines, setIsLines] = useState<CorporateTaxGridLine[]>([])
@@ -47,13 +47,14 @@ export function CorporateTaxCalcPage() {
       setUsingGrid(false)
     } catch (err) {
       console.error('Error loading corporate tax data:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
   }, [loadData])
 
   function handleCalculate() {

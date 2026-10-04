@@ -1,17 +1,15 @@
+import { templateLineAmounts } from '@/lib/entryTemplate'
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Breadcrumb, Input, Select } from '@/components/ui'
-import { formatCurrency } from '@/lib/utils'
-import {
-  getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts,
-  getThirdPartyAccounts, getEntryTemplates, getTaxRates,
-  getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateVAT,
-  calculateEcheance,
-} from '@/lib/queries'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getAuthorizedJournals, getFiscalYears, getFiscalPeriods, getChartAccounts, getThirdPartyAccounts, getEntryTemplates, getNextPieceNumber, createSaisieEntry, applyAutoLabelRules, calculateEcheance } from '@/lib/queries/accounting'
 import {
   Plus, Trash2, CheckCircle2, Wand2, Calculator, RefreshCw, Layers,
 } from 'lucide-react'
-import type { Journal, FiscalYear, FiscalPeriod, ChartAccount, ThirdPartyAccount, EntryTemplate, TaxRate } from '@/types'
+import type { Journal, FiscalYear, FiscalPeriod, ChartAccount, ThirdPartyAccount, EntryTemplate } from '@/types'
+import { getVatCodes } from '@/lib/queries/businessFunctions'
+import { buildVatLines, type VatCode } from '@/lib/vatLines'
 import { useToast } from '@/lib/toast'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
@@ -50,7 +48,7 @@ export function SaisieParPiecePage() {
   const [accounts, setAccounts] = useState<ChartAccount[]>([])
   const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   const [templates, setTemplates] = useState<EntryTemplate[]>([])
-  const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+  const [vatCodes, setVatCodes] = useState<VatCode[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -68,30 +66,31 @@ export function SaisieParPiecePage() {
   const [rateLoading, setRateLoading] = useState(false)
   const [showAnalyticDist, setShowAnalyticDist] = useState<number | null>(null)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadRef() }, [])
 
   async function loadRef() {
     try {
-      const currentUserId = localStorage.getItem('auth_user_id') || undefined
+      const rawUserId = localStorage.getItem('auth_user_id')
+      const currentUserId = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId) ? rawUserId : undefined
       const [jls, fys, accs, tp, tmpls, txs] = await Promise.all([
         getAuthorizedJournals(currentUserId),
         getFiscalYears(),
         getChartAccounts(),
         getThirdPartyAccounts(),
         getEntryTemplates(),
-        getTaxRates(),
+        getVatCodes(),
       ])
       setJournals(jls || [])
       setFiscalYears(fys || [])
       setAccounts(accs || [])
       setThirdParties(tp || [])
       setTemplates(tmpls || [])
-      setTaxRates(txs || [])
+      setVatCodes(txs || [])
       if (fys && fys.length > 0) {
         setSelectedYear(fys[0].id)
       }
-    } catch (err) {
-      console.error('Error loading ref data:', err)
+    } catch (err) { console.error('Error loading ref data:', err)
       toast('error', t('saisieParPiece.title'), t('saisieParPiece.loadError'))
     } finally {
       setLoading(false)
@@ -134,8 +133,8 @@ export function SaisieParPiecePage() {
       account_name: accounts.find((a) => a.code === tl.account_general)?.name || '',
       account_tiers: tl.account_tiers || '',
       description: tl.label || '',
-      debit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.debit_pct ? String(tl.debit_pct) : ''),
-      credit: tl.amount_type === 'fixed' ? String(tl.fixed_amount ?? '') : (tl.credit_pct ? String(tl.credit_pct) : ''),
+      // F6 (cpt-007) : un pourcentage n'est pas un montant — voir `templateLineAmounts`.
+      ...templateLineAmounts(tl),
       vat_code: tl.vat_code || '', vat_amount: '', echeance_date: '',
       analytic_section: tl.analytic_section || '', quantity: '',
     }))
@@ -166,40 +165,43 @@ export function SaisieParPiecePage() {
 
   function handleCalculateVAT(idx: number) {
     const line = lines[idx]
-    const taxRate = taxRates.find((tr) => String(tr.rate) === line.vat_code)
-    if (!taxRate || (!line.debit && !line.credit)) {
+    const code = vatCodes.find((v) => v.vat_code === line.vat_code)
+    const isDebit = Boolean(line.debit)
+    const amount = Number(line.debit) || Number(line.credit) || 0
+    // 325 : comptes du paramétrage TVA ; autoliquidation = TVA déductible et due, contrepartie HT
+    const calc = code ? buildVatLines(code, amount, isDebit) : null
+    if (!code || !calc) {
       toast('warning', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatSelectRate'))
       return
     }
-    const amount = Number(line.debit) || Number(line.credit) || 0
-    const isDebit = Boolean(line.debit)
-    const { ht, tva, ttc } = calculateVAT(amount, taxRate.rate, 'ht')
 
     // Update current line to HT
-    updateLine(idx, 'vat_amount', String(tva))
+    updateLine(idx, 'vat_amount', String(calc.tva))
 
-    // Add TVA line
-    const vatAccount = isDebit ? (taxRate.account_deductible || '445660') : (taxRate.account_collectee || '445710')
-    const vatLine = blankLine()
-    vatLine.account_general = vatAccount
-    vatLine.account_name = taxRate.name
-    vatLine.description = `TVA ${taxRate.rate}%`
-    vatLine.vat_code = line.vat_code
-    if (isDebit) { vatLine.debit = String(tva) } else { vatLine.credit = String(tva) }
+    const vatLines = calc.lines.map((l) => {
+      const vatLine = blankLine()
+      vatLine.account_general = l.account
+      vatLine.account_name = code.label
+      vatLine.description = l.description
+      vatLine.vat_code = code.vat_code
+      if (l.debit) vatLine.debit = String(l.debit)
+      if (l.credit) vatLine.credit = String(l.credit)
+      return vatLine
+    })
 
-    // Add TTC line (contrepartie)
+    // Add TTC line (contrepartie) — HT en autoliquidation
     const ttcLine = blankLine()
     ttcLine.account_general = selectedJournalObj?.account_counterpart || ''
     ttcLine.account_name = 'Contrepartie'
     ttcLine.description = line.description || 'TTC'
-    if (isDebit) { ttcLine.credit = String(ttc) } else { ttcLine.debit = String(ttc) }
+    if (isDebit) { ttcLine.credit = String(calc.counterpart) } else { ttcLine.debit = String(calc.counterpart) }
 
     setLines((prev) => {
       const newLines = [...prev]
-      newLines.splice(idx + 1, 0, vatLine, ttcLine)
+      newLines.splice(idx + 1, 0, ...vatLines, ttcLine)
       return newLines
     })
-    toast('success', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht, tva, ttc }))
+    toast('success', t('saisieParPiece.vatCalc'), t('saisieParPiece.vatCalcSuccess', { ht: calc.ht, tva: calc.tva, ttc: calc.counterpart }))
   }
 
   function equilibrate() {
@@ -279,8 +281,7 @@ export function SaisieParPiecePage() {
       setDescription('')
       setInvoiceRef('')
       if (selectedJournal) getNextPieceNumber(selectedJournal).then(setPieceNumber)
-    } catch (err) {
-      console.error('Error saving entry:', err)
+    } catch (err) { console.error('Error saving entry:', err)
       toast('error', t('saisieParPiece.title'), t('saisieParPiece.saveError'))
     } finally {
       setSaving(false)
@@ -337,11 +338,11 @@ export function SaisieParPiecePage() {
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('saisie.exchangeRate')}</label>
             <div className="flex gap-1">
-              <input className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
+              <input aria-label={t('saisie.exchangeRate')} className="input" type="number" step="0.000001" value={exchangeRate} onChange={(e) => setExchangeRate(Number(e.target.value))} disabled={currencyCode === 'EUR'} />
               <button type="button" onClick={async () => {
                 if (currencyCode === 'EUR') return
                 setRateLoading(true)
-                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch {} finally { setRateLoading(false) }
+                try { const r = await getLatestRate('EUR', currencyCode); if (r) setExchangeRate(r.rate) } catch (err) { console.error("catch:", err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) } finally { setRateLoading(false) }
               }} disabled={rateLoading || currencyCode === 'EUR'} className="p-2 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('saisie.refreshRate')}>
                 <RefreshCw className={`w-4 h-4 ${rateLoading ? 'animate-spin' : ''}`} />
               </button>
@@ -370,8 +371,8 @@ export function SaisieParPiecePage() {
                 options={[{ value: '', label: t('saisie.none') }, ...templates.filter((t) => !t.journal_code || t.journal_code === selectedJournal).map((t) => ({ value: t.id, label: t.name }))]}
               />
             </div>
-            <Button variant="secondary" onClick={applyTemplate} disabled={!selectedTemplate}>
-              <Wand2 className="w-4 h-4" />
+            <Button variant="secondary" onClick={applyTemplate} disabled={!selectedTemplate} ariaLabel={tCommon('actions.generate')}>
+              <Wand2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -380,7 +381,10 @@ export function SaisieParPiecePage() {
       {/* Entry grid */}
       <Card>
         <div className="p-4">
-          <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+          {/* `overflow-hidden` empêchait tout défilement : le tableau (1 100 px) ne
+              pouvait pas être lu sur téléphone, et l'essaim le disait à raison
+              (mesuré le 29/09/2026 : 1 100 px dans 527). */}
+          <div className="border border-[var(--color-border)] rounded-lg overflow-x-auto">
             <table className="app-table min-w-[1100px]">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
@@ -449,8 +453,8 @@ export function SaisieParPiecePage() {
                         onChange={(e) => updateLine(idx, 'vat_code', e.target.value)}
                       >
                         <option value="">—</option>
-                        {taxRates.map((tr) => (
-                          <option key={tr.id} value={tr.rate}>{tr.rate}% — {tr.name}</option>
+                        {vatCodes.map((v) => (
+                          <option key={v.vat_code} value={v.vat_code}>{v.label}</option>
                         ))}
                       </select>
                     </td>
@@ -494,10 +498,8 @@ export function SaisieParPiecePage() {
                         {lines.length > 2 && (
                           <button
                             onClick={() => removeLine(idx)}
-                            className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                         )}
                       </div>
                     </td>
@@ -507,12 +509,12 @@ export function SaisieParPiecePage() {
               <tfoot>
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-neutral-50)]">
                   <td colSpan={3} className="px-2 py-2">
-                    <button type="button" onClick={addLine} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1">
+                    <button type="button" onClick={addLine} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> {t('saisie.addLine')}
                     </button>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <button type="button" onClick={equilibrate} className="text-sm text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
+                    <button type="button" onClick={equilibrate} className="text-sm min-h-6 text-[var(--color-primary)] hover:underline flex items-center gap-1 ml-auto">
                       <CheckCircle2 className="w-3 h-3" /> {t('saisie.balanc')}
                     </button>
                   </td>

@@ -5,6 +5,8 @@ import { getJournals, createJournal, updateJournal, deleteJournal, getBankAccoun
 import { BookCopy, Plus, Pencil, Trash2, X, Search, Lock } from 'lucide-react'
 import type { Journal, BankAccount, EntryTemplate, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 const journalTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
   purchase: 'warning',
@@ -71,7 +73,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('journals.deleteConfirm'))) return
+    if (!confirmSync(t('journals.deleteConfirm'))) return
     try {
       await deleteJournal(id)
       await loadData()
@@ -156,12 +158,10 @@ const [journals, setJournals] = useState<Journal[]>([])
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(journal)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(journal.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => openEdit(journal)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(journal.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -204,10 +204,12 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
   const [bankAccountId, setBankAccountId] = useState(journal?.bank_account_id || '')
   const [defaultTemplateId, setDefaultTemplateId] = useState(journal?.default_entry_template_id || '')
   const [status, setStatus] = useState<Journal['status']>(journal?.status || 'active')
-  const [racinesAutorisees, setRacinesAutorisees] = useState((journal as any)?.racines_autorisees || '')
-  const [compteAttente, setCompteAttente] = useState((journal as any)?.compte_attente || '')
-  const [numerotation, setNumerotation] = useState((journal as any)?.numerotation || 'manual')
-  const [reconciliationMode, setReconciliationMode] = useState((journal as any)?.reconciliation_mode || 'manual')
+  // D-C (273) : racines et compte d'attente ont un effet (contrôlés à la saisie
+  // et à la validation) ; la numérotation est celle de la base (numéro définitif
+  // continu à la validation) et le mode de rapprochement n'est lu par aucune
+  // règle : l'écran ne les offre plus.
+  const [racinesAutorisees, setRacinesAutorisees] = useState(journal?.racines_autorisees || '')
+  const [compteAttente, setCompteAttente] = useState(journal?.account_attente || '')
   const [currencyCode, setCurrencyCode] = useState(journal?.currency_code || 'EUR')
   const [sequence, setSequence] = useState(String(journal?.sequence || 0))
   const [saving, setSaving] = useState(false)
@@ -227,10 +229,8 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
         default_entry_template_id: defaultTemplateId || null,
         status,
         locked: journal?.locked || false,
-        racines_autorisees: racinesAutorisees || null,
-        compte_attente: compteAttente || null,
-        numerotation: numerotation || 'manual',
-        reconciliation_mode: isTreasury ? (reconciliationMode || 'manual') : null,
+        racines_autorisees: racinesAutorisees.trim() || null,
+        account_attente: compteAttente || null,
         currency_code: currencyCode || 'EUR',
         sequence: Number(sequence) || 0,
       }
@@ -240,8 +240,8 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
         await createJournal(data as any)
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -259,7 +259,7 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '42rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{journal ? t('journals.edit') : t('journals.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="flex border-b border-[var(--color-border)] px-6">
@@ -310,14 +310,7 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
                     ...chartAccounts.filter((a) => a.code.startsWith('47') || a.code.startsWith('48')).map((a) => ({ value: a.code, label: `${a.code} — ${a.name}` })),
                   ]} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('journals.racinesAutorisees')} value={racinesAutorisees} onChange={(e) => setRacinesAutorisees(e.target.value)} placeholder="401, 411, 512" />
-                  <Select label={t('journals.numerotation')} value={numerotation} onChange={(e) => setNumerotation(e.target.value)} options={[
-                    { value: 'manual', label: t('journals.numerotationManual') },
-                    { value: 'auto', label: t('journals.numerotationAuto') },
-                    { value: 'continuous', label: t('journals.numerotationContinuous') },
-                  ]} />
-                </div>
+                <Input label={t('journals.racinesAutorisees')} value={racinesAutorisees} onChange={(e) => setRacinesAutorisees(e.target.value)} placeholder="401, 411, 512" />
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('journals.currency')}</label>
@@ -342,10 +335,6 @@ function JournalForm({ journal, bankAccounts, templates, chartAccounts, onClose,
                   ...bankAccounts.map((b) => ({ value: b.id, label: `${b.name} (${b.bank_name})` })),
                 ]} />
                 <Input label={t('journals.rib')} value="" onChange={() => {}} placeholder="FR76 1234 5678 9012 3456 7890 123" />
-                <Select label={t('journals.reconciliationMode')} value={reconciliationMode} onChange={(e) => setReconciliationMode(e.target.value)} options={[
-                  { value: 'manual', label: t('journals.reconciliationManual') },
-                  { value: 'auto', label: t('journals.reconciliationAuto') },
-                ]} />
               </>
             )}
 

@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getBankReconciliationRules, createBankReconciliationRule, deleteBankReconciliationRule } from '@/lib/queries'
-import { Plus, Trash2, Zap } from 'lucide-react'
+import { getBankReconciliationRules, createBankReconciliationRule, deleteBankReconciliationRule } from '@/lib/queries/accounting'
+import { Plus, Trash2, Zap, X } from 'lucide-react'
 import type { BankReconciliationRule } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function BankReconciliationRulesPage() {
   const { t } = useTranslation('accounting')
@@ -19,27 +21,27 @@ export function BankReconciliationRulesPage() {
     try {
       const data = await getBankReconciliationRules()
       setRules(data || [])
-    } catch (err) {
-      console.error('Failed to load bank recon rules:', err)
+    } catch (err) { console.error('Failed to load bank recon rules:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('bankRecon.deleteConfirm'))) return
+    if (!confirmSync(t('bankRecon.deleteConfirm'))) return
     try {
       await deleteBankReconciliationRule(id)
       toast('success', tCommon('common.success'), t('bankRecon.deleteSuccess'))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
-  const tableHeaders = [t('bankRecon.name'), t('bankRecon.afbCode'), t('bankRecon.counterpart'), t('bankRecon.priority'), t('bankRecon.status'), tCommon('common.table.actions')]
+  const tableHeaders = [t('bankRecon.name'), t('bankRecon.afbCode'), t('bankRecon.counterpart'), t('bankRecon.priority'), t('bankRecon.status'), tCommon('table.actions')]
 
   return (
     <div>
@@ -72,9 +74,8 @@ export function BankReconciliationRulesPage() {
                   <Badge variant={rule.active ? 'success' : 'neutral'}>{rule.active ? t('bankRecon.active') : t('bankRecon.inactive')}</Badge>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(rule.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(rule.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -113,8 +114,8 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
       })
       toast('success', tCommon('common.success'), t('bankRecon.saveSuccess'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('common.error'), err.message || tCommon('common.error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -125,7 +126,7 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('bankRecon.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]">✕</button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></button>
         </div>
         <div className="p-6 space-y-4">
           <Input label={t('bankRecon.name')} value={name} onChange={(e) => setName(e.target.value)} required />
@@ -135,8 +136,8 @@ function RuleForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => vo
           <Input label={t('bankRecon.priority')} type="number" value={priority} onChange={(e) => setPriority(Number(e.target.value))} />
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)]">
-          <Button variant="secondary" onClick={onClose}>{tCommon('common.actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('common.actions.save')}</Button>
+          <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? tCommon('common.saving') : tCommon('actions.save')}</Button>
         </div>
       </div>
     </div>

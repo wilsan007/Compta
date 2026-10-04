@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
+import { CompanyPayrollParameters } from '@/components/CompanyPayrollParameters'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '@/lib/toast'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Input, Select, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { getCompanySettings, getChartAccounts, getTenantUsers, getLegislationPacks, updateCompanySettings, type TenantUser } from '@/lib/queries'
+import { getCompanySettings, getChartAccounts, getLegislationPacks, updateCompanySettings } from '@/lib/queries/accounting'
+import { getTenantUsers } from '@/lib/queries/misc'
+import { verifySiret, validateVatVies, type SiretCheck, type VatCheck } from '@/lib/queries/verifications'
+import { VerificationLine } from '@/components/VerificationLine'
+import { type TenantUser } from '@/lib/queries'
 import { useLegislation } from '@/lib/legislation'
 import { Building2, Users, BookOpen, Link2, Save, Scale, LayoutGrid, CheckCircle2, Lock } from 'lucide-react'
 import type { CompanySettings, ChartAccount, LegislationPack } from '@/types'
@@ -10,6 +16,7 @@ import { useAuth } from '@/lib/auth'
 import { useTenantModules } from '@/lib/useTenantModules'
 import { useLocale } from '@/hooks/useLocale'
 import { CURRENCIES, COUNTRIES } from '@/lib/countries'
+import { errorMessage } from '@/lib/utils'
 
 const routeToTab: Record<string, 'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'> = {
   '/settings/company': 'company',
@@ -25,6 +32,7 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const { t } = useTranslation('settings')
   const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { formatCurrency, formatDate } = useLocale()
   const { user } = useAuth()
   const [tab, setTab] = useState<'company' | 'accounts' | 'users' | 'integrations' | 'legislation' | 'modules'>(routeToTab[location.pathname] || 'company')
@@ -35,7 +43,8 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   useEffect(() => {
@@ -55,8 +64,7 @@ export function SettingsPage() {
       setAccounts(a || [])
       setUsers(u || [])
       setPacks(p || [])
-    } catch (err) {
-      console.error('Error loading settings:', err)
+    } catch (err) { console.error('Error loading settings:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -187,7 +195,7 @@ export function SettingsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={u.status === 'active' ? 'success' : u.status === 'pending' ? 'warning' : 'danger'}>
-                          {u.status === 'active' ? tCommon('common.active') : u.status === 'pending' ? tCommon('common.pending') : tCommon('common.inactive')}
+                          {u.status === 'active' ? tCommon('common.active') : u.status === 'pending' ? tCommon('status.pending') : tCommon('common.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-[var(--color-text-secondary)]">
@@ -245,6 +253,8 @@ export function SettingsPage() {
 
 function LegislationTab({ company, packs, onSaved }: { company: CompanySettings | null; packs: LegislationPack[]; onSaved: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const { pack, vatRates, loading, refresh } = useLegislation()
   const [selectedPack, setSelectedPack] = useState(company?.legislation_pack_code || pack?.code || '')
   const [saving, setSaving] = useState(false)
@@ -263,8 +273,9 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
       } as any)
       refresh()
       onSaved()
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to update legislation pack:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }
@@ -345,17 +356,20 @@ function LegislationTab({ company, packs, onSaved }: { company: CompanySettings 
           />
           <div className="flex justify-end">
             <Button variant="primary" onClick={handleSave} disabled={saving || !company}>
-              <Save className="w-4 h-4" /> {saving ? '...' : t('legislation.save')}
+              <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('legislation.save')}
             </Button>
           </div>
         </div>
       </Card>
+
+      <CompanyPayrollParameters />
     </div>
   )
 }
 
 function ModulesTab() {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
   const { t: tAuth } = useTranslation('auth')
   const { user } = useAuth()
   const { modules: enabledModules, saveModules, refresh } = useTenantModules()
@@ -377,6 +391,7 @@ function ModulesTab() {
     { id: 'stock', icon: '📦', color: 'violet' },
     { id: 'production', icon: '🏭', color: 'rose' },
     { id: 'hr', icon: '👥', color: 'cyan' },
+    { id: 'projectManagement', icon: '📋', color: 'rose' },
     { id: 'dashboards', icon: '📊', color: 'teal' },
     { id: 'reporting', icon: '📈', color: 'fuchsia' },
   ]
@@ -475,7 +490,7 @@ function ModulesTab() {
         {isAdmin && (
           <div className="mt-6 flex justify-end">
             <Button variant="primary" onClick={handleSave} disabled={saving}>
-              <Save className="w-4 h-4" /> {saving ? '...' : t('modules.save')}
+              <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('modules.save')}
             </Button>
           </div>
         )}
@@ -486,6 +501,8 @@ function ModulesTab() {
 
 function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onSaved: () => void }) {
   const { t } = useTranslation('settings')
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
@@ -527,6 +544,37 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
     setSaved(false)
   }
 
+  // W6 — les vérifications externes avaient une fonction Edge déployée et
+  // aucun appelant : le SIRET et le numéro de TVA étaient saisis « à l'œil ».
+  // L'écran dit ce qui a été vérifié et **où** : à la source (INSEE / VIES)
+  // quand l'accès est configuré, ou le seul format et la clé de contrôle.
+  const [siretCheck, setSiretCheck] = useState<SiretCheck | null>(null)
+  const [vatCheck, setVatCheck] = useState<VatCheck | null>(null)
+  const [checkingSiret, setCheckingSiret] = useState(false)
+  const [checkingVat, setCheckingVat] = useState(false)
+
+  async function handleCheckSiret() {
+    setCheckingSiret(true)
+    try {
+      setSiretCheck(await verifySiret(form.siret.trim()))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingSiret(false)
+    }
+  }
+
+  async function handleCheckVat() {
+    setCheckingVat(true)
+    try {
+      setVatCheck(await validateVatVies(form.vat_number.trim(), form.vat_number.trim()))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
+    } finally {
+      setCheckingVat(false)
+    }
+  }
+
   async function handleSave() {
     if (!company) return
     setSaving(true)
@@ -547,8 +595,7 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       } as any)
       setSaved(true)
       onSaved()
-    } catch (err) {
-      console.error('Failed to save company settings:', err)
+    } catch (err) { console.error('Failed to save company settings:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setSaving(false)
     }
@@ -559,8 +606,38 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input label={t('company.name')} value={form.name} onChange={(e) => update('name', e.target.value)} />
         <Input label={t('company.legalName')} value={form.legal_name} onChange={(e) => update('legal_name', e.target.value)} />
-        <Input label={t('company.vatNumber')} value={form.vat_number} onChange={(e) => update('vat_number', e.target.value)} />
-        <Input label={t('company.siret')} value={form.siret} onChange={(e) => update('siret', e.target.value)} />
+        <div>
+          <Input label={t('company.vatNumber')} value={form.vat_number} onChange={(e) => update('vat_number', e.target.value)} />
+          <VerificationLine
+            busy={checkingVat}
+            disabled={!form.vat_number.trim()}
+            onCheck={handleCheckVat}
+            result={vatCheck}
+            labels={{
+              check: t('company.verify'),
+              checking: t('company.verifying'),
+              atSource: t('company.verifiedAtSource'),
+              formatOnly: t('company.verifiedFormatOnly'),
+              invalid: t('company.verifyInvalid'),
+            }}
+          />
+        </div>
+        <div>
+          <Input label={t('company.siret')} value={form.siret} onChange={(e) => update('siret', e.target.value)} />
+          <VerificationLine
+            busy={checkingSiret}
+            disabled={!form.siret.trim()}
+            onCheck={handleCheckSiret}
+            result={siretCheck}
+            labels={{
+              check: t('company.verify'),
+              checking: t('company.verifying'),
+              atSource: t('company.verifiedAtSource'),
+              formatOnly: t('company.verifiedFormatOnly'),
+              invalid: t('company.verifyInvalid'),
+            }}
+          />
+        </div>
         <Input label={t('company.address')} value={form.address} onChange={(e) => update('address', e.target.value)} />
         <Input label={t('company.city')} value={form.city} onChange={(e) => update('city', e.target.value)} />
         <Input label={t('company.zipCode')} value={form.postal_code} onChange={(e) => update('postal_code', e.target.value)} />
@@ -588,9 +665,15 @@ function CompanyTab({ company, onSaved }: { company: CompanySettings | null; onS
       )}
       <div className="mt-6 flex justify-end">
         <Button variant="primary" onClick={handleSave} disabled={saving || !company}>
-          <Save className="w-4 h-4" /> {saving ? '...' : t('company.save')}
+          <Save className="w-4 h-4" /> {saving ? tCommon('actions.saving') : t('company.save')}
         </Button>
       </div>
     </Card>
   )
 }
+
+// ============================================================
+// W6 — la ligne de vérification vient désormais de `@/components/VerificationLine`
+// (partagée avec l'écran des comptes tiers, qui en fait la même chose pour
+// l'IBAN). Elle est importée en tête de ce fichier.
+// ============================================================

@@ -98,5 +98,58 @@
     "operationCancelled": "تم إلغاء العملية",
     "tryAgain": "يرجى إعادة المحاولة",
     "contactSupport": "إذا استمرت المشكلة، اتصل بالدعم"
+  },
+  "chain": {
+    "deleteRefused": "تم رفض الحذف: هذا المستند ({{document}}) مرتبط بـ {{count}} مستند(ات) في السلسلة ({{vers}}). قم بإلغائه أولاً: الإلغاء يغلق هذه الروابط.",
+    "types": {
+      "bank_accounts": "حساب بنكي",
+      "bank_transactions": "عملية بنكية",
+      "chart_accounts": "حساب محاسبي",
+      "credit_notes": "إشعار دائن",
+      "customer_payments": "دفعة عميل",
+      "delivery_notes": "إذن تسليم",
+      "expense_reports": "تقرير مصاريف",
+      "goods_receipts": "استلام بضاعة",
+      "invoice_lines": "سطر فاتورة",
+      "invoices": "فاتورة عميل",
+      "journal_entries": "قيد محاسبي",
+      "journal_lines": "سطر قيد",
+      "journals": "دفتر يومية",
+      "manufacturing_orders": "أمر تصنيع",
+      "payroll_variable_elements": "عنصر أجر متغير",
+      "pay_runs": "دفعة رواتب",
+      "pos_payments": "دفعة صندوق",
+      "pos_sessions": "جلسة صندوق",
+      "pos_tickets": "إيصال صندوق",
+      "project_time_entries": "وقت مسجل على مشروع",
+      "purchase_invoices": "فاتورة مورد",
+      "sales_orders": "طلب بيع",
+      "stock_movements": "حركة مخزون",
+      "stock_reservations": "حجز مخزون",
+      "st_receipts": "استلام مقاولة من الباطن",
+      "st_shipments": "شحنة مقاولة من الباطن",
+      "supplier_payments": "دفعة مورد"
+    }
+  },
+  "db": {
+    "duplicate": "هذا العنصر موجود مسبقًا.",
+    "duplicateValue": "«{{value}}» موجود مسبقًا.",
+    "check": "إحدى القيم المدخلة غير مقبولة. تحقق من حقول النموذج.",
+    "notNull": "حقل إلزامي غير مُعبَّأ ({{column}}).",
+    "stillReferenced": "هذا العنصر ما زال مستخدمًا في مكان آخر: لا يمكن حذفه أو تعديله بهذه الطريقة.",
+    "referenceMissing": "تعذّر العثور على عنصر مرتبط. أعد تحميل الصفحة وحاول مجددًا.",
+    "forbidden": "ليس لديك الحق في تنفيذ هذا الإجراء.",
+    "invalidValue": "إحدى القيم المدخلة غير صالحة.",
+    "constraints": { "grillAccountMissing": "هذا الحساب غير موجود في دليل الحسابات.", "grillSectionMissing": "هذا القسم التحليلي غير موجود.",
+      "chartAccountExists": "الحساب {{value}} موجود مسبقًا.",
+      "documentNumberExists": "الرقم {{value}} مستخدم مسبقًا.",
+      "salaryNegative": "لا يمكن أن يكون الراتب سالبًا.",
+      "contractTypeInvalid": "نوع العقد هذا غير معروف.",
+      "emailInvalid": "عنوان البريد الإلكتروني غير صالح.",
+      "priceNegative": "لا يمكن أن يكون السعر سالبًا.",
+      "stockNegative": "لا يمكن أن يصبح المخزون سالبًا.",
+      "hoursNegative": "لا يمكن أن يكون عدد الساعات سالبًا.",
+      "commitmentAmountNegative": "لا يمكن أن يكون مبلغ الالتزام سالبًا."
+    }
   }
 }

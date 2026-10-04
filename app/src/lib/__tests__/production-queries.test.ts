@@ -13,7 +13,9 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     single: vi.fn(() => Promise.resolve(resolvedValue)),
     maybeSingle: vi.fn(() => Promise.resolve(resolvedValue)),
     limit: vi.fn(() => chain),
-    range: vi.fn(() => Promise.resolve(resolvedValue)),
+    // LOT7-03 : fetchAllRows pagine via .range() ; le mock doit renvoyer les mêmes
+    // données que `then`, y compris après un setMockData qui réassigne `then`.
+    range: vi.fn(() => new Promise((resolve) => chain.then(resolve))),
     in: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),
@@ -282,13 +284,25 @@ describe('OF Lots', () => {
 describe('OF Consumptions', () => {
   beforeEach(() => resetMock())
 
-  it('getOFConsumptions queries by manufacturing_order_id', async () => {
-    setMockData([{ id: '1', quantity: 10 }])
+  it('getOFConsumptions lit les sorties de la clôture ET les saisies manuelles', async () => {
+    // D3 (stk-010) : la clôture sort les composants en `stock_movements`
+    // (`reference_type = 'production'`), jamais dans `of_consumptions`. Lire la
+    // seule table des saisies manuelles laissait l'onglet vide sur tout OF
+    // terminé (« Aucune consommation »).
+    setMockData([{ id: 'mv1', quantity: 4, date: '2026-03-10', reference: 'OF-1', product_id: 'p2', products: { name: 'Composant A' } }])
     const { getOFConsumptions } = await import('@/lib/queries')
     const result = await getOFConsumptions('mo-1')
+
+    expect((supabase as any).from).toHaveBeenCalledWith('stock_movements')
     expect((supabase as any).from).toHaveBeenCalledWith('of_consumptions')
-    expect(mockChain.eq).toHaveBeenCalledWith('manufacturing_order_id', 'mo-1')
-    expect(result).toHaveLength(1)
+    expect(mockChain.eq).toHaveBeenCalledWith('reference_type', 'production')
+    expect(mockChain.eq).toHaveBeenCalledWith('reference_id', 'mo-1')
+    expect(mockChain.eq).toHaveBeenCalledWith('movement_type', 'out')
+    // les mouvements sont remis dans la forme du tableau, marqués par leur origine
+    expect(result[0]).toMatchObject({
+      id: 'mv1', quantity: 4, consumption_date: '2026-03-10',
+      products: { name: 'Composant A' }, origin: 'movement',
+    })
   })
 
   it('createOFConsumption inserts with tenant_id', async () => {
@@ -591,7 +605,7 @@ describe('Echeancier', () => {
     const { getEcheancier } = await import('@/lib/queries')
     const result = await getEcheancier('customer')
     expect(result).toBeDefined()
-    expect(result.every((r: any) => r.type === 'customer')).toBe(true)
+    expect(result?.every((r: any) => r.type === 'customer')).toBe(true)
   })
 })
 
@@ -643,19 +657,22 @@ describe('FEC Data', () => {
 describe('SIG Data', () => {
   beforeEach(() => resetMock())
 
-  it('getSIGData returns class 6/7 account balances', async () => {
-    setMockData([{ account_code: '701000', account_general: '701000', debit: 0, credit: 5000 }])
-    const { getSIGData } = await import('@/lib/queries')
-    const result = await getSIGData()
-    expect(result).toBeDefined()
-    expect(Array.isArray(result)).toBe(true)
-  })
-
-  it('getSIGData filters by fiscalYearId', async () => {
-    setMockData([{ account_code: '601000', account_general: '601000', debit: 3000, credit: 0 }])
+  // AUD-D09 : agrégation serveur (get_income_statement), plus de lignes lues dans le navigateur
+  it('getSIGData lit le compte de résultat serveur de l\'exercice demandé', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: [{ account_code: '706000', account_name: 'Prestations', account_type: 'income', debit: 0, credit: 5000, balance: -5000 }],
+      error: null,
+    } as any)
     const { getSIGData } = await import('@/lib/queries')
     const result = await getSIGData('fy-1')
-    expect(result).toBeDefined()
+    expect(supabase.rpc).toHaveBeenCalledWith('get_income_statement', { p_fiscal_year_id: 'fy-1', p_date_from: null, p_date_to: null })
+    expect(result).toEqual([{ code: '706000', name: 'Prestations', debit: 0, credit: 5000, solde: -5000 }])
+  })
+
+  it('getSIGData remonte l\'erreur du serveur au lieu de rendre un SIG vide', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: null, error: { message: 'boom' } } as any)
+    const { getSIGData } = await import('@/lib/queries')
+    await expect(getSIGData('fy-1')).rejects.toMatchObject({ message: 'boom' })
   })
 })
 
@@ -664,12 +681,16 @@ describe('SIG Data', () => {
 describe('Analytic Balance', () => {
   beforeEach(() => resetMock())
 
-  it('getAnalyticBalance returns sections with totals', async () => {
+  it('getAnalyticBalance borne la période demandée (ANA-03 : plus tout l’historique)', async () => {
     setMockData([{ analytic_section_id: 's1', analytic_amount: 100, debit: 50, credit: 0, account_code: '701', account_general: '701' }])
     const { getAnalyticBalance } = await import('@/lib/queries')
-    const result = await getAnalyticBalance()
+    const result = await getAnalyticBalance('2026-01-01', '2026-12-31')
     expect(result).toBeDefined()
     expect(Array.isArray(result)).toBe(true)
+    // Avant la 304, la fonction n'avait aucun paramètre : la balance portait sur
+    // tout l'historique et ces filtres n'étaient jamais posés.
+    expect(mockChain.gte).toHaveBeenCalledWith('journal_entries.date', '2026-01-01')
+    expect(mockChain.lte).toHaveBeenCalledWith('journal_entries.date', '2026-12-31')
   })
 })
 
@@ -679,19 +700,24 @@ describe('calcVatFromEntries', () => {
   beforeEach(() => resetMock())
 
   it('calculates VAT from journal lines in date range', async () => {
-    setMockData([
-      { account_general: '445710', debit: 0, credit: 200 },
-      { account_general: '445660', debit: 100, credit: 0 },
-      { account_general: '701000', debit: 0, credit: 1000 },
-      { account_general: '601000', debit: 500, credit: 0 },
-    ])
+    ;(supabase as any).from = vi.fn((table: string) => {
+      if (table === 'fiscal_years') return createMockChain({ data: [{ id: 'fy-1' }], error: null })
+      return mockChain
+    })
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: [
+        { vat_code: 'FR20', direction: 'collected', account_code: '445711', ca3_box: 'A1', base_ht: 1000, vat_amount: 200, rate: 20 },
+        { vat_code: 'FR20', direction: 'deductible', account_code: '445661', ca3_box: '08', base_ht: 500, vat_amount: 100, rate: 20 },
+      ],
+      error: null
+    }))
     const { calcVatFromEntries } = await import('@/lib/queries')
     const result = await calcVatFromEntries('2024-01-01', '2024-12-31')
-    expect(result.outputVat).toBe(200)
-    expect(result.inputVat).toBe(100)
-    expect(result.netVat).toBe(100)
-    expect(result.totalSales).toBe(1000)
-    expect(result.totalPurchases).toBe(500)
+    expect(result?.outputVat).toBe(200)
+    expect(result?.inputVat).toBe(100)
+    expect(result?.netVat).toBe(100)
+    expect(result?.totalSales).toBe(1000)
+    expect(result?.totalPurchases).toBe(500)
   })
 })
 
@@ -825,6 +851,27 @@ describe('Budget Tracking', () => {
     await getBudgetTracking('fy-1')
     expect(mockChain.eq).toHaveBeenCalledWith('fiscal_year_id', 'fy-1')
   })
+
+  it('borne le réalisé à l’exercice, exclut AN/CL et les brouillons, et ne pagine plus par budget (BUD-01/02/04)', async () => {
+    const budgets = [
+      { id: '1', account_code: '601000', fiscal_year_id: 'fy-1', fiscal_years: { start_date: '2026-01-01', end_date: '2026-12-31' }, period_1: 1000, debit: 100, credit: 0 },
+      { id: '2', account_code: '606000', fiscal_year_id: 'fy-1', fiscal_years: { start_date: '2026-01-01', end_date: '2026-12-31' }, period_1: 500, debit: 0, credit: 0 },
+    ]
+    ;(supabase as any).from = vi.fn(() => mockChain)
+    setMockData(budgets)
+    const { getBudgetTracking } = await import('@/lib/queries')
+    await getBudgetTracking()
+
+    // BUD-01 : le réalisé est borné aux dates de l'exercice du budget
+    expect(mockChain.gte).toHaveBeenCalledWith('journal_entries.date', '2026-01-01')
+    expect(mockChain.lte).toHaveBeenCalledWith('journal_entries.date', '2026-12-31')
+    // BUD-02 : écritures validées seulement, à-nouveaux et clôture exclus
+    expect(mockChain.eq).toHaveBeenCalledWith('journal_entries.status', 'posted')
+    expect(mockChain.not).toHaveBeenCalledWith('journal_entries.journal_code', 'in', '(AN,CL)')
+    // BUD-04 : une seule requête de lignes pour les DEUX budgets (plus de N+1)
+    const appelsLignes = ((supabase as any).from as any).mock.calls.filter((c: string[]) => c[0] === 'journal_lines').length
+    expect(appelsLignes).toBeLessThanOrEqual(1)
+  })
 })
 
 // ============ Budget Commitments ============
@@ -867,7 +914,7 @@ describe('checkBudgetAvailability', () => {
     const { checkBudgetAvailability } = await import('@/lib/queries')
     const result = await checkBudgetAvailability('601000', 500)
     expect(result).toBeDefined()
-    expect(result.account_code).toBe('601000')
+    expect(result?.account_code).toBe('601000')
     expect(typeof result.would_exceed).toBe('boolean')
     expect(typeof result.available).toBe('number')
   })
@@ -945,12 +992,14 @@ describe('Fiscal Year Closure', () => {
   beforeEach(() => resetMock())
 
   it('closeFiscalYear closes year and generates opening entries', async () => {
-    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 'fy-1', code: '2024', status: 'open' }, error: null }))
-    mockChain.then = vi.fn((resolve: any) => Promise.resolve({ data: [{ id: 'p1' }, { id: 'p2' }], error: null }).then(resolve))
+    ;(supabase as any).rpc = vi.fn(() => Promise.resolve({
+      data: { success: true, fiscal_year_id: 'fy-1', result: 5000, carry_forward_entry_id: 'cf-1', close_entry_id: 'cl-1', hash: 'abc123', log_id: 'log-1' },
+      error: null
+    }))
     const { closeFiscalYear } = await import('@/lib/queries')
     const result = await closeFiscalYear('fy-1', 'fy-2')
     expect(result).toBeDefined()
-    expect(typeof result.openingLinesCount).toBe('number')
+    expect(result?.success).toBe(true)
   })
 })
 
@@ -977,10 +1026,47 @@ describe('generateExtourne', () => {
 describe('generateCarryForward', () => {
   beforeEach(() => resetMock())
 
+  // Réponses successives : log de report existant, écritures validées de l'exercice
+  function queueResponses(...responses: any[]) {
+    for (const data of responses) {
+      mockChain.then.mockImplementationOnce((resolve: any) => Promise.resolve({ data, error: null }).then(resolve))
+    }
+  }
+
   it('generates carry forward entries between fiscal years', async () => {
-    setMockData([{ id: 'je-1', journal_lines: [{ account_general: '401000', debit: 500, credit: 0 }] }])
+    queueResponses([], [
+      { id: 'je-1', status: 'posted', journal_lines: [
+        { account_general: '512000', debit: 1000, credit: 0 },
+        { account_general: '401000', account_tiers: 'F001', debit: 0, credit: 600 },
+        { account_general: '607000', debit: 200, credit: 0 },
+        { account_general: '707000', debit: 0, credit: 600 },
+      ] },
+    ])
+    mockChain.single = vi.fn(() => Promise.resolve({ data: { id: 'an-1' }, error: null }))
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({ data: 'AN-2026-000001', error: null } as any)
     const { generateCarryForward } = await import('@/lib/queries')
     const result = await generateCarryForward('fy-1', 'fy-2')
-    expect(result).toBeDefined()
+    expect(result).toEqual({ id: 'an-1' })
+
+    // LOT4-10 : numéro séquentiel issu de la RPC
+    expect(supabase.rpc).toHaveBeenCalledWith('get_next_document_number', { p_prefix: 'AN' })
+    const entryInsert = mockChain.insert.mock.calls.find((c: any[]) => !Array.isArray(c[0]))[0]
+    expect(entryInsert.number).toBe('AN-2026-000001')
+
+    // LOT4-01 : aucune ligne de classe 6 ou 7, résultat (+400) porté au 120000
+    const lines = mockChain.insert.mock.calls.find((c: any[]) => Array.isArray(c[0]))[0]
+    const accounts = lines.map((l: any) => l.account_general)
+    expect(accounts.some((a: string) => a.startsWith('6') || a.startsWith('7'))).toBe(false)
+    expect(lines.find((l: any) => l.account_general === '120000')).toMatchObject({ debit: 0, credit: 400 })
+    expect(lines.find((l: any) => l.account_general === '401000')).toMatchObject({ account_tiers: 'F001', credit: 600 })
+    const totalDebit = lines.reduce((s: number, l: any) => s + l.debit, 0)
+    const totalCredit = lines.reduce((s: number, l: any) => s + l.credit, 0)
+    expect(totalDebit).toBeCloseTo(totalCredit, 2)
+  })
+
+  it('refuse un second report pour le même exercice', async () => {
+    queueResponses([{ id: 'log-1' }])
+    const { generateCarryForward } = await import('@/lib/queries')
+    await expect(generateCarryForward('fy-1', 'fy-2')).rejects.toThrow('déjà été générés')
   })
 })

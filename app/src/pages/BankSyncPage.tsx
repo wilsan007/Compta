@@ -2,11 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankConnections, createBankConnection, updateBankConnection, deleteBankConnection, syncBankConnection, getBankAccounts, getBankTransactions } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { getBankConnections, createBankConnection, updateBankConnection, deleteBankConnection, syncBankConnection, getBankAccounts, getBankTransactions } from '@/lib/queries/banking'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Plus, Trash2, X, Zap, Link2, AlertCircle } from 'lucide-react'
 import type { BankConnection, BankAccount, BankTransaction } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -40,35 +41,38 @@ export function BankSyncPage() {
       setConnections(conns)
       setAccounts(accs)
       setTransactions(txns.filter((tx: any) => tx.source === 'auto'))
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setLoading(false)
     }
-  }, [filterAccount])
+  }, [filterAccount, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleSync(connectionId: string) {
     setSyncing(connectionId)
     try {
-      await syncBankConnection(connectionId)
-      toast('success', tCommon('common.success'), t('bankSync.syncSuccess'))
+      // W6 / EF-03 : le compte rendu vient de la fonction Edge, pas d'un
+      // « succès » affiché sans qu'aucune opération n'ait été récupérée.
+      const result = await syncBankConnection(connectionId)
+      toast('success', tCommon('common.success'),
+        `${t('bankSync.syncSuccess')} — ${t('bankSync.syncImported', { count: result.synced })}`)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), t('bankSync.syncError') + ': ' + (err.message || ''))
+    } catch (err) {
+      toast('error', tCommon('common.error'), t('bankSync.syncError') + ': ' + (errorMessage(err) || ''))
     } finally {
       setSyncing(null)
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteBankConnection(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError'))
     }
   }
 
@@ -147,10 +151,8 @@ export function BankSyncPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(conn.id)}
-                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -225,8 +227,8 @@ function SettingsTab({ connections, onUpdate }: { connections: BankConnection[];
       await updateBankConnection(id, { sync_frequency: frequency })
       toast('success', tCommon('common.success'), t('bankSync.settings.syncFrequency') + ' → ' + frequency)
       onUpdate()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || '')
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || '')
     }
   }
 
@@ -287,8 +289,8 @@ function ConnectionForm({ accounts, onClose, onSaved }: { accounts: BankAccount[
       } as any)
       toast('success', tCommon('common.success'), t('bankSync.connections.connectBank'))
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -299,7 +301,7 @@ function ConnectionForm({ accounts, onClose, onSaved }: { accounts: BankAccount[
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('bankSync.connections.connectBank')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select label={t('bankSync.connections.provider')} value={provider} onChange={(e) => setProvider(e.target.value)} options={[
@@ -309,7 +311,7 @@ function ConnectionForm({ accounts, onClose, onSaved }: { accounts: BankAccount[
             { value: 'manual', label: t('bankSync.settings.manual') },
           ]} />
           <Select label={t('accounts.title')} value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} options={[
-            { value: '', label: t('thirdParty.none') || '—' },
+            { value: '', label: t('accounting:thirdParty.none') || '—' },
             ...accounts.map(a => ({ value: a.id, label: a.name })),
           ]} />
           <Select label={t('bankSync.settings.syncFrequency')} value={syncFrequency} onChange={(e) => setSyncFrequency(e.target.value)} options={[

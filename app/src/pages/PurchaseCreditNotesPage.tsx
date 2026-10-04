@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, getSuppliers, getPurchaseInvoices } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, updatePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
+import { getSuppliers } from '@/lib/queries/partners'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { useTranslation } from 'react-i18next'
+import { confirmSync } from '@/lib/confirm'
 
 export function PurchaseCreditNotesPage() {
   const { t } = useTranslation('purchases')
@@ -27,12 +29,12 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
       setCreditNotes(cn)
       setSuppliers(s)
       setInvoices(inv)
-    } catch (err) {
-      console.error('Failed to load:', err)
+    } catch (err) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -41,13 +43,18 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('creditNotes.deleteConfirm'))) return
-    try { await deletePurchaseCreditNote(id); await loadData() } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    if (!confirmSync(t('creditNotes.deleteConfirm'))) return
+    try { await deletePurchaseCreditNote(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
+  }
+
+  // AUD-G01 : la validation passe l'écriture d'avoir (journal AC) et impute la facture d'origine
+  async function handleValidate(id: string) {
+    try { await updatePurchaseCreditNote(id, { status: 'validated' }); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.purchases') }, { label: t('creditNotes.title') }]} />
+      <Breadcrumb items={[{ label: tNav('items.purchases') }, { label: t('creditNotes.title') }]} />
       <PageHeader
         title={t('creditNotes.title')}
         subtitle={t('creditNotes.subtitle')}
@@ -71,11 +78,16 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                   <TableCell>{formatDate(cn.date)}</TableCell>
                   <TableCell>{cn.supplier_name || 'N/A'}</TableCell>
                   <TableCell className="font-mono text-[var(--color-success)] text-right">{formatCurrency(Number(cn.total))}</TableCell>
-                  <TableCell><Badge variant={cn.status === 'applied' ? 'success' : 'warning'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
+                  <TableCell><Badge variant={cn.status === 'draft' ? 'warning' : 'success'}>{t(`creditNotes.statuses.${cn.status}`) as string}</Badge></TableCell>
                   <TableCell>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {cn.status === 'draft' && (
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); handleValidate(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-success)]" aria-label={tCommon('actions.validate')} title={tCommon('actions.validate')}>
+                          <CheckCircle className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(cn.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                          <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
                 {expanded.has(cn.id) && cn.purchase_credit_lines?.map((line) => (
@@ -105,7 +117,8 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
 function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { suppliers: Supplier[]; invoices: PurchaseInvoice[]; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
-  const [number, setNumber] = useState('AVF-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
+  // AUD-G02 : numéro interne AVF-<exercice>-n attribué par le serveur à la validation
+  const [supplierRef, setSupplierRef] = useState('')
   const { toast } = useToast()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [supplierId, setSupplierId] = useState('')
@@ -139,16 +152,16 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
     setSaving(true)
     try {
       await createPurchaseCreditNote({
-        number, date, supplier_id: supplierId || null, supplier_name: supplier?.name || null,
+        supplier_reference: supplierRef.trim() || null, date, supplier_id: supplierId || null, supplier_name: supplier?.name || null,
         status: 'draft', subtotal, vat_total: vatTotal, total,
         reason: reason || null, purchase_invoice_id: invoiceId || null,
-        purchase_credit_lines: lines.filter(l => l.description).map(l => ({
+        lines: lines.filter(l => l.description).map(l => ({
           description: l.description, quantity: l.quantity, unit_price: l.unit_price,
           vat_rate: l.vat_rate, total: l.total, vat_total: l.vat_total,
         })),
       } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) } finally { setSaving(false) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) } finally { setSaving(false) }
   }
 
   return (
@@ -156,11 +169,11 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('creditNotes.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('creditNotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+            <Input label={t('creditNotes.supplierReference')} value={supplierRef} onChange={(e) => setSupplierRef(e.target.value)} />
             <Input label={t('creditNotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -189,11 +202,11 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
                 {lines.map((line, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)]">
                     <td className="px-3 py-2"><input value={line.description} onChange={(e) => updateLine(idx, 'description', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]" placeholder={t('invoices.description')} /></td>
-                    <td className="px-3 py-2"><input type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
-                    <td className="px-3 py-2"><input type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
-                    <td className="px-3 py-2"><input type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.quantity')} type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.unitPrice')} type="number" step="0.01" value={line.unit_price} onChange={(e) => updateLine(idx, 'unit_price', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
+                    <td className="px-3 py-2"><input aria-label={t('invoices.vatRate')} type="number" step="0.01" value={line.vat_rate} onChange={(e) => updateLine(idx, 'vat_rate', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" /></td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>
-                    <td className="px-3 py-2">{lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1"><X className="w-3 h-3" /></button>}</td>
+                    <td className="px-3 py-2">{lines.length > 1 && <button type="button" onClick={() => setLines(prev => prev.filter((_, i) => i !== idx))} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3 h-3" aria-hidden="true" /></button>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -208,7 +221,7 @@ function PurchaseCreditForm({ suppliers, invoices, onClose, onSaved }: { supplie
           <Input label={t('creditNotes.reasonLabel')} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('creditNotes.reason')} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

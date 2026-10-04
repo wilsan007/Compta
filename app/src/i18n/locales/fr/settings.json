@@ -16,6 +16,11 @@
     "legalForm": "Forme juridique",
     "vatNumber": "Numéro de TVA",
     "siret": "SIRET",
+    "verify": "Vérifier",
+    "verifying": "Vérification…",
+    "verifiedAtSource": "Vérifié à la source",
+    "verifiedFormatOnly": "Format et clé de contrôle valides — vérification à la source non configurée",
+    "verifyInvalid": "Invalide : {{reason}}",
     "address": "Adresse",
     "city": "Ville",
     "zipCode": "Code postal",
@@ -636,5 +641,43 @@
       "turnover": "Chiffre d'affaires",
       "property_value": "Valeur foncière"
     }
+  },
+  "chartPacks": {
+    "breadcrumb": "Paramètres",
+    "title": "Plans comptables par pays",
+    "subtitle": "Téléverser puis publier le plan comptable d'un pays. La publication bascule automatiquement les sociétés du pays au plan provisoire et sans écriture validée.",
+    "statusTitle": "État des plans",
+    "accounts": "{{count}} comptes",
+    "statusPublished": "Publié",
+    "statusDraft": "Brouillon",
+    "uploadTitle": "Téléverser un plan",
+    "pack": "Pays / pack",
+    "format": "Fichier CSV, séparateur « ; » ou « , ». En-tête obligatoire : code;libellé;type (colonnes facultatives : parent;tva). Type : actif, passif, capitaux propres, produit ou charge.",
+    "chooseFile": "Choisir un fichier CSV",
+    "rowsRead": "{{count}} comptes lus dans le fichier",
+    "upload": "Téléverser (brouillon)",
+    "publish": "Publier",
+    "publishConfirm": "Publier le plan {{pack}} ? Il deviendra définitif et les sociétés du pays au plan provisoire, sans écriture validée, y seront basculées.",
+    "uploaded": "{{count}} comptes enregistrés en brouillon",
+    "published": "Plan publié",
+    "alreadyPublished": "Ce plan est publié : il ne peut plus être remplacé.",
+    "lineErrors": "Fichier refusé, rien n'a été enregistré :",
+    "lineError": "Ligne {{line}} ({{code}}) : {{error}}",
+    "missingRequired": "Publication impossible tant que le plan ne contient pas les comptes imputés par les écritures automatiques : {{codes}}",
+    "switched": "Sociétés basculées sur ce plan : {{count}}",
+    "notSwitched": "Sociétés non basculées (écritures déjà validées, transposition manuelle) : {{count}}",
+    "forbiddenTitle": "Accès réservé",
+    "forbidden": "Cette page est réservée aux administrateurs de la plateforme."
+  },
+  "api": {
+    "rateLimit": "Limitation de débit"
+  },
+  "payrollParameters": {
+    "title": "Paramètres de paie de la société",
+    "hint": "Deux paramètres que la loi ne fixe pas pour tous : le taux AT/MP notifié par la Carsat, et l'effectif de 50 salariés ou plus (FNAL, réduction générale). Sans eux, l'AT/MP est calculé à 0 %.",
+    "atmpRate": "Taux AT/MP notifié (%)",
+    "effectif50Plus": "Effectif de 50 salariés ou plus",
+    "saved": "Paramètres de paie enregistrés (effet au {{month}})",
+    "effectiveMonth": "À compter du mois"
   }
 }

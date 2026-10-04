@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getRateHistory, saveRate, refreshRatesFromECB, type ExchangeRate } from '@/lib/currencyRates'
-import { formatDate } from '@/lib/utils'
-import { getCurrencies } from '@/lib/queries'
+import { errorMessage, formatDate } from '@/lib/utils'
+import { getCurrencies } from '@/lib/queries/accounting'
 import { RefreshCw, Plus, X, TrendingUp, TrendingDown, Calendar } from 'lucide-react'
 import type { Currency } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -29,12 +29,12 @@ export function ExchangeRatesPage() {
       ])
       setRates(history)
       setCurrencies(curs || [])
-    } catch (err) {
-      console.error('Error loading exchange rates:', err)
+    } catch (err) { console.error('Error loading exchange rates:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [baseCurrency, quoteCurrency])
+  }, [baseCurrency, quoteCurrency, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -44,8 +44,8 @@ export function ExchangeRatesPage() {
       const saved = await refreshRatesFromECB('EUR')
       toast('success', tCommon('toast.success'), t('exchangeRates.refreshed', { count: saved }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || t('exchangeRates.refreshError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || t('exchangeRates.refreshError'))
     } finally {
       setRefreshing(false)
     }
@@ -178,8 +178,8 @@ function ManualRateForm({ currencies, onClose, onSaved }: { currencies: Currency
     try {
       await saveRate(base, quote, rate, rateDate, 'manual')
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError'))
     } finally {
       setSaving(false)
     }
@@ -190,7 +190,7 @@ function ManualRateForm({ currencies, onClose, onSaved }: { currencies: Currency
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '28rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('exchangeRates.addManual')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -211,7 +211,7 @@ function ManualRateForm({ currencies, onClose, onSaved }: { currencies: Currency
           <Input label={t('exchangeRates.date')} type="date" required value={rateDate} onChange={(e) => setRateDate(e.target.value)} />
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.save')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.save')}</Button>
           </div>
         </form>
       </div>

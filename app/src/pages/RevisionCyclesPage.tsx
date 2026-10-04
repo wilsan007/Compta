@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getRevisionCycles, createRevisionCycle, updateRevisionCycle, deleteRevisionCycle } from '@/lib/queries'
+import { getRevisionCycles, createRevisionCycle, updateRevisionCycle, deleteRevisionCycle } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, RefreshCw } from 'lucide-react'
 import type { RevisionCycle } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function RevisionCyclesPage() {
   const { t } = useTranslation('accounting')
@@ -75,7 +76,7 @@ export function RevisionCyclesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('revisionCycles.deleteConfirm'))) return
+    if (!confirmSync(t('revisionCycles.deleteConfirm'))) return
     try {
       await deleteRevisionCycle(id)
       toast('success', t('revisionCycles.title'), t('revisionCycles.deleteSuccess'))
@@ -106,7 +107,7 @@ export function RevisionCyclesPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('revisionCycles.edit') : t('revisionCycles.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <Input label={t('revisionCycles.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -168,8 +169,8 @@ export function RevisionCyclesPage() {
                 <TableCell><Badge variant={cyc.active ? 'success' : 'neutral'}>{cyc.active ? tCommon('common.active') : tCommon('common.inactive')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(cyc)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(cyc.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => startEdit(cyc)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(cyc.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

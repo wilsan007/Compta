@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getGescomTransferData, transferGescomToAccounting } from '@/lib/queries/accounting'
 import { ArrowRightLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +11,7 @@ export function GescomTransferPage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
-const [data, setData] = useState<any>(null)
+const [data, setData] = useState<Awaited<ReturnType<typeof getGescomTransferData>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [transferring, setTransferring] = useState(false)
@@ -19,9 +19,9 @@ const [data, setData] = useState<any>(null)
 
   const loadData = useCallback(async () => {
     try { setData(await getGescomTransferData()) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -40,17 +40,21 @@ const [data, setData] = useState<any>(null)
   }
 
   async function handleTransfer() {
-    if (selected.size === 0) return
+    if (selected.size === 0 || !data) return
     setTransferring(true)
     try {
-      const items: any[] = []
+      const items: Parameters<typeof transferGescomToAccounting>[0] = []
       for (const key of selected) {
+        // ⚠️ 2.16, défaut OUVERT (décision) : `split('-')` coupe l'identifiant (un UUID) à son
+        // premier tiret — aucune pièce n'est jamais retrouvée, ce bouton ne transfère RIEN.
+        // Ne pas « réparer » ce découpage seul : `transferGescomToAccounting` passerait une
+        // écriture 411/707 du TTC sans TVA, en double du moteur de validation des factures.
         const [type, id] = key.split('-')
         if (type === 'sales') {
-          const inv = data.invoices.find((i: any) => i.id === id)
+          const inv = data.invoices.find((i) => i.id === id)
           if (inv) items.push({ type: 'sales', id, number: inv.number, amount: Number(inv.total), date: inv.date })
         } else {
-          const pur = data.purchaseInvoices.find((p: any) => p.id === id)
+          const pur = data.purchaseInvoices.find((p) => p.id === id)
           if (pur) items.push({ type: 'purchase', id, number: pur.number, amount: Number(pur.total), date: pur.date })
         }
       }
@@ -58,18 +62,18 @@ const [data, setData] = useState<any>(null)
       setResults(res)
       setSelected(new Set())
       await loadData()
-    } catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
+    } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
     finally { setTransferring(false) }
   }
 
   const pendingItems = [
-    ...(data?.invoices || []).filter((i: any) => !i.transferred).map((i: any) => ({ key: `sales-${i.id}`, label: i.number, type: t('transfer.sales'), amount: Number(i.total), date: i.date, transferred: false })),
-    ...(data?.purchaseInvoices || []).filter((p: any) => !p.transferred).map((p: any) => ({ key: `purchase-${p.id}`, label: p.number, type: t('transfer.purchase'), amount: Number(p.total), date: p.date, transferred: false })),
+    ...(data?.invoices || []).filter((i) => !i.transferred).map((i) => ({ key: `sales-${i.id}`, label: i.number, type: t('transfer.sales'), amount: Number(i.total), date: i.date, transferred: false })),
+    ...(data?.purchaseInvoices || []).filter((p) => !p.transferred).map((p) => ({ key: `purchase-${p.id}`, label: p.number, type: t('transfer.purchase'), amount: Number(p.total), date: p.date, transferred: false })),
   ]
 
   return (
     <div>
-      <Breadcrumb items={[{ label: tNav('sections.stock') }, { label: t('transfer.title') }]} />
+      <Breadcrumb items={[{ label: tNav('groups.stock') }, { label: t('transfer.title') }]} />
       <PageHeader title={t('transfer.gescomTitle')} subtitle={t('transfer.pendingDocs', { count: data?.pendingCount || 0 })}
         action={<div className="flex gap-2"><Button variant="secondary" onClick={selectAllPending}>{t('transfer.selectAll')}</Button><Button onClick={handleTransfer} disabled={selected.size === 0 || transferring}><ArrowRightLeft className="w-4 h-4" /> {transferring ? '...' : `${t('transfer.transfer')} (${selected.size})`}</Button></div>} />
 
@@ -116,7 +120,7 @@ const [data, setData] = useState<any>(null)
         <div className="mt-6 grid grid-cols-2 gap-6">
           <Card title={t('transfer.transferredInvoices')}>
             <Table headers={[t('transfer.number'), t('transfer.date'), t('transfer.amount'), t('transfer.status')]}>
-              {(data.invoices || []).filter((i: any) => i.transferred).slice(0, 10).map((inv: any) => (
+              {(data.invoices || []).filter((i) => i.transferred).slice(0, 10).map((inv) => (
                 <TableRow key={inv.id}>
                   <TableCell className="font-mono text-xs">{inv.number}</TableCell>
                   <TableCell className="text-xs">{formatDate(inv.date)}</TableCell>
@@ -128,7 +132,7 @@ const [data, setData] = useState<any>(null)
           </Card>
           <Card title={t('transfer.transferredPurchases')}>
             <Table headers={[t('transfer.number'), t('transfer.date'), t('transfer.amount'), t('transfer.status')]}>
-              {(data.purchaseInvoices || []).filter((p: any) => p.transferred).slice(0, 10).map((pur: any) => (
+              {(data.purchaseInvoices || []).filter((p) => p.transferred).slice(0, 10).map((pur) => (
                 <TableRow key={pur.id}>
                   <TableCell className="font-mono text-xs">{pur.number}</TableCell>
                   <TableCell className="text-xs">{formatDate(pur.date)}</TableCell>

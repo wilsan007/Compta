@@ -3,8 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEntryTemplates, createEntryTemplate, updateEntryTemplate, deleteEntryTemplate, getJournals, getChartAccounts, getThirdPartyAccounts, getAnalyticSections } from '@/lib/queries'
 import { LayoutTemplate, Plus, Pencil, Trash2, X, Search, Star } from 'lucide-react'
-import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType } from '@/types'
+import type { EntryTemplate, Journal, TemplateLine, TemplateAmountType, ChartAccount, ThirdPartyAccount, AnalyticSection } from '@/types'
 import { useToast } from '@/lib/toast'
+import { getVatCodes } from '@/lib/queries/businessFunctions'
+import type { VatCode } from '@/lib/vatLines'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function EntryTemplatesPage() {
   const { t } = useTranslation('accounting')
@@ -59,12 +63,12 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('templates.deleteConfirm'))) return
+    if (!confirmSync(t('templates.deleteConfirm'))) return
     try {
       await deleteEntryTemplate(id)
       toast('success', tCommon('common.success'), t('templates.deleteSuccess'))
       await loadData()
-    } catch (err) {
+    } catch {
       toast('error', tCommon('toast.error'), tCommon('toast.deleteError'))
     }
   }
@@ -112,12 +116,10 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
                 <TableCell>{tpl.active ? <Badge variant="success">{tCommon('common.active')}</Badge> : <Badge variant="neutral">{tCommon('common.inactive')}</Badge>}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => openEdit(tpl)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}>
+                      <Pencil className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -140,13 +142,6 @@ const [templates, setTemplates] = useState<EntryTemplate[]>([])
 
 const AMOUNT_TYPES: TemplateAmountType[] = ['input', 'fixed', 'percent', 'balance', 'calc_vat']
 
-const VAT_RATES = [
-  { code: '', label: '—' },
-  { code: 'V0', label: '0% — Exonéré' },
-  { code: 'V5.5', label: '5.5% — Réduit' },
-  { code: 'V10', label: '10% — Intermédiaire' },
-  { code: 'V20', label: '20% — Normal' },
-]
 
 function TemplateForm({ template, journals, onClose, onSaved }: {
   template: EntryTemplate | null
@@ -166,19 +161,23 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
     (template?.template_lines as TemplateLine[]) || [{ account_general: '', account_tiers: '', label: '', debit_pct: 0, credit_pct: 0, amount_type: 'input' as TemplateAmountType, fixed_amount: null, vat_code: null, analytic_section: null }]
   )
   const [saving, setSaving] = useState(false)
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [thirdParties, setThirdParties] = useState<any[]>([])
-  const [analyticSections, setAnalyticSections] = useState<any[]>([])
+  const [accounts, setAccounts] = useState<ChartAccount[]>([])
+  const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
+  const [analyticSections, setAnalyticSections] = useState<AnalyticSection[]>([])
+  // 325 : codes du paramétrage TVA (et non plus V0 / V5.5 / V10 / V20, inconnus des déclarations)
+  const [vatCodes, setVatCodes] = useState<VatCode[]>([])
 
   useEffect(() => {
     Promise.all([
       getChartAccounts().catch(() => []),
       getThirdPartyAccounts().catch(() => []),
       getAnalyticSections().catch(() => []),
-    ]).then(([a, tp, as]) => {
+      getVatCodes().catch(() => []),
+    ]).then(([a, tp, as, vc]) => {
       setAccounts(a || [])
       setThirdParties(tp || [])
       setAnalyticSections(as || [])
+      setVatCodes(vc || [])
     })
   }, [])
 
@@ -214,8 +213,8 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('templates.createSuccess'))
       }
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('toast.error'), err.message || tCommon('toast.updateError'))
+    } catch (err) {
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.updateError'))
     } finally {
       setSaving(false)
     }
@@ -237,7 +236,7 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '56rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{template ? t('templates.edit') : t('templates.create')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
@@ -309,8 +308,9 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
                         value={line.vat_code || ''}
                         onChange={(e) => updateLine(idx, 'vat_code', e.target.value || null)}
                       >
-                        {VAT_RATES.map((v) => (
-                          <option key={v.code} value={v.code}>{v.label}</option>
+                        <option value="">—</option>
+                        {vatCodes.map((v) => (
+                          <option key={v.vat_code} value={v.vat_code}>{v.label}</option>
                         ))}
                       </select>
                     </div>
@@ -360,9 +360,8 @@ function TemplateForm({ template, journals, onClose, onSaved }: {
                       </div>
                     )}
                     <div className="col-span-3 flex items-end justify-end">
-                      <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button type="button" onClick={() => removeLine(idx)} className="p-1.5 rounded text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </div>
                 </div>

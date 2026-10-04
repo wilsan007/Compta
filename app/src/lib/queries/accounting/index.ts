@@ -1,0 +1,15 @@
+// Sous-barrel de src/lib/queries/accounting/ — re-exporte les sous-fichiers.
+// Les consommateurs n'ont pas change : './accounting' resout ici.
+export * from './settings'
+export * from './accounts'
+export * from './recurring'
+export * from './journal'
+export * from './vat'
+export * from './pilotage'
+export * from './assets'
+export * from './budgets'
+export * from './saisie'
+export * from './etats'
+export * from './treasury'
+export * from './reconciliation'
+export * from './features6'

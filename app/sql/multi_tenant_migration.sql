@@ -40,6 +40,9 @@ ALTER TABLE tenants FORCE ROW LEVEL SECURITY;
 
 -- Drop the old permissive policy if it exists
 DROP POLICY IF EXISTS "allow_all_tenants" ON tenants;
+DROP POLICY IF EXISTS "tenant_select_tenants" ON tenants;
+DROP POLICY IF EXISTS "tenant_update_tenants" ON tenants;
+DROP POLICY IF EXISTS "tenant_delete_tenants" ON tenants;
 
 -- SELECT: users can only see their own tenant
 CREATE POLICY "tenant_select_tenants" ON tenants
@@ -86,6 +89,10 @@ ALTER TABLE tenant_users FORCE ROW LEVEL SECURITY;
 
 -- Drop the old permissive policy if it exists
 DROP POLICY IF EXISTS "allow_all_tenant_users" ON tenant_users;
+DROP POLICY IF EXISTS "tenant_select_tenant_users" ON tenant_users;
+DROP POLICY IF EXISTS "tenant_insert_tenant_users" ON tenant_users;
+DROP POLICY IF EXISTS "tenant_update_tenant_users" ON tenant_users;
+DROP POLICY IF EXISTS "tenant_delete_tenant_users" ON tenant_users;
 
 -- SELECT: users can see users in their own tenant (needed for team management)
 -- Also allow users to see their own pending invitation (by email match via auth_id)

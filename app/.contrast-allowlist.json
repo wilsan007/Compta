@@ -1,0 +1,71 @@
+{
+  "_comment": "LOT7-07 — écarts de contraste TOLÉRÉS pour l'instant, chacun avec la décision attendue (voir doc/audit/SUIVI-CAHIER-CORRECTIF.md, bloc H). Tout AUTRE écart sous 4,5:1 fait échouer la CI. `node scripts/check-contrast.mjs --suggest` propose la correction la plus proche.",
+  "_frozenAt": "2026-09-18",
+  "allowed": [
+    {
+      "theme": "light",
+      "fg": "--color-warning",
+      "bg": "--color-surface",
+      "ref": "H1",
+      "reason": "H1 tranché le 18/09 : le TEXTE est passé à --color-warning-text (#a35f00, 5,01:1) ; --color-warning reste la couleur de marque pour les fonds, bordures et icônes. Les 14 usages restants ne colorent pas du texte mais des icônes : 8 boutons n'affichant qu'une icône, et 6 tables de variantes appliquées à un <Icon> (toast, NotificationCenter, StatCard, KanbanCard, flux d'activité, raccourcis du tableau de bord) — que l'analyse statique ne peut pas rattacher à leur balise. Vérifiés un par un. maxUses interdit à cette dispense de couvrir un usage de plus.",
+      "maxUses": 14
+    },
+    {
+      "theme": "light",
+      "fg": "--color-warning",
+      "bg": "--color-background",
+      "ref": "H1",
+      "reason": "H1 tranché le 18/09 : le TEXTE est passé à --color-warning-text (#a35f00, 5,01:1) ; --color-warning reste la couleur de marque pour les fonds, bordures et icônes. Les 14 usages restants ne colorent pas du texte mais des icônes : 8 boutons n'affichant qu'une icône, et 6 tables de variantes appliquées à un <Icon> (toast, NotificationCenter, StatCard, KanbanCard, flux d'activité, raccourcis du tableau de bord) — que l'analyse statique ne peut pas rattacher à leur balise. Vérifiés un par un. maxUses interdit à cette dispense de couvrir un usage de plus. Même couleur, sur le fond de page.",
+      "maxUses": 14
+    },
+    {
+      "theme": "light",
+      "fg": "--color-text-secondary",
+      "bg": "--color-neutral-100",
+      "ref": "H3",
+      "reason": "4,50:1 au centième près — exactement au seuil, donc accepté. 17 usages."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-text-secondary",
+      "bg": "--color-neutral-200",
+      "ref": "H3",
+      "reason": "4,06:1 — texte gris sur gris clair, 3 usages. À revoir avec le fond plutôt qu'avec la couleur du texte, qui est déjà juste ailleurs."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-neutral-400",
+      "bg": "--color-neutral-100",
+      "ref": "H3",
+      "reason": "4,18:1 — 1 usage, dans un bloc de code. À revoir avec le fond."
+    },
+    {
+      "theme": "light",
+      "fg": "--color-danger",
+      "bg": "--color-danger",
+      "ref": "H2",
+      "reason": "4,24:1 — texte rouge sur fond rouge à 10 % (pastille d'erreur). Se corrige en éclaircissant le fond. 4 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-success",
+      "bg": "--color-success",
+      "ref": "H2",
+      "reason": "4,17:1 — pastille verte en thème sombre. Même remarque : éclaircir le fond. 8 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-danger",
+      "bg": "--color-danger",
+      "ref": "H2",
+      "reason": "4,10:1 — pastille rouge en thème sombre. 4 usages."
+    },
+    {
+      "theme": "dark",
+      "fg": "--color-primary",
+      "bg": "--color-primary",
+      "ref": "H2",
+      "reason": "3,99:1 et 4,29:1 selon l'opacité — pastille bleue en thème sombre. 3 usages."
+    }
+  ]
+}

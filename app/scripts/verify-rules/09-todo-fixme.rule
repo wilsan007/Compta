@@ -1,0 +1,21 @@
+# rule: TODO/FIXME comments left in code
+# severity: warning
+# pattern: // TODO or // FIXME or /* TODO or /* FIXME in comments
+# fix: Resolve the TODO or create a tracked issue
+# note: Only matches in comment context (// or /*) to avoid false positives
+
+RULE_NAME="TODO/FIXME"
+RULE_DESC="TODO/FIXME comments left in code (resolve or track)"
+RULE_SEVERITY="warning"
+RULE_USE_MULTI_PATTERN=true
+RULE_GREP_PATTERNS=(
+  "// TODO"
+  "// FIXME"
+  "/\* TODO"
+  "/\* FIXME"
+  " \* TODO"
+  " \* FIXME"
+)
+RULE_GREP_INCLUDES="--include=*.ts --include=*.tsx"
+RULE_GREP_PATHS="src/"
+RULE_GREP_EXCLUDES="node_modules|\.test\.|__tests__|verify-rules"

@@ -3,11 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Button, Input, Select, Badge, Card, Table, TableRow, TableCell, EmptyState, SkeletonTable } from '@/components/ui'
 import { X, Plus, Trash2, Edit2, Users, Building } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import {
-  getPartnerContacts, createPartnerContact, updatePartnerContact, deletePartnerContact,
-  getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount,
-} from '@/lib/queries'
+import { getPartnerContacts, createPartnerContact, updatePartnerContact, deletePartnerContact, getPartnerBankAccounts, createPartnerBankAccount, updatePartnerBankAccount, deletePartnerBankAccount } from '@/lib/queries/partners'
 import type { PartnerContact, PartnerBankAccount } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 interface Props {
   partnerType: 'customer' | 'supplier'
@@ -37,8 +35,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       ])
       setContacts(c || [])
       setBankAccounts(b || [])
-    } catch { } finally { setLoading(false) }
-  }, [partnerType, partnerId])
+    } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) }
+  }, [partnerType, partnerId, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -51,7 +49,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       await deletePartnerContact(id)
       toast('success', tCommon('common.success'), t('partnerContacts.deleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   async function handleDeleteBank(id: string) {
@@ -59,7 +57,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
       await deletePartnerBankAccount(id)
       toast('success', tCommon('common.success'), t('partnerContacts.bankDeleted'))
       await loadData()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (
@@ -70,7 +68,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
             <Users className="w-5 h-5" />
             {t('partnerContacts.title')} — {partnerName}
           </h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
 
         <div className="flex border-b border-[var(--color-border)] px-6">
@@ -123,7 +121,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                   t('partnerContacts.colType'), t('partnerContacts.colName'),
                   t('partnerContacts.colEmail'), t('partnerContacts.colPhone'),
                   t('partnerContacts.colFunction'), t('partnerContacts.colDefault'),
-                  tCommon('common.actions'),
+                  tCommon('table.actions'),
                 ]}>
                   {contacts.map((c) => (
                     <TableRow key={c.id}>
@@ -135,8 +133,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                       <TableCell>{c.is_default ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteContact(c.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteContact(c.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -174,7 +172,7 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                 <Table headers={[
                   t('partnerContacts.colIBAN'), t('partnerContacts.colBIC'),
                   t('partnerContacts.colBankName'), t('partnerContacts.colCurrency'),
-                  t('partnerContacts.colDefault'), t('partnerContacts.colActive'), tCommon('common.actions'),
+                  t('partnerContacts.colDefault'), t('partnerContacts.colActive'), tCommon('table.actions'),
                 ]}>
                   {bankAccounts.map((b) => (
                     <TableRow key={b.id}>
@@ -186,8 +184,8 @@ export function PartnerContactsModal({ partnerType, partnerId, partnerName, onCl
                       <TableCell>{b.active ? <Badge variant="success">{tCommon('common.yes')}</Badge> : <Badge>{tCommon('common.no')}</Badge>}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="secondary" size="sm" onClick={() => { setEditingBank(b); setShowForm(true) }}><Edit2 className="w-3 h-3" /></Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDeleteBank(b.id)}><Trash2 className="w-3 h-3" /></Button>
+                          <Button variant="secondary" size="sm" onClick={() => { setEditingBank(b); setShowForm(true) }} ariaLabel={tCommon('actions.edit')}><Edit2 className="w-3 h-3" aria-hidden="true" /></Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeleteBank(b.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-3 h-3" aria-hidden="true" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -241,8 +239,8 @@ function ContactForm({ partnerType, partnerId, contact, onClose, onSaved }: {
         toast('success', tCommon('common.success'), t('partnerContacts.created'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 
@@ -322,8 +320,8 @@ function BankAccountForm({ partnerType, partnerId, bankAccount, onClose, onSaved
         toast('success', tCommon('common.success'), t('partnerContacts.bankCreated'))
       }
       onSaved()
-    } catch (e: any) {
-      toast('error', tCommon('common.error'), e.message)
+    } catch (e) {
+      toast('error', tCommon('common.error'), errorMessage(e))
     } finally { setSaving(false) }
   }
 

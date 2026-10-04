@@ -4,9 +4,10 @@ import { Plus, Trash2, Workflow as WorkflowIcon, Grid3x3, List, Clock, Check, X 
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
-import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries'
-import { formatDate } from '@/lib/utils'
+import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries/stock'
+import { errorMessage, formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function WorkflowsPage() {
   const { toast } = useToast()
@@ -20,21 +21,21 @@ export function WorkflowsPage() {
 
   const loadData = useCallback(async () => {
     try { setWorkflows(await getWorkflows() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deleteWorkflow(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleToggle(id: string, currentStatus: string) {
     try { await updateWorkflow(id, { status: currentStatus === 'active' ? 'inactive' : 'active' }); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -44,8 +45,8 @@ export function WorkflowsPage() {
         action={
           <div className="flex gap-2">
             <div className="flex border border-[var(--color-border)] rounded-lg overflow-hidden">
-              <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm ${viewMode === 'list' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`}><List className="w-4 h-4" /></button>
-              <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`}><Grid3x3 className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm ${viewMode === 'list' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`} aria-label={tCommon('actions.listView')} title={tCommon('actions.listView')}><List className="w-4 h-4" aria-hidden="true" /></button>
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--color-neutral-50)]'}`} aria-label={tCommon('actions.gridView')} title={tCommon('actions.gridView')}><Grid3x3 className="w-4 h-4" aria-hidden="true" /></button>
             </div>
             <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('workflows.new')}</Button>
           </div>
@@ -69,7 +70,7 @@ export function WorkflowsPage() {
                   </button>
                 </TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(wf.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => handleDelete(wf.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -118,7 +119,7 @@ function WorkflowFormModal({ onClose, onSaved }: { onClose: () => void; onSaved:
     try {
       await createWorkflow({ name, description: description || null, workflow_type: workflowType as any, schedule: schedule || null, last_run: null, status: 'active' })
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -158,15 +159,15 @@ export function EquivalencesPage() {
       const [eqs, prods] = await Promise.all([getProductEquivalences(), getProducts()])
       setEquivalences(eqs || [])
       setProducts(prods || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
     try { await deleteProductEquivalence(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -183,10 +184,10 @@ export function EquivalencesPage() {
           <Table headers={[t('equivalences.product'), t('equivalences.equivalentProduct'), t('equivalences.ratio'), tCommon('table.actions')]}>
             {equivalences.map((eq) => (
               <TableRow key={eq.id}>
-                <TableCell className="text-sm">{eq.products?.[0]?.name || '—'}</TableCell>
-                <TableCell className="text-sm">{eq.products?.[1]?.name || '—'}</TableCell>
+                <TableCell className="text-sm">{eq.produit?.name || '—'}</TableCell>
+                <TableCell className="text-sm">{eq.equivalent?.name || '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{Number(eq.conversion_ratio)}</TableCell>
-                <TableCell><button onClick={() => handleDelete(eq.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(eq.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -211,7 +212,7 @@ function EquivalenceFormModal({ products, onClose, onSaved }: { products: Produc
     if (!productId || !equivalentId) { toast('error', tCommon('toast.error'), t('equivalences.selectTwoProducts')); return }
     if (productId === equivalentId) { toast('error', tCommon('toast.error'), t('equivalences.cannotBeSame')); return }
     try { await createProductEquivalence({ product_id: productId, equivalent_product_id: equivalentId, conversion_ratio: ratio }); onSaved() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -244,20 +245,20 @@ export function OFDocumentAccessPage() {
 
   const loadData = useCallback(async () => {
     try { setAccessList(await getOFDocumentAccess() || []) }
-    catch (err) { console.error('Error:', err) }
+    catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
     try { await deleteOFDocumentAccess(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   async function handleToggle(id: string, field: 'can_view' | 'can_print' | 'can_export', current: boolean) {
     try { await updateOFDocumentAccess(id, { [field]: !current } as any); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (
@@ -279,7 +280,7 @@ export function OFDocumentAccessPage() {
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_view', acc.can_view)}>{acc.can_view ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_print', acc.can_print)}>{acc.can_print ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
                 <TableCell><button onClick={() => handleToggle(acc.id, 'can_export', acc.can_export)}>{acc.can_export ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : <X className="w-4 h-4 text-[var(--color-danger)]" />}</button></TableCell>
-                <TableCell><button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button></TableCell>
+                <TableCell><button onClick={() => handleDelete(acc.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button></TableCell>
               </TableRow>
             ))}
           </Table>
@@ -305,7 +306,7 @@ function OFDocAccessFormModal({ onClose, onSaved }: { onClose: () => void; onSav
     e.preventDefault()
     if (!userId) { toast('error', tCommon('toast.error'), t('ofDocAccess.userRequired')); return }
     try { await createOFDocumentAccess({ user_id: userId, document_type: documentType, can_view: canView, can_print: canPrint, can_export: canExport }); onSaved() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
 
   return (

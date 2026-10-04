@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getCollectionDashboard, createCollectionReminder, getCustomers } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getCollectionDashboard, createCollectionReminder } from '@/lib/queries/accounting'
+import { getCustomers } from '@/lib/queries/partners'
 import { AlertTriangle, Plus, X, Mail } from 'lucide-react'
 import type { Customer } from '@/types'
 import { useToast } from '@/lib/toast'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function CollectionDashboardPage() {
   const { t } = useTranslation('treasury')
-const [data, setData] = useState<any>(null)
+  const { t: tCommon } = useTranslation('common')
+  const { toast } = useToast()
+const [data, setData] = useState<Awaited<ReturnType<typeof getCollectionDashboard>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -21,8 +26,7 @@ const [data, setData] = useState<any>(null)
       const [res, custs] = await Promise.all([getCollectionDashboard(), getCustomers()])
       setData(res)
       setCustomers(custs || [])
-    } catch (err) {
-      console.error('Error loading collection dashboard:', err)
+    } catch (err) { console.error('Error loading collection dashboard:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -170,15 +174,15 @@ const [customerId, setCustomerId] = useState('')
     e.preventDefault()
     setSaving(true)
     try {
-      const number = `REL-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('REL')
       await createCollectionReminder({
         number, customer_id: customerId || null, third_party_id: null, invoice_id: null,
         reminder_level: reminderLevel, reminder_date: reminderDate,
         due_date: dueDate || null, amount, status: 'draft', notes: notes || null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -189,7 +193,7 @@ const [customerId, setCustomerId] = useState('')
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('collections.form.title')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -212,7 +216,7 @@ const [customerId, setCustomerId] = useState('')
           <Input label={t('collections.form.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('collections.form.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('collections.form.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('collections.form.create')}</Button>
           </div>
         </form>
       </div>

@@ -3,16 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, ChevronDown, ChevronRight, Route, ArrowUpDown, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getRoutings, createRouting, deleteRouting,
-  getRoutingOperations, createRoutingOperation, deleteRoutingOperation, renumberAllOperations,
-  getProducts, getWorkCenters, getMachines, getToolings, getSuppliers,
-} from '@/lib/queries'
+import { getRoutings, createRouting, deleteRouting, getRoutingOperations, createRoutingOperation, deleteRoutingOperation, renumberAllOperations, getProducts, getWorkCenters, getMachines, getToolings } from '@/lib/queries/stock'
+import { getSuppliers } from '@/lib/queries/partners'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Product, WorkCenter, Machine, Tooling, Supplier } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function RoutingsPage() {
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [routings, setRoutings] = useState<any[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -40,9 +40,9 @@ export function RoutingsPage() {
       setMachines(macs || [])
       setToolings(tls || [])
       setSuppliers(sups || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -55,16 +55,16 @@ export function RoutingsPage() {
         try {
           const ops = await getRoutingOperations(id)
           setOperations((prev) => ({ ...prev, [id]: ops }))
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('routings.confirmDelete'))) return
+    if (!confirmSync(t('routings.confirmDelete'))) return
     try { await deleteRouting(id); await loadData() }
-    catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleDeleteOp(opId: string, routingId: string) {
@@ -72,7 +72,7 @@ export function RoutingsPage() {
       await deleteRoutingOperation(opId)
       const ops = await getRoutingOperations(routingId)
       setOperations((prev) => ({ ...prev, [routingId]: ops }))
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   async function handleRenumber(routingId: string) {
@@ -81,7 +81,7 @@ export function RoutingsPage() {
       const ops = await getRoutingOperations(routingId)
       setOperations((prev) => ({ ...prev, [routingId]: ops }))
       toast('success', t('routings.renumberSuccess'), t('routings.renumberSuccessMessage'))
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   function handleExport() {
@@ -111,7 +111,7 @@ export function RoutingsPage() {
     try {
       const rows = await importFromExcel(file)
       toast('success', t('routings.import'), t('routings.importSuccess', { count: rows.length }))
-    } catch (err: any) { toast('error', t('routings.importError'), err.message) }
+    } catch (err) { toast('error', t('routings.importError'), errorMessage(err)) }
   }
 
   return (
@@ -153,7 +153,7 @@ export function RoutingsPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       <button onClick={() => setShowOpForm(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('routings.addOperation')}><Plus className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(r.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -180,7 +180,7 @@ export function RoutingsPage() {
                             <TableCell className="font-mono text-xs">{op.run_time_min}</TableCell>
                             <TableCell>{op.is_subcontracted ? <Badge variant="warning">{t('routings.st')}</Badge> : '—'}</TableCell>
                             <TableCell>
-                              <button onClick={() => handleDeleteOp(op.id, r.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteOp(op.id, r.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -214,7 +214,7 @@ function RoutingFormModal({ products, onClose, onSaved }: { products: Product[];
     try {
       await createRouting({ code, name, description, product_id: productId || null, version: 1, active: true })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (
@@ -266,7 +266,7 @@ function RoutingOperationFormModal({ routingId, workCenters, machines, toolings,
         st_unit: stUnit || null, st_quantity: stQuantity,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message || 'échec') }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }
 
   return (

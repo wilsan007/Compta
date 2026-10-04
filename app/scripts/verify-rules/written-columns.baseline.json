@@ -1,0 +1,6 @@
+{
+  "frozenAt": "2026-09-26",
+  "note": "VAGUE W6 (26/09/2026) — BASELINE À ZÉRO. Gelée le 24/09 par W0 avec 20 écritures impossibles (21 à l'audit du 23/09, `next_retry_at` ayant déjà été renommée `next_attempt_at` dans l'arbre). Les 20 ont été corrigées : la migration 257 pose les colonnes réelles (avec leurs garanties : unicité, clés composites, énumérations) et le code a été aligné là où une colonne existait déjà (`http_status` → `response_code`, `provider_requisition_id` → `provider_connection_id`, `link_url`/`user_id` → `metadata`). Le plafond ne peut toujours que baisser (`--update-baseline` refuse d'ajouter) : toute écriture nouvelle qui viserait une colonne absente fait échouer la CI.",
+  "total": 0,
+  "findings": []
+}

@@ -102,8 +102,10 @@
     "total": "Total",
     "statuses": {
       "applied": "Applied",
-      "draft": "Draft"
-    }
+      "draft": "Draft",
+      "validated": "Validated"
+    },
+    "supplierReference": "Supplier credit note no. (optional)"
   },
   "orders": {
     "title": "Purchase orders",
@@ -149,7 +151,8 @@
       "draft": "Draft",
       "confirmed": "Confirmed",
       "received": "Received",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "partial": "Partially received"
     }
   },
   "goodsReceipts": {
@@ -180,7 +183,13 @@
       "received": "Received",
       "partial": "Partial",
       "cancelled": "Cancelled"
-    }
+    },
+    "purchaseOrder": "Purchase order",
+    "stock": "Stock",
+    "stockIn": "In stock",
+    "stockPending": "Pending",
+    "warehouse": "Receiving warehouse",
+    "fromOrderHint": "The receipt takes the confirmed order's lines, at the remaining quantity. Set it to \"Received\" to bring the goods into stock."
   },
   "payments": {
     "title": "Supplier payments",
@@ -200,6 +209,7 @@
     "status": "Status",
     "noPayments": "No payment",
     "noPaymentsDescription": "No payment recorded",
+    "count": "{{count}} payment(s) — {{total}}",
     "createFirst": "Record my first payment",
     "searchPlaceholder": "Search by number, supplier, invoice...",
     "methods": {
@@ -216,7 +226,9 @@
     "currency": "Currency",
     "exchangeRate": "Exchange rate",
     "refreshRate": "Refresh rate",
-    "amountCurrency": "Amount in currency"
+    "amountCurrency": "Amount in currency",
+    "recordFor": "Record payment for supplier invoice {{number}}",
+    "overpaidNotice": "Overpayment of {{amount}}: it will be recorded as a supplier advance (4091)."
   },
   "suppliers": {
     "title": "Suppliers",
@@ -256,6 +268,8 @@
     "parentIdPlaceholder": "Parent company UUID",
     "salesRepId": "Sales representative (ID)",
     "salesRepIdPlaceholder": "Sales rep UUID",
+    "accountTiers": "Auxiliary account",
+    "accountCollectif": "Collective account",
     "nameLabel": "Supplier name",
     "nameRequired": "Name is required",
     "deleted": "Supplier deleted successfully",
@@ -269,8 +283,21 @@
       "email": "contact@supplier.com",
       "phone": "0612345678",
       "address": "15 Commerce Street, 75011 Paris",
-      "vatNumber": "FR98765432109"
-    }
+      "vatNumber": "FR98765432109",
+      "city": "Paris"
+    },
+    "checkSiret": "Verify",
+    "checkingSiret": "Verifying…",
+    "siretAtSource": "Verified at source",
+    "siretFormatOnly": "Format and check key valid — source verification not configured",
+    "siretInvalidKey": "Invalid: {{reason}}",
+    "siretInvalid": "Invalid SIRET: 14 digits and a check key (Luhn) are required",
+    "countryUnset": "— not set —",
+    "countryInvalid": "Invalid country: two-letter ISO code (e.g. BE)",
+    "paymentTermsUnset": "— not set —",
+    "parentIdUnset": "— none —",
+    "salesRepIdUnset": "— none —",
+    "cityPlaceholder": "Paris"
   },
   "automation": {
     "title": "Invoice automation",
@@ -297,7 +324,7 @@
     "processed": "Processed invoices",
     "pending": "Pending invoices",
     "rejected": "Rejected invoices",
-    "uploadTitle": "Upload an invoice (simulated OCR)",
+    "uploadTitle": "Import an invoice (OCR)",
     "dragDropText": "Drag a PDF or image invoice, or click to browse",
     "fileTypes": "PDF, PNG, JPG — 10 MB max",
     "browse": "Browse",
@@ -315,7 +342,9 @@
       "paid": "Paid",
       "overdue": "Overdue",
       "received": "Received"
-    }
+    },
+    "subtotalAmount": "Amount excl. VAT",
+    "totalMismatch": "The total read on the invoice ({{total}}) differs from net + VAT: check the amounts."
   },
   "approval": {
     "title": "Invoice approval",
@@ -337,5 +366,120 @@
       "approved": "Approved",
       "rejected": "Rejected"
     }
+  },
+  "purchaseRequests": {
+    "title": "Purchase requests",
+    "new": "New request",
+    "number": "Request #",
+    "requester": "Requester",
+    "department": "Department",
+    "status": "Status",
+    "priority": "Priority",
+    "expectedDate": "Expected date",
+    "notes": "Notes",
+    "lines": "Lines",
+    "addLine": "Add line",
+    "description": "Description",
+    "quantity": "Quantity",
+    "estimatedPrice": "Estimated price",
+    "approve": "Approve",
+    "reject": "Reject",
+    "convert": "Convert to order",
+    "statusChanged": "Status changed",
+    "converted": "Request converted to order",
+    "searchPlaceholder": "Search by number, requester...",
+    "noRequests": "No purchase requests",
+    "noRequestsDescription": "You haven't created any purchase request",
+    "statusDraft": "Draft",
+    "statusSubmitted": "Submitted",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusConverted": "Converted",
+    "priorityLow": "Low",
+    "priorityNormal": "Normal",
+    "priorityHigh": "High",
+    "priorityUrgent": "Urgent"
+  },
+  "supplierPrices": {
+    "title": "Supplier price lists",
+    "new": "New price list",
+    "name": "Name",
+    "supplier": "Supplier",
+    "validFrom": "Valid from",
+    "validTo": "Valid to",
+    "discount": "Discount",
+    "currency": "Currency",
+    "compare": "Compare prices",
+    "bestPrice": "Best price",
+    "leadTime": "Lead time",
+    "noPriceFound": "No price found for this product",
+    "searchPlaceholder": "Search by name, supplier...",
+    "noLists": "No price lists",
+    "noListsDescription": "You haven't created any price list",
+    "days": "days"
+  },
+  "deliverySchedule": {
+    "title": "Delivery schedules",
+    "new": "New schedule",
+    "supplier": "Supplier",
+    "product": "Product",
+    "frequency": "Frequency",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "active": "Active",
+    "weekly": "Weekly",
+    "biweekly": "Biweekly",
+    "monthly": "Monthly",
+    "monday": "Mon",
+    "tuesday": "Tue",
+    "wednesday": "Wed",
+    "thursday": "Thu",
+    "friday": "Fri",
+    "saturday": "Sat",
+    "sunday": "Sun",
+    "generateForDate": "Generate for",
+    "generateOrders": "Generate orders",
+    "ordersGenerated": "{{count}} order(s) generated",
+    "searchPlaceholder": "Search by supplier, product...",
+    "noSchedules": "No schedules",
+    "noSchedulesDescription": "You haven't created any schedule"
+  },
+  "purchaseInvoices": {
+    "title": "Purchase invoices",
+    "invoices": "Invoices",
+    "invoice": "Invoice",
+    "new": "New supplier invoice",
+    "recordPurchase": "Record a purchase",
+    "number": "Internal no.",
+    "supplier": "Supplier",
+    "dueDate": "Due date",
+    "total": "Total incl. tax",
+    "toPay": "Amount due",
+    "remainingToPay": "Amount due",
+    "paid": "Paid",
+    "markPaid": "Mark as paid",
+    "markedPaid": "Invoice marked as paid",
+    "created": "Invoice recorded",
+    "createdMsg": "Invoice {{number}} saved as draft",
+    "noInvoices": "No purchase invoices",
+    "noInvoicesDescription": "Record your first supplier invoice.",
+    "searchPlaceholder": "Search invoices…",
+    "selectSupplier": "Select a supplier",
+    "selectSupplierPlaceholder": "Choose a supplier",
+    "invalidAmount": "Invalid amount",
+    "totalAmount": "Total amount",
+    "budgetAccount": "Budget account",
+    "fiscalYear": "Fiscal year",
+    "budgetChecking": "Checking budget…",
+    "budgetTotal": "Budget",
+    "realized": "Actual",
+    "committed": "Committed",
+    "available": "Available",
+    "overshoot": "Overshoot",
+    "budgetExceedWarning": "This purchase of {{amount}} exceeds the budget by {{overshoot}}. Continue?",
+    "supplierReference": "Supplier invoice no.",
+    "supplierReferenceRequired": "Enter the supplier's invoice number.",
+    "numberAssigned": "The internal number (ACH-year-no.) is assigned on approval.",
+    "atLeastOneLine": "Add at least one line with a description and an amount."
   }
 }

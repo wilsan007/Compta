@@ -1,15 +1,13 @@
-import { useEffect, useState, useCallback } from 'react'
+import { confirmSync } from '@/lib/confirm'
+import { useEffect, useState, useCallback  } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2 } from 'lucide-react'
-import {
-  getAssetDepreciationPlans, createAssetDepreciationPlan,
-  getAssetFamilies, createAssetFamily, deleteAssetFamily,
-  getAssetRevaluations, createAssetRevaluation,
-  getAssetBatchDisposals, createAssetBatchDisposal, updateAssetBatchDisposal,
-} from '@/lib/queries'
+import { getAssetDepreciationPlans, createAssetDepreciationPlan } from '@/lib/queries/accounting'
+import { getAssetFamilies, createAssetFamily, deleteAssetFamily, getAssetRevaluations, createAssetRevaluation, getAssetBatchDisposals, createAssetBatchDisposal, updateAssetBatchDisposal } from '@/lib/queries/misc'
+import { errorMessage } from '@/lib/utils'
 
 // ============ Asset Depreciation Plans Page ============
 export function AssetDepreciationPlansPage() {
@@ -22,10 +20,10 @@ export function AssetDepreciationPlansPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', plan_type: 'economic' as const, depreciation_method: 'linear' as const, duration_months: 12, residual_value: 0, start_date: '', active: true })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetDepreciationPlans() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetDepreciationPlans() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createAssetDepreciationPlan(form as any); toast('success', tCommon('common.success'), t('depPlans.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleCreate() { try { await createAssetDepreciationPlan(form as any); toast('success', tCommon('common.success'), t('depPlans.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -51,11 +49,11 @@ export function AssetFamiliesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear' as const, depreciation_rate: 0, description: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetFamilies() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetFamilies() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createAssetFamily(form as any); toast('success', tCommon('common.success'), t('families.created')); setShowForm(false); setForm({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear', depreciation_rate: 0, description: '' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleDelete(id: string) { if (!window.confirm(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleCreate() { try { await createAssetFamily(form as any); toast('success', tCommon('common.success'), t('families.created')); setShowForm(false); setForm({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear', depreciation_rate: 0, description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -63,8 +61,8 @@ export function AssetFamiliesPage() {
       <PageHeader title={t('families.title')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('families.new')}</Button>} />
       {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-2 gap-3"><Input placeholder={t('families.code')} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /><Input placeholder={t('families.name')} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /><Input placeholder={t('families.account')} value={form.default_account} onChange={e => setForm({ ...form, default_account: e.target.value })} /><Input type="number" placeholder={t('families.duration')} value={form.default_duration_months} onChange={e => setForm({ ...form, default_duration_months: parseInt(e.target.value) || 60 })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('families.empty')} /> : (
-        <Table headers={[t('families.code'), t('families.name'), t('families.account'), t('families.duration'), tCommon('common.actions')]}>
-          {items.map(f => (<TableRow key={f.id}><TableCell>{f.code}</TableCell><TableCell>{f.name}</TableCell><TableCell>{f.default_account || '-'}</TableCell><TableCell>{f.default_duration_months || '-'}m</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(f.id)}><Trash2 className="w-4 h-4" /></Button></TableCell></TableRow>))}
+        <Table headers={[t('families.code'), t('families.name'), t('families.account'), t('families.duration'), tCommon('table.actions')]}>
+          {items.map(f => (<TableRow key={f.id}><TableCell>{f.code}</TableCell><TableCell>{f.name}</TableCell><TableCell>{f.default_account || '-'}</TableCell><TableCell>{f.default_duration_months || '-'}m</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(f.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></Button></TableCell></TableRow>))}
         </Table>
       )}
     </div>
@@ -82,10 +80,10 @@ export function AssetRevaluationPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ asset_id: '', revaluation_date: '', old_value: 0, new_value: 0, reason: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetRevaluations() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetRevaluations() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { const diff = form.new_value - form.old_value; await createAssetRevaluation({ ...form, difference: diff } as any); toast('success', tCommon('common.success'), t('revaluations.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleCreate() { try { const diff = form.new_value - form.old_value; await createAssetRevaluation({ ...form, difference: diff } as any); toast('success', tCommon('common.success'), t('revaluations.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -112,11 +110,11 @@ export function BatchDisposalPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ batch_number: '', disposal_date: '', notes: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetBatchDisposals() || []) } catch { } finally { setLoading(false) } }, [])
+  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getAssetBatchDisposals() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createAssetBatchDisposal(form as any); toast('success', tCommon('common.success'), t('batchDisposals.created')); setShowForm(false); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
-  async function handleProcess(id: string) { try { await updateAssetBatchDisposal(id, { status: 'processed' }); await loadData() } catch (e: any) { toast('error', tCommon('common.error'), e.message) } }
+  async function handleCreate() { try { await createAssetBatchDisposal(form as any); toast('success', tCommon('common.success'), t('batchDisposals.created')); setShowForm(false); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleProcess(id: string) { try { await updateAssetBatchDisposal(id, { status: 'processed' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
@@ -124,7 +122,7 @@ export function BatchDisposalPage() {
       <PageHeader title={t('batchDisposals.title')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('batchDisposals.new')}</Button>} />
       {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-2 gap-3"><Input placeholder={t('batchDisposals.number')} value={form.batch_number} onChange={e => setForm({ ...form, batch_number: e.target.value })} /><Input type="date" value={form.disposal_date} onChange={e => setForm({ ...form, disposal_date: e.target.value })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('batchDisposals.empty')} /> : (
-        <Table headers={[t('batchDisposals.number'), t('batchDisposals.date'), t('batchDisposals.assets'), t('batchDisposals.proceeds'), t('batchDisposals.gainLoss'), t('batchDisposals.status'), tCommon('common.actions')]}>
+        <Table headers={[t('batchDisposals.number'), t('batchDisposals.date'), t('batchDisposals.assets'), t('batchDisposals.proceeds'), t('batchDisposals.gainLoss'), t('batchDisposals.status'), tCommon('table.actions')]}>
           {items.map(b => (<TableRow key={b.id}><TableCell>{b.batch_number}</TableCell><TableCell>{b.disposal_date}</TableCell><TableCell>{b.total_assets}</TableCell><TableCell>{formatCurrency(b.total_proceeds)}</TableCell><TableCell>{formatCurrency(b.total_gain_loss)}</TableCell><TableCell><Badge>{t(`batchDisposals.statuses.${b.status}`)}</Badge></TableCell><TableCell>{b.status === 'draft' && <Button size="sm" variant="secondary" onClick={() => handleProcess(b.id)}>{t('batchDisposals.process')}</Button>}</TableCell></TableRow>))}
         </Table>
       )}
@@ -161,7 +159,7 @@ export function AssetFromEntryPage() {
       if (aErr) throw aErr
       toast('success', tCommon('common.success'), t('fromEntry.created'))
       setEntryId('')
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) }
   }
 
   return (

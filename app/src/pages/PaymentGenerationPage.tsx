@@ -1,15 +1,17 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import {
-  getThirdPartyAccounts, getInvoices, getPurchaseInvoices, getBankAccounts,
-  createCustomerPayment, createSupplierPayment, updateInvoice, updatePurchaseInvoice,
-  getPaymentTerms, generateMultiEcheances,
-} from '@/lib/queries'
+import { getThirdPartyAccounts } from '@/lib/queries/accounting'
+import { getInvoices, getPurchaseInvoices, updateInvoice, updatePurchaseInvoice } from '@/lib/queries/sales'
+import { getBankAccounts } from '@/lib/queries/banking'
+import { createCustomerPayment, createSupplierPayment } from '@/lib/queries/partners'
+import { getPaymentTerms } from '@/lib/queries/payroll'
+import { generateMultiEcheances } from '@/lib/queries/misc'
 import { Wallet, CheckSquare, Square, Landmark, CalendarClock } from 'lucide-react'
 import type { ThirdPartyAccount, Invoice, PurchaseInvoice, BankAccount, PaymentTerm } from '@/types'
+import { nextDocumentNumber } from '@/lib/queries/core'
 
 type TiersType = 'customer' | 'supplier'
 
@@ -50,7 +52,8 @@ export function PaymentGenerationPage() {
   const [echeancePreview, setEcheancePreview] = useState<{ date: string; amount_pct: number; label: string }[]>([])
 
   useEffect(() => {
-    loadRef()
+    loadRef().catch(err => console.error('loadRef:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadRef() {
@@ -59,8 +62,8 @@ export function PaymentGenerationPage() {
       setThirdParties(tp || [])
       setBanks(ba || [])
       setPaymentTerms(pt || [])
-    } catch (err) {
-      console.error('Error loading reference data:', err)
+    } catch (err) { console.error('Error loading reference data:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -78,8 +81,8 @@ export function PaymentGenerationPage() {
         const data = await getInvoices()
         setInvoices(data || [])
       }
-    } catch (err) {
-      console.error('Error loading invoices:', err)
+    } catch (err) { console.error('Error loading invoices:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -158,7 +161,7 @@ export function PaymentGenerationPage() {
         const echeances = term ? generateMultiEcheances(row.date, term) : [{ date: paymentDate, amount_pct: 100, label: 'Payment' }]
         for (const ech of echeances) {
           const amount = (row.amountDue * ech.amount_pct) / 100
-          const number = `${tiersType === 'supplier' ? 'RSF' : 'RSC'}-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}-${row.id.slice(0, 4)}-${ech.label.slice(-1)}`
+          const number = await nextDocumentNumber(tiersType === 'supplier' ? 'RSF' : 'RSC')
           if (tiersType === 'supplier') {
             await createSupplierPayment({
               number,
@@ -203,8 +206,8 @@ export function PaymentGenerationPage() {
       }
       toast('success', t('paymentGeneration.generated'), t('paymentGeneration.generatedDesc', { count: selectedRows.length }))
       await handleSearch()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || t('paymentGeneration.generateError'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || t('paymentGeneration.generateError'))
     } finally {
       setGenerating(false)
     }

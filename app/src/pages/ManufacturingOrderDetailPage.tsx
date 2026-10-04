@@ -4,13 +4,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList, Printer } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import {
-  getManufacturingOrder,
-  getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel,
-  getOFLots, createOFLot, deleteOFLot,
-  getOFConsumptions, createOFConsumption, deleteOFConsumption,
-  getSubManufacturingOrders, getProducts,
-} from '@/lib/queries'
+import { errorMessage, formatCurrency } from '@/lib/utils'
+import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
+import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
@@ -20,6 +16,7 @@ export function ManufacturingOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation('production')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [mo, setMo] = useState<any>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -34,6 +31,8 @@ export function ManufacturingOrderDetailPage() {
   const [labelCount, setLabelCount] = useState(1)
   const [labelQty, setLabelQty] = useState(0)
   const [allowDeferred, setAllowDeferred] = useState(false)
+  const [productionCost, setProductionCost] = useState<any>(null)
+  const [costLoading, setCostLoading] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -45,25 +44,25 @@ export function ManufacturingOrderDetailPage() {
         const prod = (prods || []).find((p: any) => p.id === moData.product_id)
         if ((prod as any)?.units_per_carton) setLabelQty((prod as any).units_per_carton)
       }
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [id])
+  }, [id, tCommon, toast])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function loadTabData(tab: string) {
     if (!id) return
     if (tab === 'labels' && labels.length === 0) {
-      try { setLabels(await getOFLabels(id)) } catch (err) { console.error(err) }
+      try { setLabels(await getOFLabels(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'lots' && lots.length === 0) {
-      try { setLots(await getOFLots(id)) } catch (err) { console.error(err) }
+      try { setLots(await getOFLots(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'consumptions' && consumptions.length === 0) {
-      try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err) }
+      try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
-      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err) }
+      try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
   }
 
@@ -73,7 +72,7 @@ export function ManufacturingOrderDetailPage() {
       await generateOFLabels(id, labelCount, labelQty, mo?.product_id || null)
       setLabels(await getOFLabels(id))
       toast('success', t('manufacturing.detail.labels.generated'), t('manufacturing.detail.labels.generatedMsg', { count: labelCount }))
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeclareLabel(labelId: string) {
@@ -81,26 +80,63 @@ export function ManufacturingOrderDetailPage() {
       await updateOFLabel(labelId, { is_declared: true, is_complete: true })
       setLabels(await getOFLabels(id!))
       toast('success', t('manufacturing.detail.labels.declaredSuccess'), t('manufacturing.detail.labels.declaredSuccessMsg'))
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteLabel(labelId: string) {
     try { await deleteOFLabel(labelId); setLabels(await getOFLabels(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteLot(lotId: string) {
     try { await deleteOFLot(lotId); setLots(await getOFLots(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   async function handleDeleteCons(consId: string) {
     try { await deleteOFConsumption(consId); setConsumptions(await getOFConsumptions(id!)) }
-    catch (err: any) { toast('error', t('common.error'), err.message) }
+    catch (err) { toast('error', t('common.error'), errorMessage(err)) }
+  }
+
+  async function handleProductionCost() {
+    if (!id) return
+    setCostLoading(true)
+    try {
+      const res = await calculateProductionCost(id)
+      setProductionCost(res)
+      const total = (res as any)?.total_cost ?? res
+      toast('success', t('manufacturing.detail.info.cost'), formatCurrency(Number(total ?? 0)))
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
+    finally { setCostLoading(false) }
   }
 
   if (loading) return <SkeletonTable rows={4} cols={4} />
   if (!mo) return <EmptyState title={t('manufacturing.detail.notFound')} description={t('manufacturing.detail.notFoundDescription')} action={<Button onClick={() => navigate('/production/manufacturing')}><ArrowLeft className="w-4 h-4" /> {t('manufacturing.detail.back')}</Button>} />
+
+  // D3 (stk-010) : le coût de référence est celui que la **clôture** a écrit sur
+  // l'OF (`cost_material`, `cost_labor`, `cost_overhead`, `cost_total`,
+  // `unit_cost`, `cost_variance`) — `getManufacturingOrder` le ramène déjà.
+  // Le bouton « Calculer le coût » reste pour un OF en cours : son résultat
+  // (`calculate_production_cost`, qui applique 10 % de frais généraux en dur et
+  // les entrées de projet) n'est affiché que s'il n'y a pas de coût de clôture,
+  // et il est alors annoncé comme un recalcul, pas comme le coût de l'OF.
+  const coutCloture = mo.cost_total != null || mo.cost_material != null ? {
+    material: Number(mo.cost_material || 0),
+    labor: Number(mo.cost_labor || 0),
+    overhead: Number(mo.cost_overhead || 0),
+    total: Number(mo.cost_total || 0),
+    unit: Number(mo.unit_cost || 0),
+    variance: mo.cost_variance != null ? Number(mo.cost_variance) : null,
+  } : null
+  const coutRecalcule = productionCost && typeof productionCost === 'object' && productionCost.total_cost != null ? {
+    material: Number(productionCost.material_cost || 0),
+    labor: Number(productionCost.labor_cost || 0),
+    overhead: Number(productionCost.overhead_cost || 0),
+    total: Number(productionCost.total_cost || 0),
+    unit: Number(productionCost.unit_cost || 0),
+    variance: null,
+  } : null
+  const coutAffiche = coutCloture ?? coutRecalcule
 
   const tabs = [
     { key: 'info', label: t('manufacturing.detail.tabs.info'), icon: ClipboardList },
@@ -144,25 +180,78 @@ export function ManufacturingOrderDetailPage() {
 
       {/* Tab: Informations */}
       {activeTab === 'info' && (
-        <Card>
-          <div className="grid grid-cols-2 gap-4 p-4">
-            <InfoRow label={t('manufacturing.detail.info.number')} value={mo.number} />
-            <InfoRow label={t('manufacturing.detail.info.status')} value={t('manufacturing.statuses.' + mo.status)} />
-            <InfoRow label={t('manufacturing.detail.info.bom')} value={mo.boms ? `${mo.boms.code} — ${mo.boms.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.product')} value={mo.products ? `${mo.products.sku} — ${mo.products.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.quantity')} value={String(mo.quantity)} />
-            <InfoRow label={t('manufacturing.detail.info.warehouse')} value={mo.warehouses?.name || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.routing')} value={mo.routings ? `${mo.routings.code} — ${mo.routings.name}` : '—'} />
-            <InfoRow label={t('manufacturing.detail.info.startDate')} value={mo.start_date || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.endDate')} value={mo.end_date || '—'} />
-            <InfoRow label={t('manufacturing.detail.info.origin')} value={t('manufacturing.origins.' + (mo.origin || 'manual'))} />
-            {mo.lot_number && <InfoRow label={t('manufacturing.detail.info.lotNumber')} value={mo.lot_number} />}
-            {mo.expiry_date && <InfoRow label={t('manufacturing.detail.info.expiryDate')} value={mo.expiry_date} />}
-            {mo.expiry_type && <InfoRow label={t('manufacturing.detail.info.expiryType')} value={mo.expiry_type} />}
-            {mo.additional_text && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.additionalText')} value={mo.additional_text} /></div>}
-            {mo.notes && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.notes')} value={mo.notes} /></div>}
-          </div>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <div className="grid grid-cols-2 gap-4 p-4">
+              <InfoRow label={t('manufacturing.detail.info.number')} value={mo.number} />
+              <InfoRow label={t('manufacturing.detail.info.status')} value={t('manufacturing.statuses.' + mo.status)} />
+              <InfoRow label={t('manufacturing.detail.info.bom')} value={mo.boms ? `${mo.boms.code} — ${mo.boms.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.product')} value={mo.products ? `${mo.products.sku} — ${mo.products.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.quantity')} value={String(mo.quantity)} />
+              <InfoRow label={t('manufacturing.detail.info.warehouse')} value={mo.warehouses?.name || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.routing')} value={mo.routings ? `${mo.routings.code} — ${mo.routings.name}` : '—'} />
+              <InfoRow label={t('manufacturing.detail.info.startDate')} value={mo.start_date || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.endDate')} value={mo.end_date || '—'} />
+              <InfoRow label={t('manufacturing.detail.info.origin')} value={t('manufacturing.origins.' + (mo.origin || 'manual'))} />
+              {mo.lot_number && <InfoRow label={t('manufacturing.detail.info.lotNumber')} value={mo.lot_number} />}
+              {mo.expiry_date && <InfoRow label={t('manufacturing.detail.info.expiryDate')} value={mo.expiry_date} />}
+              {mo.expiry_type && <InfoRow label={t('manufacturing.detail.info.expiryType')} value={mo.expiry_type} />}
+              {mo.additional_text && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.additionalText')} value={mo.additional_text} /></div>}
+              {mo.notes && <div className="col-span-2"><InfoRow label={t('manufacturing.detail.info.notes')} value={mo.notes} /></div>}
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between p-4">
+              <div>
+                <p className="text-xs text-[var(--color-text-secondary)] mb-0.5">
+                  {t('manufacturing.detail.info.cost')}
+                  {coutCloture && <span className="ml-2 text-[var(--color-text-tertiary)]">{t('manufacturing.detail.info.costFromClosing')}</span>}
+                </p>
+                <p className="text-sm font-medium">{coutAffiche ? formatCurrency(coutAffiche.total) : '—'}</p>
+              </div>
+              <Button variant="secondary" onClick={handleProductionCost} disabled={costLoading}>{costLoading ? '…' : t('manufacturing.detail.info.calculateCost', { defaultValue: 'Calculer le coût' })}</Button>
+            </div>
+            {coutAffiche && (
+              <div className="border-t border-[var(--color-border)] px-4 py-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.materialCost', { defaultValue: 'Coût matières' })}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.material)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.laborCost', { defaultValue: 'Coût main-d\'œuvre' })}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.labor)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.overheadCost', { defaultValue: 'Frais généraux' })}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.overhead)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.unitCost', { defaultValue: 'Coût unitaire' })}</p>
+                    <p className="font-mono font-medium">{formatCurrency(coutAffiche.unit)}</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+                  <span className="text-sm text-[var(--color-text-secondary)]">{t('manufacturing.detail.info.totalCost', { defaultValue: 'Coût total' })} ({Number(mo.quantity || 0)} unités)</span>
+                  <span className="font-bold font-mono text-base">{formatCurrency(coutAffiche.total)}</span>
+                </div>
+                {coutCloture && coutCloture.variance != null && (
+                  <div className="mt-2 pt-2 border-t border-[var(--color-border)] flex items-center justify-between">
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      {t('manufacturing.detail.info.costVariance')}
+                      <span className="ml-1 text-[var(--color-text-tertiary)]">
+                        {t('manufacturing.detail.info.costVarianceHint', { defaultValue: 'standard moins réel' })}
+                      </span>
+                    </span>
+                    <span className={`font-mono text-sm font-semibold ${Number(coutCloture.variance) > 0 ? 'text-[var(--color-success)]' : Number(coutCloture.variance) < 0 ? 'text-[var(--color-danger)]' : ''}`}>
+                      {formatCurrency(Number(coutCloture.variance))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
       )}
 
       {/* Tab: Suivi Quantité (Étiquettes) */}
@@ -191,7 +280,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         {!lbl.is_declared && <button onClick={() => handleDeclareLabel(lbl.id)} className="text-xs px-2 py-1 rounded bg-[var(--color-success)] text-white hover:opacity-80">{t('manufacturing.detail.labels.declare')}</button>}
-                        <button onClick={() => handleDeleteLabel(lbl.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDeleteLabel(lbl.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -221,7 +310,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell className="text-xs">{lot.production_date || '—'}</TableCell>
                     <TableCell className="text-xs">{lot.custom_expiry_date || lot.expiry_date || '—'}</TableCell>
                     <TableCell>{lot.expiry_type ? <Badge variant="neutral">{lot.expiry_type}</Badge> : '—'}</TableCell>
-                    <TableCell><button onClick={() => handleDeleteLot(lot.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                    <TableCell><button onClick={() => handleDeleteLot(lot.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                   </TableRow>
                 ))}
               </Table>
@@ -260,7 +349,7 @@ export function ManufacturingOrderDetailPage() {
                     <TableCell className="text-xs">{cons.consumption_date}</TableCell>
                     <TableCell>{cons.is_deferred ? <Badge variant="warning">{t('manufacturing.detail.consumptions.deferred')}</Badge> : '—'}</TableCell>
                     <TableCell className="text-xs">{cons.notes || '—'}</TableCell>
-                    <TableCell><button onClick={() => handleDeleteCons(cons.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]"><Trash2 className="w-3.5 h-3.5" /></button></TableCell>
+                    <TableCell><button onClick={() => handleDeleteCons(cons.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button></TableCell>
                   </TableRow>
                 ))}
               </Table>
@@ -327,7 +416,7 @@ function LotFormModal({ moId, products, onClose, onSaved }: { moId: string; prod
         expiry_type: (expiryType as any) || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -370,7 +459,7 @@ function ConsumptionFormModal({ moId, products, isDeferred, onClose, onSaved }: 
         is_deferred: isDeferred, notes: notes || null,
       })
       onSaved()
-    } catch (err: any) { toast('error', t('common.error'), err.message) }
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
   }
 
   return (
@@ -382,7 +471,7 @@ function ConsumptionFormModal({ moId, products, isDeferred, onClose, onSaved }: 
           <Input label={t('manufacturing.detail.consumptions.quantity')} type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
           <Input label={t('manufacturing.detail.consumptions.unit')} value={unit} onChange={(e) => setUnit(e.target.value)} />
           <Input label={t('manufacturing.detail.consumptions.notes')} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          {isDeferred && <p className="text-xs text-[var(--color-warning)]">{t('manufacturing.detail.consumptions.deferredHint')}</p>}
+          {isDeferred && <p className="text-xs text-[var(--color-warning-text)]">{t('manufacturing.detail.consumptions.deferredHint')}</p>}
           <div className="flex gap-2 justify-end pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button type="submit">{t('common.add')}</Button>

@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getPriceLists, createPriceList, deletePriceList, getPriceListLines, createPriceListLine, deletePriceListLine, getProducts } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Tag, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PriceList, Product } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
 
 export function PriceListsPage() {
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
 const [lists, setLists] = useState<PriceList[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -24,9 +25,9 @@ const [lists, setLists] = useState<PriceList[]>([])
       const [pls, prods] = await Promise.all([getPriceLists(), getProducts()])
       setLists(pls || [])
       setProducts(prods || [])
-    } catch (err) { console.error('Error:', err) }
+    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -39,21 +40,21 @@ const [lists, setLists] = useState<PriceList[]>([])
         try {
           const lns = await getPriceListLines(id)
           setLines((prev) => ({ ...prev, [id]: lns }))
-        } catch (err) { console.error('Error:', err) }
+        } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
       }
     }
     setExpanded(next)
   }
 
   async function handleDelete(id: string) {
-  if (!window.confirm(tCommon('form.confirmDelete'))) return
+  if (!confirmSync(tCommon('form.confirmDelete'))) return
     try { await deletePriceList(id); await loadData() }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   async function handleDeleteLine(lineId: string, listId: string) {
     try { await deletePriceListLine(lineId); const lns = await getPriceListLines(listId); setLines((prev) => ({ ...prev, [listId]: lns })) }
-    catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.deleteError')) }
+    catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 
   return (
@@ -87,9 +88,8 @@ const [lists, setLists] = useState<PriceList[]>([])
                       <button onClick={() => setShowLineForm(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={tCommon('actions.add')}>
                         <Plus className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={() => handleDelete(l.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                        <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -106,9 +106,8 @@ const [lists, setLists] = useState<PriceList[]>([])
                             <TableCell className="font-mono text-xs">{Number(line.min_quantity)}</TableCell>
                             <TableCell className="font-mono text-xs">{Number(line.discount_percent)}%</TableCell>
                             <TableCell>
-                              <button onClick={() => handleDeleteLine(line.id, l.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <button onClick={() => handleDeleteLine(line.id, l.id)} className="p-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -131,7 +130,7 @@ const [lists, setLists] = useState<PriceList[]>([])
 function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [code, setCode] = useState('')
   const [type, setType] = useState('sales')
@@ -145,7 +144,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
     try {
       await createPriceList({ name, code: code || null, type: type as any, currency: 'EUR', valid_from: validFrom || null, valid_to: validTo || null, active: true, is_default: false } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
@@ -154,7 +153,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('priceLists.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Input label={t('priceLists.name')} required value={name} onChange={(e) => setName(e.target.value)} />
@@ -168,7 +167,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>
@@ -179,7 +178,7 @@ function PriceListForm({ onClose, onSaved }: { onClose: () => void; onSaved: () 
 function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceListId: string; products: Product[]; onClose: () => void; onSaved: () => void }) {
   const [productId, setProductId] = useState('')
   const { toast } = useToast()
-  const { t } = useTranslation('inventory')
+  const { t } = useTranslation('stock')
   const { t: tCommon } = useTranslation('common')
   const [unitPrice, setUnitPrice] = useState(0)
   const [minQuantity, setMinQuantity] = useState(1)
@@ -192,7 +191,7 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
     try {
       await createPriceListLine({ price_list_id: priceListId, product_id: productId, unit_price: unitPrice, min_quantity: minQuantity, discount_percent: discountPercent } as any)
       onSaved()
-    } catch (err: any) { toast('error', tCommon('toast.error'), err.message || tCommon('toast.createError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) }
     finally { setSaving(false) }
   }
 
@@ -201,7 +200,7 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('priceLists.addProduct')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
@@ -218,7 +217,7 @@ function PriceListLineForm({ priceListId, products, onClose, onSaved }: { priceL
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : tCommon('actions.add')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : tCommon('actions.add')}</Button>
           </div>
         </form>
       </div>

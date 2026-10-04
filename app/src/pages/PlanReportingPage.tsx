@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { getReportingPlans, createReportingPlan, updateReportingPlan, deleteReportingPlan } from '@/lib/queries'
+import { getReportingPlans, createReportingPlan, updateReportingPlan, deleteReportingPlan } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, FileBarChart } from 'lucide-react'
 import type { ReportingPlan } from '@/types'
+import { confirmSync } from '@/lib/confirm'
 
 export function PlanReportingPage() {
   const { t } = useTranslation('accounting')
@@ -78,7 +79,7 @@ export function PlanReportingPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('reportingPlans.deleteConfirm'))) return
+    if (!confirmSync(t('reportingPlans.deleteConfirm'))) return
     try {
       await deleteReportingPlan(id)
       toast('success', t('reportingPlans.title'), t('reportingPlans.deleteSuccess'))
@@ -109,7 +110,7 @@ export function PlanReportingPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('reportingPlans.edit') : t('reportingPlans.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <Input label={t('reportingPlans.name')} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
@@ -191,8 +192,8 @@ export function PlanReportingPage() {
                 <TableCell><Badge variant={plan.active ? 'success' : 'neutral'}>{plan.active ? tCommon('common.active') : tCommon('common.inactive')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(plan)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(plan.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => startEdit(plan)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(plan.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

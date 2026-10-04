@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { getPaymentOrders, createPaymentOrder, updatePaymentOrder, deletePaymentOrder, getBankAccounts, getThirdPartyAccounts } from '@/lib/queries'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { getPaymentOrders, createPaymentOrder, updatePaymentOrder, deletePaymentOrder, getThirdPartyAccounts } from '@/lib/queries/accounting'
+import { getBankAccounts } from '@/lib/queries/banking'
 import { Plus, Trash2, X, CheckCircle2, Ban, FileText } from 'lucide-react'
 import type { PaymentOrder, BankAccount, ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { nextDocumentNumber } from '@/lib/queries/core'
+import { isIbanRejected } from '@/lib/iban'
 
-const statusLabels: Record<string, string> = {
-  draft: 'Brouillon',
-  approved: 'Approuvé',
-  executed: 'Exécuté',
-  cancelled: 'Annulé',
-}
 
 export function PaymentOrdersPage() {
   const { toast } = useToast()
@@ -23,14 +21,15 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
   const [showForm, setShowForm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('')
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { load() }, [])
 
   async function load() {
   try {
       const data = await getPaymentOrders(statusFilter || undefined)
       setOrders(data || [])
-    } catch (err) {
-      console.error('Error loading payment orders:', err)
+    } catch (err) { console.error('Error loading payment orders:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -38,13 +37,13 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
 
   async function handleStatusChange(id: string, status: string) {
     try { await updatePaymentOrder(id, { status: status as any }); await load() }
-    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('paymentOrders.deleteConfirm'))) return
+    if (!confirmSync(t('paymentOrders.deleteConfirm'))) return
     try { await deletePaymentOrder(id); await load() }
-    catch (err: any) { toast('error', tCommon('error'), err.message || tCommon('error')) }
+    catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 
   const totalAmount = orders.reduce((s, o) => s + Number(o.amount), 0)
@@ -102,7 +101,7 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
                     onChange={(e) => handleStatusChange(o.id, e.target.value)}
                     className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                   >
-                    {Object.entries(statusLabels).map(([k]) => <option key={k} value={k}>{t(`paymentOrders.statuses.${k}`)}</option>)}
+                    {['draft', 'approved', 'executed', 'cancelled'].map((k) => <option key={k} value={k}>{t(`paymentOrders.statuses.${k}`)}</option>)}
                   </select>
                 </TableCell>
                 <TableCell>
@@ -115,9 +114,8 @@ const [orders, setOrders] = useState<PaymentOrder[]>([])
                     <button onClick={() => handleStatusChange(o.id, 'cancelled')} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-warning)]" title={t('paymentOrders.cancelBtn')}>
                       <Ban className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => handleDelete(o.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -150,6 +148,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadRef() }, [])
 
   async function loadRef() {
@@ -157,14 +156,21 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       const [ba, tp] = await Promise.all([getBankAccounts(), getThirdPartyAccounts()])
       setBankAccounts(ba || [])
       setTiers(tp || [])
-    } catch (err) { console.error('Error loading ref:', err) }
+    } catch (err) { console.error('Error loading ref:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // A5 (ach-003) : un IBAN faux sur un ordre de paiement finit en virement.
+    // Même décision que le compte bancaire du tiers (`isIbanRejected`), même
+    // refus nommé ; un numéro de compte ordinaire n'est pas un IBAN et passe.
+    if (isIbanRejected(thirdPartyIban)) {
+      toast('warning', tCommon('form.requiredField'), t('paymentOrders.form.ibanRefused'))
+      return
+    }
     setSaving(true)
     try {
-      const number = `PAY-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+      const number = await nextDocumentNumber('PAY')
       await createPaymentOrder({
         number, type, status: 'draft',
         bank_account_id: bankAccountId || null,
@@ -177,8 +183,8 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
         remise_number: null,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -189,7 +195,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('paymentOrders.form.title')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <Select label={t('paymentOrders.form.type')} value={type} onChange={(e) => setType(e.target.value as any)} options={[
@@ -226,7 +232,7 @@ function PaymentOrderForm({ onClose, onSaved }: { onClose: () => void; onSaved: 
           <Input label={t('paymentOrders.form.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('paymentOrders.form.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('paymentOrders.form.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('paymentOrders.form.create')}</Button>
           </div>
         </form>
       </div>

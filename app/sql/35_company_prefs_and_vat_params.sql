@@ -1,5 +1,5 @@
 -- Migration: Company preferences and VAT parameters
--- Items #48 and #49 from PLAN-IMPLEMENTATION-FINAL-SAGE100-COMPTA.md
+-- Items #48 and #49 from implementation plan
 
 -- Add company preferences fields
 ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS saisie_negative boolean DEFAULT false;

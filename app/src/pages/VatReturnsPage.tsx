@@ -1,11 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
-import { getVatReturns, createVatReturn, updateVatReturn, deleteVatReturn, calcVatFromEntries } from '@/lib/queries'
+import { getVatReturns, createVatReturn, updateVatReturn, deleteVatReturn, calcVatFromEntries } from '@/lib/queries/accounting'
+import { generateVatReturn, calculateVatCa3 } from '@/lib/queries/businessFunctions'
 import { useLocale } from '@/hooks/useLocale'
-import { FileText, Plus, Trash2, X, Calculator } from 'lucide-react'
+import { FileText, Plus, Trash2, X, Calculator, Zap } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function VatReturnsPage() {
   const { toast } = useToast()
@@ -15,17 +18,50 @@ export function VatReturnsPage() {
 const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [calculatingCa3, setCalculatingCa3] = useState(false)
+
+  async function handleCalculateVatCa3() {
+    const today = new Date()
+    const periodStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0]
+    const periodEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0]
+    setCalculatingCa3(true)
+    try {
+      const result = await calculateVatCa3(periodStart, periodEnd)
+      toast('success', tCommon('common.success'), `TVA collectée: ${formatCurrency(result.vat_collected ?? 0)} | Déductible: ${formatCurrency(result.vat_deductible ?? 0)} | À payer: ${formatCurrency(result.vat_to_pay ?? 0)}`)
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setCalculatingCa3(false)
+    }
+  }
+
+  async function handleGenerateVatReturn() {
+    const today = new Date()
+    const periodStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0]
+    const periodEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0]
+    setGenerating(true)
+    try {
+      await generateVatReturn(periodStart, periodEnd)
+      toast('success', tCommon('common.success'), t('vat.generated'))
+      await loadData()
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
       setVatReturns(await getVatReturns())
-    } catch (err) {
-      console.error('Failed to load VAT returns:', err)
+    } catch (err) { console.error('Failed to load VAT returns:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -35,18 +71,18 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       if (status === 'submitted') updates.submitted_date = new Date().toISOString().split('T')[0]
       await updateVatReturn(id, updates)
       await loadData()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(t('vat.deleteConfirm'))) return
+    if (!confirmSync(t('vat.deleteConfirm'))) return
     try {
       await deleteVatReturn(id)
       await loadData()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -56,7 +92,17 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
       <PageHeader
         title={t('vat.title')}
         subtitle={t('vat.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('vat.new')}</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleCalculateVatCa3} disabled={calculatingCa3}>
+              <Calculator className="w-4 h-4" /> {calculatingCa3 ? t('vat.calculating') : 'Calculer la TVA CA3'}
+            </Button>
+            <Button variant="secondary" onClick={handleGenerateVatReturn} disabled={generating}>
+              <Zap className="w-4 h-4" /> {generating ? t('vat.calculating') : t('vat.autoCalc')}
+            </Button>
+            <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('vat.new')}</Button>
+          </div>
+        }
       />
 
       {loading ? (
@@ -91,9 +137,8 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(v.total_sales))}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(v.total_purchases))}</TableCell>
                 <TableCell>
-                  <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => handleDelete(v.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}>
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </TableCell>
               </TableRow>
             ))}
@@ -126,7 +171,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
 
   async function handleAutoCalc() {
     if (!periodStart || !periodEnd) {
-      toast('warning', tCommon('warning'), t('vat.selectDatesFirst'))
+      toast('warning', tCommon('common.warning'), t('vat.selectDatesFirst'))
       return
     }
     setCalculating(true)
@@ -136,8 +181,8 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       setInputVat(result.inputVat)
       setTotalSales(result.totalSales)
       setTotalPurchases(result.totalPurchases)
-    } catch (err: any) {
-      toast('error', t('vat.calcError'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', t('vat.calcError'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setCalculating(false)
     }
@@ -160,8 +205,8 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
         total_purchases: totalPurchases,
       } as any)
       onSaved()
-    } catch (err: any) {
-      toast('error', t('vat.error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', t('vat.error'), errorMessage(err) || tCommon('common.error'))
     } finally {
       setSaving(false)
     }
@@ -172,7 +217,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('vat.newReturn')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -198,7 +243,7 @@ function VatForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button type="button" variant="secondary" onClick={onClose}>{t('vat.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? '...' : t('vat.createBtn')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('vat.createBtn')}</Button>
           </div>
         </form>
       </div>

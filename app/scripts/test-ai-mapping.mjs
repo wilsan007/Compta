@@ -1,4 +1,4 @@
-import { autoMapColumns, confidenceLabel, confidenceVariant } from '../src/lib/aiImportMapping.ts'
+import { autoMapColumns, confidenceLabel } from '../src/lib/aiImportMapping.ts'
 
 const customerFields = [
   { key: 'name', label: 'Nom', required: true },

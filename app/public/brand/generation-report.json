@@ -1,0 +1,39 @@
+[
+  {
+    "id": "og-background",
+    "file": "public/brand/og-background.png",
+    "model": "flux-2-pro",
+    "seed": 3310,
+    "bytes": 337136,
+    "elapsedSeconds": 16.2,
+    "paletteMode": "strict",
+    "paletteOk": false,
+    "paletteProblems": [
+      "brand colours absent or drifted: terracotta (closest #A35841, ΔE 8.0), indigo (closest #181E26, ΔE 11.4)"
+    ],
+    "paletteCoverage": [
+      {
+        "name": "terracotta",
+        "expected": "#C44536",
+        "closest": "#A35841",
+        "deltaE": 8.039511084423571,
+        "ok": false
+      },
+      {
+        "name": "indigo",
+        "expected": "#1E2A4A",
+        "closest": "#181E26",
+        "deltaE": 11.427458636911574,
+        "ok": false
+      },
+      {
+        "name": "sand",
+        "expected": "#F5F0E8",
+        "closest": "#F8EFE0",
+        "deltaE": 2.8878860150899643,
+        "ok": true
+      }
+    ],
+    "generatedAt": "2026-07-29T21:56:20.599Z"
+  }
+]

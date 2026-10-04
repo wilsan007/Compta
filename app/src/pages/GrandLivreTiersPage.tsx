@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Button } from '@/components/ui'
 import { useLocale } from '@/hooks/useLocale'
-import { getThirdPartyAccounts, getGrandLivreTiers, generateExtourne, exportToExcel } from '@/lib/queries'
+import { getThirdPartyAccounts, getGrandLivreTiers, generateExtourne } from '@/lib/queries/accounting'
+import { exportToExcel } from '@/lib/queries/misc'
 import { useToast } from '@/lib/toast'
 import { BookOpen, RotateCcw, Download } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
+import { errorMessage } from '@/lib/utils'
 
 export function GrandLivreTiersPage() {
   const { t } = useTranslation('accounting')
@@ -14,7 +16,11 @@ export function GrandLivreTiersPage() {
   const { toast } = useToast()
   const [tiers, setTiers] = useState<ThirdPartyAccount[]>([])
   const [selectedTiers, setSelectedTiers] = useState('')
-  const [movements, setMovements] = useState<any[]>([])
+  // Corrigé le 2026-10-01 : ce state portait le type de `getThirdPartyAccounts`
+  // (des TIERS) alors qu'il est rempli par `getGrandLivreTiers` (des MOUVEMENTS de
+  // journal). Le `any` du retour masquait l'erreur : l'écran lisait `debit`,
+  // `credit`, `journal_entries` sur un type qui ne les a pas.
+  const [movements, setMovements] = useState<Awaited<ReturnType<typeof getGrandLivreTiers>>>([])
   const [loading, setLoading] = useState(false)
   const [, setLoadingTiers] = useState(true)
   const [dateFrom, setDateFrom] = useState('')
@@ -24,14 +30,15 @@ export function GrandLivreTiersPage() {
   const [showExtourne, setShowExtourne] = useState(false)
   const [extourneLoading, setExtourneLoading] = useState(false)
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   useEffect(() => { loadTiers() }, [])
 
   async function loadTiers() {
     try {
       const data = await getThirdPartyAccounts()
       setTiers(data || [])
-    } catch (err) {
-      console.error('Error loading tiers:', err)
+    } catch (err) { console.error('Error loading tiers:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoadingTiers(false)
     }
@@ -43,8 +50,8 @@ export function GrandLivreTiersPage() {
     try {
       const data = await getGrandLivreTiers(selectedTiers, dateFrom || undefined, dateTo || undefined)
       setMovements(data || [])
-    } catch (err) {
-      console.error('Error loading grand livre tiers:', err)
+    } catch (err) { console.error('Error loading grand livre tiers:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -63,7 +70,7 @@ export function GrandLivreTiersPage() {
       toast('success', tCommon('common.success'), t('extourne.generated'))
       setShowExtourne(false); setExtourneEntryId(''); setExtourneReason('')
       await loadMovements()
-    } catch (e: any) { toast('error', tCommon('common.error'), e.message) } finally { setExtourneLoading(false) }
+    } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } finally { setExtourneLoading(false) }
   }
 
   function handleExport() {
@@ -82,7 +89,7 @@ export function GrandLivreTiersPage() {
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.states') }, { label: t('grandLivreTiers.title') }]} />
       <PageHeader title={t('grandLivreTiers.title')} subtitle={t('grandLivreTiers.subtitle')} action={
         <div className="flex gap-2">
-          {movements.length > 0 && <Button variant="secondary" onClick={handleExport}><Download className="w-4 h-4" /> {tCommon('common.actions.export')}</Button>}
+          {movements.length > 0 && <Button variant="secondary" onClick={handleExport}><Download className="w-4 h-4" /> {tCommon('actions.export')}</Button>}
           {movements.length > 0 && <Button variant="secondary" onClick={() => setShowExtourne(true)}><RotateCcw className="w-4 h-4" /> {t('extourne.title')}</Button>}
         </div>
       } />
@@ -169,13 +176,16 @@ export function GrandLivreTiersPage() {
             <option value="">{t('extourne.selectEntry')}</option>
             {movements.map(m => {
               const je = m.journal_entries
-              return <option key={m.id} value={je?.entry_id || m.id}>{je?.date} — {je?.piece_number || je?.number} — {formatCurrency(Number(m.debit) || Number(m.credit))}</option>
+              // Corrigé le 2026-10-01 : `je.entry_id` n'existe pas (l'embed porte
+              // `id`). Le repli prenait `m.id`, l'id de la LIGNE, et non de
+              // l'écriture — l'extourne partait sur la mauvaise pièce.
+              return <option key={m.id} value={je?.id || m.id}>{je?.date} — {je?.piece_number || je?.number} — {formatCurrency(Number(m.debit) || Number(m.credit))}</option>
             })}
           </select>
           <Input label={t('extourne.reason')} value={extourneReason} onChange={e => setExtourneReason(e.target.value)} />
           <div className="flex gap-2">
             <Button onClick={handleExtourne} disabled={extourneLoading}><RotateCcw className="w-4 h-4" /> {t('extourne.generate')}</Button>
-            <Button variant="secondary" onClick={() => setShowExtourne(false)}>{tCommon('common.actions.cancel')}</Button>
+            <Button variant="secondary" onClick={() => setShowExtourne(false)}>{tCommon('actions.cancel')}</Button>
           </div>
         </Card>
       )}

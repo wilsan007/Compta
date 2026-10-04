@@ -50,3 +50,24 @@ Thumbs.db
 # SECURITY: Lock files that could leak dependency versions
 package-lock.json.bak
 yarn.lock.bak
+
+# SOC-08: Backup files
+*.bak
+*.bak2
+*.orig
+
+# CodeGraph local index
+.codegraph/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Claude Code (worktrees locaux, 266 Mo)
+.claude/
+
+# Outillage local de session (réglages d'une autre session, non versionné)
+claude/

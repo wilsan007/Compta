@@ -155,6 +155,12 @@ export function AccountingHomePage() {
       <Breadcrumb items={[{ label: t('title') }, { label: t('home.title') }]} />
 
       <div className="relative mb-8 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] via-[var(--color-surface)] to-[var(--color-neutral-50)] dark:to-white/5 p-8 backdrop-blur-sm">
+        <img
+          src="/brand/hero-dataviz.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.05] pointer-events-none"
+          aria-hidden="true"
+        />
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-violet-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/10 to-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative">

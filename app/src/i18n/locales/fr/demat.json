@@ -1,0 +1,48 @@
+{
+  "signatures": {
+    "title": "Signatures électroniques",
+    "subtitle": "Gérez les signatures de vos documents",
+    "documentType": "Type de document",
+    "documentId": "ID document",
+    "signerName": "Signataire",
+    "signerEmail": "Email signataire",
+    "signedAt": "Signé le",
+    "ipAddress": "Adresse IP",
+    "noSignatures": "Aucune signature",
+    "noSignaturesDescription": "Aucune signature électronique enregistrée",
+    "new": "Nouvelle signature"
+  },
+  "payments": {
+    "title": "Paiements en ligne",
+    "subtitle": "Suivez les paiements en ligne de vos clients",
+    "invoice": "Facture",
+    "customer": "Client",
+    "provider": "Fournisseur",
+    "amount": "Montant",
+    "currency": "Devise",
+    "status": "Statut",
+    "pending": "En attente",
+    "completed": "Complété",
+    "failed": "Échec",
+    "refunded": "Remboursé",
+    "paidAt": "Payé le",
+    "noPayments": "Aucun paiement",
+    "noPaymentsDescription": "Aucun paiement en ligne enregistré"
+  },
+  "shares": {
+    "title": "Partages de documents",
+    "subtitle": "Gérez les liens de partage de documents",
+    "documentType": "Type de document",
+    "sharedWith": "Partagé avec",
+    "shareToken": "Jeton de partage",
+    "expiresAt": "Expire le",
+    "viewed": "Vu",
+    "viewedAt": "Vu le",
+    "notViewed": "Non vu",
+    "noShares": "Aucun partage",
+    "noSharesDescription": "Aucun partage de document enregistré",
+    "new": "Nouveau partage",
+    "createLink": "Créer un lien",
+    "copyLink": "Copier le lien"
+  }
+}

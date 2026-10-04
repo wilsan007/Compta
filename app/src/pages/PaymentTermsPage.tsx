@@ -2,9 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getPaymentTerms, createPaymentTerm, updatePaymentTerm, deletePaymentTerm } from '@/lib/queries'
-import { Plus, Trash2, Edit2, X, CalendarDays } from 'lucide-react'
+import { getPaymentTerms, createPaymentTerm, updatePaymentTerm, deletePaymentTerm } from '@/lib/queries/payroll'
+import { calculatePaymentDueDates } from '@/lib/queries/businessFunctions'
+import { Plus, Trash2, Edit2, X, CalendarDays, Calculator } from 'lucide-react'
 import type { PaymentTerm } from '@/types'
+import { confirmSync } from '@/lib/confirm'
+import { errorMessage } from '@/lib/utils'
 
 export function PaymentTermsPage() {
   const { t } = useTranslation('accounting')
@@ -14,6 +17,21 @@ export function PaymentTermsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<PaymentTerm | null>(null)
+  const [calculatingId, setCalculatingId] = useState<string | null>(null)
+
+  async function handleCalcDueDates(termId: string) {
+    const invoiceDate = new Date().toISOString().split('T')[0]
+    setCalculatingId(termId)
+    try {
+      const result = await calculatePaymentDueDates(invoiceDate, termId)
+      const dates = Array.isArray(result) ? result.map((d: any) => d.due_date || d.date).join(', ') : JSON.stringify(result)
+      toast('success', t('paymentTerms.title'), `Échéances: ${dates}`)
+    } catch (err) {
+      toast('error', t('paymentTerms.title'), errorMessage(err) || t('paymentTerms.saveError'))
+    } finally {
+      setCalculatingId(null)
+    }
+  }
 
   const [form, setForm] = useState({
     code: '',
@@ -78,7 +96,7 @@ export function PaymentTermsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('paymentTerms.deleteConfirm'))) return
+    if (!confirmSync(t('paymentTerms.deleteConfirm'))) return
     try {
       await deletePaymentTerm(id)
       toast('success', t('paymentTerms.title'), t('paymentTerms.deleteSuccess'))
@@ -113,7 +131,7 @@ export function PaymentTermsPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">{editing ? t('paymentTerms.edit') : t('paymentTerms.create')}</h3>
-              <Button variant="secondary" onClick={resetForm}><X className="w-4 h-4" /></Button>
+              <Button variant="secondary" onClick={resetForm} ariaLabel={tCommon('actions.close')}><X className="w-4 h-4" aria-hidden="true" /></Button>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <Input label={t('paymentTerms.code')} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required />
@@ -189,8 +207,11 @@ export function PaymentTermsPage() {
                 <TableCell><Badge variant={term.active ? 'success' : 'neutral'}>{term.active ? tCommon('common.active') : tCommon('common.inactive')}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <button onClick={() => startEdit(term)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(term.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleCalcDueDates(term.id)} disabled={calculatingId === term.id} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" title="Calculer les échéances">
+                      {calculatingId === term.id ? <span className="text-xs">…</span> : <Calculator className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => startEdit(term)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Edit2 className="w-4 h-4" aria-hidden="true" /></button>
+                    <button onClick={() => handleDelete(term.id)} className="p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
                 </TableCell>
               </TableRow>

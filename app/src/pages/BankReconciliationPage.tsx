@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Select } from '@/components/ui'
-import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { CheckCircle, XCircle, Zap } from 'lucide-react'
+import { getBankTransactions, getBankAccounts, updateBankTransaction, autoMatchBankTransactions } from '@/lib/queries/banking'
+import { smartBankReconciliation } from '@/lib/queries/businessFunctions'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { ArrowRight, CheckCircle, XCircle, Zap } from 'lucide-react'
 import type { BankTransaction, BankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
 
@@ -11,6 +13,7 @@ export function BankReconciliationPage() {
   const { toast } = useToast()
   const { t } = useTranslation('banking')
   const { t: tCommon } = useTranslation('common')
+  const navigate = useNavigate()
 const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,12 +25,12 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const [txns, accs] = await Promise.all([getBankTransactions(selectedAccount || undefined), getBankAccounts()])
       setTransactions(txns)
       setAccounts(accs)
-    } catch (err) {
-      console.error('Failed to load:', err)
+    } catch (err) { console.error('Failed to load:', err)
+    toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [selectedAccount])
+  }, [selectedAccount, toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -35,8 +38,8 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
   try {
       await updateBankTransaction(id, { reconciled: !current, matched: !current })
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -45,8 +48,23 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
       const result = await autoMatchBankTransactions(selectedAccount || undefined)
       toast('success', tCommon('common.success'), t('reconciliation.autoMatchResult', { matched: result.matched, unmatched: result.unmatched }))
       await loadData()
-    } catch (err: any) {
-      toast('error', tCommon('error'), err.message || tCommon('error'))
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
+    }
+  }
+
+  async function handleSmartReconciliation() {
+    if (!selectedAccount) {
+      toast('error', tCommon('common.error'), t('reconciliation.selectAccount'))
+      return
+    }
+    try {
+      const result = await smartBankReconciliation(selectedAccount)
+      const matched = result?.matched ?? result?.match_count ?? result ?? 0
+      toast('success', tCommon('common.success'), t('reconciliation.smartResult', { matched: typeof matched === 'number' ? matched : 0 }))
+      await loadData()
+    } catch (err) {
+      toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))
     }
   }
 
@@ -70,6 +88,20 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         <Button onClick={handleAutoMatch} disabled={loading || unreconciled.length === 0}>
           <Zap className="w-4 h-4" /> {t('reconciliation.autoMatch')}
         </Button>
+        <Button onClick={handleSmartReconciliation} disabled={loading || !selectedAccount || unreconciled.length === 0} variant="secondary">
+          <Zap className="w-4 h-4" /> {t('reconciliation.smartMatch')}
+        </Button>
+        {/* W10 : le bouton « Appliquer les règles » appelait
+            `apply_bank_reconciliation_rules` — un DÉCLENCHEUR `BEFORE INSERT` sur
+            `bank_transactions`, que PostgREST n'expose jamais : l'action ne
+            pouvait qu'échouer. Les règles s'appliquent à l'import de la ligne ; le
+            rapprochement demandé à la main est celui du bouton précédent
+            (`smart_bank_reconciliation`, une fonction réellement appelable). */}
+        {/* R-09 : l'état de rapprochement (soldes, écarts des deux côtés, pointage
+            et comptabilisation d'une ligne non pointée) a son propre écran. */}
+        <Button onClick={() => navigate('/banking/reconciliation-state')} variant="secondary">
+          <ArrowRight className="w-4 h-4" /> {t('state.title')}
+        </Button>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -82,7 +114,7 @@ const [transactions, setTransactions] = useState<BankTransaction[]>([])
         <Card>
           <div className="p-4">
             <p className="text-sm text-[var(--color-text-secondary)]">{t('reconciliation.unreconciledAmount')}</p>
-            <p className="text-2xl font-bold font-mono text-[var(--color-warning)]">{formatCurrency(Math.abs(totalUnreconciled))}</p>
+            <p className="text-2xl font-bold font-mono text-[var(--color-warning-text)]">{formatCurrency(Math.abs(totalUnreconciled))}</p>
           </div>
         </Card>
         <Card>

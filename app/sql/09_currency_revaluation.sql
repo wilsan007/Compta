@@ -33,6 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_currency_reval_period ON currency_revaluations(pe
 ALTER TABLE currency_revaluations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'allow_all_currency_revaluations') THEN
+    DROP POLICY IF EXISTS "allow_all_currency_revaluations" ON currency_revaluations;
     CREATE POLICY "allow_all_currency_revaluations" ON currency_revaluations FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;

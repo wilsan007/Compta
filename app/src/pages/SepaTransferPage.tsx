@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, EmptyState, AutoBreadcrumb, Input } from '@/components/ui'
-import { getPaymentOrders, getCompanySettings } from '@/lib/queries'
+import { getPaymentOrders, getCompanySettings } from '@/lib/queries/accounting'
 import { generateSEPAXML, downloadSEPAXML, type SEPAPaymentInfo, type SEPAInitiator } from '@/lib/sepa'
 import { useToast } from '@/lib/toast'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { FileCode, Download, CheckSquare, Square, CheckCircle2 } from 'lucide-react'
 import type { PaymentOrder, CompanySettings } from '@/types'
 
 export function SepaTransferPage() {
   const { t } = useTranslation('features')
+  const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [payments, setPayments] = useState<PaymentOrder[]>([])
   const [company, setCompany] = useState<CompanySettings | null>(null)
@@ -20,7 +21,8 @@ export function SepaTransferPage() {
   const [executionDate, setExecutionDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => console.error('loadData:', err))
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- chargement volontairement limite aux valeurs listees
   }, [])
 
   async function loadData() {
@@ -33,6 +35,7 @@ export function SepaTransferPage() {
       setCompany(comp)
     } catch (err) {
       console.error('Error loading SEPA data:', err)
+      toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
@@ -97,8 +100,8 @@ export function SepaTransferPage() {
     const selectedPayments = payments.filter((p) => selected.has(p.id))
     const initiator: SEPAInitiator = {
       name: company?.legal_name || company?.name || '',
-      iban: (company as any)?.iban || '',
-      bic: (company as any)?.bic || '',
+      iban: company?.iban || '',
+      bic: company?.bic || '',
       siret: company?.siret,
     }
     const sepaPayments: SEPAPaymentInfo[] = selectedPayments.map((p) => ({

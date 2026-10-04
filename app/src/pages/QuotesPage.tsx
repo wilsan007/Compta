@@ -1,20 +1,26 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
-import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice, getCustomers, getProducts } from '@/lib/queries'
+import { getQuotes, createQuote, updateQuote, deleteQuote, convertQuoteToInvoice } from '@/lib/queries/sales'
+import { transformQuoteToSalesOrder } from '@/lib/queries/misc'
+import { getCustomers } from '@/lib/queries/partners'
+import { getProducts } from '@/lib/queries/stock'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
-import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package } from 'lucide-react'
+import { FileText, Plus, Trash2, X, ChevronDown, ChevronRight, ArrowRight, Package, FileSignature } from 'lucide-react'
 import type { Quote, Customer, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModal'
-import { getProductStock } from '@/lib/queries'
+import { getProductStock } from '@/lib/queries/stock'
+import { confirmSync } from '@/lib/confirm'
+import { usePermission } from '@/hooks/usePermission'
 
 const statusKeys: string[] = ['draft', 'sent', 'accepted', 'rejected', 'expired']
 
 export function QuotesPage() {
   const { toast } = useToast()
   const { t } = useTranslation('sales')
+  const { canCreate, canDelete } = usePermission('quotes')
   const { t: tCommon } = useTranslation('common')
 const [quotes, setQuotes] = useState<Quote[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -39,12 +45,12 @@ const [quotes, setQuotes] = useState<Quote[]>([])
         sMap[prod.id] = (stockEntries[i] as any[] || []).reduce((sum, s) => sum + Number(s.quantity || 0), 0)
       })
       setStockMap(sMap)
-    } catch (err) {
-      console.error('Failed to load quotes:', err)
+    } catch (err: any) { console.error('Failed to load quotes:', err)
+    toast('error', tCommon('toast.error'), err.message || tCommon('toast.loadingError'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [toast, tCommon])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -58,7 +64,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm(tCommon('form.confirmDelete'))) return
+    if (!confirmSync(tCommon('form.confirmDelete'))) return
     try {
       await deleteQuote(id)
       await loadData()
@@ -68,13 +74,24 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   async function handleConvert(id: string) {
-    if (!window.confirm(t('quotes.convertToInvoice'))) return
+    if (!confirmSync(t('quotes.convertToInvoice'))) return
     try {
       await convertQuoteToInvoice(id)
       toast('success', tCommon('toast.success'), t('quotes.convertToInvoice'))
       await loadData()
     } catch (err: any) {
       toast('error', tCommon('toast.error'), err.message || tCommon('toast.error'))
+    }
+  }
+
+  async function handleTransformToOrder(id: string) {
+    if (!confirmSync(t('quotes.transformToOrder'))) return
+    try {
+      await transformQuoteToSalesOrder(id)
+      toast('success', tCommon('toast.success'), t('transformations.transformationSuccess'))
+      await loadData()
+    } catch (err: any) {
+      toast('error', tCommon('toast.error'), err.message || t('transformations.transformationError'))
     }
   }
 
@@ -88,6 +105,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
   }
 
   const filtered = filterStatus ? quotes.filter(q => q.status === filterStatus) : quotes
+  const tableHeaders = ['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), t('quotes.transformationStatus'), tCommon('table.actions')]
 
   return (
     <div>
@@ -95,7 +113,7 @@ const [quotes, setQuotes] = useState<Quote[]>([])
       <PageHeader
         title={t('quotes.title')}
         subtitle={t('quotes.subtitle')}
-        action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button>}
+        action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button> : undefined}
       />
 
       <div className="mb-4 flex items-center gap-3">
@@ -113,13 +131,13 @@ const [quotes, setQuotes] = useState<Quote[]>([])
           icon={<FileText className="w-8 h-8" />}
           title={t('quotes.noQuotes')}
           description={t('quotes.noQuotesDescription')}
-          action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button>}
+          action={canCreate ? <Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('quotes.new')}</Button> : undefined}
         />
       ) : (
         <Card>
-          <Table headers={['', t('quotes.number'), t('quotes.date'), t('quotes.customer'), t('quotes.amount'), t('quotes.status'), tCommon('table.actions')]}>
+          <Table headers={tableHeaders}>
             {filtered.map((quote) => (
-              <div key={quote.id}>
+              <Fragment key={quote.id}>
                 <TableRow onClick={() => toggleExpand(quote.id)}>
                   <TableCell className="w-8">
                     {quote.quote_lines && quote.quote_lines.length > 0
@@ -137,10 +155,15 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                       onChange={(e) => handleStatusChange(quote.id, e.target.value)}
                       className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)]"
                     >
-                      {Object.entries(statusKeys).map(([_, k]) => (
+                      {statusKeys.map((k) => (
                         <option key={k} value={k}>{translateStatus(k)}</option>
                       ))}
                     </select>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs ${quote.transformation_status === 'transformed' ? 'text-[var(--color-success)]' : quote.transformation_status === 'partial' ? 'text-[var(--color-warning-text)]' : 'text-[var(--color-text-secondary)]'}`}>
+                      {quote.transformation_status === 'transformed' ? t('quotes.transformationTransformed') : quote.transformation_status === 'partial' ? t('quotes.transformationPartial') : t('quotes.transformationPending')}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -149,9 +172,14 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
+                      {quote.status === 'accepted' && quote.transformation_status !== 'transformed' && (
+                        <button onClick={(e) => { e.stopPropagation(); handleTransformToOrder(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" title={t('quotes.transformToOrder')}>
+                          <FileSignature className="w-4 h-4" />
+                        </button>
+                      )}
+                      {canDelete && <button onClick={(e) => { e.stopPropagation(); handleDelete(quote.id) }} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" title={tCommon('actions.delete')}>
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -170,9 +198,10 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     <TableCell className="font-mono text-xs text-right">{formatCurrency(Number(line.total))}</TableCell>
                     <TableCell className="font-mono text-xs text-right">{t('invoices.vatAmount')}: {formatCurrency(Number(line.vat_total))}</TableCell>
                     <TableCell />
+                    <TableCell />
                   </tr>
                 ))}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>
@@ -199,7 +228,6 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
-  const [number, setNumber] = useState('DEV-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 999)).padStart(3, '0'))
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
@@ -251,8 +279,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
     const customer = customers.find(c => c.id === customerId)
     setSaving(true)
     try {
+      // AUD-E04 : numéro DEV-<exercice>-n attribué par le serveur
       await createQuote({
-        number,
         date,
         expiry_date: expiryDate,
         customer_id: customerId || null,
@@ -262,8 +290,8 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
         vat_total: vatTotal,
         total,
         notes,
-        quote_lines: lines.filter(l => l.description).map(l => ({
-          product_id: null,
+        lines: lines.filter(l => l.description).map(l => ({
+          product_id: l.productId || null,
           description: l.description,
           quantity: l.quantity,
           unit_price: l.unit_price,
@@ -285,11 +313,11 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
           <h2 className="text-lg font-semibold">{t('quotes.new')}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <Input label={t('quotes.number')} required value={number} onChange={(e) => setNumber(e.target.value)} />
+          <p className="text-xs text-[var(--color-text-secondary)]">{t('quotes.numberAssigned')}</p>
+          <div className="grid grid-cols-2 gap-4">
             <Input label={t('quotes.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
             <Input label={t('quotes.validUntil')} type="date" required value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
           </div>
@@ -336,7 +364,7 @@ function QuoteForm({ customers, products, stockMap, onClose, onSaved }: {
                     <td className="px-3 py-2 text-right text-xs font-mono">{line.productId ? (stockMap[line.productId] ?? '—') : '—'}</td>
                     <td className="px-3 py-2 text-right text-xs font-mono">{formatCurrency(line.total + line.vat_total)}</td>
                     <td className="px-3 py-2">
-                      {lines.length > 1 && <button type="button" onClick={() => removeLine(idx)} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1"><X className="w-3 h-3" /></button>}
+                      {lines.length > 1 && <button type="button" onClick={() => removeLine(idx)} className="text-[var(--color-danger)] hover:bg-[var(--color-neutral-100)] rounded p-1" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-3 h-3" aria-hidden="true" /></button>}
                     </td>
                   </tr>
                 ))}
