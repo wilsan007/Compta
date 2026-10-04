@@ -1,4 +1,5 @@
 import type { ViewMode, GanttTask } from '@/types/projectManagement'
+import { getCurrentLocale } from '@/lib/utils'
 
 export interface ViewConfigInternal {
   viewMode: ViewMode
@@ -85,7 +86,8 @@ export function getTimelineHeaders(
     while (current <= timelineEnd) {
       const pos = ((current.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)) * dayToPixel
       headers.push({
-        label: current.toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
+        // G4 (pil-004) : la langue de l'APPLICATION, pas celle du navigateur.
+        label: current.toLocaleDateString(getCurrentLocale(), { day: '2-digit', month: 'short' }),
         position: pos,
         width: config.pixelPerUnit,
       })
@@ -105,7 +107,7 @@ export function getTimelineHeaders(
     while (current <= timelineEnd) {
       const pos = ((current.getTime() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)) * dayToPixel
       headers.push({
-        label: current.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }),
+        label: current.toLocaleDateString(getCurrentLocale(), { month: 'short', year: '2-digit' }),
         position: pos,
         width: config.pixelPerUnit,
       })

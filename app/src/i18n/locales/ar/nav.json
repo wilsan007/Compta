@@ -365,7 +365,7 @@
     "title": "اختر شركتك",
     "subtitle": "اختر الشركة التي تريد الوصول إليها ({{email}})"
   },
-  "hub": {
+  "hub": { "projectManagement": { "subtitle": "المشاريع والمهام والتخطيط وتتبع الوقت" },
     "viewAll": "عرض الكل",
     "pages": "صفحات",
     "quickNavigation": "التنقل السريع",

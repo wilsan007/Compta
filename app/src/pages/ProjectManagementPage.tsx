@@ -116,7 +116,7 @@ export function ProjectManagementPage({ projectId, initialView }: ProjectManagem
 }
 
 function ToolbarTaskDialog({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId?: string }) {
-  const { createTask } = useTaskContext()
+  const { createTask, allTasks } = useTaskContext()
   const { t } = useTranslation('taskManagement')
   const { toast } = useToast()
   const handleCreate = (task: TaskCreateInput) => {
@@ -128,6 +128,7 @@ function ToolbarTaskDialog({ open, onClose, projectId }: { open: boolean; onClos
       onClose={onClose}
       onConfirm={handleCreate}
       projectId={projectId}
+      parentCandidates={allTasks}
     />
   )
 }

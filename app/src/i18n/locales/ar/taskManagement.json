@@ -151,7 +151,7 @@
     "dependencies": "التبعيات",
     "overload": "زيادة العبء"
   },
-  "dialog": {
+  "dialog": { "progress": "نسبة الإنجاز (%)",
     "newTask": "مهمة جديدة",
     "editTask": "تعديل المهمة",
     "newSubtask": "مهمة فرعية جديدة",

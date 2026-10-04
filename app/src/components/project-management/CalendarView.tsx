@@ -4,7 +4,7 @@ import { useTaskContext } from '@/contexts/TaskContext'
 import { useProjectContext } from '@/contexts/ProjectContext'
 import { Card, EmptyState, Badge } from '@/components/ui'
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getCurrentLocale } from '@/lib/utils'
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, addMonths, format, isSameMonth, isToday,
@@ -87,7 +87,8 @@ export function CalendarView(_props: CalendarViewProps) {
     <div className="flex flex-col h-full p-4 gap-4" role="region" aria-label={t('calendar.title')}>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--color-text)]">
-          {format(currentDate, 'MMMM yyyy')}
+          {/* G4 (pil-004) : le mois dans la langue de l'application (date-fns, sans locale, écrit en anglais). */}
+          {currentDate.toLocaleDateString(getCurrentLocale(), { month: 'long', year: 'numeric' })}
         </h2>
         <div className="flex items-center gap-2">
           <button
@@ -193,7 +194,7 @@ export function CalendarView(_props: CalendarViewProps) {
               {selectedTask.due_date && (
                 <div>
                   <span className="text-xs text-[var(--color-text-secondary)]">{t('calendar.dueDate')}</span>
-                  <div className="text-sm font-medium">{format(parseISO(selectedTask.due_date), 'PPP')}</div>
+                  <div className="text-sm font-medium">{parseISO(selectedTask.due_date).toLocaleDateString(getCurrentLocale(), { dateStyle: 'long' })}</div>
                 </div>
               )}
               {selectedTask.assignee && (

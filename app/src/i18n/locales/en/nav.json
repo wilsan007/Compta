@@ -365,7 +365,7 @@
     "title": "Choose your company",
     "subtitle": "Select the company you want to access ({{email}})"
   },
-  "hub": {
+  "hub": { "projectManagement": { "subtitle": "Projects, tasks, planning and time tracking" },
     "viewAll": "View all",
     "pages": "pages",
     "quickNavigation": "Quick navigation",

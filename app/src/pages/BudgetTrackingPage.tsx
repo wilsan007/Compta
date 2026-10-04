@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, PageHeader, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Button, Select } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { errorMessage, formatCurrency } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatPercent } from '@/lib/utils'
 import { getBudgetTracking, getFiscalYears } from '@/lib/queries/accounting'
 import { Download, TrendingDown, TrendingUp } from 'lucide-react'
 import type { FiscalYear } from '@/types'
@@ -105,7 +105,8 @@ export function BudgetTrackingPage() {
                   {formatCurrency(item.variance)}
                 </TableCell>
                 <TableCell className={`text-right ${item.variance_pct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {item.variance_pct.toFixed(1)}%
+                  {/* G5 : « 100,0 % » en français, pas « 100.0% ». */}
+                  {formatPercent(item.variance_pct)}
                 </TableCell>
                 <TableCell>
                   {(item.available || 0) >= 0 ? (

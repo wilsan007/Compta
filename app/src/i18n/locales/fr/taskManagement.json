@@ -151,7 +151,7 @@
     "dependencies": "Dépendances",
     "overload": "Surcharge"
   },
-  "dialog": {
+  "dialog": { "progress": "Avancement (%)",
     "newTask": "Nouvelle Tâche",
     "editTask": "Modifier la Tâche",
     "newSubtask": "Nouvelle Sous-tâche",

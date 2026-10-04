@@ -151,7 +151,7 @@
     "dependencies": "Dependencies",
     "overload": "Overload"
   },
-  "dialog": {
+  "dialog": { "progress": "Progress (%)",
     "newTask": "New Task",
     "editTask": "Edit Task",
     "newSubtask": "New Subtask",

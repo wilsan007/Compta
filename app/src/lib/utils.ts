@@ -77,6 +77,13 @@ export function formatCurrency(amount: number, currency = 'EUR'): string {
   }).format(amount)
 }
 
+/** Un pourcentage dans la langue de l'application : `formatPercent(12.5)` → « 12,5 % » en français. */
+export function formatPercent(value: number, digits = 1): string {
+  return new Intl.NumberFormat(getCurrentLocale(), {
+    style: 'percent', minimumFractionDigits: digits, maximumFractionDigits: digits,
+  }).format((Number(value) || 0) / 100)
+}
+
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat(getCurrentLocale(), {

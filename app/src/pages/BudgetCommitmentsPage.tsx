@@ -212,7 +212,7 @@ function CommitmentForm({ accounts, years, suppliers, onClose, onSaved }: {
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('budgetCommitments.supplierOptional')}</label>
             <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-              <option value="">{t('budgetCommitments.none')}</option>
+              <option value="">{t('budgetCommitments.chooseSupplier')}</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>

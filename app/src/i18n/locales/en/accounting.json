@@ -1075,6 +1075,7 @@
     "name": "Budget name"
   },
   "budgetCommitments": {
+    "chooseSupplier": "— Choose a supplier —",
     "title": "Budget commitments",
     "subtitle": "{{count}} commitment(s) — {{total}} active",
     "new": "New commitment",

@@ -365,7 +365,7 @@
     "title": "Choisissez votre entreprise",
     "subtitle": "Sélectionnez l'entreprise à laquelle vous souhaitez accéder ({{email}})"
   },
-  "hub": {
+  "hub": { "projectManagement": { "subtitle": "Projets, tâches, planning et suivi des temps" },
     "viewAll": "Voir tout",
     "pages": "pages",
     "quickNavigation": "Navigation rapide",

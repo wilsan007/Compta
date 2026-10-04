@@ -11,12 +11,14 @@ interface TaskCreationDialogProps {
   onClose: () => void
   onConfirm: (task: TaskCreateInput) => void
   projectId?: string
+  /** G3 (pil-006) : les tâches parmi lesquelles choisir une tâche PARENTE. Sans elles, le champ n'apparaît pas. */
+  parentCandidates?: { id: string; title: string; project_id: string | null; task_level?: number | null }[]
 }
 
 const STATUSES: TaskStatus[] = ['todo', 'doing', 'blocked', 'changes_requested', 'approved', 'done', 'canceled']
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent']
 
-export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: TaskCreationDialogProps) {
+export function TaskCreationDialog({ open, onClose, onConfirm, projectId, parentCandidates }: TaskCreationDialogProps) {
   const { t } = useTranslation('taskManagement')
   const { t: tCommon } = useTranslation('common')
   const { projects } = useProjectContext()
@@ -32,6 +34,10 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
   const [dueDate, setDueDate] = useState('')
   const [effort, setEffort] = useState(0)
   const [budget, setBudget] = useState(0)
+  // G3 : la tâche parente et l'avancement. L'avancement d'un parent est la moyenne
+  // pondérée de ses sous-tâches, calculée par la base (303) : on ne saisit que le sien.
+  const [parentId, setParentId] = useState('')
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     if (open) {
@@ -46,8 +52,13 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
       setDueDate('')
       setEffort(0)
       setBudget(0)
+      setParentId('')
+      setProgress(0)
     }
   }, [open, projectId])
+
+  // Une tâche parente appartient au même projet que la tâche créée.
+  const parents = (parentCandidates ?? []).filter((p) => (p.project_id ?? '') === (selectedProject || ''))
 
   function handleConfirm() {
     if (!title.trim()) return
@@ -55,7 +66,7 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
       title: title.trim(),
       description: description.trim() || null,
       project_id: selectedProject || null,
-      parent_id: null,
+      parent_id: parentId || null,
       status,
       priority,
       assignee: assignee.trim() || null,
@@ -64,9 +75,9 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
       due_date: dueDate || null,
       effort_estimate_h: effort,
       effort_spent_h: 0,
-      progress: 0,
+      progress: Math.min(100, Math.max(0, Math.round(progress))),
       display_order: new Date().toISOString(),
-      task_level: 0,
+      task_level: parentId ? (Number(parents.find((p) => p.id === parentId)?.task_level) || 0) + 1 : 0,
       budget,
       color: 0,
       acceptance_criteria: null,
@@ -215,6 +226,23 @@ export function TaskCreationDialog({ open, onClose, onConfirm, projectId }: Task
               onChange={(e) => setBudget(Number(e.target.value))}
               className={inputClass}
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {parents.length > 0 && (
+            <div>
+              <label htmlFor="task-parent" className={labelClass}>{t('dialog.parentTask')}</label>
+              <select id="task-parent" value={parentId} onChange={(e) => setParentId(e.target.value)} className={inputClass}>
+                <option value="">—</option>
+                {parents.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label htmlFor="task-progress" className={labelClass}>{t('dialog.progress')}</label>
+            <input id="task-progress" type="number" min={0} max={100} value={progress}
+              onChange={(e) => setProgress(Number(e.target.value))} className={inputClass} />
           </div>
         </div>
       </div>
