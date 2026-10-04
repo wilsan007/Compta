@@ -67,7 +67,7 @@ const [contracts, setContracts] = useState<any[]>([])
           action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('contracts.new')}</Button>} />
       ) : (
         <Card>
-          <Table headers={[t('payRuns.number'), t('contracts.employee'), t('contracts.type'), t('contracts.startDate'), t('contracts.endDate'), t('contracts.salary'), t('contracts.workingHours'), t('contracts.status'), tCommon('table.actions')]}>
+          <Table headers={[t('contracts.number'), t('contracts.employee'), t('contracts.type'), t('contracts.startDate'), t('contracts.endDate'), t('contracts.salary'), t('contracts.workingHours'), t('contracts.status'), tCommon('table.actions')]}>
             {filtered.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono text-xs">{c.number}</TableCell>

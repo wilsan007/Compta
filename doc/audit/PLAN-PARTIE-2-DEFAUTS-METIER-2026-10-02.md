@@ -35,7 +35,7 @@
 | 2.1 | **C2 ter** — titres-restaurant et indemnité de transport hors du bulletin (suite `321`, 3 rouges inscrits au registre) | les deux postes entrent dans le brut, les cotisations et le net selon la grille 2026 **sourcée** ; `321 T02/T03/T05` sortent du registre | 1 j | ✅ `341` (04/10) — déploiement après signature D-G |
 | 2.2 | **C3 — rh-008** — heures sup jamais détectées depuis la feuille de temps | une feuille de temps au-delà de l'horaire prévu crée l'élément de paie (chemin unique de la W5) | 0,5 j | ✅ `340` (04/10) |
 | 2.3 | **Tranches d'heures sup (reste de W5)** — seule la première tranche est appliquée ; `calculate_overtime_pay` (tranches + exonération 7 500 €) n'a plus d'appelant | 25 % / 50 % selon le seuil hebdomadaire, exonération plafonnée ; **un seul** moteur | 1 j | ✅ `342` (04/10) — déploiement après signature D-G ; seuil hebdomadaire et exonération d'impôt non codés |
-| 2.4 | **C4 — rh-009** — pointage d'absence impossible ; **C5, C6** — constats hors fiche et défauts bas de paie (à instruire puis corriger) | l'absence pointée entre au registre W9 ; chaque constat C5/C6 a un verdict | 0,5 j | ⬜ |
+| 2.4 | **C4 — rh-009** — pointage d'absence impossible ; **C5, C6** — constats hors fiche et défauts bas de paie (à instruire puis corriger) | l'absence pointée entre au registre W9 ; chaque constat C5/C6 a un verdict | 0,5 j | ✅ `343` (04/10) — arrêt maladie laissé à l'expert (D-G) |
 
 ⚠️ Toute modification de la grille de paie reste soumise à la **signature de
 l'expert-comptable (D-G)** avant déploiement — elle est préparée ici, livrée en partie 4.

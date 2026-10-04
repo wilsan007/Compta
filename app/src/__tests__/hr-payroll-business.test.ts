@@ -3,10 +3,10 @@ import { calculatePayroll } from '@/lib/payroll';
 import { formatPayrollAmount } from '@/lib/payrollFormat';
 import type { Employee, PayRun, PaySlip, Contract, LeaveRequest, PayrollTaxGridLine, PayrollAccountingEntry, SalaryAdvance, DsnDeclaration, EmployeeDocument } from '@/types';
 
-const mockEmp1: Employee = { id: 'emp-001', name: 'Ahmed Benali', email: 'a@co.com', phone: '06', position: 'Dev', department: 'IT', salary: 3500, hire_date: '2022-03-01', status: 'active', employee_number: 'E1', social_security_number: '1', birth_date: '1990-05-15', address: 'rue', city: 'Paris', postal_code: '75002', contract_type: 'CDI', contract_end_date: null, created_at: '2022-03-01', updated_at: '2024-01-01' }
-const mockEmp2: Employee = { ...mockEmp1, id: 'emp-002', name: 'Fatima', salary: 2800, contract_type: 'CDD', contract_end_date: '2025-12-31' }
+const mockEmp1: Employee = { id: 'emp-001', name: 'Ahmed Benali', email: 'a@co.com', phone: '06', position: 'Dev', department: 'IT', salary: 3500, hire_date: '2022-03-01', status: 'active', employee_number: 'E1', social_security_number: '1', birth_date: '1990-05-15', address: 'rue', city: 'Paris', postal_code: '75002', contract_type: 'cdi', contract_end_date: null, created_at: '2022-03-01', updated_at: '2024-01-01' }
+const mockEmp2: Employee = { ...mockEmp1, id: 'emp-002', name: 'Fatima', salary: 2800, contract_type: 'cdd', contract_end_date: '2025-12-31' }
 const mockEmp3: Employee = { ...mockEmp1, id: 'emp-003', name: 'Karim', salary: 4200, status: 'on_leave' }
-const mockEmp4: Employee = { ...mockEmp1, id: 'emp-004', name: 'Sara', salary: 1500, status: 'inactive', contract_type: 'Stage' }
+const mockEmp4: Employee = { ...mockEmp1, id: 'emp-004', name: 'Sara', salary: 1500, status: 'inactive', contract_type: 'stage' }
 const allEmps = [mockEmp1, mockEmp2, mockEmp3, mockEmp4]
 
 const mockPayRun: PayRun = { id: 'pr-001', number: 'PR-2024-01', period_start: '2024-01-01', period_end: '2024-01-31', pay_date: '2024-01-31', status: 'draft', gross_total: 0, tax_total: 0, net_total: 0, employee_count: 0, created_at: '2024-01-01' }

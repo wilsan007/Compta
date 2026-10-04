@@ -1,3 +1,4 @@
+import { localDateString } from '@/lib/dateRange'
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -69,9 +70,10 @@ export function QuickEmployeeAccess({ onClose, onSaved, forceInline }: QuickEmpl
         position: position.trim(),
         department: department.trim(),
         salary: 0,
-        hire_date: new Date().toISOString().split('T')[0],
+        hire_date: localDateString(),
         status: 'active',
-        contract_type: 'CDI',
+        // rh-002 : la valeur de la base est `cdi` (la fiche et les libellés lisent les minuscules).
+        contract_type: 'cdi',
       } as Omit<Employee, 'id' | 'created_at' | 'updated_at'>)
       toast('success', tCommon('common.success'), t('employee.created'))
       onSaved?.(emp)

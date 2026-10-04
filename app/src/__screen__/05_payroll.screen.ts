@@ -66,5 +66,11 @@ it('Paie — salarié, lot, bulletins, journal, virement', async () => {
       check('H12', 'approuver la feuille pose UN élément « heures sup » (5 h, montant non nul) et signe l\'approbation', ap.ok && el.length === 1 && el[0].q === 5 && el[0].a > 0 && !!sig?.approved_by && !!sig?.approved_at, { err: ap.err, elements: el, signature: sig })
     }
   }
+  // C4 / rh-009 : TimesheetsPage pointe une ABSENCE (absence_type) — quatrième source du registre (263).
+  if (emps[0]) {
+    const abs = await attempt(() => pay.createTimesheet({ employee_id: emps[0].id, date: '2026-11-12', hours: 0, description: '', project_id: null, status: 'pending', absence_type: 'mission', absence_reason: 'déplacement client' }))
+    const reg = await sql(`select absence_kind, origin from employee_absence_days where employee_id=$1 and day='2026-11-12'`, [emps[0].id])
+    check('H13', 'pointer une absence par l\'écran inscrit UN jour au registre des absences (mission, origine pointage)', abs.ok && reg.length === 1 && reg[0].absence_kind === 'mission' && reg[0].origin === 'timesheet', { err: abs.err, registre: reg })
+  }
   save('s5.json', findings)
 })

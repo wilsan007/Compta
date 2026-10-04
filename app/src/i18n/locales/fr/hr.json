@@ -40,7 +40,7 @@
     "costs": "Coûts par centre",
     "custom": "Personnalisé"
   },
-  "employees": {
+  "employees": { "weeklyHours": "Horaire hebdomadaire (heures)",
     "title": "Employés",
     "subtitle": "Gérez vos employés",
     "new": "Nouvel employé",
@@ -206,6 +206,7 @@
     "validate": "Valider",
     "reject": "Rejeter",
     "noTimesheets": "Aucune feuille de temps",
+    "absenceType": "Type d'absence", "absenceNone": "Aucune — jour travaillé", "absenceReason": "Motif de l'absence",
     "overtimeIncluded": "dont {{hours}} h sup",
     "noTimesheetsDescription": "Aucune feuille de temps enregistrée",
     "createFirst": "Créer ma première feuille de temps",
@@ -255,7 +256,7 @@
       "cancelled": "Annulé"
     }
   },
-  "contracts": {
+  "contracts": { "number": "N° de contrat",
     "title": "Contrats",
     "subtitle": "Gérez les contrats de vos employés",
     "new": "Nouveau contrat",
@@ -671,7 +672,7 @@
     "noStaffReqs": "Aucun besoin",
     "noStaffReqsDescription": "Aucun besoin en effectif configuré"
   },
-  "leaveBalances": {
+  "leaveBalances": { "acquisitionComputed": "Droits acquis calculés : {{days}} j au total (prorata depuis l'embauche)",
     "title": "Soldes de congés",
     "subtitle": "Gérez les soldes et provisions de congés",
     "tabs": {

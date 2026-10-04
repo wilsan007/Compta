@@ -969,7 +969,8 @@ export interface Employee {
   address?: string | null
   city?: string | null
   postal_code?: string | null
-  contract_type?: 'CDI' | 'CDD' | 'Apprentissage' | 'Stage' | 'Interim' | null
+  // rh-002 : les valeurs de la base, en minuscules (contrainte `employees_contract_type_check`, 343).
+  contract_type?: 'cdi' | 'cdd' | 'apprentissage' | 'stage' | 'interim' | 'freelance' | null
   contract_end_date?: string | null
   /** 276 : catégorie de paie (Apec pour les cadres) */
   payroll_category?: 'non_cadre' | 'cadre'
@@ -1007,6 +1008,9 @@ export interface Timesheet {
   status: 'pending' | 'approved' | 'rejected'
   /** Calculé par la base (340) : minutes au-delà de l'horaire prévu du jour. */
   overtime_minutes?: number | null
+  /** Pointage d'absence (263) : 'none' pour un jour travaillé. */
+  absence_type?: string | null
+  absence_reason?: string | null
   created_at: string
 }
 

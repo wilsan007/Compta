@@ -40,7 +40,7 @@
     "costs": "Costs by center",
     "custom": "Custom"
   },
-  "employees": {
+  "employees": { "weeklyHours": "Weekly hours",
     "title": "Employees",
     "subtitle": "Manage your employees",
     "new": "New employee",
@@ -292,6 +292,7 @@
     "validate": "Validate",
     "reject": "Reject",
     "noTimesheets": "No timesheets",
+    "absenceType": "Absence type", "absenceNone": "None — worked day", "absenceReason": "Reason for absence",
     "overtimeIncluded": "incl. {{hours}} h overtime",
     "noTimesheetsDescription": "No timesheet recorded",
     "createFirst": "Create my first timesheet",
@@ -341,7 +342,7 @@
       "cancelled": "Cancelled"
     }
   },
-  "contracts": {
+  "contracts": { "number": "Contract no.",
     "title": "Contracts",
     "subtitle": "Manage your employees' contracts",
     "new": "New contract",
@@ -671,7 +672,7 @@
     "noStaffReqs": "No Requirements",
     "noStaffReqsDescription": "No staff requirements configured"
   },
-  "leaveBalances": {
+  "leaveBalances": { "acquisitionComputed": "Accrued leave computed: {{days}} days in total (pro rata from hire date)",
     "title": "Leave Balances",
     "subtitle": "Manage leave balances and provisions",
     "tabs": {

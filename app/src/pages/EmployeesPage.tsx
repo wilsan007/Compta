@@ -1,8 +1,9 @@
+import { localDateString } from '@/lib/dateRange'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '@/lib/queries/payroll'
-import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
+import { errorMessage, formatCurrency, formatDate} from '@/lib/utils'
 import { Users, Plus, Trash2, X } from 'lucide-react'
 import type { Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -110,7 +111,9 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [position, setPosition] = useState('')
   const [department, setDepartment] = useState('')
   const [salary, setSalary] = useState(0)
-  const [hireDate, setHireDate] = useState(new Date().toISOString().split('T')[0])
+  const [hireDate, setHireDate] = useState(() => localDateString())
+  // rh-003 : l'horaire hebdomadaire fonde le taux horaire et le seuil des heures sup (340).
+  const [weeklyHours, setWeeklyHours] = useState(35)
   const [saving, setSaving] = useState(false)
   const [employeeNumber, setEmployeeNumber] = useState('')
   const [ssNumber, setSsNumber] = useState('')
@@ -132,6 +135,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     try {
       await createEmployee({
         name, email, phone, position, department, salary, hire_date: hireDate, status: 'active',
+        weekly_hours: weeklyHours,
         employee_number: employeeNumber || null,
         social_security_number: ssNumber || null,
         birth_date: birthDate || null,
@@ -172,6 +176,7 @@ function EmployeeForm({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             <Input label={t('employees.salary')} type="number" step="0.01" value={salary} onChange={(e) => setSalary(Number(e.target.value))} />
             <Input label={t('employees.hireDate')} type="date" value={hireDate} onChange={(e) => setHireDate(e.target.value)} />
           </div>
+          <Input label={t('employees.weeklyHours')} type="number" step="0.5" value={weeklyHours} onChange={(e) => setWeeklyHours(Number(e.target.value))} />
           <div className="grid grid-cols-3 gap-4">
             <Input label={t('employees.birthDate')} type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
             <Select label={t('employees.gender')} value={gender} onChange={(e) => setGender(e.target.value)} options={[

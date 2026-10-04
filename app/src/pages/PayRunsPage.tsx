@@ -1,9 +1,10 @@
+import { localDateString } from '@/lib/dateRange'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
 import { getPayRuns, createPayRun, updatePayRun, deletePayRun, getEmployees, generatePayRunSlips } from '@/lib/queries/payroll'
 import { generatePayrollJournal, payPayrollRun } from '@/lib/queries/misc'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate} from '@/lib/utils'
 import { Calendar, Plus, Trash2, X, FileText, Banknote, Sparkles } from 'lucide-react'
 import type { PayRun, Employee } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -175,13 +176,13 @@ function PayRunForm({ employees, onClose, onSaved }: { employees: Employee[]; on
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const today = new Date()
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
-  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0]
+  const firstDay = localDateString(new Date(today.getFullYear(), today.getMonth(), 1))
+  const lastDay = localDateString(new Date(today.getFullYear(), today.getMonth() + 1, 0))
   const [number, setNumber] = useState('PAY-' + today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0'))
   const { toast } = useToast()
   const [periodStart, setPeriodStart] = useState(firstDay)
   const [periodEnd, setPeriodEnd] = useState(lastDay)
-  const [payDate, setPayDate] = useState(today.toISOString().split('T')[0])
+  const [payDate, setPayDate] = useState(localDateString(today))
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {

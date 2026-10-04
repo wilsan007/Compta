@@ -2080,6 +2080,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.4 (C5, C6) : les constats de bas de paie. Mesuré avant
+      # (4 rouges) : « CDI » et « cdi » coexistaient sans contrainte, une date
+      # d'embauche en 2099 passait, changer le salaire de la fiche ne changeait
+      # pas le salaire payé (`base_salary` restait à l'ancienne valeur), et les
+      # droits à congés valaient 25 jours quel que soit le mois d'embauche.
+      - name: 'Partie 2 (2.4) : fiche salarié cohérente et droits à congés au prorata (343)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/343_hr_small_defects_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

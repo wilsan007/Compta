@@ -40,7 +40,7 @@
     "costs": "التكاليف حسب المركز",
     "custom": "مخصص"
   },
-  "employees": {
+  "employees": { "weeklyHours": "ساعات العمل الأسبوعية",
     "title": "الموظفون",
     "subtitle": "إدارة موظفيك",
     "new": "موظف جديد",
@@ -292,6 +292,7 @@
     "validate": "اعتماد",
     "reject": "رفض",
     "noTimesheets": "لا توجد جداول وقت",
+    "absenceType": "نوع الغياب", "absenceNone": "لا يوجد — يوم عمل", "absenceReason": "سبب الغياب",
     "overtimeIncluded": "منها {{hours}} س إضافية",
     "noTimesheetsDescription": "لم يتم تسجيل أي جدول وقت",
     "createFirst": "إنشاء أول جدول وقت",
@@ -341,7 +342,7 @@
       "cancelled": "ملغى"
     }
   },
-  "contracts": {
+  "contracts": { "number": "رقم العقد",
     "title": "العقود",
     "subtitle": "إدارة عقود موظفيك",
     "new": "عقد جديد",
@@ -671,7 +672,7 @@
     "noStaffReqs": "لا متطلبات",
     "noStaffReqsDescription": "لم يتم تكوين متطلبات الموظفين"
   },
-  "leaveBalances": {
+  "leaveBalances": { "acquisitionComputed": "تم حساب الإجازات المكتسبة: {{days}} يومًا في المجموع (بالتناسب منذ التوظيف)",
     "title": "أرصدة العطل",
     "subtitle": "إدارة أرصدة ومخصصات العطل",
     "tabs": {

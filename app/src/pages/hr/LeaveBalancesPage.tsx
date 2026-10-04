@@ -81,9 +81,11 @@ export function LeaveBalancesPage() {
       let totalDays = 0
       for (const emp of targets) {
         const res = await calculateLeaveAcquisition(emp.id, year)
-        totalDays += Number(res) || 0
+        // La base rend un objet ({ acquired, taken, remaining }) : `Number(res)` valait
+        // toujours NaN, donc le message affichait 0,00 j pour tout le monde.
+        totalDays += Number((res as { acquired?: number } | null)?.acquired) || 0
       }
-      toast('success', tCommon('common.success'), `${'Droits acquis calculés'} — ${totalDays.toFixed(2)} j (2,5/mois)`)
+      toast('success', tCommon('common.success'), t('leaveBalances.acquisitionComputed', { days: totalDays.toFixed(2) }))
       await loadData()
     } catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }
@@ -143,7 +145,7 @@ export function LeaveBalancesPage() {
                   empBalances.map((b, idx) => (
                     <TableRow key={b.id}>
                       <TableCell className="text-sm font-medium">{idx === 0 ? empName(empId) : ''}</TableCell>
-                      <TableCell className="text-xs"><Badge variant="neutral">{b.leave_type}</Badge></TableCell>
+                      <TableCell className="text-xs"><Badge variant="neutral">{t(`leaveRequests.types.${b.leave_type}`, { defaultValue: b.leave_type })}</Badge></TableCell>
                       <TableCell className="font-mono text-xs">{Number(b.acquired).toFixed(2)}</TableCell>
                       <TableCell className="font-mono text-xs">{Number(b.taken).toFixed(2)}</TableCell>
                       <TableCell className="font-mono text-xs">{Number(b.pending).toFixed(2)}</TableCell>

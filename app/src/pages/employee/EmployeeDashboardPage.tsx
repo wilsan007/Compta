@@ -78,7 +78,7 @@ export function EmployeeDashboardPage() {
             </div>
             {balances.length > 0 ? balances.map((b: any) => (
               <div key={b.id} className="flex justify-between text-sm mb-1">
-                <span>{b.leave_type}</span>
+                <span>{t(`leaves.types.${b.leave_type}`, { defaultValue: b.leave_type })}</span>
                 <span className="font-mono font-bold">{b.current_balance}</span>
               </div>
             )) : <p className="text-sm text-[var(--color-text-secondary)]">{t('dashboard.noActivity')}</p>}

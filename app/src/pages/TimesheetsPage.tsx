@@ -1,9 +1,10 @@
+import { localDateString } from '@/lib/dateRange'
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getTimesheets, createTimesheet, updateTimesheet, deleteTimesheet, getEmployees } from '@/lib/queries/payroll'
 import { getProjects } from '@/lib/queries/accounting'
-import { errorMessage, formatDate, translateStatus } from '@/lib/utils'
+import { errorMessage, formatDate, translateStatus} from '@/lib/utils'
 import { Clock, Plus, Trash2, X, CheckCircle, XCircle } from 'lucide-react'
 import type { Employee, Project } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -92,7 +93,9 @@ const [timesheets, setTimesheets] = useState<any[]>([])
                 <TableCell className="text-xs">{formatDate(t.date)}</TableCell>
                 <TableCell className="font-medium text-sm">{t.employees?.name || empName(t.employee_id)}</TableCell>
                 <TableCell className="font-mono text-xs">
-                  {Number(t.hours).toFixed(1)}h
+                  {t.absence_type && t.absence_type !== 'none'
+                    ? <Badge variant="warning">{tHr(`absenceAnomalies.kinds.${t.absence_type}`)}</Badge>
+                    : <>{Number(t.hours).toFixed(1)}h</>}
                   {/* 340 : les heures sup sont calculées par la base (heures − horaire prévu). */}
                   {Number(t.overtime_minutes) > 0 && (
                     <span className="block text-[var(--color-warning-text)]">
@@ -137,8 +140,15 @@ function TimesheetForm({ employees, projects, onClose, onSaved }: { employees: E
   const { toast } = useToast()
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [hours, setHours] = useState(8)
+  // Date LOCALE : `toISOString()` rend la date UTC, donc la veille après minuit à l'est de Greenwich.
+  const [date, setDate] = useState(() => localDateString())
+  // 7 h : l'horaire prévu d'un salarié à 35 h. Avec 8 h par défaut, chaque feuille
+  // créée sans y toucher produisait 1 h supplémentaire (340).
+  const [hours, setHours] = useState(7)
+  // C4 (rh-009) : le pointage d'ABSENCE. `absence_type` est la quatrième source du
+  // registre des absences (263) ; aucun écran ne l'écrivait.
+  const [absenceType, setAbsenceType] = useState('none')
+  const [absenceReason, setAbsenceReason] = useState('')
   const [description, setDescription] = useState('')
   const [projectId, setProjectId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -148,9 +158,13 @@ function TimesheetForm({ employees, projects, onClose, onSaved }: { employees: E
     setSaving(true)
     try {
       await createTimesheet({
-        employee_id: employeeId, date, hours,
-        description, project_id: projectId || null, status: 'pending',
-      } as any)
+        employee_id: employeeId, date,
+        // Un jour d'absence ne porte pas d'heures travaillées.
+        hours: absenceType === 'none' ? hours : 0,
+        description, project_id: absenceType === 'none' ? (projectId || null) : null, status: 'pending',
+        absence_type: absenceType,
+        absence_reason: absenceType === 'none' ? null : (absenceReason.trim() || null),
+      })
       onSaved()
     } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.createError')) } finally { setSaving(false) }
   }
@@ -169,8 +183,19 @@ function TimesheetForm({ employees, projects, onClose, onSaved }: { employees: E
           ]} />
           <div className="grid grid-cols-2 gap-4">
             <Input label={tCommon('common.date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-            <Input label={t('timesheets.hours')} type="number" step="0.25" required value={hours} onChange={(e) => setHours(Number(e.target.value))} />
+            <Input label={t('timesheets.hours')} type="number" step="0.25" required disabled={absenceType !== 'none'}
+              value={absenceType === 'none' ? hours : 0} onChange={(e) => setHours(Number(e.target.value))} />
           </div>
+          <Select label={t('timesheets.absenceType')} value={absenceType} onChange={(e) => setAbsenceType(e.target.value)} options={[
+            { value: 'none', label: t('timesheets.absenceNone') },
+            { value: 'sick', label: t('absenceAnomalies.kinds.sick') },
+            { value: 'unpaid', label: t('absenceAnomalies.kinds.unpaid') },
+            { value: 'personal', label: t('absenceAnomalies.kinds.personal') },
+            { value: 'mission', label: t('absenceAnomalies.kinds.mission') },
+          ]} />
+          {absenceType !== 'none' && (
+            <Input label={t('timesheets.absenceReason')} value={absenceReason} onChange={(e) => setAbsenceReason(e.target.value)} />
+          )}
           <Input label={t('timesheets.description')} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('timesheets.descriptionPlaceholder')} />
           <Select label={t('timesheets.projectOptional')} value={projectId} onChange={(e) => setProjectId(e.target.value)} options={[
             { value: '', label: tCommon('common.none') },
