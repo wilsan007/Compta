@@ -501,24 +501,29 @@ describe('2.16 — les états des écrans stock, caisse, compta et paie sont nom
 
 describe("2.16 — réservations de stock : l'article et le dépôt arrivent jusqu'à l'écran", () => {
   // Défaut révélé par le type : l'écran lisait `r.products?.name` et `r.warehouses?.name`
-  // sur le résultat d'un `select('*')`. La table ne porte aucune clé étrangère : la
-  // jointure PostgREST est impossible, les noms sont résolus dans la fonction.
+  // sur le résultat d'un `select('*')`. La table ne portait aucune clé étrangère ; depuis
+  // la 352 elle porte les clés composites vers `products` et `warehouses`, et la fonction
+  // demande la jointure à PostgREST — une requête, plus de résolution des noms à part.
   it('chaque réservation porte le nom de son article et de son dépôt', async () => {
-    const tables: Record<string, unknown[]> = {
-      stock_reservations: [
-        { id: 'r1', product_id: 'p1', warehouse_id: 'w1', quantity: 3, status: 'active' },
-        { id: 'r2', product_id: 'p2', warehouse_id: null, quantity: 1, status: 'active' },
+    const chain = createMockChain({
+      data: [
+        { id: 'r1', product_id: 'p1', warehouse_id: 'w1', quantity: 3, status: 'active', products: { name: 'Article A', sku: 'A-1' }, warehouses: { name: 'Dépôt principal' } },
+        { id: 'r2', product_id: 'p2', warehouse_id: null, quantity: 1, status: 'active', products: { name: 'Article B', sku: 'B-1' }, warehouses: null },
       ],
-      products: [{ id: 'p1', name: 'Article A', sku: 'A-1' }],
-      warehouses: [{ id: 'w1', name: 'Dépôt principal' }],
-    }
-    vi.mocked(supabase.from).mockImplementation(((table: string) =>
-      createMockChain({ data: tables[table] ?? [], error: null })) as unknown as typeof supabase.from)
+      error: null,
+    })
+    const tables: string[] = []
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
+      tables.push(table)
+      return chain
+    }) as unknown as typeof supabase.from)
     const { getStockReservations } = await import('@/lib/queries/stock')
     const rows = await getStockReservations()
+    expect(tables).toEqual(['stock_reservations'])
+    expect(chain.select).toHaveBeenCalledWith('*, products(name, sku), warehouses(name)')
     expect(rows.map((r) => [r.products?.name ?? null, r.warehouses?.name ?? null])).toEqual([
       ['Article A', 'Dépôt principal'],
-      [null, null], // article introuvable et dépôt absent : `null`, que l'écran rend « — »
+      ['Article B', null], // réservation sans dépôt précis : `null`, que l'écran rend « — »
     ])
     vi.mocked(supabase.from).mockImplementation((() => mockChain) as unknown as typeof supabase.from)
   })
