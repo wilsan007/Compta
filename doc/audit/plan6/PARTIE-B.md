@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001 (`500`, 9/9), R-004 (`501`, 5/5), R-005 (`502`, 4/4), R-003 (`503`, 4/4) le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001, R-004, R-005, R-003, R-002 (`500`→`504`, 25 scénarios verts) le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -77,9 +77,11 @@ devis recopiés) ; lien `devis → commande` (`created_from`), événement
    neufs (`regle_r001_…` / `zz_b2r001_…`) ; elle ne réécrit **aucune** fonction
    existante — aucun risque de collision avec A, C ou E sur ce lot.
 
-**Reste du module Ventes (à faire, dans l'ordre) :** R-002 (devis expiré), R-007
-(retour client), R-009 (BL brouillon), et le reliquat de R-006 (rapprochement
-facture / preuve de livraison). *(R-004, R-005 et R-003 sont livrées — lots 2 à 4.)*
+**Reste du module Ventes (à faire, dans l'ordre) :** R-007 (retour client →
+entrée en stock), R-009 (BL brouillon → interdire la sortie de stock), et le
+reliquat de R-006 (rapprochement facture / preuve de livraison). *(R-001, R-002,
+R-003, R-004 et R-005 sont livrées — lots 1 à 5.)* ⚠️ R-007/R-009 touchent le
+**stock et l'écran** (couplage parties E/D) : à coordonner avant de les écrire.
 
 **Lot 2 — R-004 (`501`, suite 5/5).** Au passage d'une commande à `invoiced` :
 rapprochement commande ↔ factures (un lien `invoiced_by` par facture rattachée via
@@ -101,6 +103,14 @@ est **verrouillé** (client, date, échéance, numéro gelés) et ses **lignes s
 Le verrou **ne porte pas** sur la transformation (`transformed_to_order_id` /
 `transformation_status`) : un devis validé peut encore être accepté, et un test
 (T04) vérifie que **R-001 reste entier** sur un devis validé.
+
+**Lot 5 — R-002 (`504`, suite 3/3).** Un devis passé à **expiré** émet
+`quotes.expired` (payload : numéro, client, total, échéance) — le point d'accroche
+de la **relance CRM** (partie F) et de la **statistique de perte** — et laisse une
+trace. « Libération de la réservation » : **rien à libérer** (un devis ne réserve
+pas de stock), et c'est dit dans l'en-tête plutôt qu'inventé. **Idempotence par une
+garde propre** : `chain_avant` protège par le **lien**, or ce maillon n'en pose
+aucun — un test vérifie qu'un rejeu n'émet pas un second événement.
 
 **Demande à E (territoire « écrans et requêtes ventes », R3).** L'écran
 `transformQuoteToSalesOrder` (`app/src/lib/queries/misc/commercial.ts`) crée encore
@@ -140,3 +150,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · ventes-2 | Ventes | **R-004** : commande facturée → rapprochement commande ↔ factures (lien `invoiced_by`), **reliquat non facturé mesuré** dans l'événement `sales_orders.invoiced` ; idempotent. Migration `501` + suite `501_…_tests.sql`. | base neuve **335 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
 | 05/10 | B.2 · ventes-3 | Ventes | **R-005** : commande validée → **numéro définitif** (brouillon → `CMD`), **en-tête immuable**, **lignes gelées**. Gardes (aucun effet aval). Migration `502` + suite `502_…_tests.sql`. | base neuve **336 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · ventes-4 | Ventes | **R-003** : devis validé → **numéro définitif** (`DEV`), **verrou d'en-tête**, **lignes gelées** ; la transformation R-001 reste permise (testé). Migration `503` + suite `503_…_tests.sql`. | base **337 migrations, 0 erreur** ; suite **4/4** | `91944d8`+ |
+| 05/10 | B.2 · ventes-5 | Ventes | **R-002** : devis expiré → événement `quotes.expired` (relance CRM, perte), idempotent (garde propre : pas de lien). Migration `504` + suite `504_…_tests.sql`. | base **338 migrations, 0 erreur** ; suite **3/3** (les 5 suites B : **25/25**) | _à venir_ |
