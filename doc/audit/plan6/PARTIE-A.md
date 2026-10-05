@@ -29,7 +29,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| A.1 | Recompter L3 : maillons RPC tracés, épreuves D1 → D8 réellement jouées par `433`/`434`/`436`, rapport par maillon | 3.1, 3.4 → 3.7 | 1 j | 🟡 **compté le 05/10** — voir le rapport A.1 |
+| A.1 | Recompter L3 : maillons RPC tracés, épreuves D1 → D8 réellement jouées par `433`/`434`/`436`, rapport par maillon | 3.1, 3.4 → 3.7 | 1 j | ✅ **fermé le 05/10** — rapport [A1-RAPPORT-PAR-MAILLON](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) |
 | A.2 | Relevé bancaire manuel et maillons RPC restants | 3.3 | 2 j | ⬜ |
 | A.3 | Les 6 invariants « non mesurables » ; relevé nocturne et alerte (`414`) ; invariants lus par l'écran | 3.8 → 3.10 | 4 j | ⬜ **le décompte dit 3, pas 6** |
 | A.4 | Pages « Robustesse » et « Cohérence » | L5, 4.1/4.2 | 3 j | ⬜ |
@@ -117,8 +117,14 @@ dé-lettrage : c'est la trace de D3/D4, pas une fuite.
 - [x] Maillons déclarés : 7, tous couverts
 - [x] Épreuves D1 → D8 : 5 tenues, 3 non jouées **avec raison**
 - [x] Invariants : 17/20 mesurables
-- [ ] **Le rapport par maillon** — un fichier, écrit, versé au suivi par
-      l'intégration. C'est le dernier morceau d'A.1 et il est court.
+- [x] **Le rapport par maillon** — écrit dans
+      [A1-RAPPORT-PAR-MAILLON-2026-10-05.md](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) :
+      la grille des 7 × 8 = 56 verdicts, les preuves tenues et la raison de
+      chaque case non jouée. Les suites `434` (8/8) et `436` (9/9) ont été
+      **rejouées** sur la base neuve pour l'établir.
+- [x] **Le reste honnête d'A.1** — la preuve d'isolation **D8 n'est mesurée que
+      sur `releve.comptabilise`** (les six autres restent `non_joue` dans `436`) :
+      c'est transmis à **A.2** (« maillons RPC restants »), pas maquillé en `tenu`.
 
 ## La plage, en fait — `475` → `499`, pas `423` → `499`
 
@@ -157,7 +163,8 @@ Et, pour A.1 tout de suite : l'arbitrage de plage ci-dessus.
 
 ## Journal
 
-*(vide — une ligne par lot poussé, avec la date et le verdict de la batterie)*
+*(une ligne par lot poussé, avec la date et le verdict de la batterie)*
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
+| 2026-10-05 | A.1 | Recompter L3 + **rapport par maillon** (`A1-RAPPORT-PAR-MAILLON-2026-10-05.md`) : grille 7×8 = 56 verdicts, 23 tenues / 33 non jouées motivées ; suites `434` et `436` rejouées sur base neuve | `434` **8/8**, `436` **9/9** | *(à pousser par cette session)* |

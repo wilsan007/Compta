@@ -1,0 +1,213 @@
+# A.1 — Le rapport par maillon (chaînages et preuve) — mesuré le 05/10/2026
+
+> Livrable de la tâche **A.1** de la [partie A](../PLAN-6-PARTIES-PARALLELES-2026-10-05.md)
+> (§4) : « le rapport par maillon — un fichier, écrit, versé au suivi par
+> l'intégration ». Le **décompte** lui-même (7 maillons déclarés, épreuves
+> D1→D8, invariants, liens, plage de migrations) est tenu dans
+> [PARTIE-A.md](PARTIE-A.md) ; **ce fichier porte la grille des 56 verdicts**,
+> maillon par maillon, telle que le banc la rend.
+>
+> **Base de mesure.** Base neuve `test_compta` (PostgreSQL 16, conteneur
+> `pg_wip`, port 5491), schéma complet monté par `sql/ci/00_supabase_stubs.sql`
+> + `sql/00_schema_dump.sql` + `run-sql-migrations.mjs` — **333 migrations,
+> 0 erreur**. Les deux suites du banc ont été **rejouées** sur cette base :
+>
+> | Suite | Objet | Verdict |
+> |---|---|---|
+> | `434_chain_banc_epreuves_tests.sql` | les 8 épreuves sur `releve.comptabilise` | **8/8 verts** |
+> | `436_chain_banc_six_maillons_tests.sql` | les 6 autres maillons du `banc` | **9/9 verts** |
+>
+> Ce ne sont pas des scores de « confiance » : chaque `✅ tenu` porte une
+> **mesure** (liens, traces ou p95 en ms), et chaque `— non joué` porte sa
+> **raison**. Un verdict sans mesure n'est jamais publié `tenu` (la suite `436`,
+> `T09`, le vérifie pour la campagne entière).
+
+---
+
+## 1. Le banc, en deux phrases
+
+Le banc éprouve **7 maillons** — les sept gestes du socle qui portent une
+écriture comptable — contre **8 épreuves** (D1 → D8). Un maillon est décrit une
+fois, au catalogue `chain_banc_maillons` (libellé, effet, gabarit d'appel,
+geste d'annulation) ; les épreuves sont **dérivées** de cette description par le
+moteur `chain_banc_epreuve` / `chain_banc_lancer` (`433`, `434`).
+
+| Code | Libellé | Effet produit | Nature | Geste d'annulation (D4) |
+|---|---|---|---|---|
+| `releve.comptabilise` | Comptabilisation d'une ligne de relevé | `treasury.statement_line.posted` | application | `unreconcile_bank_statement_line` |
+| `releve.pointage` | Pointage manuel d'une ligne de relevé | `treasury.statement_line.manually_reconciled` | application | `unreconcile_bank_statement_line` |
+| `releve.delettrage` | Dé-lettrage d'une ligne de relevé (ferme le lien, ne produit rien) | `treasury.statement_line.posted` | application | — *(aucun : il ne produit rien)* |
+| `caisse.ticket` | Ticket de caisse (encaissement atomique) | `pos.ticket.stock_out` | **création** | `void_pos_ticket` |
+| `caisse.avoir` | Avoir de caisse (avec retour de stock) | `pos.ticket.stock_in` | application | — *(aucun décrit)* |
+| `paie.comptabilisee` | Comptabilisation du bulletin de paie | `payroll.run.posted` | application | — *(aucun décrit)* |
+| `paie.versement` | Versement de la paie (net, social, taxe, acomptes) | `payroll.payment.settled` | application | — *(aucun décrit)* |
+
+> **Un seul maillon est de nature `création` : `caisse.ticket`.** C'est lui, et
+> lui seul, pour qui D1 (« le rejeu ne double pas l'effet ») est **sans objet** :
+> son argument est un *contenu*, pas l'identifiant d'une ressource ; le rejouer
+> crée un **second** ticket (mesuré : +1 lien, +1 trace). Le publier `rompu`
+> serait publier un défaut qui n'existe pas ; il est donc déclaré `non_joue` avec
+> cette raison — pas vert par défaut.
+
+---
+
+## 2. La grille — 7 maillons × 8 épreuves = 56 verdicts
+
+`✅` = tenue, avec mesure · `—` = non jouée, avec raison (§3 et §4).
+
+| Maillon | D1 rejeu | D2 concurrence | D3 tout-ou-rien | D4 annulation | D5 réouverture | D6 retour arrière | D7 volume | D8 isolation | **Tenues** |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| `releve.comptabilise` | ✅ | — | — | ✅ | — | ✅ | ✅ | ✅ | **5/8** |
+| `caisse.ticket` *(création)* | — | — | — | ✅ | — | ✅ | ✅ | — | 3/8 |
+| `caisse.avoir` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
+| `paie.comptabilisee` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
+| `paie.versement` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
+| `releve.pointage` | ✅ | — | — | ✅ | — | ✅ | ✅ | — | 4/8 |
+| `releve.delettrage` | ✅ | — | — | — | — | ✅ | — | — | 2/8 |
+| **Total (sur 56)** | **6** | **0** | **0** | **3** | **0** | **7** | **6** | **1** | **23/56** |
+
+**Comment lire ce `23/56`.** Les 33 cases `—` **ne sont pas** 33 défauts : elles
+se répartissent en trois familles, chacune nommée ci-dessous.
+
+| Famille | Cases | Pourquoi |
+|---|:--:|---|
+| D2, D3, D5 — **structurelles** | 7 × 3 = **21** | exigent des instruments que le schéma n'a pas (seconde connexion, point d'échec, chemin de réouverture) — voir §3 |
+| D8 sur les six autres maillons | **6** | mesurée une fois (`releve.comptabilise`, `434` T06) ; la suite `436` ne la joue pas — voir §4 |
+| D4 / D1 / D7 ponctuels | **6** | un geste d'annulation qui n'existe pas, une création sans rejeu, une série de stimuli absente — chaque raison est écrite |
+
+---
+
+## 3. Les preuves tenues, maillon par maillon
+
+Les mesures ci-dessous sont celles des suites rejouées le 05/10 (verbatim
+abrégé). Elles sont aussi en base : `chain_banc_resultats`, une ligne datée par
+couple `(code, épreuve)`.
+
+### `releve.comptabilise` — le maillon de référence (suite `434`)
+
+| Épreuve | Verdict | Mesure |
+|---|---|---|
+| **D1 rejeu** | ✅ tenu | 1ᵉʳ tour : 1 lien, 1 trace `applique` ; 2ᵉ tour : **+0 lien, +0 trace** (refus métier contrôlé, SQLSTATE `23505`) |
+| **D4 annulation** | ✅ tenu | **0 lien actif** restant après le dé-lettrage |
+| **D6 retour arrière** | ✅ tenu | **0 lien de plus** qu'au départ après l'annulation de la transaction |
+| **D7 volume** | ✅ tenu | **p95 = 3 ms** sur 19 tours distincts (budget G6 : 50 ms) |
+| **D8 isolation** | ✅ tenu | société voisine : **0 lien visible** ; propriétaire : **1** (> 0, sinon l'épreuve ne prouverait rien) |
+
+### Les six autres (suite `436`)
+
+| Maillon | D1 | D4 | D6 | D7 |
+|---|---|---|---|---|
+| `caisse.ticket` | — *sans objet (création)* | ✅ `void_pos_ticket` → 0 lien actif | ✅ | ✅ (20 stimuli distincts) |
+| `caisse.avoir` | ✅ *par un REFUS (`42501`)* | — *pas de geste décrit* | ✅ | ✅ p95 = 8,05 ms |
+| `paie.comptabilisee` | ✅ (1 lien, 1 trace → +0/+0) | — *pas de geste décrit* | ✅ | ✅ p95 = 3,05 ms |
+| `paie.versement` | ✅ (1 lien, 1 trace → +0/+0) | — *pas de geste décrit* | ✅ | ✅ p95 = 11,5 ms |
+| `releve.pointage` | ✅ (1 lien, 1 trace → +0/+0) | ✅ `unreconcile…` → 0 lien actif | ✅ | ✅ p95 = 1 ms |
+| `releve.delettrage` | ✅ (1 lien, 1 trace → +0/+0) | — *le re-pointage a été joué, il a REFUSÉ la ligne déjà pointée* | ✅ | — *pas de série de stimuli* |
+
+> **`caisse.avoir` — D1 « tenu par un refus » est une tenue, pas un trou.**
+> Le rejeu y est refusé (`42501`), et un refus **est** une tenue valide de
+> l'invariant D1 : le second tour n'a **rien** ajouté. Le banc le dit tel quel.
+
+---
+
+## 4. Les 33 « non jouées », et pourquoi ce n'est pas une échappatoire
+
+### D2, D3, D5 — trois instruments que le schéma n'a pas (21 cases)
+
+Ces trois épreuves sont `non_joue` **pour tous les maillons**, et la raison est
+la même : chacune exige quelque chose que la base n'offre pas.
+
+| Épreuve | Ce qu'elle veut | Pourquoi elle n'est pas jouable |
+|---|---|---|
+| **D2 concurrence** | deux transactions **simultanées** | exige une **seconde connexion** (`dblink`) ; aucun maillon n'a `defaut_dblink = true` |
+| **D3 tout-ou-rien** | une panne **au milieu** de l'effet | exige un **point d'échec instrumenté** ; aucun maillon n'en expose |
+| **D5 réouverture** | un chemin de « fermé » → « rouvert » | exige un `appat_reouverture` décrit ; aucun maillon n'en a |
+
+Les forcer en écrivant `tenu` serait mentir sur trois épreuves sur huit. La
+suite le verrouille : `T09` (`436`) et `T07` (`434`) refusent tout `tenu` sur
+D2/D3/D5 (`D2_D3_D5_tenus = 0`), et refusent tout `non_joue` **sans raison**
+(`non_joués_sans_raison = 0`).
+### D4 — les maillons qui n'ont pas de geste d'annulation (4 cases)
+
+`caisse.avoir`, `paie.comptabilisee`, `paie.versement` et `releve.delettrage`
+n'ont **aucun** geste d'annulation au catalogue. On ne l'invente pas : on ne
+peut pas annuler en **rejouant** le producteur (cela produirait un *second*
+effet, pas sa suppression — doctrine `434`). `releve.delettrage` va plus loin :
+le geste que tout le monde proposerait (re-pointer) **a été joué**, et il
+**refuse** la ligne déjà pointée — c'est écrit, pas tu.
+
+### D1 — la création, et la série absente (2 cases)
+
+- `caisse.ticket` : D1 sans objet (création — §1).
+- `releve.delettrage` D7 : aucune série de stimuli au catalogue (`arg_series`
+  vide) ; rejouer une seule entrée ne mesurerait que le chemin de refus, donc
+  pas de p95 honnête — la suite ne le publie pas.
+
+### D8 sur les six autres — **un reste honnête, à trancher** (6 cases)
+
+L'isolation entre sociétés est **prouvée** pour `releve.comptabilise`
+(`434` T06, sous `SET LOCAL ROLE authenticated` : voisin 0, propriétaire 1).
+Pour les **six autres**, la suite `436` ne la joue pas (c'est écrit dans son
+en-tête). La RLS qui porte l'isolation est **générique** — la même preuve
+vaudrait pour les six — mais **elle n'a été mesurée qu'une fois**.
+**C'est le reste le plus substantiel de ce rapport** : étendre la preuve D8 aux
+six maillons (ou dire explicitement pourquoi un seul témoin suffit) est un
+candidat direct pour **A.2** (« maillons RPC restants »). Ce n'est pas maquillé
+en `tenu`.
+
+---
+
+## 5. La campagne (`chain_banc_lancer`) — ce qu'elle prouve, et ce qu'elle ne prouve pas
+
+`chain_banc_lancer(tenant)` parcourt le catalogue et **joue les 8 épreuves** :
+le rapport compte alors **7 × 8 = 56 lignes datées** (`T08` de la suite `436` :
+`maillons=7 lignes=56 couples=56 verdicts_sans_date=0`). C'est la preuve de la
+tâche 3.7 — « un chaînage déclaré = 8 verdicts datés » — appliquée au catalogue
+entier, et non à un seul maillon.
+
+⚠️ **Attention à ne pas lire ces 56 lignes comme des verdicts de métier.** La
+campagne joue chaque maillon avec la **description courante** du catalogue ; un
+maillon dont le décor n'est pas posé rend `non_joue` (décor manquant) ou
+`rompu` (chemin de refus). Ce sont les **suites dédiées** (§3) qui posent le
+décor par maillon et portent le verdict de référence. La campagne prouve la
+**structure** (56 verdicts datés, aucune case muette), pas la tenue.
+
+---
+
+## 6. Reproduire cette mesure
+
+```bash
+# 1. la base neuve (une fois) — conteneur Postgres 16 publié sur 5491
+docker run -d --name pg_wip -e POSTGRES_PASSWORD=postgres -p 5491:5432 postgres:16
+cd app
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5491/test_compta"
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
+node run-sql-migrations.mjs          # 333 migrations, 0 erreur attendue
+
+# 2. les deux suites du banc. Les fichiers sont copiés DANS le conteneur, pour
+#    que leurs `\ir ci/…` se résolvent : `psql -f` depuis stdin ne le fait pas.
+docker cp sql pg_wip:/tmp/psql6
+docker exec pg_wip psql -U postgres -d test_compta -v ON_ERROR_STOP=1 \
+  -f /tmp/psql6/434_chain_banc_epreuves_tests.sql
+docker exec pg_wip psql -U postgres -d test_compta -v ON_ERROR_STOP=1 \
+  -f /tmp/psql6/436_chain_banc_six_maillons_tests.sql
+
+# 3. la grille par maillon, telle qu'enregistrée (une ligne datée par couple)
+docker exec pg_wip psql -U postgres -d test_compta -c \
+  "SELECT code, epreuve, verdict, round(mesure,2) FROM chain_banc_resultats ORDER BY code, epreuve;"
+```
+
+---
+
+## 7. Ce que ce rapport ne prouve pas — nommé
+
+- **D2, D3, D5.** Non jouables faute d'instrument (§4) — **pas** « vertes ».
+- **D8 sur six maillons.** Mesurée une fois, pas sept (§4) — le reste à trancher.
+- **`plpgsql_check`** n'est pas dans l'image locale : les 333 migrations ont été
+  appliquées **sans** cette sonde de code PL/pgSQL (la CI l'installe).
+- **Le `p95` est une mesure d'horloge locale** (`pg_wip`, conteneur à chaud) :
+  indicative du budget G6 (50 ms), pas une mesure de production.
+- **D4/D7 des maillons sans geste / sans série** : la case reste vide tant que
+  le geste ou la série n'est pas décrit ; ce n'est pas un travail « à faire
+  semblant ».
