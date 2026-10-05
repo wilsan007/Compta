@@ -2326,6 +2326,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      - name: 'LOC1-02 : les tables de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/381_pack_data_tables_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright

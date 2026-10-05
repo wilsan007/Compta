@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01 (+ LOC1-48) fait — `380`** ; LOC1-02 → 05 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01, LOC1-02 (+ LOC1-48) faits — `380`, `381`** ; LOC1-03 → 05 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -81,13 +81,30 @@ est data-driven, mais le cahier ne la nomme pas explicitement.
   l'extension `plpgsql_check` — la CI l'installe.)
 - **Rejouabilité** : un 2ᵉ passage de la `380` ajoute **0** ligne (`T06`).
 
+### `LOC1-02` — les tables de données du pack (`381`)
+
+**`381_pack_data_tables.sql` (+ suite).** Le MOULE (`380`) reçoit sa FARINE : les
+**10 tables** qui portent le contenu d'un pack — `pack_sources`,
+`pack_account_roles`, `pack_journal_roles`, `pack_capabilities`, `pack_holidays`,
+`pack_legal_identifiers`, `pack_document_rules`, `pack_statement_templates`,
+`pack_statement_lines`, `pack_other_taxes`. **Toutes globales, sans `tenant_id`**
+(un pack est un référentiel de plateforme) : lecture par tout connecté, écriture
+par `service_role` seul (aucune politique d'écriture). **Exemptées d'ISO-02**,
+qui ne vise que les enfants portant un `tenant_id`.
+
+Compléments sur les tables existantes : `source_id` sur les **7** tables de
+valeurs (`tax_rates`, `chart_account_templates`, `payroll_tax_grids`,
+`payroll_tax_grid_lines`, `payroll_legal_parameters`, `corporate_tax_grids`,
+`corporate_tax_grid_lines`) ; `pack_code` + **clé composite** `(tenant_id,
+pack_code)` sur les **3** grilles/paramètres — même forme que
+`company_settings_legislation_pack_code_fkey`.
+
 ### Ce qui reste dans C.1
 
-`LOC1-02` (les 10 tables du pack + colonnes `source_id`), `LOC1-03`
-(`pack_lineage`, résolution héritée), `LOC1-04` (catalogue des rôles, annexe B),
-`LOC1-05` (`resolve_account` / `resolve_journal`), puis `LOC1-06` → `58`.
-**Aucun `CREATE OR REPLACE` de fonction dans ce lot : rien à annoncer au titre
-de R7.**
+`LOC1-03` (`pack_lineage`, résolution héritée), `LOC1-04` (catalogue des rôles,
+annexe B), `LOC1-05` (`resolve_account` / `resolve_journal`), puis `LOC1-06` →
+`58`. **Aucun `CREATE OR REPLACE` de fonction dans les lots faits (LOC1-01,
+LOC1-02) : rien à annoncer au titre de R7.**
 
 ---
 
@@ -151,3 +168,4 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
 | 05/10 | LOT 1-A (LOC1-01 + LOC1-48) | `legislation_packs` | modèle de pack : 17 colonnes ; 13 référentiels (un par norme) ; SYSCOHADA promu référentiel ; hiérarchie par 2 CHECK + FK composite ; fixture `310` corrigé ; suite branchée sous `plan6:c` | base neuve : **334 migrations / 0 erreur** ; `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; contrôles CI verts ; G5 151/151 | 1a9e0a7 |
+| 05/10 | LOT 1-A (LOC1-02) | `pack_*` | 10 tables du pack (globales, RLS lecture seule) ; `source_id` sur 7 tables ; `pack_code` + clé composite sur 3 grilles ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; **10 contrôles CI verts** ; G5 152/152 | (ce commit) |
