@@ -2351,6 +2351,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-017/R-018 (partie B, lot Achats) — facture fournisseur échue / rejetée :
+      # événements `purchase_invoices.overdue` et `purchase_invoices.rejected`.
+      - name: 'plan6 B — R-017/R-018 : facture fournisseur échue / rejetée (505)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/505_regle_achats_facture_surveillance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

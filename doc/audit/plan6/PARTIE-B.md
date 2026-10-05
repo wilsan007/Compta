@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001, R-004, R-005, R-003, R-002 (`500`→`504`, 25 scénarios verts) le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 (`500`→`504`) ; achats : R-017, R-018 (`505`) — 30 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -112,6 +112,32 @@ pas de stock), et c'est dit dans l'en-tête plutôt qu'inventé. **Idempotence p
 garde propre** : `chain_avant` protège par le **lien**, or ce maillon n'en pose
 aucun — un test vérifie qu'un rejeu n'émet pas un second événement.
 
+## B.2 — lot 6 : module Achats, règles R-017 & R-018 (livré le 05/10/2026)
+
+**Migration `505_regle_achats_facture_surveillance.sql`** + suite `505_…_tests.sql`
+(**5 verts**). Deux **maillons « événement »** additifs sur `purchase_invoices`, sans
+écriture métier :
+
+- **R-017** — facture fournisseur **échue** (`status = overdue`) → événement
+  `purchase_invoices.overdue` (numéro, fournisseur, reste dû, échéance) : accroche de
+  l'alerte et de l'échéancier ;
+- **R-018** — facture **rejetée** (`approval_status = rejected`) → événement
+  `purchase_invoices.rejected` : accroche du retour au demandeur.
+
+**Décision dite (R-018).** « Libération de l'engagement » **n'est pas faite** :
+l'engagement (`budget_commitments`) est rattaché à la **commande**, pas à la facture —
+rejeter une facture ne libère rien. L'engagement se consomme à l'approbation (R-057) et
+se libère à l'annulation de la commande (R-012). Idem : aucune colonne « motif » au
+schéma, l'événement dit seulement **qu'**un rejet a eu lieu.
+
+**Idempotence** : propre à chaque maillon (aucun lien posé → `chain_deja_fait`, qui lit
+`document_links`, ne protège pas) — un test vérifie le rejeu.
+
+**Reste du module Achats :** R-011 (reçu → rapprochement, partielle → compléter),
+R-013 (réception partielle), R-015 (réception en attente → contrôle qualité), R-016
+(facture fournisseur annulée → contre-passation). ⚠️ R-013/R-015 touchent le **stock**
+(couplage E), R-016 la **comptabilité** : à coordonner.
+
 **Demande à E (territoire « écrans et requêtes ventes », R3).** L'écran
 `transformQuoteToSalesOrder` (`app/src/lib/queries/misc/commercial.ts`) crée encore
 la commande à la main ; désormais l'acceptation la crée. Il devrait **sauter quand
@@ -151,3 +177,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · ventes-3 | Ventes | **R-005** : commande validée → **numéro définitif** (brouillon → `CMD`), **en-tête immuable**, **lignes gelées**. Gardes (aucun effet aval). Migration `502` + suite `502_…_tests.sql`. | base neuve **336 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · ventes-4 | Ventes | **R-003** : devis validé → **numéro définitif** (`DEV`), **verrou d'en-tête**, **lignes gelées** ; la transformation R-001 reste permise (testé). Migration `503` + suite `503_…_tests.sql`. | base **337 migrations, 0 erreur** ; suite **4/4** | `91944d8`+ |
 | 05/10 | B.2 · ventes-5 | Ventes | **R-002** : devis expiré → événement `quotes.expired` (relance CRM, perte), idempotent (garde propre : pas de lien). Migration `504` + suite `504_…_tests.sql`. | base **338 migrations, 0 erreur** ; suite **3/3** (les 5 suites B : **25/25**) | _à venir_ |
+| 05/10 | B.2 · achats-1 | Achats | **R-017/R-018** : facture fournisseur échue → `purchase_invoices.overdue` ; rejetée → `purchase_invoices.rejected`. Maillons événement, idempotents ; « libération de l'engagement » écartée (rattachée à la commande). Migration `505` + suite `505_…_tests.sql`. | base **339 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
