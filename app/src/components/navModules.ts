@@ -278,7 +278,6 @@ export const navModules: NavModule[] = [
       { labelKey: 'items.inventory', path: '/stock/inventory' },
       { labelKey: 'items.reorder', path: '/stock/reorder' },
       { labelKey: 'items.priceLists', path: '/stock/price-lists' },
-      { labelKey: 'items.gescomTransfer', path: '/stock/transfer' },
       { labelKey: 'items.bom', path: '/stock/boms' },
       { labelKey: 'items.manufacturingOrders', path: '/stock/manufacturing' },
       { labelKey: 'items.warehouseLocations', path: '/stock/warehouse-locations' },

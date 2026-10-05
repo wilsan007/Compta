@@ -600,7 +600,6 @@ interface RetoursVerifies {
   getBankTransactions: Verdict<Q['getBankTransactions']>; getProductStock: Verdict<S['getProductStock']>
   getProductSupplierPrices: Verdict<S['getProductSupplierPrices']>; getProductDocuments: Verdict<S['getProductDocuments']>
   traceLotDownstream: EstVide<Awaited<ReturnType<S['traceLotDownstream']>>['movements'][number]>
-  gescomInvoices: EstVide<Awaited<ReturnType<Q['getGescomTransferData']>>['invoices'][number]>
   getCollectionDashboard: Verdict<Q['getCollectionDashboard']>; closeFiscalYear: Verdict<Q['closeFiscalYear']>
 }
 /** Toutes les entrées doivent valoir `false` — c'est cette affectation que `tsc` vérifie. */
@@ -641,11 +640,12 @@ describe('2.16 — tranche 3 : quatre écrans lisaient des propriétés que leur
       .toMatch(/price_lists\(name, type, currency\)/)
   })
 
-  it('les douze écrans de la tranche ne gardent aucun état non typé', () => {
+  // (douze à l'origine : l'écran de transfert comptable a été retiré le 05/10 — 2.16, single-engine.test.ts)
+  it('les onze écrans de la tranche ne gardent aucun état non typé', () => {
     const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
     const ecrans = ['pages/PaySlipsPage', 'pages/GeneralLedgerPage', 'pages/LiasseFiscalePage', 'pages/FiscalYearClosurePage',
       'pages/AgedBalancePage', 'pages/AccountingDashboardPage', 'pages/LotTraceabilityPage', 'pages/BankAccountsPage',
-      'pages/GescomTransferPage', 'pages/CreditControlPage', 'pages/CollectionDashboardPage', 'components/ArticleInterrogationModal']
+      'pages/CreditControlPage', 'pages/CollectionDashboardPage', 'components/ArticleInterrogationModal']
     expect(ecrans.filter((p) => codeSeul(lire(`src/${p}.tsx`)).some((l) => NON_TYPE.test(l)))).toEqual([])
   })
 })

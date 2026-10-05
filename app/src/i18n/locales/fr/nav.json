@@ -125,7 +125,6 @@
     "inventory": "Inventaire",
     "reorder": "Réapprovisionnement",
     "priceLists": "Listes de prix",
-    "gescomTransfer": "Transfert comptable",
     "bom": "Nomenclatures (BOM)",
     "manufacturingOrders": "Ordres de fabrication",
     "productionManagement": "Gestion production",
