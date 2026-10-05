@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01, LOC1-02 (+ LOC1-48) faits — `380`, `381`** ; LOC1-03 → 05 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01 → 03 (+ LOC1-48) faits — `380`, `381`, `382`** ; LOC1-04 → 05 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -99,12 +99,36 @@ valeurs (`tax_rates`, `chart_account_templates`, `payroll_tax_grids`,
 pack_code)` sur les **3** grilles/paramètres — même forme que
 `company_settings_legislation_pack_code_fkey`.
 
+### `LOC1-03` — la résolution héritée (`382`)
+
+**`382_pack_resolution.sql` (+ suite).** La hiérarchie `secteur → pays →
+référentiel` devient **utilisable** :
+- `pack_lineage(code)` remonte la chaîne (depth 0 = le pack lui-même) ;
+- `tenant_pack_code(tenant_id)` rend le pack effectif d'une société ;
+- `pack_effective_value(code, colonne)` résout une valeur de format — **le plus
+  spécifique gagne** — avec une **liste close** de colonnes autorisées ;
+- `v_pack_effective` expose, pack actif par pack actif, les formats **résolus** ;
+- `pack_account_role` / `pack_journal_role` : **le plus profond gagne** ;
+- `pack_holidays_of` : **l'union** de la lignée (le pays AJOUTE au référentiel).
+
+C'est le modèle des leaders : *country chart sur operating chart* (SAP), et
+`parent_id` + `country_id = None` pour la base générique (Odoo). **Décision de
+hiérarchie, arrêtée** : le référentiel est **la norme comptable, sans pays**
+(Odoo `country_id = None` ≡ notre `level='referential'`), le pays en hérite, le
+secteur hérite du pays ; Djibouti sera repointé vers `PCN-DJ` en C.3 (aujourd'hui
+provisoire → `PCG`, comme le dit déjà la `201`).
+
+**Point de sécurité** : `tenant_pack_code` est **SECURITY INVOKER** (pas
+DEFINER). `tenants` est en RLS stricte ET forcée (`id = current_tenant_id()`),
+donc la RLS fait la garde ; en DEFINER la porte `ci/check_tenant_guard.sql` la
+refusait (mesuré).
+
 ### Ce qui reste dans C.1
 
-`LOC1-03` (`pack_lineage`, résolution héritée), `LOC1-04` (catalogue des rôles,
-annexe B), `LOC1-05` (`resolve_account` / `resolve_journal`), puis `LOC1-06` →
-`58`. **Aucun `CREATE OR REPLACE` de fonction dans les lots faits (LOC1-01,
-LOC1-02) : rien à annoncer au titre de R7.**
+`LOC1-04` (catalogue des rôles, annexe B), `LOC1-05` (`resolve_account` /
+`resolve_journal`), puis `LOC1-06` → `58`. **R7** : les fonctions créées en
+`382` sont **nouvelles** (`pack_lineage`, `pack_*`) — leur nom n'est écrit par
+aucune autre branche `plan6/*`.
 
 ---
 
@@ -168,4 +192,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
 | 05/10 | LOT 1-A (LOC1-01 + LOC1-48) | `legislation_packs` | modèle de pack : 17 colonnes ; 13 référentiels (un par norme) ; SYSCOHADA promu référentiel ; hiérarchie par 2 CHECK + FK composite ; fixture `310` corrigé ; suite branchée sous `plan6:c` | base neuve : **334 migrations / 0 erreur** ; `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; contrôles CI verts ; G5 151/151 | 1a9e0a7 |
-| 05/10 | LOT 1-A (LOC1-02) | `pack_*` | 10 tables du pack (globales, RLS lecture seule) ; `source_id` sur 7 tables ; `pack_code` + clé composite sur 3 grilles ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; **10 contrôles CI verts** ; G5 152/152 | (ce commit) |
+| 05/10 | LOT 1-A (LOC1-02) | `pack_*` | 10 tables du pack (globales, RLS lecture seule) ; `source_id` sur 7 tables ; `pack_code` + clé composite sur 3 grilles ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; **10 contrôles CI verts** ; G5 152/152 | fca2abd |
+| 05/10 | LOT 1-A (LOC1-03) | `pack_lineage` | résolution héritée : `pack_lineage`, `tenant_pack_code` (INVOKER), `pack_effective_value`, `v_pack_effective`, `pack_account_role/journal_role`, `pack_holidays_of` ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `382` 6/6, `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; 9 contrôles CI verts | (ce commit) |
