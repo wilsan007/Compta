@@ -240,6 +240,16 @@ export async function deleteBOM(id: string) {
   if (error) throw error
 }
 
+// E.2 : « Modifier » une nomenclature — l'action manquait (seuls create/delete
+// existaient). On corrige un code, un nom, une quantité ou un type sans
+// détruire les lignes ni les ordres de fabrication déjà rattachés.
+export async function updateBOM(id: string, updates: Partial<Omit<BOM, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('boms').update(updates), 'boms', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BOM
+}
+
 export async function getBOMLines(bomId: string) {
   const tid = await getTenantId()
   let q = supabase.from('bom_lines').select('*, products(name, sku)').eq('bom_id', bomId).order('position')
@@ -267,6 +277,14 @@ export async function deleteBOMLine(id: string) {
   const tid = await getTenantId()
   const { error } = await tud(supabase.from('bom_lines').delete(), 'bom_lines', tid).eq('id', id)
   if (error) throw error
+}
+
+// E.2 : « Modifier » une ligne de nomenclature (quantité, coût unitaire, position).
+export async function updateBOMLine(id: string, updates: Partial<Omit<BOMLine, 'id'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('bom_lines').update(updates), 'bom_lines', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as BOMLine
 }
 
 

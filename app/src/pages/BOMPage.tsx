@@ -2,8 +2,8 @@ import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select, Badge } from '@/components/ui'
 import { errorMessage, formatCurrency } from '@/lib/utils'
-import { getBOMs, createBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts, getProductCurrentCump } from '@/lib/queries/stock'
-import { Plus, Trash2, X, Layers, ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
+import { getBOMs, createBOM, updateBOM, deleteBOM, getBOMLines, createBOMLine, deleteBOMLine, getProducts, getProductCurrentCump } from '@/lib/queries/stock'
+import { Plus, Trash2, X, Layers, ChevronDown, ChevronRight, GitBranch, Pencil } from 'lucide-react'
 import type { BOM, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useStatusLabels } from '@/lib/statusUtils'
@@ -21,6 +21,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<BOM | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [lines, setLines] = useState<Record<string, any[]>>({})
   const [showLineForm, setShowLineForm] = useState<string | null>(null)
@@ -105,6 +106,7 @@ const [boms, setBOMs] = useState<BOM[]>([])
                   <TableCell><span className={`text-xs px-2 py-0.5 rounded ${b.active ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]'}`}>{b.active ? getStatusLabel('active') : getStatusLabel('inactive')}</span></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <button onClick={() => setEditing(b)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]" aria-label={tCommon('actions.edit')} title={tCommon('actions.edit')}><Pencil className="w-4 h-4" aria-hidden="true" /></button>
                       <button onClick={() => setShowLineForm(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]" aria-label={tCommon('actions.add')} title={tCommon('actions.add')}><Plus className="w-4 h-4" aria-hidden="true" /></button>
                       <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-danger)]" aria-label={tCommon('actions.delete')} title={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
@@ -145,31 +147,33 @@ const [boms, setBOMs] = useState<BOM[]>([])
         </Card>
       )}
 
-      {showForm && <BOMForm products={products} routings={routings} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
+      {(showForm || editing) && <BOMForm products={products} routings={routings} bom={editing} onClose={() => { setShowForm(false); setEditing(null) }} onSaved={() => { setShowForm(false); setEditing(null); loadData() }} />}
       {showLineForm && <BOMLineForm bomId={showLineForm} products={products} onClose={() => setShowLineForm(null)} onSaved={async () => { const id = showLineForm; setShowLineForm(null); const lns = await getBOMLines(id); setLines((prev) => ({ ...prev, [id]: lns })) }} />}
       {interrogationProduct && <ArticleInterrogationModal productId={interrogationProduct.id} productName={interrogationProduct.name} productSku={interrogationProduct.sku} open={true} onClose={() => setInterrogationProduct(null)} />}
     </div>
   )
 }
 
-function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]; routings: Routing[]; onClose: () => void; onSaved: () => void }) {
-  const [code, setCode] = useState('')
+function BOMForm({ products, routings, bom, onClose, onSaved }: { products: Product[]; routings: Routing[]; bom?: BOM | null; onClose: () => void; onSaved: () => void }) {
+  const [code, setCode] = useState(bom?.code ?? '')
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [name, setName] = useState('')
-  const [productId, setProductId] = useState('')
-  const [quantity, setQuantity] = useState(1)
-  const [unit, setUnit] = useState('unit')
-  const [bomType, setBomType] = useState('standard')
-  const [routingId, setRoutingId] = useState('')
+  const [name, setName] = useState(bom?.name ?? '')
+  const [productId, setProductId] = useState(bom?.product_id ?? '')
+  const [quantity, setQuantity] = useState(Number(bom?.quantity ?? 1))
+  const [unit, setUnit] = useState(bom?.unit ?? 'unit')
+  const [bomType, setBomType] = useState<BOM['bom_type']>(bom?.bom_type ?? 'standard')
+  const [routingId, setRoutingId] = useState(bom?.routing_id ?? '')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      await createBOM({ code, name, product_id: productId, quantity, unit, active: true, bom_type: bomType, routing_id: routingId || null } as any)
+      const payload = { code, name, product_id: productId, quantity, unit, active: bom?.active ?? true, bom_type: bomType, routing_id: routingId || null }
+      if (bom) await updateBOM(bom.id, payload)
+      else await createBOM(payload)
       onSaved()
     } catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
     finally { setSaving(false) }
@@ -179,7 +183,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: '32rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('bom.create')}</h2>
+          <h2 className="text-lg font-semibold">{bom ? t('bom.edit') : t('bom.create')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -198,7 +202,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
             <Input label={t('bom.quantity')} type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
             <Input label={t('bom.unit')} value={unit} onChange={(e) => setUnit(e.target.value)} />
           </div>
-          <Select label={t('bom.bomType')} value={bomType} onChange={(e) => setBomType(e.target.value)} options={[
+          <Select label={t('bom.bomType')} value={bomType} onChange={(e) => setBomType(e.target.value as BOM['bom_type'])} options={[
             { value: 'standard', label: t('bom.standard') }, { value: 'amalgam', label: t('bom.amalgam') },
           ]} />
           <Select label={t('bom.routing')} value={routingId} onChange={(e) => setRoutingId(e.target.value)} options={[{ value: '', label: '—' }, ...routings.map((r) => ({ value: r.id, label: `${r.code} — ${r.name}` }))]} />
@@ -209,7 +213,7 @@ function BOMForm({ products, routings, onClose, onSaved }: { products: Product[]
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : t('common.create')}</Button>
+            <Button type="submit" disabled={saving}>{saving ? tCommon('actions.saving') : (bom ? tCommon('actions.save') : t('common.create'))}</Button>
           </div>
         </form>
       </div>

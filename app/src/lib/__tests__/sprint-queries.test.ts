@@ -334,6 +334,15 @@ describe('BOMs CRUD', () => {
     )
   })
 
+  // E.2 : l'action « Modifier » d'une nomenclature — la requête qui manquait.
+  it('updateBOM met à jour une nomenclature par id', async () => {
+    setMockData({ id: '1', code: 'BOM-002' })
+    const { updateBOM } = await import('@/lib/queries')
+    await updateBOM('1', { code: 'BOM-002' })
+    expect(mockChain.update).toHaveBeenCalledWith(expect.objectContaining({ code: 'BOM-002' }))
+    expect(mockChain.eq).toHaveBeenCalledWith('id', '1')
+  })
+
   it('getBOMLines queries by bom_id', async () => {
     setMockData([{ id: '1', bom_id: 'bom-1' }])
     const { getBOMLines } = await import('@/lib/queries')
