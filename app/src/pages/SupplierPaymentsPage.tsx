@@ -144,7 +144,7 @@ function PaymentForm({ suppliers, banks, onClose, onSaved }: { suppliers: Suppli
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">{t('payments.supplier')}</label>
-            <select className="input" value={supplierId} onChange={async (e) => { setSupplierId(e.target.value); setPurchaseInvoiceId(''); setPurchaseInvoices([]); if (e.target.value) { try { const all = await getPurchaseInvoices(); setPurchaseInvoices((all || []).filter((i) => i.supplier_id === e.target.value && i.status !== 'paid')) } catch { /* ignore */ } } }} required>
+            <select className="input" value={supplierId} onChange={async (e) => { setSupplierId(e.target.value); setPurchaseInvoiceId(''); setPurchaseInvoices([]); if (e.target.value) { try { const all = await getPurchaseInvoices(); setPurchaseInvoices((all || []).filter((i) => i.supplier_id === e.target.value && i.status !== 'paid' && i.approval_status === 'approved')) } catch { /* ignore */ } } }} required>
               <option value="">{tCommon('form.selectPlaceholder')}</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>

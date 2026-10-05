@@ -1428,32 +1428,19 @@ export async function deleteProductSubstitute(id: string) {
 // ============ Stock Reservations & Lot Traceability ============
 
 // 2.16 — l'écran lisait `r.products?.name` et `r.warehouses?.name`, que `select('*')` ne
-// rend pas : la colonne « Article » affichait « — » pour TOUTES les réservations. La
-// jointure PostgREST est impossible — `stock_reservations` ne porte aucune clé étrangère
-// (mesuré : `pg_constraint`, 2 CHECK et la clé primaire) — donc les noms sont résolus
-// ici, dans la société. La clé manquante est un défaut à part, inscrit au suivi.
+// rend pas : la colonne « Article » affichait « — » pour TOUTES les réservations.
+// `stock_reservations` ne portait aucune clé étrangère ; la 352 pose les clés composites
+// `(tenant_id, product_id)` → products et `(tenant_id, warehouse_id)` → warehouses :
+// PostgREST joint donc l'article et le dépôt de la société, en une requête.
 export type StockReservationRow = Row<'stock_reservations'> & { products: Joined<'products', 'name' | 'sku'>; warehouses: Joined<'warehouses', 'name'> }
 
 export async function getStockReservations(): Promise<StockReservationRow[]> {
   const tid = await getTenantId()
-  let q = supabase.from('stock_reservations').select('*').order('created_at', { ascending: false })
+  let q = supabase.from('stock_reservations').select('*, products(name, sku), warehouses(name)').order('created_at', { ascending: false })
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  const rows = (data || []) as Row<'stock_reservations'>[]
-  if (rows.length === 0) return []
-  const productIds = [...new Set(rows.map((r) => r.product_id))]
-  const warehouseIds = [...new Set(rows.map((r) => r.warehouse_id).filter((id): id is string => !!id))]
-  let pq = supabase.from('products').select('id, name, sku').in('id', productIds)
-  if (tid) pq = pq.eq('tenant_id', tid)
-  let wq = supabase.from('warehouses').select('id, name').in('id', warehouseIds)
-  if (tid) wq = wq.eq('tenant_id', tid)
-  const [ps, ws] = await Promise.all([pq, warehouseIds.length ? wq : Promise.resolve({ data: [], error: null })])
-  if (ps.error) throw ps.error
-  if (ws.error) throw ws.error
-  const products = new Map(((ps.data || []) as Pick<Row<'products'>, 'id' | 'name' | 'sku'>[]).map((p) => [p.id, { name: p.name, sku: p.sku }]))
-  const warehouses = new Map(((ws.data || []) as Pick<Row<'warehouses'>, 'id' | 'name'>[]).map((w) => [w.id, { name: w.name }]))
-  return rows.map((r) => ({ ...r, products: products.get(r.product_id) ?? null, warehouses: (r.warehouse_id && warehouses.get(r.warehouse_id)) || null }))
+  return (data || []) as StockReservationRow[]
 }
 
 // Partie 5 (454) : une réservation se LIBÈRE, elle ne se supprime pas. La

@@ -47,6 +47,40 @@ it('Achats, fournisseurs, stock — par les fonctions des écrans', async () => 
   const st3 = (await sql(`select status, amount_paid::float, amount_due::float from purchase_invoices where id=$1`, [pinv.id]))[0]
   const s401 = (await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like '401%'`, [A]))[0].s
   check('P05', 'décaissement 360 : facture payée, 401 soldé', pay.ok && st3.amount_due === 0 && r2(s401) === 0, { err: pay.err, st3, s401 })
+  // 354 : un règlement ne s'impute qu'à une facture APPROUVÉE — sinon la facture passait à « payée »
+  // sans écriture d'achat, le 401 débité sans dette, et l'approbation (M9) contournée par le paiement.
+  const pi2 = await attempt(() => sales.createPurchaseInvoice({ supplier_reference: 'F-779', supplier_id: sup.id, supplier_name: sup.name, date: '2026-09-06', due_date: '2026-10-06', status: 'draft',
+    subtotal: 1000, vat_total: 200, total: 1200, amount_paid: 0, amount_due: 1200, notes: '',
+    lines: [{ product_id: null, description: 'Matériel', quantity: 1, unit_price: 1000, vat_rate: 20, total: 1000, vat_total: 200, vat_amount: 200, line_order: 0 }] } as unknown as Parameters<typeof sales.createPurchaseInvoice>[0]))
+  const pinv2 = pi2.val as { id: string }
+  const pay2 = await attempt(async () => partners.createSupplierPayment({ number: await core.nextDocumentNumber('DEC'), supplier_id: sup.id, purchase_invoice_id: pinv2.id, payment_date: '2026-09-28', amount: 1200, method: 'transfer', bank_account_id: bank.id, reference: 'F-779', status: 'recorded' } as unknown as Parameters<typeof partners.createSupplierPayment>[0]))
+  const st4 = (await sql(`select status, approval_status, amount_due::float, (select count(*)::int from supplier_payments p where p.purchase_invoice_id = i.id) reglements from purchase_invoices i where id=$1`, [pinv2.id]))[0]
+  const s401b = (await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like '401%'`, [A]))[0].s
+  check('P05b', 'régler une facture d\'achat non approuvée est refusé : facture intacte, aucun règlement, 401 inchangé',
+    pi2.ok && !pay2.ok && st4.status === 'draft' && st4.approval_status === 'pending' && st4.amount_due === 1200 && st4.reglements === 0 && r2(s401b) === r2(s401),
+    { err: pay2.err, st4, s401: s401b })
+
+  // ---------- Facture issue de l'OCR (SupplierInvoiceAutomationPage, /purchases/automation) ----------
+  // La charge utile est celle de l'écran (`ocrFormToPurchaseInvoice`), relecture sans échéance lue.
+  // Mesuré le 05/10 (rouges avant) : l'écran écrivait `status: 'received'`, que
+  // `purchase_invoices_status_check` refuse (23514) — aucune facture lue par OCR ne pouvait être
+  // enregistrée ; une échéance non lue partait en chaîne vide (22007) ; et il n'envoyait aucune
+  // ligne, or la base refuse d'approuver une facture sans ligne.
+  const ocr = await import('@/lib/ocrInvoice')
+  const oi = await attempt(() => sales.createPurchaseInvoice(ocr.ocrFormToPurchaseInvoice({
+    number: 'FA-2026-0912', supplierId: sup.id, supplierName: sup.name, date: '2026-09-12', dueDate: '',
+    subtotal: 200, vatTotal: 40, lineLabel: 'Facture FA-2026-0912' })))
+  const oid = oi.val?.id
+  const oRow = oid ? (await sql<{ status: string; approval_status: string; ref: string; d: string; due: string; ht: number; tva: number; ttc: number; n: number }>(
+    `select status, approval_status, supplier_reference ref, date::text d, due_date::text due, subtotal::float ht, vat_total::float tva, total::float ttc,
+      (select count(*)::int from purchase_invoice_lines l where l.purchase_invoice_id=i.id) n from purchase_invoices i where id=$1`, [oid]))[0] : null
+  check('P08', 'facture lue par OCR : enregistrée en brouillon, à approuver, référence du fournisseur gardée, échéance = date à défaut, 1 ligne 200 + 40 = 240',
+    !!oRow && oRow.status === 'draft' && oRow.approval_status === 'pending' && oRow.ref === 'FA-2026-0912' && oRow.due === '2026-09-12' && oRow.n === 1 && oRow.ht === 200 && oRow.tva === 40 && oRow.ttc === 240, oi.err ?? oRow)
+  const oAppr = oid ? await attempt(() => sales.updatePurchaseInvoiceApproval(oid, 'approved')) : oi
+  const oAc = oid ? await sql<{ code: string; d: number; c: number }>(`select l.account_code code, l.debit::float d, l.credit::float c from journal_lines l
+      where l.journal_id = (select transferred_entry_id from purchase_invoices where id=$1) order by l.line_order`, [oid]) : []
+  const oSum = (pre: string, k: 'd' | 'c') => r2(oAc.filter((x) => x.code.startsWith(pre)).reduce((a, x) => a + x[k], 0))
+  check('P09', 'elle suit le circuit d\'approbation : écriture AC D6 200 / D4456 40 / C401 240', oAppr.ok && oSum('6', 'd') === 200 && oSum('4456', 'd') === 40 && oSum('401', 'c') === 240, { err: oAppr.err, ac: oAc })
 
   // ---------- Stock ----------
   const w = await attempt(() => stock.createWarehouse({ code: 'DEP'+Date.now(), name: 'Dépôt principal', address: null, city: null, postal_code: null, country: 'France', active: true } as any))

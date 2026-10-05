@@ -63,9 +63,11 @@ L'essentiel en huit lignes :
 > | **`415` → `429`** | **L16 → L24** (événements unifiés, capacité ↔ absence, régénération, chaînages internes, stock ↔ projets, dérivés du lettrage, reporting, moteur de règles, explicabilité) — `415` L23, `416` L17 | **2026-10-02** |
 > | **`414`, `430` → `449`** | **partie 3** (L3, L4) : `414` alerte de dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé bancaire — **déplacés de `415`/`416` le 02/10 au soir** (`0cd347c`, `9e0f33d`) | **2026-10-02** |
 > | **`450` → `459`** | **Partie 5** — intégrité référentielle des chaînages (registre des types, existence, garde de suppression, INV-19) | **2026-10-02** |
+| **`370` → `379`** | **Lot K (localisation Djibouti)** — `370` : le barème mensuel de l'I.T.S. (grille « en table », 393 tranches), **porté de `claude/extract-tax-salary-table-2a3267`**, dont l'ancien `65_seed_dj_its_payroll_grid.sql`. Le numéro `65` est impossible (déjà `65_project_management.sql`) ; `370` était réservé et **resté vide**. Corrigé au passage : le moteur lisait `fixed_amount` **sans tester la tranche** — sur 393 lignes, l'ITS était la somme des montants. | **2026-10-05** |
 > | `325` · `340` → `369` | **partie 1** (TVA 198, tâche 1.7) · **partie 2** (défauts métier) | **2026-10-02** |
 > | `326` → `339`, `370` → `399` | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
 > | **`460` → `469`** | **I-01, la « Vue Chaîne »** (`460`) — instrumenter les chaînages existants, pas les réécrire | **2026-10-02** |
+> | **`470` → `474`** | **partie 2 (défauts métier) — dernier écrivain au-dessus des chaînages** : `470` (tâche 2.17) réécrit `cash_flow_forecast`, que la `420` réécrit aussi — en `35x` elle serait écrasée sur base neuve | **2026-10-05** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue

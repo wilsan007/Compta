@@ -121,7 +121,6 @@ const StockMovementsPage = lazy(() => import('@/pages/StockMovementsPage').then(
 const InventoryPage = lazy(() => import('@/pages/InventoryPage').then(m => ({ default: m.InventoryPage })))
 const ReorderPage = lazy(() => import('@/pages/ReorderPage').then(m => ({ default: m.ReorderPage })))
 const PriceListsPage = lazy(() => import('@/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
-const GescomTransferPage = lazy(() => import('@/pages/GescomTransferPage').then(m => ({ default: m.GescomTransferPage })))
 const BOMPage = lazy(() => import('@/pages/BOMPage').then(m => ({ default: m.BOMPage })))
 const ManufacturingOrdersPage = lazy(() => import('@/pages/ManufacturingOrdersPage').then(m => ({ default: m.ManufacturingOrdersPage })))
 const RoutingsPage = lazy(() => import('@/pages/RoutingsPage').then(m => ({ default: m.RoutingsPage })))
@@ -267,7 +266,6 @@ const GridTemplatesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({
 const PaymentTemplatesComptaPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.PaymentTemplatesComptaPage })))
 const StandardLabelsPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.StandardLabelsPage })))
 const AnalyticJournalCodesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.AnalyticJournalCodesPage })))
-const AnalyticODEntryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticODEntryPage })))
 const ThirdPartyInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ThirdPartyInquiryPage })))
 const AnalyticInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticInquiryPage })))
 const ReimputationPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ReimputationPage })))
@@ -451,7 +449,6 @@ function App() {
           <Route path="/stock/inventory" element={<InventoryPage />} />
           <Route path="/stock/reorder" element={<ReorderPage />} />
           <Route path="/stock/price-lists" element={<PriceListsPage />} />
-          <Route path="/stock/transfer" element={<GescomTransferPage />} />
           <Route path="/stock/boms" element={<BOMPage />} />
           <Route path="/stock/manufacturing" element={<ManufacturingOrdersPage />} />
 
@@ -721,7 +718,9 @@ function App() {
           <Route path="/accounting/payment-templates-compta" element={<PaymentTemplatesComptaPage />} />
           <Route path="/accounting/standard-labels" element={<StandardLabelsPage />} />
           <Route path="/accounting/analytic-journal-codes" element={<AnalyticJournalCodesPage />} />
-          <Route path="/accounting/analytic-od-entry" element={<AnalyticODEntryPage />} />
+          {/* 2.13 (G1) : « Saisie OD analytique » n'était qu'une liste de sections, sans formulaire.
+              Une OD analytique se saisit dans la saisie d'écriture, qui porte la section par ligne. */}
+          <Route path="/accounting/analytic-od-entry" element={<Navigate to="/accounting/treatment/journal-entry" replace />} />
           <Route path="/accounting/third-party-inquiry" element={<ThirdPartyInquiryPage />} />
           <Route path="/accounting/analytic-inquiry" element={<AnalyticInquiryPage />} />
           <Route path="/accounting/reimputation" element={<ReimputationPage />} />

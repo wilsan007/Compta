@@ -4,7 +4,7 @@ import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { getPurchaseInvoices, createPurchaseInvoice } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
 import { validateFileUpload, FILE_PROFILES } from '@/lib/fileSecurity'
-import { extractSupplierInvoice, type OcrInvoiceResult } from '@/lib/ocrInvoice'
+import { extractSupplierInvoice, ocrFormToPurchaseInvoice, type OcrInvoiceResult } from '@/lib/ocrInvoice'
 import { Upload, FileText, CheckCircle2, X, Sparkles, AlertCircle } from 'lucide-react'
 import type { PurchaseInvoice, Supplier } from '@/types'
 import { useToast } from '@/lib/toast'
@@ -150,12 +150,11 @@ const { toast } = useToast()
     e.preventDefault()
     setSaving(true)
     try {
-      await createPurchaseInvoice({
-        number, supplier_id: supplierId || null,
-        date, due_date: dueDate,
-        subtotal, vat_total: vatTotal, total, amount_paid: 0, amount_due: total,
-        status: 'received',
-      } as any)
+      await createPurchaseInvoice(ocrFormToPurchaseInvoice({
+        number, supplierId, supplierName: suppliers.find((s) => s.id === supplierId)?.name,
+        date, dueDate, subtotal, vatTotal,
+        lineLabel: t('automation.ocrLineLabel', { number }),
+      }))
       onSaved()
     } catch (err) {
       toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error'))

@@ -161,6 +161,25 @@ export async function createInvoice(invoice: Omit<Invoice, 'id' | 'created_at' |
   return inv as Invoice
 }
 
+/** 2.13 (353) — ce qu'un brouillon de facture laisse modifier ; la base ignore tout autre champ. */
+export type InvoiceDraftHeader = Partial<Pick<Invoice, 'customer_id' | 'customer_name' | 'date' | 'due_date' | 'notes'>>
+
+// 2.13 (G1) : un brouillon se modifie d'un seul geste — en-tête et lignes, ou rien.
+// `update_invoice_draft` s'exécute avec les droits de l'appelant, refuse une facture
+// validée et un brouillon né d'un autre document (temps, livraison, commande).
+export async function updateInvoiceDraft(id: string, header: InvoiceDraftHeader, lines: Omit<InvoiceLine, 'id' | 'created_at' | 'invoice_id'>[]): Promise<Invoice> {
+  const { data: result, error: rpcError } = await supabase.rpc('update_invoice_draft', {
+    p_invoice_id: id,
+    p_invoice: header,
+    p_lines: lines.map((l, i) => ({ ...l, line_order: i })),
+  })
+  if (rpcError) throw rpcError
+  if (result && result.success === false) throw new Error(result.error || 'Erreur modification facture')
+  const { data: inv, error: invError } = await supabase.from('invoices').select('*').eq('id', id).single()
+  if (invError) throw invError
+  return inv as Invoice
+}
+
 export async function updateInvoice(id: string, updates: Partial<Invoice>) {
   const tid = await getTenantId()
   const { data, error } = await tud(supabase.from('invoices').update(updates), 'invoices', tid).eq('id', id).select().single()
@@ -285,7 +304,9 @@ export async function getPurchaseInvoices() {
 
 // AUD-G02 : numéro interne attribué par le serveur à l'approbation ; en-tête et
 // lignes créés ensemble (RPC atomique), montants recalculés par le serveur
-export async function createPurchaseInvoice(invoice: Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines?: Omit<PurchaseInvoiceLine, 'id' | 'created_at' | 'purchase_invoice_id'>[] }) {
+export type PurchaseInvoiceInput = Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines?: Omit<PurchaseInvoiceLine, 'id' | 'created_at' | 'purchase_invoice_id'>[] }
+
+export async function createPurchaseInvoice(invoice: PurchaseInvoiceInput) {
   const tid = await getTenantId()
   const { lines, ...header } = invoice
   if (lines && lines.length > 0) {

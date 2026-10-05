@@ -599,7 +599,6 @@ const routeLabelKeys: Record<string, string> = {
   'inventory': 'items.inventory',
   'reorder': 'items.reorder',
   'price-lists': 'items.priceLists',
-  'transfer': 'items.gescomTransfer',
   'boms': 'items.bom',
   'manufacturing': 'items.manufacturingOrders',
   'production': 'groups.production',

@@ -16,7 +16,7 @@
     "invoicesByStatus": "Factures par statut",
     "monthlyRevenue": "Chiffre d'affaires mensuel"
   },
-  "invoices": { "analyticSection": "Section analytique",
+  "invoices": { "editDraft": "Modifier le brouillon", "editDraftTitle": "Modifier le brouillon {{number}}", "draftUpdated": "Brouillon modifié.", "analyticSection": "Section analytique",
     "title": "Factures",
     "proFormaNotice": "PRO FORMA — document provisoire, non valable comme facture",
     "subtitle": "Gérez vos factures de vente",

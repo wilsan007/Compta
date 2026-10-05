@@ -289,6 +289,8 @@ export interface CreditNoteLine {
   vat_amount?: number
   /** B4 (ven-012) : compte de vente d'une ligne sans article */
   account_code?: string | null
+  /** 2.13 (353) : section analytique de la ligne d'avoir, reprise sur l'écriture */
+  analytic_section_id?: string | null
   line_order: number
   created_at: string
 }

@@ -170,6 +170,7 @@ INSERT INTO g8_registre VALUES
   ('cancel_import_batch', 'Acte d''import : il annule un lot d''écritures DÉJÀ produites, il ne produit pas d''effet de document. Écarté par l''inventaire tranche 1 §2, décision non rejouée ici.'),
   ('bootstrap_tenant', 'Mise en service : crée le plan comptable et les journaux d''une société nouvelle. Ce n''est pas un document, et le socle n''a pas de notion d''acte de mise en service. Modèle à traiter (lot L4), pas un oubli.'),
   ('create_tenant_for_current_user', 'Mise en service, même nature que bootstrap_tenant. Écarté.'),
+  ('stock_reservations_reprendre_orphelins', '05/10/2026 (352) : acte de REPRISE, pas un maillon — il retire ou détache les réservations dont l''article, le dépôt ou la société est introuvable, trace chaque ligne dans audit_log et FERME (rompu, motif) le lien de chaîne qui la tenait. Il ne produit aucun effet de document, n''est appelé que par la migration 352 et n''est exécutable que par service_role. Même nature que chain_fermer_orphelins (452).'),
   ('refresh_invoice_settlement', 'Recalcul paramétrique : régénère un solde à partir des paiements, ne crée pas d''effet. Un recalcul n''est pas un maillon (verdict de l''inventaire tranche 4 §2).'),
   ('refresh_purchase_invoice_settlement', 'Recalcul paramétrique, même nature que refresh_invoice_settlement. Écarté.'),
   ('revaluate_currency_balances', 'Recalcul de clôture (réévaluation des comptes en devise). Écarté par l''inventaire tranche 4 §2 : « pas un document, acte de clôture ».'),

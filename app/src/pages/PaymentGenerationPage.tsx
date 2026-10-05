@@ -76,7 +76,8 @@ export function PaymentGenerationPage() {
     try {
       if (tiersType === 'supplier') {
         const data = await getPurchaseInvoices()
-        setPurchaseInvoices(data || [])
+        // 354 : seule une facture approuvée se règle (la base refuse les autres)
+        setPurchaseInvoices((data || []).filter((i) => i.approval_status === 'approved'))
       } else {
         const data = await getInvoices()
         setInvoices(data || [])

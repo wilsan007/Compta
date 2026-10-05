@@ -113,10 +113,14 @@ export async function getTreasuryDashboard() {
   if (tid) inQ = inQ.eq('tenant_id', tid)
   const incoming = await fetchAllRows<any>(inQ, { label: 'getTreasuryDashboard/invoices' })
 
+  // 2.17 (470) : la dette fournisseur = approuvée, non annulée, reste dû > 0 —
+  // et c'est le RESTE DÛ qui sortira, pas le total.
   let outQ = supabase
     .from('purchase_invoices')
-    .select('total, due_date, status')
-    .in('status', ['received', 'overdue'])
+    .select('amount_due, due_date')
+    .eq('approval_status', 'approved')
+    .neq('status', 'cancelled')
+    .gt('amount_due', 0)
     .gte('due_date', today.toISOString().split('T')[0])
     .lte('due_date', in90.toISOString().split('T')[0])
     .order('id')
@@ -140,9 +144,9 @@ export async function getTreasuryDashboard() {
   for (const inv of outgoing) {
     const due = new Date(inv.due_date)
     const days = Math.floor((due.getTime() - today.getTime()) / 86400000)
-    if (days <= 30) forecastBuckets[0].outgoing += Number(inv.total)
-    else if (days <= 60) forecastBuckets[1].outgoing += Number(inv.total)
-    else forecastBuckets[2].outgoing += Number(inv.total)
+    if (days <= 30) forecastBuckets[0].outgoing += Number(inv.amount_due)
+    else if (days <= 60) forecastBuckets[1].outgoing += Number(inv.amount_due)
+    else forecastBuckets[2].outgoing += Number(inv.amount_due)
   }
 
   let ppQ = supabase.from('payment_orders').select('*').in('status', ['draft', 'approved']).order('id')
@@ -201,10 +205,13 @@ export async function getTreasuryForecast(days: number = 90) {
   // LOT7-03 : la courbe de trésorerie prévisionnelle doit intégrer toutes les échéances.
   const invoices = await fetchAllRows<any>(invQ, { label: 'getTreasuryForecast/invoices' })
 
+  // 2.17 (470) : le même critère que le moteur — approuvée, non annulée, reste dû > 0.
   let purQ = supabase
     .from('purchase_invoices')
-    .select('number, total, due_date, supplier_id, status')
-    .in('status', ['received', 'overdue'])
+    .select('number, amount_due, due_date, supplier_id')
+    .eq('approval_status', 'approved')
+    .neq('status', 'cancelled')
+    .gt('amount_due', 0)
     .gte('due_date', today.toISOString().split('T')[0])
     .lte('due_date', end.toISOString().split('T')[0])
     .order('due_date')
@@ -226,7 +233,7 @@ export async function getTreasuryForecast(days: number = 90) {
     events.push({ date: inv.due_date, type: 'in', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
   }
   for (const inv of purchaseInvoices) {
-    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
+    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.amount_due), reference: inv.number })
   }
 
   events.sort((a, b) => a.date.localeCompare(b.date))
@@ -291,108 +298,6 @@ export async function getCollectionDashboard() {
     totalDue,
     reminders: reminders || [],
   }
-}
-
-
-
-// ============ Sprint 6: Gescom Transfer (Compta) ============
-/** 2.16 — une pièce de gestion commerciale proposée au transfert, avec son état. */
-export interface GescomDocument { id: string; number: string; date: string; total: number; status: string; transferred: boolean }
-type GescomSource = Omit<GescomDocument, 'transferred'>
-export interface GescomTransferData {
-  invoices: GescomDocument[]
-  purchaseInvoices: GescomDocument[]
-  customerPayments: Row<'customer_payments'>[]
-  supplierPayments: Row<'supplier_payments'>[]
-  pendingCount: number
-}
-
-export async function getGescomTransferData(dateFrom?: string, dateTo?: string): Promise<GescomTransferData> {
-  const tid = await getTenantId()
-  let invQ = supabase.from('invoices').select('id, number, date, total, status, customer_id').in('status', ['sent', 'paid']).order('date', { ascending: false })
-  if (tid) invQ = invQ.eq('tenant_id', tid)
-  if (dateFrom) invQ = invQ.gte('date', dateFrom)
-  if (dateTo) invQ = invQ.lte('date', dateTo)
-  const { data: invoices } = await invQ
-
-  let purQ = supabase.from('purchase_invoices').select('id, number, date, total, status, supplier_id').in('status', ['received', 'paid']).order('date', { ascending: false })
-  if (tid) purQ = purQ.eq('tenant_id', tid)
-  if (dateFrom) purQ = purQ.gte('date', dateFrom)
-  if (dateTo) purQ = purQ.lte('date', dateTo)
-  const { data: purchaseInvoices } = await purQ
-
-  let cpQ = supabase.from('customer_payments').select('*').eq('status', 'recorded').order('payment_date', { ascending: false })
-  if (tid) cpQ = cpQ.eq('tenant_id', tid)
-  const { data: customerPayments } = await cpQ
-
-  let spQ = supabase.from('supplier_payments').select('*').eq('status', 'recorded').order('payment_date', { ascending: false })
-  if (tid) spQ = spQ.eq('tenant_id', tid)
-  const { data: supplierPayments } = await spQ
-
-  let jeQ = supabase.from('journal_entries').select('invoice_ref').not('invoice_ref', 'is', null)
-  if (tid) jeQ = jeQ.eq('tenant_id', tid)
-  const { data: existingEntries } = await jeQ
-  const alreadyTransferred = new Set(((existingEntries || []) as { invoice_ref: string | null }[]).map((e) => e.invoice_ref))
-  const mark = (docs: GescomSource[] | null): GescomDocument[] => (docs || []).map((d) => ({ ...d, transferred: alreadyTransferred.has(d.number) }))
-  const sales = mark(invoices as GescomSource[] | null)
-  const purchases = mark(purchaseInvoices as GescomSource[] | null)
-
-  return {
-    invoices: sales,
-    purchaseInvoices: purchases,
-    customerPayments: (customerPayments || []) as Row<'customer_payments'>[],
-    supplierPayments: (supplierPayments || []) as Row<'supplier_payments'>[],
-    pendingCount: sales.filter((d) => !d.transferred).length + purchases.filter((d) => !d.transferred).length,
-  }
-}
-
-export async function transferGescomToAccounting(items: Array<{ type: 'sales' | 'purchase' | 'customer_payment' | 'supplier_payment'; id: string; number: string; amount: number; date: string }>) {
-  const tid = await getTenantId()
-  const results: Array<{ success: boolean; number: string; error?: string }> = []
-  for (const item of items) {
-    try {
-      let journalCode = 'VT'
-      let accountDebit = '411000'
-      let accountCredit = '707000'
-      if (item.type === 'purchase') { journalCode = 'AC'; accountDebit = '607000'; accountCredit = '401000' }
-      else if (item.type === 'customer_payment') { journalCode = 'BQ'; accountDebit = '512000'; accountCredit = '411000' }
-      else if (item.type === 'supplier_payment') { journalCode = 'BQ'; accountDebit = '401000'; accountCredit = '512000' }
-
-      // ACC-01.7 : Idempotence — ne pas retransférer un document déjà comptabilisé
-      const sourceTable = item.type === 'sales' ? 'invoices'
-        : item.type === 'purchase' ? 'purchase_invoices'
-        : item.type === 'customer_payment' ? 'customer_payments'
-        : 'supplier_payments'
-      let srcQ = supabase.from(sourceTable).select('transferred_entry_id').eq('id', item.id)
-      if (tid) srcQ = srcQ.eq('tenant_id', tid)
-      const { data: source } = await srcQ.single()
-      if (source?.transferred_entry_id) {
-        results.push({ success: true, number: item.number, error: 'Déjà transféré' })
-        continue
-      }
-
-      // SOC-01/ACC-01 : RPC atomique — entête et lignes dans une seule transaction
-      const entryNumber = `${journalCode}-${item.number}`
-      const { data: rpcRes, error: rpcErr } = await supabase.rpc('post_journal_entry', {
-        p_entry: { number: entryNumber, date: item.date, journal_code: journalCode, status: 'draft', invoice_ref: item.number },
-        p_lines: [
-          { account_code: accountDebit, account_general: accountDebit, debit: item.amount, credit: 0, description: item.number, line_order: 0 },
-          { account_code: accountCredit, account_general: accountCredit, debit: 0, credit: item.amount, description: item.number, line_order: 1 },
-        ],
-      })
-      if (rpcErr) throw rpcErr
-      const res = rpcRes as any
-      if (res?.success === false) throw new Error(res.error || 'Échec du transfert')
-
-      // Marquer la source comme transférée (idempotence)
-      await tud(supabase.from(sourceTable).update({ transferred_entry_id: res?.entry_id }), sourceTable, tid).eq('id', item.id)
-
-      results.push({ success: true, number: item.number })
-    } catch (err: any) {
-      results.push({ success: false, number: item.number, error: err.message })
-    }
-  }
-  return results
 }
 
 

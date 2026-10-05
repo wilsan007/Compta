@@ -449,21 +449,20 @@ describe("AUD-ACCES-05 — échéancier : la ligne porte l'id de son document so
 
 // ============ AUD-ACCES-06 — le type d'une section analytique ============
 
-describe('AUD-ACCES-06 — saisie OD analytique : le type se lit sur `section_type`', () => {
-  it("l'écran ne lit plus `s.type`, qui n'existe ni en base ni dans le type", () => {
-    const src = lire('src/pages/Phase7DInquiryPages.tsx')
-    const fautives = codeSeul(src).filter((l) => /\bs\.type\b/.test(l))
-    expect(fautives).toEqual([])
-    // La colonne réelle (274), et les deux libellés — une section « total » n'est
-    // jamais imputable, elle doit se distinguer.
-    expect(src).toMatch(/s\.section_type === 'total'/)
-    expect(src).toContain("t('analyticSections.typeTotal')")
-    expect(src).toContain("t('analyticSections.typeSection')")
+describe('AUD-ACCES-06 — saisie OD analytique : la fausse page est retirée', () => {
+  // 2026-10-05 (tâche 2.13) : la page ne faisait que LISTER les sections (son défaut
+  // d'origine, `s.type` au lieu de `section_type`, avait été corrigé le 02/10). Elle
+  // n'a jamais porté de formulaire : elle est retirée du menu, et sa route mène à la
+  // saisie d'écriture. L'assertion d'origine gardait un écran qui n'existe plus ;
+  // elle garde maintenant qu'il ne revient pas sous sa forme de liste.
+  it("la page n'existe plus, son entrée de menu non plus, et sa route redirige", () => {
+    expect(lire('src/pages/Phase7DInquiryPages.tsx')).not.toMatch(/export function AnalyticODEntryPage/)
+    expect(codeSeul(lire('src/components/navModules.ts')).filter((l) => /analytic-od-entry/.test(l))).toEqual([])
+    expect(lire('src/App.tsx')).toMatch(/path="\/accounting\/analytic-od-entry" element=\{<Navigate to="\/accounting\/treatment\/journal-entry" replace \/>\}/)
   })
 
-  it('les quatre états nommés ne sont plus des tableaux de `any`', () => {
+  it('les états nommés ne sont plus des tableaux de `any`', () => {
     const src = lire('src/pages/Phase7DInquiryPages.tsx')
-    expect(src).toContain('useState<Awaited<ReturnType<typeof getAnalyticSections>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getAnalyticLedgerLines>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getJournalEntries>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getChartAccounts>>>')
@@ -501,24 +500,29 @@ describe('2.16 — les états des écrans stock, caisse, compta et paie sont nom
 
 describe("2.16 — réservations de stock : l'article et le dépôt arrivent jusqu'à l'écran", () => {
   // Défaut révélé par le type : l'écran lisait `r.products?.name` et `r.warehouses?.name`
-  // sur le résultat d'un `select('*')`. La table ne porte aucune clé étrangère : la
-  // jointure PostgREST est impossible, les noms sont résolus dans la fonction.
+  // sur le résultat d'un `select('*')`. La table ne portait aucune clé étrangère ; depuis
+  // la 352 elle porte les clés composites vers `products` et `warehouses`, et la fonction
+  // demande la jointure à PostgREST — une requête, plus de résolution des noms à part.
   it('chaque réservation porte le nom de son article et de son dépôt', async () => {
-    const tables: Record<string, unknown[]> = {
-      stock_reservations: [
-        { id: 'r1', product_id: 'p1', warehouse_id: 'w1', quantity: 3, status: 'active' },
-        { id: 'r2', product_id: 'p2', warehouse_id: null, quantity: 1, status: 'active' },
+    const chain = createMockChain({
+      data: [
+        { id: 'r1', product_id: 'p1', warehouse_id: 'w1', quantity: 3, status: 'active', products: { name: 'Article A', sku: 'A-1' }, warehouses: { name: 'Dépôt principal' } },
+        { id: 'r2', product_id: 'p2', warehouse_id: null, quantity: 1, status: 'active', products: { name: 'Article B', sku: 'B-1' }, warehouses: null },
       ],
-      products: [{ id: 'p1', name: 'Article A', sku: 'A-1' }],
-      warehouses: [{ id: 'w1', name: 'Dépôt principal' }],
-    }
-    vi.mocked(supabase.from).mockImplementation(((table: string) =>
-      createMockChain({ data: tables[table] ?? [], error: null })) as unknown as typeof supabase.from)
+      error: null,
+    })
+    const tables: string[] = []
+    vi.mocked(supabase.from).mockImplementation(((table: string) => {
+      tables.push(table)
+      return chain
+    }) as unknown as typeof supabase.from)
     const { getStockReservations } = await import('@/lib/queries/stock')
     const rows = await getStockReservations()
+    expect(tables).toEqual(['stock_reservations'])
+    expect(chain.select).toHaveBeenCalledWith('*, products(name, sku), warehouses(name)')
     expect(rows.map((r) => [r.products?.name ?? null, r.warehouses?.name ?? null])).toEqual([
       ['Article A', 'Dépôt principal'],
-      [null, null], // article introuvable et dépôt absent : `null`, que l'écran rend « — »
+      ['Article B', null], // réservation sans dépôt précis : `null`, que l'écran rend « — »
     ])
     vi.mocked(supabase.from).mockImplementation((() => mockChain) as unknown as typeof supabase.from)
   })
@@ -595,7 +599,6 @@ interface RetoursVerifies {
   getBankTransactions: Verdict<Q['getBankTransactions']>; getProductStock: Verdict<S['getProductStock']>
   getProductSupplierPrices: Verdict<S['getProductSupplierPrices']>; getProductDocuments: Verdict<S['getProductDocuments']>
   traceLotDownstream: EstVide<Awaited<ReturnType<S['traceLotDownstream']>>['movements'][number]>
-  gescomInvoices: EstVide<Awaited<ReturnType<Q['getGescomTransferData']>>['invoices'][number]>
   getCollectionDashboard: Verdict<Q['getCollectionDashboard']>; closeFiscalYear: Verdict<Q['closeFiscalYear']>
 }
 /** Toutes les entrées doivent valoir `false` — c'est cette affectation que `tsc` vérifie. */
@@ -636,11 +639,12 @@ describe('2.16 — tranche 3 : quatre écrans lisaient des propriétés que leur
       .toMatch(/price_lists\(name, type, currency\)/)
   })
 
-  it('les douze écrans de la tranche ne gardent aucun état non typé', () => {
+  // (douze à l'origine : l'écran de transfert comptable a été retiré le 05/10 — 2.16, single-engine.test.ts)
+  it('les onze écrans de la tranche ne gardent aucun état non typé', () => {
     const NON_TYPE = new RegExp('useState<an' + 'y(\\[\\])?>')
     const ecrans = ['pages/PaySlipsPage', 'pages/GeneralLedgerPage', 'pages/LiasseFiscalePage', 'pages/FiscalYearClosurePage',
       'pages/AgedBalancePage', 'pages/AccountingDashboardPage', 'pages/LotTraceabilityPage', 'pages/BankAccountsPage',
-      'pages/GescomTransferPage', 'pages/CreditControlPage', 'pages/CollectionDashboardPage', 'components/ArticleInterrogationModal']
+      'pages/CreditControlPage', 'pages/CollectionDashboardPage', 'components/ArticleInterrogationModal']
     expect(ecrans.filter((p) => codeSeul(lire(`src/${p}.tsx`)).some((l) => NON_TYPE.test(l)))).toEqual([])
   })
 })

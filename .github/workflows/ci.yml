@@ -1834,6 +1834,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 2.17 (470) : une facture d'achat APPROUVÉE et IMPAYÉE est un
+      # décaissement à venir. Mesuré le 05/10 : `cash_flow_forecast` cherchait
+      # la dette fournisseur sous `status IN ('received','overdue')` — or
+      # `received` n'est pas admis par `purchase_invoices_status_check`, et
+      # une facture approuvée impayée reste `draft` : les sorties prévues
+      # valaient 0, toujours. 7 scénarios : approuvée impayée (T01), non
+      # approuvée (T02), partiellement réglée → le reste dû (T03), soldée
+      # (T04), l'horizon (T05), l'isolation (T06), les deux noms d'un même
+      # chiffre et le net (T07). Rouges avant : T01, T03, T05, T07. La 470
+      # porte un numéro AU-DESSUS de la 420, qui réécrit la même fonction :
+      # en 35x elle serait écrasée sur base neuve. Les lecteurs de l'écran
+      # sont gardés par le job `screen-path` (09_dash, D08 → D11).
+      - name: '2.17 : la dette fournisseur approuvée dans le prévisionnel (470)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/470_purchase_payables_cash_forecast_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # 462 — I-08, la moitié visible du dictionnaire : dérouler la chaîne
       # qui produit un montant. Elle ne CALCULE rien et n'INVENTE aucun
       # lien : elle ne rend que ce que les maillons de la 460 ont tracé, et
@@ -1866,6 +1883,17 @@ jobs:
       # réservation se libère sans être supprimée, et INV-19 se mesure.
       - name: 'Partie 5 : intégrité référentielle des chaînages (450)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/450_chain_integrite_referentielle_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Lot K (370) — Djibouti : le barème mensuel de l'ITS, une grille « en
+      # table » de 393 tranches. La grille existe et est rejouable, ses tranches
+      # sont consécutives et bornées, et le lien vers le fichier source pointe
+      # un bucket qui existe. Le moteur qui la LIT est tenu côté front
+      # (src/lib/__tests__/grid-fixed-amount.test.ts) : une base ne prouve pas
+      # qu'un TypeScript lit min_amount/max_amount.
+      - name: 'Lot K : le barème ITS de Djibouti (370)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/370_dj_its_bareme_mensuel_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -2154,12 +2182,47 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2 : un règlement fournisseur imputé à une facture d'achat NON approuvée
+      # était accepté — facture « payée » sans écriture d'achat, 401 débité sans dette,
+      # approbation (271, M9) contournée par le paiement. 8 scénarios : refus à
+      # l'insertion (T01), sur facture rejetée (T02), à l'imputation après coup (T03) ;
+      # non-régression du règlement normal (T04) et du règlement sans facture (T05) ;
+      # les lignes héritées listées sans rien supprimer (T06), régularisées par
+      # l'approbation (T07) ou l'annulation du règlement (T08).
+      - name: 'Partie 2 : un règlement fournisseur exige une facture approuvée (354)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/354_supplier_payment_requires_approved_invoice_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 2, tâche 2.13 (G2, pil-007) : une grille de ventilation désignait son
       # compte et ses sections en TEXTE LIBRE — « 706999 » vers « ZZZ99 »
       # s'enregistrait et ne ventilait jamais rien. 3 scénarios : compte inexistant
       # refusé (T01), section inexistante refusée (T02), renommage suivi (T03).
       - name: 'Partie 2 (2.13) : une grille de ventilation désigne ce qui existe (350)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/350_distribution_grill_references_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.16 (défaut révélé par la voie C) : `stock_reservations` ne
+      # portait AUCUNE clé étrangère — une réservation désignait un article ou un
+      # dépôt inexistant, ou ceux d'une autre société. 11 scénarios, 0 vert avant :
+      # les quatre refus (T01-T04), le chemin sain (T05), l'article et le dépôt
+      # réservés qui ne se suppriment pas (T06), la société qui emporte ses
+      # réservations (T07), et la reprise des orphelins — retirée et tracée au
+      # journal d'audit, détachée du dépôt, lien de chaîne fermé (T08-T11).
+      - name: 'Partie 2 (2.16) : une réservation désigne un article et un dépôt de sa société (352)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/352_stock_reservations_fks_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # Partie 2, tâche 2.13 (G1, les restes) : la section analytique d'une ligne
+      # d'AVOIR atteint l'écriture (T01), la GRILLE du compte s'applique quand personne
+      # n'a rien choisi — 100 % (T02), 60 / 40 avec les deux parts écrites (T03) —, une
+      # grille fausse ne bloque jamais (T04), le document prime (T05), et un BROUILLON
+      # de facture se modifie d'un geste (T06) sans ouvrir une facture validée (T07)
+      # ni celle d'une autre société (T08). 6 rouges avant la 353.
+      - name: 'Partie 2 (2.13) : avoir, grille automatique et brouillon modifiable (353)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/353_analytic_credit_note_grill_draft_tests.sql
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
@@ -2226,6 +2289,52 @@ jobs:
         run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ═══════════════════════════════════════════════════════════════════════
+      # PLAN EN 6 PARTIES PARALLÈLES — les six zones réservées
+      # (doc/audit/PLAN-6-PARTIES-PARALLELES-2026-10-05.md, règle R5)
+      #
+      # Le 05/10, quatre commits partis de `main` en parallèle ont TOUS touché
+      # `ci.yml`, `SUIVI-CHANTIERS.md` et les mêmes `.any-ceiling.json` : le
+      # découpage par sujet ne suffisait pas. D'où les six MARQUEURS ci-dessous.
+      #
+      # ⚠️ LA RÈGLE, EN UNE LIGNE : chaque partie n'ajoute ses suites que SOUS
+      # SON PROPRE MARQUEUR. Jamais au-dessus, jamais ailleurs dans le fichier.
+      # Un bloc écrit entre deux marqueurs apartient à personne : à la fusion,
+      # le conflit est long et personne ne sait qui l'a écrit.
+      #
+      # ⚠️ CES SIX BLOCS SONT VIDES AU 05/10/2026 — c'est voulu. Ils posent le
+      # cadre (étape 0.8) ; les parties remplissent le leur. Ne pas les
+      # supprimer en croyant nettoyer un fichier vide : ils sont la frontière.
+      # ═══════════════════════════════════════════════════════════════════════
+
+      # --- plan6:a --- chaînes, métriques, robustesse, cohérence ---
+      # Territoire : app/sql/*chain*, *metric*, ci/check_chain*, ci/check_effects*
+      # Plage : 423→429, 437→449, 457→459, 468→499
+
+      # --- plan6:b --- règles d'état, paie française ---
+      # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
+      # Plage : 500→559
+
+      # --- plan6:c --- lot K, localisation Djibouti ---
+      # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
+      #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
+      # Plage : 370→399, puis 600→649
+
+      # --- plan6:d --- qualité des écrans, recette, livraison ---
+      # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
+      #              app/src/__screen__, job Playwright
+      # Plage : 355→369
+
+      # --- plan6:e --- opérations : stock, production, achats, ventes ---
+      # Territoire : écrans et requêtes stock, production, achats, ventes ;
+      #              leurs tables coquilles
+      # Plage : 650→699
+
+      # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
+      # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
+      #              notifications ; leurs tables coquilles
+      # Plage : 700→749
 
   # ─────────────────────────────────────────────
   # Job 6: Build verification

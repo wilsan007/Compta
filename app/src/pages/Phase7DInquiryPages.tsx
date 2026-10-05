@@ -4,74 +4,14 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { useLocale } from '@/hooks/useLocale'
 import { getReimputationLogs, createReimputationLog } from '@/lib/queries/misc'
-import { getJournalEntries, getChartAccounts, getAnalyticSections, getAnalyticLedgerLines } from '@/lib/queries/accounting'
+import { getJournalEntries, getChartAccounts, getAnalyticLedgerLines } from '@/lib/queries/accounting'
 import { Plus, Search } from 'lucide-react'
 import type { ReimputationLog, JournalEntry } from '@/types'
 import { errorMessage } from '@/lib/utils'
 
-// ============ Analytic OD Entry Page (Saisie OD analytiques) ============
-export function AnalyticODEntryPage() {
-  const { t } = useTranslation('accounting')
-  const { toast } = useToast()
-  const [sections, setSections] = useState<Awaited<ReturnType<typeof getAnalyticSections>>>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-
-  const load = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await getAnalyticSections()
-      setSections(data || [])
-    } catch (err) {
-      console.error('Error loading analytic sections:', err)
-      toast('error', t('analyticODEntry.title'), t('analyticODEntry.loadError'))
-    } finally {
-      setLoading(false)
-    }
-  }, [toast, t])
-
-  useEffect(() => { load() }, [load])
-
-  const filtered = sections.filter(s =>
-    !search || s.code?.toLowerCase().includes(search.toLowerCase()) || s.name?.toLowerCase().includes(search.toLowerCase())
-  )
-
-  return (
-    <div>
-      <Breadcrumb items={[{ label: t('home.breadcrumb'), path: '/accounting' }, { label: t('analyticODEntry.title') }]} />
-      <PageHeader title={t('analyticODEntry.title')} subtitle={t('analyticODEntry.subtitle')} />
-      <Card className="p-4 mb-4">
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-[var(--color-text-secondary)]" />
-          <Input placeholder={t('analyticODEntry.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-      </Card>
-      {loading ? <SkeletonTable /> : filtered.length === 0 ? <EmptyState title={t('analyticODEntry.empty')} /> : (
-        <Table headers={[t('analyticODEntry.code'), t('analyticODEntry.name'), t('analyticODEntry.type'), t('analyticODEntry.parent')]}>
-          {filtered.map(s => (
-            <TableRow key={s.id}>
-              <TableCell className="font-mono text-xs">{s.code}</TableCell>
-              <TableCell>{s.name}</TableCell>
-              {/* AUD-ACCES-06 : la colonne réelle est `section_type` (posée par la
-                  274, déclarée dans `AnalyticSection`) — l'écran lisait `s.type`,
-                  qui n'existe ni en base ni dans le type : le badge affichait
-                  « section » pour TOUTES les lignes, y compris les sections
-                  « total » qui ne sont jamais imputables. Mesuré en base le
-                  2026-10-02 : 5 sections `total` sur 40 étaient donc mal dites.
-                  Libellés repris de l'écran de gestion (mêmes clés i18n). */}
-              <TableCell>
-                <Badge variant={s.section_type === 'total' ? 'neutral' : 'primary'}>
-                  {s.section_type === 'total' ? t('analyticSections.typeTotal') : t('analyticSections.typeSection')}
-                </Badge>
-              </TableCell>
-              <TableCell className="font-mono text-xs">{s.parent_id ? sections.find(p => p.id === s.parent_id)?.code : '-'}</TableCell>
-            </TableRow>
-          ))}
-        </Table>
-      )}
-    </div>
-  )
-}
+// « Saisie OD analytique » (AnalyticODEntryPage) a été retirée le 05/10/2026 (tâche 2.13) :
+// la page listait les sections analytiques sans rien saisir. Sa route redirige vers la
+// saisie d'écriture, où chaque ligne porte sa section.
 
 // ============ Third Party Inquiry Page (Interrogation tiers) ============
 

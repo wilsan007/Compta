@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 const createInvoice = vi.fn()
 const updateInvoice = vi.fn()
+const updateInvoiceDraft = vi.fn()
 const createCustomerPayment = vi.fn()
 let invoiceList: unknown[] = []
 const createQuote = vi.fn()
@@ -28,6 +29,7 @@ vi.mock('@/lib/queries/sales', () => ({
   createQuote: (...a: unknown[]) => createQuote(...a),
   createCreditNote: (...a: unknown[]) => createCreditNote(...a),
   updateInvoice: (...a: unknown[]) => updateInvoice(...a), updateQuote: vi.fn(), deleteQuote: vi.fn(),
+  updateInvoiceDraft: (...a: unknown[]) => updateInvoiceDraft(...a),
   updateCreditNote: vi.fn(), deleteCreditNote: vi.fn(), convertQuoteToInvoice: vi.fn(),
 }))
 // R-08 : la fenêtre de règlement propose les comptes bancaires de la société
@@ -96,6 +98,7 @@ describe('Formulaires de pièces de vente (AUD-E02, AUD-E04)', () => {
     createQuote.mockResolvedValue({ id: 'q1' })
     createCreditNote.mockResolvedValue({ id: 'a1' })
     updateInvoice.mockResolvedValue({})
+    updateInvoiceDraft.mockResolvedValue({ id: 'd1' })
     createCustomerPayment.mockResolvedValue({})
     invoiceList = []
   })
@@ -171,6 +174,42 @@ describe('Formulaires de pièces de vente (AUD-E02, AUD-E04)', () => {
     await waitFor(() => expect(updateInvoice).toHaveBeenCalledTimes(2))
     expect(updateInvoice.mock.calls[0]).toEqual(['d1', { validation_status: 'validated' }])
     expect(updateInvoice.mock.calls[1]).toEqual(['d1', { status: 'sent' }])
+  })
+
+  // 2.13 (G1) : un brouillon se modifie depuis la liste, par le formulaire de création.
+  it('Liste des factures : « Modifier » un brouillon rouvre ses lignes et le remplace d’un geste', async () => {
+    invoiceList = [{ id: 'd1', number: 'BROUILLON-FAC-1', customer_id: 'c1', customer_name: 'Client Un', date: '2026-03-01', due_date: '2026-03-31',
+      status: 'draft', validation_status: 'draft', total: 120, amount_due: 120, amount_paid: 0, invoice_type: 'standard',
+      invoice_lines: [{ id: 'l1', description: 'Ancienne ligne', quantity: 1, unit_price: 100, vat_rate: 20, line_order: 0, analytic_section_id: 's1' }] }]
+    render(<MemoryRouter><InvoicesPage /></MemoryRouter>)
+    fireEvent.click(await screen.findByTitle('invoices.editDraft'))
+    const form = formOf('invoices.editDraftTitle')
+    const description = within(form).getByLabelText('invoices.description') as HTMLInputElement
+    expect(description.value).toBe('Ancienne ligne')
+    fireEvent.change(within(form).getByLabelText('invoices.quantity'), { target: { value: '3' } })
+    fireEvent.click(within(form).getByRole('button', { name: 'actions.save' }))
+
+    await waitFor(() => expect(updateInvoiceDraft).toHaveBeenCalledTimes(1))
+    expect(createInvoice).not.toHaveBeenCalled()
+    const [id, header, lines] = updateInvoiceDraft.mock.calls[0]
+    expect(id).toBe('d1')
+    expect(header).toEqual({ customer_id: 'c1', customer_name: 'Client Un', date: '2026-03-01', due_date: '2026-03-31' })
+    expect(lines).toHaveLength(1)
+    // la section de la ligne survit à la modification, même quand la société n'affiche pas la colonne
+    expect(lines[0]).toMatchObject({ description: 'Ancienne ligne', quantity: 3, unit_price: 100, total: 300, vat_amount: 60, analytic_section_id: 's1' })
+  })
+
+  it('Liste des factures : ni une facture validée ni un brouillon né d’un temps passé ne proposent « Modifier »', async () => {
+    invoiceList = [
+      { id: 'v1', number: 'FAC-2026-000001', customer_id: 'c1', customer_name: 'Client Un', date: '2026-03-01', due_date: '2026-03-31',
+        status: 'sent', validation_status: 'validated', total: 120, amount_due: 120, amount_paid: 0, invoice_type: 'standard', invoice_lines: [] },
+      { id: 'd2', number: 'BROUILLON-FAC-2', customer_id: 'c1', customer_name: 'Client Un', date: '2026-03-01', due_date: '2026-03-31',
+        status: 'draft', validation_status: 'draft', total: 240, amount_due: 240, amount_paid: 0, invoice_type: 'standard',
+        invoice_lines: [{ id: 'l2', description: 'Temps passé', quantity: 3, unit_price: 80, vat_rate: 20, line_order: 0, time_entry_id: 't1' }] },
+    ]
+    render(<MemoryRouter><InvoicesPage /></MemoryRouter>)
+    await screen.findByText('FAC-2026-000001')
+    expect(screen.queryByTitle('invoices.editDraft')).toBeNull()
   })
 
   it('Liste des factures : facture validée comptabilisée, paiement avec un numéro de règlement propre', async () => {

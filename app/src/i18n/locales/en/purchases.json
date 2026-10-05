@@ -332,6 +332,7 @@
     "recentInvoicesTitle": "Recent invoices",
     "noInvoicesDescription": "Import your first supplier invoice.",
     "ocrReviewTitle": "Review OCR data",
+    "ocrLineLabel": "Invoice {{number}}",
     "confidenceLevel": "{{confidence}}% confidence",
     "reviewWarning": "Review and correct extracted data before validation.",
     "invoiceNumber": "Invoice no.",

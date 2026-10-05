@@ -93,11 +93,14 @@ export async function getDashboardChartData(): Promise<{
   if (tid) invQ = invQ.eq('tenant_id', tid)
   const { data: invoices } = await invQ
 
+  // 2.17 (470) : une dépense est une facture d'achat APPROUVÉE (non annulée), réglée
+  // ou non — `received` n'existe pas au CHECK, une facture approuvée impayée reste `draft`.
   let purQ = supabase
     .from('purchase_invoices')
-    .select('date, total, status')
+    .select('date, total')
     .gte('date', yearStart.toISOString().split('T')[0])
-    .in('status', ['paid', 'received', 'overdue', 'sent'])
+    .eq('approval_status', 'approved')
+    .neq('status', 'cancelled')
   if (tid) purQ = purQ.eq('tenant_id', tid)
   const { data: purchaseInvoices } = await purQ
 

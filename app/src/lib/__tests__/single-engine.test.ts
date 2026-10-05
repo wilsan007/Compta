@@ -14,6 +14,10 @@
  *   IMMO-05 les échecs du lot étaient avalés (`console.error`) ;
  *   RH-04  `importTimesheetElements` recalculait les heures sup (seuil 8 h, × 1,25).
  *   C7     (X3, 275) `PayRunsPage` calculait les totaux du lot avec un barème marocain.
+ *   2.16   (05/10) l'écran « Transfert comptable » portait un second moteur d'écritures de
+ *          facture (411/707 du TTC, sans TVA, comptes en dur) à côté des déclencheurs de
+ *          validation. Mesuré avant retrait : 0 pièce en attente après un usage normal —
+ *          la base comptabilise à la validation et à l'approbation.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'node:fs'
@@ -72,6 +76,12 @@ const INTERDITS: Array<[string, RegExp, RegExp?]> = [
   // (« MAD » reste une devise légitime des listes de devises : seul le calcul est interdit.)
   ['taux de cotisation marocains dans un écran (C7)', /0\.0448|0\.0226|0\.0898/],
   ['calcul CNSS / AMO du front (C7)', /\b(cnss|amo)(Total|Base|Ded)\b/i],
+  // 2.16 : une pièce commerciale n'a qu'UN chemin vers le grand livre — sa validation
+  // (vente) ou son approbation (achat), par les déclencheurs de la base.
+  ['transferGescomToAccounting (second moteur d’écritures de facture, 2.16)', /transferGescomToAccounting/],
+  ['getGescomTransferData (lecture de l’écran de transfert retiré, 2.16)', /getGescomTransferData/],
+  ['GescomTransferPage (écran de transfert retiré, 2.16)', /GescomTransferPage/],
+  ['route /stock/transfer (écran de transfert retiré, 2.16)', /\/stock\/transfer['"`]/],
 ]
 
 // Les commentaires CITENT les symboles supprimés pour dire ce qui a changé :

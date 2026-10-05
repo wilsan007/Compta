@@ -332,6 +332,7 @@
     "recentInvoicesTitle": "الفواتير الأخيرة",
     "noInvoicesDescription": "استورد أول فاتورة مورد لك.",
     "ocrReviewTitle": "مراجعة بيانات OCR",
+    "ocrLineLabel": "فاتورة {{number}}",
     "confidenceLevel": "{{confidence}}% ثقة",
     "reviewWarning": "راجع وصحح البيانات المستخرجة قبل الاعتماد.",
     "invoiceNumber": "رقم الفاتورة",
