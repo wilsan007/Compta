@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01 → 03 (+ LOC1-48) faits — `380`, `381`, `382`** ; LOC1-04 → 05 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A + 1-B : LOC1-01 → 04 (+ LOC1-48) faits — `380`→`383`** ; LOC1-05 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -123,12 +123,24 @@ DEFINER). `tenants` est en RLS stricte ET forcée (`id = current_tenant_id()`),
 donc la RLS fait la garde ; en DEFINER la porte `ci/check_tenant_guard.sql` la
 refusait (mesuré).
 
+### `LOC1-04` — le catalogue fermé des rôles (`383`)
+
+**`383_role_catalog.sql` (+ suite).** Les deux catalogues qui rendent la
+neutralité possible : `account_role_catalog` (**67** rôles de comptes) et
+`journal_role_catalog` (**8** rôles de journaux), repris de l'**annexe B** du
+cahier. Le code ne demande plus un numéro de compte mais un **rôle**
+(`CLIENTS`, `TVA_COLLECTEE`, `VENTES_MARCHANDISES`…) ; chaque pack mappe ses
+rôles vers ses comptes. Les tables du pack y sont **raccrochées par clé
+étrangère** : un rôle non catalogué est **refusé**. Même mécanisme que les
+*SystemAccounts* de Xero, les `property_*_account_id` d'Odoo et l'attribut
+« role » du *group chart* de SAP.
+
 ### Ce qui reste dans C.1
 
-`LOC1-04` (catalogue des rôles, annexe B), `LOC1-05` (`resolve_account` /
-`resolve_journal`), puis `LOC1-06` → `58`. **R7** : les fonctions créées en
-`382` sont **nouvelles** (`pack_lineage`, `pack_*`) — leur nom n'est écrit par
-aucune autre branche `plan6/*`.
+`LOC1-05` (`tenant_account_roles`, `resolve_account` / `resolve_journal`,
+surcharge par société **et** par contexte métier), puis `LOC1-06` → `58`.
+**R7** : `pack_*` (382) et les catalogues (383) sont **nouveaux** — aucun nom
+n'est réécrit dans une autre branche `plan6/*`.
 
 ---
 
@@ -193,4 +205,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 |---|---|---|---|---|---|
 | 05/10 | LOT 1-A (LOC1-01 + LOC1-48) | `legislation_packs` | modèle de pack : 17 colonnes ; 13 référentiels (un par norme) ; SYSCOHADA promu référentiel ; hiérarchie par 2 CHECK + FK composite ; fixture `310` corrigé ; suite branchée sous `plan6:c` | base neuve : **334 migrations / 0 erreur** ; `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; contrôles CI verts ; G5 151/151 | 1a9e0a7 |
 | 05/10 | LOT 1-A (LOC1-02) | `pack_*` | 10 tables du pack (globales, RLS lecture seule) ; `source_id` sur 7 tables ; `pack_code` + clé composite sur 3 grilles ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; **10 contrôles CI verts** ; G5 152/152 | fca2abd |
-| 05/10 | LOT 1-A (LOC1-03) | `pack_lineage` | résolution héritée : `pack_lineage`, `tenant_pack_code` (INVOKER), `pack_effective_value`, `v_pack_effective`, `pack_account_role/journal_role`, `pack_holidays_of` ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `382` 6/6, `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; 9 contrôles CI verts | (ce commit) |
+| 05/10 | LOT 1-A (LOC1-03) | `pack_lineage` | résolution héritée : `pack_lineage`, `tenant_pack_code` (INVOKER), `pack_effective_value`, `v_pack_effective`, `pack_account_role/journal_role`, `pack_holidays_of` ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `382` 6/6, `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; 9 contrôles CI verts | 5605d53 |
+| 05/10 | LOT 1-B (LOC1-04) | `*_role_catalog` | catalogue fermé : **67** rôles de comptes + **8** rôles de journaux (annexe B) ; les tables du pack y sont raccrochées par clé étrangère (rôle non catalogué refusé) ; suite branchée sous `plan6:c` | base : `383` 6/6 ; **11 contrôles CI verts** | (ce commit) |
