@@ -30,7 +30,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A.1 | Recompter L3 : maillons RPC tracés, épreuves D1 → D8 réellement jouées par `433`/`434`/`436`, rapport par maillon | 3.1, 3.4 → 3.7 | 1 j | ✅ **fermé le 05/10** — rapport [A1-RAPPORT-PAR-MAILLON](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) |
-| A.2 | Relevé bancaire manuel et maillons RPC restants | 3.3 | 2 j | ⬜ |
+| A.2 | Relevé bancaire manuel et maillons RPC restants | 3.3 | 2 j | ✅ **fermé le 05/10 au soir** — voir la section A.2 |
 | A.3 | Les 6 invariants « non mesurables » ; relevé nocturne et alerte (`414`) ; invariants lus par l'écran | 3.8 → 3.10 | 4 j | ⬜ **le décompte dit 3, pas 6** |
 | A.4 | Pages « Robustesse » et « Cohérence » | L5, 4.1/4.2 | 3 j | ⬜ |
 | A.5 | Vue Chaîne : finir ce que `460` → `467` ont amorcé | L6, I-01 | à recompter | ⬜ |
@@ -122,9 +122,54 @@ dé-lettrage : c'est la trace de D3/D4, pas une fuite.
       la grille des 7 × 8 = 56 verdicts, les preuves tenues et la raison de
       chaque case non jouée. Les suites `434` (8/8) et `436` (9/9) ont été
       **rejouées** sur la base neuve pour l'établir.
-- [x] **Le reste honnête d'A.1** — la preuve d'isolation **D8 n'est mesurée que
-      sur `releve.comptabilise`** (les six autres restent `non_joue` dans `436`) :
-      c'est transmis à **A.2** (« maillons RPC restants »), pas maquillé en `tenu`.
+- [x] **Le reste honnête d'A.1** — la preuve d'isolation **D8 n'était mesurée que
+      sur `releve.comptabilise`** : **fermé le 05/10 au soir par `T10` (A.2)** —
+      D8 tenue pour les six maillons restants, voisine 0 / propriétaire 1.
+      La grille du rapport passe de 23/56 à **29/56** tenues.
+
+## A.2 — le relevé bancaire manuel, les maillons RPC restants, et D8
+
+**Trois constats, mesurés sur base neuve complète (333 migrations, 0 erreur —
+conteneur `pg_a`, port 5492, dédié à la partie A).**
+
+### 1. Le relevé bancaire manuel était déjà livré — héritage de la partie 3
+
+La `432` pose les **trois maillons du relevé** : comptabilisation, pointage
+manuel, et le dé-lettrage qui **ferme** ses liens (doctrine 320 — il ne produit
+rien, il retire). Suite dédiée **8/8**. Rien à refaire : c'est l'héritage de la
+tâche 3.3, entré dans `main` par l'étape 0.
+
+### 2. Les maillons RPC restants : il n'y en a plus — et une porte le dit
+
+`ci/check_chain_rpc_inventory.sql`, rejoué sur base complète : **15 maillons
+RPC transverses — 7 tracés par leur chemin d'appel, 8 écartés avec leur raison,
+aucun en attente**. AUTO-TEST G8 vert.
+
+> ⚠️ **Leçon de mesure, inscrite.** La porte a d'abord été rejouée sur une base
+> périmée (`pg_wip/test_compta` : 328 migrations, sans la `352` — construite
+> le 04/10, avant la réunion des sept commits) : elle y rougissait à tort,
+> l'entrée `stock_reservations_reprendre_orphelins` du registre désignant une
+> fonction que cette base incomplète n'avait pas. **Le rouge était celui de la
+> base, pas du dépôt.** Toute mesure de ce rapport se prend sur base complète.
+
+### 3. Le dernier reste d'A.1 fermé : **D8 jouée sur les six maillons (`T10`)**
+
+La suite `436` gagne un scénario `T10` (et le helper `_l436_revenir`) :
+production par le **geste réel** de chaque maillon dans une société neuve (une
+par maillon), voisine choisie **sans lien de ce maillon**, mesure sous
+`authenticated` via `chain_banc_liens_visibles`, puis **réinjection de la
+mesure dans l'épreuve** — méthode de la `434` T06 reprise au mot près.
+**Mesuré : voisine 0, propriétaire 1, pour les six — `tenu`.** La grille du
+[rapport A.1](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) passe de 23/56 à **29/56**
+tenues (colonnes D8 : 7/7).
+
+### Observé, sans être un défaut du dépôt
+
+**Le p95 de D7 est volatil sur la machine locale** (une dizaine de conteneurs
+à chaud) : mesuré de 1 à 128,5 ms selon le passage, et des dépassements du
+budget G6 (50 ms) ont tour à tour touché `T02`, `T03` puis `T05` — **y compris
+avec la suite d'origine de `main`**, donc indépendamment de `T10`. Le verdict
+de la CI fait foi ; les valeurs mesurées sont dans `chain_banc_resultats`.
 
 ## La plage, en fait — `475` → `499`, pas `423` → `499`
 
@@ -167,4 +212,5 @@ Et, pour A.1 tout de suite : l'arbitrage de plage ci-dessus.
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
-| 2026-10-05 | A.1 | Recompter L3 + **rapport par maillon** (`A1-RAPPORT-PAR-MAILLON-2026-10-05.md`) : grille 7×8 = 56 verdicts, 23 tenues / 33 non jouées motivées ; suites `434` et `436` rejouées sur base neuve | `434` **8/8**, `436` **9/9** | *(à pousser par cette session)* |
+| 2026-10-05 | A.1 | Recompter L3 + **rapport par maillon** (`A1-RAPPORT-PAR-MAILLON-2026-10-05.md`) : grille 7×8 = 56 verdicts, 23 tenues / 33 non jouées motivées ; suites `434` et `436` rejouées sur base neuve | `434` **8/8**, `436` **9/9** | `3cf8132` (plan6/a-chainages) |
+| 2026-10-05 | A.2 | Relevé manuel (`432`, hérité, suite 8/8) ; inventaire G8 **vert** sur base complète (15 = 7 tracés + 8 écartés, 0 en attente) ; **`T10`** : D8 tenue pour les six maillons (voisine 0 / propriétaire 1) ; grille A.1 → **29/56** | `434` **8/8** ; `436` **10 scénarios** (`T10` vert à chacun des 4 passages ; p95 D7 volatil en local, la CI fait foi) | *(lot A.2, plan6/a-chainages)* |

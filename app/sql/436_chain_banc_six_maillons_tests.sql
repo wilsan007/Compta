@@ -20,12 +20,17 @@
 --        le re-pointage a été joué et il a levé, c'est dit ;
 --   T08  LE RAPPORT EST DATÉ ET COMPLET : huit verdicts par
 --        maillon, sur les SEPT du catalogue ;
---   T09  AUCUN `tenu` SANS MESURE, et D2/D3/D5 jamais tenues.
+--   T09  AUCUN `tenu` SANS MESURE, et D2/D3/D5 jamais tenues ;
+--   T10  D8 (ISOLATION) JOUÉE SUR LES SIX MAILLONS : production
+--        par le geste réel, voisine neutre, mesure sous
+--        `authenticated`, réinjection dans l'épreuve — le témoin
+--        unique de la 434 devient une preuve par maillon.
 --
 -- Ce que cette suite NE mesure pas : D2 (concurrence), D3 (panne
--- partielle), D5 (réouverture) et D8 (isolation). Elles restent
--- `non_joue` avec leur raison, et T09 vérifie qu'aucune ne soit
--- verte par défaut.
+-- partielle) et D5 (réouverture). Elles restent `non_joue` avec
+-- leur raison, et T09 vérifie qu'aucune ne soit verte par défaut.
+-- (D8 a quitté cette liste : T10 la joue pour les six, méthode
+-- de la 434 T06.)
 --
 -- ⚠️ UNE SOCIÉTÉ PAR ÉPREUVE, ET C'EST MESURÉ. Les épreuves D1,
 -- D4 et D6 comptent les liens et les traces DU MAILLON DANS LA
@@ -190,6 +195,20 @@ BEGIN
          arg_valeurs_annul = p_annul,
          arg_series        = COALESCE(p_series, '[]'::jsonb)
    WHERE code = p_code;
+END $fn$;
+
+-- Remet le contexte d'une société (identité ET société) — le geste de
+-- `_l434_revenir` dans la suite de la 434, repris au mot près : c'est lui
+-- qui rend possible la preuve d'isolation (T10), car `current_tenant_id()`
+-- exige que `auth.uid()` soit membre de la société active.
+DROP FUNCTION IF EXISTS _l436_revenir(uuid, uuid);
+CREATE OR REPLACE FUNCTION _l436_revenir(p_t uuid, p_usr uuid)
+RETURNS void LANGUAGE plpgsql AS $fn$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', p_usr::text, false);
+  PERFORM set_config('request.jwt.claims',
+                     json_build_object('sub', p_usr, 'role', 'authenticated')::text, false);
+  PERFORM set_config('app.active_tenant_id', p_t::text, false);
 END $fn$;
 
 -- L'en-tête d'un ticket, et ses LIGNES : les deux arguments de
@@ -620,6 +639,142 @@ BEGIN
     format('tenus_sans_mesure=%s D2_D3_D5_tenus=%s non_joués_sans_raison=%s maillons_création=%s colonnes=%s',
            n_sans_mesure, n_d235_tenu, n_nj_sans_raison, n_creation, n_colonnes));
 END $t09$;
+
+-- ─────────────────────────────────────────────────────────────
+-- T10 — D8 (ISOLATION) POUR LES SIX MAILLONS : le témoin unique
+--        de la 434 devient une preuve par maillon
+--
+-- C'est le reste que le rapport A.1 (doc/audit/plan6) nommait : la
+-- 434 prouvait l'isolation sur UN maillon (`releve.comptabilise`),
+-- et cette suite ne la jouait pas — six cases `non_joue` dans la
+-- grille des 56. La RLS de `document_links` est générique, mais une
+-- preuve mesurée une seule fois ne se généralise pas d'elle-même :
+-- chaque maillon écrit ses liens par SON chemin, et c'est CE chemin
+-- qu'il faut confronter à la société voisine.
+--
+-- LA MÉTHODE EST CELLE DE LA 434 (T06), AU MOT PRÈS. Produire par
+-- le geste réel du maillon (sa fonction PUBLIQUE — le wrapper qui
+-- porte la chaîne, doctrine 412) dans une société neuve ; compter
+-- le registre du propriétaire hors RLS ; choisir une voisine SANS
+-- lien de ce maillon (sinon le témoin est pollué par ses propres
+-- liens — mesuré le 02/10) ; traverser la RLS en `authenticated`
+-- avec l'identité de la voisine via `chain_banc_liens_visibles` ;
+-- puis réinjecter la mesure dans l'épreuve. Un `tenu` obtenu sans
+-- traverser la RLS serait vert par construction, donc faux.
+-- ─────────────────────────────────────────────────────────────
+DO $t10$
+DECLARE
+  v_code text;
+  v_c record; v_p record; v_r record;
+  tt uuid; usr uuid; tb uuid; ub uuid;
+  v_depuis timestamptz; v_amont text; v_effet text;
+  v_visibles bigint; v_proprio bigint; r record;
+  v_ok boolean := true; v_detail text := '';
+  v_prod_ok boolean;
+BEGIN
+  FOR v_code IN SELECT unnest(ARRAY['caisse.ticket','caisse.avoir','paie.comptabilisee',
+                                   'paie.versement','releve.pointage','releve.delettrage'])
+  LOOP
+    EXECUTE 'RESET ROLE';
+    v_depuis := clock_timestamp() - interval '1 minute';
+    SELECT amont_type, effet INTO v_amont, v_effet
+      FROM chain_banc_maillons WHERE code = v_code;
+
+    -- 1. LE DÉCOR, PUIS LA PRODUCTION PAR LE GESTE RÉEL DU MAILLON —
+    --    une société neuve par maillon. `caisse.ticket` n'a pas de
+    --    geste à jouer : son décor produit déjà le lien (c'est une
+    --    création) ; `caisse.avoir` exige la session fermée (T03) ;
+    --    `releve.delettrage` ne produit rien de lui-même, c'est le
+    --    POSTAGE de la ligne qui ouvre le lien qu'il ferme.
+    v_prod_ok := true;
+    BEGIN
+      CASE v_code
+        WHEN 'caisse.ticket' THEN
+          v_c := _l436_caisse('T10-ticket', 1);
+          tt := v_c.t;
+        WHEN 'caisse.avoir' THEN
+          v_c := _l436_caisse('T10-avoir', 1);
+          UPDATE pos_sessions SET status = 'closed', closed_at = now() WHERE id = v_c.sess;
+          PERFORM pos_refund_ticket(v_c.tks[1], 'Banc 436 — avoir T10');
+          tt := v_c.t;
+        WHEN 'paie.comptabilisee' THEN
+          v_p := _l436_paie('T10-post', 1);
+          PERFORM payroll_post_run(v_p.runs[1]);
+          tt := v_p.t;
+        WHEN 'paie.versement' THEN
+          v_p := _l436_paie('T10-versement', 1);
+          PERFORM post_payroll_payment(v_p.runs[1], v_p.bank, DATE '2026-03-31', 'all');
+          tt := v_p.t;
+        WHEN 'releve.pointage' THEN
+          v_r := _l436_releve('T10-pointage', 1);
+          PERFORM reconcile_bank_statement_line(v_r.txs[1], v_r.jls[1]);
+          tt := v_r.t;
+        WHEN 'releve.delettrage' THEN
+          v_r := _l436_releve('T10-delettrage', 1);
+          PERFORM post_bank_statement_line(v_r.txs[1], '627000', 'Frais bancaires T10');
+          tt := v_r.t;
+      END CASE;
+    EXCEPTION WHEN OTHERS THEN
+      v_prod_ok := false;
+      v_detail := v_detail || format('%s : la production a levé (%s) ; ', v_code, SQLERRM);
+    END;
+    IF NOT v_prod_ok THEN
+      v_ok := false;
+      CONTINUE;
+    END IF;
+    usr := auth.uid();
+
+    -- 2. LE TÉMOIN DU PROPRIÉTAIRE — compté hors RLS (superutilisateur),
+    --    AVANT tout changement de société : c'est lui qui distingue
+    --    « la RLS a filtré » de « le propriétaire n'a rien produit ».
+    SELECT count(*) INTO v_proprio FROM document_links d
+     WHERE d.tenant_id = tt AND d.amont_type = v_amont AND d.effet = v_effet
+       AND d.created_at >= v_depuis;
+
+    -- 3. LA SOCIÉTÉ VOISINE DOIT ÊTRE UN TÉMOIN, PAS UN TIRAGE (434
+    --    T06) : sans lien de CE maillon, la plus « neutre » d'abord.
+    SELECT t2.id INTO tb
+      FROM tenants t2
+     WHERE t2.id <> tt
+       AND EXISTS (SELECT 1 FROM tenant_users tu WHERE tu.tenant_id = t2.id)
+       AND NOT EXISTS (SELECT 1 FROM document_links d
+                        WHERE d.tenant_id = t2.id AND d.amont_type = v_amont
+                          AND d.effet = v_effet AND d.created_at >= v_depuis)
+     ORDER BY (SELECT count(*) FROM document_links d2 WHERE d2.tenant_id = t2.id) ASC
+     LIMIT 1;
+
+    IF v_proprio = 0 OR tb IS NULL THEN
+      -- Sans production ou sans témoin, la preuve n'est pas prise —
+      -- et elle ne s'invente pas : c'est dit, pas maquillé.
+      v_ok := false;
+      v_detail := v_detail || format('%s : preuve non prise (registre du propriétaire=%s, voisine neutre=%s) ; ',
+                                     v_code, v_proprio, tb);
+      CONTINUE;
+    END IF;
+    SELECT auth_id INTO ub FROM tenant_users WHERE tenant_id = tb LIMIT 1;
+
+    -- 4. LA MESURE RÉELLE — session `authenticated`, identité de la
+    --    voisine : la seule étape qui traverse réellement la RLS.
+    PERFORM _l436_revenir(tb, ub);
+    SET LOCAL ROLE authenticated;
+    SELECT chain_banc_liens_visibles(v_amont, v_effet, v_depuis) INTO v_visibles;
+    RESET ROLE;
+    -- on rend l'identité au propriétaire avant de réinjecter la mesure
+    PERFORM _l436_revenir(tt, usr);
+
+    -- 5. LA MESURE RÉINJECTÉE DANS L'ÉPREUVE — c'est le banc qui rend
+    --    le verdict, sur son couple (registre du propriétaire, mesure
+    --    externe de la voisine).
+    SELECT * INTO r FROM chain_banc_epreuve(tt, v_code, 'D8', v_visibles);
+    v_ok := v_ok AND r.verdict = 'tenu' AND v_visibles = 0 AND v_proprio > 0;
+    v_detail := v_detail || format('%s : verdict=%s voisine=%s propriétaire=%s | ',
+                                   v_code, r.verdict, v_visibles, v_proprio);
+  END LOOP;
+
+  PERFORM _rec('T10',
+    'D8 (isolation) : la voisine ne voit AUCUN lien de CHACUN des six maillons — production par le geste réel, mesure sous authenticated, réinjection dans l''épreuve',
+    v_ok, v_detail);
+END $t10$;
 
 -- ─────────────────────────────────────────────────────────────
 -- Verdict de la suite

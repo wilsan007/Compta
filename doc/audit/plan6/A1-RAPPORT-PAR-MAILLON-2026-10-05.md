@@ -7,15 +7,15 @@
 > [PARTIE-A.md](PARTIE-A.md) ; **ce fichier porte la grille des 56 verdicts**,
 > maillon par maillon, telle que le banc la rend.
 >
-> **Base de mesure.** Base neuve `test_compta` (PostgreSQL 16, conteneur
-> `pg_wip`, port 5491), schéma complet monté par `sql/ci/00_supabase_stubs.sql`
-> + `sql/00_schema_dump.sql` + `run-sql-migrations.mjs` — **333 migrations,
-> 0 erreur**. Les deux suites du banc ont été **rejouées** sur cette base :
+> **Base de mesure.** Base neuve (PostgreSQL 16, conteneur `pg_a`, port 5492,
+> dédiée à la partie A, montée depuis `main` après l'étape 0), schéma complet
+> par `sql/ci/00_supabase_stubs.sql` + `sql/00_schema_dump.sql` +
+> `run-sql-migrations.mjs` — **333 migrations, 0 erreur**. Les deux suites du banc ont été **rejouées** sur cette base :
 >
 > | Suite | Objet | Verdict |
 > |---|---|---|
 > | `434_chain_banc_epreuves_tests.sql` | les 8 épreuves sur `releve.comptabilise` | **8/8 verts** |
-> | `436_chain_banc_six_maillons_tests.sql` | les 6 autres maillons du `banc` | **9/9 verts** |
+> | `436_chain_banc_six_maillons_tests.sql` | les 6 autres maillons, **et D8 par `T10`** (A.2) | **10 scénarios** — `T10` vert à chaque passage ; le p95 de D7 est volatil en local selon la charge (§3) |
 >
 > Ce ne sont pas des scores de « confiance » : chaque `✅ tenu` porte une
 > **mesure** (liens, traces ou p95 en ms), et chaque `— non joué` porte sa
@@ -58,21 +58,27 @@ moteur `chain_banc_epreuve` / `chain_banc_lancer` (`433`, `434`).
 | Maillon | D1 rejeu | D2 concurrence | D3 tout-ou-rien | D4 annulation | D5 réouverture | D6 retour arrière | D7 volume | D8 isolation | **Tenues** |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
 | `releve.comptabilise` | ✅ | — | — | ✅ | — | ✅ | ✅ | ✅ | **5/8** |
-| `caisse.ticket` *(création)* | — | — | — | ✅ | — | ✅ | ✅ | — | 3/8 |
-| `caisse.avoir` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
-| `paie.comptabilisee` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
-| `paie.versement` | ✅ | — | — | — | — | ✅ | ✅ | — | 3/8 |
-| `releve.pointage` | ✅ | — | — | ✅ | — | ✅ | ✅ | — | 4/8 |
-| `releve.delettrage` | ✅ | — | — | — | — | ✅ | — | — | 2/8 |
-| **Total (sur 56)** | **6** | **0** | **0** | **3** | **0** | **7** | **6** | **1** | **23/56** |
+| `caisse.ticket` *(création)* | — | — | — | ✅ | — | ✅ | ✅ | ✅ | 4/8 |
+| `caisse.avoir` | ✅ | — | — | — | — | ✅ | ✅ | ✅ | 4/8 |
+| `paie.comptabilisee` | ✅ | — | — | — | — | ✅ | ✅ | ✅ | 4/8 |
+| `paie.versement` | ✅ | — | — | — | — | ✅ | ✅ | ✅ | 4/8 |
+| `releve.pointage` | ✅ | — | — | ✅ | — | ✅ | ✅ | ✅ | 5/8 |
+| `releve.delettrage` | ✅ | — | — | — | — | ✅ | — | ✅ | 3/8 |
+| **Total (sur 56)** | **6** | **0** | **0** | **3** | **0** | **7** | **6** | **7** | **29/56** |
 
-**Comment lire ce `23/56`.** Les 33 cases `—` **ne sont pas** 33 défauts : elles
-se répartissent en trois familles, chacune nommée ci-dessous.
+> **La colonne D8 a changé le 05/10 au soir (T10, tâche A.2).** À la mesure
+> initiale d'A.1, les six cases D8 des maillons autres que
+> `releve.comptabilise` étaient `non_joue` — tenues : **23/56**. La suite
+> `436` les joue désormais (`T10`) : production par le geste réel, voisine
+> neutre, mesure sous `authenticated` — **voisine 0, propriétaire 1, pour
+> les six**.
+
+**Comment lire ce `29/56`.** Les 27 cases `—` **ne sont pas** 27 défauts : elles
+se répartissent en deux familles, chacune nommée ci-dessous.
 
 | Famille | Cases | Pourquoi |
 |---|:--:|---|
 | D2, D3, D5 — **structurelles** | 7 × 3 = **21** | exigent des instruments que le schéma n'a pas (seconde connexion, point d'échec, chemin de réouverture) — voir §3 |
-| D8 sur les six autres maillons | **6** | mesurée une fois (`releve.comptabilise`, `434` T06) ; la suite `436` ne la joue pas — voir §4 |
 | D4 / D1 / D7 ponctuels | **6** | un geste d'annulation qui n'existe pas, une création sans rejeu, une série de stimuli absente — chaque raison est écrite |
 
 ---
@@ -98,19 +104,34 @@ couple `(code, épreuve)`.
 | Maillon | D1 | D4 | D6 | D7 |
 |---|---|---|---|---|
 | `caisse.ticket` | — *sans objet (création)* | ✅ `void_pos_ticket` → 0 lien actif | ✅ | ✅ (20 stimuli distincts) |
-| `caisse.avoir` | ✅ *par un REFUS (`42501`)* | — *pas de geste décrit* | ✅ | ✅ p95 = 8,05 ms |
+| `caisse.avoir` | ✅ *par un REFUS (`42501`)* | — *pas de geste décrit* | ✅ | ✅ p95 = 13,05 ms |
 | `paie.comptabilisee` | ✅ (1 lien, 1 trace → +0/+0) | — *pas de geste décrit* | ✅ | ✅ p95 = 3,05 ms |
-| `paie.versement` | ✅ (1 lien, 1 trace → +0/+0) | — *pas de geste décrit* | ✅ | ✅ p95 = 11,5 ms |
-| `releve.pointage` | ✅ (1 lien, 1 trace → +0/+0) | ✅ `unreconcile…` → 0 lien actif | ✅ | ✅ p95 = 1 ms |
+| `paie.versement` | ✅ (1 lien, 1 trace → +0/+0) | — *pas de geste décrit* | ✅ | ✅ p95 = 17,1 ms |
+| `releve.pointage` | ✅ (1 lien, 1 trace → +0/+0) | ✅ `unreconcile…` → 0 lien actif | ✅ | ✅ p95 = 4,1 ms |
 | `releve.delettrage` | ✅ (1 lien, 1 trace → +0/+0) | — *le re-pointage a été joué, il a REFUSÉ la ligne déjà pointée* | ✅ | — *pas de série de stimuli* |
 
 > **`caisse.avoir` — D1 « tenu par un refus » est une tenue, pas un trou.**
 > Le rejeu y est refusé (`42501`), et un refus **est** une tenue valide de
 > l'invariant D1 : le second tour n'a **rien** ajouté. Le banc le dit tel quel.
 
+> **D8, ajoutée par T10 (A.2, 05/10 au soir) : tenue pour les six aussi.**
+> Production par le geste réel du maillon dans une société neuve, voisine
+> choisie **sans lien de ce maillon**, mesure sous `authenticated` via
+> `chain_banc_liens_visibles`, réinjection dans l'épreuve — méthode de la
+> `434` T06, reprise au mot près. Mesuré : **voisine 0, propriétaire 1, pour
+> les six**, `T10` vert à chacun des quatre passages complets.
+
+> **Les p95 de D7 varient avec la charge de la machine.** Mesuré le 05/10 :
+> de 1 à 128,5 ms selon le passage, sur quatre passages complets — et les
+> dépassements du budget G6 (50 ms) ont tour à tour touché `T02`, `T03` puis
+> `T05`, **y compris avec la suite d'origine de `main`**. Ce n'est pas un
+> défaut du banc : c'est une machine locale chargée (une dizaine de
+> conteneurs). Le verdict de la CI fait foi ; les valeurs mesurées sont dans
+> `chain_banc_resultats`.
+
 ---
 
-## 4. Les 33 « non jouées », et pourquoi ce n'est pas une échappatoire
+## 4. Les 27 « non jouées », et pourquoi ce n'est pas une échappatoire
 
 ### D2, D3, D5 — trois instruments que le schéma n'a pas (21 cases)
 
@@ -143,17 +164,19 @@ le geste que tout le monde proposerait (re-pointer) **a été joué**, et il
   vide) ; rejouer une seule entrée ne mesurerait que le chemin de refus, donc
   pas de p95 honnête — la suite ne le publie pas.
 
-### D8 sur les six autres — **un reste honnête, à trancher** (6 cases)
+### D8 sur les six autres — **fermée par T10 (A.2), le 05/10 au soir** (0 case)
 
-L'isolation entre sociétés est **prouvée** pour `releve.comptabilise`
+L'isolation entre sociétés était **prouvée** pour `releve.comptabilise` seule
 (`434` T06, sous `SET LOCAL ROLE authenticated` : voisin 0, propriétaire 1).
-Pour les **six autres**, la suite `436` ne la joue pas (c'est écrit dans son
-en-tête). La RLS qui porte l'isolation est **générique** — la même preuve
-vaudrait pour les six — mais **elle n'a été mesurée qu'une fois**.
-**C'est le reste le plus substantiel de ce rapport** : étendre la preuve D8 aux
-six maillons (ou dire explicitement pourquoi un seul témoin suffit) est un
-candidat direct pour **A.2** (« maillons RPC restants »). Ce n'est pas maquillé
-en `tenu`.
+Les six autres restaient `non_joue` — c'était le reste le plus substantiel
+nommé par ce rapport. **Il est fermé** : la suite `436` gagne un scénario
+`T10` qui produit le lien par le **geste réel** de chaque maillon dans une
+société neuve (une par maillon), choisit une voisine **sans lien de ce
+maillon** (sinon le témoin est pollué par ses propres liens), mesure sous
+`authenticated` via `chain_banc_liens_visibles`, puis **réinjecte la mesure
+dans l'épreuve** — c'est le banc, et lui seul, qui rend le verdict. Résultat
+mesuré : **voisine 0, propriétaire 1, pour les six** (`tenu`), `T10` vert à
+chacun des quatre passages complets.
 
 ---
 
@@ -177,24 +200,26 @@ décor par maillon et portent le verdict de référence. La campagne prouve la
 ## 6. Reproduire cette mesure
 
 ```bash
-# 1. la base neuve (une fois) — conteneur Postgres 16 publié sur 5491
-docker run -d --name pg_wip -e POSTGRES_PASSWORD=postgres -p 5491:5432 postgres:16
+# 1. la base neuve (une fois) — conteneur Postgres 16 dédié, publié sur 5492
+docker run -d --name pg_a -e POSTGRES_PASSWORD=postgres -p 5492:5432 postgres:16
+# attendre le serveur (pg_isready), puis créer la base
+docker exec pg_a psql -U postgres -h 127.0.0.1 -c 'CREATE DATABASE test_compta'
 cd app
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5491/test_compta"
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5492/test_compta"
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/ci/00_supabase_stubs.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/00_schema_dump.sql
 node run-sql-migrations.mjs          # 333 migrations, 0 erreur attendue
 
 # 2. les deux suites du banc. Les fichiers sont copiés DANS le conteneur, pour
 #    que leurs `\ir ci/…` se résolvent : `psql -f` depuis stdin ne le fait pas.
-docker cp sql pg_wip:/tmp/psql6
-docker exec pg_wip psql -U postgres -d test_compta -v ON_ERROR_STOP=1 \
+docker cp sql pg_a:/tmp/psql6
+docker exec pg_a psql -U postgres -h 127.0.0.1 -d test_compta -v ON_ERROR_STOP=1 \
   -f /tmp/psql6/434_chain_banc_epreuves_tests.sql
-docker exec pg_wip psql -U postgres -d test_compta -v ON_ERROR_STOP=1 \
+docker exec pg_a psql -U postgres -h 127.0.0.1 -d test_compta -v ON_ERROR_STOP=1 \
   -f /tmp/psql6/436_chain_banc_six_maillons_tests.sql
 
 # 3. la grille par maillon, telle qu'enregistrée (une ligne datée par couple)
-docker exec pg_wip psql -U postgres -d test_compta -c \
+docker exec pg_a psql -U postgres -h 127.0.0.1 -d test_compta -c \
   "SELECT code, epreuve, verdict, round(mesure,2) FROM chain_banc_resultats ORDER BY code, epreuve;"
 ```
 
@@ -203,11 +228,15 @@ docker exec pg_wip psql -U postgres -d test_compta -c \
 ## 7. Ce que ce rapport ne prouve pas — nommé
 
 - **D2, D3, D5.** Non jouables faute d'instrument (§4) — **pas** « vertes ».
-- **D8 sur six maillons.** Mesurée une fois, pas sept (§4) — le reste à trancher.
+- **D8.** Tenue pour les **sept** maillons depuis `T10` (§4) ; à la mesure
+  initiale d'A.1, elle ne l'était que pour un.
 - **`plpgsql_check`** n'est pas dans l'image locale : les 333 migrations ont été
   appliquées **sans** cette sonde de code PL/pgSQL (la CI l'installe).
-- **Le `p95` est une mesure d'horloge locale** (`pg_wip`, conteneur à chaud) :
-  indicative du budget G6 (50 ms), pas une mesure de production.
+- **Le `p95` est une mesure d'horloge locale** (`pg_a`, conteneur à chaud sur
+  une machine chargée) : mesuré de 1 à 128,5 ms selon le passage, avec des
+  dépassements du budget G6 (50 ms) touchant des scénarios différents —
+  y compris avec la suite d'origine. Indicative, pas une mesure de
+  production ; le verdict de la CI fait foi.
 - **D4/D7 des maillons sans geste / sans série** : la case reste vide tant que
   le geste ou la série n'est pas décrit ; ce n'est pas un travail « à faire
   semblant ».
