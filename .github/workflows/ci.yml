@@ -2358,6 +2358,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-059/R-060/R-061 (partie B, lot Relances) — horodatage de la relance (EF-02),
+      # arrêt de la relance (payée / annulée).
+      - name: 'plan6 B — R-059/060/061 : relances horodatées et clôturées (506)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/506_regle_relances_suivi_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

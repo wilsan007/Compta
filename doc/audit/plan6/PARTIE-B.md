@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 (`500`→`504`) ; achats : R-017, R-018 (`505`) — 30 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 ; achats : R-017/R-018 ; relances : R-059→R-061 (`500`→`506`) — 34 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -138,6 +138,36 @@ R-013 (réception partielle), R-015 (réception en attente → contrôle qualit�
 (facture fournisseur annulée → contre-passation). ⚠️ R-013/R-015 touchent le **stock**
 (couplage E), R-016 la **comptabilité** : à coordonner.
 
+## B.2 — lot 7 : module Relances (L15), règles R-059, R-060, R-061 (livré le 05/10/2026)
+
+**Migration `506_regle_relances_suivi.sql`** + suite `506_…_tests.sql` (**4 verts**).
+
+- **R-059** — relance passée à **`sent`** : un `BEFORE UPDATE` **horodate** `sent_at`
+  (jamais écrasé s'il est déjà posé). C'est le correctif **complet** du défaut nommé
+  **EF-02** (sans horodatage, la relance repart tous les jours) ; il **complète** la
+  garde `email_sent_needs_date` déjà au schéma.
+- **R-060 / R-061** — relance **payée** / **annulée** : événements
+  `collection_reminders.paid` / `collection_reminders.cancelled` (arrêt des relances,
+  sortie de file), idempotents.
+
+**⚠️ Déviation d'ordre, dite.** Le plan range ce module (L15) **en dernier**. Il est
+fait **avant la trésorerie** parce que R-059 est **complète et sûre**, alors que
+R-050/R-051 (virements) demandent une **écriture comptable** (période ouverte,
+équilibre, `post_journal_entry` + permission) qu'il faut **coordonner** — pas à écrire
+seul.
+
+**Reste du module Relances :** néant (R-059 → R-061 livrées). Le module **Budgets /
+engagements** (R-057 ✅ déjà, R-058) reste à faire.
+
+## B.2 — la trésorerie, à coordonner (R-048 → R-051)
+
+Non commencée, et **pourquoi** : R-048/R-049 (`sepa_payment_orders`) et R-050/R-051
+(`treasury_transfers`) demandent des enfants d'effet qui touchent **le rapprochement
+bancaire** et une **écriture comptable** ; leur tierce personne est la partie
+d'intégration/comptabilité, pas B seule. Le chemin pressenti : R-050 « exécuté » →
+`post_journal_entry` (virement D `to_account.account_code` / C
+`from_account.account_code`, `treasury_transfers.journal_entry_id` renseigné).
+
 **Demande à E (territoire « écrans et requêtes ventes », R3).** L'écran
 `transformQuoteToSalesOrder` (`app/src/lib/queries/misc/commercial.ts`) crée encore
 la commande à la main ; désormais l'acceptation la crée. Il devrait **sauter quand
@@ -178,3 +208,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · ventes-4 | Ventes | **R-003** : devis validé → **numéro définitif** (`DEV`), **verrou d'en-tête**, **lignes gelées** ; la transformation R-001 reste permise (testé). Migration `503` + suite `503_…_tests.sql`. | base **337 migrations, 0 erreur** ; suite **4/4** | `91944d8`+ |
 | 05/10 | B.2 · ventes-5 | Ventes | **R-002** : devis expiré → événement `quotes.expired` (relance CRM, perte), idempotent (garde propre : pas de lien). Migration `504` + suite `504_…_tests.sql`. | base **338 migrations, 0 erreur** ; suite **3/3** (les 5 suites B : **25/25**) | _à venir_ |
 | 05/10 | B.2 · achats-1 | Achats | **R-017/R-018** : facture fournisseur échue → `purchase_invoices.overdue` ; rejetée → `purchase_invoices.rejected`. Maillons événement, idempotents ; « libération de l'engagement » écartée (rattachée à la commande). Migration `505` + suite `505_…_tests.sql`. | base **339 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
+| 05/10 | B.2 · relances-1 | Relances (L15) | **R-059/R-060/R-061** : relance `sent` → **horodatage** `sent_at` (fixe **EF-02**) ; `paid` / `cancelled` → événements. Migration `506` + suite `506_…_tests.sql`. **Déviation d'ordre** (module L15 avant la trésorerie), dite. | base **340 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
