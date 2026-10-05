@@ -47,6 +47,18 @@ it('Achats, fournisseurs, stock — par les fonctions des écrans', async () => 
   const st3 = (await sql(`select status, amount_paid::float, amount_due::float from purchase_invoices where id=$1`, [pinv.id]))[0]
   const s401 = (await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like '401%'`, [A]))[0].s
   check('P05', 'décaissement 360 : facture payée, 401 soldé', pay.ok && st3.amount_due === 0 && r2(s401) === 0, { err: pay.err, st3, s401 })
+  // 354 : un règlement ne s'impute qu'à une facture APPROUVÉE — sinon la facture passait à « payée »
+  // sans écriture d'achat, le 401 débité sans dette, et l'approbation (M9) contournée par le paiement.
+  const pi2 = await attempt(() => sales.createPurchaseInvoice({ supplier_reference: 'F-779', supplier_id: sup.id, supplier_name: sup.name, date: '2026-09-06', due_date: '2026-10-06', status: 'draft',
+    subtotal: 1000, vat_total: 200, total: 1200, amount_paid: 0, amount_due: 1200, notes: '',
+    lines: [{ product_id: null, description: 'Matériel', quantity: 1, unit_price: 1000, vat_rate: 20, total: 1000, vat_total: 200, vat_amount: 200, line_order: 0 }] } as unknown as Parameters<typeof sales.createPurchaseInvoice>[0]))
+  const pinv2 = pi2.val as { id: string }
+  const pay2 = await attempt(async () => partners.createSupplierPayment({ number: await core.nextDocumentNumber('DEC'), supplier_id: sup.id, purchase_invoice_id: pinv2.id, payment_date: '2026-09-28', amount: 1200, method: 'transfer', bank_account_id: bank.id, reference: 'F-779', status: 'recorded' } as unknown as Parameters<typeof partners.createSupplierPayment>[0]))
+  const st4 = (await sql(`select status, approval_status, amount_due::float, (select count(*)::int from supplier_payments p where p.purchase_invoice_id = i.id) reglements from purchase_invoices i where id=$1`, [pinv2.id]))[0]
+  const s401b = (await sql(`select coalesce(sum(debit-credit),0)::float s from journal_lines l join journal_entries e on e.id=l.journal_id where e.tenant_id=$1 and e.status='posted' and l.account_code like '401%'`, [A]))[0].s
+  check('P05b', 'régler une facture d\'achat non approuvée est refusé : facture intacte, aucun règlement, 401 inchangé',
+    pi2.ok && !pay2.ok && st4.status === 'draft' && st4.approval_status === 'pending' && st4.amount_due === 1200 && st4.reglements === 0 && r2(s401b) === r2(s401),
+    { err: pay2.err, st4, s401: s401b })
 
   // ---------- Stock ----------
   const w = await attempt(() => stock.createWarehouse({ code: 'DEP'+Date.now(), name: 'Dépôt principal', address: null, city: null, postal_code: null, country: 'France', active: true } as any))
