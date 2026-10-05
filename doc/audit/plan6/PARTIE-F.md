@@ -20,12 +20,12 @@
 |---|---|---|---|---|
 | F.1 | **Recompter** les ❓ de son périmètre et **estimer** les ⬜ | BNQ-04, TRE-01, CRM-03, PRJ-01/06/07/09, BI-03, SEC-03, PRF-03/04, UX-05, ADM-01/03/05, IMP-03, NOT-03, ONB-02, PAY-01/11/12 | à chiffrer | ✅ **recompté le 05/10** — verdicts ci-dessous |
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
-| F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | ⬜ |
+| F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ⬜ |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ⬜ |
-| F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | ⬜ |
+| F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
 ## F.1 — le recomptage (fait le 05/10/2026)
 
@@ -101,6 +101,53 @@ Pas de changement de schéma (aucune colonne, aucune table) :
 `npm run db:types` n'a rien à régénérer (R6 : rien à signaler à
 l'intégration sur ce point).
 
+## F.8 — premier lot livré le 05/10 : le recomptage, et une coquille retirée
+
+**Le chiffre du plan est périmé.** Le suivi annonce « 37 tables coquilles », dont
+« les 25 autres » pour F. Mesuré le 05/10 contre le schéma réel : sur les 24
+tables listées pour F, **cinq existent encore**. Deux raisons, chacune tenable
+en une ligne — et ce sont deux **défauts du calcul**, pas du produit :
+
+1. **`164_drop_unused_vague3_tables.sql` (18/09) a déjà supprimé 22** des tables
+   que le suivi compte encore. `suivi-chantiers.mjs::coquilles()` lit les
+   `CREATE TABLE` des fichiers de migration et **ne regarde pas les `DROP`
+   ultérieurs** : une table retirée reste comptée comme coquille.
+2. **`platform_admins` n'est pas une coquille** : elle est **lue par une fonction
+   SQL** (`is_platform_admin()`, migration `201`). Le même calcul ne regarde que
+   les références du **front** (`src/` + Edge) — une table lue par du SQL pur
+   passe donc pour une coquille.
+
+**Les cinq tables réellement existantes, et leur verdict :**
+
+| Table | Verdict | Pourquoi |
+|---|---|---|
+| `collective_agreements` | **brancher (F.7)** | PAY‑08, conventions collectives — conservée |
+| `collective_classifications` | **brancher (F.7)** | idem — conservée |
+| `platform_admins` | **brancher (lot K/C)** | lue par `is_platform_admin()` ; hors périmètre F — intacte |
+| `time_entries` | **supprimer** ✅ **fait (`701`)** | second modèle de temps, jamais lu, double `timesheets` |
+
+**`time_entries` — la décision que la 164 avait laissée ouverte.** La 164 l'avait
+conservée car elle serait « la cible des 16 fonctions de
+`queries/projectManagementSprint1.ts` ». Mesuré le 05/10, cet argument **n'est
+plus vrai** : ces fonctions visent `project_time_entries`. Et la 127 la crée
+(bloc « RH‑01 ») sans que **rien** ne la lise : aucune occurrence dans `src/` hors
+le type généré, aucune fonction/vue/politique/déclencheur en SQL, aucune suite.
+Surtout, elle **double une table vivante** : `timesheets` (baseline, paie W9,
+écrans RH). Deux modèles de temps, un seul branché — c'est le leurre que F.8
+retire.
+
+**Livré** : migration `701` (garde « vide **et** non référencée » de la 164 :
+sur une base qui porte des données, la table est **conservée** et la migration
+le dit) ; suite `701` **4/4** (le leurre part ; `timesheets`,
+`project_time_entries`, les deux tables de F.7 et `platform_admins` restent) ;
+types régénérés (`db:types`, le type `time_entries` disparaît — le diff ne
+touche **que** ce bloc) ; câblage sous le marqueur `plan6:f`.
+
+**Ce qui reste de F.8** : « brancher » les tables de F.4→F.7, c'est‑à‑dire
+**écrire ces fonctionnalités** (le groupe, le CRM, les documents, les
+conventions collectives). Il n'y a **plus de table morte à retirer** dans le
+périmètre F — la 164 et la 701 ont fait le tri.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -126,3 +173,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 |---|---|---|---|---|
 | 05/10/2026 | F.1 recomptage des 20 ❓ du périmètre | 8 « faire » ≈ 16,5 j ; 5 reportés ; 1 écarté ; 6 transférés (B/D/C, R3) ; 1 à arbitrer (PRF-04) | — | `plan6/f-plateforme` |
 | 05/10/2026 | F.2 authentification forte (ORPH-01/SEC-02) | **fait** : migration `700` + suite T01→T13 + test Edge « clé révoquée → 401 » + câblage CI sous le marqueur `plan6:f` | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.8 tables coquilles (premier lot) | **recompté** : 24 listées → 5 existent (19 déjà supprimées par la `164`). `time_entries` **supprimée** (`701`, garde de la 164) + suite `701` 4/4 ; `collective_*` → brancher F.7 ; `platform_admins` = faux positif (lue par `is_platform_admin()`) | 0,5 j | `plan6/f-plateforme` |

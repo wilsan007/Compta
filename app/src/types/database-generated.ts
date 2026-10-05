@@ -21181,58 +21181,6 @@ export interface Database {
         },
       ]
     }
-    time_entries: {
-      Row: {
-        id: string
-        tenant_id: string
-        employee_id: string
-        date: string
-        start_time: string | null
-        end_time: string | null
-        break_minutes: number | null
-        total_minutes: number | null
-        activity_type: string | null
-        project_id: string | null
-        notes: string | null
-        status: string | null
-        approved_by: string | null
-        created_at: string | null
-      }
-      Insert: {
-        id?: string
-        tenant_id: string
-        employee_id: string
-        date: string
-        start_time?: string
-        end_time?: string
-        break_minutes?: number
-        total_minutes?: number
-        activity_type?: string
-        project_id?: string
-        notes?: string
-        status?: string
-        approved_by?: string
-        created_at?: string
-      }
-      Update: {
-        id?: string
-        tenant_id?: string
-        employee_id?: string
-        date?: string
-        start_time?: string
-        end_time?: string
-        break_minutes?: number
-        total_minutes?: number
-        activity_type?: string
-        project_id?: string
-        notes?: string
-        status?: string
-        approved_by?: string
-        created_at?: string
-      }
-      Relationships: [
-      ]
-    }
     timesheets: {
       Row: {
         id: string

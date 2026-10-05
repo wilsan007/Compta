@@ -2350,6 +2350,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.8 — « tables coquilles : brancher ou supprimer ». Le suivi annonce 37
+      # coquilles ; mesuré le 05/10, la liste est périmée pour deux raisons : la
+      # 164 en a DÉJÀ supprimé 22 (le calcul lit les CREATE sans les DROP), et
+      # `platform_admins` est lue par `is_platform_admin()` (le calcul ne voit
+      # que le front). Sur les 24 tables listées pour F, cinq existent : deux à
+      # brancher par F.7 (conventions collectives), `platform_admins` (lot K), et
+      # `time_entries` — un SECOND modèle de temps, jamais lu, à supprimer. La
+      # 701 le retire (garde « vide et non référencée » de la 164) et la suite
+      # mesure les deux moitiés : le leurre part, `timesheets` reste.
+      - name: 'F.8 : une seule table de temps — `time_entries` (dupliquée, jamais lue) supprimée (701)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/701_drop_time_entries_duplique_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
