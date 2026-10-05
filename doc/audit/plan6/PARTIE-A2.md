@@ -29,7 +29,7 @@ D vis-à-vis de nous).
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A2.1 | Recompter la Vue Chaîne : ce que `460` → `467` couvrent, ce qu'il manque pour I-01 | A.5 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | ⬜ |
+| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | 🟡 **2 pages livrées le 05/10** (achats `purchase_invoices`, notes de frais `expense_reports`) — voir §Livré |
 | A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ⬜ |
 | A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ⬜ |
 
@@ -52,6 +52,39 @@ cliquable », la promesse du référentiel) : héberger la frise sur les autres
 types de documents. Le composant est générique (`type, id`) : c'est un travail
 d'**intégration par page**, pas de réécriture — d'où la charge mesurée ≈ 4 j.
 
+## Livré (05/10/2026) — la frise hébergée, page par page
+
+**3 pages sur ~10** hébergent la frise (`ChainTimeline`) et le « pourquoi ce
+montant ? » (`ExplainAmount`). Aucune ligne de SQL, aucun maillon ajouté : le
+composant est générique (`type`, `id`), l'intégration suit **mot pour mot** le
+bloc déjà écrit dans `InvoicesPage` (label `crossModule.chain.title` → frise →
+explication).
+
+| Page | Type au registre `chain_document_types` | État |
+|---|---|---|
+| `InvoicesPage` | `invoices` | ✅ (existante, modèle suivi) |
+| `PurchaseInvoicesPage` | `purchase_invoices` | ✅ ajoutée le 05/10 |
+| `EmployeeExpensesPage` | `expense_reports` | ✅ ajoutée le 05/10 |
+
+**Vérifications** : `tsc -b` **0 erreur** · `oxlint` **0/0** · `i18n:check`
+**vert** · Vitest **1 661 verts** (suite complète ; dont `chainTimeline` 4,
+`explainAmount` 3, `chain-coherence` 9) · plafonds `any` **936/936** et
+`console.error` **488/488** conformes.
+
+**Ce qu'il reste pour tenir I-01, et pourquoi ce n'est pas mécanique.** Les
+pages candidates suivantes (commandes de vente `sales_orders`, devis, réceptions
+`goods_receipts`, bulletins `pay_runs`, tickets de caisse `pos_tickets`, ordres
+de fabrication `manufacturing_orders`) **n'ont pas de vue détail** : ce sont des
+tables plates (`SalesOrdersPage` : aucune `<Modal>` de consultation, seulement
+transformer/supprimer). Y héberger la frise suppose donc de **créer une vue
+détail** — c'est une décision de conception, pas une intégration. Elle est
+consignée ici comme **demande** (R3) pour l'intégration : ouvre-t-on une vue
+détail sur ces pages, ou attend-on le chantier D (`app/src/pages`) qui les
+balaie déjà ?
+
 ## Journal
 
-*(vide — une ligne par lot poussé, avec la date et le verdict de la batterie)*
+| Date | Lot | Ce qui est fait | Batterie | Commit |
+|---|---|---|---|---|
+| 2026-10-05 | A2.1 | Recomptage Vue Chaîne : backend `460`/`462` + composant OK, frise hébergée sur `InvoicesPage` seulement | — (lecture seule) | `3a2642c` |
+| 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | _(ce lot)_ |

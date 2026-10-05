@@ -16,6 +16,8 @@ import { confirmSync } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
 import { useLegislation } from '@/lib/legislation'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
+import { ChainTimeline } from '@/components/ChainTimeline'
+import { ExplainAmount } from '@/components/ExplainAmount'
 
 export function PurchaseInvoicesPage() {
   const { toast } = useToast()
@@ -482,6 +484,8 @@ function PurchaseInvoiceDetailModal({ invoice, onClose }: { invoice: PurchaseInv
   const { t } = useTranslation('purchases')
   const { t: tCommon } = useTranslation('common')
   const { t: tAcc } = useTranslation('accounting')
+  // I-01 — la Vue Chaîne, dans son propre espace de noms d'écran.
+  const { t: tChain } = useTranslation('crossModule')
   return (
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4">
       <div className="card shadow-2xl" style={{ width: '100%', maxWidth: '36rem' }}>
@@ -500,6 +504,17 @@ function PurchaseInvoiceDetailModal({ invoice, onClose }: { invoice: PurchaseInv
           <div className="flex justify-between text-sm border-t border-[var(--color-border)] pt-3"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.total')}</span><span className="font-mono font-bold">{formatCurrency(Number(invoice.total))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.paid')}</span><span className="font-mono text-[var(--color-success)]">{formatCurrency(Number(invoice.amount_paid))}</span></div>
           <div className="flex justify-between text-sm"><span className="text-[var(--color-text-secondary)]">{t('purchaseInvoices.remainingToPay')}</span><span className="font-mono text-[var(--color-danger)]">{formatCurrency(Number(invoice.amount_due))}</span></div>
+          <div className="border-t border-[var(--color-border)] pt-3">
+            {/* I-01 — la Vue Chaîne : direction, profondeur et historique viennent
+                de `chain_document_arborescence` (migration 460) ; le composant ne
+                décide rien. Le type est celui du registre `chain_document_types`. */}
+            <div className="text-[var(--color-text-secondary)] mb-1">{tChain('chain.title')}</div>
+            <ChainTimeline type="purchase_invoices" id={invoice.id} libelle={t('purchaseInvoices.invoice')} />
+            {/* I-08 — le « pourquoi ce montant ? » : les lignes d'écriture qui
+                portent réellement ce total. Rien n'est recalculé ici, et une
+                provenance absente est DITE absente — jamais comblée. */}
+            <ExplainAmount type="purchase_invoices" id={invoice.id} montantAffiche={Number(invoice.total)} />
+          </div>
         </div>
       </div>
     </div>
