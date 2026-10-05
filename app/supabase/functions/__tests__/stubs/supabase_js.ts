@@ -29,13 +29,29 @@ function resultatNeutre() {
   return { data: Object.assign([ligne], ligne), error: null }
 }
 
+// Un test peut répondre À LA PLACE d'une RPC (`globalThis.__stubRpc`) : la
+// clé est le NOM de la fonction, la valeur est le `{ data, error }` rendu.
+// Sans entrée pour ce nom, le résultat neutre est rendu — le comportement de
+// tous les tests existants (W6) est inchangé.
+//
+// C'est le crochet qui rend « clé révoquée → 401 » testable (ORPH-01/SEC-02,
+// 700) : la vérité du cycle de vie d'une clé vit dans la base
+// (`authenticate_api_key`), et le test Edge n'a ni base ni réseau — il pose
+// le VERDICT de la base et prouve que public-api l'OBÉIT.
+function rpcResultat(nom: string) {
+  const perso = (globalThis as any).__stubRpc
+  if (perso && Object.prototype.hasOwnProperty.call(perso, nom)) return perso[nom]
+  return resultatNeutre()
+}
 
-function chaine(): any {
+
+function chaine(nomRpc?: string): any {
   const cible = function () {}
   const proxy: any = new Proxy(cible, {
     get(_t, prop) {
       if (prop === "then") {
-        return (resolve: (v: unknown) => unknown) => Promise.resolve(resultatNeutre()).then(resolve)
+        const valeur = nomRpc === undefined ? resultatNeutre() : rpcResultat(nomRpc)
+        return (resolve: (v: unknown) => unknown) => Promise.resolve(valeur).then(resolve)
       }
       if (prop === "auth") {
         return {
@@ -67,7 +83,7 @@ export function createClient(..._args: unknown[]): any {
     get(_t, prop) {
       if (prop === "auth") return chaine().auth
       if (prop === "storage") return chaine().storage
-      if (prop === "rpc") return () => chaine()
+      if (prop === "rpc") return (nom: string) => chaine(nom)
       return () => chaine()
     },
   })

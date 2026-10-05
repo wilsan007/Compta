@@ -2336,6 +2336,20 @@ jobs:
       #              notifications ; leurs tables coquilles
       # Plage : 700→749
 
+      # ORPH-01 / SEC-02 (F.2) — authentification forte : `api_keys` et
+      # `user_totp` existaient depuis les migrations 92/93 et leurs RPC depuis
+      # la 130, et AUCUNE suite SQL ne les exerçait. La 700 pose la vérité du
+      # cycle de vie d'une clé dans UNE fonction (`authenticate_api_key` —
+      # refus nommés : not_found, revoked, expired) et la vérification TOTP
+      # RÉELLE (RFC 6238 : l'ancienne `verify_totp` acceptait tout code à 6
+      # chiffres et rendait le secret). Le rejeu d'une clé révoquée est refusé
+      # au niveau SQL (T05) ET au point d'entrée public-api (« clé révoquée →
+      # 401 », job Edge). Chaque scénario rouges-avant est dit dans le fichier.
+      - name: 'ORPH-01/SEC-02 : authentification forte — émission, usage, révocation, rejeu, expiration, TOTP (700)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/700_auth_forte_api_keys_totp_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
