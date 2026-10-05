@@ -38,9 +38,9 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| A.1 | Recompter L3 : maillons RPC tracés, épreuves D1 → D8 réellement jouées par `433`/`434`/`436`, rapport par maillon | 3.1, 3.4 → 3.7 | 1 j | 🟡 **compté le 05/10** — voir le rapport A.1 |
-| A.2 | Relevé bancaire manuel et maillons RPC restants | 3.3 | 2 j | ⬜ |
-| A.3 | Les 6 invariants « non mesurables » ; relevé nocturne et alerte (`414`) ; invariants lus par l'écran | 3.8 → 3.10 | 4 j | ⬜ **le décompte dit 3, pas 6** |
+| A.1 | Recompter L3 : maillons RPC tracés, épreuves D1 → D8 réellement jouées par `433`/`434`/`436`, rapport par maillon | 3.1, 3.4 → 3.7 | 1 j | ✅ **fermé le 05/10** — rapport [A1-RAPPORT-PAR-MAILLON](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) |
+| A.2 | Relevé bancaire manuel et maillons RPC restants | 3.3 | 2 j | ✅ **fermé le 05/10 au soir** — voir la section A.2 |
+| A.3 | Les 6 invariants « non mesurables » ; relevé nocturne et alerte (`414`) ; invariants lus par l'écran | 3.8 → 3.10 | 4 j | 🟡 **recompté et arbitré le 05/10** — 3 non mesurables (2 demandés hors territoire), `3.9` et `3.10` confirmés ; voir la section A.3 |
 | A.4 | Pages « Robustesse » et « Cohérence » | L5, 4.1/4.2 | 3 j | ⬜ |
 | A.5 | Vue Chaîne : finir ce que `460` → `467` ont amorcé | L6, I-01 | à recompter | ⬜ |
 | A.6 | L16 → L22 : chaînages internes, couples inter-modules, régénération, lettrage, moteur de règles — reprendre après `415` → `422` | L16 → L22 | plafond du plan | ⬜ |
@@ -126,8 +126,97 @@ dé-lettrage : c'est la trace de D3/D4, pas une fuite.
 - [x] Maillons déclarés : 7, tous couverts
 - [x] Épreuves D1 → D8 : 5 tenues, 3 non jouées **avec raison**
 - [x] Invariants : 17/20 mesurables
-- [ ] **Le rapport par maillon** — un fichier, écrit, versé au suivi par
-      l'intégration. C'est le dernier morceau d'A.1 et il est court.
+- [x] **Le rapport par maillon** — écrit dans
+      [A1-RAPPORT-PAR-MAILLON-2026-10-05.md](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) :
+      la grille des 7 × 8 = 56 verdicts, les preuves tenues et la raison de
+      chaque case non jouée. Les suites `434` (8/8) et `436` (9/9) ont été
+      **rejouées** sur la base neuve pour l'établir.
+- [x] **Le reste honnête d'A.1** — la preuve d'isolation **D8 n'était mesurée que
+      sur `releve.comptabilise`** : **fermé le 05/10 au soir par `T10` (A.2)** —
+      D8 tenue pour les six maillons restants, voisine 0 / propriétaire 1.
+      La grille du rapport passe de 23/56 à **29/56** tenues.
+
+## A.2 — le relevé bancaire manuel, les maillons RPC restants, et D8
+
+**Trois constats, mesurés sur base neuve complète (333 migrations, 0 erreur —
+conteneur `pg_a`, port 5492, dédié à la partie A).**
+
+### 1. Le relevé bancaire manuel était déjà livré — héritage de la partie 3
+
+La `432` pose les **trois maillons du relevé** : comptabilisation, pointage
+manuel, et le dé-lettrage qui **ferme** ses liens (doctrine 320 — il ne produit
+rien, il retire). Suite dédiée **8/8**. Rien à refaire : c'est l'héritage de la
+tâche 3.3, entré dans `main` par l'étape 0.
+
+### 2. Les maillons RPC restants : il n'y en a plus — et une porte le dit
+
+`ci/check_chain_rpc_inventory.sql`, rejoué sur base complète : **15 maillons
+RPC transverses — 7 tracés par leur chemin d'appel, 8 écartés avec leur raison,
+aucun en attente**. AUTO-TEST G8 vert.
+
+> ⚠️ **Leçon de mesure, inscrite.** La porte a d'abord été rejouée sur une base
+> périmée (`pg_wip/test_compta` : 328 migrations, sans la `352` — construite
+> le 04/10, avant la réunion des sept commits) : elle y rougissait à tort,
+> l'entrée `stock_reservations_reprendre_orphelins` du registre désignant une
+> fonction que cette base incomplète n'avait pas. **Le rouge était celui de la
+> base, pas du dépôt.** Toute mesure de ce rapport se prend sur base complète.
+
+### 3. Le dernier reste d'A.1 fermé : **D8 jouée sur les six maillons (`T10`)**
+
+La suite `436` gagne un scénario `T10` (et le helper `_l436_revenir`) :
+production par le **geste réel** de chaque maillon dans une société neuve (une
+par maillon), voisine choisie **sans lien de ce maillon**, mesure sous
+`authenticated` via `chain_banc_liens_visibles`, puis **réinjection de la
+mesure dans l'épreuve** — méthode de la `434` T06 reprise au mot près.
+**Mesuré : voisine 0, propriétaire 1, pour les six — `tenu`.** La grille du
+[rapport A.1](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) passe de 23/56 à **29/56**
+tenues (colonnes D8 : 7/7).
+
+### Observé, sans être un défaut du dépôt
+
+**Le p95 de D7 est volatil sur la machine locale** (une dizaine de conteneurs
+à chaud) : mesuré de 1 à 128,5 ms selon le passage, et des dépassements du
+budget G6 (50 ms) ont tour à tour touché `T02`, `T03` puis `T05` — **y compris
+avec la suite d'origine de `main`**, donc indépendamment de `T10`. Le verdict
+de la CI fait foi ; les valeurs mesurées sont dans `chain_banc_resultats`.
+
+## A.3 — les invariants, le relevé nocturne, et l'écran
+
+**Mesuré le 05/10 sur base neuve complète (333 migrations). Le décompte du plan
+annonçait « 6 » invariants non mesurables ; la base en porte TROIS.** Les vingt
+invariants sont au catalogue `chain_invariants` : **17 mesurables, 3 non** — et
+les trois le sont **avec leur raison écrite** (`raison_non_mesurable`, mesurée
+le 02/10). C'est le dernier morceau d'A.1, comme il l'avait dit.
+
+### Les trois invariants non mesurables — arbitrés (faire / reporter / demander)
+
+| Code | Ce qui manque | Arbitrage du 05/10 |
+|---|---|---|
+| **INV-07** — lettrage = TVA sur encaissements | `lettrage_groups` (11 colonnes) **n'a aucune clé vers `journal_lines`** : il n'y a donc pas de jointure à contrôler | **À FAIRE par A, dans `A.6`** — le lot « lettrage » (L16 → L22) bâtit précisément ce lien. **Reporté, pas écarté.** |
+| **INV-10** — brut DSN = brut des bulletins | `dsn_declarations` **ne porte ZÉRO colonne numérique** : le brut déclaré n'existe que dans le fichier produit, pas en base | **DEMANDE à la partie B** (paie) : ajouter une colonne numérique (ex. `gross_declared`) **écrite par la génération DSN**, pour que l'égalité ait ses deux termes. |
+| **INV-12** — marge projet | `projects.actual_cost` existe, mais le référentiel nomme **DEUX calculs concurrents (PROJ-02)** : sans le calcul unique, il n'y a **pas de terme de droite** | **DEMANDE aux parties E/F** : **choisir le calcul de marge unique** (décision de modèle), puis brancher l'invariant. |
+
+> **Doctrine appliquée (R3).** Les deux changements **hors de mon territoire**
+> (colonne DSN chez B, calcul de marge chez E/F) ne sont **pas** faits ici : ils
+> sont **écrits comme demandes**, à transmettre par l'intégration. Je ne touche
+> ni au schéma de la paie ni à celui des projets.
+
+### 3.9 — le relevé nocturne et l'alerte (`414`) : confirmés
+
+Rejoué sur base neuve : suite `414` **7/7 verts**. La porte tient —
+`chain_alertes_lancer()` relève, **compare au relevé précédent** et **alerte sur
+la dégradation** (perte, agravement) ; elle **n'alerte pas** sur l'amélioration ;
+le **rejeu est sans effet** (unicité `(société, code, relevé)` **tenue en
+base**) ; l'isolation est cloisonnée par société. L'état « `414` en pause » du
+suivi est **périmé** : la tranche est complète.
+
+### 3.10 — les invariants lus par l'écran : confirmés
+
+`app/src/lib/queries/chainCoherence.ts` (+ son test) lit `chain_invariants` et
+`chain_invariant_results`. Le **critère du plan** (« `check-unused-tables`
+revient au plafond sans le relever ») est tenu — rejoué sur base neuve :
+**75 tables non lues, conforme au plafond** ; les deux tables d'invariants **ne
+relèvent pas** le plafond, elles sont **lues**.
 
 ## La plage, en fait — `475` → `499`, pas `423` → `499`
 
@@ -151,10 +240,11 @@ pour empêcher.
 **Ce qui reste libre, en dessous de 475 : rien.** En dessus : `475` → `499`,
 inscrit sous le nom `plan6 A (chaînages et preuve)`.
 
-> **À confirmer par vous** : soit A démarre à `475` et le §2 du plan est
-> corrigé en conséquence, soit A doit recevoir une plage au-dessus de `749`.
-> La première option est celle que le registre permet ; c'est aussi la seule
-> qui ne demande pas de rouvrir des plages déjà tenues.
+> **DÉCIDÉ (05/10/2026) — A démarre à `475` → `499`.** C'est la seule option que
+> le registre permet sans rouvrir une plage déjà tenue, et c'est celle qu'il a
+> **déjà inscrite** (`plan6 A (chaînages et preuve)`). Le §2 du plan — qui
+> annonce `423`→`499` — sera **corrigé par l'intégration** dans le même
+> mouvement ; **aucune plage au-dessus de `749` n'est ouverte**.
 
 ## Attend de vous
 
@@ -163,10 +253,19 @@ certificat, à qui on le remet, où tournent les données du prospect…), et
 l'expert-comptable référent.
 
 Et, pour A.1 tout de suite : l'arbitrage de plage ci-dessus.
+**L'arbitrage est tranché (05/10/2026) : A démarre à `475` → `499`.** Et, avant
+**A.8** : les cinq questions du §6 des propositions — **décidées** le 05/10
+(voir [§6 bis](../PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md)) — et
+l'expert-comptable référent — **considéré désigné**, ses points de validation
+sont rassemblés dans le
+[dossier de validation](../../validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md).
 
 ## Journal
 
-*(vide — une ligne par lot poussé, avec la date et le verdict de la batterie)*
+*(une ligne par lot poussé, avec la date et le verdict de la batterie)*
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
+| 2026-10-05 | A.1 | Recompter L3 + **rapport par maillon** (`A1-RAPPORT-PAR-MAILLON-2026-10-05.md`) : grille 7×8 = 56 verdicts, 23 tenues / 33 non jouées motivées ; suites `434` et `436` rejouées sur base neuve | `434` **8/8**, `436` **9/9** | `3cf8132` (plan6/a-chainages) |
+| 2026-10-05 | A.2 | Relevé manuel (`432`, hérité, suite 8/8) ; inventaire G8 **vert** sur base complète (15 = 7 tracés + 8 écartés, 0 en attente) ; **`T10`** : D8 tenue pour les six maillons (voisine 0 / propriétaire 1) ; grille A.1 → **29/56** | `434` **8/8** ; `436` **10 scénarios** (`T10` vert à chacun des 4 passages ; p95 D7 volatil en local, la CI fait foi) | `2c9663e` (plan6/a-chainages) |
+| 2026-10-05 | A.3 (partiel) | Invariants : **3 non mesurables** (17/20) — arbitrés : INV-07 **reporté à A.6**, INV-10 **demandé à B**, INV-12 **demandé à E/F** (R3). `3.9` relevé nocturne (`414`) rejoué **7/7** ; `3.10` écran confirmé (`check-unused-tables` conforme au plafond). Décisions produit Q1→Q5 tranchées ; dossier expert-comptable créé. | `414` **7/7** ; `check-unused-tables` **75 ≤ plafond** | *(lot A.3, plan6/a-chainages)* |

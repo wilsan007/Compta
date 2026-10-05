@@ -97,6 +97,12 @@ arrière, volume, isolation).
 sur T07** (isolation : la propriétaire ne voit pas sa propre alerte). Ce n'est
 donc pas encore acquis.
 
+> **↳ Réconcilié le 05/10/2026 (intégration).** Rejouée sur base neuve complète,
+> la suite `414` rend **7/7** — `T07` **vert**. Le rouge n'était pas un défaut
+> d'isolation : le scénario posait la faute **avant** le relevé sain, d'où un
+> motif `deja_rompu` sans alerte ; l'ordre est rétabli et « la propriétaire ne
+> voit pas sa propre alerte » **n'est pas reproduite** (lot A1, `plan6/a-chainages`).
+
 ### 2.5 Tâche 3.10 — lecture écran de l'indice (0,5 j)
 En cours par l'autre session (`chainCoherence.ts`).
 

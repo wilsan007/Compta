@@ -31,14 +31,117 @@ R8 lots courts, fusion par l'intégration seule.
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| A1.a | Fin d'A.2 : maillons RPC restants après `T10` — croiser `create_pos_ticket`, `pos_refund_ticket`, `payroll_post_run`, `payroll_payment_inner`, `post_bank_statement_line` avec la grille du [rapport par maillon](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) ; tracer ou rayer chacun | 3.3 | ≈ 1 j | 🟡 en cours (`T10` livré le 05/10) |
-| A1.b | A.3 : les **3** invariants encore « non mesurables » (le recomptage du 05/10 dit 3, pas 6) ; relevé nocturne et alerte (`414` — reprendre la suite `T07` rouge : la propriétaire ne voit pas sa propre alerte) | 3.8, 3.9 | ≈ 2 j | ⬜ |
+| A1.a | Fin d'A.2 : maillons RPC restants après `T10` — croiser `create_pos_ticket`, `pos_refund_ticket`, `payroll_post_run`, `payroll_payment_inner`, `post_bank_statement_line` avec la grille du [rapport par maillon](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) ; tracer ou rayer chacun | 3.3 | ≈ 1 j | ✅ **fait le 05/10 au soir** — voir §A1.a |
+| A1.b | A.3 : les **3** invariants encore « non mesurables » (le recomptage du 05/10 dit 3, pas 6) ; relevé nocturne et alerte (`414` — reprendre la suite `T07` rouge : la propriétaire ne voit pas sa propre alerte) | 3.8, 3.9 | ≈ 2 j | 🟡 **fait le 05/10 au soir** — `414` mesuré **7/7** (T07 **vert**, la note rouge non reproduite) ; les 3 invariants arbitrés → §A1.b |
 
 ⚠️ La part **écran** de la tâche 3.10 (lecture de l'indice, `chainCoherence.ts`)
 part chez **A2** (tâche A2.4).
 
+## A1.a — le croisement des cinq maillons RPC (fin d'A.2)
+
+**Objet.** Croiser les cinq maillons nommés par le plan avec la grille du
+[rapport par maillon](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) : **tracer ou rayer
+chacun**.
+
+**Résultat, mesuré sur base neuve (333 migrations).** Chacun est soit **tracé**,
+soit **rayé nommément** :
+
+| Maillon nommé | Tracé ? | Ce que c'est |
+|---|---|---|
+| `create_pos_ticket` | ✅ **tracé** (enveloppe) | caisse — ticket |
+| `pos_refund_ticket` | ✅ **tracé** (enveloppe) | caisse — avoir |
+| `payroll_post_run` | ✅ **tracé** (enveloppe) | paie comptabilisée |
+| `post_payroll_payment` | ✅ **tracé** (enveloppe) | paie versée |
+| `payroll_payment_inner` | ⛔ **rayé** | le **corps renommé** de `post_payroll_payment` (`430`, doctrine `412`) : le maillon est son **enveloppe publique**, pas l'`_inner` — l'`_inner` **n'est pas un maillon** et **ne doit pas** être tracé |
+
+**La porte G8 le confirme** (`ci/check_chain_rpc_inventory.sql`, rejoué sur base
+complète) : **15 maillons RPC transverses — 7 tracés par leur chemin d'appel,
+8 écartés motivés, aucun en attente.** Les sept tracés sont exactement les sept
+gestes du banc (les cinq ci-dessus + `reconcile_bank_statement_line` et
+`unreconcile_bank_statement_line`). **Il ne reste aucun maillon RPC à tracer** :
+c'est la fin d'A.2.
+
+## A1.b — les invariants et le relevé nocturne
+
+**Les trois invariants non mesurables** (le recomptage du 05/10 dit **3**, pas 6)
+sont au catalogue `chain_invariants` : **17/20 mesurables**, les trois portant
+leur **raison écrite**. Arbitrage du 05/10 :
+
+| Code | Ce qui manque | Arbitrage |
+|---|---|---|
+| **INV-07** | pas de clé `lettrage_groups` → `journal_lines` | **à faire par A3** (lettrage, L16 → L22) — **reporté**, pas écarté |
+| **INV-10** | `dsn_declarations` sans **aucune** colonne numérique | **demande à B** (§Demandes) |
+| **INV-12** | deux calculs de marge concurrents (PROJ-02) | **demande à E/F** (§Demandes) |
+
+**Le relevé nocturne et l'alerte (`414`) : mesuré 7/7 verts.** ⚠️ La note
+d'ouverture d'A1.b annonçait « `T07` rouge : la propriétaire ne voit pas sa
+propre alerte ». **Sur base neuve complète (333 migrations), `T07` est VERT** —
+rejoué **deux fois**, sur **deux bases indépendantes** : *« AL6 voit la sienne=1
+(1 attendu) | AL7 vues par AL6=0 | AL7 voit la sienne=1 »*, et la suite rend
+**7 verts / 0 rouge**. La note **n'est donc pas reproduite**. **À réconcilier par
+l'intégration** (base incomplète ? état antérieur de la suite ?) avant de clore
+A1.b ; **en l'état, la porte est verte.**
+
+**La part écran de la tâche 3.10** (`chainCoherence.ts` lit `chain_invariants`
+et `chain_invariant_results`) **appartient à A2** (tâche **A2.4**). Mesure
+transmise : `check-unused-tables` sur base neuve = **75 tables non lues, conforme
+au plafond** ; les deux tables d'invariants **ne relèvent pas** le plafond (elles
+sont **lues**). A2 n'a donc, a priori, qu'à **brancher la page**.
+
+## Demandes hors territoire (règle R3)
+
+| # | Demande | Vers | Pourquoi |
+|---|---|---|---|
+| 1 | Ajouter une colonne numérique à `dsn_declarations` (ex. `gross_declared`), **écrite par la génération DSN** | **B** (paie) | rend **INV-10** mesurable |
+| 2 | **Choisir le calcul de marge projet unique** (PROJ-02), puis le figer | **E/F** | rend **INV-12** mesurable |
+| 3 | Bâtir le lien `lettrage_groups` ↔ `journal_lines` | **A3** (lettrage, L16 → L22) | rend **INV-07** mesurable |
+
+## Ce que cette ligne débloque (à transmettre par l'intégration)
+
+- **Les cinq questions du §6 (`P1` → `P8`) sont TRANCHÉES** — voir
+  [§6 bis](../PROPOSITIONS-DIFFERENCIATION-APRES-L24-2026-09-30.md). Elles
+  débloquent **A3.4** (« attend vos cinq décisions »).
+- **L'expert-comptable référent est considéré désigné** ; ses points de
+  validation sont rassemblés dans le
+  [dossier de validation](../../validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md)
+  — il débloque **B** (paie FR), **C.3** (Djibouti) et **A3.4** (`P1`).
+- **L'arbitrage de plage est tranché** : A démarre à `475` (ici **A1 = `475` → `486`**).
+
+## La batterie de la ligne A1 — rejouée le 05/10 sur base neuve complète
+
+Base `test_a3` (PostgreSQL 16, **333 migrations, 0 erreur**). **Toutes** les
+suites du périmètre A1, jouées d'affilée :
+
+| Suite | Objet | Verdict |
+|---|---|---|
+| `413` | invariants — le relevé | **8/8** |
+| `414` | alerte de dégradation | **7/7** — **`T07` vert** |
+| `431` | invariants rendus mesurables | **1/1** |
+| `435` | invariants par agrégation | **8/8** |
+| `434` | les 8 épreuves du banc | **8/8** |
+| `436` | les six maillons + **D8 (`T10`)** | **10/10** ✅ |
+| `460` | arborescence (Vue Chaîne — lecture) | **8/8** |
+| `462` | expliquer un montant (I-08) | **5/5** |
+| `ci/check_chain_rpc_inventory.sql` | les maillons RPC | **vert** — 15 = 7 tracés + 8 écartés |
+
+> ⚠️ **`436` est 10/10 cette fois** : le `p95` de D7 est passé **sous** le budget
+> G6. C'est la confirmation que les rouges D7 des passages précédents étaient
+> bien de la **volatilité d'horloge locale** (voir le
+> [rapport par maillon](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) §7), et **non** un
+> défaut du banc. Le verdict de la CI fait foi ; ici, tout est vert.
+
+**Conclusion de la ligne A1.** Les deux tâches (`A1.a`, `A1.b`) sont **faites** ;
+le banc, les invariants et l'alerte sont **rejoués verts sur base neuve** ; les
+trois invariants encore non mesurables sont **arbitrés** (une part revient à A3,
+deux sont **demandées** à B et E/F, R3). **Reste à l'intégration** : réconcilier
+la note `414` « T07 rouge » (non reproduite) et transmettre les demandes.
+
 ## Journal
 
-*(une ligne par lot poussé, avec la date et le verdict de la batterie —
-l'historique jusqu'au 05/10 midi est dans
-[PARTIE-A.md](PARTIE-A.md))*
+| Date | Lot | Ce qui est fait | Batterie | Commit |
+|---|---|---|---|---|
+| 2026-10-05 | A1.a | Croisement des 5 maillons RPC : **4 tracés**, `payroll_payment_inner` **rayé** (corps `_inner`, pas un maillon) ; G8 **15 = 7 tracés + 8 écartés**, aucun en attente | inventaire **G8 vert** | *(lot A1)* |
+| 2026-10-05 | A1.b | 3 invariants non mesurables arbitrés (INV-07 → A3, INV-10 → B, INV-12 → E/F) ; `414` relevé nocturne + alerte **7/7** (**T07 vert** — la note rouge non reproduite) | `414` **7/7** | *(lot A1)* |
+
+*(l'historique du 05/10 midi — recomptage A.1, rapport par maillon, A.2 — est dans
+[PARTIE-A.md](PARTIE-A.md), fichier de famille ; commit `3cf8132` puis `2c9663e`.)*

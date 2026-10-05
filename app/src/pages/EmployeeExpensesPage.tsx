@@ -7,6 +7,8 @@ import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
 import { confirmSync } from '@/lib/confirm'
+import { ChainTimeline } from '@/components/ChainTimeline'
+import { ExplainAmount } from '@/components/ExplainAmount'
 
 const statusColors: Record<string, 'neutral' | 'warning' | 'success' | 'danger'> = {
   draft: 'neutral',
@@ -180,6 +182,8 @@ function ExpenseReportForm({ onClose, onSaved }: { onClose: () => void; onSaved:
 function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => void }) {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
+  // I-01 — la Vue Chaîne, dans son propre espace de noms d'écran.
+  const { t: tChain } = useTranslation('crossModule')
   const { toast } = useToast()
   const [lines, setLines] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
@@ -298,6 +302,16 @@ function ExpenseReportDetail({ report, onClose }: { report: any; onClose: () => 
           </Table>
         </Card>
       )}
+
+      <div className="border-t border-[var(--color-border)] pt-4 mt-2">
+        {/* I-01 — la Vue Chaîne : ce que la base a tracé (`document_links`),
+            rien de plus. Une note de frais sans maillon reste muette — c'est
+            le maillon qu'il faut corriger, pas l'écran. */}
+        <div className="text-[var(--color-text-secondary)] mb-1">{tChain('chain.title')}</div>
+        <ChainTimeline type="expense_reports" id={report.id} libelle={t('expenses.title')} />
+        {/* I-08 — le « pourquoi ce montant ? », sans aucun recalcul. */}
+        <ExplainAmount type="expense_reports" id={report.id} montantAffiche={totalTtc} />
+      </div>
     </div>
   )
 }

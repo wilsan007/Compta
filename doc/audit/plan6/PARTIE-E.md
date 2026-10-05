@@ -62,6 +62,13 @@ la laisser, n'en est pas une.
 Une suppression est une migration, donc elle prend un numéro dans `650`→`699`
 comme le reste.
 
+## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
+
+| # | Demande | De | Ce qu'elle débloque / corrige |
+|---|---|---|---|
+| 1 | **Choisir le calcul de marge projet unique** (`PROJ-02`), puis le **figer** | A1 — invariant **INV-12** | rend **INV-12** mesurable (« marge projet = facturé − temps − achats − stock − frais ») : `projects.actual_cost` existe, mais les **deux** recalculs concurrents n'ont pas de terme de droite figé. À traiter avec F (projets) — l'égalité tire sur les **achats, le stock et la production**, qui sont E |
+| 2 | **PRF-03** et **UX-05** | F — recomptage F.1 | transférés à **D** (R3), hors périmètre E — pour information dans le registre d'intégration |
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |

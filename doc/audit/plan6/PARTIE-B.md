@@ -46,6 +46,13 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 En cas de doute, **C passe après** B et E sur les fonctions d'écriture
 comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 
+## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
+
+| # | Demande | De | Ce qu'elle débloque / corrige |
+|---|---|---|---|
+| 1 | Ajouter une **colonne numérique** à `dsn_declarations` (ex. `gross_declared`), **écrite par la génération DSN** | A1 — invariant **INV-10** | rend **INV-10** mesurable (« brut de la DSN = brut des bulletins du mois ») : la table n'a aujourd'hui **zéro** colonne numérique, le brut n'existe que dans le fichier produit (mesure `L4-INVARIANTS-MESURABLES`) |
+| 2 | **PAY-01** (deux corrections immédiates, bloquant), **PAY-11** (solde de tout compte, ≈ 1,5 j), **PAY-12** (architecture cible du moteur) | F — recomptage F.1 | chantiers **de paie hors périmètre F**, **transférés à B** (R3) |
+
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |

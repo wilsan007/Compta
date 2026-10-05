@@ -169,5 +169,27 @@
       "sum": "Montant affiché à l’écran : {{montant}}. Rien n’a été recalculé ici.",
       "error": "Provenance illisible : {{message}}"
     }
+  },
+  "coherence": {
+    "title": "Cohérence des chaînages",
+    "subtitle": "L'indice de cohérence : les invariants transversaux mesurés pour cette société.",
+    "tenu": "Invariants tenus",
+    "rompu": "Invariants rompus",
+    "nonMesure": "Non mesurés",
+    "total": "Invariants au catalogue",
+    "mesureLe": "Dernier relevé : {{date}}",
+    "jamaisMesure": "Aucun relevé enregistré pour cette société : l'indice n'a pas encore été calculé.",
+    "vide": "Aucun invariant",
+    "videDescription": "Aucun invariant au catalogue pour cette société.",
+    "code": "Code",
+    "libelle": "Invariant",
+    "modules": "Modules",
+    "verdict": "Verdict",
+    "ecart": "Écart",
+    "lignes": "Lignes en écart",
+    "releves": "Relevés",
+    "verdictTenu": "tenu",
+    "verdictRompu": "rompu",
+    "verdictNonMesure": "non mesuré"
   }
 }
