@@ -223,6 +223,10 @@ teste cet état**.
 - [x] Les 62 règles confrontées au schéma (déclencheurs actifs + `document_effects` + `CHECK`)
 - [x] Le verdict par règle et l'origine des règles déjà posées
 - [x] Les corrections à porter au plan et au référentiel (§4, points 2 → 4)
-- [ ] **À verser au référentiel** (hors territoire B → demande à l'intégration, R3) :
-      corriger le §B.2 (`deliveries` → `delivery_notes`) et dater la ligne `R-062`
-      comme faite. Cette note tient lieu de demande.
+- [ ] **À verser au référentiel** — `doc/audit/REFERENTIEL-CHAINAGES-TRANSVERSAUX-2026-09-24.md`
+      **n'est au territoire d'aucune des six parties** (§2 : ni A ni B ni C… ne
+      détiennent `doc/audit/`) : c'est un document de référence partagé, tenu par la
+      **session d'intégration** (§10), **au même titre que `SUIVI-CHANTIERS.md` et
+      `AGENTS.md`** (règle **R4**). Cette note tient donc lieu de **demande à
+      l'intégration** (règle **R3**) : corriger le §B.2 (`deliveries` →
+      `delivery_notes`) et dater la ligne `R-062` comme faite.

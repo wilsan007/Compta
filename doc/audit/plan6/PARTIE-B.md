@@ -48,6 +48,10 @@ production 0 / conformité 1 / budgets 1 (existantes).
 3. **`R-062` est déjà faite** (`pos_tickets_status_check` existe) et **`R-006` vise
    `deliveries`, une table qui n'existe pas** (c'est `delivery_notes`) → §B.2 du
    référentiel à corriger.
+   ↳ **Demande à l'intégration (R3)** : `doc/audit/REFERENTIEL-CHAINAGES-TRANSVERSAUX-2026-09-24.md`
+   n'est au territoire d'**aucune** des six parties (§2) — `doc/audit/` n'est détenu
+   par ni A ni B ni C… C'est un document de référence partagé, tenu par la **session
+   d'intégration** (§10), comme `SUIVI-CHANTIERS.md` et `AGENTS.md` (R4).
 
 ## Attend de vous
 
