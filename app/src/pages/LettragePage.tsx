@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { Fragment, useEffect, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
@@ -269,7 +269,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                   </div>
                   <Table headers={[t('lettrage.letterCode'), t('entries.date'), t('saisie.pieceNumber'), t('closure.journal'), t('entries.description'), t('entries.debit'), t('entries.credit'), t('entries.actions')]}>
                     {Object.entries(letteredGroups).map(([code, lines]) => (
-                      <div key={code}>
+                      <Fragment key={code}>
                         {lines.map((line, idx) => (
                           <TableRow key={line.id}>
                             <TableCell className="font-mono text-xs font-semibold">{idx === 0 ? code : ''}</TableCell>
@@ -289,7 +289,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
                             </TableCell>
                           </TableRow>
                         ))}
-                      </div>
+                      </Fragment>
                     ))}
                   </Table>
                 </Card>

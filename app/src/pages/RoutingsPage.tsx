@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, ChevronDown, ChevronRight, Route, ArrowUpDown, Download, Upload } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
@@ -136,7 +136,7 @@ export function RoutingsPage() {
         <Card>
           <Table headers={routingHeaders}>
             {routings.map((r: any) => (
-              <div key={r.id}>
+              <Fragment key={r.id}>
                 <TableRow>
                   <TableCell className="font-mono text-xs">
                     <div className="flex items-center gap-1">
@@ -158,7 +158,8 @@ export function RoutingsPage() {
                   </TableCell>
                 </TableRow>
                 {expanded.has(r.id) && (
-                  <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
+                  <tr>
+                    <td colSpan={6} className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{t('routings.operations')}</span>
                       <button onClick={() => handleRenumber(r.id)} className="text-xs inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-neutral-100)] text-[var(--color-primary)]">
@@ -186,9 +187,10 @@ export function RoutingsPage() {
                         ))}
                       </Table>
                     )}
-                  </div>
+                    </td>
+                  </tr>
                 )}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>

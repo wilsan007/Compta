@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getPurchaseCreditNotes, createPurchaseCreditNote, deletePurchaseCreditNote, updatePurchaseCreditNote, getPurchaseInvoices } from '@/lib/queries/sales'
 import { getSuppliers } from '@/lib/queries/partners'
@@ -69,7 +69,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
         <Card>
           <Table headers={['', t('creditNotes.number'), t('creditNotes.date'), t('creditNotes.supplier'), t('creditNotes.amount'), t('creditNotes.status'), t('creditNotes.actions')]}>
             {creditNotes.map((cn) => (
-              <div key={cn.id}>
+              <Fragment key={cn.id}>
                 <TableRow onClick={() => toggleExpand(cn.id)}>
                   <TableCell className="w-8">
                     {cn.purchase_credit_lines?.length ? (expanded.has(cn.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />) : <span className="w-4 inline-block" />}
@@ -101,7 +101,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
                 {cn.reason && (
                   <tr className="bg-[var(--color-neutral-50)]"><TableCell /><TableCell colSpan={6} className="text-xs italic text-[var(--color-text-secondary)]">{t('creditNotes.reasonLabel')}: {cn.reason}</TableCell></tr>
                 )}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>

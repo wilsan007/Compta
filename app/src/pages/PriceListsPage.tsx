@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
@@ -70,7 +70,7 @@ const [lists, setLists] = useState<PriceList[]>([])
         <Card>
           <Table headers={[t('priceLists.name'), t('priceLists.type'), t('priceLists.currency'), t('priceLists.validity'), tCommon('table.actions')]}>
             {lists.map((l) => (
-              <div key={l.id}>
+              <Fragment key={l.id}>
                 <TableRow>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-1">
@@ -94,7 +94,8 @@ const [lists, setLists] = useState<PriceList[]>([])
                   </TableCell>
                 </TableRow>
                 {expanded.has(l.id) && (
-                  <div className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
+                  <tr>
+                    <td colSpan={5} className="px-8 py-3 bg-[var(--color-neutral-50)] border-y border-[var(--color-border)]">
                     {(lines[l.id] || []).length === 0 ? (
                       <p className="text-xs text-[var(--color-text-secondary)]">{t('priceLists.noLines')}</p>
                     ) : (
@@ -113,9 +114,10 @@ const [lists, setLists] = useState<PriceList[]>([])
                         ))}
                       </Table>
                     )}
-                  </div>
+                    </td>
+                  </tr>
                 )}
-              </div>
+              </Fragment>
             ))}
           </Table>
         </Card>

@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
 | D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ⬜ |
-| D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ⬜ |
+| D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
 | D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | ⬜ |
@@ -156,11 +156,32 @@ export function confirmSync(message: string): boolean { return window.confirm(me
 1.8 / AUD-I01 le demandent. Aucun usage restant (mesuré : `grep confirmSync
 app/src` = cette seule ligne).
 
-## D.3 — reprise gelée
+## D.3 — alignement des colonnes (reprise gelée)
 
 Voir [REPRISE-2-ALIGNEMENT-COLONNES.md](REPRISE-2-ALIGNEMENT-COLONNES.md) :
-10 écrans, l'instantané `f5cda2f`. **Mesurer d'abord** — `CreditNotesPage.tsx`
-a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
+10 écrans, l'instantané `f5cda2f`.
+
+**Mesuré le 05/10** — le gel est **à moitié déjà dans `main`** : `BOMPage`,
+`CreditNotesPage`, `FixedAssetsPage`, `QuotesPage`, `SearchEntriesPage` ont déjà
+`<Fragment>` ; `ChartAccountsPage` aussi (son `<div key={i}>` est une grille de
+formulaire, hors table). **Il restait 4 écrans :**
+
+| Écran | Correction |
+|---|---|
+| `LettragePage` | `<div key={code}>` → `<Fragment key={code}>` |
+| `PurchaseCreditNotesPage` | `<div key={cn.id}>` → `<Fragment key={cn.id}>` |
+| `PriceListsPage` | idem + ligne dépliée `<div>` → `<tr><td colSpan={5}>` |
+| `RoutingsPage` | idem + ligne dépliée `<div>` → `<tr><td colSpan={6}>` |
+
+Le défaut : un `<div>` dans `<tbody>` (HTML invalide) — React le rend **hors du
+tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cda2f`.
+
+**Preuve.** `grep '<div key'` sur les 4 = **0** ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 4 ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
+> **Non joué ici :** la suite d'écrans (`npx vitest run src/__screen__/` + job
+> `screen-path`) exige le banc PostgreSQL/PostgREST (`SCREEN_RIG`), absent du
+> poste. À rejouer par l'intégration, seule à avoir la base.
 
 ## Journal
 
@@ -170,3 +191,4 @@ a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
 | 05/10 | D.1 · lot 2 | `hr` | 16 écrans : `confirmSync` → `confirmDialog`, 17 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `1b60cbb` |
 | 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `f9b9079` |
 | 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
+| 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `HASH_D3` |
