@@ -556,29 +556,6 @@ describe('Collection Dashboard', () => {
   })
 })
 
-// ============ Gescom Transfer ============
-
-describe('Gescom Transfer', () => {
-  beforeEach(() => resetMock())
-
-  it('getGescomTransferData returns invoices and payments', async () => {
-    setMockData([{ id: '1', number: 'INV-001', status: 'sent' }])
-    const { getGescomTransferData } = await import('@/lib/queries')
-    const result = await getGescomTransferData()
-    expect(result).toBeDefined()
-    expect(result?.invoices).toBeDefined()
-    expect(typeof result.pendingCount).toBe('number')
-  })
-
-  it('getGescomTransferData filters by date range', async () => {
-    setMockData([])
-    const { getGescomTransferData } = await import('@/lib/queries')
-    await getGescomTransferData('2024-01-01', '2024-12-31')
-    expect(mockChain.gte).toHaveBeenCalledWith('date', '2024-01-01')
-    expect(mockChain.lte).toHaveBeenCalledWith('date', '2024-12-31')
-  })
-})
-
 // ============ Payroll Accounting Entries ============
 
 describe('Payroll Accounting Entries', () => {

@@ -125,7 +125,6 @@
     "inventory": "Inventory",
     "reorder": "Reorder",
     "priceLists": "Price lists",
-    "gescomTransfer": "Accounting transfer",
     "bom": "Bills of materials (BOM)",
     "manufacturingOrders": "Manufacturing orders",
     "productionManagement": "Production management",

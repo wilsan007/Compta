@@ -227,58 +227,6 @@ describe('checkMaterialAvailability', () => {
 })
 
 // ============================================================
-// 4. transferGescomToAccounting (3120-3153)
-// ============================================================
-describe('transferGescomToAccounting', () => {
-  beforeEach(() => resetMock())
-
-  it('transfers items to accounting', async () => {
-    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
-    _fromOverride = () => {
-      const c = chainWith({ id: 'entry-1', transferred_entry_id: null })
-      c.select = vi.fn(() => c)
-      c.eq = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
-      c.update = vi.fn(() => c)
-      return c
-    }
-    const supabaseMock = await import('@/lib/supabase')
-    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: true, entry_id: 'entry-1', number: 'VTE-0001' }, error: null }))
-
-    const { transferGescomToAccounting } = await import('@/lib/queries')
-    const results = await transferGescomToAccounting([
-      { type: 'sales', id: 'i1', number: 'INV-001', amount: 1000, date: '2024-01-15' },
-      { type: 'purchase', id: 'pi1', number: 'PI-001', amount: 500, date: '2024-01-16' },
-      { type: 'customer_payment', id: 'cp1', number: 'PAY-001', amount: 1000, date: '2024-01-17' },
-      { type: 'supplier_payment', id: 'sp1', number: 'SPAY-001', amount: 500, date: '2024-01-18' },
-    ])
-    expect(results).toHaveLength(4)
-    results.forEach((r: any) => expect(r.success).toBe(true))
-  })
-
-  it('handles errors per item', async () => {
-    // ACC-01: transferGescomToAccounting utilise maintenant le RPC post_journal_entry
-    _fromOverride = () => {
-      const c = chainWith({ transferred_entry_id: null })
-      c.select = vi.fn(() => c)
-      c.eq = vi.fn(() => c)
-      c.single = vi.fn(() => Promise.resolve({ data: { transferred_entry_id: null }, error: null }))
-      c.update = vi.fn(() => c)
-      return c
-    }
-    const supabaseMock = await import('@/lib/supabase')
-    ;(supabaseMock.supabase as any).rpc = vi.fn(() => Promise.resolve({ data: { success: false, error: 'Insert failed' }, error: null }))
-
-    const { transferGescomToAccounting } = await import('@/lib/queries')
-    const results = await transferGescomToAccounting([
-      { type: 'sales', id: 'i1', number: 'INV-001', amount: 1000, date: '2024-01-15' },
-    ])
-    expect(results).toHaveLength(1)
-    expect(results[0].success).toBe(false)
-  })
-})
-
-// ============================================================
 // 5. Pay Slips & Payroll (3157-3216)
 // ============================================================
 describe('Pay Slips & Payroll', () => {
