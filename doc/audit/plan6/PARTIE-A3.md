@@ -37,7 +37,7 @@ le **comportement** peut se contrer. Garde-fous :
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
 | A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **1er maillon livré le 05/10** : L16 · devis accepté → commande (493), **19/19 verdicts** — voir §A3.2 lot 1 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
-| A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🔴 **attend vos cinq décisions du §6 + l'expert-comptable référent** |
+| A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
 ## Recomptage L16 → L22 (05/10/2026) — mesuré dans `app/sql/`, pas recopié
 
@@ -111,6 +111,12 @@ la **confirmation** de la commande, pas de sa création — aucun comportement
 d'aval n'est modifié) ni la facturation (le devis peut produire une commande
 **ou** une facture, les deux étant tracés séparément). Les 8 autres familles de
 L16 (stock, production, RH, projets, trésorerie…) restent devant.
+
+## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
+
+| # | Demande | De | Ce qu'elle débloque |
+|---|---|---|---|
+| 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** | A1 — invariant **INV-07** | rend **INV-07** mesurable (lien groupe de lettrage ↔ ligne de TVA). `lettrage_groups` n'a aujourd'hui **aucune clé** vers `journal_lines` ; c'est le **lettrage génératif** d'**L21** (reste d'A3.2), qui attend **L20-tranche 2** pour être jouable |
 
 ## Journal
 
