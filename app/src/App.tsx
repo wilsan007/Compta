@@ -169,6 +169,7 @@ const SignupPage = lazy(() => import('@/pages/SignupPage').then(m => ({ default:
 const AcceptInvitationPage = lazy(() => import('@/pages/AcceptInvitationPage').then(m => ({ default: m.AcceptInvitationPage })))
 const TenantSelectionPage = lazy(() => import('@/pages/TenantSelectionPage').then(m => ({ default: m.TenantSelectionPage })))
 const AuditLogPage = lazy(() => import('@/pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
+const CoherencePage = lazy(() => import('@/pages/CoherencePage').then(m => ({ default: m.CoherencePage })))
 const TrainingPage = lazy(() => import('@/pages/TrainingPage').then(m => ({ default: m.TrainingPage })))
 const SocialDeclarationsPage = lazy(() => import('@/pages/hr/SocialDeclarationsPage').then(m => ({ default: m.SocialDeclarationsPage })))
 const BdesPage = lazy(() => import('@/pages/hr/BdesPage').then(m => ({ default: m.BdesPage })))
@@ -587,6 +588,7 @@ function App() {
           <Route path="/settings/nf525-audit" element={<AdminRoute><Nf525AuditPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
           <Route path="/system/audit-log" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
+          <Route path="/system/coherence" element={<AdminRoute><CoherencePage /></AdminRoute>} />
 
           {/* Reporting & BI */}
           <Route path="/reporting" element={<ModuleHubPage moduleId="reporting" />} />

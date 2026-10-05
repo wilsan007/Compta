@@ -169,5 +169,27 @@
       "sum": "Amount shown on screen: {{montant}}. Nothing was recalculated here.",
       "error": "Provenance unreadable: {{message}}"
     }
+  },
+  "coherence": {
+    "title": "Chain coherence",
+    "subtitle": "The coherence index: cross-cutting invariants measured for this company.",
+    "tenu": "Invariants held",
+    "rompu": "Broken invariants",
+    "nonMesure": "Not measured",
+    "total": "Invariants in the catalogue",
+    "mesureLe": "Last survey: {{date}}",
+    "jamaisMesure": "No survey recorded for this company: the index has not been computed yet.",
+    "vide": "No invariant",
+    "videDescription": "No invariant in the catalogue for this company.",
+    "code": "Code",
+    "libelle": "Invariant",
+    "modules": "Modules",
+    "verdict": "Verdict",
+    "ecart": "Gap",
+    "lignes": "Rows in gap",
+    "releves": "Surveys",
+    "verdictTenu": "held",
+    "verdictRompu": "broken",
+    "verdictNonMesure": "not measured"
   }
 }
