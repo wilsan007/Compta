@@ -72,18 +72,50 @@ Deux autres défauts, corrigés en route :
 | G5 (suites branchées) | 149 | **150/150** |
 | SOC-06 (collisions) | — | **0** sur 252 numéros |
 
-Base de mesure : conteneur PostgreSQL 17 éphémère, harnais reproduisant les
-contraintes `CHECK` de `36_tax_grids_payroll_corporate.sql`. **Limite dite** : ce
-n'est pas une base neuve du dépôt (330+ migrations) — la 370 ne touche que cinq
-tables, mais son intégration au schéma complet reste à confirmer par la CI.
+**Validation en schéma complet, pas sur harnais.** Le doute de la première
+rédaction est levé : la base neuve complète a été montée (stubs + `00_schema_dump`
++ `run-sql-migrations.mjs`) — **333 migrations, 0 erreur** — et sur cette base :
+
+- la suite 370 rend **6/6**, avec les **vrais** helpers d'audit ;
+- la grille est appliquée : `grille=1`, `lignes=393`, `pack_DJ=1`, `bucket=1` ;
+- cinq contrôles CI passent : `check_anon_grants`, `check_tenant_guard`,
+  `check_composite_fks`, `check_global_rows_writable`, `check_policy_duplicates`.
+
+Base de mesure pour le moteur : Vitest sur le dépôt (1 661 verts). `plpgsql_check`
+n'est pas dans l'image locale (la CI l'installe) — non exécuté ici.
 
 ## Limites
 
 - Les deux dernières lignes (392, 393) sont une **extrapolation non officielle**,
   signalée dans leurs libellés, à faire valider auprès de la DGI.
-- `main` **n'a toujours pas** la purge `allow_all_*` de l'ex-`66_critical_rls_isolation_fix.sql`
-  (71 tables). Non Fusionnée ici : elle exige une **mesure sur base neuve** —
-  savoir si la 238 a déjà retiré ces politiques — et un numéro pris. **Sujet ouvert.**
+- **La purge `allow_all_*` de l'ex-`66_critical_rls_isolation_fix.sql` : mesurée,
+  et inutile.** Les migrations `47, 54, 60, 62, 64, 99` créent bien des
+  `allow_all_<table> FOR ALL USING(true) WITH CHECK(true)`, et le droppeur
+  générique `37` tourne **avant** elles — le doute était légitime. Mais sur la
+  base neuve complète : **0 politique `allow_all_*` restante**. C'est
+  `238_policy_dedup.sql` qui les retire (la plus large perd contre la plus
+  étroite). La branche Djibouti **ne portait donc plus rien d'unique** : son
+  barème est en `370`, sa purge est déjà faite par `238`.
 - `stock_reservations` n'a toujours **aucune clé étrangère** vers `products`.
   Sujet ouvert, inchangé.
-- La 370 ne crée **pas** le fichier `.xlsx` : le bucket est créé, son contenu reste à déposer.
+- La 370 ne crée **pas** le fichier `.xlsx` : le bucket est créé, son contenu
+  reste à déposer.
+
+## Pourquoi les branches ne sont pas « fusionnées » au sens de `git merge`
+
+Mesuré sur chacune, contre son **ancêtre commun** (ce qu'une fusion ajouterait
+réellement — et non le `diff` global, trompeur) :
+
+| Branche | Ce qu'un `git merge` ferait |
+|---|---|
+| `claude/extract-tax-salary-table-2a3267` | ré-ajoute un `65_…` **en collision**, et **réécrit `payroll.ts`** — donc **annule** le correctif `inFixedBracket` |
+| `backup/stash-2026-09-11` | **supprime** `38`, `44`, `71` et en modifie 240 |
+| `claude/happy-goodall-11da15` | 291 fichiers, dont des versions **antérieures** de suites SQL |
+| `claude/quirky-goldwasser-ba49dd`, `claude/import-data-column-alignment-aad9c5` | 72 et 10 fichiers, versions antérieures d'écrans |
+| `claude/tva-saisie-ca3` | ré-ajoute un `198_…` **doublon** du `325` |
+| `origin/l3-tranche2-maillons-rpc` | 32 **renommages** déjà faits (`310`→`400`…) + un `413_tests` **périmé** |
+| `origin/merge/recette-2026-10-02` | 139 fichiers déjà absorbés, dont un `238` **antérieur** |
+
+Fusionner **détruirait** `main`. Le contenu utile est **déjà dedans** : c'est
+cela, « toutes les branches dans `main` ». Laisser les branches en place ne coûte
+rien ; les fusionner coûterait le dépôt.
