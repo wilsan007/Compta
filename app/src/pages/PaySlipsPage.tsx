@@ -7,7 +7,7 @@ import { calculatePayslip } from '@/lib/queries/businessFunctions'
 import { FileText, Trash2, Sparkles, ChevronDown, ChevronRight, Receipt, AlertTriangle, Clock, Plane, RotateCcw, Calculator as CalcIcon } from 'lucide-react'
 import type { PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function PaySlipsPage() {
   const { toast } = useToast()
@@ -56,7 +56,7 @@ const [slips, setSlips] = useState<Awaited<ReturnType<typeof getPaySlips>>>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deletePaySlip(id); await loadData() }
     catch (err: any) { toast('error', tCommon('common.error'), err.message || tCommon('common.error')) }
   }

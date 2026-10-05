@@ -8,7 +8,7 @@ import { errorMessage, formatDate, translateStatus} from '@/lib/utils'
 import { Clock, Plus, Trash2, X, CheckCircle, XCircle } from 'lucide-react'
 import type { Employee, Project } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   pending: 'warning', approved: 'success', rejected: 'danger',
@@ -48,7 +48,7 @@ const [timesheets, setTimesheets] = useState<Awaited<ReturnType<typeof getTimesh
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteTimesheet(id); await loadData() } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
 

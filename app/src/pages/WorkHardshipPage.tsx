@@ -6,7 +6,7 @@ import { errorMessage, formatDate } from '@/lib/utils'
 import { AlertTriangle, Plus, Trash2, X } from 'lucide-react'
 import type { Employee, WorkHardship } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const exposureLevelColors: Record<string, string> = {
   low: 'var(--color-success)',
@@ -40,7 +40,7 @@ export function WorkHardshipPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteWorkHardship(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

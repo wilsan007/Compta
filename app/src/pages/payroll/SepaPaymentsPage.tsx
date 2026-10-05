@@ -7,7 +7,7 @@ import { getPayRuns } from '@/lib/queries/payroll'
 import type { SepaPaymentOrder, PayRun } from '@/types'
 import { useToast } from '@/lib/toast'
 import { FileText, Send, Download } from 'lucide-react'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function SepaPaymentsPage() {
   const { t } = useTranslation('payroll')
@@ -30,7 +30,7 @@ export function SepaPaymentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleTransmit(id: string) {
-    if (!confirmSync(t('sepa.confirmTransmit'))) return
+    if (!(await confirmDialog(t('sepa.confirmTransmit')))) return
     try {
       await transmitSepaOrder(id)
       toast('success', tCommon('common.success'), t('sepa.transmitted'))

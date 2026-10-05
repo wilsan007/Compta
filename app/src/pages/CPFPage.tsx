@@ -6,7 +6,7 @@ import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { Wallet, Plus, Trash2, X } from 'lucide-react'
 import type { Employee, CpfAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function CPFPage() {
   const { toast } = useToast()
@@ -34,7 +34,7 @@ export function CPFPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteCpfAccount(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

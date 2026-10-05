@@ -6,7 +6,7 @@ import type { ExpensePayrollLink } from '@/lib/queries/sprintDE'
 import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import { Receipt, Plus, X, Send, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusColors: Record<string, 'neutral' | 'warning' | 'success' | 'danger'> = {
   draft: 'neutral',
@@ -51,7 +51,7 @@ export function EmployeeExpensesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteMyExpenseReport(id); await loadData(); toast('success', tCommon('common.success'), tCommon('toast.deleted')) }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err)) }
   }

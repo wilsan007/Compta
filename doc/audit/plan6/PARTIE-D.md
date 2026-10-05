@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | 🟡 **Lot 1 — module `system` (05/10)** |
+| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | 🟡 **Lots 1–2 — `system`, `hr` (05/10)** |
 | D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ⬜ |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ⬜ |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
@@ -79,12 +79,27 @@ du module **hr** : il n'est pas dans ce lot.
 **Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 fichiers ✅ ·
 Vitest **1661 / 1699** (38 sautés) ✅.
 
+### Lot 2 — module `hr`, 05/10
+
+16 écrans, 17 appels, tous routés `/hr/*` (dont `settings/LeaveRulesPage`, routé
+`/hr/leave-rules`) : `EmployeesPage` · `PayRunsPage` · `TimesheetsPage` ·
+`PaySlipsPage` · `PayrollAccountingPage` · `LeaveRequestsPage` ·
+`settings/LeaveRulesPage` · `ContractsPage` · `LegalDeclarationsPage` ·
+`WorkHardshipPage` · `CareerHistoryPage` · `CPFPage` · `EmployeeDocumentsPage` ·
+`EmployeeExpensesPage` · `payroll/PayrollPreparationPage` ·
+`payroll/SepaPaymentsPage`.
+
+Tous `tCommon('form.confirmDelete')` **sauf** `SepaPaymentsPage`
+(`t('sepa.confirmTransmit')`).
+
+**Preuve.** `grep confirmSync` = 0 sur le module ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 16 fichiers ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
 ### Les lots suivants (un par jour)
 
-`hr` (avec `settings/LeaveRulesPage`) → `accounting` → `treasury` →
-`commercial` → `stock` → `production` → `projectManagement` → `dashboards` →
-`reporting`. D livre ces balayages **en premier** pour que les parties A, C et E
-trouvent un terrain déjà à jour.
+`accounting` → `treasury` → `commercial` → `stock` → `production` →
+`projectManagement` → `dashboards` → `reporting`. D livre ces balayages **en
+premier** pour que les parties A, C et E trouvent un terrain déjà à jour.
 
 ## D.3 — reprise gelée
 
@@ -97,3 +112,4 @@ a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
 | 05/10 | D.1 · lot 1 | `system` | 7 écrans (`ApiWebhooks`, `TwoFactor`, `EmailTemplates`, `Currencies`, `Team`, `TaxGridSettings`, `FiscalYears`) : `confirmSync` → `confirmDialog`, 9 appels | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `2a01631` |
+| 05/10 | D.1 · lot 2 | `hr` | 16 écrans : `confirmSync` → `confirmDialog`, 17 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `HASH_LOT2` |

@@ -8,7 +8,7 @@ import { errorMessage, formatDate } from '@/lib/utils'
 import { FileText, Plus, Trash2, X, Send, PenLine, CheckCircle2 } from 'lucide-react'
 import type { Employee, EmployeeDocument } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const docTypeColors: Record<string, string> = {
   payslip: 'var(--color-primary)',
@@ -54,7 +54,7 @@ export function EmployeeDocumentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteEmployeeDocument(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
