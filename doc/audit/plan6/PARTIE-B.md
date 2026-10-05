@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 ; achats : R-017/R-018 ; relances : R-059→R-061 (`500`→`506`) — 34 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 ; achats : R-017/R-018 ; relances : R-059→R-061 ; budgets : R-058 ; conformité : R-054/055/056 (`500`→`508`) — 41 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -168,6 +168,42 @@ d'intégration/comptabilité, pas B seule. Le chemin pressenti : R-050 « exécu
 `post_journal_entry` (virement D `to_account.account_code` / C
 `from_account.account_code`, `treasury_transfers.journal_entry_id` renseigné).
 
+## B.2 — lot 8 : module Budgets, règle R-058 (livré le 05/10/2026)
+
+**Migration `507_regle_budgets_engagement_annule.sql`** + suite (**3 verts**).
+**R-058** — un engagement passé à **`cancelled`** émet `budget_commitments.cancelled`
+(numéro de la commande source, compte, montant, motif) et laisse une trace. C'est la
+« **libération motivée, avec trace** » : l'annulation existait déjà comme **effet de
+bord** de `sync_commitments_on_purchase_order` (commande annulée), mais **rien ne la
+traçait**. Idempotent (garde propre).
+
+## B.2 — lot 9 : module Conformité, règles R-054, R-055, R-056 (livré le 05/10/2026)
+
+**Migration `508_regle_conformite_rejets.sql`** + suite (**4 verts**). Trois maillons
+« événement » sur les **rejets d'administration** :
+
+- **R-054** — `vat_returns.edi_status = rejected` → `vat_returns.edi_rejected` ;
+- **R-055** — `dsn_declarations.status = rejected` → `dsn_declarations.rejected` ;
+- **R-056** — `social_declarations.status = rejected` → `social_declarations.rejected`.
+
+**Découvertes, et ce qu'on en fait.** `edi_status` s'écrit **par le serveur** : la
+garde `trg_refuse_client_edi_stamp` **refuse** un JWT utilisateur (« la télédéclaration
+EDI-TVA n'a pas eu lieu ») — comportement **voulu**, que le test respecte (il écarte la
+garde le temps de simuler la trame serveur, puis la remet). **R-052** (`status =
+submitted`, « gel des écritures de la période ») **n'est pas faite** : geler une
+période touche le **verrou comptable** → à coordonner.
+
+**Reste du module Conformité :** R-052 (gel de période) et R-053 (écriture de paiement
+de TVA) — comptables.
+
+## B.2 — reste, classé par sûreté
+
+- **Sûr, faisable comme ce tour :** production **R-046** (traçabilité MRP = événement).
+- **À coordonner (stock / écrans) :** ventes R-007, R-009 ; achats R-013, R-015.
+- **À coordonner (comptabilité) :** achats R-016 ; trésorerie R-048→R-051 ;
+  conformité R-052 / R-053 ; **paie R-025 → R-039** (dont le trou R-025) ; projets
+  R-040→R-042.
+
 **Demande à E (territoire « écrans et requêtes ventes », R3).** L'écran
 `transformQuoteToSalesOrder` (`app/src/lib/queries/misc/commercial.ts`) crée encore
 la commande à la main ; désormais l'acceptation la crée. Il devrait **sauter quand
@@ -209,3 +245,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · ventes-5 | Ventes | **R-002** : devis expiré → événement `quotes.expired` (relance CRM, perte), idempotent (garde propre : pas de lien). Migration `504` + suite `504_…_tests.sql`. | base **338 migrations, 0 erreur** ; suite **3/3** (les 5 suites B : **25/25**) | _à venir_ |
 | 05/10 | B.2 · achats-1 | Achats | **R-017/R-018** : facture fournisseur échue → `purchase_invoices.overdue` ; rejetée → `purchase_invoices.rejected`. Maillons événement, idempotents ; « libération de l'engagement » écartée (rattachée à la commande). Migration `505` + suite `505_…_tests.sql`. | base **339 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
 | 05/10 | B.2 · relances-1 | Relances (L15) | **R-059/R-060/R-061** : relance `sent` → **horodatage** `sent_at` (fixe **EF-02**) ; `paid` / `cancelled` → événements. Migration `506` + suite `506_…_tests.sql`. **Déviation d'ordre** (module L15 avant la trésorerie), dite. | base **340 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
+| 05/10 | B.2 · budgets-1 | Budgets | **R-058** : engagement annulé → `budget_commitments.cancelled` + trace (libération motivée). Migration `507` + suite `507_…_tests.sql`. | base **341 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 05/10 | B.2 · conformité-1 | Conformité | **R-054/R-055/R-056** : rejets EDI-TVA / DSN / déclaration sociale → événements dédiés. Migration `508` + suite `508_…_tests.sql`. | base **342 migrations, 0 erreur** ; suite **4/4** (les 9 suites B : **41/41**) | _à venir_ |

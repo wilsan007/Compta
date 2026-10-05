@@ -2365,6 +2365,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-058 (partie B, lot Budgets) — engagement annulé : trace motivée.
+      - name: 'plan6 B — R-058 : engagement libéré (507)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/507_regle_budgets_engagement_annule_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-054/R-055/R-056 (partie B, lot Conformité) — rejets déclaratifs (TVA EDI,
+      # DSN, déclaration sociale) : alerte / histoire des rejets.
+      - name: 'plan6 B — R-054/055/056 : rejets déclaratifs (508)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/508_regle_conformite_rejets_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
