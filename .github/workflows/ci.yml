@@ -27,9 +27,10 @@ on:
       - 'qa/**'
       - 'partie-*'
       - 'fusion-*'
+      - 'plan6/**'
       - harmonisation
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*']
+    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*', 'plan6/**']
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'

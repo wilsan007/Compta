@@ -39,7 +39,7 @@
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `integration/wip-restants` @ `faff72b` | — |
+| Branche de la copie de travail | `main` @ `03c81d5` | — |
 | Migrations / suites SQL dans `app/sql` | 232 / 150 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
@@ -131,7 +131,7 @@
 | 3.4 | Moteur des 8 épreuves + rapport par maillon | ⬜ | 0 chaînage éprouvé sur 62 |
 | 3.5 → 3.7 | Épreuves D1 → D8 | ⬜ | — |
 | 3.8 | 7 invariants « non mesurables » | 🔶 | INV-19 rendu mesurable par la partie 5 (`455`, non commitée) ; 6 restent |
-| 3.9 | Relevé nocturne et alerte | 🔶 | `414` commitée, en pause |
+| 3.9 | Relevé nocturne et alerte | ✅ | `414` **rejouée 7/7** le 05/10 sur base neuve (333 migrations), **T07 vert** — la note « T07 rouge » n'est **pas reproduite** : la faute du scénario avait un **ordre inversé** (relevé avant la faute → motif `deja_rompu`, aucune alerte), la RLS n'a jamais été en cause. Lot A1 (`plan6/a-chainages`), intégré dans `main` |
 | 3.10 | Invariants lus par l'écran | 🔶 | `chainCoherence.ts` (`98afde3`) ; à confirmer contre le critère du plan |
 
 ### Partie 4 — Montrer, recetter, livrer
@@ -190,7 +190,7 @@ Les 9 scénarios transverses (phase 6) : ➜ absorbés par L1/L2/L4. Reste de W5
 | L1 | Rétro-instrumentation (23 effets, 23 contrats + caisse) | ✅ | `400`→`412` (ex-`310`→`321`) |
 | L2 | Portes CI G1 → G7 | ✅ | preuve L2 + G7 |
 | L3 | Maillons RPC + banc D1 → D8 | 🔶 | réception, fermetures, caisse, paie (`415`, partie 3) ✅ ; relevé et banc ➜ partie 3 |
-| L4 | 20 invariants, indice, relevé nocturne | 🔶 | `413` (13/20 mesurables), `414` en pause ➜ partie 3 ; INV-19 ➜ partie 5 |
+| L4 | 20 invariants, indice, relevé nocturne | 🔶 | **17/20 mesurables** (`413`/`431`/`435`/`455`/`456`) ; `414` **rejouée 7/7** le 05/10 (T07 vert, la note rouge non reproduite) ; les 3 restants non mesurables sont **arbitrés** et demandés (INV-07 ➜ A3, INV-10 ➜ B, INV-12 ➜ E/F) |
 | L5 | Pages Robustesse / Cohérence | ⬜ | ➜ 4.1/4.2 |
 | L6 | Vue Chaîne (I-01) | ⬜ | **aucun plan** |
 | L7 | Contrats d'effet (I-02) | ✅ | `313` |
@@ -428,4 +428,5 @@ du chantier 9,5 correspondant.***
 | 02/10/2026 soir | numérotation | ALR-01 fermée (`430`→`432`), ALR-04 et ALR-05 ouvertes, partie 5 livrée, SOC-06 ✅ |
 | 05/10/2026 | 2.17 | les quatre lecteurs de `received` côté trésorerie fermés : migration `470` (au-dessus de la `420`, plage `470`→`474` inscrite), suite `470` 7/7, verdicts d'écran D08 → D11 ; ouvert : la borne basse des échéances (moteur avec les échues, ligne de temps sans) |
 | 05/10/2026 | 2.17 | facture d'achat lue par OCR : statut `received` refusé par le CHECK → brouillon à ligne unique (P08, P09) ; `check-screen-writes` confronte les valeurs aux CHECK ; ouvert : quatre lecteurs de `received` côté trésorerie |
+| 05/10/2026 | intégration | **lots A poussés fusionnés dans `main`** : A1 (`plan6/a-chainages` — recomptage, rapport par maillon, D8/T10 sur les six maillons, dossier expert-comptable), A2 (`plan6/a2-vue-chaine` — Vue Chaîne hébergée, page Cohérence), A3.1 (`plan6/a3-moteur` — recomptage L16→L22). Types **inchangés** (aucune migration dans ces lots) ; plafonds `any`/`console.error`/knip **conformes** ; `suivi-chantiers --check` ✅. **Note « `414` T07 rouge » réconciliée** : re-mesure **7/7**, T07 **vert**. **Demandes R3 transmises** : INV-10 ➜ **B**, INV-12 ➜ **E/F** (consignées dans `PARTIE-B/E/F.md`). **R3 d'E actionnée** : `plan6/**` ajouté à `push.branches` et `pull_request.branches` (`ci.yml`) — les six marqueurs ne sont plus inertes |
 | 02/10/2026 | création | recoupement de tous les plans ; ALR-01 (collision `415`) trouvée par la mesure ; ORPH-01 → 04 ouverts ; première passe du 9,5 |

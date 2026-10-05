@@ -162,6 +162,15 @@ Le banc (3.4 → 3.7) s'applique **aussi** aux maillons posés en 3.2 et 3.3.
 > alerte. Les contrôles `check_chain_rpc_inventory`, `check_forced_rls_writers`
 > et `check_bt_grid` restent verts, et aucun fichier de la 414 n'a été touché
 > par la 434.
+>
+> **↳ Réconcilié le 05/10/2026 (intégration).** Rejouée sur base neuve complète
+> (333 migrations), la suite `414` rend **7/7** — `T07` est **vert**. Le rouge
+> n'était **pas** un défaut d'isolation de la RLS : le scénario créait la faute
+> **avant** le premier relevé, donc `rompu → rompu` appliquait le motif
+> `deja_rompu` (qui n'écrit, à juste titre, aucune alerte) et le contrôle voyait
+> `0`. L'ordre correct (relevé sain → faute → passage) a été rétabli dans la
+> suite ; « la propriétaire ne voit pas sa propre alerte » **n'est pas
+> reproduite**. Fait par le lot A1 (`plan6/a-chainages`), fusionné dans `main`.
 
 ## 4. Ce qui n'est PAS dans cette partie
 

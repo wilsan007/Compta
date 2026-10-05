@@ -62,6 +62,12 @@ En cas de doute sur une fonction d'écriture comptable : **C passe après** les
 autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 (operations intra-groupe) et F.5 (projets).
 
+## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
+
+| # | Demande | De | Ce qu'elle débloque / corrige |
+|---|---|---|---|
+| 1 | **Choisir le calcul de marge projet unique** (`PROJ-02`), puis le **figer** | A1 — invariant **INV-12** | rend **INV-12** mesurable. Projets = territoire **F** (F.5) ; à traiter **avec E**, qui porte les achats, le stock et la production dont l'égalité dépend |
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
