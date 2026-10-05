@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
-| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | — | ⬜ |
+| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07` livré le 05/10** (écran `/stock/uoms`, `convert_uom` exposé ; la base portait déjà catégories/unités/convert depuis la `125`) · **`STK-14` livré** (transferts `652`, E.2) · restent `STK-08/09/11` |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | — | ⬜ |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | — | ⬜ |
 
@@ -97,6 +97,31 @@ Les douze coquilles de mon périmètre : `uom_categories`, `landed_cost_lines`,
 `quality_control_plans` (+ `quality_control_points`), `fixed_asset_components`,
 `resource_capacities`. Chacune **branche** sur son chantier 9,5 ci-dessus, ou se
 **supprime** par une migration motivée dans `650`→`699` (E.5).
+
+## E.3 — stock avancé, première brique : `STK-07` (unités de mesure)
+
+**Mesuré : la base portait déjà tout, l'app ne lisait rien.** `uom_categories`,
+`uoms`, `convert_uom` et les champs `products.uom_id / purchase_uom_id /
+sale_uom_id` existaient depuis la `125` — mais **aucun écran ni requête** ne les
+nommait : `uom_categories` figurait parmi les coquilles (ORPH-02). Et `convert_uom`
+était **correct** : il interdit le croisement de catégories (« Conversion
+impossible entre catégories différentes »), convertit via l'unité de référence et
+arrondit au pas de l'unité cible.
+
+**Livré (partie app).** Requêtes (`getUomCategories`, `getUoms`, `createUom`,
+`updateUom`, `deleteUom`, `convertUom`) et écran **`/stock/uoms`** : catégories,
+unités (code, nom, catégorie, facteur, arrondi, unité de référence) et un
+**convertisseur**. C'est ce qui **branche `uom_categories`** — elle sort des
+coquilles.
+
+**Reste de `STK-07`.** Convertir aux **frontières** (ligne de commande, réception,
+mouvement, ligne de facture) et poser `uom_id`/`purchase_uom_id`/`sale_uom_id`
+depuis la fiche article : le critère « acheter 1 t, stocker en kg, vendre par sacs
+de 25 kg » demande ce branchement.
+
+**Reste de `E.3`.** `STK-08` frais accessoires (coquille `landed_cost_lines`),
+`STK-09` réappro/inventaire (`reorder_rules`, `stock_count_cycles`), `STK-11`
+emplacements. `STK-14` (transferts) et `STK-03` (FIFO/LIFO écarté) sont traités.
 
 ## Les deux décisions de politique — tranchées le 05/10/2026
 
@@ -187,4 +212,5 @@ comme le reste.
 | 05/10/2026 | **E.1** — recomptage des 11 ❓ | 5 ✅ · 3 🔶 · 3 ⬜ · 0 écarté (corrigé) | ≈ 13,5 j (❓) + ≈ 9 sem. (⬜ E.2→E.5) | `35d5d5d` |
 | 05/10/2026 | **Les 2 décisions** — `STK-03` (`650`) et `PRD-03` (`651`) | LIFO écarté (IAS 2/PCG) ; consommation des prévisions livrée | 0,5 j, `650` 4/4 · `651` 4/4 · `254` 5/5 | `f280641` |
 | 05/10/2026 | **E.2** — « Modifier » une nomenclature | `updateBOM`/`updateBOMLine` + bouton ; MRP testé (`651`) | 0,5 j ; tsc 0 · oxlint 0 · vitest 86/86 | `b22b443` |
-| 05/10/2026 | **E.2** — transferts inter-dépôts | `652` (expédier/réceptionner) + requêtes + écran `/stock/transfers` | `652` 5/5 · tsc 0 · oxlint 0 · i18n OK | à committer |
+| 05/10/2026 | **E.2** — transferts inter-dépôts | `652` (expédier/réceptionner) + requêtes + écran `/stock/transfers` | `652` 5/5 · tsc 0 · oxlint 0 · i18n OK | `a891161` |
+| 05/10/2026 | **E.3** — `STK-07` unités de mesure | requêtes + écran `/stock/uoms` + convertisseur ; branche `uom_categories` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | à committer |

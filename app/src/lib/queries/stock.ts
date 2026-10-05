@@ -370,6 +370,89 @@ export async function receiveStockTransfer(id: string) {
   if (error) throw error
 }
 
+// ============ STK-07 / E.3 : unités de mesure ============
+// La base portait déjà `uom_categories`, `uoms`, `convert_uom` et les champs
+// produit (`uom_id`, `purchase_uom_id`, `sale_uom_id`) depuis la 125 — mais rien
+// ne les lisait (coquille). `convert_uom` interdit le croisement de catégories et
+// arrondit ; ces requêtes l'exposent à l'écran.
+
+export interface UomCategory {
+  id: string
+  tenant_id: string
+  name: string
+  created_at: string | null
+}
+
+export interface Uom {
+  id: string
+  tenant_id: string
+  code: string
+  name: string
+  category_id: string
+  factor: number
+  is_base: boolean | null
+  rounding: number | null
+  created_at: string | null
+}
+
+export async function getUomCategories() {
+  const tid = await getTenantId()
+  let q = supabase.from('uom_categories').select('*').order('name')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as UomCategory[]
+}
+
+export async function createUomCategory(c: Omit<UomCategory, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('uom_categories').insert(ti(c, 'uom_categories', tid)).select().single()
+  if (error) throw error
+  return data as UomCategory
+}
+
+export async function deleteUomCategory(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('uom_categories').delete(), 'uom_categories', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getUoms() {
+  const tid = await getTenantId()
+  let q = supabase.from('uoms').select('*').order('code')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as Uom[]
+}
+
+export async function createUom(u: Omit<Uom, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('uoms').insert(ti(u, 'uoms', tid)).select().single()
+  if (error) throw error
+  return data as Uom
+}
+
+export async function updateUom(id: string, updates: Partial<Omit<Uom, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('uoms').update(updates), 'uoms', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as Uom
+}
+
+export async function deleteUom(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('uoms').delete(), 'uoms', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-07 : convertit une quantité d'une unité vers une autre (même catégorie). */
+export async function convertUom(quantity: number, fromUomId: string, toUomId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('convert_uom', { p_quantity: quantity, p_from_uom_id: fromUomId, p_to_uom_id: toUomId })
+  if (error) throw error
+  return Number(data)
+}
+
 
 // ============ Production Module: Routings ============
 export async function getRoutings() {

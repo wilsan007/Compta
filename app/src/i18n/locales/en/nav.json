@@ -127,6 +127,7 @@
     "priceLists": "Price lists",
     "bom": "Bills of materials (BOM)",
     "stockTransfers": "Stock transfers",
+    "uoms": "Units of measure",
     "manufacturingOrders": "Manufacturing orders",
     "productionManagement": "Production management",
     "productionDashboard": "Dashboard",
