@@ -2315,6 +2315,13 @@ jobs:
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
+      #
+      # R-001 (partie B, lot Ventes) — un devis ACCEPTÉ produit sa commande
+      # (brouillon), prix gelé, lien `created_from`, événement `quotes.accepted`.
+      - name: 'plan6 B — R-001 : devis accepté → commande (500)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/500_regle_ventes_devis_accepte_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;

@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | ⬜ |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **lot 1 (ventes, R-001) livré le 05/10** — `500`, suite 9/9 |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -53,6 +53,41 @@ production 0 / conformité 1 / budgets 1 (existantes).
    par ni A ni B ni C… C'est un document de référence partagé, tenu par la **session
    d'intégration** (§10), comme `SUIVI-CHANTIERS.md` et `AGENTS.md` (R4).
 
+## B.2 — lot 1 : module Ventes, règle R-001 (livré le 05/10/2026)
+
+**Migration `500_regle_ventes_devis_accepte_commande.sql`** (plage B, prise par
+`migration-numero.mjs`) + **suite `500_…_tests.sql`** (9 scénarios, **9 verts**,
+registre d'échecs attendus vide). Base neuve : **334 migrations, 0 erreur** ;
+l'ajout est **additif** (aucune migration existante touchée) et le maillon est
+**idempotent**.
+
+**Ce que la règle fait.** À l'acceptation d'un devis (`quotes.status = 'accepted'`) :
+création de la **commande** (statut `draft`), ses lignes, le **prix gelé** (prix du
+devis recopiés) ; lien `devis → commande` (`created_from`), événement
+`quotes.accepted`, entrée/sortie du maillon tracées ; le devis passe `transformed`.
+
+**Trois décisions, dites :**
+
+1. La commande naît **brouillon** (la créer `confirmed` ferait tomber les contrôles
+   de plafond client et de stock à l'acceptation — effet de bord que R-001 ne
+   demande pas). La réservation ferme reste à la **confirmation** de la commande.
+2. **`quotes` manquait au registre `chain_document_types`** (450) : `link_documents`
+   le refusait. La migration l'y **inscrit** (`quotes` / `quote_lines`).
+3. **Priorité R7 vérifiée** : la migration **crée** un maillon et un déclencheur
+   neufs (`regle_r001_…` / `zz_b2r001_…`) ; elle ne réécrit **aucune** fonction
+   existante — aucun risque de collision avec A, C ou E sur ce lot.
+
+**Reste du module Ventes (à faire, dans l'ordre) :** R-002 (devis expiré), R-003,
+R-005 (validation → numérotation définitive + lignes gelées), R-004 (commande
+facturée → rapprochement + reliquat), R-007 (retour client), R-009 (BL brouillon),
+et le reliquat de R-006 (rapprochement facture / preuve de livraison).
+
+**Demande à E (territoire « écrans et requêtes ventes », R3).** L'écran
+`transformQuoteToSalesOrder` (`app/src/lib/queries/misc/commercial.ts`) crée encore
+la commande à la main ; désormais l'acceptation la crée. Il devrait **sauter quand
+`quotes.transformed_to_order_id` est déjà posé**, sans quoi un clic « transformer »
+après une acceptation créerait une 2e commande.
+
 ## Attend de vous
 
 La signature de l'expert-comptable (**D-G**). Elle bloque le **déploiement**
@@ -81,3 +116,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
 | 05/10 | B.1 | tous | Inventaire des 62 règles d'état mesuré sur base neuve (**333 migrations, 0 erreur**) : **13 ✅ / 13 🟨 / 36 ⬜**. Déclencheurs actifs + `document_effects` + `CHECK` lus en base ; origine des règles déjà posées (L1, partie 3, sessions 241→419) ; `R-062` faite, `R-006`/`deliveries` à corriger au référentiel. | lecture seule (aucune migration) | _à venir_ |
+| 05/10 | B.2 · ventes-1 | Ventes | **R-001** : devis accepté → commande (brouillon), prix gelé, lien `created_from`, événement `quotes.accepted`, trace ; inscription de `quotes` au registre `chain_document_types`. Migration `500` + suite `500_…_tests.sql`. | base neuve **334 migrations, 0 erreur** ; suite **9/9** | _à venir_ |
