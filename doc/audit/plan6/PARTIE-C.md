@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 05 (+ LOC1-48) faits — `380`→`384`** ; **prérequis LOC1-06 — `385`** ; LOC1-06 → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; LOC1-07 → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -147,16 +147,33 @@ RLS (`tenant_id = current_tenant_id()`), et `resolve_account` /
 `resolve_account_from_context` sont **SECURITY INVOKER** : la RLS fait la garde
 (la porte `check_tenant_guard` refuse un DEFINER à uuid société sans garde).
 
+### `LOC1-06` — les 4 triggers de ventes/achats/règlements (`386`)
+
+**`386_roles_sales_purchases.sql` (+ suite).** Les quatre déclencheurs qui passent
+une facture de vente, une facture d'achat, un encaissement et un décaissement ne
+portent plus de numéro de compte : ils **demandent un rôle**
+(`resolve_account(…,'CLIENTS',{customer_id})`, `resolve_journal(…,'JOURNAL_VENTES')`…).
+
+- **Prérequis, fait en `385`** : le pack PCG porte ses rôles (sinon la résolution
+  échoue sur `ROLE_NON_MAPPE`).
+- **Pont de phase 1** : une société **sans pack** retombe sur le pack **par
+  défaut** (FR) — sinon les fixtures de test, qui n'en posent aucun, casseraient.
+- **Recette tenue** : `102_trigger_tests.sql` rejoué, **17/17 verts, inchangé**
+  (écritures identiques — dont facture → `VT` et la ventilation TVA). La suite
+  `386` prouve en plus la **neutralité** : plus aucun numéro de compte en dur.
+- **Ce qui n'a PAS changé, volontairement** : la TVA continue de passer par
+  `vat_account_mapping` (par code de taux) — seul le **repli** est un rôle ; la
+  trésorerie des règlements reste `treasury_for_payment`. Les changer modifierait
+  les écritures, ce que la recette interdit.
+
 ### Ce qui reste dans C.1
 
-`LOC1-06` → `58` : réécrire sur les rôles les triggers ventes/achats/règlements,
-paie, stock, production, POS, clôture ; puis monnaie/arrondis, fiscalité, paie,
-états, capacités, packs `ZZ`… **Hors de ce lot** : les enveloppes
+`LOC1-07` → `58` : paie, stock, production, POS, clôture, monnaie/arrondis,
+fiscalité, états, capacités, packs `ZZ`… **Hors de ce lot** : les enveloppes
 `resolve_stock_account` / `resolve_variation_account` du cahier touchent des
 fonctions **déjà inscrites au registre** de `ci/check_tenant_guard.sql` — à
-traiter avec l'intégration (fichier hors territoire). **R7** : `pack_*` (382),
-les catalogues (383) et `resolve_*` (384) sont **nouveaux** — aucun nom n'est
-réécrit dans une autre branche `plan6/*`.
+traiter avec l'intégration (fichier hors territoire). **R7** : `386` réécrit
+4 fonctions ; leur nom n'est écrit par aucune autre branche `plan6/*` (vérifié).
 
 ---
 
@@ -224,4 +241,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 05/10 | LOT 1-A (LOC1-03) | `pack_lineage` | résolution héritée : `pack_lineage`, `tenant_pack_code` (INVOKER), `pack_effective_value`, `v_pack_effective`, `pack_account_role/journal_role`, `pack_holidays_of` ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `382` 6/6, `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; 9 contrôles CI verts | 5605d53 |
 | 05/10 | LOT 1-B (LOC1-04) | `*_role_catalog` | catalogue fermé : **67** rôles de comptes + **8** rôles de journaux (annexe B) ; les tables du pack y sont raccrochées par clé étrangère (rôle non catalogué refusé) ; suite branchée sous `plan6:c` | base : `383` 6/6 ; **11 contrôles CI verts** | fbfc978 |
 | 05/10 | LOT 1-B (LOC1-05) | `resolve_account` | point d'appel unique : objet métier → société → pack (lignée) → échec explicite (`ROLE_NON_MAPPE` / `COMPTE_ABSENT`) ; `resolve_journal` ; surcharges société sous RLS ; INVOKER (la RLS fait la garde) ; suite branchée sous `plan6:c` | base : `384` 7/7 ; **10 contrôles CI verts** ; G5 155/155 | 1be0b0d |
-| 05/10 | prérequis LOC1-06 (`LOC1-13`) | `pack_account_roles` | **65 rôles de comptes + 7 rôles de journaux** semés sur le référentiel **PCG** (annexe B) ; `FR` en hérite par la lignée ; recette `LOC1-05` verte (société FR → `CLIENTS` = `411000`) | base : `385` 6/6 ; **10 contrôles CI verts** | (ce commit) |
+| 05/10 | prérequis LOC1-06 (`LOC1-13`) | `pack_account_roles` | **65 rôles de comptes + 7 rôles de journaux** semés sur le référentiel **PCG** (annexe B) ; `FR` en hérite par la lignée ; recette `LOC1-05` verte (société FR → `CLIENTS` = `411000`) | base : `385` 6/6 ; **10 contrôles CI verts** | 0294fdf |
+| 05/10 | LOT 1-B (LOC1-06) | 4 triggers | facture de vente, facture d'achat, encaissement et décaissement passent par les **rôles** (`resolve_account`/`resolve_journal`) ; **pont** « société sans pack → pack par défaut » ; recette `102_trigger_tests` **17/17 inchangé** ; suite `386` prouve l'absence de numéro en dur | base : `386` 5/5 ; **10 contrôles CI verts** ; suites d'écritures (170/175/178/180…) OK | (ce commit) |
