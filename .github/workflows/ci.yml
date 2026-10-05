@@ -1834,6 +1834,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # 2.17 (470) : une facture d'achat APPROUVÉE et IMPAYÉE est un
+      # décaissement à venir. Mesuré le 05/10 : `cash_flow_forecast` cherchait
+      # la dette fournisseur sous `status IN ('received','overdue')` — or
+      # `received` n'est pas admis par `purchase_invoices_status_check`, et
+      # une facture approuvée impayée reste `draft` : les sorties prévues
+      # valaient 0, toujours. 7 scénarios : approuvée impayée (T01), non
+      # approuvée (T02), partiellement réglée → le reste dû (T03), soldée
+      # (T04), l'horizon (T05), l'isolation (T06), les deux noms d'un même
+      # chiffre et le net (T07). Rouges avant : T01, T03, T05, T07. La 470
+      # porte un numéro AU-DESSUS de la 420, qui réécrit la même fonction :
+      # en 35x elle serait écrasée sur base neuve. Les lecteurs de l'écran
+      # sont gardés par le job `screen-path` (09_dash, D08 → D11).
+      - name: '2.17 : la dette fournisseur approuvée dans le prévisionnel (470)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/470_purchase_payables_cash_forecast_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # 462 — I-08, la moitié visible du dictionnaire : dérouler la chaîne
       # qui produit un montant. Elle ne CALCULE rien et n'INVENTE aucun
       # lien : elle ne rend que ce que les maillons de la 460 ont tracé, et

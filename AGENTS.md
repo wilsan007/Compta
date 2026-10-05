@@ -66,6 +66,7 @@ L'essentiel en huit lignes :
 > | `325` · `340` → `369` | **partie 1** (TVA 198, tâche 1.7) · **partie 2** (défauts métier) | **2026-10-02** |
 > | `326` → `339`, `370` → `399` | **libre** — inscrire la plage (`migration-numero.mjs plage`) avant usage | — |
 > | **`460` → `469`** | **I-01, la « Vue Chaîne »** (`460`) — instrumenter les chaînages existants, pas les réécrire | **2026-10-02** |
+> | **`470` → `474`** | **partie 2 (défauts métier) — dernier écrivain au-dessus des chaînages** : `470` (tâche 2.17) réécrit `cash_flow_forecast`, que la `420` réécrit aussi — en `35x` elle serait écrasée sur base neuve | **2026-10-05** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue
