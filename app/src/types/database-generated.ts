@@ -19394,6 +19394,27 @@ export interface Database {
         updated_at?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "stock_reservations_product_id_fkey",
+          columns: ["tenant_id", "product_id"],
+          isOneToOne: false,
+          referencedRelation: "products",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "stock_reservations_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "stock_reservations_warehouse_id_fkey",
+          columns: ["tenant_id", "warehouse_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["tenant_id", "id"]
+        },
       ]
     }
     stock_transfer_lines: {

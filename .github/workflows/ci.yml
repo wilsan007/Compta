@@ -2163,6 +2163,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.16 (défaut révélé par la voie C) : `stock_reservations` ne
+      # portait AUCUNE clé étrangère — une réservation désignait un article ou un
+      # dépôt inexistant, ou ceux d'une autre société. 11 scénarios, 0 vert avant :
+      # les quatre refus (T01-T04), le chemin sain (T05), l'article et le dépôt
+      # réservés qui ne se suppriment pas (T06), la société qui emporte ses
+      # réservations (T07), et la reprise des orphelins — retirée et tracée au
+      # journal d'audit, détachée du dépôt, lien de chaîne fermé (T08-T11).
+      - name: 'Partie 2 (2.16) : une réservation désigne un article et un dépôt de sa société (352)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/352_stock_reservations_fks_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche
