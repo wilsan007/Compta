@@ -39,8 +39,8 @@
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `claude/pensive-jang-019c66` @ `c0fd3a0` | — |
-| Migrations / suites SQL dans `app/sql` | 228 / 146 | — |
+| Branche de la copie de travail | `integration/wip-restants` @ `faff72b` | — |
+| Migrations / suites SQL dans `app/sql` | 232 / 150 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
@@ -51,7 +51,7 @@
 | `parse-bank-statement` / `ai-import-mapping` refusent sans consentement | ✅ / ✅ | D-5 · AUD-H04 · 1.11 |
 | `get_vat_codes` (correctif TVA 198) présent en base | ✅ | 1.7 |
 | e2e Playwright sur chaque PR vers `main` | ⬜ sur étiquette seulement | AUD-J01 · 4.3 |
-| `any` explicites (plafond gelé : production / tests) | 940 / 802 (gelé le 2026-10-04) | AUD-J07 · DAT-02 |
+| `any` explicites (plafond gelé : production / tests) | 936 / 799 (gelé le 2026-10-05) | AUD-J07 · DAT-02 |
 | Tables non lues par l'écran (plafond) | 75 (gelé le 2026-10-03) | SOC-05 |
 | **Tables coquilles** (ni écran, ni Edge, SQL = DDL seul) | 37 | ORPH-02 · SOC-05 |
 | Suites SQL qui exercent `user_totp` / `api_keys` | 0 | ORPH-01 · SEC-02 |
@@ -88,9 +88,9 @@
 | 1.2 | Faux vert de la suite caisse `412` | ✅ | `317c0a6` (mesure §0) | — |
 | 1.3 | Garde anti-faux-vert dans `check-test-suites.mjs` | ✅ | `317c0a6` | — |
 | 1.4 | CI sur `qa/**` et `partie-*` | ✅ | `b5a02dc` | — |
-| 1.5 | Réparer la branche QA avant fusion | 🔶 | `4065d10` sur `qa/recette-2026-09-29`, pas encore sur la ligne principale | — |
+| 1.5 | Réparer la branche QA avant fusion | ✅ | `4065d10` **est** passé sur la ligne principale : absorbé par la fusion 1.6 (`harmonisation`, `18fb06d`). Le suivi portait encore « pas encore sur la ligne principale » — **périmé au 05/10** | ALR-03 |
 | 1.6 | Fusionner la recette (QA `310→324`, chaînages `400→413`) | ✅ | fusionnée dans `harmonisation` (`18fb06d`, `75d9799`), avec `partie-1-stabiliser`, `audit/employe-colonnes-identite`, `l4-invariants` et `partie-3-chainages` : base neuve **316 migrations, 0 erreur**, **150/150** étapes SQL, Vitest **1 643** | ALR-03 |
-| 1.7 | Correctif TVA 198 sous `325` | ⬜ | `get_vat_codes` absent (mesure §0) | — |
+| 1.7 | Correctif TVA 198 sous `325` | ✅ | **recompté le 05/10** : `325_vat_codes_ca3.sql` **existe**, la migration **et** sa suite, et `get_vat_codes()` répond en base neuve (« Aucune société active » = garde de contexte, pas une absence). Le suivi portait « ⬜ / absent (mesure §0) » — **périmé au 05/10**. Sur la suite : 3 verts, 3 rouges d'**environnement** (`permission denied for uuid_generate_v4`, l'extension n'est pas dans l'image `postgres:16` nue) — la CI, qui l'installe, jouera les six | ALR-03 |
 | 1.8 | Vrai dialogue de confirmation | ⬜ **bloquée** | attend la fin de 1.6 : la fusion touche les mêmes écrans (`SuppliersPage`, `QuotesPage`, `CustomersPage`…) ; `confirmSync` dans 97 fichiers (mesure §0) | AUD-I01, UX-03 |
 | 1.9 | Ménage des worktrees et des documents | ⬜ | — | ALR-02 |
 | 1.10 | Champs factices du plan comptable | ✅ | `7a99dae` sur `partie-1-stabiliser` : les **six** contrôles retirés (3 sans colonne, 3 dont la colonne n'est lue par rien) ; test rouge avant | AUD-I02 |

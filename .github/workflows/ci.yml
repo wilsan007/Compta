@@ -1886,6 +1886,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Lot K (370) — Djibouti : le barème mensuel de l'ITS, une grille « en
+      # table » de 393 tranches. La grille existe et est rejouable, ses tranches
+      # sont consécutives et bornées, et le lien vers le fichier source pointe
+      # un bucket qui existe. Le moteur qui la LIT est tenu côté front
+      # (src/lib/__tests__/grid-fixed-amount.test.ts) : une base ne prouve pas
+      # qu'un TypeScript lit min_amount/max_amount.
+      - name: 'Lot K : le barème ITS de Djibouti (370)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/370_dj_its_bareme_mensuel_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # I-01 (460) — la « Vue Chaîne » : tout document ouvert sur son amont
       # et son aval. La fonction `chain_document_arborescence` parcourt
       # `document_links` récursivement : la racine, puis la descendance
@@ -2278,6 +2289,52 @@ jobs:
         run: npx vitest run src/__tests__/e2e-business-scenarios.test.ts
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # ═══════════════════════════════════════════════════════════════════════
+      # PLAN EN 6 PARTIES PARALLÈLES — les six zones réservées
+      # (doc/audit/PLAN-6-PARTIES-PARALLELES-2026-10-05.md, règle R5)
+      #
+      # Le 05/10, quatre commits partis de `main` en parallèle ont TOUS touché
+      # `ci.yml`, `SUIVI-CHANTIERS.md` et les mêmes `.any-ceiling.json` : le
+      # découpage par sujet ne suffisait pas. D'où les six MARQUEURS ci-dessous.
+      #
+      # ⚠️ LA RÈGLE, EN UNE LIGNE : chaque partie n'ajoute ses suites que SOUS
+      # SON PROPRE MARQUEUR. Jamais au-dessus, jamais ailleurs dans le fichier.
+      # Un bloc écrit entre deux marqueurs apartient à personne : à la fusion,
+      # le conflit est long et personne ne sait qui l'a écrit.
+      #
+      # ⚠️ CES SIX BLOCS SONT VIDES AU 05/10/2026 — c'est voulu. Ils posent le
+      # cadre (étape 0.8) ; les parties remplissent le leur. Ne pas les
+      # supprimer en croyant nettoyer un fichier vide : ils sont la frontière.
+      # ═══════════════════════════════════════════════════════════════════════
+
+      # --- plan6:a --- chaînes, métriques, robustesse, cohérence ---
+      # Territoire : app/sql/*chain*, *metric*, ci/check_chain*, ci/check_effects*
+      # Plage : 423→429, 437→449, 457→459, 468→499
+
+      # --- plan6:b --- règles d'état, paie française ---
+      # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
+      # Plage : 500→559
+
+      # --- plan6:c --- lot K, localisation Djibouti ---
+      # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
+      #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
+      # Plage : 370→399, puis 600→649
+
+      # --- plan6:d --- qualité des écrans, recette, livraison ---
+      # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
+      #              app/src/__screen__, job Playwright
+      # Plage : 355→369
+
+      # --- plan6:e --- opérations : stock, production, achats, ventes ---
+      # Territoire : écrans et requêtes stock, production, achats, ventes ;
+      #              leurs tables coquilles
+      # Plage : 650→699
+
+      # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
+      # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
+      #              notifications ; leurs tables coquilles
+      # Plage : 700→749
 
   # ─────────────────────────────────────────────
   # Job 6: Build verification
