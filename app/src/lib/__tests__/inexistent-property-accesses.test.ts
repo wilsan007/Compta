@@ -449,21 +449,20 @@ describe("AUD-ACCES-05 — échéancier : la ligne porte l'id de son document so
 
 // ============ AUD-ACCES-06 — le type d'une section analytique ============
 
-describe('AUD-ACCES-06 — saisie OD analytique : le type se lit sur `section_type`', () => {
-  it("l'écran ne lit plus `s.type`, qui n'existe ni en base ni dans le type", () => {
-    const src = lire('src/pages/Phase7DInquiryPages.tsx')
-    const fautives = codeSeul(src).filter((l) => /\bs\.type\b/.test(l))
-    expect(fautives).toEqual([])
-    // La colonne réelle (274), et les deux libellés — une section « total » n'est
-    // jamais imputable, elle doit se distinguer.
-    expect(src).toMatch(/s\.section_type === 'total'/)
-    expect(src).toContain("t('analyticSections.typeTotal')")
-    expect(src).toContain("t('analyticSections.typeSection')")
+describe('AUD-ACCES-06 — saisie OD analytique : la fausse page est retirée', () => {
+  // 2026-10-05 (tâche 2.13) : la page ne faisait que LISTER les sections (son défaut
+  // d'origine, `s.type` au lieu de `section_type`, avait été corrigé le 02/10). Elle
+  // n'a jamais porté de formulaire : elle est retirée du menu, et sa route mène à la
+  // saisie d'écriture. L'assertion d'origine gardait un écran qui n'existe plus ;
+  // elle garde maintenant qu'il ne revient pas sous sa forme de liste.
+  it("la page n'existe plus, son entrée de menu non plus, et sa route redirige", () => {
+    expect(lire('src/pages/Phase7DInquiryPages.tsx')).not.toMatch(/export function AnalyticODEntryPage/)
+    expect(codeSeul(lire('src/components/navModules.ts')).filter((l) => /analytic-od-entry/.test(l))).toEqual([])
+    expect(lire('src/App.tsx')).toMatch(/path="\/accounting\/analytic-od-entry" element=\{<Navigate to="\/accounting\/treatment\/journal-entry" replace \/>\}/)
   })
 
-  it('les quatre états nommés ne sont plus des tableaux de `any`', () => {
+  it('les états nommés ne sont plus des tableaux de `any`', () => {
     const src = lire('src/pages/Phase7DInquiryPages.tsx')
-    expect(src).toContain('useState<Awaited<ReturnType<typeof getAnalyticSections>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getAnalyticLedgerLines>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getJournalEntries>>>')
     expect(src).toContain('useState<Awaited<ReturnType<typeof getChartAccounts>>>')

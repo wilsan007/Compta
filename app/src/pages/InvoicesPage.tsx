@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Card, PageHeader, Button, SortableTable, TableRow, TableCell, Badge, EmptyState, AutoBreadcrumb, SkeletonTable, Input, Combobox, Modal, exportToCSV } from '@/components/ui'
-import { getInvoices, createInvoice, updateInvoice, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
+import { getInvoices, createInvoice, updateInvoice, updateInvoiceDraft, getOpenAdvanceInvoices, type OpenAdvanceInvoice } from '@/lib/queries/sales'
+import { isEditableDraft } from '@/lib/invoiceDraft'
 import { getCustomers, createCustomerPayment } from '@/lib/queries/partners'
 import { getProducts } from '@/lib/queries/stock'
 import { createAdvanceInvoice } from '@/lib/queries/misc'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
-import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus } from 'lucide-react'
+import { FileText, Plus, Search, Send, Eye, Download, X, CheckCircle, FileCode, Receipt, DollarSign, UserPlus, Pencil } from 'lucide-react'
 import { generateFacturX, downloadXML, isDraftDocument, lineExemptionReason, type EInvoiceOptions } from '@/lib/facturX'
 import { downloadInvoicePdf } from '@/lib/invoicePdf'
 import { getCompanySettings, getAnalyticSections } from '@/lib/queries/accounting'
@@ -42,6 +43,8 @@ export function InvoicesPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
+  // 2.13 (G1) : le brouillon ouvert en modification (même formulaire que la création)
+  const [editing, setEditing] = useState<Invoice | null>(null)
   const [viewing, setViewing] = useState<Invoice | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [paying, setPaying] = useState<Invoice | null>(null)
@@ -360,6 +363,11 @@ export function InvoicesPage() {
                           {actionLoading === inv.id ? <CheckCircle className="w-4 h-4 animate-pulse" /> : <Send className="w-4 h-4" />}
                         </button>
                       )}
+                      {canCreate && isEditableDraft(inv) && (
+                        <button onClick={() => setEditing(inv)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-primary)] hover:bg-[rgba(0,102,204,0.1)] disabled:opacity-40" title={t('invoices.editDraft')} aria-label={t('invoices.editDraft')}>
+                          <Pencil className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      )}
                       {inv.validation_status !== 'validated' && inv.status !== 'cancelled' && (
                         <button onClick={() => handleValidate(inv.id)} disabled={actionLoading === inv.id} className="p-1.5 rounded text-[var(--color-success)] hover:bg-[rgba(0,135,90,0.1)] disabled:opacity-40" title={tCommon('actions.validate')}>
                           {actionLoading === inv.id ? <CheckCircle className="w-4 h-4 animate-pulse" /> : <FileCode className="w-4 h-4" />}
@@ -402,6 +410,9 @@ export function InvoicesPage() {
       {showForm && (
         <InvoiceForm customers={customers} products={products} customerRegime={regimeOf} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadInvoices() }} />
       )}
+      {editing && (
+        <InvoiceForm key={editing.id} invoice={editing} customers={customers} products={products} customerRegime={regimeOf} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); loadInvoices() }} />
+      )}
 
       {showAdvanceForm && (
         <AdvanceInvoiceForm customers={customers} onClose={() => setShowAdvanceForm(false)} onSaved={() => { setShowAdvanceForm(false); loadInvoices() }} />
@@ -425,7 +436,9 @@ export function InvoicesPage() {
   )
 }
 
-function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: {
+function InvoiceForm({ invoice, customers, products, customerRegime, onClose, onSaved }: {
+  /** 2.13 (G1) : un brouillon à modifier ; absent, le formulaire crée une facture. */
+  invoice?: Invoice
   customers: Customer[]
   products: Product[]
   /** B3 (ven-009) : régime fiscal du client (fr | eu_vat | non_eu | null) */
@@ -433,7 +446,7 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
   onClose: () => void
   onSaved: () => void
 }) {
-  const [customerId, setCustomerId] = useState('')
+  const [customerId, setCustomerId] = useState(invoice?.customer_id || '')
   const { toast } = useToast()
   const { t } = useTranslation('sales')
   const { t: tCommon } = useTranslation('common')
@@ -441,16 +454,22 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
   const { getAccessStrategy } = useModuleAwareAccess()
   const commercialStrategy = getAccessStrategy('commercial')
   const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false)
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [dueDate, setDueDate] = useState('')
+  const [date, setDate] = useState(invoice?.date || new Date().toISOString().split('T')[0])
+  const [dueDate, setDueDate] = useState(invoice?.due_date || '')
   // B12 (pil-009) : l'échéance par défaut suit les conditions de paiement du
   // client ; une saisie manuelle la fige (`dueTouched`).
-  const [dueTouched, setDueTouched] = useState(false)
+  const [dueTouched, setDueTouched] = useState(!!invoice)
   const { defaultVatRate } = useLegislation()
   // B2 (ven-008) : la ligne se choisit dans le catalogue (comme sur le devis) ;
   // une ligne libre porte son propre compte de vente.
   const emptyLine = () => ({ product_id: '', account_code: '', analytic_section_id: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate })
-  const [lines, setLines] = useState<{ product_id: string; account_code: string; analytic_section_id: string; description: string; quantity: number; unit_price: number; vat_rate: number }[]>([emptyLine()])
+  const [lines, setLines] = useState<{ product_id: string; account_code: string; analytic_section_id: string; description: string; quantity: number; unit_price: number; vat_rate: number }[]>(() =>
+    invoice?.invoice_lines?.length
+      ? [...invoice.invoice_lines].sort((a, b) => (a.line_order ?? 0) - (b.line_order ?? 0)).map((l) => ({
+          product_id: l.product_id || '', account_code: l.account_code || '', analytic_section_id: l.analytic_section_id || '',
+          description: l.description || '', quantity: Number(l.quantity) || 0, unit_price: Number(l.unit_price) || 0, vat_rate: Number(l.vat_rate) || 0,
+        }))
+      : [emptyLine()])
   // G1 (pil-008) : une ligne de facture s'impute sur une section analytique. Le porteur
   // existe en base depuis la 304 (`invoice_lines.analytic_section_id`) et circule jusqu'à
   // la ligne d'écriture ; aucun écran ne le renseignait.
@@ -467,13 +486,15 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
 
   useEffect(() => {
     setOpenAdvances([]); setDeducted({})
-    if (!customerId) return
+    // Un brouillon qui déduit déjà un acompte ne s'ouvre pas en modification
+    // (`isEditableDraft`) : en modification, aucune déduction n'est proposée.
+    if (!customerId || invoice) return
     let cancelled = false
     getOpenAdvanceInvoices(customerId)
       .then(list => { if (!cancelled) setOpenAdvances(list) })
       .catch(() => { if (!cancelled) setOpenAdvances([]) })
     return () => { cancelled = true }
-  }, [customerId])
+  }, [customerId, invoice])
 
   // Aperçu : le serveur fait foi (arrondi au centime par ligne, comme lui)
   const round2 = (n: number) => Math.round(n * 100) / 100
@@ -549,6 +570,30 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
     setSaving(true)
     try {
       const customer = customers.find(c => c.id === customerId)
+      const payloadLines = allLines.map((l, i) => ({
+        product_id: l.product_id || null,
+        description: l.description.trim(),
+        quantity: Number(l.quantity),
+        unit_price: Number(l.unit_price),
+        vat_rate: Number(l.vat_rate),
+        total: lineHt(l),
+        vat_total: lineVat(l),
+        vat_amount: lineVat(l),
+        line_order: i,
+        advance_invoice_id: l.advance_invoice_id ?? null,
+        // B2 : une ligne libre porte le compte de vente choisi (706/707) ;
+        // avec un article, c'est sa fiche qui le donne.
+        account_code: l.product_id ? null : (l.account_code || null),
+        // G1 : la section analytique de la ligne (aucune = non imputée).
+        analytic_section_id: l.analytic_section_id || null,
+      }))
+      if (invoice) {
+        // 2.13 (G1) : le brouillon est remplacé d'un geste (en-tête et lignes), numéro conservé.
+        await updateInvoiceDraft(invoice.id, { customer_id: customerId, customer_name: customer?.name || '', date, due_date: dueDate || date }, payloadLines)
+        toast('success', t('invoices.title'), t('invoices.draftUpdated'))
+        onSaved()
+        return
+      }
       await createInvoice({
         customer_id: customerId,
         customer_name: customer?.name || '',
@@ -563,23 +608,7 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
         notes: '',
         recurring: false,
         recurring_frequency: null,
-        lines: allLines.map((l, i) => ({
-          product_id: l.product_id || null,
-          description: l.description.trim(),
-          quantity: Number(l.quantity),
-          unit_price: Number(l.unit_price),
-          vat_rate: Number(l.vat_rate),
-          total: lineHt(l),
-          vat_total: lineVat(l),
-          vat_amount: lineVat(l),
-          line_order: i,
-          advance_invoice_id: l.advance_invoice_id ?? null,
-          // B2 : une ligne libre porte le compte de vente choisi (706/707) ;
-          // avec un article, c'est sa fiche qui le donne.
-          account_code: l.product_id ? null : (l.account_code || null),
-          // G1 : la section analytique de la ligne (aucune = non imputée).
-          analytic_section_id: l.analytic_section_id || null,
-        })),
+        lines: payloadLines,
       })
       toast('success', t('invoices.title'), t('invoices.draftCreated'))
       onSaved()
@@ -597,7 +626,7 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
     <div className="fixed inset-0 bg-black/50 z-[9990] flex items-center justify-center p-4 overflow-y-auto">
       <div className="card shadow-2xl overflow-hidden my-8" style={{ width: '100%', maxWidth: '48rem' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold">{t('invoices.new')}</h2>
+          <h2 className="text-lg font-semibold">{invoice ? t('invoices.editDraftTitle', { number: invoice.number }) : t('invoices.new')}</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-neutral-100)]" aria-label={tCommon('actions.close')} title={tCommon('actions.close')}><X className="w-5 h-5" aria-hidden="true" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -707,7 +736,7 @@ function InvoiceForm({ customers, products, customerRegime, onClose, onSaved }: 
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <Button variant="secondary" type="button" onClick={onClose}>{tCommon('actions.cancel')}</Button>
-            <Button type="submit" loading={saving}>{tCommon('actions.create')}</Button>
+            <Button type="submit" loading={saving}>{invoice ? tCommon('actions.save') : tCommon('actions.create')}</Button>
           </div>
         </form>
       </div>

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input, Select } from '@/components/ui'
 import { getCreditNotes, createCreditNote, updateCreditNote, deleteCreditNote, getInvoices } from '@/lib/queries/sales'
 import { getCustomers } from '@/lib/queries/partners'
+import { getAnalyticSections } from '@/lib/queries/accounting'
 import { getProducts } from '@/lib/queries/stock'
 import { formatCurrency, formatDate, translateStatus } from '@/lib/utils'
 import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
@@ -196,9 +197,17 @@ function CreditNoteForm({ customers, invoices, products, initialInvoiceId, onClo
   const { defaultVatRate } = useLegislation()
   // B4 (ven-012) : la ligne d'avoir porte l'article rendu (`product_id`) et son
   // compte de vente — c'est ce qui remplace la ventilation au prorata.
-  type CreditLine = { product_id: string; account_code: string; description: string; quantity: number; unit_price: number; vat_rate: number; total: number; vat_total: number }
-  const emptyLine = (): CreditLine => ({ product_id: '', account_code: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 })
+  type CreditLine = { product_id: string; account_code: string; analytic_section_id: string; description: string; quantity: number; unit_price: number; vat_rate: number; total: number; vat_total: number }
+  const emptyLine = (): CreditLine => ({ product_id: '', account_code: '', analytic_section_id: '', description: '', quantity: 1, unit_price: 0, vat_rate: defaultVatRate, total: 0, vat_total: 0 })
   const [lines, setLines] = useState<CreditLine[]>([emptyLine()])
+  // 2.13 (G1) : une ligne d'avoir s'impute sur une section analytique, comme une ligne
+  // de facture. La colonne n'apparaît que si la société a des sections.
+  const [sections, setSections] = useState<{ id: string; code: string; name: string }[]>([])
+  useEffect(() => {
+    getAnalyticSections()
+      .then((all) => setSections(all.filter((s) => s.active !== false && s.section_type !== 'total').map((s) => ({ id: s.id, code: s.code, name: s.name }))))
+      .catch(() => setSections([]))
+  }, [])
   const [saving, setSaving] = useState(false)
 
   const subtotal = lines.reduce((sum, l) => sum + l.total, 0)
@@ -211,11 +220,13 @@ function CreditNoteForm({ customers, invoices, products, initialInvoiceId, onClo
     const inv = invoices.find(i => i.id === id)
     if (!inv) return
     if (inv.customer_id) setCustomerId(inv.customer_id)
-    const src = (inv.invoice_lines || []) as { product_id?: string | null; description?: string | null; quantity?: number; unit_price?: number; vat_rate?: number; total?: number; vat_total?: number; account_code?: string | null }[]
+    const src = (inv.invoice_lines || []) as { product_id?: string | null; description?: string | null; quantity?: number; unit_price?: number; vat_rate?: number; total?: number; vat_total?: number; account_code?: string | null; analytic_section_id?: string | null }[]
     if (src.length === 0) return
     setLines(src.map(l => ({
       product_id: l.product_id || '',
       account_code: l.account_code || '',
+      // 2.13 : l'avoir reprend la section de la ligne de facture qu'il corrige
+      analytic_section_id: l.analytic_section_id || '',
       description: l.description || '',
       quantity: Number(l.quantity) || 0,
       unit_price: Number(l.unit_price) || 0,
@@ -282,6 +293,8 @@ function CreditNoteForm({ customers, invoices, products, initialInvoiceId, onClo
         lines: lines.filter(l => l.description).map((l, i) => ({
           product_id: l.product_id || null,
           account_code: l.product_id ? null : (l.account_code || null),
+          // 2.13 (353) : la section analytique de la ligne d'avoir (aucune = non imputée)
+          analytic_section_id: l.analytic_section_id || null,
           description: l.description,
           quantity: l.quantity,
           unit_price: l.unit_price,
@@ -327,6 +340,7 @@ function CreditNoteForm({ customers, invoices, products, initialInvoiceId, onClo
                   <th className="px-3 py-2 text-left text-xs font-semibold w-40">{t('invoices.product')}</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold">{t('invoices.description')}</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold w-28">{t('invoices.saleAccount')}</th>
+                  {sections.length > 0 && <th className="px-3 py-2 text-left text-xs font-semibold w-32">{t('invoices.analyticSection')}</th>}
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.quantity')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28">{t('invoices.unitPrice')}</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-20">{t('invoices.vatRate')}</th>
@@ -361,6 +375,14 @@ function CreditNoteForm({ customers, invoices, products, initialInvoiceId, onClo
                         </select>
                       )}
                     </td>
+                    {sections.length > 0 && (
+                      <td className="px-3 py-2">
+                        <select aria-label={t('invoices.analyticSection')} title={t('invoices.analyticSection')} value={line.analytic_section_id} onChange={(e) => updateLine(idx, 'analytic_section_id', e.target.value)} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)]">
+                          <option value="">—</option>
+                          {sections.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
+                        </select>
+                      </td>
+                    )}
                     <td className="px-3 py-2">
                       <input aria-label={t('invoices.quantity')} type="number" step="0.01" value={line.quantity} onChange={(e) => updateLine(idx, 'quantity', Number(e.target.value))} className="text-xs border border-[var(--color-border)] rounded px-2 py-1 w-full bg-[var(--color-surface)] text-right" />
                     </td>

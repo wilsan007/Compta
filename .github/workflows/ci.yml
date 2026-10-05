@@ -2175,6 +2175,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2, tâche 2.13 (G1, les restes) : la section analytique d'une ligne
+      # d'AVOIR atteint l'écriture (T01), la GRILLE du compte s'applique quand personne
+      # n'a rien choisi — 100 % (T02), 60 / 40 avec les deux parts écrites (T03) —, une
+      # grille fausse ne bloque jamais (T04), le document prime (T05), et un BROUILLON
+      # de facture se modifie d'un geste (T06) sans ouvrir une facture validée (T07)
+      # ni celle d'une autre société (T08). 6 rouges avant la 353.
+      - name: 'Partie 2 (2.13) : avoir, grille automatique et brouillon modifiable (353)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/353_analytic_credit_note_grill_draft_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
       # ISO-01 — les déclencheurs SECURITY DEFINER écrivaient dans la société de la
       # ligne VISÉE, jamais dans celle du mouvement : la société A fermait une tâche

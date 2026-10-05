@@ -23,10 +23,17 @@ const lire = (p: string) => fs.readFileSync(path.join(racine, p), 'utf8')
 describe('balance analytique — le filtre par plan filtre', () => {
   it('getAnalyticBalance expose `planId` (le plan de signature de la section)', () => {
     const src = lire('src/lib/queries/accounting/etats.ts')
-    const debut = src.indexOf('export async function getAnalyticBalance')
+    // 2026-10-05 (2.13, 353) : l'agrégat a été extrait dans `aggregateAnalyticBalance`
+    // (il lit désormais les parts ventilées) et son type nommé `AnalyticBalanceRow`.
+    // L'assertion suit le code : elle porte sur le bloc qui va du type à la fin de
+    // la fonction de requête — même propriété vérifiée, le plan remonte de la section.
+    const debut = src.indexOf('export interface AnalyticBalanceRow')
     expect(debut).toBeGreaterThan(-1)
-    const fin = src.indexOf('\nexport ', debut + 1)
+    const requete = src.indexOf('export async function getAnalyticBalance', debut)
+    expect(requete).toBeGreaterThan(debut)
+    const fin = src.indexOf('\nexport ', requete + 1)
     const corps = fin > 0 ? src.slice(debut, fin) : src.slice(debut)
+    expect(corps).toMatch(/return aggregateAnalyticBalance\(lines, sections\)/)
 
     // L'agrégat porte le plan, lu sur la section.
     expect(corps).toMatch(/planId:\s*sec\?\.plan_id/)

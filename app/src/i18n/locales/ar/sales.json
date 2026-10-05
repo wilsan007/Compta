@@ -16,7 +16,7 @@
     "invoicesByStatus": "الفواتير حسب الحالة",
     "monthlyRevenue": "الإيرادات الشهرية"
   },
-  "invoices": { "analyticSection": "القسم التحليلي",
+  "invoices": { "editDraft": "تعديل المسودة", "editDraftTitle": "تعديل المسودة {{number}}", "draftUpdated": "تم تعديل المسودة.", "analyticSection": "القسم التحليلي",
     "title": "الفواتير",
     "proFormaNotice": "مستند مؤقت PRO FORMA — غير صالح كفاتورة",
     "subtitle": "إدارة فواتير المبيعات",
