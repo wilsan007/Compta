@@ -54,6 +54,22 @@ Le **guide de bienvenue** a son scénario (`guide.mjs`) parce que la tournée le
 pose comme déjà vu (`compta-onboarded`) : sans lui, il recouvrirait les 334
 écrans. `dispatch.mjs` le lance après les vagues, sous le même jeton de tournée.
 
+## Recette P0-08 — les 14 parcours métier
+
+Le banc ci-dessus visite **tous** les écrans ; il ne *lit* pas les **chiffres**
+métier. La recette P0-08 (14 parcours, `RESTE-A-FAIRE` § P0-08) est le
+complément : elle produit son **référentiel**, son **procès-verbal** et son
+**certificat**, à partir d'une seule source (aucune liste tenue à la main).
+
+```bash
+node scripts/qa/recette.mjs            # référentiel + PV + certificat de recette
+```
+
+Les artefacts vont dans `doc/audit/plan6/recette/` (`parcours.json`,
+`PROCES-VERBAL-P0-08.md`, `CERTIFICAT-RECETTE.html`). Le certificat agrège les
+notes de module de `app/.qa-out/findings.json` s'il existe — donc, idéalement,
+après `npm run qa:run` puis `npm run qa:validate`.
+
 ## Doctrine (à respecter)
 
 1. **Local seulement.** `QA_BASE_URL` et `QA_API_URL` doivent être locaux ; le script refuse

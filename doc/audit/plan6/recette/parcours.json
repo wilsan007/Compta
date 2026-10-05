@@ -1,0 +1,140 @@
+{
+  "referentiel": "P0-08",
+  "source": "doc/audit/RESTE-A-FAIRE-2026-09-22.md (§ P0-08)",
+  "gabarits": [
+    {
+      "id": "mobile",
+      "px": 375
+    },
+    {
+      "id": "tablette",
+      "px": 768
+    },
+    {
+      "id": "bureau",
+      "px": 1280
+    },
+    {
+      "id": "grand",
+      "px": 1920
+    }
+  ],
+  "etats": [
+    "remplie",
+    "vide"
+  ],
+  "parcours": [
+    {
+      "id": "rec-01",
+      "ecran": "Inscription",
+      "module": "system",
+      "faire": "Créer une société France, puis Djibouti",
+      "attendu": "plan semé ; pour DJ : plan provisoire signalé ; autre pays refusé (PAYS_NON_DISPONIBLE)",
+      "lit": "pays accepté / refusé"
+    },
+    {
+      "id": "rec-02",
+      "ecran": "Factures",
+      "module": "commercial",
+      "faire": "Nouvelle facture 2 lignes (TVA 20 % et 5,5 %) → Valider → Envoyer",
+      "attendu": "brouillon BROUILLON-FAC-…, puis FAC-2026-000001 ; badge « Comptabilisé » ; écriture VT équilibrée",
+      "lit": "numéro + écriture équilibrée"
+    },
+    {
+      "id": "rec-03",
+      "ecran": "Factures",
+      "module": "commercial",
+      "faire": "« Envoyer » un brouillon",
+      "attendu": "la facture est validée d’abord (numéro définitif), puis envoyée",
+      "lit": "ordre valider → envoyer"
+    },
+    {
+      "id": "rec-04",
+      "ecran": "Factures",
+      "module": "commercial",
+      "faire": "« Marquer payée »",
+      "attendu": "règlement REG-…, facture payée, 411 lettré ; le bouton n’apparaît pas sur un brouillon",
+      "lit": "règlement + lettrage 411"
+    },
+    {
+      "id": "rec-05",
+      "ecran": "Devis",
+      "module": "commercial",
+      "faire": "Nouveau devis → Convertir en facture",
+      "attendu": "lignes et TVA reprises ; devis « transformé »",
+      "lit": "lignes + TVA reprises"
+    },
+    {
+      "id": "rec-06",
+      "ecran": "Avoirs",
+      "module": "commercial",
+      "faire": "Avoir sur facture → Valider",
+      "attendu": "AV-2026-000001, facture soldée ou réduite, lettrage",
+      "lit": "numéro AV + solde"
+    },
+    {
+      "id": "rec-07",
+      "ecran": "Factures d’achat",
+      "module": "stock",
+      "faire": "Nouvelle facture (référence fournisseur + lignes) → Approuver → Marquer payée",
+      "attendu": "ACH-2026-000001, écriture AC, décaissement DEC-…, 401 lettré ; libellés traduits (fr/en/ar)",
+      "lit": "numéro ACH + lettrage 401"
+    },
+    {
+      "id": "rec-08",
+      "ecran": "Avoirs fournisseur",
+      "module": "stock",
+      "faire": "Nouveau → Valider",
+      "attendu": "AVF-…, écriture AC inverse",
+      "lit": "numéro AVF + écriture inverse"
+    },
+    {
+      "id": "rec-09",
+      "ecran": "Paie",
+      "module": "hr",
+      "faire": "Lot approuvé → « Générer l’écriture de paie » → passer à « payé »",
+      "attendu": "une seule écriture PAIE, équilibrée ; message clair si un bulletin est incohérent",
+      "lit": "une écriture PAIE équilibrée"
+    },
+    {
+      "id": "rec-10",
+      "ecran": "Import de relevé",
+      "module": "treasury",
+      "faire": "Fichier MT940 / CAMT.053 / CFONB réel",
+      "attendu": "« n opérations importées, m doublons écartés » ; lignes pointées automatiquement",
+      "lit": "n importées / m doublons"
+    },
+    {
+      "id": "rec-11",
+      "ecran": "Stock",
+      "module": "stock",
+      "faire": "Inventaire en baisse puis en hausse",
+      "attendu": "stock dépôt = stock article ; écriture ST",
+      "lit": "stock dépôt = stock article"
+    },
+    {
+      "id": "rec-12",
+      "ecran": "Caisse",
+      "module": "treasury",
+      "faire": "Session avec 2 tickets → clôture",
+      "attendu": "stock du magasin seul décrémenté, une fois",
+      "lit": "stock décrémenté une fois"
+    },
+    {
+      "id": "rec-13",
+      "ecran": "Clôture (V2)",
+      "module": "accounting",
+      "faire": "Exercice complet → clôture → bilan / compte de résultat",
+      "attendu": "équilibrés, à-nouveaux corrects, bandeau rouge absent",
+      "lit": "bilan = compte de résultat"
+    },
+    {
+      "id": "rec-14",
+      "ecran": "Tout",
+      "module": "system",
+      "faire": "Changer de langue (fr → en → ar)",
+      "attendu": "aucune clé brute affichée ; arabe en RTL",
+      "lit": "0 clé brute ; RTL"
+    }
+  ]
+}

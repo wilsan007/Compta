@@ -23,7 +23,7 @@
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
-| D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | ⬜ |
+| D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | 🟡 **kit prêt (05/10) — verdict attendu** |
 | D.7 | Rejeu sur copie de production (porte G7 sous le vrai propriétaire), relecture des paramètres globaux et de `banks` | 4.8, 4.9 | 2 j | ⬜ |
 | D.8 | Contraste : appliquer la décision D-7 | AUD-I05 | 1 j | ⬜ |
 
@@ -219,6 +219,54 @@ tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cd
 > `screen-path`) exige le banc PostgreSQL/PostgREST (`SCREEN_RIG`), absent du
 > poste. À rejouer par l'intégration, seule à avoir la base.
 
+## D.6 — la recette (P0-08) : industrialisée, pas laissée à la main
+
+**Le constat du plan d'origine** : les 14 parcours P0-08 « demandent un
+navigateur, un compte et des captures » — 🔴 *non automatisable*. C'est vrai du
+**verdict** ; c'est faux de tout le reste. D.6 est donc traité en deux temps.
+
+### Ce que le kit fixe (et ne décide pas)
+
+Un générateur — `app/scripts/qa/recette.mjs`, **sans aucune dépendance** — fige
+le **référentiel** des 14 parcours (recopié de `RESTE-A-FAIRE` § P0-08, la seule
+source qui fait foi) et en tire trois artefacts :
+
+| Artefact | Rôle |
+|---|---|
+| `recette/parcours.json` | le référentiel **machine-lisible** — base du futur scénario Playwright (D.5) |
+| `recette/PROCES-VERBAL-P0-08.md` | le **PV à signer** : 14 parcours × verdict, matrice 2 états × 4 gabarits, critères de sortie |
+| `recette/CERTIFICAT-RECETTE.html` | le **certificat** : imprimable, daté, **empreint (SHA-256)**, re-notation des modules |
+
+```bash
+node app/scripts/qa/recette.mjs          # écrit les trois artefacts
+```
+
+Le certificat agrège les **notes de module** si `app/.qa-out/findings.json`
+existe (tournée de l'essaim `/qa`) ; sinon il écrit « non mesuré » et nomme la
+commande — **jamais un faux vert**.
+
+### Pourquoi cela reste « vous »
+
+D.6 **attend votre présence** pour une seule chose : le **verdict et la
+signature** (le 👤 de P0-08). Ce qui ne se délègue pas, c'est dire « ce parcours
+me convient » et « cet écart est **bloquant** ». Le kit ne remplace pas cette
+décision — il la **réduit à une heure** : arriver avec les 112 passages cadrés,
+les chiffres déjà lus, et n'avoir qu'à valider et signer.
+
+### L'angle marketing (choisi, pas imposé)
+
+Le certificat est aussi un **argument** : là où l'usage veut qu'une recette se
+perde dans un mail ou un tableur, celle-ci produit un **document vérifiable** —
+daté, empreint, signable. Même réflexe de preuve que le **certificat
+d'intégrité** (P1) : *la preuve, pas la promesse*. **Sans complication** : le
+kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui existait.
+
+### État
+- [x] le référentiel des 14 parcours est figé et machine-lisible ;
+- [x] le PV et le certificat se génèrent (empreinte stable `ce92316f…`) ;
+- [ ] les 14 verdicts + la signature (**vous**) ;
+- [ ] les écarts bloquants corrigés (moi, à votre verdict) — le « 4.7 ».
+
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
@@ -229,3 +277,4 @@ tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cd
 | 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
 | 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `10a51bb` |
 | 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `e3ea341` |
+| 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `HASH_D6` |
