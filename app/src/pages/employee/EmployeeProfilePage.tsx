@@ -12,8 +12,8 @@ export function EmployeeProfilePage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
-  const [profile, setProfile] = useState<any>(null)
-  const [alerts, setAlerts] = useState<any[]>([])
+  const [profile, setProfile] = useState<Awaited<ReturnType<typeof getMyProfile>> | null>(null)
+  const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof getEmployeeAlerts>>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 

@@ -15,12 +15,12 @@ export function MRPPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [runs, setRuns] = useState<any[]>([])
+  const [runs, setRuns] = useState<Awaited<ReturnType<typeof getMRPRuns>>>([])
   const [loading, setLoading] = useState(true)
   const [calculating, setCalculating] = useState(false)
   const [mrpLoading, setMrpLoading] = useState(false)
-  const [selectedRun, setSelectedRun] = useState<any>(null)
-  const [proposals, setProposals] = useState<any[]>([])
+  const [selectedRun, setSelectedRun] = useState<Awaited<ReturnType<typeof runMRPCalculation>> | null>(null)
+  const [proposals, setProposals] = useState<Awaited<ReturnType<typeof getMRPProposals>>>([])
 
   const loadData = useCallback(async () => {
     try { setRuns(await getMRPRuns() || []) }
