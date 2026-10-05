@@ -169,4 +169,4 @@ a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
 | 05/10 | D.1 · lot 1 | `system` | 7 écrans (`ApiWebhooks`, `TwoFactor`, `EmailTemplates`, `Currencies`, `Team`, `TaxGridSettings`, `FiscalYears`) : `confirmSync` → `confirmDialog`, 9 appels | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `2a01631` |
 | 05/10 | D.1 · lot 2 | `hr` | 16 écrans : `confirmSync` → `confirmDialog`, 17 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `1b60cbb` |
 | 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `f9b9079` |
-| 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `HASH_LOT4` |
+| 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
