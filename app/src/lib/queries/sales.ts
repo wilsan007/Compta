@@ -304,7 +304,9 @@ export async function getPurchaseInvoices() {
 
 // AUD-G02 : numéro interne attribué par le serveur à l'approbation ; en-tête et
 // lignes créés ensemble (RPC atomique), montants recalculés par le serveur
-export async function createPurchaseInvoice(invoice: Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines?: Omit<PurchaseInvoiceLine, 'id' | 'created_at' | 'purchase_invoice_id'>[] }) {
+export type PurchaseInvoiceInput = Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'number'> & { number?: string; lines?: Omit<PurchaseInvoiceLine, 'id' | 'created_at' | 'purchase_invoice_id'>[] }
+
+export async function createPurchaseInvoice(invoice: PurchaseInvoiceInput) {
   const tid = await getTenantId()
   const { lines, ...header } = invoice
   if (lines && lines.length > 0) {

@@ -1,6 +1,7 @@
 // Import OCR de factures fournisseurs via l'Edge Function ocr-invoice-import.
 // Le modèle de vision n'accepte que des images : un PDF est rendu (page 1) en PNG côté navigateur.
 import { supabase } from '@/lib/supabase'
+import type { PurchaseInvoiceInput } from '@/lib/queries/sales'
 
 export interface OcrInvoiceResult {
   supplierName: string
@@ -82,5 +83,56 @@ export async function extractSupplierInvoice(file: File): Promise<OcrInvoiceResu
     vatTotal,
     total,
     currency: d.currency || 'EUR',
+  }
+}
+
+/** Ce que le formulaire de relecture (SupplierInvoiceAutomationPage) remet à l'enregistrement. */
+export interface OcrInvoiceForm {
+  number: string
+  supplierId: string
+  supplierName?: string
+  date: string
+  dueDate: string
+  subtotal: number
+  vatTotal: number
+  /** Libellé de la ligne unique (traduit par l'écran). */
+  lineLabel: string
+}
+
+// La charge utile de l'écran, hors du composant : le banc « chemin de l'écran »
+// (src/__screen__/02, verdicts P08/P09) la remet telle quelle à `createPurchaseInvoice`.
+//
+// Une facture lue par OCR entre comme toute facture saisie : en BROUILLON, puis elle
+// suit le circuit d'approbation (numéro légal et écriture à l'approbation). Le statut
+// `received` qu'écrivait l'écran n'existe pas pour une facture d'achat
+// (`purchase_invoices_status_check`) : l'enregistrement échouait toujours.
+// L'OCR ne lit que des totaux : ils deviennent UNE ligne (la base refuse d'approuver
+// une facture sans ligne, et recalcule la TVA de la ligne depuis son taux — d'où le
+// taux déduit des deux montants relus, gardé à six décimales pour retomber au centime).
+export function ocrFormToPurchaseInvoice(form: OcrInvoiceForm): PurchaseInvoiceInput {
+  const subtotal = Number(form.subtotal) || 0
+  const vatTotal = Number(form.vatTotal) || 0
+  const total = Math.round((subtotal + vatTotal) * 100) / 100
+  const reference = form.number.trim()
+  return {
+    supplier_reference: reference,
+    supplier_id: form.supplierId || null,
+    supplier_name: form.supplierName || '',
+    date: form.date,
+    due_date: form.dueDate || form.date,
+    status: 'draft',
+    subtotal, vat_total: vatTotal, total, amount_paid: 0, amount_due: total,
+    notes: '',
+    lines: [{
+      product_id: null,
+      description: form.lineLabel,
+      quantity: 1,
+      unit_price: subtotal,
+      vat_rate: subtotal > 0 ? Math.round((vatTotal / subtotal) * 1e8) / 1e6 : 0,
+      total: subtotal,
+      vat_total: vatTotal,
+      vat_amount: vatTotal,
+      line_order: 0,
+    }],
   }
 }

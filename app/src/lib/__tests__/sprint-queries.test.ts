@@ -17,6 +17,7 @@ function createMockChain(resolvedValue: { data: any; error: any } = { data: [], 
     // données que `then`, y compris après un setMockData qui réassigne `then`.
     range: vi.fn(() => new Promise((resolve) => chain.then(resolve))),
     in: vi.fn(() => chain),
+    gt: vi.fn(() => chain),
     gte: vi.fn(() => chain),
     lte: vi.fn(() => chain),
     like: vi.fn(() => chain),
@@ -490,6 +491,22 @@ describe('Treasury Dashboard', () => {
     expect(result?.accounts).toBeDefined()
     expect(result?.forecastBuckets).toHaveLength(3)
     expect(result?.forecastBuckets[0].label).toBe('0-30j')
+  })
+
+  // 2.17 (470) : la dette fournisseur se lit sur l'approbation et le reste dû.
+  // `received` n'est pas admis par `purchase_invoices_status_check` : aucun lecteur
+  // de trésorerie ne doit plus chercher ce statut (le chiffre, lui, est prouvé par
+  // le chemin de l'écran, 09_dash D08 → D11 — ceci ne garde que la forme du filtre).
+  it('getTreasuryDashboard et getTreasuryForecast lisent les factures d\'achat approuvées au reste dû, jamais « received »', async () => {
+    setMockData([])
+    const { getTreasuryDashboard, getTreasuryForecast } = await import('@/lib/queries')
+    await getTreasuryDashboard()
+    await getTreasuryForecast(90)
+    expect(mockChain.eq).toHaveBeenCalledWith('approval_status', 'approved')
+    expect(mockChain.neq).toHaveBeenCalledWith('status', 'cancelled')
+    expect(mockChain.gt).toHaveBeenCalledWith('amount_due', 0)
+    const statuts = mockChain.in.mock.calls.filter((c: unknown[]) => c[0] === 'status').flatMap((c: unknown[]) => c[1] as string[])
+    expect(statuts).not.toContain('received')
   })
 })
 

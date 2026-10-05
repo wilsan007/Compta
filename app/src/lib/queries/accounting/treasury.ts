@@ -113,10 +113,14 @@ export async function getTreasuryDashboard() {
   if (tid) inQ = inQ.eq('tenant_id', tid)
   const incoming = await fetchAllRows<any>(inQ, { label: 'getTreasuryDashboard/invoices' })
 
+  // 2.17 (470) : la dette fournisseur = approuvée, non annulée, reste dû > 0 —
+  // et c'est le RESTE DÛ qui sortira, pas le total.
   let outQ = supabase
     .from('purchase_invoices')
-    .select('total, due_date, status')
-    .in('status', ['received', 'overdue'])
+    .select('amount_due, due_date')
+    .eq('approval_status', 'approved')
+    .neq('status', 'cancelled')
+    .gt('amount_due', 0)
     .gte('due_date', today.toISOString().split('T')[0])
     .lte('due_date', in90.toISOString().split('T')[0])
     .order('id')
@@ -140,9 +144,9 @@ export async function getTreasuryDashboard() {
   for (const inv of outgoing) {
     const due = new Date(inv.due_date)
     const days = Math.floor((due.getTime() - today.getTime()) / 86400000)
-    if (days <= 30) forecastBuckets[0].outgoing += Number(inv.total)
-    else if (days <= 60) forecastBuckets[1].outgoing += Number(inv.total)
-    else forecastBuckets[2].outgoing += Number(inv.total)
+    if (days <= 30) forecastBuckets[0].outgoing += Number(inv.amount_due)
+    else if (days <= 60) forecastBuckets[1].outgoing += Number(inv.amount_due)
+    else forecastBuckets[2].outgoing += Number(inv.amount_due)
   }
 
   let ppQ = supabase.from('payment_orders').select('*').in('status', ['draft', 'approved']).order('id')
@@ -201,10 +205,13 @@ export async function getTreasuryForecast(days: number = 90) {
   // LOT7-03 : la courbe de trésorerie prévisionnelle doit intégrer toutes les échéances.
   const invoices = await fetchAllRows<any>(invQ, { label: 'getTreasuryForecast/invoices' })
 
+  // 2.17 (470) : le même critère que le moteur — approuvée, non annulée, reste dû > 0.
   let purQ = supabase
     .from('purchase_invoices')
-    .select('number, total, due_date, supplier_id, status')
-    .in('status', ['received', 'overdue'])
+    .select('number, amount_due, due_date, supplier_id')
+    .eq('approval_status', 'approved')
+    .neq('status', 'cancelled')
+    .gt('amount_due', 0)
     .gte('due_date', today.toISOString().split('T')[0])
     .lte('due_date', end.toISOString().split('T')[0])
     .order('due_date')
@@ -226,7 +233,7 @@ export async function getTreasuryForecast(days: number = 90) {
     events.push({ date: inv.due_date, type: 'in', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
   }
   for (const inv of purchaseInvoices) {
-    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.amount_due ?? inv.total ?? 0), reference: inv.number })
+    events.push({ date: inv.due_date, type: 'out', amount: Number(inv.amount_due), reference: inv.number })
   }
 
   events.sort((a, b) => a.date.localeCompare(b.date))

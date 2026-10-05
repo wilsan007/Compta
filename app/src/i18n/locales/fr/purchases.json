@@ -332,6 +332,7 @@
     "recentInvoicesTitle": "Factures récentes",
     "noInvoicesDescription": "Importez votre première facture fournisseur.",
     "ocrReviewTitle": "Vérifier les données OCR",
+    "ocrLineLabel": "Facture {{number}}",
     "confidenceLevel": "{{confidence}}% confiance",
     "reviewWarning": "Vérifiez et corrigez les données extraites avant validation.",
     "invoiceNumber": "N° facture",

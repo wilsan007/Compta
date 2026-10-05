@@ -24,6 +24,17 @@
  * Les clés calculées (`[field]`) et `lines` (écrites dans une table fille) sont
  * écartées.
  *
+ * LES VALEURS AUSSI (05/10/2026). Une colonne qui existe peut refuser la valeur :
+ * `/purchases/automation` écrivait `status: 'received'` dans `purchase_invoices`,
+ * dont le CHECK n'admet que draft | sent | viewed | paid | overdue | cancelled —
+ * l'enregistrement d'une facture lue par OCR échouait toujours (23514), et le
+ * `as any` de l'appel rendait `tsc` muet. Le contrôle lit donc aussi les CHECK
+ * d'énumération (`colonne = ANY (ARRAY[…])`, une seule colonne, sans condition)
+ * et leur confronte chaque valeur LITTÉRALE écrite par un écran (les deux
+ * branches d'un `a ? 'x' : 'y'` comprises). Il suit en plus l'objet RENDU par une
+ * fonction du dépôt (`createX(construire(form))`), pour qu'extraire la charge
+ * utile d'un écran ne la sorte pas du contrôle. Une valeur calculée n'est pas vue.
+ *
  * LA BASELINE EST GELÉE à la mesure d'entrée ; elle ne peut que baisser.
  * `--update-baseline` ne sait que retirer. L'objectif (X8) est ZÉRO.
  *
@@ -56,6 +67,20 @@ const cols = new Map()
 for (const r of (await client.query(`select table_name, column_name from information_schema.columns where table_schema='public'`)).rows) {
   if (!cols.has(r.table_name)) cols.set(r.table_name, new Set())
   cols.get(r.table_name).add(r.column_name)
+}
+// CHECK d'énumération : table → colonne → valeurs admises. Seules les contraintes à
+// UNE énumération et sans condition (`AND`) sont retenues ; `col IS NULL OR …` l'est.
+const enums = new Map()
+for (const r of (await client.query(`select c.conrelid::regclass::text t, pg_get_constraintdef(c.oid) d
+    from pg_constraint c join pg_namespace n on n.oid = c.connamespace
+    where c.contype = 'c' and n.nspname = 'public'`)).rows) {
+  const m = [...r.d.matchAll(/\(?\(?"?([a-z_0-9]+)"?\)?(?:::[a-z ]+)? = ANY \(\(?ARRAY\[([^\]]+)\]/g)]
+  if (m.length !== 1 || / AND /.test(r.d)) continue
+  const values = new Set([...m[0][2].matchAll(/'((?:[^']|'')*)'/g)].map((v) => v[1].replace(/''/g, "'")))
+  const table = r.t.replace(/^public\./, '').replace(/"/g, '')
+  if (!enums.has(table)) enums.set(table, new Map())
+  const prev = enums.get(table).get(m[0][1])
+  enums.get(table).set(m[0][1], prev ? new Set([...values].filter((v) => prev.has(v))) : values)
 }
 await client.end()
 if (cols.size < 100) { console.error(`❌ Schéma incomplet (${cols.size} tables) : migrations non appliquées ?`); process.exit(2) }
@@ -92,9 +117,30 @@ for (const file of walk(path.join(SRC, 'lib'))) {
   })
 }
 
+// 1 bis. fonctions du dépôt qui RENDENT un objet littéral (constructeurs de charge utile)
+const unwrap = (n) => { while (n && (ts.isAsExpression(n) || ts.isParenthesizedExpression(n) || ts.isSatisfiesExpression?.(n))) n = n.expression; return n }
+const builders = new Map()
+for (const file of walk(SRC)) {
+  parse(file).forEachChild((node) => {
+    if (!(ts.isFunctionDeclaration(node) && node.name && node.body)) return
+    for (const st of node.body.statements) {
+      const lit = ts.isReturnStatement(st) && unwrap(st.expression)
+      if (lit && ts.isObjectLiteralExpression(lit)) builders.set(node.name.text, lit)
+    }
+  })
+}
+// valeurs littérales qu'une expression peut prendre (`'x'`, `a ? 'x' : 'y'`)
+const literals = (n) => {
+  n = unwrap(n)
+  if (!n) return []
+  if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) return [n.text]
+  if (ts.isConditionalExpression(n)) return [...literals(n.whenTrue), ...literals(n.whenFalse)]
+  return []
+}
+
 // 2. appels depuis les écrans
 const hits = []
-let calls = 0
+let calls = 0, valeurs = 0
 for (const file of walk(SRC).filter((f) => !f.includes(`${path.sep}lib${path.sep}queries${path.sep}`))) {
   const sf = parse(file)
   const visit = (node) => {
@@ -120,16 +166,27 @@ for (const file of walk(SRC).filter((f) => !f.includes(`${path.sep}lib${path.sep
           find(sf)
           if (best) arg = best
         }
+        if (arg && ts.isCallExpression(arg) && ts.isIdentifier(arg.expression) && builders.has(arg.expression.text)) arg = builders.get(arg.expression.text)
         if (arg && ts.isObjectLiteralExpression(arg)) {
           calls++
           const known = cols.get(info.table)
+          // l'objet peut venir d'un constructeur d'un AUTRE fichier : la ligne est la sienne
+          const osf = arg.getSourceFile()
+          const at = (n) => ({ file: rel(osf.fileName), line: osf.getLineAndCharacterOfPosition(n.getStart()).line + 1 })
           for (const p of arg.properties) {
             if (!(ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) || !p.name) continue
             if (ts.isComputedPropertyName(p.name)) continue
-            const key = p.name.getText(sf).replace(/['"]/g, '')
+            const key = p.name.getText(osf).replace(/['"]/g, '')
             if (info.removed.has(key) || key === 'lines') continue
             if (!known) { hits.push({ fn: name, table: info.table, key: '(table absente)', file: rel(file), line: sf.getLineAndCharacterOfPosition(node.getStart()).line + 1 }); break }
-            if (!known.has(key)) hits.push({ fn: name, table: info.table, key, file: rel(file), line: sf.getLineAndCharacterOfPosition(p.getStart()).line + 1 })
+            if (!known.has(key)) { hits.push({ fn: name, table: info.table, key, ...at(p) }); continue }
+            const admis = enums.get(info.table)?.get(key)
+            if (admis && ts.isPropertyAssignment(p)) {
+              for (const v of literals(p.initializer)) {
+                valeurs++
+                if (!admis.has(v)) hits.push({ fn: name, table: info.table, key: `${key}='${v}'`, admis: [...admis].join(' | '), ...at(p) })
+              }
+            }
           }
         }
       }
@@ -167,13 +224,13 @@ for (const h of hits) {
   const k = `${h.fn} → ${h.table}`
   parFn[k] = (parFn[k] ?? 0) + 1
 }
-console.log(`Écritures des écrans : ${fnTable.size} fonctions de requête écrivantes, ${calls} appel(s) d'écran avec objet suivi, ${hits.length} colonne(s) inexistante(s) (baseline ${frozen.size}).`)
+console.log(`Écritures des écrans : ${fnTable.size} fonctions de requête écrivantes, ${calls} appel(s) d'écran avec objet suivi, ${valeurs} valeur(s) littérale(s) confrontée(s) à un CHECK, ${hits.length} écart(s) (baseline ${frozen.size}).`)
 for (const [k, n] of Object.entries(parFn)) console.log(`   ${k} : ${n}`)
 let ko = false
 if (nouveaux.length) {
   ko = true
-  console.error('\n❌ COLONNE(S) INEXISTANTE(S) ÉCRITE(S) PAR UN ÉCRAN — la création échouera (PGRST204) :')
-  for (const k of nouveaux) { const h = found.get(k); console.error(`   ${h.file}:${h.line}  ${h.fn}() → ${h.table}.${h.key}`) }
+  console.error('\n❌ ÉCRITURE(S) D’ÉCRAN QUE LA BASE REFUSERA — colonne inexistante (PGRST204) ou valeur hors CHECK (23514) :')
+  for (const k of nouveaux) { const h = found.get(k); console.error(`   ${h.file}:${h.line}  ${h.fn}() → ${h.table}.${h.key}${h.admis ? `  (admis : ${h.admis})` : ''}`) }
 }
 if (disparus.length) {
   ko = true
@@ -182,4 +239,4 @@ if (disparus.length) {
   console.error('   Retirez-les dans le même commit : node scripts/check-screen-writes.mjs --update-baseline')
 }
 if (ko) process.exit(1)
-console.log('✅ Aucune colonne inexistante hors baseline.')
+console.log('✅ Aucune colonne inexistante ni valeur hors CHECK, hors baseline.')
