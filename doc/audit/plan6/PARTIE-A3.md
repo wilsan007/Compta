@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | ⬜ |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **1er maillon livré le 05/10** : L16 · devis accepté → commande (493), **19/19 verdicts** — voir §A3.2 lot 1 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🔴 **attend vos cinq décisions du §6 + l'expert-comptable référent** |
 
@@ -70,8 +70,51 @@ non** — mais le gros de L16 → L22 reste devant.
 L16 → L22 le reste. **L21 et L22 restent bloqués** tant que L20 et L5 ne sont pas
 livrés.
 
+## A3.2 — lot 1 : le devis accepté devient une commande (migration `493`)
+
+**Le chaînage le plus attendu du module Commercial, et un écart de niveau 1 du
+référentiel** (« devis → commande non chaîné », §B.3 ; « à la main, sans trace »,
+§D.2). Mesuré avant d'écrire, sur **base neuve (333 migrations, 0 erreur)** :
+
+| Ce que la mesure a trouvé | Conséquence |
+|---|---|
+| `convert_quote_to_invoice` existe et est testé (`190`, réécrit en `317`) | le devis savait produire une **facture**, pas une **commande** |
+| `quotes.transformed_to_order_id` et `sales_orders.quote_id` existent, `validation_status` admet `transformed` | le schéma portait le chaînon — **personne ne l'écrivait** |
+| `quotes` **absent** de `chain_document_types` (27 types, sans les devis) | un lien quotes→sales_orders aurait été **refusé** (garde d'existence `451`) |
+| aucun maillon ne se nommait pour cet effet | la porte **G2** aurait refusé l'appel (effet non déclaré) |
+
+**Ce qui est livré** — migration `493_chain_l16_devis_commande.sql` :
+
+1. le type `quotes` **entre au registre** des types de documents (upsert) ;
+2. le **contrat d'effet** `sale.quote.to_order` est déclaré (L7) ;
+3. le maillon `convert_quote_to_order` — **prix gelé** (totaux = somme des lignes
+   acceptées, aucun tarif relu), **idempotent** (rejeu refusé), **réversible**
+   (le lien se ferme), **tracé** (`link_documents`) ;
+4. droits : `REVOKE` de PUBLIC/anon, `GRANT` à authenticated (garde `228 T06`).
+
+**Éprouvé** — la suite `493` rend **19/19 verdicts** sur base neuve :
+
+| Épreuve | Verdicts | Ce qui est prouvé |
+|---|---|---|
+| **T01** nominal | 6 | commande créée, lignes copiées, **aucun écart de prix** (gelé), total = somme acceptée, le devis dit ce qu'il est devenu, **le lien est posé** |
+| **T02** idempotence (D1) | 3 | le rejeu est **REFUSÉ** (`unique_violation`) ; ni commande ni lien ajouté |
+| **T03** refus explicites | 4 | non accepté / refusé / sans ligne : **trois raisons écrites**, aucune commande laissée |
+| **T04** la frise (I-01) | 2 | `chain_document_arborescence` voit la commande **depuis le devis**, et le devis **depuis la commande** |
+| **T05** isolation (D8) | 4 | le voisin **ne convertit pas** (`no_data_found`), ne voit **aucun** lien ni commande ; la commande d'A existe toujours |
+
+**Portes franchies** : G2 (contrat d'effet) — self-test OK, **0 effet non
+déclaré** ; **rejouabilité** de la `493` (2ᵉ application sans erreur) ; suite
+**enrôlée dans `ci.yml`** sous le marqueur `plan6:a3` (G5).
+
+**Ce que ce lot NE fait pas** : il ne touche ni le stock (la réservation naît de
+la **confirmation** de la commande, pas de sa création — aucun comportement
+d'aval n'est modifié) ni la facturation (le devis peut produire une commande
+**ou** une facture, les deux étant tracés séparément). Les 8 autres familles de
+L16 (stock, production, RH, projets, trésorerie…) restent devant.
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
-| 2026-10-05 | A3.1 | Recomptage L16 → L22 : `415` → `422` inventoriés (L17 livré, L18/L19/L20/L23 en tranche 1, L16/L21/L22 ouverts) ; 421 libre, 419 sans suite | — (lecture seule) | _(ce lot)_ |
+| 2026-10-05 | A3.1 | Recomptage L16 → L22 : `415` → `422` inventoriés (L17 livré, L18/L19/L20/L23 en tranche 1, L16/L21/L22 ouverts) ; 421 libre, 419 sans suite | — (lecture seule) | `ea722d2` |
+| 2026-10-05 | A3.2 (lot 1) | **L16 · devis accepté → commande** : migration `493` (type `quotes` au registre, contrat `sale.quote.to_order`, maillon `convert_quote_to_order` — prix gelé, idempotent, réversible, tracé) + suite `493` enrôlée dans `ci.yml` | suite **19/19** sur base neuve (333 migrations) · G2 **0 effet non déclaré** · `493` rejouable | _(ce lot)_ |

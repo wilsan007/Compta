@@ -2326,6 +2326,13 @@ jobs:
       # Territoire : nouveaux maillons chain_* L16→L24 ; le socle d'A1 se modifie par demande (R7)
       # Plage : 493→499 — branche plan6/a3-moteur
 
+      # L16 — chaînage interne COMMERCIAL : le devis accepté devient une COMMANDE,
+      # tracé (effet `sale.quote.to_order`). 19 verdicts : nominal, prix gelé,
+      # idempotence (D1), quatre refus explicites, la frise des deux côtés (I-01),
+      # isolation (D8).
+      - name: 'L16 : devis accepté → commande, tracé (493)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/493_chain_l16_devis_commande_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
