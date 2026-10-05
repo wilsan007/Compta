@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
-| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07` livré le 05/10** (écran `/stock/uoms`, `convert_uom` exposé ; la base portait déjà catégories/unités/convert depuis la `125`) · **`STK-14` livré** (transferts `652`, E.2) · restent `STK-08/09/11` |
+| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités) et **`STK-09` réappro** (`reorder_rules` + `reorder_suggestions`, `653`) livrés le 05/10 · **`STK-14`** transferts livré (E.2) · restent `STK-08` (moteur à corriger), `STK-09` inventaire tournant (`stock_count_cycles`), `STK-11` |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | — | ⬜ |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | — | ⬜ |
 
@@ -119,9 +119,25 @@ mouvement, ligne de facture) et poser `uom_id`/`purchase_uom_id`/`sale_uom_id`
 depuis la fiche article : le critère « acheter 1 t, stocker en kg, vendre par sacs
 de 25 kg » demande ce branchement.
 
-**Reste de `E.3`.** `STK-08` frais accessoires (coquille `landed_cost_lines`),
-`STK-09` réappro/inventaire (`reorder_rules`, `stock_count_cycles`), `STK-11`
-emplacements. `STK-14` (transferts) et `STK-03` (FIFO/LIFO écarté) sont traités.
+### `STK-09` — réapprovisionnement : `reorder_rules` branchée (migration `653`)
+
+**Mesuré.** `reorder_rules` (produit, dépôt, minimum, maximum, multiple, délai,
+actif) existait depuis la `125` sans être lue : l'écran `/stock/reorder`
+s'appuyait sur `stock_quantities.reorder_point`, un simple seuil, sans maximum ni
+multiple de conditionnement.
+
+**Livré.** `reorder_suggestions()` (`653`) applique la règle réelle — proposition
+seulement si le stock est **≤ au minimum**, remontée jusqu'au **maximum**,
+arrondie au **multiple** (règle sans dépôt = stock total de la société) — et
+l'écran `/stock/reorder` gagne les **règles** (créer/supprimer) et les
+**suggestions**. Suite `653` : **5/5**, rouge avant.
+
+**Reste de `STK-09`.** L'**inventaire tournant** (`stock_count_cycles`) : classes
+A/B/C, fréquence, listes de comptage, écart → mouvement `adjustment` valorisé.
+
+**Reste de `E.3`.** `STK-08` frais accessoires (moteur `distribute_landed_cost` à
+corriger + lien aux réceptions), `STK-11` emplacements. `STK-07`, `STK-09` réappro
+et `STK-14` sont traités ; `STK-03` (FIFO/LIFO) est écarté.
 
 ## Les deux décisions de politique — tranchées le 05/10/2026
 
@@ -213,4 +229,5 @@ comme le reste.
 | 05/10/2026 | **Les 2 décisions** — `STK-03` (`650`) et `PRD-03` (`651`) | LIFO écarté (IAS 2/PCG) ; consommation des prévisions livrée | 0,5 j, `650` 4/4 · `651` 4/4 · `254` 5/5 | `f280641` |
 | 05/10/2026 | **E.2** — « Modifier » une nomenclature | `updateBOM`/`updateBOMLine` + bouton ; MRP testé (`651`) | 0,5 j ; tsc 0 · oxlint 0 · vitest 86/86 | `b22b443` |
 | 05/10/2026 | **E.2** — transferts inter-dépôts | `652` (expédier/réceptionner) + requêtes + écran `/stock/transfers` | `652` 5/5 · tsc 0 · oxlint 0 · i18n OK | `a891161` |
-| 05/10/2026 | **E.3** — `STK-07` unités de mesure | requêtes + écran `/stock/uoms` + convertisseur ; branche `uom_categories` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | à committer |
+| 05/10/2026 | **E.3** — `STK-07` unités de mesure | requêtes + écran `/stock/uoms` + convertisseur ; branche `uom_categories` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `9192141` |
+| 05/10/2026 | **E.3** — `STK-09` réapprovisionnement | `653` `reorder_suggestions` + règles/suggestions sur `/stock/reorder` ; branche `reorder_rules` | `653` 5/5 · tsc 0 · oxlint 0 · i18n OK | à committer |

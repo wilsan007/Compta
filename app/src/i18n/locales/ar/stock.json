@@ -136,7 +136,21 @@
     "estimatedValue": "القيمة المقدرة",
     "sku": "SKU",
     "toOrder": "للطلب",
-    "estimatedCost": "التكلفة المقدرة"
+    "estimatedCost": "التكلفة المقدرة",
+    "rules": "قواعد إعادة الطلب",
+    "newRule": "قاعدة جديدة",
+    "min": "الحد الأدنى",
+    "max": "الحد الأقصى",
+    "multiple": "مضاعف التعبئة",
+    "allWarehouses": "جميع المستودعات",
+    "selectProduct": "— اختر منتجًا —",
+    "maxBelowMin": "يجب أن يكون الحد الأقصى أكبر من أو يساوي الحد الأدنى",
+    "noRules": "لا توجد قاعدة إعادة طلب",
+    "noRulesDescription": "أنشئ قاعدة (الحد الأدنى، الأقصى، المضاعف) لكل منتج ومستودع.",
+    "confirmDeleteRule": "حذف هذه القاعدة؟",
+    "suggestions": "الاقتراحات (القواعد)",
+    "noSuggestions": "لا توجد اقتراحات",
+    "noSuggestionsDescription": "جميع المستويات فوق حدها الأدنى."
   },
   "priceLists": {
     "title": "قوائم الأسعار",

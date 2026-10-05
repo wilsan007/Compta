@@ -2352,6 +2352,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-09 (653) — suggestions de réapprovisionnement à partir de `reorder_rules`
+      # (minimum, maximum, multiple de conditionnement).
+      - name: 'E : STK-09 — règles de réapprovisionnement (653)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/653_reorder_suggestions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

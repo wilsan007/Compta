@@ -136,7 +136,21 @@
     "estimatedValue": "Valeur estimée",
     "sku": "SKU",
     "toOrder": "À commander",
-    "estimatedCost": "Coût estimé"
+    "estimatedCost": "Coût estimé",
+    "rules": "Règles de réapprovisionnement",
+    "newRule": "Nouvelle règle",
+    "min": "Minimum",
+    "max": "Maximum",
+    "multiple": "Multiple de conditionnement",
+    "allWarehouses": "Tous les dépôts",
+    "selectProduct": "— Sélectionner un produit —",
+    "maxBelowMin": "Le maximum doit être supérieur ou égal au minimum",
+    "noRules": "Aucune règle de réapprovisionnement",
+    "noRulesDescription": "Créez une règle (minimum, maximum, multiple) par article et par dépôt.",
+    "confirmDeleteRule": "Supprimer cette règle ?",
+    "suggestions": "Suggestions (règles)",
+    "noSuggestions": "Aucune suggestion",
+    "noSuggestionsDescription": "Tous les stocks sont au-dessus de leur minimum."
   },
   "priceLists": {
     "title": "Listes de prix",

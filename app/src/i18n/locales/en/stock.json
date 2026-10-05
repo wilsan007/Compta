@@ -136,7 +136,21 @@
     "estimatedValue": "Estimated value",
     "sku": "SKU",
     "toOrder": "To order",
-    "estimatedCost": "Estimated cost"
+    "estimatedCost": "Estimated cost",
+    "rules": "Reorder rules",
+    "newRule": "New rule",
+    "min": "Minimum",
+    "max": "Maximum",
+    "multiple": "Pack multiple",
+    "allWarehouses": "All warehouses",
+    "selectProduct": "— Select a product —",
+    "maxBelowMin": "Maximum must be greater than or equal to minimum",
+    "noRules": "No reorder rule",
+    "noRulesDescription": "Create a rule (minimum, maximum, multiple) per product and warehouse.",
+    "confirmDeleteRule": "Delete this rule?",
+    "suggestions": "Suggestions (rules)",
+    "noSuggestions": "No suggestion",
+    "noSuggestionsDescription": "All stock levels are above their minimum."
   },
   "priceLists": {
     "title": "Price lists",

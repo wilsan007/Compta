@@ -453,6 +453,70 @@ export async function convertUom(quantity: number, fromUomId: string, toUomId: s
   return Number(data)
 }
 
+// ============ STK-09 / E.3 : règles de réapprovisionnement ============
+// `reorder_rules` existait depuis la 125 sans être lue (coquille). La 653 la
+// branche : `reorder_suggestions()` remonte au maximum, arrondi au multiple.
+
+export interface ReorderRule {
+  id: string
+  tenant_id: string
+  product_id: string
+  warehouse_id: string | null
+  min_quantity: number
+  max_quantity: number
+  multiple_quantity: number | null
+  lead_time_days: number | null
+  is_active: boolean | null
+  created_at: string | null
+}
+
+export interface ReorderSuggestion {
+  product_id: string
+  product_name: string
+  warehouse_id: string | null
+  warehouse_name: string | null
+  stock: number
+  min_quantity: number
+  max_quantity: number
+  suggested_qty: number
+}
+
+export async function getReorderRules() {
+  const tid = await getTenantId()
+  let q = supabase.from('reorder_rules').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as ReorderRule[]
+}
+
+export async function createReorderRule(r: Omit<ReorderRule, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('reorder_rules').insert(ti(r, 'reorder_rules', tid)).select().single()
+  if (error) throw error
+  return data as ReorderRule
+}
+
+export async function updateReorderRule(id: string, updates: Partial<Omit<ReorderRule, 'id' | 'created_at'>>) {
+  const tid = await getTenantId()
+  const { data, error } = await tud(supabase.from('reorder_rules').update(updates), 'reorder_rules', tid).eq('id', id).select().single()
+  if (error) throw error
+  return data as ReorderRule
+}
+
+export async function deleteReorderRule(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('reorder_rules').delete(), 'reorder_rules', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-09 (653) : suggestions de réappro calculées par `reorder_suggestions()`. */
+export async function getReorderSuggestions() {
+  const { data, error } = await supabase.rpc('reorder_suggestions')
+  if (error) throw error
+  return (data || []) as ReorderSuggestion[]
+}
+
 
 // ============ Production Module: Routings ============
 export async function getRoutings() {
