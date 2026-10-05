@@ -129,8 +129,20 @@ la laisser, n'en est pas une.
 Une suppression est une migration, donc elle prend un numéro dans `650`→`699`
 comme le reste.
 
+## Demandes hors territoire (R3)
+
+- **`ci.yml` — une branche `plan6/*` ne déclenche aucune CI.** Le filtre
+  `on: push: branches` liste `main`, `master`, `develop`, `commercial-hr-paie`,
+  `qa/**`, `partie-*`, `fusion-*`, `harmonisation` — **pas `plan6/**`** (mesuré
+  le 05/10, `ci.yml:22-30`). Les six marqueurs `# --- plan6:<lettre> ---` sont bien
+  posés (R5) mais restent **inertes** : une suite ajoutée sous le marqueur E ne
+  sera jamais jouée tant que ces branches ne se déclenchent pas. C'est la même
+  porte que le « 0 passage sur la branche QA » du 02/10. **À corriger par
+  l'intégration** — ajouter `plan6/**` à `push.branches` et
+  `pull_request.branches` — **avant** que la partie E ne pousse sa première suite.
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
 |---|---|---|---|---|
-| 05/10/2026 | **E.1** — recomptage des 11 ❓ | 3 ✅ · 3 🔶 · 5 ⬜ · 0 écarté | ≈ 18,5 j (❓) + ≈ 9 sem. (⬜ E.2→E.5) | doc seule, à intégrer |
+| 05/10/2026 | **E.1** — recomptage des 11 ❓ | 3 ✅ · 3 🔶 · 5 ⬜ · 0 écarté | ≈ 18,5 j (❓) + ≈ 9 sem. (⬜ E.2→E.5) | `35d5d5d` (doc seule, batterie non requise) |
