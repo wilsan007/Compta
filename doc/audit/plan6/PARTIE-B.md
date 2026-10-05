@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes : R-001→R-005 ; achats : R-017/R-018 ; relances : R-059→R-061 ; budgets : R-058 ; conformité : R-054/055/056 (`500`→`508`) — 41 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005 ; achats R-017/R-018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`509`) — 45 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -196,6 +196,20 @@ période touche le **verrou comptable** → à coordonner.
 **Reste du module Conformité :** R-052 (gel de période) et R-053 (écriture de paiement
 de TVA) — comptables.
 
+## B.2 — lot 10 : module Production, règle R-046 (livré le 05/10/2026)
+
+**Migration `509_regle_production_of_source_mrp.sql`** + suite (**4 verts**).
+**R-046** — un OF créé avec `origin = 'mrp'` émet `manufacturing_orders.mrp_sourced`
+(numéro, produit, nomenclature, quantité, OF parent) et laisse une trace. Idempotent.
+
+**Le trou de schéma, dit.** R-046 demande « quel besoin, quelle **proposition**, quelle
+règle ». Le schéma **ne le porte pas** : `mrp_proposals` n'a **aucune** colonne vers
+l'OF qu'elle a fait naître (`mrp_pending_docs` fait le pont `doc_type`/`doc_id`, mais
+sans `mrp_run_id` ni proposition). L'événement dit donc **que** l'OF vient d'un MRP,
+avec son produit et sa nomenclature — **pas encore de quelle proposition**. Combler ce
+trou (colonnes `mrp_run_id` / `mrp_proposal_id` sur l'OF, puis le lien) est un ajout de
+schéma **à coordonner** (module production, partagé). **R-046 est donc partielle.**
+
 ## B.2 — reste, classé par sûreté
 
 - **Sûr, faisable comme ce tour :** production **R-046** (traçabilité MRP = événement).
@@ -247,3 +261,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · relances-1 | Relances (L15) | **R-059/R-060/R-061** : relance `sent` → **horodatage** `sent_at` (fixe **EF-02**) ; `paid` / `cancelled` → événements. Migration `506` + suite `506_…_tests.sql`. **Déviation d'ordre** (module L15 avant la trésorerie), dite. | base **340 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · budgets-1 | Budgets | **R-058** : engagement annulé → `budget_commitments.cancelled` + trace (libération motivée). Migration `507` + suite `507_…_tests.sql`. | base **341 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
 | 05/10 | B.2 · conformité-1 | Conformité | **R-054/R-055/R-056** : rejets EDI-TVA / DSN / déclaration sociale → événements dédiés. Migration `508` + suite `508_…_tests.sql`. | base **342 migrations, 0 erreur** ; suite **4/4** (les 9 suites B : **41/41**) | _à venir_ |
+| 05/10 | B.2 · production-1 | Production | **R-046** : OF d'origine `mrp` → `manufacturing_orders.mrp_sourced` + trace. Partielle (le schéma ne stocke pas la proposition MRP — trou dit). Migration `509` + suite `509_…_tests.sql`. | base **343 migrations, 0 erreur** ; suite **4/4** (les 10 suites B : **45/45**) | _à venir_ |

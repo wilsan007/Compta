@@ -2378,6 +2378,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-046 (partie B, lot Production) — OF d'origine MRP : traçabilité amont.
+      - name: 'plan6 B — R-046 : OF d''origine MRP (509)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/509_regle_production_of_source_mrp_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
