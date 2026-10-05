@@ -8,7 +8,7 @@ import type { PurchaseCreditNote, Supplier, PurchaseInvoice } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function PurchaseCreditNotesPage() {
   const { t } = useTranslation('purchases')
@@ -43,7 +43,7 @@ const [creditNotes, setCreditNotes] = useState<PurchaseCreditNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('creditNotes.deleteConfirm'))) return
+    if (!(await confirmDialog(t('creditNotes.deleteConfirm')))) return
     try { await deletePurchaseCreditNote(id); await loadData() } catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
 

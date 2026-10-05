@@ -19,7 +19,7 @@ vi.mock('@/lib/queries/accounting', async (importOriginal) => {
   }
 })
 vi.mock('@/lib/toast', () => ({ useToast: vi.fn(() => ({ toast: vi.fn() })) }))
-vi.mock('@/lib/confirm', () => ({ confirmSync: vi.fn(() => true) }))
+vi.mock('@/lib/confirm', () => ({ confirmDialog: vi.fn(() => Promise.resolve(true)) }))
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-i18next')>()
   return {

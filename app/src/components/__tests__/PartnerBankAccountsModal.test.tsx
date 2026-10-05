@@ -19,7 +19,7 @@ vi.mock('@/lib/queries/partners', () => ({
   deletePartnerBankAccount: vi.fn(async () => {}),
 }))
 vi.mock('@/lib/toast', () => ({ useToast: () => ({ toast }) }))
-vi.mock('@/lib/confirm', () => ({ confirmSync: () => true }))
+vi.mock('@/lib/confirm', () => ({ confirmDialog: () => Promise.resolve(true) }))
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-i18next')>()
   return { ...actual, useTranslation: vi.fn(() => ({ t: (key: string) => key, i18n: { language: 'fr', changeLanguage: vi.fn() } })) }

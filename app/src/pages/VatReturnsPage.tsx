@@ -7,7 +7,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { FileText, Plus, Trash2, X, Calculator, Zap } from 'lucide-react'
 import type { VatReturn } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function VatReturnsPage() {
@@ -77,7 +77,7 @@ const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('vat.deleteConfirm'))) return
+    if (!(await confirmDialog(t('vat.deleteConfirm')))) return
     try {
       await deleteVatReturn(id)
       await loadData()

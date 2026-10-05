@@ -7,7 +7,7 @@ import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { RefreshCw, Plus, Trash2, X, Zap, Link2, AlertCircle } from 'lucide-react'
 import type { BankConnection, BankAccount, BankTransaction } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
   active: 'success',
@@ -67,7 +67,7 @@ export function BankSyncPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteBankConnection(id)
       await loadData()

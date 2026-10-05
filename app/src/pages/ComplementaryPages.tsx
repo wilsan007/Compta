@@ -7,7 +7,7 @@ import { useStatusLabels } from '@/lib/statusUtils'
 import { getWorkflows, createWorkflow, deleteWorkflow, updateWorkflow, getOFDocumentAccess, createOFDocumentAccess, deleteOFDocumentAccess, updateOFDocumentAccess, getProductEquivalences, createProductEquivalence, deleteProductEquivalence, getProducts } from '@/lib/queries/stock'
 import { errorMessage, formatDate } from '@/lib/utils'
 import type { Product } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function WorkflowsPage() {
   const { toast } = useToast()
@@ -28,7 +28,7 @@ export function WorkflowsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteWorkflow(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }

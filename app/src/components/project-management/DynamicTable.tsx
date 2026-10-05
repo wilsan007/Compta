@@ -14,7 +14,7 @@ import { TaskCreationDialog } from './TaskCreationDialog'
 import { ActionCreationDialog } from './ActionCreationDialog'
 import { ProjectCreationDialog } from './ProjectCreationDialog'
 import type { DisplayMode, TaskStatus, TaskCreateInput } from '@/types/projectManagement'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { useToast } from '@/lib/toast'
 
 interface DynamicTableProps {
@@ -61,9 +61,9 @@ export function DynamicTable({ projectId, className }: DynamicTableProps) {
   )
 
   const handleDeleteTask = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!can('delete')) return
-      if (!confirmSync(t('table.deleteConfirm'))) return
+      if (!(await confirmDialog(t('table.deleteConfirm')))) return
       deleteTask(id)
     },
     [can, deleteTask, t]

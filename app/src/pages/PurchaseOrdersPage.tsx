@@ -12,7 +12,7 @@ import { Plus, Trash2, X, FileText, AlertTriangle } from 'lucide-react'
 import type { PurchaseOrder, Supplier, ChartAccount, FiscalYear, BudgetControlResult, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function PurchaseOrdersPage() {
@@ -49,7 +49,7 @@ export function PurchaseOrdersPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('orders.deleteConfirm'))) return
+    if (!(await confirmDialog(t('orders.deleteConfirm')))) return
     try { await deletePurchaseOrder(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }
@@ -151,7 +151,7 @@ function POForm({ suppliers, products, accounts, years, onClose, onSaved }: { su
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!confirmSync(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!(await confirmDialog(t('orders.budgetExceedConfirm', { amount: formatCurrency(total), overshoot: formatCurrency(budgetCheck.overshoot_amount) })))) {
           setSaving(false)
           return
         }

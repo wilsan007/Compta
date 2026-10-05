@@ -4,7 +4,7 @@ import { getStockReservations, releaseStockReservation, type StockReservationRow
 import { Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function StockReservationsPage() {
@@ -26,7 +26,7 @@ export function StockReservationsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   const handleRelease = async (id: string) => {
-    if (!confirmSync('Libérer cette réservation ?')) return
+    if (!(await confirmDialog('Libérer cette réservation ?'))) return
     try {
       await releaseStockReservation(id)
       await loadData()

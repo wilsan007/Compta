@@ -5,7 +5,7 @@ import { Plus, Trash2, X, Warehouse as WarehouseIcon } from 'lucide-react'
 import type { Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function WarehousesPage() {
@@ -31,7 +31,7 @@ const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('warehouses.deleteConfirm'))) return
+    if (!(await confirmDialog(t('warehouses.deleteConfirm')))) return
     try { await deleteWarehouse(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

@@ -11,7 +11,7 @@ import { Receipt, Plus, Trash2, X, ChevronDown, ChevronRight, CheckCircle } from
 import type { CreditNote, Customer, Invoice, Product } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useLegislation } from '@/lib/legislation'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusBadge: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 'primary'> = {
   draft: 'warning',
@@ -74,7 +74,7 @@ export function CreditNotesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteCreditNote(id)
       await loadData()

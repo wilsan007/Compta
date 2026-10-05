@@ -7,7 +7,7 @@ import { getRoutings, createRouting, deleteRouting, getRoutingOperations, create
 import { getSuppliers } from '@/lib/queries/partners'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Product, WorkCenter, Machine, Tooling, Supplier } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function RoutingsPage() {
@@ -62,7 +62,7 @@ export function RoutingsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('routings.confirmDelete'))) return
+    if (!(await confirmDialog(t('routings.confirmDelete')))) return
     try { await deleteRouting(id); await loadData() }
     catch (err) { toast('error', t('common.error'), errorMessage(err) || t('common.error')) }
   }

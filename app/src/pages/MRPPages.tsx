@@ -6,7 +6,7 @@ import { useToast } from '@/lib/toast'
 import { getMRPRuns, runMRPCalculation, deleteMRPRun, getMRPProposals, updateMRPProposal, deleteMRPProposal, getMRPPendingDocs, deleteMRPPendingDoc } from '@/lib/queries/stock'
 import { runMRP } from '@/lib/queries/businessFunctions'
 import { errorMessage, formatDate } from '@/lib/utils'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const proposalTypeIcons: Record<string, any> = { purchase: ShoppingCart, manufacture: Factory, subcontract: Factory }
 const proposalStatusVariants: Record<string, 'neutral' | 'success' | 'danger' | 'warning'> = { pending: 'neutral', approved: 'success', rejected: 'danger', converted: 'warning' }
@@ -64,7 +64,7 @@ export function MRPPage() {
   }
 
   async function handleDeleteRun(id: string) {
-    if (!confirmSync(t('mrp.confirmDeleteRun'))) return
+    if (!(await confirmDialog(t('mrp.confirmDeleteRun')))) return
     try { await deleteMRPRun(id); await loadData(); setSelectedRun(null) }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }

@@ -12,7 +12,7 @@ import { Package, Plus, Search, Eye, X, CheckCircle, Download, AlertTriangle, Us
 import { useModuleAwareAccess } from '@/components/cross-module/useModuleAwareAccess'
 import { QuickSupplierAccess } from '@/components/cross-module/QuickSupplierAccess'
 import type { PurchaseInvoice, Supplier, ChartAccount, FiscalYear, BudgetControlResult } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
 import { useLegislation } from '@/lib/legislation'
 import { PaymentDialog, type PaymentValues } from '@/components/PaymentDialog'
@@ -313,7 +313,7 @@ function PurchaseInvoiceForm({ suppliers, accounts, years, onClose, onSaved }: {
     setSaving(true)
     try {
       if (budgetCheck?.would_exceed) {
-        if (!confirmSync(t('purchaseInvoices.budgetExceedWarning', { amount: formatCurrency(totalNum), overshoot: formatCurrency(budgetCheck.overshoot_amount) }))) {
+        if (!(await confirmDialog(t('purchaseInvoices.budgetExceedWarning', { amount: formatCurrency(totalNum), overshoot: formatCurrency(budgetCheck.overshoot_amount) })))) {
           setSaving(false)
           return
         }

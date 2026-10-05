@@ -25,7 +25,7 @@ import type { Invoice, Customer, CompanySettings, Product, FiscalPosition } from
 import { usePermission } from '@/hooks/usePermission'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { useLegislation } from '@/lib/legislation'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function InvoicesPage() {
   const { t: tf } = useTranslation('features')
@@ -100,7 +100,7 @@ export function InvoicesPage() {
     // B12 (pil-009) : la validation attribue le numéro définitif et passe
     // l'écriture — une action irréversible, donc confirmée.
     const inv = invoices.find(i => i.id === id)
-    if (!confirmSync(t('invoices.confirmValidate', { number: inv?.number ?? '' }))) return
+    if (!(await confirmDialog(t('invoices.confirmValidate', { number: inv?.number ?? '' })))) return
     setActionLoading(id)
     try {
       await updateInvoice(id, { validation_status: 'validated' as any })

@@ -1,4 +1,4 @@
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { useEffect, useState, useCallback  } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState, Breadcrumb, SkeletonTable, Input } from '@/components/ui'
@@ -53,7 +53,7 @@ export function AssetFamiliesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleCreate() { try { await createAssetFamily(form as any); toast('success', tCommon('common.success'), t('families.created')); setShowForm(false); setForm({ code: '', name: '', default_account: '', default_depreciation_account: '', default_duration_months: 60, default_method: 'linear', depreciation_rate: 0, description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
-  async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteAssetFamily(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleDelete(id: string) { if (!(await confirmDialog(tCommon('form.confirmDelete')))) return; try { await deleteAssetFamily(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>

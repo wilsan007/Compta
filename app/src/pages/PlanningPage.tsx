@@ -5,7 +5,7 @@ import { Calendar, Trash2, Zap, PackageX, CheckCircle2, Clock, UserX } from 'luc
 import { Card, Button, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { getPlanningSlots, deletePlanningSlot, checkMaterialAvailability, autoScheduleMOs } from '@/lib/queries/stock'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 const statusVariants: Record<string, 'neutral' | 'warning' | 'success'> = { planned: 'neutral', scheduled: 'warning', in_progress: 'warning', completed: 'success' }
@@ -28,7 +28,7 @@ export function PlanningPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('planning.confirmDelete'))) return
+    if (!(await confirmDialog(t('planning.confirmDelete')))) return
     try { await deletePlanningSlot(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }

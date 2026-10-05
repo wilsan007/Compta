@@ -9,7 +9,7 @@ import { Plus, Trash2, X, PackageCheck } from 'lucide-react'
 import type { GoodsReceipt, Supplier, PurchaseOrder, Warehouse } from '@/types'
 import { useToast } from '@/lib/toast'
 import { useTranslation } from 'react-i18next'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function GoodsReceiptPage() {
@@ -45,7 +45,7 @@ const [receipts, setReceipts] = useState<GoodsReceipt[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('goodsReceipts.deleteConfirm'))) return
+    if (!(await confirmDialog(t('goodsReceipts.deleteConfirm')))) return
     try { await deleteGoodsReceipt(id); await loadData() }
     catch (err) { toast('error', tCommon('common.error'), errorMessage(err) || tCommon('common.error')) }
   }

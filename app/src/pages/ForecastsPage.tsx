@@ -5,7 +5,7 @@ import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, Pa
 import { useToast } from '@/lib/toast'
 import { getProductionForecasts, createProductionForecast, deleteProductionForecast, importForecastsFromInvoices, calculateForecastReliability, getProducts } from '@/lib/queries/stock'
 import type { Product } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { errorMessage } from '@/lib/utils'
 
@@ -31,7 +31,7 @@ export function ForecastsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteProductionForecast(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }

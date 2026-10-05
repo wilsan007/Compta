@@ -8,7 +8,7 @@ import { getSuppliers } from '@/lib/queries/partners'
 import { getManufacturingOrders } from '@/lib/queries/production'
 import { errorMessage, formatDate, formatCurrency } from '@/lib/utils'
 import type { Supplier, Product } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function SubcontractingOrdersPage() {
@@ -36,7 +36,7 @@ export function SubcontractingOrdersPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteSTOrder(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
@@ -158,7 +158,7 @@ export function SubcontractingShipmentsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteSTShipment(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }
@@ -210,7 +210,7 @@ export function SubcontractingReceiptsPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteSTReceipt(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err)) }
   }

@@ -6,7 +6,7 @@ import { validateIBAN, isIbanRejected } from '@/lib/iban'
 import { Plus, Trash2, X, Pencil, CheckCircle, XCircle, Landmark } from 'lucide-react'
 import type { PartnerBankAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 interface Props {
   partnerType: 'customer' | 'supplier'
@@ -38,7 +38,7 @@ export function PartnerBankAccountsModal({ partnerType, partnerId, onClose }: Pr
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('partnerBankAccounts.deleteConfirm'))) return
+    if (!(await confirmDialog(t('partnerBankAccounts.deleteConfirm')))) return
     try {
       await deletePartnerBankAccount(id)
       toast('success', tCommon('common.success'), t('partnerBankAccounts.deleted'))

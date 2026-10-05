@@ -10,7 +10,7 @@ import { CurrencySelector } from '@/components/CurrencySelector'
 import { getLatestRate } from '@/lib/currencyRates'
 import type { CustomerPayment, Customer, BankAccount, Invoice } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 
 export function CustomerPaymentsPage() {
@@ -36,7 +36,7 @@ const [payments, setPayments] = useState<CustomerPayment[]>([])
   useEffect(() => { loadData() }, [loadData])
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteCustomerPayment(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }

@@ -9,7 +9,7 @@ import { getStockPostedReferences } from '@/lib/queries/stock'
 import { Plus, Trash2, X, Truck, FileText } from 'lucide-react'
 import type { DeliveryNote, DeliveryNoteLine, Customer, SalesOrder } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusKeys: string[] = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
@@ -46,7 +46,7 @@ const [notes, setNotes] = useState<DeliveryNote[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try { await deleteDeliveryNote(id); await loadData() }
     catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.deleteError')) }
   }
