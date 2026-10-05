@@ -1,5 +1,14 @@
 # Partie A — chaînages et preuve
 
+> **⚠️ Découpage du 05/10 au soir** — la partie A est scindée en **trois lignes
+> parallèles** aux territoires disjoints :
+> [A1 — preuve et indice](PARTIE-A1.md) (branche `plan6/a-chainages`, plage `475`→`486`) ·
+> [A2 — Vue Chaîne et écrans](PARTIE-A2.md) (branche `plan6/a2-vue-chaine`, plage `487`→`492`) ·
+> [A3 — moteur L16 → L24](PARTIE-A3.md) (branche `plan6/a3-moteur`, plage `493`→`499`).
+> Ce fichier reste le **fichier de famille** : il conserve le recomptage A.1, le
+> rapport par maillon et le journal jusqu'au 05/10 midi. Chaque ligne écrit
+> désormais dans **son** fichier (R4).
+
 > Fichier de suivi **exclusif** de la partie A (règle **R4** du
 > [plan en 6 parties](../PLAN-6-PARTIES-PARALLELES-2026-10-05.md)).
 > `SUIVI-CHANTIERS.md` et `AGENTS.md` ne s'écrivent **que** par la session

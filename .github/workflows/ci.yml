@@ -2309,8 +2309,22 @@ jobs:
       # ═══════════════════════════════════════════════════════════════════════
 
       # --- plan6:a --- chaînes, métriques, robustesse, cohérence ---
+      # ⚠️ Scindée le 05/10 au soir en trois lignes parallèles (voir
+      # doc/audit/plan6/PARTIE-A1/A2/A3.md). Territoire global : app/sql/*chain*,
+      # *metric*, ci/check_chain*, ci/check_effects* ; écrans et requêtes
+      # « chaîne », « cohérence », « robustesse », « pilotage ».
+
+      # --- plan6:a1 --- preuve et indice : maillons RPC, banc D1→D8, invariants, relevé nocturne ---
       # Territoire : app/sql/*chain*, *metric*, ci/check_chain*, ci/check_effects*
-      # Plage : 423→429, 437→449, 457→459, 468→499
+      # Plage : 475→486 — branche plan6/a-chainages
+
+      # --- plan6:a2 --- Vue Chaîne, pages Robustesse/Cohérence, lecture écran de l'indice ---
+      # Territoire : ChainTimeline.tsx, chainView.ts, chainCoherence.ts, pages hôtes — SQL en lecture
+      # Plage : 487→492 — branche plan6/a2-vue-chaine
+
+      # --- plan6:a3 --- moteur L16→L24 : chaînages internes, régénération, lettrage, règles, webhooks ---
+      # Territoire : nouveaux maillons chain_* L16→L24 ; le socle d'A1 se modifie par demande (R7)
+      # Plage : 493→499 — branche plan6/a3-moteur
 
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
