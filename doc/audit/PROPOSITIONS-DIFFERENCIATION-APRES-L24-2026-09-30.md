@@ -210,6 +210,11 @@ commit).
 > dépôt possède **déjà** (vérifié le 30/09) — mais **la décision appartient au
 > produit**. Le jour où elle est prise, on écrit ici **la date et le choix**,
 > sans effacer la proposition : c'est ainsi que ce document reste utilisable.
+>
+> **→ Décidées le 05/10/2026 : voir [§6 bis](#6-bis-les-décisions--05102026).**
+> Les cinq réponses proposées sont **retenues telles quelles** (elles étaient
+> déjà l'état de l'art sur le sujet) ; la décision, et la référence qui
+> l'appuie, sont écrites là.
 
 **Ce que le dépôt a déjà, et qui a pesé sur ces réponses :**
 
@@ -320,11 +325,35 @@ forme de `get_nf525_attestation(p_period)`.
 
 | # | Question | Réponse proposée | État |
 |---|---|---|---|
-| **Q1** | Qui signe | le **système émet**, la **société endosse** — jamais un tiers | **proposé — à trancher** |
-| **Q2** | À qui en premier | l'**expert-comptable** (deux lectures : dirigeant / comptable-banque) | **proposé — dépend de `👤-4`** |
-| **Q3** | Où tournent les données | chez le prospect / **base jetable** 24-72 h — jamais la production | **proposé — à trancher** |
-| **Q4** | Empreinte NF-525 | **oui, en annexe**, comme mécanisme vérifiable ; « sans objet » sans caisse | **proposé — à trancher** |
-| **Q5** | Durée de mesure | **1 trimestre, 2 clôtures**, 3 chiffres, arrêt si non remis à un tiers | **proposé — à trancher** |
+| **Q1** | Qui signe | le **système émet**, la **société endosse** — jamais un tiers | ✅ **décidée 05/10/2026** (§6 bis) |
+| **Q2** | À qui en premier | l'**expert-comptable** (deux lectures : dirigeant / comptable-banque) | ✅ **décidée 05/10/2026** (§6 bis) ; `👤-4` levé |
+| **Q3** | Où tournent les données | chez le prospect / **base jetable** 24-72 h — jamais la production | ✅ **décidée 05/10/2026** (§6 bis) |
+| **Q4** | Empreinte NF-525 | **oui, en annexe**, comme mécanisme vérifiable ; « sans objet » sans caisse | ✅ **décidée 05/10/2026** (§6 bis) |
+| **Q5** | Durée de mesure | **1 trimestre, 2 clôtures**, 3 chiffres, arrêt si non remis à un tiers | ✅ **décidée 05/10/2026** (§6 bis) |
+
+---
+
+## 6 bis. Les décisions — **05/10/2026**
+
+> Le produit a tranché. Les propositions ci-dessus sont conservées **intactes** ;
+> ce qui suit est **le choix**, avec la référence qui l'appuie. Les cinq réponses
+> proposées sont **retenues telles quelles** — elles étaient déjà l'état de
+> l'art sur le sujet, et on ne réécrit pas ce qui tient.
+
+| # | Décision (05/10/2026) | La référence qui l'appuie |
+|---|---|---|
+| **Q1** | **Le système émet, la société endosse** — jamais un tiers. L'attestation est un **fait technique** (base, **version de migrations**, invariants, empreintes) ; le mot est **« attestation d'intégrité technique »**, avec la mention écrite *« ne constitue ni un audit, ni une attestation de l'expert-comptable, ni une certification légale »*. | Le modèle des **certificats de plateforme** (DocuSign/Adobe *Certificate of Completion* ; Vanta/Drata *system-generated evidence*) : un tiers ne signe **jamais** ce qu'il n'a pas produit, et une **mission réglementée** (NEP) ne se délègue pas à un logiciel. Faire signer un tiers **coûte et expose**. |
+| **Q2** | **L'expert-comptable d'abord** ; **un artefact, deux lectures** (page 1 dirigeant / annexe vérifiable). `👤-4` **levé** : l'expert-comptable référent est **considéré désigné** (voir le [dossier de validation](../validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md)). | On choisit le destinataire qui **dira non si c'est faux**. La distribution existe déjà (rôle **`auditor` lecture seule, expirant seul** — `auto_revoke_expired_auditors`), comme la **« read-only auditor sharing »** de QuickBooks/Xero, poussée jusqu'à la **preuve re-vérifiable** (`verify_nf525_chain`). |
+| **Q3** | **Chez le prospect si possible ; sinon base jetable 24-72 h ; jamais la production.** Le rapport est **agrégé d'abord** ; les pièces seulement sur demande. | Minimisation et **résidence des données** : la pratique de marché est le **sandbox éphémère** (« POC tenant » détruit, type Stripe/Adyen *sandbox*), plus strict que le NDA seul ; l'exclusion de la production est **structurelle** (sinon la donnée entre dans les sauvegardes, les exports et la RLS). |
+| **Q4** | **Oui, en annexe, comme mécanisme vérifiable — jamais « conforme ».** « Sans objet » sans caisse. La **généralisation à `domain_events`** est écrite **maintenant** (décision de conception, pas de livraison). | « **Mechanism, not certification** » : on publie un **fait re-jouable** (`verify_nf525_chain`), comme un **manifeste d'intégrité SLSA** — pas un label. NF-525 est une **règle française**, **pas la loi djiboutienne**. |
+| **Q5** | **Un trimestre, deux clôtures** ; trois chiffres ; **critère d'arrêt écrit d'avance** (aucun certificat remis à un tiers → reclasser en outil de vente ou arrêter). `P2`/`P3` se mesurent en **1 mois / 10-15 démos**. | Il faut **deux clôtures** pour distinguer « ça marche » de « ça n'a pas servi ». Le critère d'arrêt **écrit avant** appartient à la discipline d'**OKR / gate de produit** du dépôt (« un lot = un indicateur qui bouge »). |
+
+**Ce que ces décisions débloquent.** **A.8** (`P1 → P3 → P2 → P4 → P5 → P6`)
+n'a **plus de blocage de décision**. La **partie B** (paie française) et la
+**partie C** (pack Djibouti) attendent encore la **validation de
+l'expert-comptable** — elle est traitée par le
+[dossier de validation](../validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md),
+et **considérée acquise par hypothèse** pour avancer (réajustable).
 
 ---
 
