@@ -126,6 +126,7 @@
     "reorder": "Reorder",
     "priceLists": "Price lists",
     "bom": "Bills of materials (BOM)",
+    "stockTransfers": "Stock transfers",
     "manufacturingOrders": "Manufacturing orders",
     "productionManagement": "Production management",
     "productionDashboard": "Dashboard",

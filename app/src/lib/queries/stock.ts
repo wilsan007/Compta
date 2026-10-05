@@ -287,6 +287,89 @@ export async function updateBOMLine(id: string, updates: Partial<Omit<BOMLine, '
   return data as BOMLine
 }
 
+// ============ STK-14 / E.2 : transferts inter-dépôts ============
+// Les tables existaient depuis la 125 sans moteur ni écran. La 652 les exécute :
+// `ship_stock_transfer` sort du dépôt source (statut « in_transit »),
+// `receive_stock_transfer` fait entrer au dépôt destination (statut « received »).
+
+export interface StockTransfer {
+  id: string
+  tenant_id: string
+  transfer_number: string
+  from_warehouse_id: string
+  to_warehouse_id: string
+  shipment_date: string | null
+  expected_receipt_date: string | null
+  actual_receipt_date: string | null
+  status: 'pending' | 'in_transit' | 'received' | 'cancelled'
+  notes: string | null
+  created_at: string | null
+}
+
+export interface StockTransferLine {
+  id: string
+  tenant_id: string
+  transfer_id: string
+  product_id: string
+  quantity: number
+  unit_cost: number | null
+  created_at: string | null
+}
+
+export type StockTransferLineRow = StockTransferLine & {
+  products: { name: string; sku: string } | null
+}
+
+export async function getStockTransfers() {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_transfers').select('*').order('created_at', { ascending: false })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockTransfer[]
+}
+
+export async function createStockTransfer(tr: Omit<StockTransfer, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_transfers').insert(ti(tr, 'stock_transfers', tid)).select().single()
+  if (error) throw error
+  return data as StockTransfer
+}
+
+export async function deleteStockTransfer(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('stock_transfers').delete(), 'stock_transfers', tid).eq('id', id)
+  if (error) throw error
+}
+
+export async function getStockTransferLines(transferId: string) {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_transfer_lines').select('*, products(name, sku)').eq('transfer_id', transferId).order('created_at')
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockTransferLineRow[]
+}
+
+export async function createStockTransferLine(line: Omit<StockTransferLine, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_transfer_lines').insert(ti(line, 'stock_transfer_lines', tid)).select().single()
+  if (error) throw error
+  return data as StockTransferLine
+}
+
+/** STK-14 (652) : expédie un transfert — sort la quantité du dépôt source. */
+export async function shipStockTransfer(id: string) {
+  const { error } = await supabase.rpc('ship_stock_transfer', { p_transfer_id: id })
+  if (error) throw error
+}
+
+/** STK-14 (652) : réceptionne un transfert — fait entrer au dépôt destination. */
+export async function receiveStockTransfer(id: string) {
+  const { error } = await supabase.rpc('receive_stock_transfer', { p_transfer_id: id })
+  if (error) throw error
+}
+
 
 // ============ Production Module: Routings ============
 export async function getRoutings() {

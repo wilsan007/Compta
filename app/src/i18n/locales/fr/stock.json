@@ -166,6 +166,37 @@
     "unitPrice": "Prix unitaire",
     "validity": "Validité"
   },
+  "transfers": {
+    "title": "Transferts entre dépôts",
+    "new": "Nouveau transfert",
+    "number": "Numéro",
+    "from": "Dépôt de départ",
+    "to": "Dépôt d'arrivée",
+    "status": "Statut",
+    "shipmentDate": "Date d'expédition",
+    "expectedDate": "Réception prévue",
+    "notes": "Notes",
+    "ship": "Expédier",
+    "receive": "Réceptionner",
+    "product": "Article",
+    "quantity": "Quantité",
+    "addLine": "Ajouter un article",
+    "selectWarehouse": "— Sélectionner un dépôt —",
+    "selectProduct": "— Sélectionner un article —",
+    "sameWarehouse": "Le dépôt de départ et d'arrivée doivent différer",
+    "noTransfers": "Aucun transfert",
+    "noTransfersDescription": "Créez un transfert entre deux dépôts.",
+    "noLines": "Aucune ligne. Cliquez sur + pour ajouter un article.",
+    "confirmDelete": "Supprimer ce transfert ?",
+    "confirmShip": "Expédier ce transfert ? Le stock sortira du dépôt de départ.",
+    "confirmReceive": "Réceptionner ce transfert ? Le stock entrera au dépôt d'arrivée.",
+    "statuses": {
+      "pending": "En attente",
+      "in_transit": "En transit",
+      "received": "Reçu",
+      "cancelled": "Annulé"
+    }
+  },
   "bom": {
     "title": "Nomenclatures (BOM)",
     "subtitle": "Gérez les nomenclatures de vos produits",

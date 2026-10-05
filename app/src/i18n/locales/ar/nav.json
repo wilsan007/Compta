@@ -126,6 +126,7 @@
     "reorder": "إعادة الطلب",
     "priceLists": "قوائم الأسعار",
     "bom": "قوائم المكونات (BOM)",
+    "stockTransfers": "التحويلات بين المستودعات",
     "manufacturingOrders": "أوامر التصنيع",
     "productionManagement": "إدارة الإنتاج",
     "productionDashboard": "لوحة التحكم",

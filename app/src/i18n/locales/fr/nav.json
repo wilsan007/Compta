@@ -126,6 +126,7 @@
     "reorder": "Réapprovisionnement",
     "priceLists": "Listes de prix",
     "bom": "Nomenclatures (BOM)",
+    "stockTransfers": "Transferts entre dépôts",
     "manufacturingOrders": "Ordres de fabrication",
     "productionManagement": "Gestion production",
     "productionDashboard": "Tableau de bord",

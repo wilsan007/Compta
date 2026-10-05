@@ -166,6 +166,37 @@
     "unitPrice": "Unit price",
     "validity": "Validity"
   },
+  "transfers": {
+    "title": "Stock transfers",
+    "new": "New transfer",
+    "number": "Number",
+    "from": "From warehouse",
+    "to": "To warehouse",
+    "status": "Status",
+    "shipmentDate": "Shipment date",
+    "expectedDate": "Expected receipt",
+    "notes": "Notes",
+    "ship": "Ship",
+    "receive": "Receive",
+    "product": "Product",
+    "quantity": "Quantity",
+    "addLine": "Add product",
+    "selectWarehouse": "— Select a warehouse —",
+    "selectProduct": "— Select a product —",
+    "sameWarehouse": "From and to warehouses must differ",
+    "noTransfers": "No transfers",
+    "noTransfersDescription": "Create a transfer between two warehouses.",
+    "noLines": "No lines. Click + to add a product.",
+    "confirmDelete": "Delete this transfer?",
+    "confirmShip": "Ship this transfer? Stock will leave the from warehouse.",
+    "confirmReceive": "Receive this transfer? Stock will enter the to warehouse.",
+    "statuses": {
+      "pending": "Pending",
+      "in_transit": "In transit",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    }
+  },
   "bom": {
     "title": "Bills of Materials (BOM)",
     "subtitle": "Manage your product BOMs",

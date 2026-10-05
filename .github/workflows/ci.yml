@@ -2345,6 +2345,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-14 (652) — les transferts inter-dépôts : expédier sort du dépôt source,
+      # réceptionner fait entrer au dépôt destination (le stock bouge enfin).
+      - name: 'E : STK-14 — transferts inter-dépôts (652)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/652_stock_transfer_execute_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles
