@@ -18,10 +18,78 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | ⬜ |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A : LOC1-01 (+ LOC1-48) fait — `380`** ; LOC1-02 → 05 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
+
+## C.1 — LOT 1-A : le modèle de données du pack (LOC1-01 fait)
+
+**`380_pack_model.sql` (+ `380_pack_model_tests.sql`), numéro pris sur la plage
+« plan6 C (lot K, Djibouti) ».** Premier lot de C.1 : il ne touche aucun compte,
+il pose le **moule** que `resolve_account` (LOC1-05) lira.
+
+### Ce que la `380` fait
+
+- **LOC1-01** — `legislation_packs` reçoit les 17 colonnes du modèle (niveau,
+  parent, secteur, version, statut, décimales, arrondi, langues, week-end…).
+- **LOC1-48** — le pack `SYSCOHADA` était à la fois une norme ET un pays
+  (`country_code 'CI'`). Il devient le **référentiel** `SYSCOHADA` (niveau
+  `referential`, sans `country_code`) ; `CI` reste le pack pays.
+- La **hiérarchie** `secteur → pays → référentiel` est tenue par deux CHECK
+  (`legislation_packs_hierarchy_chk`, `legislation_packs_country_chk`).
+
+### La décision à confirmer : d'où viennent les parents
+
+La contrainte de hiérarchie exige qu'un pack pays ait un parent, et les 17 packs
+n'en avaient **aucun**. Le référentiel n'est **pas inventé** : il est **lu dans
+la donnée** — `accounting_standard` EST déjà la norme comptable (PCG, SYSCOHADA,
+IFRS, UK_GAAP…). La `380` crée donc **un référentiel par norme** (13), et chaque
+pays se raccroche à la sienne. **À confirmer** : c'est la lecture retenue, elle
+est data-driven, mais le cahier ne la nomme pas explicitement.
+
+### Trois points qui ne sont pas dans le numéro
+
+- **`ci.yml`** — la suite est branchée sous `# --- plan6:c ---` (règle R5).
+- **`310_legislation_packs_readable_tests.sql`** (fixture d'une AUTRE plage) —
+  son `T04` insérait un pack pays **sans parent** ; il violait la nouvelle
+  `hierarchy_chk`. Corrigé en référentiel privé (le test n'observe que la RLS,
+  et la FK composite interdirait un parent d'une autre société). Seul fichier
+  hors plage touché ; motif : la CI l'aurait refusé.
+- **FK de hiérarchie COMPOSITE** `(tenant_id, parent_code) → (tenant_id, code)` :
+  la porte ISO-02 (`237`, `check_composite_fks.sql`) exige une clé composite dès
+  que l'enfant porte `tenant_id`. Conséquence assumée : un pack ne se raccroche
+  qu'à un parent de **SA** société (les packs globaux vivent tous sous la société
+  technique `…0001`) — même forme que `company_settings_legislation_pack_code_fkey`.
+
+### Ce que la `380` laisse à l'intégration (règle R6)
+
+- **Régénérer `src/types/database-generated.ts`** (`npm run db:types`) : 17
+  colonnes nouvelles.
+- Inscrire `380` dans `AGENTS.md` / `NUMEROTATION-MIGRATIONS.md` (je n'y touche
+  pas — règle R4).
+
+### Validation — base NEUVE (`test_380i`, PostgreSQL 16, `run-sql-migrations.mjs`)
+
+- **334 migrations, 0 erreur**, la `380` comprise.
+- Suites : `380` **6/6**, `202` **13/13**, `310` **4/4**, `237` **8/8**,
+  `370` **6/6** ; G5 : **151 suites branchées**, 0 collision de numéro.
+- Contrôles CI verts, dont `check_composite_fks`, `check_anon_grants`,
+  `check_global_rows_writable`, `check_policy_duplicates`, `check_tenant_guard`,
+  `check_forced_rls_writers`, `check_status_writes`, `check_roles_opposables`,
+  `check_trigger_reachability`. (Hors image locale : `check_plpgsql`, qui exige
+  l'extension `plpgsql_check` — la CI l'installe.)
+- **Rejouabilité** : un 2ᵉ passage de la `380` ajoute **0** ligne (`T06`).
+
+### Ce qui reste dans C.1
+
+`LOC1-02` (les 10 tables du pack + colonnes `source_id`), `LOC1-03`
+(`pack_lineage`, résolution héritée), `LOC1-04` (catalogue des rôles, annexe B),
+`LOC1-05` (`resolve_account` / `resolve_journal`), puis `LOC1-06` → `58`.
+**Aucun `CREATE OR REPLACE` de fonction dans ce lot : rien à annoncer au titre
+de R7.**
+
+---
 
 ## C.2 — ce que l'étape 0 a livré, et les deux réserves
 
@@ -82,3 +150,4 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|---|
+| 05/10 | LOT 1-A (LOC1-01 + LOC1-48) | `legislation_packs` | modèle de pack : 17 colonnes ; 13 référentiels (un par norme) ; SYSCOHADA promu référentiel ; hiérarchie par 2 CHECK + FK composite ; fixture `310` corrigé ; suite branchée sous `plan6:c` | base neuve : **334 migrations / 0 erreur** ; `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; contrôles CI verts ; G5 151/151 | (à venir) |

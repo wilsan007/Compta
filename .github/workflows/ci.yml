@@ -2321,6 +2321,11 @@ jobs:
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
       # Plage : 370→399, puis 600→649
 
+      - name: 'LOC1-01 : le modèle de données du pack (LOT 1-A)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/380_pack_model_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright
