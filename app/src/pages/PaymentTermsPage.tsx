@@ -6,7 +6,7 @@ import { getPaymentTerms, createPaymentTerm, updatePaymentTerm, deletePaymentTer
 import { calculatePaymentDueDates } from '@/lib/queries/businessFunctions'
 import { Plus, Trash2, Edit2, X, CalendarDays, Calculator } from 'lucide-react'
 import type { PaymentTerm } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function PaymentTermsPage() {
@@ -96,7 +96,7 @@ export function PaymentTermsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('paymentTerms.deleteConfirm'))) return
+    if (!(await confirmDialog(t('paymentTerms.deleteConfirm')))) return
     try {
       await deletePaymentTerm(id)
       toast('success', t('paymentTerms.title'), t('paymentTerms.deleteSuccess'))

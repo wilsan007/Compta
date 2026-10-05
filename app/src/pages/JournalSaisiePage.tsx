@@ -15,7 +15,7 @@ import { CurrencySelector } from '@/components/CurrencySelector'
 import { AnalyticDistributionEditor } from '@/components/AnalyticDistributionEditor'
 import { getLatestRate } from '@/lib/currencyRates'
 import { useJournalValidation } from '@/hooks/useJournalValidation'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 const statusDetailBadge: Record<string, 'success' | 'warning' | 'danger'> = {
   open: 'success',
@@ -137,7 +137,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(tCommon('form.confirmDelete'))) return
+    if (!(await confirmDialog(tCommon('form.confirmDelete')))) return
     try {
       await deleteJournalEntry(id)
       await loadEntries()
@@ -156,7 +156,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleClose(id: string) {
-    if (!confirmSync(t('saisie.closeConfirm'))) return
+    if (!(await confirmDialog(t('saisie.closeConfirm')))) return
     try {
       await updateEntryStatusDetail(id, 'closed')
       await loadEntries()
@@ -528,7 +528,7 @@ function SaisieForm({
     } else {
       // Création de compte volée — offer to create if account doesn't exist
       const code = line.account_general.trim()
-      if (code.length >= 2 && confirmSync(t('saisie.createAccountPrompt', { code }))) {
+      if (code.length >= 2 && (await confirmDialog(t('saisie.createAccountPrompt', { code })))) {
         try {
           const newAccount = await createChartAccount({
             code,

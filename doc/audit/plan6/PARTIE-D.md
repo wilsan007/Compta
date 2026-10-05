@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | 🟡 **Lots 1–2 — `system`, `hr` (05/10)** |
+| D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | 🟡 **Lots 1–3 — `system`, `hr`, `accounting` (05/10)** |
 | D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ⬜ |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ⬜ |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
@@ -95,11 +95,26 @@ Tous `tCommon('form.confirmDelete')` **sauf** `SepaPaymentsPage`
 **Preuve.** `grep confirmSync` = 0 sur le module ✅ · `tsc -b --noEmit` ✅ ·
 `oxlint` **0** sur les 16 fichiers ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
 
+### Lot 3 — module `accounting`, 05/10
+
+30 écrans, 41 appels, routés `/accounting/*` : `AccountTags` · `AnalyticPlans` ·
+`AnalyticSections` · `BankReconciliationRules` · `Brouillard` ·
+`BudgetCommitments` · `Budgets` · `ChartAccounts` · `CurrencyRevaluation` ·
+`DistributionGrills` · `EdiTva` · `EntryTemplates` · `FiscalBackup` ·
+`FiscalPositions` · `FiscalYearClosure` · `FixedAssets` · `FusionComptes` ·
+`JournalClosure` · `JournalEntries` · `JournalSaisie` (3 appels, dont 1
+**positif** ligne 531) · `Journals` · `Lettrage` · `PaymentTerms` ·
+`PlanReporting` · `RecurringEntries` · `Regularization` · `ReminderLevels` ·
+`RevisionCycles` · `TaxRates` · `Tvs`.
+
+**Preuve.** `grep confirmSync` = 0 sur le module ✅ · `tsc -b --noEmit` ✅ ·
+`oxlint` **0** sur les 30 fichiers ✅ · Vitest **1661 / 1699** (38 sautés) ✅.
+
 ### Les lots suivants (un par jour)
 
-`accounting` → `treasury` → `commercial` → `stock` → `production` →
-`projectManagement` → `dashboards` → `reporting`. D livre ces balayages **en
-premier** pour que les parties A, C et E trouvent un terrain déjà à jour.
+`treasury` → `commercial` → `stock` → `production` → `projectManagement` →
+`dashboards` → `reporting`. D livre ces balayages **en premier** pour que les
+parties A, C et E trouvent un terrain déjà à jour.
 
 ## D.3 — reprise gelée
 
@@ -113,3 +128,4 @@ a bougé depuis le gel, le patch peut ne plus s'appliquer tel quel.
 |---|---|---|---|---|---|
 | 05/10 | D.1 · lot 1 | `system` | 7 écrans (`ApiWebhooks`, `TwoFactor`, `EmailTemplates`, `Currencies`, `Team`, `TaxGridSettings`, `FiscalYears`) : `confirmSync` → `confirmDialog`, 9 appels | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `2a01631` |
 | 05/10 | D.1 · lot 2 | `hr` | 16 écrans : `confirmSync` → `confirmDialog`, 17 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `1b60cbb` |
+| 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `HASH_LOT3` |

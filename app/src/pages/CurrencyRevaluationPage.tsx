@@ -6,7 +6,7 @@ import { useLocale } from '@/hooks/useLocale'
 import { Plus, Trash2, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react'
 import type { CurrencyRevaluation } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function CurrencyRevaluationPage() {
@@ -66,7 +66,7 @@ export function CurrencyRevaluationPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('revaluation.deleteConfirm'))) return
+    if (!(await confirmDialog(t('revaluation.deleteConfirm')))) return
     try {
       await deleteCurrencyRevaluation(id)
       toast('success', tCommon('common.success'), t('revaluation.deleteSuccess'))

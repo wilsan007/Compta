@@ -6,7 +6,7 @@ import { useToast } from '@/lib/toast'
 import { getReportingPlans, createReportingPlan, updateReportingPlan, deleteReportingPlan } from '@/lib/queries/misc'
 import { Plus, Trash2, Edit2, X, FileBarChart } from 'lucide-react'
 import type { ReportingPlan } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function PlanReportingPage() {
   const { t } = useTranslation('accounting')
@@ -79,7 +79,7 @@ export function PlanReportingPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('reportingPlans.deleteConfirm'))) return
+    if (!(await confirmDialog(t('reportingPlans.deleteConfirm')))) return
     try {
       await deleteReportingPlan(id)
       toast('success', t('reportingPlans.title'), t('reportingPlans.deleteSuccess'))

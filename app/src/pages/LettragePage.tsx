@@ -6,7 +6,7 @@ import { getThirdPartyAccounts, getUnletteredLines, getLetteredLines, applyLettr
 import { Link2, Unlink, Search, Wand2 } from 'lucide-react'
 import type { ThirdPartyAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 
 export function LettragePage() {
   const { toast } = useToast()
@@ -88,7 +88,7 @@ const [thirdParties, setThirdParties] = useState<ThirdPartyAccount[]>([])
   }
 
   async function handleDelettrer(lineIds: string[]) {
-    if (!confirmSync(t('lettrage.unletterConfirm'))) return
+    if (!(await confirmDialog(t('lettrage.unletterConfirm')))) return
     try {
       await removeLettrage(lineIds)
       await loadLines()

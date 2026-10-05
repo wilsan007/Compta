@@ -6,7 +6,7 @@ import { errorMessage, formatCurrency, formatDate } from '@/lib/utils'
 import { BookOpen, Plus, Trash2, X, ChevronDown, ChevronRight, RotateCcw, CheckCircle } from 'lucide-react'
 import type { JournalEntry, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { nextDocumentNumber } from '@/lib/queries/core'
 import { usePermission } from '@/hooks/usePermission'
 import { useJournalValidation } from '@/hooks/useJournalValidation'
@@ -58,7 +58,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('entries.deleteConfirm'))) return
+    if (!(await confirmDialog(t('entries.deleteConfirm')))) return
     try {
       await deleteJournalEntry(id)
       await loadData()
@@ -68,7 +68,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleExtourne(id: string) {
-    if (!confirmSync(t('writingsEnhancement.extourneConfirm'))) return
+    if (!(await confirmDialog(t('writingsEnhancement.extourneConfirm')))) return
     try {
       await generateExtourne(id, 'Extourne manuelle')
       toast('success', tCommon('toast.success'), t('writingsEnhancement.extourneSuccess'))

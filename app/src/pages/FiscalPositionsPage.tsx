@@ -6,7 +6,7 @@ import { getFiscalPositions, createFiscalPosition, updateFiscalPosition, deleteF
 import { getTaxRates } from '@/lib/queries/accounting'
 import { Plus, Trash2, Edit2, X, MapPin, ArrowRight } from 'lucide-react'
 import type { FiscalPosition, FiscalPositionMapping, TaxRate } from '@/types'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 type Tab = 'general' | 'mappings'
@@ -103,7 +103,7 @@ export function FiscalPositionsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('fiscalPositions.deleteConfirm'))) return
+    if (!(await confirmDialog(t('fiscalPositions.deleteConfirm')))) return
     try {
       await deleteFiscalPosition(id)
       toast('success', t('fiscalPositions.title'), t('fiscalPositions.deleteSuccess'))
@@ -142,7 +142,7 @@ export function FiscalPositionsPage() {
   }
 
   async function handleDeleteMapping(id: string) {
-    if (!confirmSync(t('fiscalPositions.mappingDeleteConfirm'))) return
+    if (!(await confirmDialog(t('fiscalPositions.mappingDeleteConfirm')))) return
     try {
       await deleteFiscalPositionMapping(id)
       toast('success', t('fiscalPositions.mappingsTitle'), t('fiscalPositions.mappingDeleteSuccess'))

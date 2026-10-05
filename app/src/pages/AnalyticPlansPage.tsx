@@ -5,7 +5,7 @@ import { getAnalyticPlans, createAnalyticPlan, updateAnalyticPlan, deleteAnalyti
 import { Plus, Trash2, Pencil, Layers, X } from 'lucide-react'
 import type { AnalyticPlan } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function AnalyticPlansPage() {
@@ -42,7 +42,7 @@ export function AnalyticPlansPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('analyticPlans.deleteConfirm'))) return
+    if (!(await confirmDialog(t('analyticPlans.deleteConfirm')))) return
     try {
       await deleteAnalyticPlan(id)
       toast('success', tCommon('common.success'), t('analyticPlans.deleteSuccess'))

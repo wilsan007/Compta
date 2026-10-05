@@ -6,7 +6,7 @@ import { getBrouillard, updateEntryStatusDetail, deleteJournalEntry } from '@/li
 import { Printer, Trash2, FileEdit, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react'
 import type { JournalEntry } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { useJournalValidation } from '@/hooks/useJournalValidation'
 
 export function BrouillardPage() {
@@ -55,7 +55,7 @@ const [entries, setEntries] = useState<JournalEntry[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('brouillard.deleteConfirm'))) return
+    if (!(await confirmDialog(t('brouillard.deleteConfirm')))) return
     try {
       await deleteJournalEntry(id)
       await load()

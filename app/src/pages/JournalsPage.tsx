@@ -5,7 +5,7 @@ import { getJournals, createJournal, updateJournal, deleteJournal, getBankAccoun
 import { BookCopy, Plus, Pencil, Trash2, X, Search, Lock } from 'lucide-react'
 import type { Journal, BankAccount, EntryTemplate, ChartAccount } from '@/types'
 import { useToast } from '@/lib/toast'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 const journalTypeBadge: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'primary'> = {
@@ -73,7 +73,7 @@ const [journals, setJournals] = useState<Journal[]>([])
   }
 
   async function handleDelete(id: string) {
-    if (!confirmSync(t('journals.deleteConfirm'))) return
+    if (!(await confirmDialog(t('journals.deleteConfirm')))) return
     try {
       await deleteJournal(id)
       await loadData()
