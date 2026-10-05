@@ -2384,6 +2384,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-011 (partie B, lot Achats) — commande reçue : rapprochement + écart de quantité.
+      - name: 'plan6 B — R-011 : commande reçue → rapprochement (510)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/510_regle_achats_commande_recue_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-013/R-015/R-016 (partie B, lot Achats) — réception partielle / en attente,
+      # facture fournisseur annulée.
+      - name: 'plan6 B — R-013/015/016 : réceptions et facture annulée (511)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/511_regle_achats_reception_et_facture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005 ; achats R-017/R-018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`509`) — 45 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005 ; achats R-011/013/015/016/017/018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`511`) — 52 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -210,6 +210,37 @@ avec son produit et sa nomenclature — **pas encore de quelle proposition**. Co
 trou (colonnes `mrp_run_id` / `mrp_proposal_id` sur l'OF, puis le lien) est un ajout de
 schéma **à coordonner** (module production, partagé). **R-046 est donc partielle.**
 
+## B.2 — lot 11 : module Achats, règle R-011 (compléter) — livré le 05/10/2026
+
+**Migration `510_regle_achats_commande_recue.sql`** + suite (**4 verts**).
+**R-011** — à la commande passée à `received` : **rapprochement** avec ses réceptions
+(un lien `created_from` par réception) et **mesure de l'écart de quantité** (commandé vs
+reçu) dans l'événement ; idempotent. **Découverte** : `purchase_orders` **manquait au
+registre `chain_document_types`** (comme `quotes` en R-001) → la migration l'inscrit.
+**Ce qui est déjà fait ailleurs** (et non refait) : la consommation de l'engagement
+(R-057, à l'approbation de la facture) et l'**écart de prix** (`perform_three_way_match`,
+car `goods_receipt_lines` n'a pas de `unit_cost`).
+
+## B.2 — lot 12 : module Achats, règles R-013, R-015, R-016 — livré le 05/10/2026
+
+**Migration `511_regle_achats_reception_et_facture.sql`** + suite (**3 verts**). Trois
+maillons **événement** : `goods_receipts.partial` (reliquat), `goods_receipts.pending`
+(contrôle qualité requis), `purchase_invoices.cancelled` (contre-passation). Idempotents.
+
+**Ce qui reste à la coordination, dit dans l'en-tête :**
+- **R-013** — l'**entrée en stock** d'une réception partielle n'est pas écrite :
+  `create_stock_on_goods_receipt` ne réagit qu'à `received` et refuse de doubler ; un
+  second déclencheur dès `partial` ferait **deux sorties** sur `partial → received` →
+  corrigeable seulement avec le déclencheur de stock (R7, parties E).
+- **R-015** — le contrôle qualité est une **garde** ; la poser seule bloquerait les
+  réceptions sans contrôle → **décision métier** à trancher.
+- **R-016** — la **contre-passation** comptable (écriture inverse + sortie de lettrage)
+  est un travail comptable coordonné (l'avoir existe : `purchase_credit_notes`).
+
+**État du module Achats : R-010, R-011, R-012, R-014 (✅ entiers) ; R-017, R-018 (✅) ;
+R-013, R-015, R-016 (🟨 événements ; effet métier coordonné).** Le module Achats est
+**couvert à 9/9 règles**, dont **6 entières**.
+
 ## B.2 — reste, classé par sûreté
 
 - **Sûr, faisable comme ce tour :** production **R-046** (traçabilité MRP = événement).
@@ -262,3 +293,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · budgets-1 | Budgets | **R-058** : engagement annulé → `budget_commitments.cancelled` + trace (libération motivée). Migration `507` + suite `507_…_tests.sql`. | base **341 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
 | 05/10 | B.2 · conformité-1 | Conformité | **R-054/R-055/R-056** : rejets EDI-TVA / DSN / déclaration sociale → événements dédiés. Migration `508` + suite `508_…_tests.sql`. | base **342 migrations, 0 erreur** ; suite **4/4** (les 9 suites B : **41/41**) | _à venir_ |
 | 05/10 | B.2 · production-1 | Production | **R-046** : OF d'origine `mrp` → `manufacturing_orders.mrp_sourced` + trace. Partielle (le schéma ne stocke pas la proposition MRP — trou dit). Migration `509` + suite `509_…_tests.sql`. | base **343 migrations, 0 erreur** ; suite **4/4** (les 10 suites B : **45/45**) | _à venir_ |
+| 05/10 | B.2 · achats-2 | Achats | **R-011** (compléter) : commande reçue → **rapprochement** avec ses réceptions + **écart de quantité** ; inscription de `purchase_orders` au registre. Migration `510` + suite `510_…_tests.sql`. | base **344 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
+| 05/10 | B.2 · achats-3 | Achats | **R-013/R-015/R-016** : réception `partial` (reliquat) / `pending`, facture fournisseur `cancelled` → événements. Effets stock/comptables coordonnés (dits). Migration `511` + suite `511_…_tests.sql`. | base **345 migrations, 0 erreur** ; suite **3/3** (les 12 suites B : **52/52**) | _à venir_ |
