@@ -228,4 +228,4 @@ tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cd
 | 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `f9b9079` |
 | 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
 | 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `10a51bb` |
-| 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `HASH_D2T1` |
+| 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `e3ea341` |
