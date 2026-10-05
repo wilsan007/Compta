@@ -180,6 +180,25 @@
     "unitPrice": "Prix unitaire",
     "validity": "Validité"
   },
+  "counts": {
+    "title": "Comptages cycliques",
+    "subtitle": "Inventaire tournant — classes A/B/C et écarts",
+    "due": "À compter",
+    "noDue": "Aucun comptage dû",
+    "noDueDescription": "Créez un cycle de comptage ; les articles dus apparaîtront ici.",
+    "cycles": "Cycles de comptage",
+    "newCycle": "Nouveau cycle",
+    "abcClass": "Classe",
+    "frequency": "Fréquence (jours)",
+    "nextCount": "Prochain comptage",
+    "currentStock": "Stock théorique",
+    "count": "Compter",
+    "countedQty": "Quantité comptée",
+    "variance": "Écart",
+    "noCycles": "Aucun cycle",
+    "noCyclesDescription": "Créez un cycle (article, classe, fréquence).",
+    "confirmDeleteCycle": "Supprimer ce cycle de comptage ?"
+  },
   "uoms": {
     "title": "Unités de mesure",
     "subtitle": "Catégories, unités et conversions",

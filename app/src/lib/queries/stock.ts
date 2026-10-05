@@ -517,6 +517,73 @@ export async function getReorderSuggestions() {
   return (data || []) as ReorderSuggestion[]
 }
 
+// ============ STK-09 / E.3 : inventaire tournant (comptages cycliques) ============
+// `stock_count_cycles` existait depuis la 125 sans être lue. La 654 la branche :
+// `generate_count_list()` donne les articles dus, `record_stock_count()` enregistre
+// l'écart physique (mouvement valorisé) et avance la prochaine date.
+
+export interface StockCountCycle {
+  id: string
+  tenant_id: string
+  product_id: string
+  warehouse_id: string | null
+  abc_class: string | null
+  frequency_days: number
+  last_count_date: string | null
+  next_count_date: string | null
+  is_active: boolean | null
+  created_at: string | null
+}
+
+export interface StockCountDue {
+  cycle_id: string
+  product_id: string
+  product_name: string
+  warehouse_id: string | null
+  warehouse_name: string | null
+  abc_class: string | null
+  frequency_days: number
+  last_count_date: string | null
+  next_count_date: string | null
+  current_stock: number
+}
+
+export async function getStockCountCycles() {
+  const tid = await getTenantId()
+  let q = supabase.from('stock_count_cycles').select('*').order('next_count_date', { ascending: true, nullsFirst: true })
+  if (tid) q = q.eq('tenant_id', tid)
+  const { data, error } = await q
+  if (error) throw error
+  return data as StockCountCycle[]
+}
+
+export async function createStockCountCycle(c: Omit<StockCountCycle, 'id' | 'created_at' | 'tenant_id'>) {
+  const tid = await getTenantId()
+  const { data, error } = await supabase.from('stock_count_cycles').insert(ti(c, 'stock_count_cycles', tid)).select().single()
+  if (error) throw error
+  return data as StockCountCycle
+}
+
+export async function deleteStockCountCycle(id: string) {
+  const tid = await getTenantId()
+  const { error } = await tud(supabase.from('stock_count_cycles').delete(), 'stock_count_cycles', tid).eq('id', id)
+  if (error) throw error
+}
+
+/** STK-09 (654) : les comptages dus (prochaine date ≤ aujourd'hui). */
+export async function getStockCountList() {
+  const { data, error } = await supabase.rpc('generate_count_list')
+  if (error) throw error
+  return (data || []) as StockCountDue[]
+}
+
+/** STK-09 (654) : enregistre un comptage ; renvoie l'écart (compté − stock). */
+export async function recordStockCount(cycleId: string, countedQty: number): Promise<number> {
+  const { data, error } = await supabase.rpc('record_stock_count', { p_cycle_id: cycleId, p_counted_qty: countedQty })
+  if (error) throw error
+  return Number(data)
+}
+
 
 // ============ Production Module: Routings ============
 export async function getRoutings() {

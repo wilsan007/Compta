@@ -180,6 +180,25 @@
     "unitPrice": "Unit price",
     "validity": "Validity"
   },
+  "counts": {
+    "title": "Cycle counts",
+    "subtitle": "Perpetual inventory — A/B/C classes and variances",
+    "due": "Due to count",
+    "noDue": "No count due",
+    "noDueDescription": "Create a count cycle; due items will appear here.",
+    "cycles": "Count cycles",
+    "newCycle": "New cycle",
+    "abcClass": "Class",
+    "frequency": "Frequency (days)",
+    "nextCount": "Next count",
+    "currentStock": "Theoretical stock",
+    "count": "Count",
+    "countedQty": "Counted quantity",
+    "variance": "Variance",
+    "noCycles": "No cycle",
+    "noCyclesDescription": "Create a cycle (product, class, frequency).",
+    "confirmDeleteCycle": "Delete this count cycle?"
+  },
   "uoms": {
     "title": "Units of measure",
     "subtitle": "Categories, units and conversions",

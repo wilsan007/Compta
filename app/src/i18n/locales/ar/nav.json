@@ -128,6 +128,7 @@
     "bom": "قوائم المكونات (BOM)",
     "stockTransfers": "التحويلات بين المستودعات",
     "uoms": "وحدات القياس",
+    "stockCounts": "الجرد الدوري",
     "manufacturingOrders": "أوامر التصنيع",
     "productionManagement": "إدارة الإنتاج",
     "productionDashboard": "لوحة التحكم",

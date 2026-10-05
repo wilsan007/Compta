@@ -180,6 +180,25 @@
     "unitPrice": "سعر الوحدة",
     "validity": "الصلاحية"
   },
+  "counts": {
+    "title": "الجرد الدوري",
+    "subtitle": "الجرد المستمر — الفئات A/B/C والفروقات",
+    "due": "مستحق للجرد",
+    "noDue": "لا يوجد جرد مستحق",
+    "noDueDescription": "أنشئ دورة جرد؛ ستظهر المواد المستحقة هنا.",
+    "cycles": "دورات الجرد",
+    "newCycle": "دورة جديدة",
+    "abcClass": "الفئة",
+    "frequency": "التكرار (أيام)",
+    "nextCount": "الجرد التالي",
+    "currentStock": "المخزون النظري",
+    "count": "جرد",
+    "countedQty": "الكمية المجرودة",
+    "variance": "الفرق",
+    "noCycles": "لا توجد دورة",
+    "noCyclesDescription": "أنشئ دورة (مادة، فئة، تكرار).",
+    "confirmDeleteCycle": "حذف دورة الجرد هذه؟"
+  },
   "uoms": {
     "title": "وحدات القياس",
     "subtitle": "الفئات والوحدات والتحويلات",

@@ -2359,6 +2359,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-09 (654) — inventaire tournant : liste des comptages dus + enregistrement
+      # d'un écart physique (mouvement valorisé).
+      - name: 'E : STK-09 — inventaire tournant (654)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/654_stock_count_cycles_engine_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles
