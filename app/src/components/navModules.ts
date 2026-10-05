@@ -518,6 +518,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.sageImport', path: '/settings/import/sage' },
           { labelKey: 'items.dataExport', path: '/settings/data-export' },
           { labelKey: 'items.auditLog', path: '/system/audit-log' },
+          { labelKey: 'items.coherence', path: '/system/coherence' },
         ],
       },
     ],

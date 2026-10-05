@@ -113,6 +113,15 @@ mes 3 pages et ce fichier de suivi**.
 2. une session ne doit pas écrire dans le worktree d'une autre partie (R1) —
    `CoherencePage.tsx` a été créé dans `plan6-a2-vue-chaine`.
 
+> **Résolu (05/10, 23 h 16).** La session parallèle a livré **A2.4** et l'a
+> corrigé : le `console.error` compté était un **mot dans un commentaire** de
+> `CoherencePage.tsx` (le plafond compte **toute** occurrence, commentaires
+> compris) — reformulé, la porte est **488/488 verte** ; les clés
+> `crossModule:coherence.*` sont **présentes en fr/en/ar** (`i18n:check` passe).
+> Le lot A2.4 est committé à la suite de ce fichier de suivi. **La demande R3
+> n°1 est satisfaite** ; la n°2 (R1) reste valable comme **leçon** : deux
+> sessions ne doivent pas écrire dans le même worktree.
+
 **Ce qu'il reste pour tenir I-01, et pourquoi ce n'est pas mécanique.** Les
 pages candidates suivantes (commandes de vente `sales_orders`, devis, réceptions
 `goods_receipts`, bulletins `pay_runs`, tickets de caisse `pos_tickets`, ordres
@@ -124,10 +133,35 @@ consignée ici comme **demande** (R3) pour l'intégration : ouvre-t-on une vue
 détail sur ces pages, ou attend-on le chantier D (`app/src/pages`) qui les
 balaie déjà ?
 
+## A2.4 — la page « Cohérence » (livrée le 05/10)
+
+`app/src/pages/CoherencePage.tsx` — la moitié **écran** de L4/L5 : elle lit
+`getChainCoherenceIndex()` et `getChainInvariants()` (`chainCoherence.ts`) et
+montre **le score** (tenu / rompu / non mesuré / total), **la date du dernier
+relevé**, et **le détail par invariant**. Elle **ne mesure rien** — c'est le job
+`audit_chains_nocturne`, en base.
+
+- **Route** `/system/coherence` (`App.tsx`, sous `AdminRoute`) et **entrée de
+  navigation** (`navModules.ts`, `items.coherence`) ;
+- **i18n fr/en/ar** : bloc `crossModule:coherence.*` + `nav:items.coherence` ;
+- **Deux règles tenues ici.** `rompu` et `non_mesure` **ne se confondent pas**
+  (un invariant qu'on ne sait pas mesurer n'est **pas** une alerte, il est
+  compté à part) ; et **pas de journal console d'erreur** — l'erreur de lecture
+  se dit à l'écran (`role="alert"`), comme dans `ChainTimeline`.
+
+**Critère du plan vérifié** — `check-unused-tables` sur base neuve : **75 tables
+non lues, conforme au plafond** ; lire l'indice par l'écran **ne relève pas** le
+plafond (les deux tables d'invariants sont **lues**).
+
+**Vérifications** : `tsc -b` **0** · `oxlint` **0/0** · `i18n:check` **vert**
+(parité + clés littérales) · Vitest **1 661 verts** · `any` **1 735/1 735** ·
+`console.error` **488/488** (plafonds gelés conformes).
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
 | 2026-10-05 | A2.1 | Recomptage Vue Chaîne : backend `460`/`462` + composant OK, frise hébergée sur `InvoicesPage` seulement | — (lecture seule) | `3a2642c` |
 | 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | `5cd2dcc` |
-| 2026-10-05 | A2.2 (lot 2) | Frise sur l'OF (page détail existante) ; **vues détail créées** sur les commandes de vente et les bons de livraison (lignes, reliquats, frise) ; pas d'I-08 sur le BL | `tsc` 0 · `oxlint` 0/0 · a11y vert · Vitest **1 661** · plafonds conformes (hors `CoherencePage.tsx`, session parallèle) | _(ce lot)_ |
+| 2026-10-05 | A2.2 (lot 2) | Frise sur l'OF (page détail existante) ; **vues détail créées** sur les commandes de vente et les bons de livraison (lignes, reliquats, frise) ; pas d'I-08 sur le BL | `tsc` 0 · `oxlint` 0/0 · a11y vert · Vitest **1 661** · plafonds conformes (hors `CoherencePage.tsx`, session parallèle) | `a3e59cc` |
+| 2026-10-05 | A2.4 | Page « Cohérence » (`CoherencePage.tsx`) : indice (tenu/rompu/non mesuré) + détail par invariant, route `/system/coherence`, entrée de nav, i18n fr/en/ar ; `check-unused-tables` conforme | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds `any` **1 735** et `console.error` **488/488** conformes | _(ce lot)_ |
