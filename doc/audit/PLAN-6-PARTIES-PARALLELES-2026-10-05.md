@@ -53,7 +53,7 @@ par **fichier**.
 
 | Partie | Objet | Charge | Plage de migrations | Territoire de fichiers |
 |---|---|---|---|---|
-| **A** | Chaînages et preuve : finir L3/L4, L6, L16 → L24, pages Robustesse/Cohérence, puis P1 → P8 | ≈ 60 j + ≈ 25 j | `423`→`429`, `437`→`449`, `457`→`459`, `468`→`499` | `app/sql/*chain*`, `*metric*`, `ci/check_chain*`, `ci/check_effects*` ; écrans et requêtes « chaîne », « cohérence », « pilotage » |
+| **A** | Chaînages et preuve : finir L3/L4, L6, L16 → L24, pages Robustesse/Cohérence, puis P1 → P8 | ≈ 60 j + ≈ 25 j | `423`→`429`, `437`→`449`, `457`→`459`, `468`→`469`, `475`→`499` (`470`→`474` : pris par la 2.17) | `app/sql/*chain*`, `*metric*`, `ci/check_chain*`, `ci/check_effects*` ; écrans et requêtes « chaîne », « cohérence », « pilotage » |
 | **B** | Les 62 règles d'état (L8 → L15) et les restes de paie française | ≈ 42 j + ≈ 3 j | `500` → `559` | migrations de règles d'état par module ; `lib/payroll*`, écrans de paie |
 | **C** | Lot K — localisation Djibouti | ≈ 74 j (48 neutres + 26 pack) | `370` → `399`, puis `600` → `649` | `legislation_packs`, `chart_*`, `resolve_account`, grilles fiscales ; `lib/countries.ts`, écrans Paramètres → pays/plan comptable ; `doc/localisation/` |
 | **D** | Qualité des écrans, recette, livraison | ≈ 25 j + recette | `355` → `369` (peu de SQL) | balayages transverses de `src/pages`, `src/components`, `e2e/`, `scripts/qa`, `src/__screen__`, job Playwright |
