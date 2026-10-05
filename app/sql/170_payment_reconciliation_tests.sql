@@ -157,6 +157,10 @@ BEGIN
   -- ============================================================
   SET session_replication_role = 'replica';
 
+  -- 05/10/2026 (354) : la facture d'achat est désormais approuvée, donc son maillon L1
+  -- pose un lien purchase_invoices → journal_entries. La société disparaît ci-dessous :
+  -- ses liens partent avec elle, sinon ils désignent un aval qui n'existe plus (404 T10).
+  DELETE FROM document_links WHERE tenant_id = v_tenant_id;
   DELETE FROM supplier_payments WHERE tenant_id = v_tenant_id;
   DELETE FROM customer_payments WHERE tenant_id = v_tenant_id;
   DELETE FROM journal_lines WHERE tenant_id = v_tenant_id;
