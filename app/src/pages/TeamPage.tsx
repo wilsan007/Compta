@@ -11,7 +11,7 @@ import { GuestAccessConfigPanel } from '@/components/team/GuestAccessConfigPanel
 import { getEnabledModuleRoleOptions } from '@/lib/moduleRoles'
 import { useTenantModules } from '@/lib/useTenantModules'
 import type { GuestPermissions } from '@/types/documents'
-import { confirmSync } from '@/lib/confirm'
+import { confirmDialog } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
 
 export function TeamPage() {
@@ -151,7 +151,7 @@ export function TeamPage() {
   )
 
   async function handleRevoke(u: TenantUser) {
-    if (!confirmSync(t('team.revokeConfirm', { name: u.name }))) return
+    if (!(await confirmDialog(t('team.revokeConfirm', { name: u.name })))) return
     const result = await revokeUser(u.id)
     if (result.success) { toast('success', t('team.userRevoked'), t('team.userRevokedMsg', { name: u.name })); loadData() }
     else toast('error', tCommon('toast.error'), result.error!)
