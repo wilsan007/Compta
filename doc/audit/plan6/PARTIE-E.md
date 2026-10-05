@@ -11,7 +11,7 @@
 | **Worktree** | `.claude/worktrees/plan6-e-operations` |
 | **Plage de migrations** | `650` → `699` |
 | **Territoire de fichiers** | écrans et requêtes stock, production, achats, ventes ; leurs tables coquilles |
-| **Charge** | **à estimer** — c'est la tâche E.1 |
+| **Charge** | ≈ 13,5 j (❓ restants, E.1 faite) + ≈ 9 sem. (⬜ E.2→E.5) |
 | **Départ possible** | tout de suite, **par le recomptage** |
 
 ## Les tâches
@@ -53,25 +53,27 @@ atteint dans le code d'aujourd'hui.
 | ACC-01 | 3 j | **Fait.** `108_auxiliary_accounts` : `account_tiers` / `account_collectif` sur `customers`/`suppliers`, génération automatique, écriture dans les triggers de compta **et rattrapage** des écritures existantes. Les triggers **vivants** (`210`, `317`) portent bien `account_tiers, third_party_id, echeance_date`. | ✅ fait | 0,5 j (garde-fou seul) |
 | ACC-03 | 4 j | **Fait.** `110_product_accounts` : `sale/purchase/stock_account_code` + `product_categories`, boucle « une ligne par compte » dans les triggers ; `resolve_stock_account` (`241`), `315`, `317`. Les triggers vivants gardent `COALESCE(p.sale_account_code, pc.sale_account_code, …)`. | ✅ fait | 0,5 j (garde-fou seul) |
 | PRD-05 | 2 h | **Fait.** `stock.ts` lit `purchase_order_lines` (reste à recevoir) et non l'en-tête `purchase_orders` ; les OF en cours sont déduits de `qty_produced`. | ✅ fait | 0 |
-| PRD-08 | mineur | **Partiel.** Le RPC `run_mrp(p_horizon_days)` existe (`115`/`144`/`152`) et **est branché** (`MRPPages.handleRunMRP` → `runMRP(90)`). Mais l'ancien moteur client `runMRPCalculation` **subsiste** et reste le bouton par défaut (`handleCalculate`). Deux moteurs coexistent. | 🔶 finir | 0,5 j |
-| PRD-03 | 4 j | **Non fait.** `runMRPCalculation` ne prend que les OF ouverts : ni commandes clients, ni `production_forecasts` (lues par l'écran, jamais par le calcul), ni seaux de temps, ni horizon. | ⬜ faire | 4 j |
-| PRD-04 | 1 j | **Non fait.** `suggested_date = aujourd'hui + 7 j` en dur, besoin net jamais diminué du stock de sécurité, quantité = `Math.ceil` nu (ni minimum de commande, ni multiple). | ⬜ faire | 1 j |
+| PRD-08 | mineur | **🔶 corrigé le 05/10.** Le RPC `run_mrp` existe et **est branché** (`MRPPages.handleRunMRP`). La `651` l'a complété et a retiré l'ancienne signature (`DROP run_mrp(uuid,integer)`). **Reste** : l'ancien moteur client `runMRPCalculation` (`handleCalculate`) coexiste encore. | 🔶 finir | 0,5 j |
+| PRD-03 | 4 j | **✅ corrigé le 05/10 — le ❓ lisait le mauvais moteur.** Le RPC SQL `run_mrp` (`152`) lisait **déjà** les trois sources (OF, commandes clients, prévisions) **et** l'horizon `p_horizon_days` ; le critère ne manquait que sur la **consommation des prévisions** — livrée par la `651`. Le vieux moteur client, lui, ne lit que les OF : c'est lui qui avait fait dire ❓. | ✅ fait (base) | 0 |
+| PRD-04 | 1 j | **✅ corrigé le 05/10 — même cause.** `run_mrp` applique **déjà** `safety_stock`, `lead_time_days`, `min_order_qty`, `qty_multiple` ; le `+7 j` en dur et le `Math.ceil` nu n'existent que dans le vieux moteur client. | ✅ fait (base) | 0 |
 | PRD-10 | 1 sem. (avec PRD-11) | **Non fait.** `workflows` et `product_equivalences` sont des écrans CRUD ; non exploités dans le MRP ; finalité non documentée. | ⬜ faire (léger) | 2 j |
 | ACH-01 | — | **Non fait.** Aucune table de contrat ni d'accord-cadre. | ⬜ faire | 3 j |
 | ACH-02 | — | **Non fait.** Aucune table ni fonction de score fournisseur. | ⬜ faire | 2 j |
 | VTE-01 | 3 j | **Partiel.** `resolve_price` (`117`) + helper client `resolvePrice` existent, mais **aucun formulaire ne l'appelle** : `price_list` n'est lu que par la page de saisie des grilles. | 🔶 finir | 2 j |
 | VTE-03 | — | **Partiel.** `calculate_payment_due_dates` (`88`) produit des échéances multiples ; manquent la cascade de remises, l'escompte conditionnel et les remises de fin d'année. | 🔶 faire | 3 j |
 
-**Compte du recomptage : 3 ✅** (`ACC-01`, `ACC-03`, `PRD-05`) **· 3 🔶**
-(`PRD-08`, `VTE-01`, `VTE-03`) **· 5 ⬜** (`PRD-03`, `PRD-04`, `PRD-10`, `ACH-01`,
-`ACH-02`) **· 0 écarté.**
+**Compte du recomptage (corrigé le 05/10) : 5 ✅** (`ACC-01`, `ACC-03`, `PRD-05`,
+`PRD-03`, `PRD-04`) **· 3 🔶** (`PRD-08`, `VTE-01`, `VTE-03`) **· 3 ⬜**
+(`PRD-10`, `ACH-01`, `ACH-02`) **· 0 écarté.**
 
 **Ce que le recomptage change.** Le §9 du plan rangeait ces onze chantiers sous
-« à estimer ». **Trois sont déjà faits** — comme pour la partie 3 (A.1), le suivi
-est en retard, pas le dépôt. La charge du périmètre ❓ tombe à **≈ 18,5 j**, dont
-**1 j** pour verrouiller les deux faits par une suite de non-régression
-(`ACC-01`, `ACC-03`) : un chantier prouvé par la migration mais par aucune suite
-reste un chantier « fait, non gardé ».
+« à estimer ». **Cinq sont déjà faits** — comme pour la partie 3 (A.1), le suivi
+est en retard, pas le dépôt. Et deux corrections d'honnêteté : `PRD-03` et
+`PRD-04` n'étaient ❓ que parce que la première mesure regardait le **vieux
+moteur client** (`runMRPCalculation`) ; le moteur qui fait foi — le RPC SQL
+`run_mrp` — les portait déjà. La charge du périmètre ❓ tombe à **≈ 13,5 j**
+(ACC-01/03 garde-fous 1 j, PRD-08 0,5 j, VTE-01 2 j, VTE-03 3 j, PRD-10 2 j,
+ACH-01 3 j, ACH-02 2 j).
 
 ### Les ⬜ du périmètre (E.2 → E.5), estimés
 
@@ -96,13 +98,50 @@ Les douze coquilles de mon périmètre : `uom_categories`, `landed_cost_lines`,
 `resource_capacities`. Chacune **branche** sur son chantier 9,5 ci-dessus, ou se
 **supprime** par une migration motivée dans `650`→`699` (E.5).
 
-### Ce qu'E.1 demande de vous
+## Les deux décisions de politique — tranchées le 05/10/2026
 
-Rien ne bloque. Deux choix de politique à confirmer avant E.3 et E.4 :
-1. **`STK-03`** : confirmer l'**écart** du FIFO/LIFO (le CUMP de `254` reste la
-   seule valorisation), ou dire que les couches sont voulues.
-2. **`PRD-03`** : l'horizon de calcul (jours) et la politique de consommation des
-   prévisions — c'est un paramètre de dossier, pas une constante.
+E.1 laissait deux questions ouvertes. Elles sont tranchées **selon les normes
+comptables et la pratique des leaders**, et chacune a sa migration et sa suite.
+
+### `STK-03` — la méthode de valorisation : LIFO interdit, CUMP + PEPS (migration `650`)
+
+**Le droit, pas une préférence.**
+- **IAS 2 (IFRS)** : le LIFO (« dernier entré, premier sorti ») est **interdit**.
+- **PCG français** (ANC 2014-03, art. 213-1) : CUMP et PEPS admis, **LIFO interdit
+  depuis le 1er janvier 2005** (CRC 2004-06).
+- **SYSCOHADA révisé** : CUMP et PEPS admis, **LIFO interdit**.
+
+**Les leaders s'alignent :** Odoo offre FIFO, AVCO et prix standard, **pas de
+LIFO** ; Sage Gestion Commerciale FR offre CUMP (défaut) et PEPS, pas de LIFO ;
+SAP n'a pas de LIFO en normes IFRS.
+
+**Décision.** `stock_valuation_method` n'admet plus que **`cump`** (défaut, moteur
+de la `254`) et **`fifo`** (PEPS). `lifo` est **écarté** — non pas « pas encore
+fait », mais **interdit**. La `650` resserre le `CHECK` et normalise les lignes
+existantes ; la suite `650` (4 scénarios) est **rouge avant** (`lifo` accepté) et
+**verte après**.
+
+### `PRD-03` — horizon et consommation des prévisions : la politique standard (migration `651`)
+
+**La pratique des leaders, mot pour mot.** Sage : « consommation des prévisions » ;
+Odoo : « consume forecast » ; SAP : *consumption of forecast*. Une **commande
+ferme de la période consomme la prévision** au lieu de s'y ajouter — sinon le
+besoin est compté deux fois.
+
+**Décision.** `run_mrp` prend deux paramètres : `p_consume_forecast` (défaut
+**true**) et `p_consumption_window_days` (défaut 0 = la période exacte ; la
+tolérance est offerte comme chez les leaders). Sous ce défaut, une prévision vaut
+`max(0, prévision − commandes fermes de sa fenêtre)`, et une commande tombant dans
+la fenêtre n'est plus ajoutée séparément ; `p_consume_forecast := false` rend
+l'ancien comportement (porte de non-régression). L'horizon était déjà le paramètre
+`p_horizon_days` du RPC. La `651` **retire l'ancienne signature** de `run_mrp`
+(leçon de la `316`, sinon deux `run_mrp` coexistent) et **repose les droits**
+(228, 152). Suite `651` (4 scénarios) : **rouge avant**, **verte après**.
+
+**État de la base, mesuré sur base neuve** (`postgres:16`, 330 migrations + `650`
++ `651`, 0 erreur) : `650` **4/4 vert** · `651` **4/4 vert** · non-régression
+`254` **5/5 vert** · `plpgsql_check` **0 erreur** · rôles opposables OK. Les deux
+suites sont câblées dans `ci.yml`, **sous le marqueur `# --- plan6:e ---`**.
 
 ## Le couplage à surveiller
 
@@ -145,4 +184,5 @@ comme le reste.
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
 |---|---|---|---|---|
-| 05/10/2026 | **E.1** — recomptage des 11 ❓ | 3 ✅ · 3 🔶 · 5 ⬜ · 0 écarté | ≈ 18,5 j (❓) + ≈ 9 sem. (⬜ E.2→E.5) | `35d5d5d` (doc seule, batterie non requise) |
+| 05/10/2026 | **E.1** — recomptage des 11 ❓ | 5 ✅ · 3 🔶 · 3 ⬜ · 0 écarté (corrigé) | ≈ 13,5 j (❓) + ≈ 9 sem. (⬜ E.2→E.5) | `35d5d5d` |
+| 05/10/2026 | **Les 2 décisions** — `STK-03` (`650`) et `PRD-03` (`651`) | LIFO écarté (IAS 2/PCG) ; consommation des prévisions livrée | 0,5 j, `650` 4/4 · `651` 4/4 · `254` 5/5 | à committer |

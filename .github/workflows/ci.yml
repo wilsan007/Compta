@@ -2331,6 +2331,20 @@ jobs:
       #              leurs tables coquilles
       # Plage : 650→699
 
+      # STK-03 (650) — le LIFO est interdit (IAS 2, PCG art. 213-1, SYSCOHADA) :
+      # `stock_valuation_method` n'admet plus que cump (défaut) et fifo (PEPS).
+      - name: 'E : STK-03 — méthode de valorisation, LIFO refusé (650)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/650_stock_valuation_method_lifo_rejected_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # PRD-03 (651) — consommation des prévisions (Sage/Odoo) : une commande
+      # ferme de la période consomme la prévision, elle n'est plus comptée deux fois.
+      - name: 'E : PRD-03 — consommation des prévisions (651)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/651_mrp_consommation_previsions_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles
