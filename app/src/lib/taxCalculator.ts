@@ -204,7 +204,12 @@ export function calculateCorporateTax(
       const cap = line.cap_amount != null ? Number(line.cap_amount) : null
       if (cap != null && lineTax > cap) lineTax = cap
     } else if (line.line_type === 'fixed_amount') {
-      lineTax = Number(line.fixed_amount || 0)
+      // Même règle que payroll.ts (inFixedBracket) : un montant fixe ne vaut que
+      // dans sa tranche [min_amount, max_amount]. Sans ce test, une grille en table
+      // (barème ITS de Djibouti, 370) est additionnée ligne par ligne.
+      const fMin = Number(line.min_amount || 0)
+      const fMax = line.max_amount != null ? Number(line.max_amount) : Infinity
+      lineTax = base >= fMin && base <= fMax ? Number(line.fixed_amount || 0) : 0
     }
 
     taxAmount += lineTax
@@ -217,6 +222,8 @@ export function calculateCorporateTax(
     for (const line of minimumTaxLines) {
       const base = line.base_type === 'turnover' ? turnover : profit
       let lineMinTax = 0
+      const fMin = Number(line.min_amount || 0)
+      const fMax = line.max_amount != null ? Number(line.max_amount) : Infinity
       if (line.line_type === 'percentage') {
         lineMinTax = base * (Number(line.rate || 0) / 100)
         const cap = line.cap_amount != null ? Number(line.cap_amount) : null
@@ -224,7 +231,8 @@ export function calculateCorporateTax(
         const floor = Number(line.fixed_amount || 0)
         if (floor > 0 && lineMinTax < floor) lineMinTax = floor
       } else if (line.line_type === 'fixed_amount') {
-        lineMinTax = Number(line.fixed_amount || 0)
+        // Même règle que plus haut : le montant ne vaut que dans sa tranche.
+        lineMinTax = base >= fMin && base <= fMax ? Number(line.fixed_amount || 0) : 0
       }
       minimumTax += lineMinTax
     }

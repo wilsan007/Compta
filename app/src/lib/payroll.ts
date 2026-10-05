@@ -245,6 +245,19 @@ function calculateBracket(base: number, line: PayrollTaxGridLine): number {
   return taxableInBracket * rate
 }
 
+// Un montant FIXE ne vaut que DANS sa tranche. Une grille « en table » — le barème
+// ITS de Djibouti (370) en compte 392 lignes de 5 000 DJF — serait sinon ADDITIONNÉE
+// en entier : `employeeAmount = line.fixed_amount` sans tester l'assiette cumule les
+// 392 montants et rend un impôt absurde. Mesuré le 04/10/2026 sur le moteur :
+// `bracket` et `percentage` testaient la tranche, `fixed_amount` non.
+// Bornes incluses des deux côtés : [min_amount, max_amount], et `max_amount IS NULL`
+// = « et au-delà » (le plancher extrapolé du barème DJ s'appuie dessus).
+function inFixedBracket(base: number, line: PayrollTaxGridLine): boolean {
+  const min = Number(line.min_amount || 0)
+  const max = line.max_amount != null ? Number(line.max_amount) : Infinity
+  return base >= min && base <= max
+}
+
 function calculatePercentage(base: number, line: PayrollTaxGridLine, isEmployer: boolean): number {
   const rate = isEmployer ? Number(line.rate_employer || 0) / 100 : Number(line.rate_employee || 0) / 100
   let amount = base * rate
@@ -336,7 +349,9 @@ export function calculatePayroll(input: PayrollInput, gridLines?: PayrollTaxGrid
       } else if (line.line_type === 'bracket') {
         employeeAmount = calculateBracket(base, line)
       } else if (line.line_type === 'fixed_amount') {
-        employeeAmount = Number(line.fixed_amount || 0)
+        // 04/10 : le montant ne s'applique QUE si l'assiette tombe dans sa tranche
+        // (cf. inFixedBracket) — sinon une grille en table s'additionne en entier.
+        employeeAmount = inFixedBracket(base, line) ? Number(line.fixed_amount || 0) : 0
       } else if (line.line_type === 'flat') {
         employeeAmount = Number(line.rate_employee || 0)
         employerAmount = Number(line.rate_employer || 0)
