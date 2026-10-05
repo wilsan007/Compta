@@ -107,6 +107,35 @@ sont **lues**). A2 n'a donc, a priori, qu'à **brancher la page**.
   — il débloque **B** (paie FR), **C.3** (Djibouti) et **A3.4** (`P1`).
 - **L'arbitrage de plage est tranché** : A démarre à `475` (ici **A1 = `475` → `486`**).
 
+## La batterie de la ligne A1 — rejouée le 05/10 sur base neuve complète
+
+Base `test_a3` (PostgreSQL 16, **333 migrations, 0 erreur**). **Toutes** les
+suites du périmètre A1, jouées d'affilée :
+
+| Suite | Objet | Verdict |
+|---|---|---|
+| `413` | invariants — le relevé | **8/8** |
+| `414` | alerte de dégradation | **7/7** — **`T07` vert** |
+| `431` | invariants rendus mesurables | **1/1** |
+| `435` | invariants par agrégation | **8/8** |
+| `434` | les 8 épreuves du banc | **8/8** |
+| `436` | les six maillons + **D8 (`T10`)** | **10/10** ✅ |
+| `460` | arborescence (Vue Chaîne — lecture) | **8/8** |
+| `462` | expliquer un montant (I-08) | **5/5** |
+| `ci/check_chain_rpc_inventory.sql` | les maillons RPC | **vert** — 15 = 7 tracés + 8 écartés |
+
+> ⚠️ **`436` est 10/10 cette fois** : le `p95` de D7 est passé **sous** le budget
+> G6. C'est la confirmation que les rouges D7 des passages précédents étaient
+> bien de la **volatilité d'horloge locale** (voir le
+> [rapport par maillon](A1-RAPPORT-PAR-MAILLON-2026-10-05.md) §7), et **non** un
+> défaut du banc. Le verdict de la CI fait foi ; ici, tout est vert.
+
+**Conclusion de la ligne A1.** Les deux tâches (`A1.a`, `A1.b`) sont **faites** ;
+le banc, les invariants et l'alerte sont **rejoués verts sur base neuve** ; les
+trois invariants encore non mesurables sont **arbitrés** (une part revient à A3,
+deux sont **demandées** à B et E/F, R3). **Reste à l'intégration** : réconcilier
+la note `414` « T07 rouge » (non reproduite) et transmettre les demandes.
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
