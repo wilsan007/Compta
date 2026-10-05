@@ -117,6 +117,12 @@ BEGIN
           500, 0, 500, 'not_paid')
   RETURNING id INTO v_pinv_id;
 
+  -- 05/10/2026 (354) : un règlement ne s'impute plus qu'à une facture APPROUVÉE. Le décor
+  -- pose donc sa ligne et approuve la facture — les assertions, elles, n'ont pas changé.
+  INSERT INTO purchase_invoice_lines (tenant_id, purchase_invoice_id, description, quantity, unit_price, vat_rate, total, vat_amount, line_order)
+  VALUES (v_tenant_id, v_pinv_id, 'Achat rapproché', 1, 500, 0, 500, 0, 0);
+  UPDATE purchase_invoices SET approval_status = 'approved' WHERE id = v_pinv_id;
+
   INSERT INTO supplier_payments (number, payment_date, amount, status, tenant_id, supplier_id, purchase_invoice_id)
   VALUES ('REG-FF-RAPPRO-1', CURRENT_DATE, 500, 'recorded', v_tenant_id, v_supplier_id, v_pinv_id)
   RETURNING id INTO v_spayment_id;

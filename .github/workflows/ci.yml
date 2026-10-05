@@ -2154,6 +2154,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Partie 2 : un règlement fournisseur imputé à une facture d'achat NON approuvée
+      # était accepté — facture « payée » sans écriture d'achat, 401 débité sans dette,
+      # approbation (271, M9) contournée par le paiement. 8 scénarios : refus à
+      # l'insertion (T01), sur facture rejetée (T02), à l'imputation après coup (T03) ;
+      # non-régression du règlement normal (T04) et du règlement sans facture (T05) ;
+      # les lignes héritées listées sans rien supprimer (T06), régularisées par
+      # l'approbation (T07) ou l'annulation du règlement (T08).
+      - name: 'Partie 2 : un règlement fournisseur exige une facture approuvée (354)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/354_supplier_payment_requires_approved_invoice_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # Partie 2, tâche 2.13 (G2, pil-007) : une grille de ventilation désignait son
       # compte et ses sections en TEXTE LIBRE — « 706999 » vers « ZZZ99 »
       # s'enregistrait et ne ventilait jamais rien. 3 scénarios : compte inexistant
