@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A + 1-B : LOC1-01 → 04 (+ LOC1-48) faits — `380`→`383`** ; LOC1-05 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOT 1-A + 1-B : LOC1-01 → 05 (+ LOC1-48) faits — `380`→`384`** ; LOC1-06 → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -135,12 +135,28 @@ rôles vers ses comptes. Les tables du pack y sont **raccrochées par clé
 *SystemAccounts* de Xero, les `property_*_account_id` d'Odoo et l'attribut
 « role » du *group chart* de SAP.
 
+### `LOC1-05` — `resolve_account` / `resolve_journal` (`384`)
+
+**`384_resolve_account.sql` (+ suite).** Le **point d'appel unique** du code vers
+un compte. `resolve_account(tenant, rôle, contexte)` résout dans l'ordre :
+**objet métier** (collectif d'un client, compte de vente d'une catégorie…) →
+**société** (`tenant_account_roles`) → **pack effectif** (lignée) → sinon **échec
+explicite** `ROLE_NON_MAPPE` ; le compte doit **exister dans le plan**
+(`COMPTE_ABSENT`). `resolve_journal` suit le même schéma. Surcharges société sous
+RLS (`tenant_id = current_tenant_id()`), et `resolve_account` /
+`resolve_account_from_context` sont **SECURITY INVOKER** : la RLS fait la garde
+(la porte `check_tenant_guard` refuse un DEFINER à uuid société sans garde).
+
 ### Ce qui reste dans C.1
 
-`LOC1-05` (`tenant_account_roles`, `resolve_account` / `resolve_journal`,
-surcharge par société **et** par contexte métier), puis `LOC1-06` → `58`.
-**R7** : `pack_*` (382) et les catalogues (383) sont **nouveaux** — aucun nom
-n'est réécrit dans une autre branche `plan6/*`.
+`LOC1-06` → `58` : réécrire sur les rôles les triggers ventes/achats/règlements,
+paie, stock, production, POS, clôture ; puis monnaie/arrondis, fiscalité, paie,
+états, capacités, packs `ZZ`… **Hors de ce lot** : les enveloppes
+`resolve_stock_account` / `resolve_variation_account` du cahier touchent des
+fonctions **déjà inscrites au registre** de `ci/check_tenant_guard.sql` — à
+traiter avec l'intégration (fichier hors territoire). **R7** : `pack_*` (382),
+les catalogues (383) et `resolve_*` (384) sont **nouveaux** — aucun nom n'est
+réécrit dans une autre branche `plan6/*`.
 
 ---
 
@@ -206,4 +222,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 05/10 | LOT 1-A (LOC1-01 + LOC1-48) | `legislation_packs` | modèle de pack : 17 colonnes ; 13 référentiels (un par norme) ; SYSCOHADA promu référentiel ; hiérarchie par 2 CHECK + FK composite ; fixture `310` corrigé ; suite branchée sous `plan6:c` | base neuve : **334 migrations / 0 erreur** ; `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; contrôles CI verts ; G5 151/151 | 1a9e0a7 |
 | 05/10 | LOT 1-A (LOC1-02) | `pack_*` | 10 tables du pack (globales, RLS lecture seule) ; `source_id` sur 7 tables ; `pack_code` + clé composite sur 3 grilles ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; **10 contrôles CI verts** ; G5 152/152 | fca2abd |
 | 05/10 | LOT 1-A (LOC1-03) | `pack_lineage` | résolution héritée : `pack_lineage`, `tenant_pack_code` (INVOKER), `pack_effective_value`, `v_pack_effective`, `pack_account_role/journal_role`, `pack_holidays_of` ; suite branchée sous `plan6:c` | base neuve : **336 migrations / 0 erreur** ; `382` 6/6, `381` 6/6, `380` 6/6, `202` 13/13, `310` 4/4, `237` 8/8, `370` 6/6 ; 9 contrôles CI verts | 5605d53 |
-| 05/10 | LOT 1-B (LOC1-04) | `*_role_catalog` | catalogue fermé : **67** rôles de comptes + **8** rôles de journaux (annexe B) ; les tables du pack y sont raccrochées par clé étrangère (rôle non catalogué refusé) ; suite branchée sous `plan6:c` | base : `383` 6/6 ; **11 contrôles CI verts** | (ce commit) |
+| 05/10 | LOT 1-B (LOC1-04) | `*_role_catalog` | catalogue fermé : **67** rôles de comptes + **8** rôles de journaux (annexe B) ; les tables du pack y sont raccrochées par clé étrangère (rôle non catalogué refusé) ; suite branchée sous `plan6:c` | base : `383` 6/6 ; **11 contrôles CI verts** | fbfc978 |
+| 05/10 | LOT 1-B (LOC1-05) | `resolve_account` | point d'appel unique : objet métier → société → pack (lignée) → échec explicite (`ROLE_NON_MAPPE` / `COMPTE_ABSENT`) ; `resolve_journal` ; surcharges société sous RLS ; INVOKER (la RLS fait la garde) ; suite branchée sous `plan6:c` | base : `384` 7/7 ; **10 contrôles CI verts** ; G5 155/155 | (ce commit) |
