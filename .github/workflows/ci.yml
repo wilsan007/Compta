@@ -2337,6 +2337,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-003 (partie B, lot Ventes) — valider un devis : numéro définitif, verrou
+      # d'en-tête, lignes gelées (la transformation R-001 reste permise).
+      - name: 'plan6 B — R-003 : devis validé → numéro définitif + verrou (503)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/503_regle_ventes_devis_valide_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
