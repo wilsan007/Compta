@@ -11,7 +11,7 @@ export function TreasuryForecastPage() {
   const { t } = useTranslation('treasury')
   const { toast } = useToast()
   const { t: tCommon } = useTranslation('common')
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<Awaited<ReturnType<typeof getTreasuryForecast>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [horizon, setHorizon] = useState('90')
   const [forecastLoading, setForecastLoading] = useState(false)

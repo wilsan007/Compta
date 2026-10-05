@@ -26,7 +26,7 @@ export function EmployeeExpensesPage() {
   const [reports, setReports] = useState<Awaited<ReturnType<typeof getMyExpenseReports>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [selectedReport, setSelectedReport] = useState<any>(null)
+  const [selectedReport, setSelectedReport] = useState<Awaited<ReturnType<typeof getMyExpenseReports>>[number] | null>(null)
   /** `id` de la note → son élément de paie. Absente = la note n'est jamais entrée en paie. */
   const [payrollByReport, setPayrollByReport] = useState<Map<string, ExpensePayrollLink>>(new Map())
 

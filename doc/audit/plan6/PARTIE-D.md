@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ⬜ |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranche 1 (05/10) : 11 états** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -156,6 +156,42 @@ export function confirmSync(message: string): boolean { return window.confirm(me
 1.8 / AUD-I01 le demandent. Aucun usage restant (mesuré : `grep confirmSync
 app/src` = cette seule ligne).
 
+## D.2 — typer les états d'écran (suite de 2.16)
+
+**Méthode 2.16** : nommer le type d'un état depuis sa fonction de requête —
+`useState<Awaited<ReturnType<typeof FN>>>` (ou `[number]` pour l'élément).
+
+**Ce que la mesure dit d'abord.** L'audit du 02/10
+([ETAT-DES-LIEUX-TYPAGE-ETATS-TRANCHE-2](../ETAT-DES-LIEUX-TYPAGE-ETATS-TRANCHE-2-2026-10-02.md))
+a montré que le lot « 85 états » était une **hypothèse** et que **son lot de
+défauts produits est vide**. D.2 est donc de l'**hygiène** de typage (faire
+baisser le plafond `any`), pas la fermeture de défauts annoncés.
+
+### Tranche 1 — 05/10 (11 états, 7 écrans)
+
+| Écran | États typés |
+|---|---|
+| `EmployeeExpensesPage` | `selectedReport` |
+| `EmployeeExitPage` | `processes`, `selectedProcess` |
+| `ManagerExpenseApprovalsPage` | `reports`, `selectedReport`, `lines` |
+| `crm/CampaignsPage` | `stats` |
+| `TreasuryDashboardPage` | `data` |
+| `TreasuryForecastPage` | `data` |
+| `HRDashboardPage` | `timesheets`, `dashData` |
+
+**Défaut révélé ET fermé** — `HRDashboardPage` : la garde
+`dashData?.medical?.overdue > 0` ne **couvrait pas** la lecture
+`dashData.medical.overdue` qui suivait (accès **non chaîné**). `tsc` l'a attrapé
+dès que l'état a été typé ; corrigé en `(… ?? 0) > 0` + `dashData?.medical?.overdue`.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 925**
+(`.any-ceiling.json` est régénéré par l'intégration — règle R6, laissé au gel ici).
+
+**Suite** — les états restants (document, RH, immobilisations, production, CRM),
+puis la « voie C » de 2.16 (déclarer le type de retour des fonctions de requête
+avant de nommer les états).
+
 ## D.3 — alignement des colonnes (reprise gelée)
 
 Voir [REPRISE-2-ALIGNEMENT-COLONNES.md](REPRISE-2-ALIGNEMENT-COLONNES.md) :
@@ -192,3 +228,4 @@ tableau** et **désaligne les colonnes**. Corrigé **au mot près** du gel `f5cd
 | 05/10 | D.1 · lot 3 | `accounting` | 30 écrans : `confirmSync` → `confirmDialog`, 41 appels | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `f9b9079` |
 | 05/10 | D.1 · lot 4 | modules restants | 41 fichiers + 5 mocks : `confirmSync` → `confirmDialog` | grep 0 · tsc ✅ · oxlint 0 · Vitest 1661/1699 | `8f57910` |
 | 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `10a51bb` |
+| 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `HASH_D2T1` |

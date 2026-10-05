@@ -11,10 +11,10 @@ export function ManagerExpenseApprovalsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [reports, setReports] = useState<any[]>([])
+  const [reports, setReports] = useState<Awaited<ReturnType<typeof getPendingExpenseReports>>>([])
   const [loading, setLoading] = useState(true)
-  const [selectedReport, setSelectedReport] = useState<any>(null)
-  const [lines, setLines] = useState<any[]>([])
+  const [selectedReport, setSelectedReport] = useState<Awaited<ReturnType<typeof getPendingExpenseReports>>[number] | null>(null)
+  const [lines, setLines] = useState<Awaited<ReturnType<typeof getExpenseReportLines>>>([])
 
   const loadData = useCallback(async () => {
     setLoading(true)
