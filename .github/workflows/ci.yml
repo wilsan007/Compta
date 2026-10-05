@@ -2334,6 +2334,13 @@ jobs:
       - name: 'L16 : devis accepté → commande, tracé (493)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/493_chain_l16_devis_commande_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL (tronçon 2) : la LIVRAISON issue d'une
+      # COMMANDE est rattachée et tracée (effet `sale.order.to_delivery`).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (brouillon, autre
+      # client, annulé, inexistant), la frise des deux côtés (I-01), isolation (D8).
+      - name: 'L16 : commande → livraison, rattachée et tracée (494)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/494_chain_l16_commande_livraison_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559

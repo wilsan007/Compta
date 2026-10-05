@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **1er maillon livré le 05/10** : L16 · devis accepté → commande (493), **19/19 verdicts** — voir §A3.2 lot 1 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **2 maillons livrés le 05/10** : L16 Commercial — devis → commande (`493`, **19/19**) et commande → livraison (`494`, **14/14**) — voir §A3.2 lots 1 et 2 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -112,15 +112,54 @@ d'aval n'est modifié) ni la facturation (le devis peut produire une commande
 **ou** une facture, les deux étant tracés séparément). Les 8 autres familles de
 L16 (stock, production, RH, projets, trésorerie…) restent devant.
 
+## A3.2 — lot 2 : la livraison rattachée à la commande (migration `494`)
+
+**Le tronçon suivant du module Commercial** — « commande ↔ livraison » (§B.3).
+Mesuré avant d'écrire : `delivery_notes.sales_order_id` et
+`delivery_note_lines.sales_order_line_id` **existaient**, et **personne ne les
+écrivait** ; aucun contrat d'effet, donc aucun maillon.
+
+**Ce qui est livré** — migration `494_chain_l16_commande_livraison.sql` :
+
+1. le **contrat d'effet** `sale.order.to_delivery` (`document_effects`) ;
+2. le maillon `chain_l16_order_deliver(p_order, p_delivery)` : la commande
+   **confirmée** rattache son bon de livraison — **cohérence vérifiée** (même
+   client, statuts valides), **idempotent** (rejeu refusé), le
+   `delivery_notes.sales_order_id` est **écrit** (la colonne que personne
+   n'écrivait), et le **lien** `link_documents` est posé (`delivered_by`).
+
+**Éprouvé** — suite `494` **14/14 verdicts** sur base neuve (clone de
+`a3_maillon`, 333 migrations) :
+
+| Épreuve | Verdicts | Ce qui est prouvé |
+|---|---|---|
+| **T01** nominal | 3 | bon rattaché, `sales_order_id` posé, **le lien est posé** |
+| **T02** idempotence (D1) | 2 | rejeu **REFUSÉ** (`unique_violation`), un seul lien |
+| **T03** refus explicites | 4 | brouillon / autre client / annulé / inexistant — **quatre raisons** |
+| **T04** la frise (I-01) | 2 | la frise voit le bon **depuis la commande**, et la commande **depuis le bon** |
+| **T05** isolation (D8) | 3 | le voisin ne rattache pas, ne voit **aucun** lien ; le lien de A reste à A |
+
+**Portes franchies** : G2 (contrat d'effet) **63 constats, 0 au registre** ;
+G8 (inventaire RPC) OK ; `check_tenant_guard` OK (485 SECURITY DEFINER, 0 sans
+mention de la société) ; `check_anon_grants` OK ; `check_forced_rls_writers` OK ;
+rejouabilité de la `494` OK ; suite **enrôlée dans `ci.yml`** (G5 **152/152**).
+
+**Ce que ce lot NE fait pas** : il ne modifie pas le **statut de la commande**
+(`sales_orders.delivery_status` reste piloté par les écrivains existants), ni la
+sortie de stock (déjà portée par le bon, `sale.delivery.stock_out`). Restent de
+la famille Commercial : livraison ↔ facture (partiellement chez B), avoir,
+règlement, relance, et la **marge prévisionnelle** (absente).
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
 |---|---|---|---|
-| 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** | A1 — invariant **INV-07** | rend **INV-07** mesurable (lien groupe de lettrage ↔ ligne de TVA). `lettrage_groups` n'a aujourd'hui **aucune clé** vers `journal_lines` ; c'est le **lettrage génératif** d'**L21** (reste d'A3.2), qui attend **L20-tranche 2** pour être jouable |
+| 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** (pour **INV-07**) | A1 — invariant **INV-07** | **Mesure du 05/10** : `journal_lines.lettrage_group_id` **existe déjà** (124) mais **sans clé étrangère** — un premier tronçon possible (FK composite, doctrine 237). Mais INV-07 lui-même (« le lettrage = la TVA sur encaissements ») est le **lettrage génératif** d'**L21**, **bloqué par L20-tranche 2** |
 
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
 | 2026-10-05 | A3.1 | Recomptage L16 → L22 : `415` → `422` inventoriés (L17 livré, L18/L19/L20/L23 en tranche 1, L16/L21/L22 ouverts) ; 421 libre, 419 sans suite | — (lecture seule) | `ea722d2` |
-| 2026-10-05 | A3.2 (lot 1) | **L16 · devis accepté → commande** : migration `493` (type `quotes` au registre, contrat `sale.quote.to_order`, maillon `convert_quote_to_order` — prix gelé, idempotent, réversible, tracé) + suite `493` enrôlée dans `ci.yml` | suite **19/19** sur base neuve (333 migrations) · G2 **0 effet non déclaré** · `493` rejouable | _(ce lot)_ |
+| 2026-10-05 | A3.2 (lot 1) | **L16 · devis accepté → commande** : migration `493` (type `quotes` au registre, contrat `sale.quote.to_order`, maillon `convert_quote_to_order` — prix gelé, idempotent, réversible, tracé) + suite `493` enrôlée dans `ci.yml` | suite **19/19** sur base neuve (333 migrations) · G2 **0 effet non déclaré** · `493` rejouable | `fa9ccb7` |
+| 2026-10-05 | A3.2 (lot 2) | **L16 · commande → livraison** : migration `494` (contrat `sale.order.to_delivery`, maillon `chain_l16_order_deliver` — cohérence client/statut, idempotent, écrit `delivery_notes.sales_order_id`, lien `delivered_by`) + suite `494` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 63 constats **0 au registre** · G8/tenant/anon/forced-RLS **OK** · `494` rejouable · G5 **152/152** | _(ce lot)_ |
