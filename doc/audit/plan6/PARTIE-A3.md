@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **2 maillons livrés le 05/10** : L16 Commercial — devis → commande (`493`, **19/19**) et commande → livraison (`494`, **14/14**) — voir §A3.2 lots 1 et 2 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **3 maillons livrés le 05/10** : L16 Commercial — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**) et livraison → facture (`495`, **14/14**) — voir §A3.2 lots 1, 2 et 3 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -150,6 +150,29 @@ sortie de stock (déjà portée par le bon, `sale.delivery.stock_out`). Restent 
 la famille Commercial : livraison ↔ facture (partiellement chez B), avoir,
 règlement, relance, et la **marge prévisionnelle** (absente).
 
+## A3.2 — lot 3 : la facture rattachée au bon de livraison (migration `495`)
+
+**Le tronçon suivant du module Commercial** — « livraison ↔ facture » (§B.3),
+après `493` (devis → commande) et `494` (commande → livraison). Mesuré avant
+d'écrire : `invoices.delivery_note_id` et `invoice_lines.delivery_note_line_id`
+**existaient**, et **personne ne les écrivait** ; aucun contrat d'effet.
+
+**Ce qui est livré** — migration `495_chain_l16_livraison_facture.sql` :
+contrat d'effet `sale.delivery.to_invoice` + maillon
+`chain_l16_delivery_invoice(p_delivery, p_invoice)` — la facture et le bon
+visent le **même client**, ni l'un ni l'autre n'est **annulé**, un bon déjà
+facturé par une autre facture est **refusé** ; **idempotent** (rejeu refusé) ;
+`invoices.delivery_note_id` **écrit** ; **lien** `link_documents` (`invoiced_by`).
+
+**Éprouvé** — suite `495` **14/14 verdicts** sur base neuve : T01 nominal (3),
+T02 idempotence (2), T03 quatre refus explicites (4), T04 frise des deux côtés
+(2), T05 isolation (3). Portes : G2 **64 constats, 0 au registre** ; G8,
+`check_tenant_guard` (486 SECURITY DEFINER, 0 sans société), `check_anon_grants`
+**OK** ; `495` rejouable ; suite enrôlée dans `ci.yml` (G5 **153/153**).
+
+**Reste de la famille Commercial** : avoir (`reversed_by`), règlement
+(`paid_by`), relance, et la **marge prévisionnelle** (absente).
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -162,4 +185,5 @@ règlement, relance, et la **marge prévisionnelle** (absente).
 |---|---|---|---|---|
 | 2026-10-05 | A3.1 | Recomptage L16 → L22 : `415` → `422` inventoriés (L17 livré, L18/L19/L20/L23 en tranche 1, L16/L21/L22 ouverts) ; 421 libre, 419 sans suite | — (lecture seule) | `ea722d2` |
 | 2026-10-05 | A3.2 (lot 1) | **L16 · devis accepté → commande** : migration `493` (type `quotes` au registre, contrat `sale.quote.to_order`, maillon `convert_quote_to_order` — prix gelé, idempotent, réversible, tracé) + suite `493` enrôlée dans `ci.yml` | suite **19/19** sur base neuve (333 migrations) · G2 **0 effet non déclaré** · `493` rejouable | `fa9ccb7` |
-| 2026-10-05 | A3.2 (lot 2) | **L16 · commande → livraison** : migration `494` (contrat `sale.order.to_delivery`, maillon `chain_l16_order_deliver` — cohérence client/statut, idempotent, écrit `delivery_notes.sales_order_id`, lien `delivered_by`) + suite `494` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 63 constats **0 au registre** · G8/tenant/anon/forced-RLS **OK** · `494` rejouable · G5 **152/152** | _(ce lot)_ |
+| 2026-10-05 | A3.2 (lot 2) | **L16 · commande → livraison** : migration `494` (contrat `sale.order.to_delivery`, maillon `chain_l16_order_deliver` — cohérence client/statut, idempotent, écrit `delivery_notes.sales_order_id`, lien `delivered_by`) + suite `494` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 63 constats **0 au registre** · G8/tenant/anon/forced-RLS **OK** · `494` rejouable · G5 **152/152** | `010db14` |
+| 2026-10-05 | A3.2 (lot 3) | **L16 · livraison → facture** : migration `495` (contrat `sale.delivery.to_invoice`, maillon `chain_l16_delivery_invoice` — cohérence client/statut, idempotent, écrit `invoices.delivery_note_id`, lien `invoiced_by`) + suite `495` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 64 constats **0 au registre** · G8/tenant/anon **OK** · `495` rejouable · G5 **153/153** | _(ce lot)_ |

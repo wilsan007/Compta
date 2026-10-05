@@ -2341,6 +2341,13 @@ jobs:
       - name: 'L16 : commande → livraison, rattachée et tracée (494)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/494_chain_l16_commande_livraison_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL (tronçon 3) : la FACTURE d'un bon de
+      # livraison lui est rattachée et tracée (effet `sale.delivery.to_invoice`).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (bon annulé/retourné,
+      # facture annulée, autre client), la frise des deux côtés (I-01), isolation (D8).
+      - name: 'L16 : livraison → facture, rattachée et tracée (495)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/495_chain_l16_livraison_facture_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
