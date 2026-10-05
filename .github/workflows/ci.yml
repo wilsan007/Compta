@@ -2323,6 +2323,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-004 (partie B, lot Ventes) — une commande FACTURÉE se rapproche de ses
+      # factures (lien `invoiced_by`), reliquat non facturé mesuré.
+      - name: 'plan6 B — R-004 : commande facturée → rapprochement (501)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/501_regle_ventes_commande_facturee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
