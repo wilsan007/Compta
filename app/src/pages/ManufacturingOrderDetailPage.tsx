@@ -5,6 +5,8 @@ import { ArrowLeft, Plus, Trash2, Tag, Calendar, Package, Layers, ClipboardList,
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency } from '@/lib/utils'
+import { ChainTimeline } from '@/components/ChainTimeline'
+import { ExplainAmount } from '@/components/ExplainAmount'
 import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import type { Product } from '@/types'
@@ -17,6 +19,8 @@ export function ManufacturingOrderDetailPage() {
   const navigate = useNavigate()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
+  // I-01 — la Vue Chaîne, dans son propre espace de noms d'écran.
+  const { t: tChain } = useTranslation('crossModule')
   const { toast } = useToast()
   const [mo, setMo] = useState<any>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -250,6 +254,19 @@ export function ManufacturingOrderDetailPage() {
                 )}
               </div>
             )}
+          </Card>
+          <Card>
+            <div className="p-4">
+              {/* I-01 — la Vue Chaîne : ce que la base a tracé (`document_links`).
+                  Un OF vient d'un besoin MRP, d'une sous-nomenclature ou de la
+                  main ; il produit des consommations, des lots et une écriture.
+                  Ce qui n'a pas de lien reste muet — jamais inventé. */}
+              <div className="text-[var(--color-text-secondary)] mb-1">{tChain('chain.title')}</div>
+              <ChainTimeline type="manufacturing_orders" id={mo.id} libelle={t('manufacturing.detail.info.number')} />
+              {/* I-08 — le « pourquoi ce coût ? », sans aucun recalcul (le coût
+                  vient de la base, et une provenance absente est DITE absente). */}
+              <ExplainAmount type="manufacturing_orders" id={mo.id} montantAffiche={coutAffiche ? Number(coutAffiche.total) : null} />
+            </div>
           </Card>
         </div>
       )}

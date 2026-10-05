@@ -29,7 +29,7 @@ D vis-à-vis de nous).
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A2.1 | Recompter la Vue Chaîne : ce que `460` → `467` couvrent, ce qu'il manque pour I-01 | A.5 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | 🟡 **2 pages livrées le 05/10** (achats `purchase_invoices`, notes de frais `expense_reports`) — voir §Livré |
+| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | 🟡 **5 pages ajoutées le 05/10** (6 au total avec `InvoicesPage`) — voir §Livré |
 | A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ⬜ |
 | A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ⬜ |
 
@@ -65,11 +65,53 @@ explication).
 | `InvoicesPage` | `invoices` | ✅ (existante, modèle suivi) |
 | `PurchaseInvoicesPage` | `purchase_invoices` | ✅ ajoutée le 05/10 |
 | `EmployeeExpensesPage` | `expense_reports` | ✅ ajoutée le 05/10 |
+| `ManufacturingOrderDetailPage` | `manufacturing_orders` | ✅ ajoutée le 05/10 (page détail existante) |
+| `SalesOrdersPage` | `sales_orders` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes, reliquats, frise) |
+| `DeliveryNotesPage` | `delivery_notes` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes, reliquats facturés, frise) |
 
-**Vérifications** : `tsc -b` **0 erreur** · `oxlint` **0/0** · `i18n:check`
-**vert** · Vitest **1 661 verts** (suite complète ; dont `chainTimeline` 4,
-`explainAmount` 3, `chain-coherence` 9) · plafonds `any` **936/936** et
-`console.error` **488/488** conformes.
+**La règle appliquée (décision du 05/10, du demandeur)** : *une vue détail est
+ouverte seulement là où il y a de la matière à voir en détail*. Conséquence
+directe et assumée :
+
+- **6 pages** hébergent la frise — les 3 qui avaient déjà un détail
+  (`invoices`, `purchase_invoices`, `expense_reports`) + les 3 créées ici ;
+- **pas d'I-08** sur le bon de livraison : un BL ne porte aucun montant,
+  « pourquoi ce chiffre ? » n'aurait rien à expliquer — on n'ouvre pas une
+  explication vide ;
+- **les pages sans matière à détail n'en reçoivent pas** : `QuotesPage`
+  (devis), `PurchaseOrdersPage`, `PosSessionsPage`, `PayrollAccountingPage`
+  n'ont ni lignes consultables ni vue détail. Y héberger la frise demanderait
+  d'abord de **créer l'écran de détail** — décision de conception, pas
+  intégration (demande R3 ci-dessous).
+
+**Vérifications** : `tsc -b` **0 erreur** · `oxlint` **0/0** · `i18n:check` **vert
+pour mes fichiers** · `a11y:icon-buttons` **vert** · Vitest **1 661 verts** ·
+plafonds `any` **936/936** et `console.error` **488/488** conformes pour mes
+fichiers.
+
+## ⚠️ Collision de session dans ce worktree (05/10, 23h04)
+
+Pendant ce lot, **une autre session a écrit dans ce worktree** (territoire A2,
+normalement) : `app/src/pages/CoherencePage.tsx` (non suivi, 23h04) et les
+`app/src/i18n/locales/{fr,en,ar}/{crossModule,nav}.json`. Ce fichier est du
+**territoire A2.4** (lecture écran de l'indice de cohérence).
+
+Conséquence, **mesurée et non cachée** :
+
+- `i18n:check` **échoue sur 20 clés** — toutes dans `CoherencePage.tsx`
+  (`crossModule:coherence.*` absentes en fr) ; **aucune de mes clés** ;
+- `audit:console-error-ceiling` **489 > 488** — causé par le `console.error` de
+  ce même fichier ; mes 3 pages n'en ajoutent aucun (`git diff` : 0).
+
+**Je n'ai rien touché** dans ce fichier ni dans ces locales (R3 : hors de mon
+lot ; et une session y travaille en direct). Le commit ci-dessous **n'ajoute que
+mes 3 pages et ce fichier de suivi**.
+
+**Demandes à l'intégration (R3)** :
+1. `CoherencePage.tsx` et les clés `crossModule:coherence.*` : à porter au
+   compte d'**A2.4** (la session en cours), pas de ce lot ;
+2. une session ne doit pas écrire dans le worktree d'une autre partie (R1) —
+   `CoherencePage.tsx` a été créé dans `plan6-a2-vue-chaine`.
 
 **Ce qu'il reste pour tenir I-01, et pourquoi ce n'est pas mécanique.** Les
 pages candidates suivantes (commandes de vente `sales_orders`, devis, réceptions
@@ -87,4 +129,5 @@ balaie déjà ?
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
 | 2026-10-05 | A2.1 | Recomptage Vue Chaîne : backend `460`/`462` + composant OK, frise hébergée sur `InvoicesPage` seulement | — (lecture seule) | `3a2642c` |
-| 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | _(ce lot)_ |
+| 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | `5cd2dcc` |
+| 2026-10-05 | A2.2 (lot 2) | Frise sur l'OF (page détail existante) ; **vues détail créées** sur les commandes de vente et les bons de livraison (lignes, reliquats, frise) ; pas d'I-08 sur le BL | `tsc` 0 · `oxlint` 0/0 · a11y vert · Vitest **1 661** · plafonds conformes (hors `CoherencePage.tsx`, session parallèle) | _(ce lot)_ |
