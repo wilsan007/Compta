@@ -265,53 +265,91 @@ export async function getSIGData(fiscalYearId?: string): Promise<SigRow[]> {
 // ANA-03 (304) : la balance porte sur **la période demandée**, plus sur tout
 // l'historique. Le filtre s'appuie sur la date de l'écriture (`journal_entries`
 // en jointure interne), comme les autres états comptables.
-export async function getAnalyticBalance(dateFrom: string, dateTo: string) {
-  const tid = await getTenantId()
-  let abQ2 = supabase
-    .from('journal_lines')
-    .select('analytic_section_id, analytic_amount, debit, credit, account_code, account_general, journal_entries!inner(date)')
-    .not('analytic_section_id', 'is', null)
-    .gte('journal_entries.date', dateFrom)
-    .lte('journal_entries.date', dateTo)
-    .order('id')
-  if (tid) abQ2 = abQ2.eq('tenant_id', tid)
-  // LOT7-03 : balance analytique = agrégat par section, borné à la période.
-  const lines = await fetchAllRows<any>(abQ2, { label: 'getAnalyticBalance/journal_lines' })
+/** Une ligne de la balance analytique : une section, ses mouvements, son montant imputé. */
+export interface AnalyticBalanceRow {
+  sectionId: string; sectionCode: string; sectionName: string; planId: string | null
+  totalDebit: number; totalCredit: number; totalAnalytic: number
+}
+/** Une ligne d'écriture telle que la balance la lit, avec ses parts ventilées s'il y en a. */
+export interface AnalyticBalanceSourceLine {
+  analytic_section_id: string | null
+  analytic_amount: number | string | null
+  debit: number | string | null
+  credit: number | string | null
+  analytic_distribution_lines?: { section_id: string; amount: number | string | null }[] | null
+}
 
-  let asQ = supabase.from('analytic_sections').select('*').order('id')
-  if (tid) asQ = asQ.eq('tenant_id', tid)
-  const sections = await fetchAllRows<Row<'analytic_sections'>>(asQ, { label: 'getAnalyticBalance/analytic_sections' })
-
+/**
+ * 2.13 (353) — l'agrégat de la balance analytique, par section.
+ *
+ * Une ligne d'écriture ventilée (grille 60 / 40, ventilation saisie) porte ses PARTS
+ * dans `analytic_distribution_lines` : chaque section reçoit la sienne. Avant, seule
+ * la section dominante de la ligne comptait, pour sa seule part — les 40 % restants
+ * n'apparaissaient nulle part. Une ligne sans part garde sa section unique.
+ */
+export function aggregateAnalyticBalance(
+  lines: AnalyticBalanceSourceLine[],
+  sections: Pick<Row<'analytic_sections'>, 'id' | 'code' | 'name' | 'plan_id'>[],
+): AnalyticBalanceRow[] {
   const sectionMap = new Map(sections.map((s) => [s.id, s]))
-
-  // Corrigé le 2026-10-01 : l'agrégat ne portait PAS le plan de la section, alors
-  // que l'écran en a un sélecteur (« Tous les plans » / un plan). Le filtre de
-  // `AnalyticBalancePage` cherchait `d.planId` / `d.plan_id` sur un objet qui ne
-  // les avait pas : la condition était TOUJOURS fausse, et choisir un plan vidait
-  // l'écran (totaux à zéro) au lieu de filtrer. `analytic_sections.plan_id` existe
-  // (information_schema) — il remonte maintenant.
-  const bySection: Record<string, {
-    sectionId: string; sectionCode: string; sectionName: string; planId: string | null
-    totalDebit: number; totalCredit: number; totalAnalytic: number
-  }> = {}
-
-  for (const line of lines) {
-    const sid = line.analytic_section_id
-    if (!sid) continue
+  const bySection: Record<string, AnalyticBalanceRow> = {}
+  const row = (sid: string) => {
     if (!bySection[sid]) {
       const sec = sectionMap.get(sid)
+      // Le plan de la section remonte : le sélecteur de plan de l'écran filtre dessus.
       bySection[sid] = {
         sectionId: sid, sectionCode: sec?.code || '—', sectionName: sec?.name || '—',
         planId: sec?.plan_id ?? null,
         totalDebit: 0, totalCredit: 0, totalAnalytic: 0,
       }
     }
-    bySection[sid].totalDebit += Number(line.debit) || 0
-    bySection[sid].totalCredit += Number(line.credit) || 0
-    bySection[sid].totalAnalytic += Number(line.analytic_amount) || 0
+    return bySection[sid]
+  }
+
+  for (const line of lines) {
+    const debit = Number(line.debit) || 0
+    const credit = Number(line.credit) || 0
+    const parts = (line.analytic_distribution_lines || []).filter((p) => p.section_id)
+    if (parts.length > 0) {
+      // La part porte le sens de la ligne : au débit si la ligne est au débit, sinon au crédit.
+      for (const part of parts) {
+        const amount = Number(part.amount) || 0
+        const r = row(part.section_id)
+        if (debit !== 0) r.totalDebit += amount
+        else r.totalCredit += amount
+        r.totalAnalytic += amount
+      }
+      continue
+    }
+    const sid = line.analytic_section_id
+    if (!sid) continue
+    const r = row(sid)
+    r.totalDebit += debit
+    r.totalCredit += credit
+    r.totalAnalytic += Number(line.analytic_amount) || 0
   }
 
   return Object.values(bySection).sort((a, b) => a.sectionCode.localeCompare(b.sectionCode))
+}
+
+export async function getAnalyticBalance(dateFrom: string, dateTo: string): Promise<AnalyticBalanceRow[]> {
+  const tid = await getTenantId()
+  let abQ2 = supabase
+    .from('journal_lines')
+    .select('analytic_section_id, analytic_amount, debit, credit, account_code, account_general, journal_entries!inner(date), analytic_distribution_lines(section_id, amount)')
+    .not('analytic_section_id', 'is', null)
+    .gte('journal_entries.date', dateFrom)
+    .lte('journal_entries.date', dateTo)
+    .order('id')
+  if (tid) abQ2 = abQ2.eq('tenant_id', tid)
+  // LOT7-03 : balance analytique = agrégat par section, borné à la période.
+  const lines = await fetchAllRows<AnalyticBalanceSourceLine>(abQ2, { label: 'getAnalyticBalance/journal_lines' })
+
+  let asQ = supabase.from('analytic_sections').select('*').order('id')
+  if (tid) asQ = asQ.eq('tenant_id', tid)
+  const sections = await fetchAllRows<Row<'analytic_sections'>>(asQ, { label: 'getAnalyticBalance/analytic_sections' })
+
+  return aggregateAnalyticBalance(lines, sections)
 }
 
 // --- Fiscal Year Closure: close year + generate opening entries ---

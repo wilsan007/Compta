@@ -16,7 +16,7 @@
     "invoicesByStatus": "Invoices by status",
     "monthlyRevenue": "Monthly revenue"
   },
-  "invoices": { "analyticSection": "Analytic section",
+  "invoices": { "editDraft": "Edit draft", "editDraftTitle": "Edit draft {{number}}", "draftUpdated": "Draft updated.", "analyticSection": "Analytic section",
     "title": "Invoices",
     "proFormaNotice": "PRO FORMA — provisional document, not valid as an invoice",
     "subtitle": "Manage your sales invoices",

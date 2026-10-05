@@ -267,7 +267,6 @@ const GridTemplatesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({
 const PaymentTemplatesComptaPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.PaymentTemplatesComptaPage })))
 const StandardLabelsPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.StandardLabelsPage })))
 const AnalyticJournalCodesPage = lazy(() => import('@/pages/Phase7DPages').then(m => ({ default: m.AnalyticJournalCodesPage })))
-const AnalyticODEntryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticODEntryPage })))
 const ThirdPartyInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ThirdPartyInquiryPage })))
 const AnalyticInquiryPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.AnalyticInquiryPage })))
 const ReimputationPage = lazy(() => import('@/pages/Phase7DInquiryPages').then(m => ({ default: m.ReimputationPage })))
@@ -721,7 +720,9 @@ function App() {
           <Route path="/accounting/payment-templates-compta" element={<PaymentTemplatesComptaPage />} />
           <Route path="/accounting/standard-labels" element={<StandardLabelsPage />} />
           <Route path="/accounting/analytic-journal-codes" element={<AnalyticJournalCodesPage />} />
-          <Route path="/accounting/analytic-od-entry" element={<AnalyticODEntryPage />} />
+          {/* 2.13 (G1) : « Saisie OD analytique » n'était qu'une liste de sections, sans formulaire.
+              Une OD analytique se saisit dans la saisie d'écriture, qui porte la section par ligne. */}
+          <Route path="/accounting/analytic-od-entry" element={<Navigate to="/accounting/treatment/journal-entry" replace />} />
           <Route path="/accounting/third-party-inquiry" element={<ThirdPartyInquiryPage />} />
           <Route path="/accounting/analytic-inquiry" element={<AnalyticInquiryPage />} />
           <Route path="/accounting/reimputation" element={<ReimputationPage />} />

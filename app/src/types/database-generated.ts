@@ -4136,6 +4136,7 @@ export interface Database {
         vat_code: string | null
         vat_amount: number
         account_code: string | null
+        analytic_section_id: string | null
       }
       Insert: {
         id?: string
@@ -4153,6 +4154,7 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
         account_code?: string
+        analytic_section_id?: string
       }
       Update: {
         id?: string
@@ -4170,8 +4172,16 @@ export interface Database {
         vat_code?: string
         vat_amount?: number
         account_code?: string
+        analytic_section_id?: string
       }
       Relationships: [
+        {
+          foreignKeyName: "credit_note_lines_analytic_section_fkey",
+          columns: ["tenant_id", "analytic_section_id"],
+          isOneToOne: false,
+          referencedRelation: "analytic_sections",
+          referencedColumns: ["tenant_id", "id"]
+        },
         {
           foreignKeyName: "credit_note_lines_credit_note_id_fkey",
           columns: ["tenant_id", "credit_note_id"],

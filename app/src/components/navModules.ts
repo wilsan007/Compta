@@ -172,7 +172,6 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.gridTemplates', path: '/accounting/grid-templates' },
           { labelKey: 'items.standardLabels', path: '/accounting/standard-labels' },
           { labelKey: 'items.analyticJournalCodes', path: '/accounting/analytic-journal-codes' },
-          { labelKey: 'items.analyticODEntry', path: '/accounting/analytic-od-entry' },
           { labelKey: 'items.thirdPartyInquiry', path: '/accounting/third-party-inquiry' },
           { labelKey: 'items.analyticInquiry', path: '/accounting/analytic-inquiry' },
           { labelKey: 'items.reimputation', path: '/accounting/reimputation' },
