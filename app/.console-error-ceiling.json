@@ -1,7 +1,6 @@
 {
-  "production": 489,
+  "production": 488,
   "tests": 1,
-  "total": 490,
-  "frozenAt": "2026-10-05",
-  "note": "RELEVE, PAS UN MASQUAGE. +4 `console.error` en production, tous apportes par la fusion de la recette — la plus forte concentration est dans `src/pages/Phase6Pages.tsx` (15) et `src/pages/Phase2Pages.tsx` (11), ecrans que la recette a reprends. La valeur est celle reellement mesuree apres fusion. Le plafond ne pourra que descendre ensuite : chaque `console.error` remplace par `toast(...)` ou `reportSilentFailure()` le fait baisser, et la garde echoue des qu'il monte."
+  "total": 489,
+  "frozenAt": "2026-10-05"
 }
