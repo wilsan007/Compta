@@ -185,6 +185,7 @@
     "dataImport": "Data import",
     "sageImport": "Sage 100 import",
     "multiCompany": "Multi-company",
+    "groups": "Company groups",
     "dataExport": "Data export",
     "auditLog": "Audit log",
     "prospects": "Prospects",

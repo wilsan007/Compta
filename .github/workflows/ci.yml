@@ -2364,6 +2364,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.4 / GRP-01 + GRP-02 — la structure d'un groupe. Les trois tables de la
+      # 127 avaient été supprimées par la 164 (« nommées nulle part ») ; F.4 les
+      # rétablit CORRIGÉES : le maître `groups` est GLOBAL (un groupe relie
+      # PLUSIEURS sociétés — la 127 le rangeait sous une seule), l'appartenance
+      # vit dans `group_members`, et la lecture passe par `my_group_ids()`
+      # (SECURITY DEFINER, sinon deux politiques se référenceraient l'une l'autre).
+      # L'écriture n'a aucune politique : seules les RPC écrivent, après avoir
+      # vérifié que l'appelant est administrateur d'une société membre.
+      - name: 'F.4 : structure de groupe et opérations intra-groupe — GRP-01/02 (702)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/702_groupes_structure_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

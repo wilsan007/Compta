@@ -8339,6 +8339,76 @@ export interface Database {
         },
       ]
     }
+    group_members: {
+      Row: {
+        id: string
+        group_id: string
+        tenant_id: string
+        member_type: string
+        ownership_pct: number
+        consolidation_method: string
+        joined_at: string
+      }
+      Insert: {
+        id?: string
+        group_id: string
+        tenant_id: string
+        member_type?: string
+        ownership_pct?: number
+        consolidation_method?: string
+        joined_at?: string
+      }
+      Update: {
+        id?: string
+        group_id?: string
+        tenant_id?: string
+        member_type?: string
+        ownership_pct?: number
+        consolidation_method?: string
+        joined_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "group_members_group_id_fkey",
+          columns: ["group_id"],
+          isOneToOne: true,
+          referencedRelation: "groups",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "group_members_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    groups: {
+      Row: {
+        id: string
+        name: string
+        created_by: string
+        created_at: string
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        name: string
+        created_by: string
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        name?: string
+        created_by?: string
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+      ]
+    }
     honorarium_records: {
       Row: {
         id: string
@@ -8780,6 +8850,76 @@ export interface Database {
           isOneToOne: false,
           referencedRelation: "employees",
           referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    intra_group_transactions: {
+      Row: {
+        id: string
+        group_id: string
+        from_tenant_id: string
+        to_tenant_id: string
+        transaction_type: string
+        amount: number
+        currency: string
+        reference: string | null
+        label: string | null
+        transaction_date: string
+        status: string
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        group_id: string
+        from_tenant_id: string
+        to_tenant_id: string
+        transaction_type: string
+        amount: number
+        currency?: string
+        reference?: string
+        label?: string
+        transaction_date: string
+        status?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        group_id?: string
+        from_tenant_id?: string
+        to_tenant_id?: string
+        transaction_type?: string
+        amount?: number
+        currency?: string
+        reference?: string
+        label?: string
+        transaction_date?: string
+        status?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "intra_group_transactions_from_tenant_id_fkey",
+          columns: ["from_tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "intra_group_transactions_group_id_fkey",
+          columns: ["group_id"],
+          isOneToOne: true,
+          referencedRelation: "groups",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "intra_group_transactions_to_tenant_id_fkey",
+          columns: ["to_tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
         },
       ]
     }

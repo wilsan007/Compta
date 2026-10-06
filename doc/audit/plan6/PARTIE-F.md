@@ -21,7 +21,7 @@
 | F.1 | **Recompter** les ❓ de son périmètre et **estimer** les ⬜ | BNQ-04, TRE-01, CRM-03, PRJ-01/06/07/09, BI-03, SEC-03, PRF-03/04, UX-05, ADM-01/03/05, IMP-03, NOT-03, ONB-02, PAY-01/11/12 | à chiffrer | ✅ **recompté le 05/10** — verdicts ci-dessous |
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
-| F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ⬜ |
+| F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | 🟡 **GRP‑01/02 livrés le 05/10** (`702` + écran Paramètres → Groupes) ; **GRP‑03 (consolidation) reste** |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ⬜ |
@@ -148,6 +148,48 @@ touche **que** ce bloc) ; câblage sous le marqueur `plan6:f`.
 conventions collectives). Il n'y a **plus de table morte à retirer** dans le
 périmètre F — la 164 et la 701 ont fait le tri.
 
+## F.4 — premier lot livré le 05/10 (GRP‑01 + GRP‑02)
+
+**Les tables de la 127 avaient été supprimées** par la `164` le 18/09 (« nommées
+NULLE PART ») : c'était vrai, il n'y avait que du DDL. F.4 les rétablit, mais
+**corrigées** sur les deux points que la 127 avait faux :
+
+1. **Un groupe relie plusieurs sociétés.** La 127 rangeait `group_entities` sous
+   une seule société (`tenant_id`) — un « groupe » qu'une seule société voit
+   n'est pas un groupe. Le maître **`groups`** est donc **global** ; l'appartenance
+   vit dans **`group_members`** (qui porte, lui, le `tenant_id` de la société
+   membre) ;
+2. **Le cloisonnement reste tenu par la base.** Un membre ne voit que son groupe
+   et ses pairs. La lecture passe par `my_group_ids()`, un helper SECURITY DEFINER
+   sans lequel deux politiques se référenceraient l'une l'autre (« infinite
+   recursion detected in policy »). L'écriture, elle, **n'a aucune politique** :
+   seules les RPC écrivent, après avoir vérifié que l'appelant est
+   **administrateur d'une société membre**.
+
+**Livré** : migration `702` (`groups`, `group_members`,
+`intra_group_transactions`, RLS, helper, 5 RPC : `create_group`,
+`add_group_member`, `remove_group_member`, `record_intra_group_transaction`,
+`group_structure`) ; suite `702` **8/8** ; **l'écran**
+`Paramètres → Groupes` (`GroupsPage` + `lib/queries/groups.ts` + nav + route
+`/settings/groups` + i18n fr/en/ar).
+
+⚠️ **Pourquoi l'écran dans le même lot** : sans lui, les 3 tables neuves
+comptaient comme « coquilles » et faisaient **monter** un plafond gelé
+(`check-unused-tables`, `SOC-05`) — c'est-à-dire exactement le « leurre » que
+F.8 retire. Les brancher était la condition, pas une option. Effet mesuré sur le
+plafond : **75 → 74** (la 701 retire `time_entries`, les 3 tables de la 702 sont
+lues par l'écran).
+
+**Un plafond daté réinscrit** : `check_bt_grid` (`rls_sans_force` 54 → **53**,
+`sans_index_societe` 78 → **77**) — c'est une **baisse** (amélioration) : la 701
+retire `time_entries` (RLS non forcée, sans index de société) et la 702 ajoute
+`group_members` (forcée, indexée). Le contrôle exige de réinscrire le plafond
+dans le même commit ; c'est fait, daté.
+
+**Ce qui reste (GRP‑03)** : la **consolidation** (agrégation des balances des
+sociétés membres, mise en équivalence, élimination des flux intra-groupe) —
+elle mérite son lot. La structure et les flux qu'elle consomme sont posés ici.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -174,3 +216,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.1 recomptage des 20 ❓ du périmètre | 8 « faire » ≈ 16,5 j ; 5 reportés ; 1 écarté ; 6 transférés (B/D/C, R3) ; 1 à arbitrer (PRF-04) | — | `plan6/f-plateforme` |
 | 05/10/2026 | F.2 authentification forte (ORPH-01/SEC-02) | **fait** : migration `700` + suite T01→T13 + test Edge « clé révoquée → 401 » + câblage CI sous le marqueur `plan6:f` | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.8 tables coquilles (premier lot) | **recompté** : 24 listées → 5 existent (19 déjà supprimées par la `164`). `time_entries` **supprimée** (`701`, garde de la 164) + suite `701` 4/4 ; `collective_*` → brancher F.7 ; `platform_admins` = faux positif (lue par `is_platform_admin()`) | 0,5 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.4 groupe (premier lot) | **livré** : `702` (structure `groups`/`group_members` + flux `intra_group_transactions`, RLS, helper anti-récursion, 5 RPC) + suite 8/8 + **écran** Paramètres→Groupes (queries/nav/route/i18n fr/en/ar). Plafonds : `unused-tables` 75→74 ; `check_bt_grid` réinscrit (2 baisses) | 1,5 j | `plan6/f-plateforme` |

@@ -185,6 +185,7 @@
     "dataImport": "Import de données",
     "sageImport": "Import Sage 100",
     "multiCompany": "Multi-société",
+    "groups": "Groupes de sociétés",
     "dataExport": "Export des données",
     "auditLog": "Journal d'audit",
     "prospects": "Prospects",

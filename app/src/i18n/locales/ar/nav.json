@@ -185,6 +185,7 @@
     "dataImport": "استيراد البيانات",
     "sageImport": "استيراد Sage 100",
     "multiCompany": "متعدد الشركات",
+    "groups": "مجموعات الشركات",
     "dataExport": "تصدير البيانات",
     "auditLog": "سجل التدقيق",
     "prospects": "العملاء المحتملون",
