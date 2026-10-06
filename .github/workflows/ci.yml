@@ -2335,6 +2335,14 @@ jobs:
       - name: 'L16 : la clôture de projet est tracée et annoncée (496)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/496_chain_l16_cloture_projet_tests.sql
 
+      # L16 — chaînage interne de la PRODUCTION : le DÉMARRAGE de l'OF cesse
+      # d'être muet (R-044). 12 verdicts : trace « applique » + contrat déclaré,
+      # événement manufacturing_orders.started portant numéro et quantité,
+      # idempotence (D1), silence hors démarrage, isolation (D8).
+      # Branche : plan6/a3-l16-production (plage 750→759).
+      - name: 'L16 : le démarrage d''un OF est tracé et annoncé (750)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/750_chain_l16_demarrage_of_tests.sql
+
       # L16 — chaînage interne COMMERCIAL : le devis accepté devient une COMMANDE,
       # tracé (effet `sale.quote.to_order`). 19 verdicts : nominal, prix gelé,
       # idempotence (D1), quatre refus explicites, la frise des deux côtés (I-01),

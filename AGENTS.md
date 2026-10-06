@@ -71,6 +71,7 @@ L'essentiel en huit lignes :
 > | **`475` → `486`** | **plan6 A1 (preuve et indice)** — scission de la partie A : maillons RPC restants, invariants, relevé nocturne — branche `plan6/a-chainages` | **2026-10-05** |
 > | **`487` → `492`** | **plan6 A2 (Vue Chaîne et écrans)** — héberger la frise sur tous les types de documents, pages Robustesse/Cohérence — branche `plan6/a2-vue-chaine` | **2026-10-05** |
 > | **`493` → `499`** | **plan6 A3 (moteur L16-L24)** — chaînages internes, régénération, lettrage, moteur de règles, webhooks — branche `plan6/a3-moteur` | **2026-10-05** |
+> | **`750` → `759`** | **plan6 A3 L16 (familles restantes)** — la plage `493`→`499` étant saturée : maillons `chain_l16_*` des 7 familles internes encore ouvertes, branche `plan6/a3-l16-production` (`750` : démarrage d'OF) | **2026-10-06** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue

@@ -22,7 +22,7 @@
 | **Projets** | devis ↔ projet ↔ budget ↔ temps ↔ coût ↔ facturation ↔ marge ↔ clôture | 🟡 **clôture livrée (`496`)** — restent : temps→coût, facturation |
 | **Comptabilité** | lettrage ↔ relance ↔ provision ↔ clôture ; rapprochement ; à-nouveaux | ⬜ ouvert |
 | **Stock** | besoin (MRP) ↔ proposition ↔ commande ↔ réception ↔ CUMP ↔ écriture ; lot ↔ rappel | ⬜ ouvert (`run_mrp` 3/7 ; `transfer` non traité, R-047) |
-| **Production** | OF ↔ nomenclature ↔ consommation ↔ rebuts ↔ PF ↔ coût ↔ marge par OF | ⬜ ouvert (`in_progress` muet, R-044) |
+| **Production** | OF ↔ nomenclature ↔ consommation ↔ rebuts ↔ PF ↔ coût ↔ marge par OF | 🟡 **démarrage livré (`750`)** — reste : consommation → stock/coût, rebuts ↔ coût, multi-niveaux |
 | **RH / Paie** | contrat ↔ salarié ↔ absence ↔ temps ↔ variable ↔ bulletin ↔ cumuls ↔ écriture ↔ virement | ⬜ ouvert — le « maillon faible » du référentiel (R-025) |
 | **Trésorerie** | prévision ↔ échéancier ↔ ordre de paiement ↔ virement ↔ relevé ↔ rapprochement | ⬜ ouvert (`cash_flow_forecast` 4/7 ; virement interne muet, R-050) |
 | **Caisse** | ticket ↔ session ↔ clôture ↔ écart ↔ TVA ↔ stock ↔ journal NF-525 | ✅ le plus complet (5/7, `219`) |
@@ -62,4 +62,36 @@ isolation D8 (3). Portes : **G2** 64 constats / **0 non déclaré** ·
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
 |---|---|---|---|---|
-| 2026-10-05 | L16 · Projets | La clôture de projet est tracée et annoncée (`496`) : registre `projects`, contrat `project.closure.finalized`, maillon `chain_l16_project_closure` + suite enrôlée | suite **14/14** · G2 **0 non déclaré** · G5 **153/153** · rejouable | _(ce lot)_ |
+| 2026-10-05 | L16 · Projets | La clôture de projet est tracée et annoncée (`496`) : registre `projects`, contrat `project.closure.finalized`, maillon `chain_l16_project_closure` + suite enrôlée | suite **14/14** · G2 **0 non déclaré** · G5 **153/153** · rejouable | *(fusionné dans `main`, PR #11)* |
+| 2026-10-06 | L16 · Production | Le démarrage d'OF est tracé et annoncé (`750`) : contrat `production.order.started`, maillon `chain_l16_production_start` + suite enrôlée ; plage `750`→`759` inscrite (registre + `AGENTS.md`) | suite **12/12** · G2 **0 non déclaré** · G5 **155/155** · rejouable | _(ce lot)_ |
+
+## Lot 2 — le démarrage d'OF cesse d'être muet (`750`, Production)
+
+**Défaut nommé** : §B.3 « **`in_progress` muet (`R-044`)** ». Mesuré avant d'écrire
+(base neuve, 333 migrations) : `manufacturing_orders.status` admet `in_progress`,
+mais **un seul** maillon existe sur cette table (`zz_l1_manufacturing_order`,
+401) et il ne traite **que** l'arrivée à `completed` (deux effets + un
+événement) ; le passage à `in_progress` n'apparaît nulle part.
+
+**Ce que la mesure a AUSSI décidé** : **aucune** fonction ne lie une réservation
+de stock à un OF (`stock_reservations.reference_type` existe, rien ne l'écrit
+pour la production) — il n'y a donc **aucun document d'aval** au démarrage. Le
+maillon **trace et annonce, et ne lie rien** — inventer un lien (l'OF vers
+lui-même, ou vers une réservation qui n'existe pas) ferait **mentir la frise**.
+C'est écrit dans l'en-tête de la migration, pas caché.
+
+**Livré** : le contrat `production.order.started` · le maillon
+`chain_l16_production_start` (déclencheur `AFTER UPDATE`, `planned` →
+`in_progress`) — trace « applique » + événement `manufacturing_orders.started`
+portant numéro, produit, quantité et date de début. Idempotence **explicite**,
+pour la même raison mesurée que la `496` (pas de lien ⇒ c'est l'annonce qui
+atteste l'effet, et le rejeu est **dit** par une trace `ignore`).
+
+**Éprouvé** — suite `750`, **12/12 verdicts** : trace + contrat déclaré (4),
+idempotence D1 (3), silence hors démarrage (2), isolation D8 (3). Le décor
+d'atelier a été repris de la `229` : un OF **refuse de naître sans article à
+fabriquer** (« aucun article à fabriquer », garde `a_manufacturing_order_product`)
+— la suite l'a **vu rouge** avant d'être verte.
+
+**Portes** : **G2** 0 effet non déclaré · **G5** suites branchées · migration
+rejouable · `ci.yml` YAML valide.
