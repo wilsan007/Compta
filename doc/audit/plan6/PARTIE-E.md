@@ -21,7 +21,7 @@
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
 | E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités), **`STK-09`** (réappro `653` + inventaire `654`), **`STK-14`** (transferts, E.2) et **`STK-11`** (stock par emplacement `655`, socle) livrés le 05/10 · restent `STK-08` (moteur à corriger) et le reste de `STK-11` (arbre/capacité à l'écran, rangement) |
-| E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | — | ⬜ |
+| E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | 🔶 **`PRD-11`** — alerte d'usure d'outillage (`656`) livrée le 06/10 · restent capacité finie (`PRD-07`), maintenance préventive et sous-OF |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | — | ⬜ |
 
 ## E.1 d'abord : pourquoi
@@ -169,6 +169,21 @@ aussi les règles de **rangement/prélèvement** et l'**alerte de capacité**.
 corriger + lien aux réceptions). `STK-07`, `STK-09` (réappro et inventaire),
 `STK-11` (socle) et `STK-14` sont traités ; `STK-03` (FIFO/LIFO) est écarté.
 
+## E.4 — production : alerte d'usure d'outillage (`PRD-11`, migration `656`)
+
+**Mesuré.** `toolings` porte `max_pieces`, `initial_counter` et `current_counter`
+(l'usure est modélisée), mais **aucune fonction n'alertait** à l'approche de la fin
+de vie — le critère PRD-11 n'était pas tenu.
+
+**Livré.** `tooling_wear_alert()` (`656`) — les outillages à **95 % ou plus** de
+leur durée de vie — et une carte **« Usure des outillages »** sur l'écran
+`/production/machines`. Suite `656` : **3/3**, rouge avant.
+
+**Reste de `E.4`.** L'incrémentation automatique du compteur à la production
+(`PRD-06`), le blocage du lancement d'OF sur outillage hors service, la maintenance
+préventive (`maintenance_records`), la **capacité finie** (`PRD-07`) et le
+**sous-OF** (`parent_mo_id`).
+
 ## Les deux décisions de politique — tranchées le 05/10/2026
 
 E.1 laissait deux questions ouvertes. Elles sont tranchées **selon les normes
@@ -262,4 +277,5 @@ comme le reste.
 | 05/10/2026 | **E.3** — `STK-07` unités de mesure | requêtes + écran `/stock/uoms` + convertisseur ; branche `uom_categories` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `9192141` |
 | 05/10/2026 | **E.3** — `STK-09` réapprovisionnement | `653` `reorder_suggestions` + règles/suggestions sur `/stock/reorder` ; branche `reorder_rules` | `653` 5/5 · tsc 0 · oxlint 0 · i18n OK | `a6aa046` |
 | 05/10/2026 | **E.3** — `STK-09` inventaire tournant | `654` `generate_count_list`/`record_stock_count` + écran `/stock/counts` ; branche `stock_count_cycles` | `654` 5/5 · tsc 0 · oxlint 0 · i18n OK | `c73100f` |
-| 05/10/2026 | **E.3** — `STK-11` stock par emplacement | `655` `stock_by_location` + type/capacité et « stock par emplacement » à l'écran | `655` 3/3 · tsc 0 · oxlint 0 · i18n OK | à committer |
+| 05/10/2026 | **E.3** — `STK-11` stock par emplacement | `655` `stock_by_location` + type/capacité et « stock par emplacement » à l'écran | `655` 3/3 · tsc 0 · oxlint 0 · i18n OK | `5bdf317` |
+| 06/10/2026 | **E.4** — `PRD-11` usure outillage | `656` `tooling_wear_alert` + carte « Usure des outillages » sur `/production/machines` | `656` 3/3 · tsc 0 · oxlint 0 · i18n OK | à committer |

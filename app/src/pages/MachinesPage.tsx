@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Trash2, Cog, Download, Upload } from 'lucide-react'
+import { Plus, Trash2, Cog, Download, Upload, AlertTriangle } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter } from '@/lib/queries/stock'
+import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter, getToolingWearAlerts } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
@@ -17,15 +17,17 @@ export function MachinesPage() {
   const { getStatusLabel, getStatusVariant } = useStatusLabels()
   const [machines, setMachines] = useState<Machine[]>([])
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
+  const [wearAlerts, setWearAlerts] = useState<Awaited<ReturnType<typeof getToolingWearAlerts>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showWcForm, setShowWcForm] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
-      const [macs, wcs] = await Promise.all([getMachines(), getWorkCenters()])
+      const [macs, wcs, alerts] = await Promise.all([getMachines(), getWorkCenters(), getToolingWearAlerts()])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
+      setWearAlerts(alerts || [])
     } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
@@ -121,6 +123,26 @@ export function MachinesPage() {
           )}
         </Card>
       </div>
+
+      {wearAlerts.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-4 border-b border-[var(--color-border)] flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-[var(--color-danger)]" aria-hidden="true" />
+            <h3 className="text-sm font-semibold">{t('machines.toolingWear')}</h3>
+          </div>
+          <Table headers={[t('common.code'), t('machines.name'), t('machines.workCenter'), t('machines.toolingCounter'), t('machines.toolingWearRatio')]}>
+            {wearAlerts.map((a) => (
+              <TableRow key={a.tooling_id}>
+                <TableCell className="font-mono text-xs">{a.tooling_code}</TableCell>
+                <TableCell className="text-sm">{a.tooling_name}</TableCell>
+                <TableCell className="text-sm">{a.machine_name ?? '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{a.current_counter} / {a.max_pieces}</TableCell>
+                <TableCell className="font-mono text-xs text-[var(--color-danger)]">{Math.round(Number(a.wear_ratio) * 100)} %</TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </Card>
+      )}
 
       {showForm && <MachineFormModal workCenters={workCenters} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); loadData() }} />}
       {showWcForm && <WorkCenterFormModal onClose={() => setShowWcForm(false)} onSaved={() => { setShowWcForm(false); loadData() }} />}

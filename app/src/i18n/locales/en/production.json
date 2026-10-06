@@ -129,7 +129,10 @@
       "inactive": "Inactive"
     },
     "namePlaceholder": "Machine name",
-    "workCenterPlaceholder": "Work center name"
+    "workCenterPlaceholder": "Work center name",
+    "toolingWear": "Tooling wear",
+    "toolingCounter": "Counter / life",
+    "toolingWearRatio": "Wear"
   },
   "toolings": {
     "title": "Toolings",

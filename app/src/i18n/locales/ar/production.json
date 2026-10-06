@@ -129,7 +129,10 @@
       "inactive": "غير نشط"
     },
     "namePlaceholder": "اسم الآلة",
-    "workCenterPlaceholder": "اسم مركز العمل"
+    "workCenterPlaceholder": "اسم مركز العمل",
+    "toolingWear": "اهتراء الأدوات",
+    "toolingCounter": "العداد / العمر",
+    "toolingWearRatio": "الاهتراء"
   },
   "toolings": {
     "title": "الأدوات",

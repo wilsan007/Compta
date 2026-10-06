@@ -2372,6 +2372,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # PRD-11 (656) — alerte d'usure d'outillage à 95 % de la durée de vie.
+      - name: 'E : PRD-11 — alerte usure outillage (656)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/656_tooling_wear_alert_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

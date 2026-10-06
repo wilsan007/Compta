@@ -129,7 +129,10 @@
       "inactive": "Inactif"
     },
     "namePlaceholder": "Nom de la machine",
-    "workCenterPlaceholder": "Nom du centre de charge"
+    "workCenterPlaceholder": "Nom du centre de charge",
+    "toolingWear": "Usure des outillages",
+    "toolingCounter": "Compteur / durée de vie",
+    "toolingWearRatio": "Usure"
   },
   "toolings": {
     "title": "Outillages",

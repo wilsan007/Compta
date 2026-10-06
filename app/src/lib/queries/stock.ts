@@ -741,6 +741,23 @@ export async function deleteTooling(id: string) {
   if (error) throw error
 }
 
+// PRD-11 / E.4 : les outillages à 95 % ou plus de leur durée de vie (656).
+export interface ToolingWearAlert {
+  tooling_id: string
+  tooling_code: string
+  tooling_name: string
+  machine_name: string | null
+  current_counter: number
+  max_pieces: number
+  wear_ratio: number
+}
+
+export async function getToolingWearAlerts() {
+  const { data, error } = await supabase.rpc('tooling_wear_alert')
+  if (error) throw error
+  return (data || []) as ToolingWearAlert[]
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {
