@@ -2367,6 +2367,137 @@ jobs:
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
+      #
+      # R-001 (partie B, lot Ventes) — un devis ACCEPTÉ produit sa commande
+      # (brouillon), prix gelé, lien `created_from`, événement `quotes.accepted`.
+      - name: 'plan6 B — R-001 : devis accepté → commande (500)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/500_regle_ventes_devis_accepte_commande_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-004 (partie B, lot Ventes) — une commande FACTURÉE se rapproche de ses
+      # factures (lien `invoiced_by`), reliquat non facturé mesuré.
+      - name: 'plan6 B — R-004 : commande facturée → rapprochement (501)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/501_regle_ventes_commande_facturee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-005 (partie B, lot Ventes) — valider une commande : numéro définitif,
+      # en-tête immuable, lignes gelées.
+      - name: 'plan6 B — R-005 : commande validée → numéro définitif + gel (502)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/502_regle_ventes_commande_validee_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-003 (partie B, lot Ventes) — valider un devis : numéro définitif, verrou
+      # d'en-tête, lignes gelées (la transformation R-001 reste permise).
+      - name: 'plan6 B — R-003 : devis validé → numéro définitif + verrou (503)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/503_regle_ventes_devis_valide_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-002 (partie B, lot Ventes) — devis expiré : émet `quotes.expired`
+      # (relance CRM, statistique de perte), idempotent.
+      - name: 'plan6 B — R-002 : devis expiré → événement (504)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/504_regle_ventes_devis_expire_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-017/R-018 (partie B, lot Achats) — facture fournisseur échue / rejetée :
+      # événements `purchase_invoices.overdue` et `purchase_invoices.rejected`.
+      - name: 'plan6 B — R-017/R-018 : facture fournisseur échue / rejetée (505)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/505_regle_achats_facture_surveillance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-059/R-060/R-061 (partie B, lot Relances) — horodatage de la relance (EF-02),
+      # arrêt de la relance (payée / annulée).
+      - name: 'plan6 B — R-059/060/061 : relances horodatées et clôturées (506)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/506_regle_relances_suivi_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-058 (partie B, lot Budgets) — engagement annulé : trace motivée.
+      - name: 'plan6 B — R-058 : engagement libéré (507)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/507_regle_budgets_engagement_annule_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-054/R-055/R-056 (partie B, lot Conformité) — rejets déclaratifs (TVA EDI,
+      # DSN, déclaration sociale) : alerte / histoire des rejets.
+      - name: 'plan6 B — R-054/055/056 : rejets déclaratifs (508)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/508_regle_conformite_rejets_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-046 (partie B, lot Production) — OF d'origine MRP : traçabilité amont.
+      - name: 'plan6 B — R-046 : OF d''origine MRP (509)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/509_regle_production_of_source_mrp_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-011 (partie B, lot Achats) — commande reçue : rapprochement + écart de quantité.
+      - name: 'plan6 B — R-011 : commande reçue → rapprochement (510)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/510_regle_achats_commande_recue_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-013/R-015/R-016 (partie B, lot Achats) — réception partielle / en attente,
+      # facture fournisseur annulée.
+      - name: 'plan6 B — R-013/015/016 : réceptions et facture annulée (511)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/511_regle_achats_reception_et_facture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-007 (partie B, lot Ventes) — retour client : réintégration en stock.
+      - name: 'plan6 B — R-007 : retour client (512)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/512_regle_ventes_retour_client_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-009 (partie B, lot Ventes) — BL transformé : lien vers la facture (la garde
+      # « pas de sortie sur un brouillon » est coordonnée).
+      - name: 'plan6 B — R-009 : BL transformé → lien facture (513)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/513_regle_ventes_bl_transforme_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-048/R-049 (partie B, lot Trésorerie) — ordres SEPA rejeté / traité.
+      - name: 'plan6 B — R-048/049 : SEPA rejeté / traité (514)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/514_regle_tresorerie_sepa_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-050/R-051 (partie B, lot Trésorerie) — virement exécuté / annulé.
+      - name: 'plan6 B — R-050/051 : virement exécuté / annulé (515)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/515_regle_tresorerie_virement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-052/R-053 (partie B, lot Conformité) — TVA soumise / payée.
+      - name: 'plan6 B — R-052/053 : TVA soumise / payée (516)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/516_regle_conformite_tva_retour_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-040/041/042 (partie B, lot Projets) — projet complété / annulé / en attente.
+      - name: 'plan6 B — R-040/041/042 : état de projet (517)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/517_regle_projets_cloture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-031/037/038/039 (partie B, lot Paie/RH) — note de frais rejetée, contrats.
+      - name: 'plan6 B — R-031/037/038/039 : note de frais et contrats (518)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/518_regle_rh_contrats_et_note_frais_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-019/044/045/047 (partie B) — facture client annulée, OF planifié/en cours,
+      # transfert de stock : les quatre dernières VIERGES de l'inventaire B.1.
+      - name: 'plan6 B — R-019/044/045/047 : derniers états (519)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/519_regle_derniers_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
