@@ -2440,6 +2440,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-019/044/045/047 (partie B) — facture client annulée, OF planifié/en cours,
+      # transfert de stock : les quatre dernières VIERGES de l'inventaire B.1.
+      - name: 'plan6 B — R-019/044/045/047 : derniers états (519)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/519_regle_derniers_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

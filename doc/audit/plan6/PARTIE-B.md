@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **58 / 62 règles touchées (`500`→`518`) ; 4 vierges restantes (R-019, R-044, R-045, R-047) + 11 partielles à compléter — 73 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **les 62 règles sont TOUCHÉES (`500`→`519`) — 77 scénarios verts le 05/10 ; les effets stock/comptables restent coordonnés** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -196,13 +196,12 @@ maillons **événement** idempotents :
 - **R-039** — contrat **créé** → `contracts.created` **avec son type** (accroche des
   règles par type : prime de précarité, exonérations, gratification — à écrire en paie).
 
-## B.2 — l'état réel : 58 / 62 règles touchées
+## B.2 — l'état réel : 62 / 62 règles touchées, 0 vierge
 
-**Vierges (4) — à faire, coordonnées :**
-- **R-019** (facture client annulée → contre-passation TVA/lettrage) : **comptable** ;
-- **R-044 / R-045** (`manufacturing_orders` in_progress / planned → consommation, en-cours,
-  réservation) : **stock**, couplage E ;
-- **R-047** (`stock_movements.movement_type = transfer`) : **stock**, couplage E.
+**Vierges (0).** Les quatre dernières — **R-019** (facture client annulée), **R-044 / R-045**
+(OF en cours / planifié), **R-047** (transfert de stock) — sont livrées par la migration
+**`519`** (maillons **événement** ; la contre-passation comptable et le transfert à deux
+mouvements liés restent coordonnés).
 
 **Partielles (11) — l'accroche existe, l'effet métier reste coordonné :**
 R-006 (rapprochement facture/POD), R-020 (immuabilité facture), R-011 (écart de prix),
@@ -371,3 +370,4 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · conformité-2 | Conformité | **R-052/R-053** : TVA `submitted`/`paid` → événements. Migration `516` + suite `516_…_tests.sql`. | base **350 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
 | 05/10 | B.2 · projets-1 | Projets | **R-040/R-041/R-042** : projet complété / annulé / en attente → événements. Migration `517` + suite `517_…_tests.sql`. | base **351 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · paie-rh-1 | Paie/RH | **R-031/R-037/R-038/R-039** : note de frais rejetée, contrat créé / fin / rupture / suspendu → événements. Migration `518` + suite `518_…_tests.sql`. | base **352 migrations, 0 erreur** ; suite **4/4** (les 19 suites B : **73/73**) | _à venir_ |
+| 05/10 | B.2 · derniers-états | Ventes/Production/Stock | **R-019/R-044/R-045/R-047** (les 4 dernières vierges) : facture client annulée, OF planifié / en cours, transfert de stock → événements. Migration `519` + suite `519_…_tests.sql`. | base **353 migrations, 0 erreur** ; suite **4/4** (les 20 suites B : **77/77**) | _à venir_ |
