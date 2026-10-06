@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; LOC1-07 → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : tranche POS — `387`** ; reste de LOC1-07 → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -166,14 +166,33 @@ portent plus de numéro de compte : ils **demandent un rôle**
   trésorerie des règlements reste `treasury_for_payment`. Les changer modifierait
   les écritures, ce que la recette interdit.
 
+### `LOC1-07` — opérations : tranche POS (`387`)
+
+**`387_roles_operations.sql` (+ suite).** La **clôture de caisse** (`post_pos_session_on_close_multi`,
+le seul des deux câblé) ne porte plus `'707000'`, `'445710'` ni le journal
+`'POS'` : elle demande ses **rôles** (`JOURNAL_POS`, `VENTES_MARCHANDISES`,
+`TVA_COLLECTEE`). Deux **rôles de journaux** sont AJOUTÉS au catalogue
+(`JOURNAL_POS`, `JOURNAL_PRODUCTION`) — le pack PCG ne les portait pas —,
+conformément à la règle de LOC1-04. ⚠ Les comptes d'**écart de caisse**
+(`658000`/`758000`) restent des littéraux : aucun rôle du catalogue ne les
+nomme — à trancher avec l'expert-comptable.
+
+**Le reste de `LOC1-07`, et ses deux dépendances (à décider).**
+- **Stock et production** (`create_journal_on_stock_movement`,
+  `create_stock_on_manufacturing_complete`, `resolve_stock_account`,
+  `resolve_variation_account`) : le cahier y corrige des **défauts voulus** qui
+  **changent les écritures françaises** (`310000` pour TOUS les stocks au lieu de
+  `370000`/`355000` ; `713550` absent du plan → `713500` ; `613000` → `611000`).
+  Ces corrections doivent être arbitrées puis validées suite par suite.
+- **Paie** (`create_journal_on_payroll_validate` → `payroll_post_run`) : les
+  comptes vivent dans le **module paie = territoire de la Partie B** (R3/R7).
+
 ### Ce qui reste dans C.1
 
-`LOC1-07` → `58` : paie, stock, production, POS, clôture, monnaie/arrondis,
-fiscalité, états, capacités, packs `ZZ`… **Hors de ce lot** : les enveloppes
-`resolve_stock_account` / `resolve_variation_account` du cahier touchent des
-fonctions **déjà inscrites au registre** de `ci/check_tenant_guard.sql` — à
-traiter avec l'intégration (fichier hors territoire). **R7** : `386` réécrit
-4 fonctions ; leur nom n'est écrit par aucune autre branche `plan6/*` (vérifié).
+Le reste de `LOC1-07` (stock, production, paie) puis `LOC1-08` → `58` :
+clôture, monnaie/arrondis, fiscalité, états, capacités, packs `ZZ`… **R7** :
+`386`/`387` réécrivent des fonctions existantes ; leur nom n'est écrit par
+aucune autre branche `plan6/*` (vérifié).
 
 ---
 
@@ -242,4 +261,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 05/10 | LOT 1-B (LOC1-04) | `*_role_catalog` | catalogue fermé : **67** rôles de comptes + **8** rôles de journaux (annexe B) ; les tables du pack y sont raccrochées par clé étrangère (rôle non catalogué refusé) ; suite branchée sous `plan6:c` | base : `383` 6/6 ; **11 contrôles CI verts** | fbfc978 |
 | 05/10 | LOT 1-B (LOC1-05) | `resolve_account` | point d'appel unique : objet métier → société → pack (lignée) → échec explicite (`ROLE_NON_MAPPE` / `COMPTE_ABSENT`) ; `resolve_journal` ; surcharges société sous RLS ; INVOKER (la RLS fait la garde) ; suite branchée sous `plan6:c` | base : `384` 7/7 ; **10 contrôles CI verts** ; G5 155/155 | 1be0b0d |
 | 05/10 | prérequis LOC1-06 (`LOC1-13`) | `pack_account_roles` | **65 rôles de comptes + 7 rôles de journaux** semés sur le référentiel **PCG** (annexe B) ; `FR` en hérite par la lignée ; recette `LOC1-05` verte (société FR → `CLIENTS` = `411000`) | base : `385` 6/6 ; **10 contrôles CI verts** | 0294fdf |
-| 05/10 | LOT 1-B (LOC1-06) | 4 triggers | facture de vente, facture d'achat, encaissement et décaissement passent par les **rôles** (`resolve_account`/`resolve_journal`) ; **pont** « société sans pack → pack par défaut » ; recette `102_trigger_tests` **17/17 inchangé** ; suite `386` prouve l'absence de numéro en dur | base : `386` 5/5 ; **10 contrôles CI verts** ; suites d'écritures (170/175/178/180…) OK | (ce commit) |
+| 05/10 | LOT 1-B (LOC1-06) | 4 triggers | facture de vente, facture d'achat, encaissement et décaissement passent par les **rôles** (`resolve_account`/`resolve_journal`) ; **pont** « société sans pack → pack par défaut » ; recette `102_trigger_tests` **17/17 inchangé** ; suite `386` prouve l'absence de numéro en dur | base : `386` 5/5 ; **10 contrôles CI verts** ; suites d'écritures (170/175/178/180…) OK | c57a9d3 |
+| 05/10 | LOC1-07 (tranche POS) | `post_pos_session_on_close_multi` | la clôture de caisse demande ses rôles (`JOURNAL_POS`, `VENTES_MARCHANDISES`, `TVA_COLLECTEE`) ; **2 rôles de journaux ajoutés** au catalogue (`JOURNAL_POS`, `JOURNAL_PRODUCTION`) et au pack PCG | base : `387` 5/5 ; suites POS `219`/`250`/`281` OK ; **10 portes CI vertes** | (ce commit) |
