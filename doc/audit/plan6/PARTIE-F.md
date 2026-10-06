@@ -21,7 +21,7 @@
 | F.1 | **Recompter** les ❓ de son périmètre et **estimer** les ⬜ | BNQ-04, TRE-01, CRM-03, PRJ-01/06/07/09, BI-03, SEC-03, PRF-03/04, UX-05, ADM-01/03/05, IMP-03, NOT-03, ONB-02, PAY-01/11/12 | à chiffrer | ✅ **recompté le 05/10** — verdicts ci-dessous |
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
-| F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | 🟡 **GRP‑01/02 livrés le 05/10** (`702` + écran Paramètres → Groupes) ; **GRP‑03 (consolidation) reste** |
+| F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ⬜ |
@@ -186,9 +186,27 @@ retire `time_entries` (RLS non forcée, sans index de société) et la 702 ajout
 `group_members` (forcée, indexée). Le contrôle exige de réinscrire le plafond
 dans le même commit ; c'est fait, daté.
 
-**Ce qui reste (GRP‑03)** : la **consolidation** (agrégation des balances des
-sociétés membres, mise en équivalence, élimination des flux intra-groupe) —
-elle mérite son lot. La structure et les flux qu'elle consomme sont posés ici.
+**GRP‑03 — la consolidation (migration `703`, suite `703` 6/6, dans l'écran).**
+Fonction `group_consolidated_balance(p_group_id, p_from, p_to)` : elle agrège le
+grand livre des sociétés membres, par compte et par période, en appliquant la
+**méthode** de chacune — `full` (poids 1), `proportional` (poids = détention),
+`equity`/`none` **exclus** — et **publie** les flux intra-groupe de la période
+pour élimination. Mesuré par la suite : A (full 100) + B (proportional 60 % × 200)
+donne le compte 601 à **220** ; un membre `none` (999) et une écriture **hors
+période** (1000) n'entrent pas ; les flux sont comptés (1 flux, 500) sans être
+éliminés.
+
+⚠️ **Ce que cette consolidation N'EST PAS, et c'est écrit dans la migration** :
+une consolidation de **premier niveau**. La **mise en équivalence** (`equity`)
+n'est pas calculée ; l'**élimination automatique** des flux intra-groupe non plus
+(la table porte le montant, pas l'écriture) ; il n'y a **pas de conversion de
+devises**. Un groupe multi-devises ne lira un total homogène que si ses sociétés
+partagent la devise. Ce sont des limites dites, pas des oublis.
+
+**La garde** : la fonction lit le grand livre d'AUTRES sociétés — le seul cas
+légitime du produit — et elle est réservée à un **administrateur d'une société
+membre** (un membre non administrateur ou une société hors du groupe sont refusés
+nommément : `GROUP_FORBIDDEN`, `GROUP_NOT_MEMBER`).
 
 ## Attend de vous
 
@@ -217,3 +235,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.2 authentification forte (ORPH-01/SEC-02) | **fait** : migration `700` + suite T01→T13 + test Edge « clé révoquée → 401 » + câblage CI sous le marqueur `plan6:f` | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.8 tables coquilles (premier lot) | **recompté** : 24 listées → 5 existent (19 déjà supprimées par la `164`). `time_entries` **supprimée** (`701`, garde de la 164) + suite `701` 4/4 ; `collective_*` → brancher F.7 ; `platform_admins` = faux positif (lue par `is_platform_admin()`) | 0,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.4 groupe (premier lot) | **livré** : `702` (structure `groups`/`group_members` + flux `intra_group_transactions`, RLS, helper anti-récursion, 5 RPC) + suite 8/8 + **écran** Paramètres→Groupes (queries/nav/route/i18n fr/en/ar). Plafonds : `unused-tables` 75→74 ; `check_bt_grid` réinscrit (2 baisses) | 1,5 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.4 groupe (GRP‑03, consolidation) | **livré** : `703` (`group_consolidated_balance` — pondération full/proportional, equity/none exclus, bornage de période, flux intra-groupe publiés) + suite 6/6 + section « Consolidation » de l'écran + i18n. **F.4 complet (GRP‑01→03)** | 1 j | `plan6/f-plateforme` |

@@ -126,3 +126,34 @@ export async function recordIntraGroupTransaction(input: RecordIntraGroupInput):
   })
   if (error) throw error
 }
+
+interface ConsolidatedAccount {
+  account: string
+  debit: number
+  credit: number
+  balance: number
+}
+
+export interface GroupConsolidation {
+  group_id: string
+  from: string
+  to: string
+  members: { tenant_id: string; name: string; consolidation_method: string; ownership_pct: number; included: boolean }[]
+  accounts: ConsolidatedAccount[]
+  intra_group: { count: number; total_amount: number }
+}
+
+/** La consolidation d'un groupe sur une période (RPC gardée, GRP-03). */
+export async function getGroupConsolidation(
+  groupId: string,
+  from: string,
+  to: string,
+): Promise<GroupConsolidation | null> {
+  const { data, error } = await supabase.rpc('group_consolidated_balance', {
+    p_group_id: groupId,
+    p_from: from,
+    p_to: to,
+  })
+  if (error) throw error
+  return (data as GroupConsolidation | null) ?? null
+}

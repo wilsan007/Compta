@@ -29,7 +29,12 @@
     "noRef": "sans référence",
     "memberTypes": { "subsidiary": "Filiale", "branch": "Succursale", "joint_venture": "Coentreprise" },
     "methods": { "full": "Intégration globale", "equity": "Mise en équivalence", "proportional": "Intégration proportionnelle", "none": "Aucune" },
-    "txTypes": { "sale": "Vente", "purchase": "Achat", "loan": "Prêt", "transfer": "Transfert", "management_fee": "Frais de gestion", "dividend": "Dividende" }
+    "txTypes": { "sale": "Vente", "purchase": "Achat", "loan": "Prêt", "transfer": "Transfert", "management_fee": "Frais de gestion", "dividend": "Dividende" },
+    "consolidation": "Consolidation",
+    "from": "Du",
+    "to": "Au",
+    "consolidate": "Consolider",
+    "intraGroup": "Flux intra-groupe à éliminer"
   },
   "tabs": {
     "chartAccounts": "Plan comptable",

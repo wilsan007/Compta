@@ -12,9 +12,11 @@ import {
   removeGroupMember,
   getIntraGroupTransactions,
   recordIntraGroupTransaction,
+  getGroupConsolidation,
   type EntityGroup,
   type GroupStructure,
   type IntraGroupTransaction,
+  type GroupConsolidation,
 } from '@/lib/queries/groups'
 import { Building2, Plus, Trash2, Network } from 'lucide-react'
 
@@ -44,6 +46,9 @@ export function GroupsPage() {
   const [txAmount, setTxAmount] = useState('')
   const [txDate, setTxDate] = useState('')
   const [txRef, setTxRef] = useState('')
+  const [consFrom, setConsFrom] = useState('')
+  const [consTo, setConsTo] = useState('')
+  const [consolidation, setConsolidation] = useState<GroupConsolidation | null>(null)
 
   const loadGroups = useCallback(async () => {
     try {
@@ -119,6 +124,15 @@ export function GroupsPage() {
       })
       setTxAmount(''); setTxRef('')
       await loadDetail(selected)
+    } catch (err) {
+      toast('error', t('groups.title'), errorMessage(err))
+    }
+  }
+
+  async function handleConsolidate() {
+    if (!selected || !consFrom || !consTo) return
+    try {
+      setConsolidation(await getGroupConsolidation(selected, consFrom, consTo))
     } catch (err) {
       toast('error', t('groups.title'), errorMessage(err))
     }
@@ -250,6 +264,35 @@ export function GroupsPage() {
                         </li>
                       ))}
                     </ul>
+                  )}
+
+                  {/* Consolidation (GRP-03) */}
+                  <h4 className="font-medium mb-2 mt-6">{t('groups.consolidation')}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                    <Input label={t('groups.from')} type="date" value={consFrom} onChange={(e) => setConsFrom(e.target.value)} />
+                    <Input label={t('groups.to')} type="date" value={consTo} onChange={(e) => setConsTo(e.target.value)} />
+                    <div className="flex items-end">
+                      <Button variant="secondary" onClick={handleConsolidate} disabled={!consFrom || !consTo}>
+                        {t('groups.consolidate')}
+                      </Button>
+                    </div>
+                  </div>
+                  {consolidation && (
+                    <>
+                      <p className="text-sm text-[var(--color-text-secondary)] mb-2">
+                        {t('groups.intraGroup')} : {consolidation.intra_group.count} · {Number(consolidation.intra_group.total_amount).toFixed(2)}
+                      </p>
+                      <ul className="divide-y divide-[var(--color-border)]">
+                        {consolidation.accounts.map((a) => (
+                          <li key={a.account} className="flex items-center justify-between py-1.5 text-sm">
+                            <span className="font-mono">{a.account}</span>
+                            <span>
+                              {Number(a.debit).toFixed(2)} / {Number(a.credit).toFixed(2)} · {Number(a.balance).toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   )}
                 </>
               )}

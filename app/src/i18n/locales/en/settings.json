@@ -29,7 +29,12 @@
     "noRef": "no reference",
     "memberTypes": { "subsidiary": "Subsidiary", "branch": "Branch", "joint_venture": "Joint venture" },
     "methods": { "full": "Full consolidation", "equity": "Equity method", "proportional": "Proportional consolidation", "none": "None" },
-    "txTypes": { "sale": "Sale", "purchase": "Purchase", "loan": "Loan", "transfer": "Transfer", "management_fee": "Management fee", "dividend": "Dividend" }
+    "txTypes": { "sale": "Sale", "purchase": "Purchase", "loan": "Loan", "transfer": "Transfer", "management_fee": "Management fee", "dividend": "Dividend" },
+    "consolidation": "Consolidation",
+    "from": "From",
+    "to": "To",
+    "consolidate": "Consolidate",
+    "intraGroup": "Intra-group flows to eliminate"
   },
   "tabs": {
     "chartAccounts": "Chart of accounts",

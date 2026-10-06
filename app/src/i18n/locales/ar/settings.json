@@ -29,7 +29,12 @@
     "noRef": "بدون مرجع",
     "memberTypes": { "subsidiary": "شركة تابعة", "branch": "فرع", "joint_venture": "مشروع مشترك" },
     "methods": { "full": "التوحيد الكامل", "equity": "طريقة حقوق الملكية", "proportional": "التوحيد النسبي", "none": "بدون" },
-    "txTypes": { "sale": "بيع", "purchase": "شراء", "loan": "قرض", "transfer": "تحويل", "management_fee": "أتعاب إدارية", "dividend": "توزيعات" }
+    "txTypes": { "sale": "بيع", "purchase": "شراء", "loan": "قرض", "transfer": "تحويل", "management_fee": "أتعاب إدارية", "dividend": "توزيعات" },
+    "consolidation": "التوحيد",
+    "from": "من",
+    "to": "إلى",
+    "consolidate": "توحيد",
+    "intraGroup": "التدفقات داخل المجموعة الواجب إلغاؤها"
   },
   "tabs": {
     "chartAccounts": "دليل الحسابات",

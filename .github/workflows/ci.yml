@@ -2377,6 +2377,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.4 / GRP-03 — la consolidation. Agrège le grand livre des sociétés
+      # membres par compte, en appliquant la MÉTHODE de chacune (full = 1,
+      # proportional = détention, equity/none exclus), borne la période, et
+      # PUBLIE les flux intra-groupe pour élimination (elle ne les élimine pas :
+      # la table porte le montant, pas l'écriture). Réservée à un administrateur
+      # d'une société membre — le seul cas où lire les livres d'autrui est
+      # légitime.
+      - name: 'F.4 : consolidation des comptes d''un groupe — GRP-03 (703)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/703_groupes_consolidation_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
