@@ -5,7 +5,7 @@ import { Card, PageHeader, Button, Table, TableRow, TableCell, Badge, EmptyState
 import { useToast } from '@/lib/toast'
 import { Plus, Trash2 } from 'lucide-react'
 import { getProspects, createProspect, deleteProspect, convertProspectToCustomer, getSalesRepresentatives, createSalesRepresentative, deleteSalesRepresentative, getDeliverySchedules, createDeliverySchedule, deleteDeliverySchedule, getDocumentTemplates, createDocumentTemplate, deleteDocumentTemplate } from '@/lib/queries/misc'
-import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
+import { getStockQuantities, getWarehouseLocations, createWarehouseLocation, deleteWarehouseLocation, getStockByLocation, getProductSerialNumbers, createProductSerialNumber, deleteProductSerialNumber, getProductBatches, createProductBatch, deleteProductBatch, getProductSubstitutes, createProductSubstitute, deleteProductSubstitute } from '@/lib/queries/stock'
 import { getQualityChecks, createQualityCheck, updateQualityCheck, getPickLists, createPickList, updatePickList } from '@/lib/queries/production'
 import type { QualityCheck, PickList } from '@/types'
 import { errorMessage } from '@/lib/utils'
@@ -121,25 +121,41 @@ export function WarehouseLocationsPage() {
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
   const [items, setItems] = useState<Awaited<ReturnType<typeof getWarehouseLocations>>>([])
+  const [stock, setStock] = useState<Awaited<ReturnType<typeof getStockByLocation>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' })
+  const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { setItems(await getWarehouseLocations() || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st] = await Promise.all([getWarehouseLocations(), getStockByLocation()]); setItems(locs || []); setStock(st || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
   useEffect(() => { loadData() }, [loadData])
 
-  async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
+  async function handleCreate() { try { await createWarehouseLocation(form as Parameters<typeof createWarehouseLocation>[0]); toast('success', tCommon('common.success'), t('locations.created')); setShowForm(false); setForm({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' }); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
   async function handleDelete(id: string) { if (!confirmSync(tCommon('form.confirmDelete'))) return; try { await deleteWarehouseLocation(id); await loadData() } catch (e) { toast('error', tCommon('common.error'), errorMessage(e)) } }
 
   return (
     <div>
       <Breadcrumb items={[{ label: t('locations.breadcrumb1'), path: '/stock' }, { label: t('locations.title') }]} />
       <PageHeader title={t('locations.title')} action={<Button onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> {t('locations.new')}</Button>} />
-      {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-3 gap-3"><Input placeholder={t('locations.code')} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /><Input placeholder={t('locations.zone')} value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })} /><Input placeholder={t('locations.aisle')} value={form.aisle} onChange={e => setForm({ ...form, aisle: e.target.value })} /><Input placeholder={t('locations.shelf')} value={form.shelf} onChange={e => setForm({ ...form, shelf: e.target.value })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
+      {showForm && (<Card className="p-4 mb-4 space-y-3"><div className="grid grid-cols-3 gap-3"><Input placeholder={t('locations.code')} value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /><Input placeholder={t('locations.zone')} value={form.zone} onChange={e => setForm({ ...form, zone: e.target.value })} /><Input placeholder={t('locations.aisle')} value={form.aisle} onChange={e => setForm({ ...form, aisle: e.target.value })} /><Input placeholder={t('locations.shelf')} value={form.shelf} onChange={e => setForm({ ...form, shelf: e.target.value })} /><Input placeholder={t('locations.type')} value={form.location_type} onChange={e => setForm({ ...form, location_type: e.target.value })} /></div><div className="flex gap-2"><Button onClick={handleCreate}>{tCommon('actions.save')}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{tCommon('common.cancel')}</Button></div></Card>)}
       {loading ? <SkeletonTable /> : items.length === 0 ? <EmptyState title={t('locations.empty')} /> : (
         <Table headers={[t('locations.code'), t('locations.zone'), t('locations.aisle'), t('locations.shelf'), tCommon('table.actions')]}>
           {items.map(l => (<TableRow key={l.id}><TableCell>{l.code}</TableCell><TableCell>{l.zone || '-'}</TableCell><TableCell>{l.aisle || '-'}</TableCell><TableCell>{l.shelf || '-'}</TableCell><TableCell><Button size="sm" variant="danger" onClick={() => handleDelete(l.id)} ariaLabel={tCommon('actions.delete')}><Trash2 className="w-4 h-4" aria-hidden="true" /></Button></TableCell></TableRow>))}
         </Table>
+      )}
+      {stock.length > 0 && (
+        <Card className="mt-6">
+          <div className="p-4 border-b border-[var(--color-border)]"><h3 className="font-semibold">{t('locations.stockByLocation')}</h3></div>
+          <Table headers={[t('reorder.product'), t('locations.code'), t('locations.type'), t('reorder.currentStock')]}>
+            {stock.map((s, i) => (
+              <TableRow key={`${s.product_id}-${s.location_id ?? 'none'}-${i}`}>
+                <TableCell>{s.product_name}</TableCell>
+                <TableCell className="font-mono text-xs">{s.location_code ?? t('locations.unassigned')}</TableCell>
+                <TableCell className="text-xs">{s.location_type ?? '-'}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(s.quantity)}</TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </Card>
       )}
     </div>
   )

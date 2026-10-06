@@ -1714,6 +1714,24 @@ export async function deleteWarehouseLocation(id: string) {
   if (error) throw error
 }
 
+// STK-11 / E.3 : le stock ventilé par emplacement (655). `location_id` NULL =
+// stock d'entrepôt non affecté.
+export interface StockByLocationRow {
+  product_id: string
+  product_name: string
+  warehouse_id: string
+  location_id: string | null
+  location_code: string | null
+  location_type: string | null
+  quantity: number
+}
+
+export async function getStockByLocation(warehouseId?: string) {
+  const { data, error } = await supabase.rpc('stock_by_location', { p_warehouse_id: warehouseId ?? null })
+  if (error) throw error
+  return (data || []) as StockByLocationRow[]
+}
+
 
 // ============ Phase 2: Product Substitutes ============
 export async function getProductSubstitutes(productId?: string) {

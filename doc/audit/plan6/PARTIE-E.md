@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
-| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités), **`STK-09`** (réappro `653` + inventaire tournant `654`) et **`STK-14`** (transferts, E.2) livrés le 05/10 · restent `STK-08` (moteur à corriger) et `STK-11` (emplacements) |
+| E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`** (unités), **`STK-09`** (réappro `653` + inventaire `654`), **`STK-14`** (transferts, E.2) et **`STK-11`** (stock par emplacement `655`, socle) livrés le 05/10 · restent `STK-08` (moteur à corriger) et le reste de `STK-11` (arbre/capacité à l'écran, rangement) |
 | E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | — | ⬜ |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | — | ⬜ |
 
@@ -147,9 +147,27 @@ comme **entrée/sortie**, car le `'adjustment'` de la base ne met à jour que
 `products.stock_quantity`, pas `stock_quantities` par dépôt. Suite `654` : **5/5**,
 rouge avant.
 
+### `STK-11` — emplacements : le stock par emplacement (migration `655`)
+
+**Mesuré.** `warehouse_locations` porte déjà l'arbre (`parent_id`), le type
+(`location_type`) et la capacité (`max_weight`/`max_volume`/`max_pallets`), et
+`stock_quantities.location_id` existe — mais **rien ne ventilait le stock par
+emplacement**, et l'écran n'exposait ni le type ni la capacité.
+
+**Livré.** `stock_by_location()` (`655`) — le stock d'un article ventilé par
+emplacement (`location_id` NULL = « non affecté »), socle du critère « la somme
+des emplacements = le stock entrepôt » ; l'écran `/stock/warehouse-locations`
+gagne le champ **type** et une carte **« Stock par emplacement »**. Suite `655` :
+**3/3**, rouge avant.
+
+**Reste de `STK-11`.** Le **stock par casier** exige que le moteur de mouvement
+porte `location_id` (la clé d'unicité de `stock_quantities` est encore
+`(produit, dépôt)`) — c'est un changement de moteur, **dit et non fait**. Restent
+aussi les règles de **rangement/prélèvement** et l'**alerte de capacité**.
+
 **Reste de `E.3`.** `STK-08` frais accessoires (moteur `distribute_landed_cost` à
-corriger + lien aux réceptions), `STK-11` emplacements. `STK-07`, `STK-09` (réappro
-et inventaire) et `STK-14` sont traités ; `STK-03` (FIFO/LIFO) est écarté.
+corriger + lien aux réceptions). `STK-07`, `STK-09` (réappro et inventaire),
+`STK-11` (socle) et `STK-14` sont traités ; `STK-03` (FIFO/LIFO) est écarté.
 
 ## Les deux décisions de politique — tranchées le 05/10/2026
 
@@ -243,4 +261,5 @@ comme le reste.
 | 05/10/2026 | **E.2** — transferts inter-dépôts | `652` (expédier/réceptionner) + requêtes + écran `/stock/transfers` | `652` 5/5 · tsc 0 · oxlint 0 · i18n OK | `a891161` |
 | 05/10/2026 | **E.3** — `STK-07` unités de mesure | requêtes + écran `/stock/uoms` + convertisseur ; branche `uom_categories` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `9192141` |
 | 05/10/2026 | **E.3** — `STK-09` réapprovisionnement | `653` `reorder_suggestions` + règles/suggestions sur `/stock/reorder` ; branche `reorder_rules` | `653` 5/5 · tsc 0 · oxlint 0 · i18n OK | `a6aa046` |
-| 05/10/2026 | **E.3** — `STK-09` inventaire tournant | `654` `generate_count_list`/`record_stock_count` + écran `/stock/counts` ; branche `stock_count_cycles` | `654` 5/5 · tsc 0 · oxlint 0 · i18n OK | à committer |
+| 05/10/2026 | **E.3** — `STK-09` inventaire tournant | `654` `generate_count_list`/`record_stock_count` + écran `/stock/counts` ; branche `stock_count_cycles` | `654` 5/5 · tsc 0 · oxlint 0 · i18n OK | `c73100f` |
+| 05/10/2026 | **E.3** — `STK-11` stock par emplacement | `655` `stock_by_location` + type/capacité et « stock par emplacement » à l'écran | `655` 3/3 · tsc 0 · oxlint 0 · i18n OK | à committer |

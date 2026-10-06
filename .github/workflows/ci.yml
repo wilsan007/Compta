@@ -2366,6 +2366,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-11 (655) — le stock ventilé par emplacement (socle du WMS par casier).
+      - name: 'E : STK-11 — stock par emplacement (655)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/655_stock_by_location_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

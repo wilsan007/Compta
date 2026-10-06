@@ -346,7 +346,10 @@
     "aisle": "Aisle",
     "shelf": "Shelf",
     "empty": "No locations",
-    "created": "Location created successfully"
+    "created": "Location created successfully",
+    "type": "Type",
+    "stockByLocation": "Stock by location",
+    "unassigned": "Unassigned"
   },
   "quality": {
     "title": "Quality checks",

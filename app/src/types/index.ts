@@ -2492,6 +2492,12 @@ export interface WarehouseLocation {
   shelf: string | null
   code: string
   description: string | null
+  // STK-11 : arbre, type et capacité (colonnes de la 125, exposées par E.3).
+  parent_id: string | null
+  location_type: string | null
+  max_weight: number | null
+  max_volume: number | null
+  max_pallets: number | null
   created_at: string
 }
 
