@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–3 (05/10) : 33 états** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–4 (05/10) : 43 états** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -163,6 +163,13 @@ devrait modéliser ces jointures (`Joined<…>` de `@/types/dbRow`) ; sans cela,
 chaque écran qui lit une jointure doit la **renommer lui‑même** (ce que fait
 `ProductionDashboardPage`, tranche 3). Aucune migration — un changement de type.
 
+**Troisième demande** — `app/src/lib/queries/dematRh.ts` : `getEmployeeDocuments`
+fait `.select('*')` et **ne joint pas** `employees`. Or `EmployeeDocumentsPage`
+lit `d.employees.first_name` : **la colonne « Salarié » affiche « — » depuis
+toujours**. Ajouter `employees(first_name, last_name)` au `select` (comme
+`lib/queries/stock.ts` le fait pour ses jointures). Défaut révélé par le typage
+(tranche 4).
+
 ## D.2 — typer les états d'écran (suite de 2.16)
 
 **Méthode 2.16** : nommer le type d'un état depuis sa fonction de requête —
@@ -241,9 +248,31 @@ territoire** → voir la 2ᵉ demande R3.
 Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 903**
 (**33 `any`** en moins sur les trois tranches).
 
-**Suite** — les états restants (document, RH, immobilisations, production, CRM),
-puis la « voie C » de 2.16 (déclarer le type de retour des fonctions de requête
-avant de nommer les états).
+### Tranche 4 — 05/10 (10 états, 8 écrans — RH)
+
+| Écran | États typés |
+|---|---|
+| `LeaveRequestsPage` | `requests` |
+| `MedicalExamsPage` | `records` |
+| `EmployeeInterviewsPage` | `objectives`, `campaigns` |
+| `CareerHistoryPage` | `records` |
+| `CPFPage` | `accounts` |
+| `EmployeeDocumentsPage` | `documents`, `payRuns` |
+| `WorkHardshipPage` | `records` |
+| `InterviewCampaignsPage` | `campaigns` |
+
+**Un défaut révélé** — `EmployeeDocumentsPage` lit `d.employees.first_name` pour la
+colonne « Salarié », mais `getEmployeeDocuments` fait `.select('*')` : **aucune
+jointure `employees`** → la colonne affiche **« — » depuis toujours**. Le
+correctif (ajouter la jointure) est **hors territoire** → 3ᵉ demande R3. En
+territoire, l'écran nomme la jointure attendue (`EmployeeDocumentRow`).
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 8 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 893**
+(**43 `any`** en moins sur les quatre tranches).
+
+**Suite** — les états restants (document, immobilisations, tableaux de bord,
+`Phase2→7DPages`, `ComplementaryPages`), puis la « voie C » de 2.16.
 
 ## D.3 — alignement des colonnes (reprise gelée)
 
@@ -332,4 +361,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `e3ea341` |
 | 05/10 | D.2 · tranche 2 | RH/employee/trésorerie | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→916 (cumul 20) | `1777807` |
 | 05/10 | D.2 · tranche 3 | production/stock | 13 états typés (7 écrans) + 1 défaut de jointure révélé (corrigé côté écran, fix requête en R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→903 (cumul 33) | `b22a44e` |
+| 05/10 | D.2 · tranche 4 | RH | 10 états typés (8 écrans) + 1 défaut de jointure manquante révélé (R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→893 (cumul 43) | `HASH_D2T4` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

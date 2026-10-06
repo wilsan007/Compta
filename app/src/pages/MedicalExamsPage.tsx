@@ -20,7 +20,7 @@ export function MedicalExamsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [records, setRecords] = useState<any[]>([])
+  const [records, setRecords] = useState<Awaited<ReturnType<typeof getMedicalExams>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

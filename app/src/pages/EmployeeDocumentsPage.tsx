@@ -19,14 +19,17 @@ const docTypeColors: Record<string, string> = {
   other: 'var(--color-text-secondary)',
 }
 
+/** `getEmployeeDocuments` ne joint pas `employees` (défaut, demande R3) — l'écran le lit, donc il le nomme. */
+type EmployeeDocumentRow = EmployeeDocument & { employees?: { first_name: string | null; last_name: string | null } | null }
+
 export function EmployeeDocumentsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-  const [documents, setDocuments] = useState<any[]>([])
+  const [documents, setDocuments] = useState<EmployeeDocumentRow[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [payRuns, setPayRuns] = useState<any[]>([])
+  const [payRuns, setPayRuns] = useState<Awaited<ReturnType<typeof getPayRuns>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showDistribute, setShowDistribute] = useState(false)

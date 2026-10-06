@@ -15,7 +15,7 @@ export function LeaveRequestsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
-const [requests, setRequests] = useState<any[]>([])
+const [requests, setRequests] = useState<Awaited<ReturnType<typeof getLeaveRequests>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

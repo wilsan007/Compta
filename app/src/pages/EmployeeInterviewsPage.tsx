@@ -11,8 +11,8 @@ export function EmployeeInterviewsPage() {
   const { t: tNav } = useTranslation('nav')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [objectives, setObjectives] = useState<any[]>([])
-  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [objectives, setObjectives] = useState<Awaited<ReturnType<typeof getMyObjectives>>>([])
+  const [campaigns, setCampaigns] = useState<Awaited<ReturnType<typeof getInterviewCampaigns>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
