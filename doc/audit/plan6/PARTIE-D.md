@@ -392,5 +392,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 3 | production/stock | 13 états typés (7 écrans) + 1 défaut de jointure révélé (corrigé côté écran, fix requête en R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→903 (cumul 33) | `b22a44e` |
 | 05/10 | D.2 · tranche 4 | RH | 10 états typés (8 écrans) + 1 défaut de jointure manquante révélé (R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→893 (cumul 43) | `1c90744` |
 | 05/10 | D.2 · tranche 5 | RH/social/frais | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→884 (cumul 52) | `dd65316` |
-| 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `HASH_D2T6` |
+| 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `c544ec1` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
