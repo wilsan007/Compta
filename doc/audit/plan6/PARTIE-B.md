@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005, R-007, R-009 ; achats R-011/013/015/016/017/018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`513`) — 60 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005, R-007, R-009 ; achats R-011/013/015/016/017/018 ; trésorerie R-048→R-051 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`515`) — 66 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -159,14 +159,27 @@ seul.
 **Reste du module Relances :** néant (R-059 → R-061 livrées). Le module **Budgets /
 engagements** (R-057 ✅ déjà, R-058) reste à faire.
 
-## B.2 — la trésorerie, à coordonner (R-048 → R-051)
+## B.2 — lot 15 : module Trésorerie, règles R-048 → R-051 — livré le 05/10/2026
 
-Non commencée, et **pourquoi** : R-048/R-049 (`sepa_payment_orders`) et R-050/R-051
-(`treasury_transfers`) demandent des enfants d'effet qui touchent **le rapprochement
-bancaire** et une **écriture comptable** ; leur tierce personne est la partie
-d'intégration/comptabilité, pas B seule. Le chemin pressenti : R-050 « exécuté » →
-`post_journal_entry` (virement D `to_account.account_code` / C
-`from_account.account_code`, `treasury_transfers.journal_entry_id` renseigné).
+**Migrations `514_regle_tresorerie_sepa.sql` (R-048/R-049, suite 3 verts)** et
+**`515_regle_tresorerie_virement.sql` (R-050/R-051, suite 3 verts)**. Quatre maillons
+**événement**, idempotents :
+
+- **R-048** — ordre SEPA **rejeté** → `sepa_payment_orders.rejected` ;
+- **R-049** — ordre SEPA **traité** → `sepa_payment_orders.processed` ;
+- **R-050** — virement **exécuté** → `treasury_transfers.executed` ;
+- **R-051** — virement **annulé** → `treasury_transfers.cancelled`.
+
+**Ce qui reste à la coordination, dit dans l'en-tête :** l'**écriture comptable**
+(reprise des paiements, rapprochement bancaire, écriture de virement D compte
+d'arrivée / C compte de départ, contre-passation) touche le **noyau comptable** et la
+**détermination des soldes** — à faire d'un seul tenant avec la comptabilité (R7). Le
+schéma la prépare (`treasury_transfers.journal_entry_id`, `bank_accounts.account_code` /
+`journal_code`). Poser l'écriture **seule**, sans la dérivation des soldes ni
+l'ouverture de période, serait incomplet et dangereux — donc non fait ici.
+
+**État du module Trésorerie : R-022 (✅), R-023/R-024 (🟨), R-048→R-051 (🟨 événements ;
+écriture coordonnée).**
 
 ## B.2 — lot 8 : module Budgets, règle R-058 (livré le 05/10/2026)
 
@@ -321,3 +334,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · achats-3 | Achats | **R-013/R-015/R-016** : réception `partial` (reliquat) / `pending`, facture fournisseur `cancelled` → événements. Effets stock/comptables coordonnés (dits). Migration `511` + suite `511_…_tests.sql`. | base **345 migrations, 0 erreur** ; suite **3/3** (les 12 suites B : **52/52**) | _à venir_ |
 | 05/10 | B.2 · ventes-6 | Ventes | **R-007** : retour client → **réintégration en stock** (même dépôt, même coût, garde anti-fantôme). Migration `512` + suite `512_…_tests.sql`. | base **346 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
 | 05/10 | B.2 · ventes-7 | Ventes | **R-009** : BL `transformed` → **lien vers la facture** ; garde « pas de sortie sur brouillon » coordonnée (dite). Migration `513` + suite `513_…_tests.sql`. | base **347 migrations, 0 erreur** ; suite **3/3** (les 14 suites B : **60/60**) | _à venir_ |
+| 05/10 | B.2 · trésorerie-1 | Trésorerie | **R-048/R-049** : ordres SEPA rejeté / traité → événements. Migration `514` + suite `514_…_tests.sql`. | base **348 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 05/10 | B.2 · trésorerie-2 | Trésorerie | **R-050/R-051** : virement exécuté / annulé → événements ; écriture comptable coordonnée (dite). Migration `515` + suite `515_…_tests.sql`. | base **349 migrations, 0 erreur** ; suite **3/3** (les 16 suites B : **66/66**) | _à venir_ |

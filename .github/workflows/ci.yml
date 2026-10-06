@@ -2410,6 +2410,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-048/R-049 (partie B, lot Trésorerie) — ordres SEPA rejeté / traité.
+      - name: 'plan6 B — R-048/049 : SEPA rejeté / traité (514)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/514_regle_tresorerie_sepa_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-050/R-051 (partie B, lot Trésorerie) — virement exécuté / annulé.
+      - name: 'plan6 B — R-050/051 : virement exécuté / annulé (515)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/515_regle_tresorerie_virement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
