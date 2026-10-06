@@ -14,7 +14,7 @@ export function RoutingsPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [routings, setRoutings] = useState<any[]>([])
+  const [routings, setRoutings] = useState<Awaited<ReturnType<typeof getRoutings>>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
   const [machines, setMachines] = useState<Machine[]>([])

@@ -15,10 +15,10 @@ export function SubcontractingOrdersPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<Awaited<ReturnType<typeof getSTOrders>>>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [mos, setMOs] = useState<any[]>([])
+  const [mos, setMOs] = useState<Awaited<ReturnType<typeof getManufacturingOrders>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
@@ -146,7 +146,7 @@ export function SubcontractingShipmentsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [shipments, setShipments] = useState<any[]>([])
+  const [shipments, setShipments] = useState<Awaited<ReturnType<typeof getSTShipments>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -198,7 +198,7 @@ export function SubcontractingReceiptsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [receipts, setReceipts] = useState<any[]>([])
+  const [receipts, setReceipts] = useState<Awaited<ReturnType<typeof getSTReceipts>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -251,7 +251,7 @@ export function SubcontractingSupervisorPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Awaited<ReturnType<typeof getSTSupervisorData>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

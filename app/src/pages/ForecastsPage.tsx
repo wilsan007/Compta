@@ -13,7 +13,7 @@ export function ForecastsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [forecasts, setForecasts] = useState<any[]>([])
+  const [forecasts, setForecasts] = useState<Awaited<ReturnType<typeof getProductionForecasts>>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

@@ -182,7 +182,7 @@ export function MRPPendingDocsPage() {
   const { toast } = useToast()
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
-  const [docs, setDocs] = useState<any[]>([])
+  const [docs, setDocs] = useState<Awaited<ReturnType<typeof getMRPPendingDocs>>>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {

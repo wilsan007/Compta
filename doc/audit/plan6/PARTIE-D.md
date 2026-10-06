@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–2 (05/10) : 20 états** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–3 (05/10) : 33 états** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -156,6 +156,13 @@ export function confirmSync(message: string): boolean { return window.confirm(me
 1.8 / AUD-I01 le demandent. Aucun usage restant (mesuré : `grep confirmSync
 app/src` = cette seule ligne).
 
+**Deuxième demande** — `app/src/lib/queries/production.ts` : `getManufacturingOrders`
+**rend** `ManufacturingOrder` alors que la requête **joint** `boms(name, code)`,
+`products(name, sku)`, `warehouses(name)`, `routings(name, code)`. Le type
+devrait modéliser ces jointures (`Joined<…>` de `@/types/dbRow`) ; sans cela,
+chaque écran qui lit une jointure doit la **renommer lui‑même** (ce que fait
+`ProductionDashboardPage`, tranche 3). Aucune migration — un changement de type.
+
 ## D.2 — typer les états d'écran (suite de 2.16)
 
 **Méthode 2.16** : nommer le type d'un état depuis sa fonction de requête —
@@ -208,6 +215,31 @@ Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 →
 > typée (p. ex. `getRhDashboardData`, qui a révélé le défaut de la tranche 1).
 > La **« voie C »** de 2.16 — déclarer le type de retour des requêtes **avant** de
 > nommer les états — reste à faire.
+
+### Tranche 3 — 05/10 (13 états, 7 écrans — production / stock)
+
+| Écran | États typés |
+|---|---|
+| `SubcontractingPages` | `orders`, `mos`, `shipments`, `receipts`, `data` |
+| `RoutingsPage` | `routings` |
+| `ProductionDashboardPage` | `mos`, `stOrders`, `mrpProposals` |
+| `WorkStoppagesPage` | `records` |
+| `ForecastsPage` | `forecasts` |
+| `PlanningPage` | `slots` |
+| `MRPPages` | `docs` |
+
+**Un défaut révélé (et corrigé côté écran)** — `ProductionDashboardPage` lit
+`mo.products?.name`, mais `getManufacturingOrders` **rend** `ManufacturingOrder`,
+un type qui **ne modélise pas ses jointures** (`boms`, `products`, `warehouses`,
+`routings`). La lecture est **juste à l'exécution** (la requête joint bien
+`products`) ; c'est le **type qui ment**. Corrigé **dans le territoire de D** :
+`ManufacturingOrderRow = ManufacturingOrder & { products?: … }`. Le vrai
+correctif — modéliser les jointures dans `lib/queries/production.ts` — est **hors
+territoire** → voir la 2ᵉ demande R3.
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 7 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 903**
+(**33 `any`** en moins sur les trois tranches).
 
 **Suite** — les états restants (document, RH, immobilisations, production, CRM),
 puis la « voie C » de 2.16 (déclarer le type de retour des fonctions de requête
@@ -299,4 +331,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.3 | écrans | 4 écrans : `<div key>` → `<Fragment>` (+ `<tr><td colSpan>`), reprise `f5cda2f` (6 déjà en `main`) | tsc ✅ · oxlint 0 · Vitest 1661/1699 | `10a51bb` |
 | 05/10 | D.2 · tranche 1 | RH/trésorerie/CRM | 11 états typés depuis les requêtes (méthode 2.16) + 1 défaut de narrowing fermé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→925 | `e3ea341` |
 | 05/10 | D.2 · tranche 2 | RH/employee/trésorerie | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→916 (cumul 20) | `1777807` |
+| 05/10 | D.2 · tranche 3 | production/stock | 13 états typés (7 écrans) + 1 défaut de jointure révélé (corrigé côté écran, fix requête en R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→903 (cumul 33) | `HASH_D2T3` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

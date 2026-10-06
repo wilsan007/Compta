@@ -15,7 +15,7 @@ export function PlanningPage() {
   const { t } = useTranslation('production')
   const { t: tCommon } = useTranslation('common')
   const { formatDateTime } = useLocale()
-  const [slots, setSlots] = useState<any[]>([])
+  const [slots, setSlots] = useState<Awaited<ReturnType<typeof getPlanningSlots>>>([])
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
 
