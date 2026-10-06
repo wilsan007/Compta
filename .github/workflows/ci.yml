@@ -2397,6 +2397,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-007 (partie B, lot Ventes) — retour client : réintégration en stock.
+      - name: 'plan6 B — R-007 : retour client (512)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/512_regle_ventes_retour_client_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-009 (partie B, lot Ventes) — BL transformé : lien vers la facture (la garde
+      # « pas de sortie sur un brouillon » est coordonnée).
+      - name: 'plan6 B — R-009 : BL transformé → lien facture (513)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/513_regle_ventes_bl_transforme_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005 ; achats R-011/013/015/016/017/018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`511`) — 52 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005, R-007, R-009 ; achats R-011/013/015/016/017/018 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`513`) — 60 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -241,6 +241,30 @@ maillons **événement** : `goods_receipts.partial` (reliquat), `goods_receipts.
 R-013, R-015, R-016 (🟨 événements ; effet métier coordonné).** Le module Achats est
 **couvert à 9/9 règles**, dont **6 entières**.
 
+## B.2 — lot 13 : module Ventes, règle R-007 (retour client) — livré le 05/10/2026
+
+**Migration `512_regle_ventes_retour_client.sql`** + suite (**5 verts**).
+**R-007** — un BL passé à **`returned`** **réintègre** la marchandise : pour chaque
+**sortie d'origine** du bon, un mouvement `in` **au même dépôt** et **au même coût**
+(réintégration du coût), lien BL → mouvements, événement `delivery_notes.returned` ;
+idempotent (référence `RET-BL-…`). **Garde de sens** : sans sortie d'origine, **aucun
+stock fantôme** — le maillon trace `sans_effet`. **Reste coordonné** : l'**avoir client**
+(R-019) et la **quarantaine** (pas de dépôt de quarantaine normé — la réintégration va
+au dépôt d'origine).
+
+## B.2 — lot 14 : module Ventes, règle R-009 (BL transformé) — livré le 05/10/2026
+
+**Migration `513_regle_ventes_bl_transforme.sql`** + suite (**3 verts**).
+**R-009** — au passage d'un BL à `validation_status = 'transformed'`, il **lie le BL aux
+factures nées de lui** (`invoices.delivery_note_id`), un lien `invoiced_by` par facture,
+et émet `delivery_notes.transformed`. Idempotent.
+**La GARDE « pas de sortie de stock sur un brouillon » n'est PAS posée** : le flux
+actuel expédie des BL `draft` — la garde, seule, bloquerait toutes les expéditions
+(suites 230/242/314/419). Elle n'a de sens qu'**avec** l'écran qui valide le BL avant de
+l'expédier (partie E). **Décision dite, pas subie.**
+
+**État du module Ventes : R-001→R-005 (✅), R-006 (🟨 stock fait, rapprochement facture/POD à faire), R-007 (✅), R-008 (✅), R-009 (🟨 lien fait, garde coordonnée).**
+
 ## B.2 — reste, classé par sûreté
 
 - **Sûr, faisable comme ce tour :** production **R-046** (traçabilité MRP = événement).
@@ -295,3 +319,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · production-1 | Production | **R-046** : OF d'origine `mrp` → `manufacturing_orders.mrp_sourced` + trace. Partielle (le schéma ne stocke pas la proposition MRP — trou dit). Migration `509` + suite `509_…_tests.sql`. | base **343 migrations, 0 erreur** ; suite **4/4** (les 10 suites B : **45/45**) | _à venir_ |
 | 05/10 | B.2 · achats-2 | Achats | **R-011** (compléter) : commande reçue → **rapprochement** avec ses réceptions + **écart de quantité** ; inscription de `purchase_orders` au registre. Migration `510` + suite `510_…_tests.sql`. | base **344 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · achats-3 | Achats | **R-013/R-015/R-016** : réception `partial` (reliquat) / `pending`, facture fournisseur `cancelled` → événements. Effets stock/comptables coordonnés (dits). Migration `511` + suite `511_…_tests.sql`. | base **345 migrations, 0 erreur** ; suite **3/3** (les 12 suites B : **52/52**) | _à venir_ |
+| 05/10 | B.2 · ventes-6 | Ventes | **R-007** : retour client → **réintégration en stock** (même dépôt, même coût, garde anti-fantôme). Migration `512` + suite `512_…_tests.sql`. | base **346 migrations, 0 erreur** ; suite **5/5** | _à venir_ |
+| 05/10 | B.2 · ventes-7 | Ventes | **R-009** : BL `transformed` → **lien vers la facture** ; garde « pas de sortie sur brouillon » coordonnée (dite). Migration `513` + suite `513_…_tests.sql`. | base **347 migrations, 0 erreur** ; suite **3/3** (les 14 suites B : **60/60**) | _à venir_ |
