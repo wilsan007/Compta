@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **ventes R-001→R-005, R-007, R-009 ; achats R-011/013/015/016/017/018 ; trésorerie R-048→R-051 ; relances R-059→R-061 ; budgets R-058 ; conformité R-054/055/056 ; production R-046 (`500`→`515`) — 66 scénarios verts le 05/10** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **58 / 62 règles touchées (`500`→`518`) ; 4 vierges restantes (R-019, R-044, R-045, R-047) + 11 partielles à compléter — 73 scénarios verts le 05/10** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -181,6 +181,38 @@ l'ouverture de période, serait incomplet et dangereux — donc non fait ici.
 **État du module Trésorerie : R-022 (✅), R-023/R-024 (🟨), R-048→R-051 (🟨 événements ;
 écriture coordonnée).**
 
+## B.2 — lot 16 : Conformité R-052/R-053, lot 17 : Projets R-040/041/042, lot 18 : Paie/RH R-031/037/038/039
+
+**Migrations `516` (suite 3 verts), `517` (suite 4 verts), `518` (suite 4 verts)** — des
+maillons **événement** idempotents :
+
+- **R-052/R-053** — TVA `submitted`/`paid` → `vat_returns.submitted` / `.paid` (gel de
+  période et écriture de paiement coordonnés) ;
+- **R-040/R-041/R-042** — projet `completed`/`cancelled`/`on_hold` → `projects.*`
+  (WIP, contre-passation, blocage de facturation coordonnés) ;
+- **R-031** — note de frais `rejected` → `expense_reports.rejected` ;
+- **R-037/R-038** — contrat `terminated`/`ended`/`suspended` → `contracts.*` (solde de
+  tout compte, DSN de fin, proratisation coordonnés) ;
+- **R-039** — contrat **créé** → `contracts.created` **avec son type** (accroche des
+  règles par type : prime de précarité, exonérations, gratification — à écrire en paie).
+
+## B.2 — l'état réel : 58 / 62 règles touchées
+
+**Vierges (4) — à faire, coordonnées :**
+- **R-019** (facture client annulée → contre-passation TVA/lettrage) : **comptable** ;
+- **R-044 / R-045** (`manufacturing_orders` in_progress / planned → consommation, en-cours,
+  réservation) : **stock**, couplage E ;
+- **R-047** (`stock_movements.movement_type = transfer`) : **stock**, couplage E.
+
+**Partielles (11) — l'accroche existe, l'effet métier reste coordonné :**
+R-006 (rapprochement facture/POD), R-020 (immuabilité facture), R-011 (écart de prix),
+R-023/R-024 (dél-letrage et relance), R-025/R-026/R-028/R-029/R-032/R-036 (paie FR :
+B.3/B.4 et moteur), R-043 (annulation d'OF), R-046 (proposition MRP), R-058 (complété),
+R-009 (garde BL brouillon).
+
+**Complètes : R-001→R-005, R-007, R-010, R-012, R-014, R-017, R-018, R-021, R-022, R-027,
+R-030, R-033, R-034, R-035, R-048→R-061**, plus **R-062** (contrainte déjà au schéma).
+
 ## B.2 — lot 8 : module Budgets, règle R-058 (livré le 05/10/2026)
 
 **Migration `507_regle_budgets_engagement_annule.sql`** + suite (**3 verts**).
@@ -336,3 +368,6 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · ventes-7 | Ventes | **R-009** : BL `transformed` → **lien vers la facture** ; garde « pas de sortie sur brouillon » coordonnée (dite). Migration `513` + suite `513_…_tests.sql`. | base **347 migrations, 0 erreur** ; suite **3/3** (les 14 suites B : **60/60**) | _à venir_ |
 | 05/10 | B.2 · trésorerie-1 | Trésorerie | **R-048/R-049** : ordres SEPA rejeté / traité → événements. Migration `514` + suite `514_…_tests.sql`. | base **348 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
 | 05/10 | B.2 · trésorerie-2 | Trésorerie | **R-050/R-051** : virement exécuté / annulé → événements ; écriture comptable coordonnée (dite). Migration `515` + suite `515_…_tests.sql`. | base **349 migrations, 0 erreur** ; suite **3/3** (les 16 suites B : **66/66**) | _à venir_ |
+| 05/10 | B.2 · conformité-2 | Conformité | **R-052/R-053** : TVA `submitted`/`paid` → événements. Migration `516` + suite `516_…_tests.sql`. | base **350 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 05/10 | B.2 · projets-1 | Projets | **R-040/R-041/R-042** : projet complété / annulé / en attente → événements. Migration `517` + suite `517_…_tests.sql`. | base **351 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
+| 05/10 | B.2 · paie-rh-1 | Paie/RH | **R-031/R-037/R-038/R-039** : note de frais rejetée, contrat créé / fin / rupture / suspendu → événements. Migration `518` + suite `518_…_tests.sql`. | base **352 migrations, 0 erreur** ; suite **4/4** (les 19 suites B : **73/73**) | _à venir_ |

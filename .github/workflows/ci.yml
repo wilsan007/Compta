@@ -2422,6 +2422,24 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-052/R-053 (partie B, lot Conformité) — TVA soumise / payée.
+      - name: 'plan6 B — R-052/053 : TVA soumise / payée (516)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/516_regle_conformite_tva_retour_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-040/041/042 (partie B, lot Projets) — projet complété / annulé / en attente.
+      - name: 'plan6 B — R-040/041/042 : état de projet (517)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/517_regle_projets_cloture_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # R-031/037/038/039 (partie B, lot Paie/RH) — note de frais rejetée, contrats.
+      - name: 'plan6 B — R-031/037/038/039 : note de frais et contrats (518)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/518_regle_rh_contrats_et_note_frais_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
