@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : POS `387`, stock/production `388`** ; reste de LOC1-07 → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : POS `387`, stock/production `388`** ; **LOC1-08 : affectation/écarts `389`** ; reste → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -201,6 +201,26 @@ n'est qu'une enveloppe, et les comptes vivent dans `payroll_post_run`, c'est‑�
 le **module paie = territoire de la Partie B** (R3/R7) : **demande à transmettre**,
 pas une édition de C.
 
+### `LOC1-08` — clôture, affectation, écarts (`389`, puis `390`)
+
+**`389_roles_closing.sql` (+ suite)** — l'**affectation du résultat**
+(`allocate_result`) et les **écarts de lettrage** (`generate_residual_entry`)
+demandent leurs rôles (`RESULTAT_BENEFICE`/`RESULTAT_PERTE`, `ESCOMPTES_ACCORDES`,
+`PERTES_CHANGE`, `GAINS_CHANGE`, `PERTES_CREANCES_IRRECOUVRABLES`, `JOURNAL_OD`).
+Un **rôle de journal ajouté** : `JOURNAL_CLOTURE` → `CL` (le journal de clôture
+n'avait pas de rôle). **Écritures identiques** — la recette « balance d'ouverture
+N+1 identique à l'actuelle au centime » est tenue par construction. Validé :
+`389` 5/5, suites `179`/`175` OK.
+
+**Ensuite (`390`)** : `close_fiscal_year` (journal `CL`, `AN`, comptes
+`120000`/`129000`) — même méthode, même résultat.
+
+**Non fait, et pourquoi** : `generate_depreciation_entry` — ses littéraux
+`280000`/`681000` ne correspondent **pas** aux rôles (`AMORTISSEMENTS` est par
+CATÉGORIE ; le pack porte `681100`). Le remplacer **changerait les écritures** :
+à trancher (même principe que `613000` — on ne « corrige » pas pour coller au
+cahier).
+
 ### Ce qui reste dans C.1
 
 Le reste de `LOC1-07` (paie) puis `LOC1-08` → `58` : clôture, monnaie/arrondis,
@@ -240,6 +260,16 @@ branche gelée (153 lignes) corrigeait 71 tables en `allow_all_%`. Il est
 aujourd'hui** — le correctif est devenu inutile. Il ne doit pas être
 reprise.
 
+## Demandes hors territoire (règle R3) — **à transmettre par l'intégration**
+
+> Une partie n'édite pas hors de son territoire : elle **écrit la demande ici**,
+> l'intégration la transmet au propriétaire (R3).
+
+| # | Vers | Demande | Pourquoi ce n'est pas C |
+|---|---|---|---|
+| **D1** | **Partie B** (paie) | Réécrire sur les **rôles** les comptes d'écriture de la paie, dans **`payroll_post_run`** — `create_journal_on_payroll_validate` n'est qu'une **enveloppe** qui l'appelle. Rôles prêts : `SALAIRES_BRUTS`(641000), `CHARGES_SOCIALES_PATRONALES`(645000), `PERSONNEL_REMUNERATIONS_DUES`(421000), `ORGANISME_SOCIAL`(431000), `ETAT_IMPOT_SALAIRES`(442000), `JOURNAL_PAIE`. | Le module paie est le **territoire de la Partie B** (`lib/payroll*`, écrans de paie). C a livré le catalogue, `resolve_account`/`resolve_journal` et les rôles du pack : il ne reste qu'à les appeler. ⚠ `JOURNAL_PAIE` n'est **pas encore mappé** dans le pack PCG (le cahier le note « à créer ») — B doit trancher son code de journal. |
+| **D2** | **Partie E** (opérations) | Si la **taxonomie d'article** (marchandise/matière/produit fini) est voulue, elle touche `products` — table d'E. C la consommerait par le rôle. | `products` est le territoire de la Partie E (stock, production). Décision du 06/10 : **pas de compte de stock par type** tant que la taxonomie n'existe pas. |
+
 ## Attend de vous
 
 - **`D-11`** : entreprises publiques seules, ou avec le module des
@@ -277,4 +307,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 05/10 | prérequis LOC1-06 (`LOC1-13`) | `pack_account_roles` | **65 rôles de comptes + 7 rôles de journaux** semés sur le référentiel **PCG** (annexe B) ; `FR` en hérite par la lignée ; recette `LOC1-05` verte (société FR → `CLIENTS` = `411000`) | base : `385` 6/6 ; **10 contrôles CI verts** | 0294fdf |
 | 05/10 | LOT 1-B (LOC1-06) | 4 triggers | facture de vente, facture d'achat, encaissement et décaissement passent par les **rôles** (`resolve_account`/`resolve_journal`) ; **pont** « société sans pack → pack par défaut » ; recette `102_trigger_tests` **17/17 inchangé** ; suite `386` prouve l'absence de numéro en dur | base : `386` 5/5 ; **10 contrôles CI verts** ; suites d'écritures (170/175/178/180…) OK | c57a9d3 |
 | 05/10 | LOC1-07 (tranche POS) | `post_pos_session_on_close_multi` | la clôture de caisse demande ses rôles (`JOURNAL_POS`, `VENTES_MARCHANDISES`, `TVA_COLLECTEE`) ; **2 rôles de journaux ajoutés** au catalogue (`JOURNAL_POS`, `JOURNAL_PRODUCTION`) et au pack PCG | base : `387` 5/5 ; suites POS `219`/`250`/`281` OK ; **10 portes CI vertes** | 542f624 |
-| 06/10 | LOC1-07 (tranche stock/production) | `create_journal_on_stock_movement`, `create_stock_on_manufacturing_complete`, `resolve_stock_account` | stock et OF sur les rôles (journal `ST`/`OF`, comptes `601000`/`310000`/`355000`/`713500`) ; **écritures identiques** ; décisions du 06/10 documentées (pas de taxonomie d'article ; `613000` intact ; variation `603000`) | base : `388` 5/5 ; suites stock `173`/`240`/`241`/`230` + `102` OK ; **10 portes CI vertes** | (ce commit) |
+| 06/10 | LOC1-07 (tranche stock/production) | `create_journal_on_stock_movement`, `create_stock_on_manufacturing_complete`, `resolve_stock_account` | stock et OF sur les rôles (journal `ST`/`OF`, comptes `601000`/`310000`/`355000`/`713500`) ; **écritures identiques** ; décisions du 06/10 documentées (pas de taxonomie d'article ; `613000` intact ; variation `603000`) | base : `388` 5/5 ; suites stock `173`/`240`/`241`/`230` + `102` OK ; **10 portes CI vertes** | 2b56d46 |
+| 06/10 | LOC1-08 (tranche affectation/écarts) | `allocate_result`, `generate_residual_entry` | affectation du résultat et écarts de lettrage sur les rôles ; **rôle `JOURNAL_CLOTURE`→`CL` ajouté** ; écritures identiques | base : `389` 5/5 ; suites `179`/`175` OK ; **10 portes CI vertes** | (ce commit) |
