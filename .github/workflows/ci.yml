@@ -2356,6 +2356,37 @@ jobs:
       - name: 'L16 : livraison → facture, rattachée et tracée (495)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/495_chain_l16_livraison_facture_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL (tronçon 4) : le RÈGLEMENT d'une FACTURE
+      # lui est rattaché et tracé (effet `sale.invoice.to_payment`).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre client, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → règlement, rattachée et tracée (497)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/497_chain_l16_facture_reglement_tests.sql
+
+      # L16 — chaînage interne ACHATS : la RÉCEPTION issue d'une COMMANDE D'ACHAT
+      # lui est rattachée et tracée (effet `purchase.order.to_receipt`) ; `purchase_orders`
+      # entre au registre chain_document_types.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (brouillon/annulée/annulée/autre
+      # fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : commande d''achat → réception, rattachée et tracée (498)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/498_chain_l16_reception_commande_tests.sql
+
+      # L16 — chaînage interne TRÉSORERIE : le VIREMENT (règlement fournisseur ou
+      # client) exécuté par un ORDRE DE PAIEMENT lui est rattaché et tracé
+      # (effet `treasury.order.to_payment`) ; `payment_orders` entre au registre.
+      # 16 verdicts : nominal achat + vente, idempotence (D1), quatre refus (annulé/
+      # déjà exécuté/introuvable/montant), frise (I-01), isolation (D8).
+      - name: 'L16 : ordre de paiement → virement, rattaché et tracé (499)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/499_chain_l16_ordre_virement_tests.sql
+
+      # L16 — chaînage interne STOCK/ACHATS : la COMMANDE D'ACHAT issue d'une
+      # PROPOSITION (MRP) lui est rattachée et tracée (effet `purchase.proposal.to_order`) ;
+      # `mrp_proposals` entre au registre chain_document_types.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (rejetée/convertie/
+      # fabrication/annulée/autre fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : proposition (MRP) → commande d''achat, rattachée et tracée (751)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/751_chain_l16_proposition_commande_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559

@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **3 maillons livrés le 05/10** : L16 Commercial — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**) et livraison → facture (`495`, **14/14**) — voir §A3.2 lots 1, 2 et 3 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **7 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 7 ; l'**avoir** est différé (cf. lot 4) |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | ⬜ |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -173,6 +173,117 @@ T02 idempotence (2), T03 quatre refus explicites (4), T04 frise des deux côtés
 **Reste de la famille Commercial** : avoir (`reversed_by`), règlement
 (`paid_by`), relance, et la **marge prévisionnelle** (absente).
 
+## A3.2 — lot 4 : le règlement rattaché à la facture (migration `497`) ; l'avoir différé
+
+**Le tronçon suivant du module Commercial** — « facture ↔ règlement » (§B.3),
+après `495`. Mesuré avant d'écrire : `customer_payments.invoice_id` et
+`invoice_number` **existaient**, et **personne ne les écrivait**.
+
+**Ce qui est livré** — migration `497_chain_l16_facture_reglement.sql` :
+contrat d'effet `sale.invoice.to_payment` + maillon
+`chain_l16_invoice_payment(p_invoice, p_payment)` — même client, ni la facture ni
+le règlement n'est annulé, un règlement déjà affecté à une autre facture est
+refusé ; **idempotent** ; `customer_payments.invoice_id` **écrit** ; **lien**
+`link_documents` (`paid_by`). Éprouvé : suite `497` **14/14** ; G2 **67 constats,
+0 au registre** ; G8 / `check_tenant_guard` / `check_anon_grants` **OK** ;
+rejouable ; enrôlée dans `ci.yml` (G5).
+
+**⏸️ L'avoir (`498_chain_l16_facture_avoir`) est DIFFÉRÉ — numéro rendu.** Le
+maillon est simple (effet `sale.invoice.to_credit_note`, lien `reversed_by`), mais
+la **suite** se heurte aux gardes de validation : `credit_note_guard` (213) impose
+« un avoir est créé en brouillon **puis validé** », et refuse de rattacher une
+facture dont `validation_status <> 'validated'` ; or `invoice_guard` (190) refuse
+de valider une facture **sans ligne**. Tester l'avoir proprement demande donc de
+construire facture + lignes + validation + avoir + validation — un harnais à part.
+Plutôt qu'un lot fragile, le numéro **`498` est rendu** (`migration-numero.mjs
+rendre`) et le tronçon reste **au reste d'A3.2** (voir plus bas). Le journal le
+dit : c'est un report décidé, pas un oubli.
+
+## A3.2 — lot 5 : la réception rattachée à la commande d'achat (migration `498`)
+
+**Le miroir achats du lot 2**, dans la famille **Stock/Achats** (« besoin (MRP) ↔
+proposition ↔ commande ↔ réception ↔ stock », §B.3). Mesuré avant d'écrire :
+`goods_receipts.purchase_order_id` **existait** et **personne ne l'écrivait** ;
+`purchase_orders` **n'était pas au registre** `chain_document_types` (un lien vers
+une commande d'achat aurait été **REFUSÉ** par la garde d'existence `451`).
+
+**Ce qui est livré** — migration `498_chain_l16_reception_commande.sql` : le type
+`purchase_orders` **entre au registre**, le contrat d'effet
+`purchase.order.to_receipt` est déclaré, et le maillon `chain_l16_receipt_order`
+rattache la réception à la commande (même fournisseur, statuts valides,
+**idempotent**, écrit `goods_receipts.purchase_order_id`, lien `delivered_by`).
+
+**Éprouvé** — suite `498` **14/14** sur base neuve : T01 nominal (3), T02
+idempotence (2), T03 quatre refus (commande brouillon / commande annulée /
+réception annulée / autre fournisseur — 4), T04 frise (2), T05 isolation (3).
+Portes : G2 **OK** ; G8 **15 maillons** (7 tracés + 8 écartés) **OK** ;
+`check_tenant_guard` (488 SECURITY DEFINER, 0 sans société) **OK** ;
+`check_anon_grants` **OK** ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste de la famille Stock/Achats** : MRP → proposition, proposition → commande,
+réception → stock → CUMP → écriture, lot ↔ traçabilité ↔ rappel ; côté achats :
+réception → facture fournisseur (partiellement chez B), règlement fournisseur
+(`paid_by`).
+
+## A3.2 — lot 6 : l'ordre de paiement rattaché à son virement (migration `499`)
+
+**La famille Trésorerie** — « prévision ↔ échéancier ↔ **ordre de paiement ↔
+virement** ↔ relevé ↔ rapprochement » (§B.3). Mesuré avant d'écrire :
+`payment_orders` est **réel** (l'écran `PaymentOrdersPage` l'écrit, le tableau de
+bord lit `draft/approved` comme engagements à venir) mais **absent du registre**
+`chain_document_types` ; aucun contrat d'effet ; le « virement » = le **règlement
+enregistré** (`supplier_payments` **ou** `customer_payments`).
+
+**Ce qui est livré** — migration `499_chain_l16_ordre_virement.sql` : le type
+`payment_orders` **entre au registre**, le contrat d'effet
+`treasury.order.to_payment`, et le maillon `chain_l16_order_payment` — il
+**retrouve** le règlement dans `supplier_payments` **ou** `customer_payments` (le
+type du tiers décide de la table), vérifie la **cohérence** (même compte bancaire,
+montant du virement ≤ montant de l'ordre), **marque l'ordre `executed`** (le
+statut que personne ne posait) et **trace** le lien (`paid_by`).
+
+**Éprouvé** — suite `499` **16/16** sur base neuve : T01 nominal achat (3), T02
+nominal vente / auto-détection (2), T03 idempotence (2), T04 quatre refus (annulé
+/ déjà exécuté / virement introuvable / virement > ordre — 4), T05 frise (2), T06
+isolation (3). Portes : G2 **65 constats, 0 au registre** ; G8 **15 maillons**
+**OK** ; `check_tenant_guard` / `check_anon_grants` **OK** ; rejouable ; enrôlée
+dans `ci.yml` (G5).
+
+**⚠️ Plage A3 SATURÉE** : `499` est le **dernier** numéro de la plage A3
+(`493 → 499`). A3 doit **demander une extension de plage à l'intégration** avant
+le prochain maillon — le registre fait foi (R2).
+
+**Reste de la famille Trésorerie** : prévision ↔ échéancier, virement → relevé
+(`bank_transactions`), relevé → rapprochement ; virement interne muet (`R-050`).
+
+## A3.2 — lot 7 : la proposition (MRP) rattachée à la commande d'achat (migration `751`)
+
+**Le tronçon amont du lot 5**, dans la famille **Stock/Achats** — « besoin (MRP)
+↔ **proposition ↔ commande** ↔ réception ↔ stock » (§B.3). Mesuré avant d'écrire :
+`mrp_proposals` **existait** (le MRP la remplit : `run_mrp`, `proposal_type`,
+`status`, `supplier_id`) mais **absente du registre** `chain_document_types` ;
+aucun contrat d'effet.
+
+**Ce qui est livré** — migration `751_chain_l16_proposition_commande.sql` : le type
+`mrp_proposals` **entre au registre**, le contrat d'effet
+`purchase.proposal.to_order`, et le maillon `chain_l16_proposal_order` — seule une
+proposition d'**achat** devient une commande d'**achat** (une proposition de
+fabrication va vers un OF — refusée ici), même fournisseur, statuts valides,
+**idempotent**, **marque la proposition `converted`**, **trace** le lien
+(`created_from`).
+
+**Éprouvé** — suite `751` **15/15** sur base neuve : T01 nominal (3), T02
+idempotence (2), T03 **cinq** refus (rejetée / déjà convertie / fabrication /
+commande annulée / autre fournisseur — 5), T04 frise (2), T05 isolation (3).
+Portes : G2 **67 constats, 0 au registre** ; G8 **OK** ; `check_tenant_guard` /
+`check_anon_grants` **OK** ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste de la famille Stock** : proposition → OF (fabrication), réception → stock
+→ CUMP → écriture, lot ↔ traçabilité ↔ rappel.
+
+*Plage utilisée : `750 → 759` « plan6 A3 L16 (familles restantes) », inscrite pour
+les familles restantes d'A3 après saturation de `493 → 499` (le registre fait foi).*
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -186,4 +297,9 @@ T02 idempotence (2), T03 quatre refus explicites (4), T04 frise des deux côtés
 | 2026-10-05 | A3.1 | Recomptage L16 → L22 : `415` → `422` inventoriés (L17 livré, L18/L19/L20/L23 en tranche 1, L16/L21/L22 ouverts) ; 421 libre, 419 sans suite | — (lecture seule) | `ea722d2` |
 | 2026-10-05 | A3.2 (lot 1) | **L16 · devis accepté → commande** : migration `493` (type `quotes` au registre, contrat `sale.quote.to_order`, maillon `convert_quote_to_order` — prix gelé, idempotent, réversible, tracé) + suite `493` enrôlée dans `ci.yml` | suite **19/19** sur base neuve (333 migrations) · G2 **0 effet non déclaré** · `493` rejouable | `fa9ccb7` |
 | 2026-10-05 | A3.2 (lot 2) | **L16 · commande → livraison** : migration `494` (contrat `sale.order.to_delivery`, maillon `chain_l16_order_deliver` — cohérence client/statut, idempotent, écrit `delivery_notes.sales_order_id`, lien `delivered_by`) + suite `494` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 63 constats **0 au registre** · G8/tenant/anon/forced-RLS **OK** · `494` rejouable · G5 **152/152** | `010db14` |
-| 2026-10-05 | A3.2 (lot 3) | **L16 · livraison → facture** : migration `495` (contrat `sale.delivery.to_invoice`, maillon `chain_l16_delivery_invoice` — cohérence client/statut, idempotent, écrit `invoices.delivery_note_id`, lien `invoiced_by`) + suite `495` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 64 constats **0 au registre** · G8/tenant/anon **OK** · `495` rejouable · G5 **153/153** | _(ce lot)_ |
+| 2026-10-05 | A3.2 (lot 3) | **L16 · livraison → facture** : migration `495` (contrat `sale.delivery.to_invoice`, maillon `chain_l16_delivery_invoice` — cohérence client/statut, idempotent, écrit `invoices.delivery_note_id`, lien `invoiced_by`) + suite `495` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 64 constats **0 au registre** · G8/tenant/anon **OK** · `495` rejouable · G5 **153/153** | `e396ff6` |
+| 2026-10-05 | A3.2 (lot 4) | **L16 · facture → règlement** : migration `497` (contrat `sale.invoice.to_payment`, maillon `chain_l16_invoice_payment` — cohérence client/statut, idempotent, écrit `customer_payments.invoice_id`, lien `paid_by`) + suite `497` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · `497` rejouable | _(ce lot)_ |
+| 2026-10-05 | A3.2 (lot 4) | **Avoir (`498`) DIFFÉRÉ, numéro rendu** : la suite se heurte aux gardes de validation (avoir brouillon→validé ; facture validée sans ligne interdite) — harnais dédié requis. Le tronçon reste au reste d'A3.2 | — (report décidé) | — |
+| 2026-10-06 | A3.2 (lot 5) | **L16 · Achats · commande d'achat → réception** : migration `498` (`purchase_orders` au registre, contrat `purchase.order.to_receipt`, maillon `chain_l16_receipt_order` — cohérence fournisseur/statut, idempotent, écrit `goods_receipts.purchase_order_id`, lien `delivered_by`) + suite `498` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 **OK** · G8 15 maillons **OK** · tenant/anon **OK** · rejouable | `61f0ee7` |
+| 2026-10-06 | A3.2 (lot 6) | **L16 · Trésorerie · ordre de paiement → virement** : migration `499` (`payment_orders` au registre, contrat `treasury.order.to_payment`, maillon `chain_l16_order_payment` — auto-détection achat/vente, cohérence compte/montant, marque l'ordre `executed`, lien `paid_by`) + suite `499` enrôlée dans `ci.yml` | suite **16/16** sur base neuve · G2 65 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `560477c` |
+| 2026-10-06 | A3.2 (lot 7) | **L16 · Stock · proposition (MRP) → commande d'achat** : migration `751` (`mrp_proposals` au registre, contrat `purchase.proposal.to_order`, maillon `chain_l16_proposal_order` — type `purchase` seul, même fournisseur, marque la proposition `converted`, lien `created_from`) + suite `751` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
