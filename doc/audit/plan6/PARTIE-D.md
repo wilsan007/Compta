@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–4 (05/10) : 43 états** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–5 (05/10) : 52 états** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -271,8 +271,25 @@ territoire, l'écran nomme la jointure attendue (`EmployeeDocumentRow`).
 Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 893**
 (**43 `any`** en moins sur les quatre tranches).
 
-**Suite** — les états restants (document, immobilisations, tableaux de bord,
-`Phase2→7DPages`, `ComplementaryPages`), puis la « voie C » de 2.16.
+### Tranche 5 — 05/10 (9 états, 5 écrans — RH/social, frais)
+
+| Écran | États typés |
+|---|---|
+| `hr/SocialDeclarationsPage` | `anomalies`, `ciceResults`, `pasRates`, `atRates` |
+| `hr/LeavePlanningPage` | `requests` |
+| `hr/RhReportsPage` | `reports` |
+| `employee/ManagerLeaveApprovalsPage` | `requests` |
+| `EmployeeExpensesPage` | `lines`, `categories` |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 5 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 884**
+(**52 `any`** en moins sur les cinq tranches).
+
+**Suite** — les états **sans fonction de requête nommable** : `Phase3/5Pages` (états
+`items` génériques), `ComplementaryPages`, `DashboardPage`, `AuditLogPage`,
+`OnboardingDashboardPage` (état indexé dynamiquement), `ManufacturingOrderDetailPage`,
+et les lectures **inline `supabase`** (`EmployeeLeavesPage`, `MobileApproval`).
+Puis la « voie C » de 2.16 (déclarer le type de retour des requêtes).
 
 ## D.3 — alignement des colonnes (reprise gelée)
 
@@ -362,4 +379,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 2 | RH/employee/trésorerie | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→916 (cumul 20) | `1777807` |
 | 05/10 | D.2 · tranche 3 | production/stock | 13 états typés (7 écrans) + 1 défaut de jointure révélé (corrigé côté écran, fix requête en R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→903 (cumul 33) | `b22a44e` |
 | 05/10 | D.2 · tranche 4 | RH | 10 états typés (8 écrans) + 1 défaut de jointure manquante révélé (R3) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→893 (cumul 43) | `1c90744` |
+| 05/10 | D.2 · tranche 5 | RH/social/frais | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→884 (cumul 52) | `HASH_D2T5` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

@@ -14,7 +14,7 @@ export function LeavePlanningPage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
-  const [requests, setRequests] = useState<any[]>([])
+  const [requests, setRequests] = useState<Awaited<ReturnType<typeof getLeaveRequests>>>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [rules, setRules] = useState<LeaveRule[]>([])
   const [holidays, setHolidays] = useState<PublicHoliday[]>([])

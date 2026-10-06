@@ -12,7 +12,7 @@ export function RhReportsPage() {
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
   const [tab, setTab] = useState<'preset' | 'saved' | 'create'>('preset')
-  const [reports, setReports] = useState<any[]>([])
+  const [reports, setReports] = useState<Awaited<ReturnType<typeof getRhReports>>>([])
   const [loading, setLoading] = useState(true)
   const [statsData, setStatsData] = useState<any>(null)
   const [activeReport, setActiveReport] = useState<string | null>(null)

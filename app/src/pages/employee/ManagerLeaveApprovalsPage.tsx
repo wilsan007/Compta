@@ -11,7 +11,7 @@ export function ManagerLeaveApprovalsPage() {
   const { t: tCommon } = useTranslation('common')
   const { t: tNav } = useTranslation('nav')
   const { toast } = useToast()
-  const [requests, setRequests] = useState<any[]>([])
+  const [requests, setRequests] = useState<Awaited<ReturnType<typeof getPendingLeaveRequests>>>([])
   const [loading, setLoading] = useState(true)
   const [comment, setComment] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
