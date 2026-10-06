@@ -9,7 +9,7 @@ export function AuditLogPage() {
   const { t } = useTranslation('settings')
   const { t: tCommon } = useTranslation('common')
   const { toast } = useToast()
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<Awaited<ReturnType<typeof getAuditLog>>>([])
   const [loading, setLoading] = useState(true)
   const [entityFilter, setEntityFilter] = useState('')
   const [actionFilter, setActionFilter] = useState('')

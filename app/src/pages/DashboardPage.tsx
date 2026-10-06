@@ -51,8 +51,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export function DashboardPage() {
   const { t } = useTranslation('common')
   const [stats, setStats] = useState<Stats | null>(null)
-  const [recentInvoices, setRecentInvoices] = useState<any[]>([])
-  const [bankAccounts, setBankAccounts] = useState<any[]>([])
+  const [recentInvoices, setRecentInvoices] = useState<Awaited<ReturnType<typeof getInvoices>>>([])
+  const [bankAccounts, setBankAccounts] = useState<Awaited<ReturnType<typeof getBankAccounts>>>([])
   const [chartData, setChartData] = useState<{ monthly: Array<{ month: string; revenus: number; depenses: number }>; cashFlow: Array<{ key: 'inflow' | 'outflow' | 'net'; name: string; value: number; color: string }>; overdueCount: number; overdueTotal: number }>({ monthly: [], cashFlow: [], overdueCount: 0, overdueTotal: 0 })
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
