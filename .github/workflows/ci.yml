@@ -2451,6 +2451,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.5 / CRM-02 — le scoring de lead. Une table de RÈGLES pondérées (nom
+      # unique par société, opérateur contraint, comparaison qui exige une valeur)
+      # et un MOTEUR `crm_lead_score` qui rend le TOTAL ET LES RÈGLES QUI ONT
+      # COMPTÉ. Un fait absent ne matche jamais ; `greater_than` compare en
+      # NOMBRE ; le moteur filtre la société EXPLICITEMENT (la RLS ne suffit pas
+      # au propriétaire).
+      - name: 'F.5 : scoring de lead (CRM-02) — règles pondérées et moteur (710)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/710_crm_scoring_rules_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

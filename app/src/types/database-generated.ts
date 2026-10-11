@@ -4686,6 +4686,53 @@ export interface Database {
         },
       ]
     }
+    crm_scoring_rules: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        field: string
+        operator: string
+        value: string | null
+        points: number
+        is_active: boolean
+        position: number
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        field: string
+        operator: string
+        value?: string
+        points: number
+        is_active?: boolean
+        position?: number
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        field?: string
+        operator?: string
+        value?: string
+        points?: number
+        is_active?: boolean
+        position?: number
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_scoring_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     crm_sequence_steps: {
       Row: {
         id: string

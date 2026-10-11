@@ -217,6 +217,7 @@ const TicketsPage = lazy(() => import('@/pages/crm/TicketsPage').then(m => ({ de
 const ServiceContractsPage = lazy(() => import('@/pages/crm/ServiceContractsPage').then(m => ({ default: m.ServiceContractsPage })))
 const KnowledgeBasePage = lazy(() => import('@/pages/crm/KnowledgeBasePage').then(m => ({ default: m.KnowledgeBasePage })))
 const SequencesPage = lazy(() => import('@/pages/crm/SequencesPage').then(m => ({ default: m.SequencesPage })))
+const ScoringRulesPage = lazy(() => import('@/pages/crm/ScoringRulesPage').then(m => ({ default: m.ScoringRulesPage })))
 const CustomerPortalPage = lazy(() => import('@/pages/crm/CustomerPortalPage').then(m => ({ default: m.CustomerPortalPage })))
 const MCFPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.MCFPage })))
 const TreasuryTransfersPage = lazy(() => import('@/pages/Phase3Pages').then(m => ({ default: m.TreasuryTransfersPage })))
@@ -632,6 +633,7 @@ function App() {
           <Route path="/crm/activities" element={<ActivitiesPage />} />
           <Route path="/crm/campaigns" element={<CampaignsPage />} />
           <Route path="/crm/sequences" element={<SequencesPage />} />
+          <Route path="/crm/scoring-rules" element={<ScoringRulesPage />} />
           <Route path="/crm/territories" element={<TerritoriesPage />} />
           <Route path="/crm/forecasts" element={<SalesForecastPage />} />
           <Route path="/crm/tickets" element={<TicketsPage />} />

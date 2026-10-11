@@ -22,6 +22,27 @@
     "removeStep": "Supprimer l'étape",
     "channels": { "email": "E-mail", "call": "Appel", "task": "Tâche", "sms": "SMS" }
   },
+  "scoring": {
+    "title": "Scoring de lead",
+    "subtitle": "Des règles pondérées ; le score dit toujours d'où il vient.",
+    "createTitle": "Créer une règle",
+    "name": "Nom",
+    "field": "Fait",
+    "operator": "Opérateur",
+    "value": "Valeur",
+    "points": "Points",
+    "create": "Créer",
+    "empty": "Aucune règle de scoring",
+    "remove": "Supprimer la règle",
+    "confirmDelete": "Supprimer cette règle ?",
+    "inactive": "Inactive",
+    "simulator": "Simulateur",
+    "facts": "Faits (JSON)",
+    "compute": "Calculer le score",
+    "score": "Score",
+    "noRule": "aucune règle n'a compté",
+    "operators": { "equals": "est égal à", "not_equals": "est différent de", "contains": "contient", "greater_than": "est supérieur à", "less_than": "est inférieur à", "is_set": "est renseigné", "is_not_set": "n'est pas renseigné" }
+  },
   "opportunities": {
     "title": "Opportunités",
     "subtitle": "Gérez votre pipeline de ventes",

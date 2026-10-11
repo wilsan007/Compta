@@ -22,7 +22,7 @@
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
-| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04, PRJ‑02 et CRM‑01 livrés le 05/10** (`706`, `708`, `709`, avec leurs écrans : champs personnalisés, capacité par ressource, séquences de relance) ; **CRM‑02 (scoring) et PRJ‑08 (automatisations) restent** |
+| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04, PRJ‑02, CRM‑01 et CRM‑02 livrés le 05/10** (`706`, `708`, `709`, `710`, avec leurs écrans) ; **PRJ‑08 (automatisations) reste** |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 livré le 05/10** (`707` : le rattachement de documents est **validé**) ; **NOT‑01/02, BI‑01, ADM‑04, API‑03 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
@@ -405,6 +405,42 @@ cadence, pas son **exécution**. « Qui entre dans quelle séquence, et quand pa
 prochaine étape » demande une horloge et un rattachement aux prospects — c'est un
 lot, pas un oubli.
 
+## F.5 — quatrième lot livré le 05/10 (CRM‑02, le scoring de lead)
+
+**Le constat.** `crm_scoring_rules` avait été **supprimée par la 164**. F.5 la
+rétablit : qualifier un prospect, c'est une **addition** — « vient d'une
+recommandation : +20 ; CA > 1 M€ : +30 ; secteur hors cible : −15 » — et le produit
+ne savait pas la calculer.
+
+**Le modèle, et ce qui le tient** (migration `710`) :
+- une **règle** dit : *pour un fait*, *avec un opérateur*, *une valeur*, elle
+  ajoute *des points*. Nom **unique par société**, opérateur **contraint**
+  (`equals`, `not_equals`, `contains`, `greater_than`, `less_than`, `is_set`,
+  `is_not_set`), et une **comparaison EXIGE une valeur** (un `greater_than` sans
+  valeur n'est pas une règle) ;
+- un **moteur** (`crm_lead_score`) applique les règles **actives** aux **faits**
+  fournis et rend **le total ET les règles qui ont compté** — un score qui ne dit
+  pas d'où il vient ne se discute pas.
+
+**Ce qui est droit, et pas seulement écrit** (chacun mesuré par la suite) :
+un fait **absent** ne matche **jamais** une comparaison ; `greater_than` /
+`less_than` comparent en **NOMBRE** (un fait non numérique ne devient pas 0 en
+silence) ; le moteur filtre `tenant_id = current_tenant_id()` **explicitement** —
+la RLS ne suffit pas au propriétaire.
+
+**Livré** : migration `710` (RLS forcée, 4 politiques, `anon` **et la fonction**
+révoqués) ; suite `710` **10/10** (RLS forcée ; addition 20 + 30 = 50 **et** les
+règles nommées ; règle **inactive** ignorée ; `equals` ; `greater_than`
+numérique ET non numérique ; points **négatifs** ; **isolation** d'une autre
+société ; nom unique ; opérateur/valeur contraints ; `anon` sans droits) ;
+**écran** `CRM → Scoring de lead` (règles + **simulateur** qui appelle le moteur)
++ i18n fr/en/ar. Plafonds datés réinscrits : `check_bt_grid` `tables_tenant`
+372 → **373** ; `unused-tables` 65 → **64**.
+
+⚠️ **Limite dite** : le moteur est un **calcul à la demande** — rien ne **stocke**
+encore le score d'un lead ni ne le recalcule à son changement ; le brancher sur la
+fiche prospect est un lot.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -439,3 +475,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.6 rattachement de documents (GED‑01) | **livré** : `707` — le rattachement polymorphe de `module_documents` devient VALIDÉ (les deux colonnes ou aucune ; type = code du registre `chain_document_types` ; existence dans la société), refus nommés + suite 7/7. Pas de nouvelle table, plafonds inchangés | 0,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 capacité par ressource (PRJ‑02) | **livré** : `708` (capacité par salarié et par période, clé composite ISO‑02, bornes contraintes, déclencheur de non‑chevauchement — la règle qu'aucune clé ne tient) + suite 8/8 + écran Paramètres→Capacité par ressource + i18n. Plafonds : `tables_tenant` 369→370 ; `unused-tables` 68→67 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 séquences de relance (CRM‑01) | **livré** : `709` (séquence à nom unique + étapes à rang unique, délai ≥ 0, canal contraint, clé composite ISO‑02) + suite 9/9 + écran CRM→Séquences de relance + i18n. Plafonds : `tables_tenant` 370→372 ; `unused-tables` 67→65 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.5 scoring de lead (CRM‑02) | **livré** : `710` (règles pondérées à opérateur contraint + moteur `crm_lead_score` qui rend le total ET ses raisons ; fait absent non matché ; comparaisons numériques ; filtre société explicite) + suite 10/10 + écran CRM→Scoring de lead (simulateur) + i18n. Plafonds : `tables_tenant` 372→373 ; `unused-tables` 65→64 | 1 j | `plan6/f-plateforme` |
