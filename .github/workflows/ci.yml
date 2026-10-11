@@ -2447,6 +2447,23 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # Complément des PARTIELLES — R-023/024 (règlements annulés), R-025/026/028 (paie),
+      # R-029/032/043 (note de frais, OF annulé), R-020 (garde documentée).
+      - name: 'plan6 B — R-023/024 : règlements annulés (520)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/520_regle_paiements_annules_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'plan6 B — R-025/026/028 : états de paie (521)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/521_regle_paie_etats_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      - name: 'plan6 B — R-020/029/032/043 : dernières partielles (522)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/522_regle_partielles_finales_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/

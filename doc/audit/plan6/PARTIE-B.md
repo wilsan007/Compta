@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **les 62 règles sont TOUCHÉES (`500`→`519`) — 77 scénarios verts le 05/10 ; les effets stock/comptables restent coordonnés** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **62/62 règles touchées (`500`→`522`) ; partielles complétées (R-023→R-026, R-028/029/032/043 ; R-020 close) — 86 scénarios verts** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -196,6 +196,16 @@ maillons **événement** idempotents :
 - **R-039** — contrat **créé** → `contracts.created` **avec son type** (accroche des
   règles par type : prime de précarité, exonérations, gratification — à écrire en paie).
 
+## B.2 — lots 20 à 22 : complément des partielles (livré le 11/10/2026)
+
+**Migrations `520` (2 verts), `521` (3 verts), `522` (4 verts)** — maillons **événement**
+idempotents qui complètent les règles partielles :
+
+- **R-023 / R-024** (`520`) — règlement client / fournisseur **annulé** → `customer_payments.cancelled` / `supplier_payments.cancelled`. La **réouverture / délettrage** existait déjà (`refresh_invoice_settlement`) ; la **trace** manquait.
+- **R-025 / R-026 / R-028** (`521`) — lot de paie **approuvé**, bulletin **approuvé / payé** → `pay_runs.approved`, `pay_slips.approved`, `pay_slips.paid`. Le **trou de paie** (écriture au `approved` plutôt qu'au `paid`) reste une **décision** (D-G + noyau) — dit, pas forcé.
+- **R-029 / R-032 / R-043** (`522`) — note de frais **soumise / remboursée**, OF **annulé** → `expense_reports.submitted` / `.reimbursed`, `manufacturing_orders.cancelled`.
+- **R-020** (`522`) — ❌ **close, inatteignable** : `invoice_guard` **refuse** de sortir de `validated` ; l'état `transformed` n'est jamais posé. **Un test le prouve** (refus attendu). Ce n'est pas un maillon manquant, c'est un **état impossible** — et le dire vaut mieux que d'écrire un déclencheur mort.
+
 ## B.2 — l'état réel : 62 / 62 règles touchées, 0 vierge
 
 **Vierges (0).** Les quatre dernières — **R-019** (facture client annulée), **R-044 / R-045**
@@ -203,11 +213,12 @@ maillons **événement** idempotents :
 **`519`** (maillons **événement** ; la contre-passation comptable et le transfert à deux
 mouvements liés restent coordonnés).
 
-**Partielles (11) — l'accroche existe, l'effet métier reste coordonné :**
-R-006 (rapprochement facture/POD), R-020 (immuabilité facture), R-011 (écart de prix),
-R-023/R-024 (dél-letrage et relance), R-025/R-026/R-028/R-029/R-032/R-036 (paie FR :
-B.3/B.4 et moteur), R-043 (annulation d'OF), R-046 (proposition MRP), R-058 (complété),
-R-009 (garde BL brouillon).
+**Partielles restantes — l'accroche (ou la garde) existe, l'effet MÉTIER est coordonné :**
+- **stock / écrans (parties E, D)** : R-006, R-009, R-013, R-015, R-043, R-044/R-045/R-047 ;
+- **comptabilité (noyau, expert-comptable)** : R-016, R-019, R-048→R-051, R-052/R-053, R-058 ;
+- **paie FR** : R-025/R-026/R-028 (écriture au `approved`), R-036 (règles par type) — **B.3/B.4** ;
+- **schéma** : R-046 (le schéma ne stocke pas la proposition MRP).
+*(R-020 est close : état inatteignable.)*
 
 **Complètes : R-001→R-005, R-007, R-010, R-012, R-014, R-017, R-018, R-021, R-022, R-027,
 R-030, R-033, R-034, R-035, R-048→R-061**, plus **R-062** (contrainte déjà au schéma).
@@ -371,3 +382,6 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 05/10 | B.2 · projets-1 | Projets | **R-040/R-041/R-042** : projet complété / annulé / en attente → événements. Migration `517` + suite `517_…_tests.sql`. | base **351 migrations, 0 erreur** ; suite **4/4** | _à venir_ |
 | 05/10 | B.2 · paie-rh-1 | Paie/RH | **R-031/R-037/R-038/R-039** : note de frais rejetée, contrat créé / fin / rupture / suspendu → événements. Migration `518` + suite `518_…_tests.sql`. | base **352 migrations, 0 erreur** ; suite **4/4** (les 19 suites B : **73/73**) | _à venir_ |
 | 05/10 | B.2 · derniers-états | Ventes/Production/Stock | **R-019/R-044/R-045/R-047** (les 4 dernières vierges) : facture client annulée, OF planifié / en cours, transfert de stock → événements. Migration `519` + suite `519_…_tests.sql`. | base **353 migrations, 0 erreur** ; suite **4/4** (les 20 suites B : **77/77**) | _à venir_ |
+| 11/10 | B.2 · trésorerie-3 | Trésorerie | **R-023/R-024** : règlement client / fournisseur annulé → événements (la réouverture existait). Migration `520` + suite `520_…_tests.sql`. | base **354 migrations, 0 erreur** ; suite **2/2** | _à venir_ |
+| 11/10 | B.2 · paie-rh-2 | Paie/RH | **R-025/R-026/R-028** : lot approuvé, bulletin approuvé / payé → événements (le trou de paie reste une décision). Migration `521` + suite `521_…_tests.sql`. | base **355 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 11/10 | B.2 · partielles | Ventes/Production/Paie | **R-029/R-032/R-043** : note de frais soumise / remboursée, OF annulé → événements ; **R-020 close** (état inatteignable, prouvé par test). Migration `522` + suite `522_…_tests.sql`. | base **356 migrations, 0 erreur** ; suite **4/4** (les 23 suites B : **86/86**) | _à venir_ |
