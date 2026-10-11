@@ -132,7 +132,12 @@
     "workCenterPlaceholder": "Nom du centre de charge",
     "toolingWear": "Usure des outillages",
     "toolingCounter": "Compteur / durée de vie",
-    "toolingWearRatio": "Usure"
+    "toolingWearRatio": "Usure",
+    "capacityLoad": "Charge / capacité des postes",
+    "day": "Jour",
+    "capacity": "Capacité",
+    "load": "Charge",
+    "overload": "Surcharge"
   },
   "toolings": {
     "title": "Outillages",

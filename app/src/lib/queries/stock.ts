@@ -758,6 +758,23 @@ export async function getToolingWearAlerts() {
   return (data || []) as ToolingWearAlert[]
 }
 
+// PRD-07 / E.4 : charge × capacité par poste et par jour (657).
+export interface WorkCenterCapacityLoad {
+  work_center_id: string
+  work_center_code: string
+  work_center_name: string
+  day: string
+  capacity: number
+  load: number
+  overload: boolean
+}
+
+export async function getWorkCenterCapacityLoad(from: string, to: string) {
+  const { data, error } = await supabase.rpc('work_center_capacity_load', { p_from: from, p_to: to })
+  if (error) throw error
+  return (data || []) as WorkCenterCapacityLoad[]
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {

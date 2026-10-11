@@ -132,7 +132,12 @@
     "workCenterPlaceholder": "Work center name",
     "toolingWear": "Tooling wear",
     "toolingCounter": "Counter / life",
-    "toolingWearRatio": "Wear"
+    "toolingWearRatio": "Wear",
+    "capacityLoad": "Work center load / capacity",
+    "day": "Day",
+    "capacity": "Capacity",
+    "load": "Load",
+    "overload": "Overload"
   },
   "toolings": {
     "title": "Toolings",

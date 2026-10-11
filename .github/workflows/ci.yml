@@ -2378,6 +2378,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # PRD-07 (657) — la capacité des postes (calendrier) croisée avec la charge.
+      - name: 'E : PRD-07 — capacité des postes (657)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/657_work_center_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

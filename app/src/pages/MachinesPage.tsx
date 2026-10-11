@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2, Cog, Download, Upload, AlertTriangle } from 'lucide-react'
 import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, PageHeader, Breadcrumb, SkeletonTable, Badge } from '@/components/ui'
 import { useToast } from '@/lib/toast'
-import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter, getToolingWearAlerts } from '@/lib/queries/stock'
+import { getMachines, createMachine, deleteMachine, getWorkCenters, createWorkCenter, deleteWorkCenter, getToolingWearAlerts, getWorkCenterCapacityLoad } from '@/lib/queries/stock'
 import { exportToExcel, importFromExcel } from '@/lib/excel-utils'
 import type { Machine, WorkCenter } from '@/types'
 import { useStatusLabels } from '@/lib/statusUtils'
 import { confirmSync } from '@/lib/confirm'
 import { errorMessage } from '@/lib/utils'
+import { localDateString } from '@/lib/dateRange'
 
 export function MachinesPage() {
   const { t } = useTranslation('production')
@@ -18,16 +19,20 @@ export function MachinesPage() {
   const [machines, setMachines] = useState<Machine[]>([])
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([])
   const [wearAlerts, setWearAlerts] = useState<Awaited<ReturnType<typeof getToolingWearAlerts>>>([])
+  const [capacityLoad, setCapacityLoad] = useState<Awaited<ReturnType<typeof getWorkCenterCapacityLoad>>>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showWcForm, setShowWcForm] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
-      const [macs, wcs, alerts] = await Promise.all([getMachines(), getWorkCenters(), getToolingWearAlerts()])
+      const from = localDateString(new Date())
+      const to = localDateString(new Date(Date.now() + 6 * 86400000))
+      const [macs, wcs, alerts, cap] = await Promise.all([getMachines(), getWorkCenters(), getToolingWearAlerts(), getWorkCenterCapacityLoad(from, to)])
       setMachines(macs || [])
       setWorkCenters(wcs || [])
       setWearAlerts(alerts || [])
+      setCapacityLoad(cap || [])
     } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
@@ -138,6 +143,26 @@ export function MachinesPage() {
                 <TableCell className="text-sm">{a.machine_name ?? '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{a.current_counter} / {a.max_pieces}</TableCell>
                 <TableCell className="font-mono text-xs text-[var(--color-danger)]">{Math.round(Number(a.wear_ratio) * 100)} %</TableCell>
+              </TableRow>
+            ))}
+          </Table>
+        </Card>
+      )}
+
+      {capacityLoad.length > 0 && (
+        <Card className="mt-4">
+          <div className="p-4 border-b border-[var(--color-border)] flex items-center gap-2">
+            <Cog className="w-4 h-4 text-[var(--color-primary)]" aria-hidden="true" />
+            <h3 className="text-sm font-semibold">{t('machines.capacityLoad')}</h3>
+          </div>
+          <Table headers={[t('machines.workCenter'), t('machines.day'), t('machines.capacity'), t('machines.load'), t('machines.overload')]}>
+            {capacityLoad.map((r) => (
+              <TableRow key={`${r.work_center_id}-${r.day}`}>
+                <TableCell className="text-sm">{r.work_center_name}</TableCell>
+                <TableCell className="text-xs">{r.day}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(r.capacity)}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(r.load)}</TableCell>
+                <TableCell>{r.overload ? <Badge variant="danger">{t('machines.overload')}</Badge> : <span className="text-xs">—</span>}</TableCell>
               </TableRow>
             ))}
           </Table>

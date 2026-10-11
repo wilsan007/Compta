@@ -132,7 +132,12 @@
     "workCenterPlaceholder": "اسم مركز العمل",
     "toolingWear": "اهتراء الأدوات",
     "toolingCounter": "العداد / العمر",
-    "toolingWearRatio": "الاهتراء"
+    "toolingWearRatio": "الاهتراء",
+    "capacityLoad": "حمل / طاقة مراكز العمل",
+    "day": "اليوم",
+    "capacity": "الطاقة",
+    "load": "الحمل",
+    "overload": "حمل زائد"
   },
   "toolings": {
     "title": "الأدوات",
