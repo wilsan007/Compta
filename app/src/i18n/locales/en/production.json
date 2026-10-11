@@ -312,6 +312,18 @@
         "saved": "Operation declared",
         "savedMsg": "The MO summary is up to date.",
         "hint": "Replaying an operation with the same name corrects its values. No stock movement is created."
+      },
+      "variance": {
+        "title": "Material variance (planned / actual)",
+        "refresh": "Recalculate",
+        "product": "Item",
+        "theoretical": "Planned",
+        "actual": "Actual",
+        "variance": "Variance",
+        "variancePercent": "Variance %",
+        "empty": "No variance computed yet — click \"Recalculate\".",
+        "refreshed": "Variance recomputed",
+        "refreshedMsg": "Planned and actual are up to date."
       }
     },
     "number": "MO no.",

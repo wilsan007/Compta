@@ -92,6 +92,27 @@ export async function getQualityPlanPoints(planId: string) {
   return (data || []) as QualityPlanPoint[]
 }
 
+// PRD-06 (663) : écart de matière — prévu (nomenclature) contre réel (mouvements).
+export interface MoConsumptionVariance {
+  product_id: string
+  product_name: string
+  theoretical_quantity: number
+  actual_quantity: number
+  variance_quantity: number
+  variance_percent: number | null
+}
+
+export async function refreshMoConsumptions(moId: string) {
+  const { error } = await supabase.rpc('refresh_mo_consumptions', { p_mo_id: moId })
+  if (error) throw error
+}
+
+export async function getMoConsumptionVariance(moId: string) {
+  const { data, error } = await supabase.rpc('mo_consumption_variance', { p_mo_id: moId })
+  if (error) throw error
+  return (data || []) as MoConsumptionVariance[]
+}
+
 
 // ============ Phase 2: Pick Lists ============
 export async function getPickLists() {

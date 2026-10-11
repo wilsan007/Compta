@@ -312,6 +312,18 @@
         "saved": "Opération déclarée",
         "savedMsg": "Le récapitulatif de l'OF est à jour.",
         "hint": "Rejouer une opération du même nom corrige ses valeurs. Aucun mouvement de stock n'est créé."
+      },
+      "variance": {
+        "title": "Écart de matière (prévu / réel)",
+        "refresh": "Recalculer",
+        "product": "Article",
+        "theoretical": "Prévu",
+        "actual": "Réel",
+        "variance": "Écart",
+        "variancePercent": "Écart %",
+        "empty": "Aucun écart calculé — cliquez sur « Recalculer ».",
+        "refreshed": "Écart recalculé",
+        "refreshedMsg": "Le prévu et le réel sont à jour."
       }
     },
     "number": "N° OF",

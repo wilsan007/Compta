@@ -7,6 +7,7 @@ import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts, getMoOperations, recordMoOperation, getMoOperationsSummary } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
+import { refreshMoConsumptions, getMoConsumptionVariance } from '@/lib/queries/production'
 import type { Product } from '@/types'
 
 const originVariants: Record<string, 'neutral' | 'success' | 'warning'> = { manual: 'neutral', mrp: 'success', sub_level: 'warning' }
@@ -29,6 +30,9 @@ export function ManufacturingOrderDetailPage() {
   const [operations, setOperations] = useState<any[]>([])
   const [opsSummary, setOpsSummary] = useState<any>(null)
   const [showOpForm, setShowOpForm] = useState(false)
+  // PRD-06 (663) : l'écart de matière (prévu vs réel) figé sur l'OF.
+  const [variance, setVariance] = useState<Awaited<ReturnType<typeof getMoConsumptionVariance>>>([])
+  const [varLoading, setVarLoading] = useState(false)
   const [showLotForm, setShowLotForm] = useState(false)
   const [showConsForm, setShowConsForm] = useState(false)
   const [labelCount, setLabelCount] = useState(1)
@@ -62,7 +66,10 @@ export function ManufacturingOrderDetailPage() {
       try { setLots(await getOFLots(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'consumptions' && consumptions.length === 0) {
+      // Les deux appels restent **indépendants** : une panne de l'écart de
+      // matière ne doit pas vider la liste des sorties de composants.
       try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+      try { setVariance(await getMoConsumptionVariance(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
       try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
@@ -79,6 +86,17 @@ export function ManufacturingOrderDetailPage() {
     if (!id) return
     const [ops, sum] = await Promise.all([getMoOperations(id), getMoOperationsSummary(id)])
     setOperations(ops); setOpsSummary(sum)
+  }
+
+  async function handleRefreshVariance() {
+    if (!id) return
+    setVarLoading(true)
+    try {
+      await refreshMoConsumptions(id)
+      setVariance(await getMoConsumptionVariance(id))
+      toast('success', t('manufacturing.detail.variance.refreshed'), t('manufacturing.detail.variance.refreshedMsg'))
+    } catch (err) { toast('error', t('common.error'), errorMessage(err)) }
+    finally { setVarLoading(false) }
   }
 
   async function handleGenerateLabels() {
@@ -352,6 +370,29 @@ export function ManufacturingOrderDetailPage() {
               <Plus className="w-4 h-4" /> {t('manufacturing.detail.consumptions.add')}
             </Button>
           </div>
+          <Card>
+            <div className="flex items-center justify-between gap-3 p-4 border-b border-[var(--color-border)]">
+              <h3 className="font-semibold">{t('manufacturing.detail.variance.title')}</h3>
+              <Button size="sm" variant="secondary" onClick={handleRefreshVariance} disabled={varLoading}>
+                {t('manufacturing.detail.variance.refresh')}
+              </Button>
+            </div>
+            {variance.length === 0 ? (
+              <p className="p-4 text-xs text-[var(--color-text-secondary)]">{t('manufacturing.detail.variance.empty')}</p>
+            ) : (
+              <Table headers={[t('manufacturing.detail.variance.product'), t('manufacturing.detail.variance.theoretical'), t('manufacturing.detail.variance.actual'), t('manufacturing.detail.variance.variance'), t('manufacturing.detail.variance.variancePercent')]}>
+                {variance.map((v) => (
+                  <TableRow key={v.product_id}>
+                    <TableCell className="text-sm">{v.product_name}</TableCell>
+                    <TableCell className="font-mono text-xs">{Number(v.theoretical_quantity)}</TableCell>
+                    <TableCell className="font-mono text-xs">{Number(v.actual_quantity)}</TableCell>
+                    <TableCell className="font-mono text-xs">{Number(v.variance_quantity)}</TableCell>
+                    <TableCell className="font-mono text-xs">{v.variance_percent == null ? '—' : `${Number(v.variance_percent)} %`}</TableCell>
+                  </TableRow>
+                ))}
+              </Table>
+            )}
+          </Card>
           <Card>
             {consumptions.length === 0 ? (
               <EmptyState icon={<Package className="w-8 h-8" />} title={t('manufacturing.detail.consumptions.noConsumptions')} description={t('manufacturing.detail.consumptions.noConsumptionsDescription')} />

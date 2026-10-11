@@ -303,10 +303,44 @@ sa méthode, l'échantillon à contrôler et ses points.
 Suite `662` : **5/5**, rouge avant.
 
 
+### `PRD-06` — écart de matière : `mo_consumptions` branchée (migration `663`)
+
+**Le trou.** Les deux moitiés existaient déjà séparément — le **prévu**
+(`manufacturing_requirements`, `302`, nomenclature explosée sur tous les niveaux)
+et le **réel** (les mouvements de stock `reference_type = 'production'`) — mais
+**rien ne les confrontait**. L'écart de matière ne se lisait nulle part, et
+`mo_consumptions` attendait depuis la `126`.
+
+**Livré.**
+
+- `refresh_mo_consumptions(of)` — recalcule et **fige** la comparaison, une ligne
+  par composant. Rejouable : on met à jour, on ne double pas (index unique) ;
+- `mo_consumption_variance(of)` — la lecture : prévu, réel, écart, écart en %.
+
+**Aucun stock n'est touché** : le réel *vient* des mouvements, il ne les crée pas.
+Les écarts se **constatent**, ils ne corrigent rien en silence.
+
+**Ce que le test a appris (et qui n'était pas écrit).** Le moteur de stock
+n'admet **qu'une sortie par couple (OF, article)**
+(`uq_stock_movement_source`, `137`). Un OF ne peut donc pas consommer un composant
+en deux fois : le scénario « on ressort 3 unités de plus » que j'avais écrit est
+**interdit par le modèle**, pas seulement par mon test. Le scénario `T03` a été
+réécrit en conséquence (idempotence du rafraîchissement) — la contrainte est
+désormais **documentée**.
+
+**Écran.** Carte **« Écart de matière (prévu / réel) »** dans l'onglet
+*Consommation* de la fiche OF, avec un bouton **« Recalculer »**. Les deux appels
+de l'onglet sont **indépendants** : une panne de l'écart ne vide pas la liste des
+sorties (défaut attrapé par le test `ManufacturingOrderDetailPage`, pas par
+relecture).
+
+Suite `663` : **4/4**, rouge avant.
+
+
 
 ## E.5 — tables coquilles : brancher ou supprimer
 
-**Neuf coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
+**Dix coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
 une fonction) :
 
 | Table | Branchée par |
@@ -319,14 +353,13 @@ une fonction) :
 | `work_center_calendars` | `PRD-07`, `657` (`work_center_capacity`) |
 | `mo_operations` | `PRD-06`, `661` + onglet « Atelier » de la fiche OF |
 | `quality_control_plans` (+ `quality_control_points`) | `STK-13`, `662` + carte « Plan de contrôle applicable » |
+| `mo_consumptions` | `PRD-06`, `663` + carte « Écart de matière » |
 
 **Ce qui reste, et pourquoi** — aucune n'est laissée en suspens :
 
 | Table | Décision | Motif |
 |---|---|---|
 | `landed_cost_lines` (+ `landed_cost_receipts`) | **branchée** (STK-08, `658`) | le moteur corrigé et l'écran `/stock/landed-costs` |
-| `mo_operations` | **branchée** (PRD-06, `661`) | déclaration d'atelier : temps réel, produites, rebuts |
-| `mo_consumptions` | **brancher** (PRD-06) | écart matière prévu/réel — l'écart se calcule déjà (`manufacturing_requirements` + mouvements `production`), il reste à le figer |
 | `fixed_asset_components` | **hors périmètre E** | immobilisations (`ACC-07`) — à l'intégration |
 | `resource_capacities` | **hors périmètre E** | capacité par ressource des projets (`PRJ`) — à l'intégration |
 
@@ -433,4 +466,5 @@ comme le reste.
 | 11/10/2026 | **E.3** — `STK-11` stock par casier | `659` affectations + `location_stock` + « Affecter » à l'écran | `659` 3/3 · non-régression 254/652/653/654/655 · tsc 0 · oxlint 0 · i18n OK | `3b17bf9` |
 | 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `1bfdba4` |
 | 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `5a9fd96` |
-| 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |
+| 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `8eec80b` |
+| 11/10/2026 | **E.5 / PRD-06** — écart de matière | `663` `mo_consumptions` branchée (`refresh_mo_consumptions` + `mo_consumption_variance`) + carte « Écart de matière » | `663` 4/4 (rouge avant) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |

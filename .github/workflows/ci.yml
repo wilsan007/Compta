@@ -2415,6 +2415,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # PRD-06 (663) — écart de matière : prévu (nomenclature) contre réel (mouvements).
+      - name: 'E : PRD-06 — écart de matière (663)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/663_mo_consumptions_variance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles
