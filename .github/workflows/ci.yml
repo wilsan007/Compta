@@ -2474,6 +2474,18 @@ jobs:
       - name: 'L16 : réception → ses mouvements de stock, tracé (762)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/762_chain_l16_reception_mouvement_tests.sql
 
+      # L16 — chaînage interne COMPTABILITÉ : l'EXERCICE rattache son ÉCRITURE
+      # D'À-NOUVEAUX (effet `rev.fiscal_year.opening_entry`), écrite par
+      # `close_fiscal_year` (153) dans le journal AN et datée du PREMIER JOUR de
+      # l'exercice ouvert. Le maillon n'ÉCRIT RIEN : mesure faite, `journal_entry_guard`
+      # (187) pose déjà `fiscal_year_id` par contenance de date, et une écriture
+      # validée est immuable (`prevent_posted_entry_modification`).
+      # 14 verdicts : nominal (3, dont « le maillon n'a rien écrit »), idempotence
+      # (D1), quatre refus (introuvable ×2, autre journal, autre jour), frise (I-01)
+      # dans les deux sens, isolation (D8).
+      - name: 'L16 : exercice → son écriture d''à-nouveaux, tracé (763)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/763_chain_l16_ouverture_exercice_tests.sql
+
 
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue

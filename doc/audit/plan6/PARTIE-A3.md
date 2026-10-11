@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **17 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement → son lot (`761`, **15/15**), réception → ses mouvements (`762`, **14/14**) — voir §A3.2 lots 1 à 17 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **18 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**), exercice → écriture d'à-nouveaux (`763`, **14/14**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**), mouvement → son lot (`761`, **15/15**), réception → ses mouvements (`762`, **14/14**) — voir §A3.2 lots 1 à 18 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟡 **P1 : le SQL est livré** (`770`, suite **7/7** sur base neuve) — voir §A3.4 ; l'**écran** reste à **A2** ; puis P3 → P6 |
 
@@ -677,6 +677,52 @@ le prochain qui lira « provision existante mais non reliée » saura qu'elle n'
 écrit l'écriture `journal_code = 'AN'`, `number = 'AN-<année>-<séquence>'`,
 `reference = 'AN-<code exercice>'`, et **rien ne la rattache à l'exercice**).
 
+## A3.2 — lot 18 : l'exercice rattaché à son écriture d'à-nouveaux (migration `763`)
+
+**La famille Comptabilité, troisième tronçon** — l'**ouverture** d'exercice, symétrique
+de la clôture du lot 15.
+
+**Ce que la mesure a trouvé.** `close_fiscal_year` (`107`, réécrit par `153`) écrit
+l'écriture d'à-nouveaux avec `journal_code = 'AN'`, **datée du premier jour de
+l'exercice qu'elle ouvre**, `number = 'AN-<année>-<séquence>'` et
+`reference = 'AN-<code de l''exercice CLOS>'`. Le `reference` nomme donc l'exercice
+**fermé** : il ne sert pas à identifier l'ouvert — `date` + `journal_code` le font, et
+c'est mesuré. **Aucun lien de chaîne** : la frise ignore l'ouverture.
+
+**⚠️ CE QUE J'AI CRU, ET CE QUE LA MESURE A DIT.** Ma première rédaction affirmait —
+et écrivait dans son propre en-tête — que `journal_entries.fiscal_year_id` était « la
+colonne faite EXACTEMENT pour ce couple, et que **personne n'écrit** » ; le maillon la
+posait « si elle est vide ». **C'était faux, et la suite l'a démontré en échouant :**
+
+1. `journal_entry_guard` (`187`) fait **`NEW.fiscal_year_id := v_fy.id`** — l'exercice
+   trouvé par contenance de date — à l'insertion **comme** à la modification. La
+   colonne n'est pas vide ;
+2. `prevent_posted_entry_modification` **refuse tout `UPDATE`** d'une écriture au
+   statut `posted` (« utiliser l'extourne »). Mon scénario qui forçait `fiscal_year_id`
+   sur une écriture validée a été **refusé net** — et le maillon, lui, aurait échoué
+   **en production**.
+
+**Ce qui a changé avant publication** : le maillon **n'écrit plus rien** (il vérifie et
+il trace) ; et un refus « l'écriture appartient déjà à un autre exercice » a été
+**retiré** — le garde le tient par contenance de date, donc il était **intestable** :
+« un refus qu'on ne peut pas provoquer n'est pas un refus, c'est du code mort ». T03
+passe de cinq refus à quatre, et l'affirmation fausse a été retirée **aussi du
+commentaire de `ci.yml`**.
+
+**Ce qui est livré** : contrat d'effet `rev.fiscal_year.opening_entry`, maillon
+`chain_l16_fiscal_year_opening(p_fy_id, p_entry_id)` — exercice et écriture bornés à la
+société, journal `AN` exigé, **date d'ouverture exigée**, lien `link_documents`
+(`generated_entry`), idempotent (rejeu refusé).
+
+**Éprouvé** : suite **14/14** sur base neuve (T01 nominal 3 — dont « le maillon n'a
+rien écrit » ; T02 idempotence ; T03 **quatre refus** ; T04 frise dans les deux sens ;
+T05 isolation), les **cinq portes OK**, G5 **170/170**, verifier **272**.
+
+**Leçon consignée pour les lots suivants** : sur `journal_entries`, **un maillon
+n'écrit pas** — le garde de l'écriture (187) tient l'exercice et la période, et une
+écriture validée est **immuable**. Le chaînage y est **vérification + trace**, jamais
+écriture.
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -743,4 +789,5 @@ contrat de la fonction et le plan d'écran sont dans
 | 2026-10-11 | A3.2 (lot 15) | **L16 · Comptabilité · exercice clos → son écriture d'affectation du résultat** : migration `760` (`fiscal_years` au registre, contrat `rev.fiscal_year.result_allocated`, maillon `chain_l16_fiscal_year_result` — exercice clos et résultat affecté requis, ne réécrit pas `result_allocation_entry_id`, lien `generated_entry`). **1ʳᵉ migration de la plage `760→769`**, inscrite au registre + `AGENTS.md` + `NUMEROTATION-MIGRATIONS.md`. + suite `760` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `20bd408` |
 | 2026-10-11 | A3.2 (lot 16) | **L16 · Stock · mouvement de stock → son lot (traçabilité)** : migration `761` (`product_batches` au registre, contrat `stock.movement.lot_traced`, maillon `chain_l16_stock_lot` — lot du MÊME produit exigé, mouvement sans produit refusé, aucune trace réécrite, lien `created_from`). **Défaut mesuré** : `stock_movements.lot_id` existait **sans clé étrangère ni lien** — un lot orphelin passait, et le lot était invisible pour la frise. **Rencontre** : le registre portait `761` pour un lot abandonné (`chain_l16_paie_virement`) — rendu (`rendre`), puis `inscrire` du vrai nom. + suite `761` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
 | 2026-10-11 | A3.2 (lot 17) | **L16 · Stock · réception → ses mouvements de stock** : migration `762` (contrat `stock.receipt.movement_recorded`, maillon `chain_l16_receipt_movement` — réception « reçue » exigée, `reference_type`/`reference_id` de l'entrée en stock `241` vérifiés, **rien n'est réécrit**, lien `created_from` ; le registre accueille déjà les deux types, il est **exigé** et non supposé). **Deux mesures neuves** : (1) `uq_stock_movement_source` borne le couple à **un mouvement par produit et par réception** — d'où T04 avec **deux produits** ; (2) **défaut transmis** : `125_stock_advanced.sql` filtre sur `reference_type = 'receipt'` alors que l'écrivain `241` pose `'goods_receipt'` — le couple **réception ↔ CUMP est vide** (à corriger au lot CUMP). + suite `762` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · les **cinq portes** (G2/G7/tenant/anon/G8) **OK** · G5 **169/169** · verifier **271** | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 18) | **L16 · Comptabilité · exercice → son écriture d'à-nouveaux** : migration `763` (contrat `rev.fiscal_year.opening_entry`, maillon `chain_l16_fiscal_year_opening` — journal `AN` exigé, écriture datée du **premier jour** de l'exercice qu'elle ouvre, lien `generated_entry`). **Mesure décisive, contre ma première rédaction** : j'y écrivais `journal_entries.fiscal_year_id` en affirmant que « personne ne la pose » — **faux** : `journal_entry_guard` (187) fait `NEW.fiscal_year_id := v_fy.id`, et `prevent_posted_entry_modification` refuse tout UPDATE d'une écriture validée (la tentative a échoué devant moi). Le maillon a été **vidé de son écriture** et un refus **intestable** retiré, avant publication. + suite `763` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · cinq portes **OK** · G5 **170/170** · verifier **272** | _(ce lot)_ |
 | 2026-10-11 | A3.4 (P1) | **P1 — le SQL** : migration `770` (`chain_certificat_integrite` → `jsonb` de FAITS : invariants / écarts nommés / banc (`non_joue` compris) / empreinte NF-525 ; **garde de société** ; **lecture pure** ; aucun « tenu » inventé). **Plage `770`→`779` inscrite** au registre. + suite `770` enrôlée dans `ci.yml` sous `plan6:a3` | suite **770 7/7** sur base neuve · SOC-06 **0 collision** (269 numéros) · suites **167/167 branchées** | _(ce lot)_ |
