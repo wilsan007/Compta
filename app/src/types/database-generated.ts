@@ -4885,6 +4885,101 @@ export interface Database {
         },
       ]
     }
+    custom_field_definitions: {
+      Row: {
+        id: string
+        tenant_id: string
+        module: string
+        entity: string
+        field_key: string
+        label: string
+        field_type: string
+        options: Json
+        is_required: boolean
+        position: number
+        is_active: boolean
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        module: string
+        entity: string
+        field_key: string
+        label: string
+        field_type: string
+        options?: Json
+        is_required?: boolean
+        position?: number
+        is_active?: boolean
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        module?: string
+        entity?: string
+        field_key?: string
+        label?: string
+        field_type?: string
+        options?: Json
+        is_required?: boolean
+        position?: number
+        is_active?: boolean
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "custom_field_definitions_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    custom_field_values: {
+      Row: {
+        id: string
+        tenant_id: string
+        definition_id: string
+        record_id: string
+        value: Json
+        updated_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        definition_id: string
+        record_id: string
+        value: Json
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        definition_id?: string
+        record_id?: string
+        value?: Json
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "custom_field_values_tenant_id_definition_id_fkey",
+          columns: ["tenant_id", "definition_id"],
+          isOneToOne: false,
+          referencedRelation: "custom_field_definitions",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "custom_field_values_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     custom_report_templates: {
       Row: {
         id: string

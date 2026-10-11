@@ -57,6 +57,26 @@
     "clear": "Unlink",
     "assigned": "Employee linked"
   },
+  "customFields": {
+    "title": "Custom fields",
+    "subtitle": "Add your own fields (first module wired: projects).",
+    "definitions": "Definitions",
+    "key": "Technical key",
+    "label": "Label",
+    "type": "Type",
+    "options": "Options (comma-separated)",
+    "create": "Add field",
+    "empty": "No custom field",
+    "remove": "Delete field",
+    "confirmDelete": "Delete this field and ALL its values?",
+    "values": "Values",
+    "record": "Project",
+    "save": "Save values",
+    "saved": "Values saved",
+    "yes": "Yes",
+    "no": "No",
+    "types": { "text": "Text", "number": "Number", "date": "Date", "boolean": "True/False", "select": "List" }
+  },
   "tabs": {
     "chartAccounts": "Chart of accounts",
     "asset": "Asset",

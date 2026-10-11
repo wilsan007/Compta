@@ -2410,6 +2410,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.5 / PRJ-04 — les champs personnalisés. Deux tables neuves : une
+      # DÉFINITION par (module, entité), une VALEUR par enregistrement, rattachée
+      # par une clé COMPOSITE, et un DÉCLENCHEUR qui tient le TYPE (un champ
+      # `number` refuse du texte, un `select` refuse une valeur hors options). Le
+      # premier module branché est le projet ; le modèle est générique.
+      - name: 'F.5 : champs personnalisés (PRJ-04) — définitions, valeurs et type tenu (706)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/706_champs_personnalises_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

@@ -57,6 +57,26 @@
     "clear": "Détacher",
     "assigned": "Salarié rattaché"
   },
+  "customFields": {
+    "title": "Champs personnalisés",
+    "subtitle": "Ajoutez vos propres champs (premier module branché : les projets).",
+    "definitions": "Définitions",
+    "key": "Clé technique",
+    "label": "Libellé",
+    "type": "Type",
+    "options": "Options (séparées par des virgules)",
+    "create": "Ajouter le champ",
+    "empty": "Aucun champ personnalisé",
+    "remove": "Supprimer le champ",
+    "confirmDelete": "Supprimer ce champ et TOUTES ses valeurs ?",
+    "values": "Valeurs",
+    "record": "Projet",
+    "save": "Enregistrer les valeurs",
+    "saved": "Valeurs enregistrées",
+    "yes": "Oui",
+    "no": "Non",
+    "types": { "text": "Texte", "number": "Nombre", "date": "Date", "boolean": "Vrai/Faux", "select": "Liste" }
+  },
   "tabs": {
     "chartAccounts": "Plan comptable",
     "asset": "Actif",

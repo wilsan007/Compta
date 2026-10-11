@@ -22,7 +22,7 @@
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
-| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
+| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04 (champs personnalisés) livré le 05/10** (`706` + écran Paramètres → Champs personnalisés, projets) ; **CRM‑01/02, PRJ‑02 (capacité), PRJ‑08 (automatisations) restent** |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
@@ -260,6 +260,45 @@ tables neuves) ; `unused-tables` 72 → **70**.
 
 Reste de F.7 : **PTL‑03 (mobile et hors ligne)** — hors d'un lot base de données.
 
+## F.5 — premier lot livré le 05/10 (PRJ‑04, champs personnalisés)
+
+**Le constat.** Les tables d'un premier jet (`custom_field_definitions`,
+`custom_field_values`) avaient été **supprimées par la 164**. F.5 les rétablit —
+une société a toujours un champ que le produit n'a pas prévu (un numéro
+d'affaire, une date de visite) et n'a nulle part où le mettre.
+
+**Le modèle, et ce qui le tient** (migration `706`) :
+- une **définition** décrit un champ pour un couple *(module, entité)* — son
+  `field_type` est **contraint** (text/number/date/boolean/select), sa clé est un
+  identifiant technique, et un `select` **doit** porter ses options ;
+- une **valeur** porte le champ pour **un enregistrement**, rattachée à sa
+  définition par une **clé composite** `(tenant_id, definition_id)` : supprimer une
+  définition **emporte** ses valeurs, et une valeur ne peut pas viser la définition
+  d'une autre société (**ISO‑02**) ;
+- un **déclencheur** tient la cohérence que les clés ne peuvent pas tenir : le
+  **type de la valeur suit la définition** (`number` → un nombre, `boolean` →
+  vrai/faux, `select` → une de ses options), et un champ **désactivé** n'accueille
+  plus de valeur — refus **nommés** (`CUSTOM_FIELD_TYPE`, `CUSTOM_FIELD_OPTION`,
+  `CUSTOM_FIELD_INACTIVE`).
+
+**Livré** : migration `706` (RLS forcée, index de société, 4 politiques par table,
+`anon` révoqué) ; suite `706` **8/8** (RLS forcée ; clé de champ unique ; `select`
+sans options refusé ; texte dans un `number` refusé — **et un nombre du bon type
+accepté**, sinon le refus ne prouverait rien ; valeur hors options refusée ; valeur
+inter‑société refusée *et* clé composite présente ; champ désactivé refusé ;
+cascade) ; **écran** `Paramètres → Champs personnalisés` (définitions + saisie des
+valeurs pour un projet) + i18n fr/en/ar.
+
+Plafonds datés réinscrits : `check_bt_grid` `tables_tenant` 367 → **369** ;
+`unused-tables` 70 → **68**.
+
+⚠️ **Limites dites** : **un seul module est branché** (les projets) — le modèle
+est générique, mais brancher un autre module demande une définition de plus **et**
+un point d'entrée dans son écran ; la valeur n'est pas indexée par
+*(module, entité)* au niveau de la table (elle l'est par sa définition) ; il n'y a
+pas de champ **calculé** ni de validation « requis » à la saisie (l'obligation est
+déclarée, pas encore opposable).
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -290,3 +329,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.4 groupe (GRP‑03, consolidation) | **livré** : `703` (`group_consolidated_balance` — pondération full/proportional, equity/none exclus, bornage de période, flux intra-groupe publiés) + suite 6/6 + section « Consolidation » de l'écran + i18n. **F.4 complet (GRP‑01→03)** | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.7 conventions collectives (PAY‑08) | **livré** : `704` (FORCE RLS sur les 2 tables + `set_employee_collective_agreement` validée : société, convention, cohérence classification) + suite 6/6 + écran Paramètres→Conventions collectives + i18n. Plafonds : `rls_sans_force` 53→51 ; `unused-tables` 74→72 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.7 recrutement (RH‑03) | **livré** : `705` (postes + candidatures, clé composite ISO‑02, statuts contraints, RLS forcée, 4 politiques/table, `anon` révoqué) + suite 6/6 + écran RH→Recrutement + i18n. Plafonds : `tables_tenant` 365→367 ; `unused-tables` 72→70 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.5 champs personnalisés (PRJ‑04) | **livré** : `706` (définitions par module/entité + valeurs par enregistrement, clé composite ISO‑02, déclencheur qui tient le TYPE) + suite 8/8 + écran Paramètres→Champs personnalisés (module branché : projets) + i18n. Plafonds : `tables_tenant` 367→369 ; `unused-tables` 70→68 | 1 j | `plan6/f-plateforme` |

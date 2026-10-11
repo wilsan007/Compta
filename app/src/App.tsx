@@ -149,6 +149,7 @@ const EmailTemplatesPage = lazy(() => import('@/pages/settings/EmailTemplatesPag
 const TwoFactorPage = lazy(() => import('@/pages/settings/TwoFactorPage').then(m => ({ default: m.TwoFactorPage })))
 const GroupsPage = lazy(() => import('@/pages/settings/GroupsPage').then(m => ({ default: m.GroupsPage })))
 const CollectiveAgreementsPage = lazy(() => import('@/pages/settings/CollectiveAgreementsPage').then(m => ({ default: m.CollectiveAgreementsPage })))
+const CustomFieldsPage = lazy(() => import('@/pages/settings/CustomFieldsPage').then(m => ({ default: m.CustomFieldsPage })))
 const ApiDocsPage = lazy(() => import('@/pages/settings/ApiDocsPage').then(m => ({ default: m.ApiDocsPage })))
 const Nf525AuditPage = lazy(() => import('@/pages/settings/Nf525AuditPage').then(m => ({ default: m.Nf525AuditPage })))
 const LeaveBalancesPage = lazy(() => import('@/pages/hr/LeaveBalancesPage').then(m => ({ default: m.LeaveBalancesPage })))
@@ -589,6 +590,7 @@ function App() {
           <Route path="/settings/2fa" element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />
           <Route path="/settings/groups" element={<AdminRoute><GroupsPage /></AdminRoute>} />
           <Route path="/settings/collective-agreements" element={<AdminRoute><CollectiveAgreementsPage /></AdminRoute>} />
+          <Route path="/settings/custom-fields" element={<AdminRoute><CustomFieldsPage /></AdminRoute>} />
           <Route path="/settings/api-docs" element={<ProtectedRoute><ApiDocsPage /></ProtectedRoute>} />
           <Route path="/settings/nf525-audit" element={<AdminRoute><Nf525AuditPage /></AdminRoute>} />
           <Route path="/system/fiscal-years" element={<AdminRoute><FiscalYearsPage /></AdminRoute>} />
