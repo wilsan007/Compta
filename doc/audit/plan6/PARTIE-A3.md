@@ -648,6 +648,35 @@ frise (2, **deux mouvements vers une réception**), T05 isolation (3).
 
 **Reste du Stock** : **CUMP → écriture**, avec le défaut ci-dessus en tête.
 
+## A3.2 — ce que la mesure a RETIRÉ de la file : la provision de dépréciation
+
+**Le référentiel (§B.3) annonçait** : « lettrage ↔ âge de la dette ↔ relance ↔
+**provision pour dépréciation** ↔ écriture de clôture », et une note d'audit parlait
+d'« une provision existante mais non reliée ». **La mesure dit autre chose.**
+
+`calculate_provisions(p_fiscal_year_id)` (`103_medium_priority_business_functions.sql`,
+§5) est un **calculateur pur** : il balaie les créances douteuses (> 90 j, taux de 25 %
+à 100 %) et les stocks obsolètes (> 365 j, 50 %), et **retourne un `jsonb`** —
+`provisions[]`, `total_provisions`, `provision_count`, `calculated_at`. Il n'écrit
+**rien**.
+
+**Il n'existe donc AUCUN objet « provision »** : aucune table (`information_schema` :
+seuls `leave_provisions` et `chart_provisional_fallbacks` portent le mot), aucune
+écriture, aucun lien. Le tronçon « provision ↔ écriture de clôture » **n'a pas de côté
+aval à relier** : ce qui manque n'est pas un **lien**, c'est un **objet** — un registre
+des provisions, avec son statut et son écriture. Cela relève d'une **décision produit**,
+pas d'un chaînage : le créer ici serait sortir du mandat d'A3 (« instrumenter les
+chaînages existants, pas les réécrire »).
+
+**Verdict : retiré de la file d'A3 et TRANSMIS** comme couple vide dont le côté manquant
+est un objet (ORPH — territoire E/F). Ce qui est livré à la place, c'est **la mesure** :
+le prochain qui lira « provision existante mais non reliée » saura qu'elle n'existe pas.
+
+**À sa place, la file reprend au tronçon suivant** : **à-nouveaux : l'exercice → son
+écriture d'ouverture** — matière confirmée (`153_fix_carry_forward_and_payroll.sql`
+écrit l'écriture `journal_code = 'AN'`, `number = 'AN-<année>-<séquence>'`,
+`reference = 'AN-<code exercice>'`, et **rien ne la rattache à l'exercice**).
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
