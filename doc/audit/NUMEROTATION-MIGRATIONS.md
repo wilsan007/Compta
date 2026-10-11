@@ -79,6 +79,16 @@ machine ; ces deux tables sont la vérité du dépôt.
 | **`460` → `469`** | **I-01, la « Vue Chaîne »** | **2026-10-02** |
 | `370` → `379` | lot K (localisation Djibouti) — `370` : le barème mensuel de l'I.T.S., grille « en table » de 393 tranches, portée de `claude/extract-tax-salary-table-2a3267` (ex-`65_seed_dj_its_payroll_grid.sql`) ; le moteur a été corrigé au passage | 2026-10-05 |
 | `470` → `474` | partie 2 (défauts métier) — dernier écrivain au-dessus des chaînages : `470`, tâche 2.17 — réécrit `cash_flow_forecast`, que la `420` réécrit aussi (en `35x`, la `420` l'écraserait sur base neuve) | 2026-10-05 |
+| `475` → `486` | plan6 A1 (preuve et indice) — branche `plan6/a-chainages` | 2026-10-05 |
+| `487` → `492` | plan6 A2 (Vue Chaîne et écrans) — branche `plan6/a2-vue-chaine` | 2026-10-05 |
+| `493` → `499` | plan6 A3 (moteur L16-L24) — branche `plan6/a3-moteur` | 2026-10-05 |
+| `500` → `559` | plan6 B (règles d'état, paie FR) | 2026-10-05 |
+| `600` → `649` | plan6 C (lot K, Djibouti) | 2026-10-05 |
+| `650` → `699` | plan6 E (opérations) | 2026-10-05 |
+| `700` → `749` | plan6 F (plateforme) | 2026-10-05 |
+| `750` → `759` | plan6 A3 L16 (familles restantes) | 2026-10-06 |
+| `760` → `769` | plan6 A3 L16 (familles restantes) — suite de la plage précédente | 2026-10-11 |
+| **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique | **2026-10-11** |
 | `380` → `399` | **LIBRE** — à inscrire avant usage | — |
 
 *Numéros constatés hors de leur fichier de plan, au 02/10 : `414` alerte de

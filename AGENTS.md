@@ -72,6 +72,8 @@ L'essentiel en huit lignes :
 > | **`487` → `492`** | **plan6 A2 (Vue Chaîne et écrans)** — héberger la frise sur tous les types de documents, pages Robustesse/Cohérence — branche `plan6/a2-vue-chaine` | **2026-10-05** |
 > | **`493` → `499`** | **plan6 A3 (moteur L16-L24)** — chaînages internes, régénération, lettrage, moteur de règles, webhooks — branche `plan6/a3-moteur` | **2026-10-05** |
 > | **`750` → `759`** | **plan6 A3 L16 (familles restantes)** — la plage `493`→`499` étant saturée : maillons `chain_l16_*` des 7 familles internes encore ouvertes, branche `plan6/a3-l16-production` (`750` : démarrage d'OF) | **2026-10-06** |
+> | **`760` → `769`** | **plan6 A3 L16 (familles restantes)** — suite de la plage précédente, saturée à son tour : les mêmes maillons `chain_l16_*` (branche `plan6/a3-moteur`) | **2026-10-11** |
+> | **`770` → `779`** | **plan6 A3 (certificat d'intégrité, A3.4)** — **P1** : `chain_certificat_integrite`, l'attestation d'intégrité technique (jsonb de faits), suite `770` — branche `plan6/a3-moteur` | **2026-10-11** |
 >
 > *Règle de coexistence : une session qui travaille sur une série déjà
 > occupée prend la **prochaine libre** et l'inscrit ici. Le runner échoue
