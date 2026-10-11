@@ -191,5 +191,23 @@
     "verdictTenu": "tenu",
     "verdictRompu": "rompu",
     "verdictNonMesure": "non mesuré"
+  },
+  "robustesse": {
+    "title": "Robustesse des chaînages",
+    "subtitle": "Le banc d'épreuves : pour chaque chaîne, le résultat des huit épreuves D1 → D8.",
+    "maillons": "Chaînes du banc",
+    "tenues": "Épreuves tenues",
+    "rompues": "Épreuves rompues",
+    "nonJouees": "Épreuves non jouées",
+    "verdictTenu": "tenu",
+    "verdictRompu": "rompu",
+    "verdictNonJoue": "non joué",
+    "colMaillon": "Chaîne",
+    "colTenues": "Tenues",
+    "legend": "D1 rejeu · D2 concurrence · D3 tout-ou-rien · D4 annulation · D5 réouverture · D6 retour arrière · D7 volume · D8 isolation",
+    "passeLe": "Dernier passage du banc : {{date}}",
+    "jamaisJoue": "Le banc n'a encore jamais été joué pour cette société.",
+    "vide": "Aucune chaîne",
+    "videDescription": "Le catalogue du banc est vide."
   }
 }

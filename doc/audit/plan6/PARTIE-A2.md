@@ -30,8 +30,8 @@ D vis-à-vis de nous).
 |---|---|---|---|---|
 | A2.1 | Recompter la Vue Chaîne : ce que `460` → `467` couvrent, ce qu'il manque pour I-01 | A.5 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
 | A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | 🟡 **5 pages ajoutées le 05/10** (6 au total avec `InvoicesPage`) — voir §Livré |
-| A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ⬜ |
-| A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ⬜ |
+| A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ✅ **fait le 05/10** — « Cohérence » (`CoherencePage.tsx`, A2.4) et « Robustesse » (`RobustessePage.tsx`) livrées ; voir §A2.3 |
+| A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ✅ **fait le 05/10** (`CoherencePage.tsx` : route `/system/coherence`, nav, i18n fr/en/ar) |
 
 ## Recomptage (05/10/2026) — mesuré, pas supposé
 
@@ -157,6 +157,35 @@ plafond (les deux tables d'invariants sont **lues**).
 (parité + clés littérales) · Vitest **1 661 verts** · `any` **1 735/1 735** ·
 `console.error` **488/488** (plafonds gelés conformes).
 
+## A2.3 — les pages « Robustesse » et « Cohérence » (L5)
+
+Les deux écrans de L5 sont **livrés** : **Cohérence** (`CoherencePage.tsx`,
+A2.4 — l'indice et les invariants) et **Robustesse** (`RobustessePage.tsx`, ce
+lot — le résultat des huit épreuves).
+
+**« Robustesse »** lit le banc d'épreuves : `chain_banc_maillons` (le catalogue,
+lisible sans filtre de société) et `chain_banc_resultats` (chaque passage,
+filtré par société), réduits côté écran au **dernier verdict par (maillon,
+épreuve)** — motif de `chainCoherence.ts`, **parce que la vue
+`chain_banc_rapport` n'est pas dans les types générés** (leçon notée : on lit
+les tables typées). Une ligne par chaîne, **huit colonnes D1 → D8**, chacune
+portant son verdict ; plus le compte tenues / rompues / non jouées et la date du
+dernier passage.
+
+- **Requête** : `app/src/lib/queries/chainRobustness.ts` (`getChainBanc()`),
+  territoire A2 (« requêtes robustesse ») ;
+- **Route** `/system/robustesse` (sous `AdminRoute`), **entrée de nav**
+  (`items.robustesse`), **i18n fr/en/ar** ;
+- **Trois règles tenues.** Aucun `tenu` par défaut — une épreuve jamais jouée
+  s'affiche **`non joué`** (gris), l'absence est publiée ; `rompu` est la
+  **seule** teinte rouge (`non joué` n'est **pas** une alerte, c'est un
+  instrument qui manque) ; **pas de journal console d'erreur** (l'erreur se dit
+  à l'écran, `role="alert"`).
+
+**Vérifications** : `tsc -b` **0** · `oxlint` **0/0** · `i18n:check` **vert** ·
+Vitest **1 661 verts** · `any` **1 735/1 735** · `console.error` **488/488** ·
+`check-unchecked-writes` **0**.
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
@@ -164,4 +193,5 @@ plafond (les deux tables d'invariants sont **lues**).
 | 2026-10-05 | A2.1 | Recomptage Vue Chaîne : backend `460`/`462` + composant OK, frise hébergée sur `InvoicesPage` seulement | — (lecture seule) | `3a2642c` |
 | 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | `5cd2dcc` |
 | 2026-10-05 | A2.2 (lot 2) | Frise sur l'OF (page détail existante) ; **vues détail créées** sur les commandes de vente et les bons de livraison (lignes, reliquats, frise) ; pas d'I-08 sur le BL | `tsc` 0 · `oxlint` 0/0 · a11y vert · Vitest **1 661** · plafonds conformes (hors `CoherencePage.tsx`, session parallèle) | `a3e59cc` |
-| 2026-10-05 | A2.4 | Page « Cohérence » (`CoherencePage.tsx`) : indice (tenu/rompu/non mesuré) + détail par invariant, route `/system/coherence`, entrée de nav, i18n fr/en/ar ; `check-unused-tables` conforme | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds `any` **1 735** et `console.error` **488/488** conformes | _(ce lot)_ |
+| 2026-10-05 | A2.4 | Page « Cohérence » (`CoherencePage.tsx`) : indice (tenu/rompu/non mesuré) + détail par invariant, route `/system/coherence`, entrée de nav, i18n fr/en/ar ; `check-unused-tables` conforme | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds `any` **1 735** et `console.error` **488/488** conformes | `2599252` |
+| 2026-10-05 | A2.3 | Page « Robustesse » (`RobustessePage.tsx`) : résultat des 8 épreuves par chaîne + requête `chainRobustness.ts` ; route `/system/robustesse`, entrée de nav, i18n fr/en/ar | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · `any` **1 735** · `console.error` **488/488** · unchecked-writes **0** | _(ce lot)_ |

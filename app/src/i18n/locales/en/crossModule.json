@@ -191,5 +191,23 @@
     "verdictTenu": "held",
     "verdictRompu": "broken",
     "verdictNonMesure": "not measured"
+  },
+  "robustesse": {
+    "title": "Chain robustness",
+    "subtitle": "The test bench: for each chain, the result of the eight tests D1 → D8.",
+    "maillons": "Chains in the bench",
+    "tenues": "Tests held",
+    "rompues": "Tests broken",
+    "nonJouees": "Tests not played",
+    "verdictTenu": "held",
+    "verdictRompu": "broken",
+    "verdictNonJoue": "not played",
+    "colMaillon": "Chain",
+    "colTenues": "Held",
+    "legend": "D1 replay · D2 concurrency · D3 all-or-nothing · D4 cancellation · D5 reopening · D6 rollback · D7 volume · D8 isolation",
+    "passeLe": "Last bench run: {{date}}",
+    "jamaisJoue": "The bench has never been run for this company yet.",
+    "vide": "No chain",
+    "videDescription": "The bench catalogue is empty."
   }
 }
