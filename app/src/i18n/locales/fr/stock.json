@@ -381,7 +381,10 @@
     "created": "Emplacement créé avec succès",
     "type": "Type",
     "stockByLocation": "Stock par emplacement",
-    "unassigned": "Non affecté"
+    "unassigned": "Non affecté",
+    "assign": "Affecter",
+    "ventilation": "Ventilation par casier",
+    "noVentilation": "Aucune affectation."
   },
   "quality": {
     "title": "Contrôles qualité",

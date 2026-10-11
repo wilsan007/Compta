@@ -381,7 +381,10 @@
     "created": "Location created successfully",
     "type": "Type",
     "stockByLocation": "Stock by location",
-    "unassigned": "Unassigned"
+    "unassigned": "Unassigned",
+    "assign": "Assign",
+    "ventilation": "Stock by bin",
+    "noVentilation": "No assignment."
   },
   "quality": {
     "title": "Quality checks",

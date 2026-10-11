@@ -381,7 +381,10 @@
     "created": "تم إنشاء الموقع بنجاح",
     "type": "النوع",
     "stockByLocation": "المخزون حسب الموقع",
-    "unassigned": "غير مُخصص"
+    "unassigned": "غير مُخصص",
+    "assign": "تخصيص",
+    "ventilation": "المخزون حسب الخانة",
+    "noVentilation": "لا يوجد تخصيص."
   },
   "quality": {
     "title": "فحوصات الجودة",

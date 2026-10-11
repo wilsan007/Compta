@@ -911,6 +911,31 @@ export async function listGoodsReceipts() {
   return data as { id: string; number: string; receipt_date: string | null }[]
 }
 
+// STK-11 / E.3 : la ventilation du stock par casier (659) — sans toucher au stock
+// d'entrepôt : une affectation dit « tant de cet article est au casier B3 ».
+export interface LocationStockRow {
+  product_id: string
+  product_name: string
+  warehouse_id: string
+  location_id: string | null
+  location_code: string | null
+  quantity: number
+  assigned: boolean
+}
+
+export async function getLocationStock(warehouseId?: string) {
+  const { data, error } = await supabase.rpc('location_stock', { p_warehouse_id: warehouseId ?? null })
+  if (error) throw error
+  return (data || []) as LocationStockRow[]
+}
+
+export async function assignStockToLocation(productId: string, warehouseId: string, locationId: string, quantity: number) {
+  const { error } = await supabase.rpc('assign_stock_to_location', {
+    p_product_id: productId, p_warehouse_id: warehouseId, p_location_id: locationId, p_quantity: quantity,
+  })
+  if (error) throw error
+}
+
 
 // ============ Production Module: OF Labels ============
 export async function getOFLabels(moId: string) {
