@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **13 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 13 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **14 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 14 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -501,6 +501,38 @@ les deux sens (2), T05 isolation (3). Portes : G2 / G8 / `check_tenant_guard` /
 (doctrine 237, touche `journal_lines` — territoire C) ; provision → écriture de
 clôture ; à-nouveaux ; état de rapprochement.
 
+## A3.2 — lot 14 : le bulletin de paie rattaché à son écriture (migration `759`)
+
+**La famille RH/Paie** — le « maillon faible » du référentiel (§B.3) : « contrat ↔
+salarié ↔ absence ↔ temps ↔ variable ↔ **bulletin** ↔ cumuls ↔ **écriture** ↔
+virement ↔ DSN ».
+
+**Ce que la mesure a trouvé.** `pay_slips.journal_entry_id` et `journal_posted`
+**existent** et sont **écrits** par la comptabilisation de la paie
+(`191_payroll_to_ledger`, ligne 207) — mais **aucun lien de chaîne** n'est posé :
+l'écriture d'un bulletin est **invisible pour la frise**. Et `pay_slips` **n'est pas
+au registre** `chain_document_types`.
+
+**Ce qui est livré** — migration `759_chain_l16_bulletin_ecriture.sql` :
+`pay_slips` **entre au registre**, contrat d'effet `payroll.slip.posted`, maillon
+`chain_l16_payslip_entry` — bulletin non annulé et **comptabilisé** (refusé sinon :
+on ne trace pas une écriture qui n'existe pas), lien `link_documents`
+(`generated_entry`). Il **ne réécrit pas** `journal_entry_id` (posée par la
+comptabilisation `191`).
+
+**Éprouvé** — suite `759` **12/12** sur base neuve : T01 nominal (2), T02 idempotence
+(2), T03 trois refus (introuvable / annulé / non comptabilisé), T04 frise (2), T05
+isolation (3). Portes : G2 / G8 / `check_tenant_guard` / `check_anon_grants` **OK** ;
+rejouable ; enrôlée dans `ci.yml` (G5).
+
+**⚠️ Plage A3 SATURÉE** : `759` est le **dernier** numéro de la plage `750 → 759`.
+A3 doit **demander une extension à l'intégration** avant le prochain maillon — le
+registre fait foi (R2).
+
+**Reste de la RH/Paie** : contrat ↔ salarié, absence (**les quatre sources** qui ne
+convergent pas), temps, variable ↔ bulletin, cumuls, virement (`sepa_payment_orders`,
+≡ INV-09), DSN.
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -526,4 +558,5 @@ clôture ; à-nouveaux ; état de rapprochement.
 | 2026-10-11 | A3.2 (lot 10) | **L16 · Achats · réception → facture fournisseur** : migration `755` (contrat `purchase.receipt.to_invoice`, maillon `chain_l16_receipt_supplier_invoice` — même fournisseur, statuts valides, idempotent, **écrit `purchase_invoices.goods_receipt_id`** que le rapprochement trois points 135/148 lisait sans qu'on l'écrive, lien `invoiced_by`). La chaîne Achats `commande → réception → facture → règlement` est **fermée**. + suite `755` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `48078ce` |
 | 2026-10-11 | A3.2 (lot 11) | **L16 · Achats · facture fournisseur → avoir** : migration `756` (`purchase_credit_notes` au registre, contrat `purchase.invoice.to_credit_note`, maillon `chain_l16_supplier_invoice_credit_note` — avoir non brouillon, même fournisseur, ne réécrit pas `purchase_invoice_id`, lien `reversed_by`). **Dernier tronçon de la famille Achats** : Commercial **et** Achats sont désormais complets de bout en bout. + suite `756` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `60839c2` |
 | 2026-10-11 | A3.2 (lot 12) | **L16 · Commercial · facture → relance** : migration `757` (`collection_reminders` au registre, contrat `sale.invoice.to_reminder`, maillon `chain_l16_invoice_reminder` — relance non brouillon/annulée, même client, écrit `invoice_id` si vide, lien `created_from`). **Dernier tronçon du Commercial** ; les familles tenues par A3 sont complètes de bout en bout. + suite `757` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `f31bde7` |
-| 2026-10-11 | A3.2 (lot 13) | **L16 · Comptabilité · groupe de lettrage → ses lignes de journal** — la **demande R3 d'A1** : migration `758` (`lettrage_groups` au registre, contrat `rev.line.lettered`, maillon `chain_l16_lettrage_group` — trace chaque ligne vers son groupe). **Défaut mesuré et corrigé** : `link_documents` fusionne deux liens de même amont, donc le sens est LIGNE → GROUPE (avec le groupe pour amont, 2 lignes ne tenaient qu'1 lien). + suite `758` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 13) | **L16 · Comptabilité · groupe de lettrage → ses lignes de journal** — la **demande R3 d'A1** : migration `758` (`lettrage_groups` au registre, contrat `rev.line.lettered`, maillon `chain_l16_lettrage_group` — trace chaque ligne vers son groupe). **Défaut mesuré et corrigé** : `link_documents` fusionne deux liens de même amont, donc le sens est LIGNE → GROUPE (avec le groupe pour amont, 2 lignes ne tenaient qu'1 lien). + suite `758` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `76e9199` |
+| 2026-10-11 | A3.2 (lot 14) | **L16 · RH/Paie · bulletin → son écriture comptable** : migration `759` (`pay_slips` au registre, contrat `payroll.slip.posted`, maillon `chain_l16_payslip_entry` — bulletin comptabilisé requis, ne réécrit pas `journal_entry_id`, lien `generated_entry`). **⚠️ dernier numéro de la plage `750→759` : extension à demander.** + suite `759` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
