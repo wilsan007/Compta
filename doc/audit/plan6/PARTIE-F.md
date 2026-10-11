@@ -23,7 +23,7 @@
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04 (champs personnalisés) livré le 05/10** (`706` + écran Paramètres → Champs personnalisés, projets) ; **CRM‑01/02, PRJ‑02 (capacité), PRJ‑08 (automatisations) restent** |
-| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
+| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 livré le 05/10** (`707` : le rattachement de documents est **validé**) ; **NOT‑01/02, BI‑01, ADM‑04, API‑03 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
@@ -299,6 +299,44 @@ un point d'entrée dans son écran ; la valeur n'est pas indexée par
 pas de champ **calculé** ni de validation « requis » à la saisie (l'obligation est
 déclarée, pas encore opposable).
 
+## F.6 — premier lot livré le 05/10 (GED‑01, le rattachement de documents, validé)
+
+**Le constat, mesuré le 05/10.** `module_documents` (migration 68) porte **deux
+colonnes polymorphes** — `entity_type`, `entity_id` — qui disent à quelle pièce un
+document se rattache. Elles sont **lues et écrites** par la couche d'écrans, et
+**rien ne les valide** : seul `tenant_id` est posé (`set_tenant_id_module_documents`),
+aucune contrainte, aucune clé étrangère (une colonne polymorphe ne peut pas en
+porter), **aucun contrôle d'existence**. Mesuré : un document peut se rattacher à
+une pièce **qui n'existe pas**, ou à une pièce **d'une autre société** —
+`entity_id` est un `uuid` nu. C'est le défaut ISO‑02 que la Partie 5 a fermé pour
+`document_links` (`451`) ; `module_documents` **n'avait pas eu sa contrepartie**.
+
+**Livré** : migration `707` — un déclencheur `validate_module_document_link` sur
+`module_documents` (`BEFORE INSERT OR UPDATE OF entity_type, entity_id`) :
+- **les deux colonnes, ou aucune** (une moitié ne désigne rien) ;
+- `entity_type` doit être un **code du registre `chain_document_types`** (les 27
+  pièces de la `450` — factures, avoirs, BL, écritures, lots de paie, tickets,
+  mouvements de stock…) ;
+- la pièce doit **exister dans la société du document** (lecture bornée par la
+  RLS du lecteur **et** filtre `tenant_id` explicite — les deux gardes).
+Refus **nommés** : `DOCUMENT_LINK_INCOMPLETE`, `DOCUMENT_LINK_TYPE`,
+`DOCUMENT_LINK_MISSING`. La fonction de déclencheur est **retirée de `PUBLIC`**.
+Suite `707` **7/7** (registre = 27 codes ; document **sans** rattachement accepté ;
+rattachement valide accepté ; pièce inexistante refusée ; pièce d'une autre société
+refusée ; type inconnu refusé ; moitié de rattachement refusée).
+
+**Pas de nouvelle table** : la coquille `document_entity_types` (vue par F.8)
+aurait **recopié** `chain_document_types` — un second registre qui aurait pu
+diverger. Le registre des chaînages **est** le registre des pièces.
+
+⚠️ **Limites dites** : le vocabulaire accepté est celui du **registre** (27 codes) —
+une pièce qui n'y figure pas (projet, client, salarié) ne peut pas encore accueillir
+de document ; l'ouvrir demande d'inscrire son code au registre (un acte de revue).
+Et l'écriture est aujourd'hui **orpheline côté écran** (`DocumentList` /
+`DocumentUploader` n'ont **aucun appelant**) : cette migration rend le rattachement
+**réel**, elle ne le rend pas encore **visible** — brancher l'écran est le lot
+suivant.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -330,3 +368,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.7 conventions collectives (PAY‑08) | **livré** : `704` (FORCE RLS sur les 2 tables + `set_employee_collective_agreement` validée : société, convention, cohérence classification) + suite 6/6 + écran Paramètres→Conventions collectives + i18n. Plafonds : `rls_sans_force` 53→51 ; `unused-tables` 74→72 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.7 recrutement (RH‑03) | **livré** : `705` (postes + candidatures, clé composite ISO‑02, statuts contraints, RLS forcée, 4 politiques/table, `anon` révoqué) + suite 6/6 + écran RH→Recrutement + i18n. Plafonds : `tables_tenant` 365→367 ; `unused-tables` 72→70 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 champs personnalisés (PRJ‑04) | **livré** : `706` (définitions par module/entité + valeurs par enregistrement, clé composite ISO‑02, déclencheur qui tient le TYPE) + suite 8/8 + écran Paramètres→Champs personnalisés (module branché : projets) + i18n. Plafonds : `tables_tenant` 367→369 ; `unused-tables` 70→68 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.6 rattachement de documents (GED‑01) | **livré** : `707` — le rattachement polymorphe de `module_documents` devient VALIDÉ (les deux colonnes ou aucune ; type = code du registre `chain_document_types` ; existence dans la société), refus nommés + suite 7/7. Pas de nouvelle table, plafonds inchangés | 0,5 j | `plan6/f-plateforme` |

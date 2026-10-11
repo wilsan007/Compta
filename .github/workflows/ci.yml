@@ -2420,6 +2420,18 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.6 / GED-01 — le rattachement universel de documents, enfin VALIDÉ.
+      # `module_documents.entity_type/entity_id` (colonnes polymorphes, migration
+      # 68) n'étaient validées par RIEN : un document pouvait se rattacher à une
+      # pièce inexistante ou d'une autre société. La 707 pose le contrôle
+      # d'existence — les deux colonnes ou aucune, le type doit être un CODE DU
+      # REGISTRE `chain_document_types` (27 pièces, celui de la 450), et la pièce
+      # doit exister dans la société (lecture bornée par la RLS + filtre explicite).
+      - name: 'F.6 : rattachement de documents validé (GED-01) — existence, société, registre (707)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/707_rattachement_documents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
