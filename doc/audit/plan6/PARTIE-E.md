@@ -53,7 +53,7 @@ atteint dans le code d'aujourd'hui.
 | ACC-01 | 3 j | **Fait.** `108_auxiliary_accounts` : `account_tiers` / `account_collectif` sur `customers`/`suppliers`, génération automatique, écriture dans les triggers de compta **et rattrapage** des écritures existantes. Les triggers **vivants** (`210`, `317`) portent bien `account_tiers, third_party_id, echeance_date`. | ✅ fait | 0,5 j (garde-fou seul) |
 | ACC-03 | 4 j | **Fait.** `110_product_accounts` : `sale/purchase/stock_account_code` + `product_categories`, boucle « une ligne par compte » dans les triggers ; `resolve_stock_account` (`241`), `315`, `317`. Les triggers vivants gardent `COALESCE(p.sale_account_code, pc.sale_account_code, …)`. | ✅ fait | 0,5 j (garde-fou seul) |
 | PRD-05 | 2 h | **Fait.** `stock.ts` lit `purchase_order_lines` (reste à recevoir) et non l'en-tête `purchase_orders` ; les OF en cours sont déduits de `qty_produced`. | ✅ fait | 0 |
-| PRD-08 | mineur | **🔶 corrigé le 05/10.** Le RPC `run_mrp` existe et **est branché** (`MRPPages.handleRunMRP`). La `651` l'a complété et a retiré l'ancienne signature (`DROP run_mrp(uuid,integer)`). **Reste** : l'ancien moteur client `runMRPCalculation` (`handleCalculate`) coexiste encore. | 🔶 finir | 0,5 j |
+| PRD-08 | mineur | **✅ fini le 11/10 (`ea60af5`).** Le RPC `run_mrp` (651, garde 664) est l'**unique** moteur : `runMRPAndSave` (`stock.ts`) persiste le lancement et ses propositions ; l'ancien moteur client `runMRPCalculation` (OF seules, `+7 j` en dur, `Math.ceil` nu) est **supprimé**, ainsi que le second bouton de l'écran (qui portait une chaîne non traduite). | ✅ fait | 0,5 j |
 | PRD-03 | 4 j | **✅ corrigé le 05/10 — le ❓ lisait le mauvais moteur.** Le RPC SQL `run_mrp` (`152`) lisait **déjà** les trois sources (OF, commandes clients, prévisions) **et** l'horizon `p_horizon_days` ; le critère ne manquait que sur la **consommation des prévisions** — livrée par la `651`. Le vieux moteur client, lui, ne lit que les OF : c'est lui qui avait fait dire ❓. | ✅ fait (base) | 0 |
 | PRD-04 | 1 j | **✅ corrigé le 05/10 — même cause.** `run_mrp` applique **déjà** `safety_stock`, `lead_time_days`, `min_order_qty`, `qty_multiple` ; le `+7 j` en dur et le `Math.ceil` nu n'existent que dans le vieux moteur client. | ✅ fait (base) | 0 |
 | PRD-10 | 1 sem. (avec PRD-11) | **Non fait.** `workflows` et `product_equivalences` sont des écrans CRUD ; non exploités dans le MRP ; finalité non documentée. | ⬜ faire (léger) | 2 j |
@@ -62,17 +62,18 @@ atteint dans le code d'aujourd'hui.
 | VTE-01 | 3 j | **Partiel.** `resolve_price` (`117`) + helper client `resolvePrice` existent, mais **aucun formulaire ne l'appelle** : `price_list` n'est lu que par la page de saisie des grilles. | 🔶 finir | 2 j |
 | VTE-03 | — | **Partiel.** `calculate_payment_due_dates` (`88`) produit des échéances multiples ; manquent la cascade de remises, l'escompte conditionnel et les remises de fin d'année. | 🔶 faire | 3 j |
 
-**Compte du recomptage (corrigé le 05/10) : 5 ✅** (`ACC-01`, `ACC-03`, `PRD-05`,
-`PRD-03`, `PRD-04`) **· 3 🔶** (`PRD-08`, `VTE-01`, `VTE-03`) **· 3 ⬜**
-(`PRD-10`, `ACH-01`, `ACH-02`) **· 0 écarté.**
+**Compte du recomptage (corrigé le 05/10, PRD-08 fini le 11/10) : 6 ✅**
+(`ACC-01`, `ACC-03`, `PRD-05`, `PRD-03`, `PRD-04`, `PRD-08`) **· 2 🔶**
+(`VTE-01`, `VTE-03`) **· 3 ⬜** (`PRD-10`, `ACH-01`, `ACH-02`) **· 0 écarté.**
 
 **Ce que le recomptage change.** Le §9 du plan rangeait ces onze chantiers sous
 « à estimer ». **Cinq sont déjà faits** — comme pour la partie 3 (A.1), le suivi
 est en retard, pas le dépôt. Et deux corrections d'honnêteté : `PRD-03` et
 `PRD-04` n'étaient ❓ que parce que la première mesure regardait le **vieux
 moteur client** (`runMRPCalculation`) ; le moteur qui fait foi — le RPC SQL
-`run_mrp` — les portait déjà. La charge du périmètre ❓ tombe à **≈ 13,5 j**
-(ACC-01/03 garde-fous 1 j, PRD-08 0,5 j, VTE-01 2 j, VTE-03 3 j, PRD-10 2 j,
+`run_mrp` — les portait déjà (ce vieux moteur client est supprimé le 11/10,
+PRD-08). La charge du périmètre ❓ restant tombe à **≈ 13 j**
+(ACC-01/03 garde-fous 1 j, VTE-01 2 j, VTE-03 3 j, PRD-10 2 j,
 ACH-01 3 j, ACH-02 2 j).
 
 ### Les ⬜ du périmètre (E.2 → E.5), estimés
@@ -598,3 +599,4 @@ après fusion.
 | 11/10/2026 | **CI** — `LOT7-04` : `/stock/transfers` s'ouvrait **sans ses articles** (migration `666`) | L'embed `products(name, sku)` était impossible : `stock_transfer_lines.product_id` n'avait aucune clé étrangère (depuis la 125) → `PGRST200` | `check-embeds` : 1 requête refusée **avant** / 1582 acceptées **après** · `666` 3/3 · `652` 5/5 · non-régression 664/665 | `8d9274b` |
 | 11/10/2026 | **CI** — étape 24 : les types générés ne portaient pas la clé étrangère de la `666` | Ma régénération datait d'une base **sans** la `666` : 666 réparait le schéma **sans** réparer l'écran (`PGRST200` serait resté) | Diff de la CI reproduit à l'identique en local (`@@ -19543,6 +19543,13 @@`) puis régénéré depuis la base neuve : **7 insertions** · `tsc` 0 · étape 24 verte au passage suivant | `823ecd7` |
 | 11/10/2026 | **CI verte** sur la branche | Le job DB va de l'étape 1 à **197** sans un rouge ; les 22 contrôles de schéma passent, et les suites jamais jouées aussi | passage `38155294420` : **`completed / success`** — 8 jobs verts, 2 `skipped` par construction (`schedule` / `workflow_dispatch`) | `823ecd7` |
+| 11/10/2026 | **PRD-08 (fin)** — un seul moteur CBN | `runMRPCalculation` (moteur client : OF seules, `+7 j` en dur, `Math.ceil` nu, prévisions ignorées) **supprimé** ; `runMRPAndSave` (`stock.ts`) persiste ce que le RPC `run_mrp` (651/664) calcule — l'écran garde son historique et ses propositions ; un seul bouton (l'autre portait une chaîne **non traduite**) ; wrapper `runMRP` enrichi de toutes les colonnes persistées | vitest **1662/1662** (bloc MRP réécrit : persistance d'un lancement + annulation W6) · tsc 0 · oxlint 0 · i18n OK · plafond `any` racheté **936→926** | `ea60af5` |
