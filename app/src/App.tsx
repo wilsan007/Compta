@@ -143,6 +143,7 @@ const PaySlipsPage = lazy(() => import('@/pages/PaySlipsPage').then(m => ({ defa
 const PayrollAccountingPage = lazy(() => import('@/pages/PayrollAccountingPage').then(m => ({ default: m.PayrollAccountingPage })))
 const LeaveRequestsPage = lazy(() => import('@/pages/LeaveRequestsPage').then(m => ({ default: m.LeaveRequestsPage })))
 const LeaveRulesPage = lazy(() => import('@/pages/settings/LeaveRulesPage').then(m => ({ default: m.LeaveRulesPage })))
+const RecruitmentPage = lazy(() => import('@/pages/hr/RecruitmentPage').then(m => ({ default: m.RecruitmentPage })))
 const ApiWebhooksPage = lazy(() => import('@/pages/settings/ApiWebhooksPage').then(m => ({ default: m.ApiWebhooksPage })))
 const EmailTemplatesPage = lazy(() => import('@/pages/settings/EmailTemplatesPage').then(m => ({ default: m.EmailTemplatesPage })))
 const TwoFactorPage = lazy(() => import('@/pages/settings/TwoFactorPage').then(m => ({ default: m.TwoFactorPage })))
@@ -540,6 +541,7 @@ function App() {
           <Route path="/hr/payroll-accounting" element={<PayrollAccountingPage />} />
           <Route path="/hr/leave-requests" element={<LeaveRequestsPage />} />
           <Route path="/hr/leave-rules" element={<LeaveRulesPage />} />
+          <Route path="/hr/recruitment" element={<RecruitmentPage />} />
           <Route path="/hr/leave-balances" element={<LeaveBalancesPage />} />
           <Route path="/hr/leave-planning" element={<LeavePlanningPage />} />
           <Route path="/hr/absence-anomalies" element={<AbsenceAnomaliesPage />} />

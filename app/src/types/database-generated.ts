@@ -9281,6 +9281,122 @@ export interface Database {
         },
       ]
     }
+    job_applications: {
+      Row: {
+        id: string
+        tenant_id: string
+        posting_id: string
+        candidate_name: string
+        candidate_email: string | null
+        candidate_phone: string | null
+        source: string | null
+        status: string
+        applied_at: string
+        notes: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        posting_id: string
+        candidate_name: string
+        candidate_email?: string
+        candidate_phone?: string
+        source?: string
+        status?: string
+        applied_at?: string
+        notes?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        posting_id?: string
+        candidate_name?: string
+        candidate_email?: string
+        candidate_phone?: string
+        source?: string
+        status?: string
+        applied_at?: string
+        notes?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "job_applications_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "job_applications_tenant_id_posting_id_fkey",
+          columns: ["tenant_id", "posting_id"],
+          isOneToOne: false,
+          referencedRelation: "job_postings",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    job_postings: {
+      Row: {
+        id: string
+        tenant_id: string
+        reference: string | null
+        title: string
+        description: string | null
+        department: string | null
+        contract_type: string
+        location: string | null
+        openings: number
+        status: string
+        published_at: string | null
+        closing_at: string | null
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        reference?: string
+        title: string
+        description?: string
+        department?: string
+        contract_type?: string
+        location?: string
+        openings?: number
+        status?: string
+        published_at?: string
+        closing_at?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        reference?: string
+        title?: string
+        description?: string
+        department?: string
+        contract_type?: string
+        location?: string
+        openings?: number
+        status?: string
+        published_at?: string
+        closing_at?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "job_postings_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     journal_access_rights: {
       Row: {
         id: string

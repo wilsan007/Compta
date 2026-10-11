@@ -1,5 +1,24 @@
 {
   "title": "Human Resources",
+  "recruitment": {
+    "title": "Recruitment",
+    "subtitle": "Publish your job postings and track applications.",
+    "createPosting": "Create a posting",
+    "postingTitle": "Job title",
+    "department": "Department",
+    "contractType": "Contract type",
+    "location": "Location",
+    "create": "Create",
+    "empty": "No posting yet",
+    "posting": "Posting",
+    "candidate": "Candidate",
+    "email": "Email",
+    "addApplication": "Add application",
+    "applications": "Applications",
+    "moveTo": "Status",
+    "contractTypes": { "cdi": "Permanent", "cdd": "Fixed-term", "stage": "Internship", "alternance": "Apprenticeship", "interim": "Temporary", "freelance": "Freelance" },
+    "statuses": { "draft": "Draft", "open": "Open", "closed": "Closed", "filled": "Filled", "received": "Received", "screening": "Screening", "interview": "Interview", "offer": "Offer", "hired": "Hired", "rejected": "Rejected" }
+  },
   "dashboard": {
     "title": "HR Dashboard",
     "subtitle": "Overview of your human resources",

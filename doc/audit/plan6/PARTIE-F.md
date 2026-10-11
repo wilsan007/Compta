@@ -24,7 +24,7 @@
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ⬜ |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | ⬜ |
-| F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | 🟡 **PAY‑08 livré le 05/10** (`704` : RLS forcée + rattachement validé, + écran Paramètres → Conventions collectives) ; **RH‑03 (recrutement, tables supprimées par la 164) et PTL‑03 (mobile) restent** |
+| F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
 ## F.1 — le recomptage (fait le 05/10/2026)
@@ -238,10 +238,27 @@ mesurés le 05/10 :
 tables passent sous FORCE). `check-unused-tables` **74 → 72** (les deux tables sont
 lues par l'écran).
 
-**Ce qui reste de F.7** : **RH‑03 (recrutement)** — les tables (`job_postings`,
-`job_applications`) ont été **supprimées par la 164** : il faut les recréer, et
-c'est un modèle à décider — et **PTL‑03 (mobile et hors ligne)**, hors d'un lot
-base de données.
+**Ce qui restait de F.7 — RH‑03, le recrutement (livré, migration `705`).** Les
+tables d'un premier jet avaient été **supprimées par la 164** (« nommées NULLE
+PART »). La `705` les rétablit sur un modèle **standard** — faute d'arbitrage
+produit, et le vocabulaire est écrit dans la migration pour être discuté :
+- **un poste** (`job_postings`) : intitulé, service, type de contrat (CDI/CDD/
+  stage/alternance/intérim/freelance), lieu, nombre de postes, et un **cycle de
+  vie** (`draft` → `open` → `closed`/`filled`) ;
+- **une candidature** (`job_applications`) : rattachée au poste par une **clé
+  composite** `(tenant_id, posting_id)` — la candidature d'une société ne peut
+  pas viser le poste d'une autre (ISO‑02), et supprimer un poste emporte ses
+  candidatures —, avec un **pipeline** nommé (`received` → `screening` →
+  `interview` → `offer` → `hired`/`rejected`).
+Les **statuts sont contraints par la base**, pas par l'écran. **RLS forcée**,
+index de société, **quatre politiques par table**. Suite `705` **6/6** : RLS
+forcée ; statuts par défaut ; refus d'un statut hors vocabulaire (`23514`) ;
+refus d'une candidature inter‑société (`23503`) ; cascade de suppression ; et le
+**visiteur `anon` sans aucun droit**. Écran **RH → Recrutement** + i18n fr/en/ar.
+Plafond daté réinscrit : `check_bt_grid` `tables_tenant` 365 → **367** (deux
+tables neuves) ; `unused-tables` 72 → **70**.
+
+Reste de F.7 : **PTL‑03 (mobile et hors ligne)** — hors d'un lot base de données.
 
 ## Attend de vous
 
@@ -272,3 +289,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.4 groupe (premier lot) | **livré** : `702` (structure `groups`/`group_members` + flux `intra_group_transactions`, RLS, helper anti-récursion, 5 RPC) + suite 8/8 + **écran** Paramètres→Groupes (queries/nav/route/i18n fr/en/ar). Plafonds : `unused-tables` 75→74 ; `check_bt_grid` réinscrit (2 baisses) | 1,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.4 groupe (GRP‑03, consolidation) | **livré** : `703` (`group_consolidated_balance` — pondération full/proportional, equity/none exclus, bornage de période, flux intra-groupe publiés) + suite 6/6 + section « Consolidation » de l'écran + i18n. **F.4 complet (GRP‑01→03)** | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.7 conventions collectives (PAY‑08) | **livré** : `704` (FORCE RLS sur les 2 tables + `set_employee_collective_agreement` validée : société, convention, cohérence classification) + suite 6/6 + écran Paramètres→Conventions collectives + i18n. Plafonds : `rls_sans_force` 53→51 ; `unused-tables` 74→72 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.7 recrutement (RH‑03) | **livré** : `705` (postes + candidatures, clé composite ISO‑02, statuts contraints, RLS forcée, 4 politiques/table, `anon` révoqué) + suite 6/6 + écran RH→Recrutement + i18n. Plafonds : `tables_tenant` 365→367 ; `unused-tables` 72→70 | 1 j | `plan6/f-plateforme` |

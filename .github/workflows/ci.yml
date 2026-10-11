@@ -2400,6 +2400,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.7 / RH-03 — le recrutement. Les tables d'un premier jet avaient été
+      # supprimées par la 164 (« nommées NULLE PART ») : la 705 les rétablit sur
+      # un modèle standard — un POSTE, ses CANDIDATURES, rattachées par une clé
+      # COMPOSITE (la candidature d'une société ne peut pas viser le poste d'une
+      # autre : ISO-02), statuts contraints des deux côtés, RLS forcée.
+      - name: 'F.7 : recrutement (RH-03) — postes et candidatures (705)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/705_recrutement_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────
