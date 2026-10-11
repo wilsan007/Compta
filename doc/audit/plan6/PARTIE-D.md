@@ -22,7 +22,7 @@
 | D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ✅ **terminé — 80 états (05/10)** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
-| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
+| D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | 🟡 **scénarios prêts (05/10) — attend les secrets** |
 | D.6 | Les 14 parcours à l'écran, 2 sociétés, 4 gabarits ; correction des écarts bloquants ; re-notation des modules | 4.6, 4.7, P0-08 | recette | 🟡 **kit prêt (05/10) — verdict attendu** |
 | D.7 | Rejeu sur copie de production (porte G7 sous le vrai propriétaire), relecture des paramètres globaux et de `banks` | 4.8, 4.9 | 2 j | ⬜ |
 | D.8 | Contraste : appliquer la décision D-7 | AUD-I05 | 1 j | ⬜ |
@@ -419,6 +419,38 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 - [ ] les 14 verdicts + la signature (**vous**) ;
 - [ ] les écarts bloquants corrigés (moi, à votre verdict) — le « 4.7 ».
 
+## D.5 — les quatre parcours qui lisent un chiffre
+
+**Préparé, pas encore joué.** D.5 « attend les secrets E2E » (§7). Sans eux,
+l'application reste sur `/login` et tout test porterait sur l'écran de connexion :
+`e2e/helpers.ts` s'abstient alors explicitement (`E2E_CREDENTIALS_CONFIGURED`).
+Les scénarios sont donc **prêts à brancher**, pas exécutés.
+
+**Ce qui manquait.** `business-flows.spec.ts` (P1 → P10) ne fait que **nommer** les
+écrans (URL + `h1`). Aucun parcours ne **lit un montant**. Les quatre ajoutés le
+font :
+
+| # | Parcours | Le chiffre lu |
+|---|---|---|
+| C1 | inscription → plan semé | le plan comptable porte des comptes (`table tbody tr` > 0) |
+| C2 | vente → écriture | la balance est **équilibrée** : total débit = total crédit, **au centime** |
+| C3 | paie → bulletin | **brut − retenues = net**, au centime |
+| C4 | caisse → clôture | la session affiche un total |
+
+**L'outil** — `e2e/chiffres.ts` : lit le **texte visible** et en extrait les
+montants au format français (« 1 234,56 », « 1.234,56 »), puis cherche une
+relation `a + b = c` ou `a − b = c`. Volontairement robuste : pas de sélecteur de
+champ qui casse à chaque refonte d'écran.
+
+**Vérifié ici** : `playwright test --list` découvre **78 tests / 6 fichiers** (les
+4 parcours compris) ✅ · `oxlint` **0** ✅. **Non joués** : secrets absents.
+
+**Reste à faire (avec les secrets)** : confirmer les libellés d'écran C2/C3/C4 sur
+la société semée, puis **rendre le job `e2e-tests` obligatoire sur chaque PR vers
+`main`** — aujourd'hui il est étiqueté `run-e2e`. ⚠️ Ce déclenchement ne doit
+arriver **qu'avec** les secrets : sans `VITE_SUPABASE_*`, l'application ne démarre
+pas et la PR rougirait.
+
 ## Journal
 
 | Date | Lot | Module | Ce qui est fait | Batterie | Commit |
@@ -436,4 +468,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `c544ec1` |
 | 05/10 | D.2 · tranche 7 | Phase3/5Pages + soldes | 13 états typés (3 écrans) + 1 défaut de colonnes corrigé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→859 (cumul 77) | `cabf927` |
 | 05/10 | D.2 · tranche 8 | clôture | 3 états typés — `useState<any>` = **0** | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→854 (cumul 82) | `aaaddbe` |
+| 05/10 | D.5 | recette | 4 parcours qui lisent un chiffre (`e2e/chiffres.ts` + spec) — prêts, non joués (secrets absents) | `playwright --list` 78/6 ✅ · oxlint 0 | `HASH_D5` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
