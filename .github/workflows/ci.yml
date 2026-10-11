@@ -2494,6 +2494,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R-015 (partie B, lot Achats) — contrôle qualité obligatoire avant entrée en stock.
+      - name: 'plan6 B — R-015 : contrôle qualité avant entrée en stock (528)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/528_regle_r015_controle_qualite_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:c --- lot K, localisation Djibouti ---
       # Territoire : legislation_packs, chart_*, resolve_account, grilles fiscales ;
       #              app/src/lib/countries.ts ; écrans Paramètres ; doc/localisation/
