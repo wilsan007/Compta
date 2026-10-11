@@ -170,6 +170,7 @@
     "lines": "Received lines",
     "receivedQuantity": "Received quantity",
     "orderedQuantity": "Ordered quantity",
+    "description": "Description",
     "noGoodsReceipts": "No receipt",
     "noGoodsReceiptsDescription": "You haven't created a receipt yet",
     "createFirst": "Create my first receipt",

@@ -170,6 +170,7 @@
     "lines": "Lignes reçues",
     "receivedQuantity": "Quantité reçue",
     "orderedQuantity": "Quantité commandée",
+    "description": "Description",
     "noGoodsReceipts": "Aucune réception",
     "noGoodsReceiptsDescription": "Vous n'avez pas encore créé de réception",
     "createFirst": "Créer ma première réception",

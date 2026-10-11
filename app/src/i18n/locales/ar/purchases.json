@@ -170,6 +170,7 @@
     "lines": "البنود المستلمة",
     "receivedQuantity": "الكمية المستلمة",
     "orderedQuantity": "الكمية المطلوبة",
+    "description": "الوصف",
     "noGoodsReceipts": "لا توجد إذونات استلام",
     "noGoodsReceiptsDescription": "لم تقم بإنشاء إذن استلام بعد",
     "createFirst": "إنشاء أول إذن استلام",
