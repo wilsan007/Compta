@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **12 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 12 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **13 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 13 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -470,11 +470,42 @@ client / déjà portée — 5), T04 frise (2), T05 isolation (3). Portes : G2 / 
 `proposition → commande → réception` (Stock) et `ordre de paiement → virement`
 (Trésorerie).
 
+## A3.2 — lot 13 : le groupe de lettrage et ses lignes de journal (migration `758`)
+
+**La famille Comptabilité** (« lettrage ↔ âge de la dette ↔ relance ↔ provision ↔
+écriture de clôture », §B.3) — et surtout **la demande R3 d'A1 restée ouverte** :
+« bâtir le lien `lettrage_groups` ↔ `journal_lines` » (pour INV-07).
+
+**Ce que la mesure a trouvé.** `lettrage_groups` existe (124 / 187) et
+`journal_lines.lettrage_group_id` existe — mais **aucun lien de chaîne** n'est posé
+et `lettrage_groups` **n'est pas au registre** : un lettrage était **invisible pour
+la frise**.
+
+**Ce qui est livré** — migration `758_chain_l16_lettrage_groupes.sql` :
+`lettrage_groups` **entre au registre**, contrat d'effet `rev.line.lettered`, maillon
+`chain_l16_lettrage_group` — il trace **CHAQUE ligne de journal** du groupe vers ce
+groupe (`link_documents`, `created_from`).
+
+**⚠️ Le sens est LIGNE → GROUPE, et c'est MESURÉ.** `link_documents` **fusionne deux
+liens de même amont** (« met à jour son aval au lieu d'empiler », la leçon de la
+`401`) : avec le groupe pour amont, les N lignes ne tenaient qu'**UN** lien — mesuré
+(`liens actifs = 1` pour 2 lignes). Chaque ligne est donc l'amont de son propre lien
+(N liens tiennent, idempotence structurelle).
+
+**Éprouvé** — suite `758` **12/12** sur base neuve : T01 nominal (2), T02 idempotence
+structurelle (2), T03 trois refus (introuvable / annulé / sans ligne), T04 frise dans
+les deux sens (2), T05 isolation (3). Portes : G2 / G8 / `check_tenant_guard` /
+`check_anon_grants` **OK** ; rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste de la Comptabilité** : la **FK composite** `journal_lines → lettrage_groups`
+(doctrine 237, touche `journal_lines` — territoire C) ; provision → écriture de
+clôture ; à-nouveaux ; état de rapprochement.
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
 |---|---|---|---|
-| 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** (pour **INV-07**) | A1 — invariant **INV-07** | **Mesure du 05/10** : `journal_lines.lettrage_group_id` **existe déjà** (124) mais **sans clé étrangère** — un premier tronçon possible (FK composite, doctrine 237). Mais INV-07 lui-même (« le lettrage = la TVA sur encaissements ») est le **lettrage génératif** d'**L21**, **bloqué par L20-tranche 2** |
+| 1 | Bâtir le **lien `lettrage_groups` ↔ `journal_lines`** (pour **INV-07**) | A1 — invariant **INV-07** | **Mesure du 05/10** : `journal_lines.lettrage_group_id` **existe déjà** (124) mais **sans clé étrangère** — un premier tronçon possible (FK composite, doctrine 237). Mais INV-07 lui-même (« le lettrage = la TVA sur encaissements ») est le **lettrage génératif** d'**L21**, **bloqué par L20-tranche 2**. **↳ Livré le 06/10/2026 (`758`)** : le lien de **chaîne** est posé — `journal_lines → lettrage_groups`, effet `rev.line.lettered` — un groupe de lettrage est désormais lisible par la frise. Reste la **FK composite** (doctrine 237), qui touche `journal_lines` (territoire C) |
 
 ## Journal
 
@@ -494,4 +525,5 @@ client / déjà portée — 5), T04 frise (2), T05 isolation (3). Portes : G2 / 
 | 2026-10-11 | A3.2 (lot 9) | **L16 · Commercial · facture → avoir** — le **DIFFÉRÉ fermé** : migration `754` (contrat `sale.invoice.to_credit_note`, maillon `chain_l16_invoice_credit_note` — avoir non brouillon, même client, ne réécrit pas `invoice_id`, lien `reversed_by`). **Décision mesurée** : le statut de la facture n'est PAS un refus (un avoir entier la passe légitimement à `cancelled`) — la 1ʳᵉ version le refusait et cassait le geste normal. Harnais `_mk_validated_invoice` / `_mk_validated_credit_note`. + suite `754` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `06f8975` |
 | 2026-10-11 | A3.2 (lot 10) | **L16 · Achats · réception → facture fournisseur** : migration `755` (contrat `purchase.receipt.to_invoice`, maillon `chain_l16_receipt_supplier_invoice` — même fournisseur, statuts valides, idempotent, **écrit `purchase_invoices.goods_receipt_id`** que le rapprochement trois points 135/148 lisait sans qu'on l'écrive, lien `invoiced_by`). La chaîne Achats `commande → réception → facture → règlement` est **fermée**. + suite `755` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `48078ce` |
 | 2026-10-11 | A3.2 (lot 11) | **L16 · Achats · facture fournisseur → avoir** : migration `756` (`purchase_credit_notes` au registre, contrat `purchase.invoice.to_credit_note`, maillon `chain_l16_supplier_invoice_credit_note` — avoir non brouillon, même fournisseur, ne réécrit pas `purchase_invoice_id`, lien `reversed_by`). **Dernier tronçon de la famille Achats** : Commercial **et** Achats sont désormais complets de bout en bout. + suite `756` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `60839c2` |
-| 2026-10-11 | A3.2 (lot 12) | **L16 · Commercial · facture → relance** : migration `757` (`collection_reminders` au registre, contrat `sale.invoice.to_reminder`, maillon `chain_l16_invoice_reminder` — relance non brouillon/annulée, même client, écrit `invoice_id` si vide, lien `created_from`). **Dernier tronçon du Commercial** ; les familles tenues par A3 sont complètes de bout en bout. + suite `757` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 12) | **L16 · Commercial · facture → relance** : migration `757` (`collection_reminders` au registre, contrat `sale.invoice.to_reminder`, maillon `chain_l16_invoice_reminder` — relance non brouillon/annulée, même client, écrit `invoice_id` si vide, lien `created_from`). **Dernier tronçon du Commercial** ; les familles tenues par A3 sont complètes de bout en bout. + suite `757` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | `f31bde7` |
+| 2026-10-11 | A3.2 (lot 13) | **L16 · Comptabilité · groupe de lettrage → ses lignes de journal** — la **demande R3 d'A1** : migration `758` (`lettrage_groups` au registre, contrat `rev.line.lettered`, maillon `chain_l16_lettrage_group` — trace chaque ligne vers son groupe). **Défaut mesuré et corrigé** : `link_documents` fusionne deux liens de même amont, donc le sens est LIGNE → GROUPE (avec le groupe pour amont, 2 lignes ne tenaient qu'1 lien). + suite `758` enrôlée dans `ci.yml` | suite **12/12** sur base neuve · G2/G8/tenant/anon **OK** · rejouable | _(ce lot)_ |

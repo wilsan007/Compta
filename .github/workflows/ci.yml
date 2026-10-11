@@ -2429,6 +2429,16 @@ jobs:
       - name: 'L16 : facture → relance, rattachée et tracée (757)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/757_chain_l16_relance_tests.sql
 
+      # L16 — chaînage interne COMPTABILITÉ : chaque LIGNE DE JOURNAL d'un groupe de
+      # lettrage est tracée vers son GROUPE (effet `rev.line.lettered`) ; `lettrage_groups`
+      # entre au registre. C'est la demande R3 d'A1 (« bâtir le lien lettrage_groups ↔
+      # journal_lines », pour INV-07). Direction LIGNE → GROUPE : link_documents fusionne
+      # deux liens de même amont, donc l'amont est la ligne (N liens tiennent).
+      # 12 verdicts : nominal (2 lignes), idempotence structurelle, trois refus,
+      # frise (I-01) dans les deux sens, isolation (D8).
+      - name: 'L16 : groupe de lettrage → ses lignes de journal, tracé (758)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/758_chain_l16_lettrage_groupes_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
