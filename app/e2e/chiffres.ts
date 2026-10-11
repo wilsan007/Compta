@@ -7,9 +7,14 @@
 // total de session = somme des tickets, plan comptable non vide).
 //
 // Ces fonctions sont volontairement robustes : elles lisent le **texte visible**
-// et en extraient les montants au format français (« 1 234,56 », « 1.234,56 »,
-// « -12,30 »), plutôt que de dépendre d'un sélecteur de champ qui change à
-// chaque refonte d'écran.
+// et en extraient les montants **dans les deux écritures** (« 1 234,56 » la
+// française, « €100.00 » celle que l'écran rend), plutôt que de dépendre d'un
+// sélecteur de champ qui change à chaque refonte.
+//
+// Quand le corps de page est plein de nombres qui ne sont PAS des montants
+// (quantités entières, numéros, dates), une lecture globale ne suffit plus :
+// `celluleSousEnTete` lit alors **une case**, désignée par son en-tête de
+// colonne et par un texte qui repère sa ligne.
 // ============================================================
 import { type Page } from '@playwright/test'
 
@@ -39,6 +44,36 @@ export function normaliserMontant(s: string): number {
   }
   return Number(t)
 }
+/**
+ * « −2 » (moins typographique), « -2 », « 10 », « 8.00 », « 1 234,56 € » → un
+ * nombre. À la différence d'`extraireMontants`, un **entier est accepté** : ici
+ * on lit une case désignée explicitement, pas tout le corps de page.
+ */
+export function nombreLisible(texte: string): number | null {
+  const t = texte.replace(/[\u2212\u2013\u2014]/g, '-').replace(/[€$\s\u00a0\u202f]/g, '')
+  const m = t.match(/-?\d+(?:[.,]\d+)?/)
+  return m ? normaliserMontant(m[0]) : null
+}
+
+/**
+ * La valeur d'une **case**, désignée par son **en-tête de colonne** et par un
+ * texte qui repère sa **ligne** (un SKU, une référence, un numéro).
+ *
+ * Le rang de la colonne est lu dans l'en-tête, jamais écrit en dur : ajouter une
+ * colonne ne décale pas la mesure. Rend `null` si l'en-tête ou la ligne manque —
+ * le test le dit alors explicitement, au lieu de comparer un chiffre inventé.
+ */
+export async function celluleSousEnTete(page: Page, ligneRepere: string, entete: string): Promise<number | null> {
+  const entetes = await page.locator('table').first().locator('thead th').allInnerTexts()
+  const rang = entetes.findIndex((h) => h.trim().toLowerCase().includes(entete.trim().toLowerCase()))
+  if (rang < 0) return null
+  const ligne = page.locator('table tbody tr').filter({ hasText: ligneRepere }).first()
+  if (await ligne.count() === 0) return null
+  const cellule = ligne.locator('td').nth(rang)
+  if (await cellule.count() === 0) return null
+  return nombreLisible(await cellule.innerText())
+}
+
 
 /** Les montants visibles sur l'écran courant (le corps de la page). */
 export async function montantsVisibles(page: Page): Promise<number[]> {

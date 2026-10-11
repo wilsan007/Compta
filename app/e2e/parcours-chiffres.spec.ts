@@ -1,5 +1,5 @@
 import { test, expect, navigateWithAuth, E2E_CREDENTIALS_CONFIGURED, E2E_SKIP_REASON } from './helpers'
-import { montantsVisibles, chercherRelation, auCentime } from './chiffres'
+import { montantsVisibles, chercherRelation, auCentime, celluleSousEnTete } from './chiffres'
 
 // ============================================================
 // D.5 — les quatre parcours qui LISENT UN CHIFFRE (4.4, AUD-J02)
@@ -62,9 +62,31 @@ test('C3 : un bulletin lit brut − retenues = net (au centime)', async ({ page,
 })
 
 // ── 4. Caisse → la clôture et le stock ──────────────────────
+// « Le stock suit » se MESURE, il ne se déclare pas : la vente en caisse sort
+// l'article du dépôt, et le solde lu sur l'écran des QUANTITÉS doit être
+// exactement le carnet lu sur l'écran des MOUVEMENTS — l'entrée initiale PLUS
+// la sortie (négative). Deux écrans, une seule vérité : si le stock ne suivait
+// pas, le solde mentirait.
 test('C4 : une session de caisse lit un total (le stock suit)', async ({ page, request }) => {
   await navigateWithAuth(page, request, '/pos/sessions')
-  await page.waitForSelector('table tbody tr, h1, h2', { timeout: 15000 })
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
   const montants = await montantsVisibles(page)
   expect(montants.length, 'une session clôturée doit afficher un total').toBeGreaterThanOrEqual(1)
+
+  // Le carnet des mouvements : l'entrée initiale, puis la sortie de la vente.
+  await page.goto('/stock/movements')
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
+  const entree = await celluleSousEnTete(page, 'Stock initial', 'Quantity')
+  const sortie = await celluleSousEnTete(page, 'TK-', 'Quantity')
+  expect(entree, "l'écran des mouvements doit montrer le stock initial de l'article (référence « Stock initial »)").not.toBeNull()
+  expect(sortie, "l'écran des mouvements doit montrer la sortie de la vente (référence « TK-… »)").not.toBeNull()
+  expect(sortie!, 'la sortie d’une vente est un retrait : sa quantité doit être négative à l’écran').toBeLessThan(0)
+
+  // Le solde : ce qui reste en dépôt, lu sur l'écran des quantités.
+  await page.goto('/stock/quantities')
+  await page.locator('table tbody tr').first().waitFor({ timeout: 20000 })
+  const solde = await celluleSousEnTete(page, 'E2E-ART-1', 'Quantity')
+  expect(solde, "l'écran des quantités doit montrer le solde de l'article (SKU E2E-ART-1)").not.toBeNull()
+  expect(auCentime(solde!, entree! + sortie!),
+    `le solde (${solde}) doit être l'entrée (${entree}) + la sortie (${sortie}) — le stock n'a pas suivi la vente`).toBe(true)
 })

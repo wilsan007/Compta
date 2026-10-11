@@ -84,6 +84,7 @@ s'encaisse que sur une session ouverte.
 | une écriture **équilibrée** (100 / 100) | `post_journal_entry` → `validate_journal_entries` |
 | un **bulletin de paie** (2400 → 1842,76) | `generate_pay_run_slips` (le moteur `calculate_payslip`) |
 | une **session de caisse** clôturée (TTC 120, écart 0) | `create_pos_ticket` → clôture |
+| une **sortie de stock** (initial 10, vente 2, solde 8) | article `stock` + mouvement `initial` → `create_pos_ticket` |
 
 ```bash
 E2E_TEST_PASSWORD=… node scripts/qa/amorce-chiffres.mjs   # idempotent
@@ -91,7 +92,11 @@ E2E_TEST_PASSWORD=… node scripts/qa/amorce-chiffres.mjs   # idempotent
 
 Rejouable : relancé, il ne refait rien et le dit. C'est ce que lisent les quatre
 parcours chiffrés (`app/e2e/parcours-chiffres.spec.ts`, D.5) — balance équilibrée,
-`brut − retenues = net`, total de caisse.
+`brut − retenues = net`, total de caisse, et **le stock qui suit la vente** (le
+solde du dépôt doit valoir le carnet des mouvements). Sur une machine partagée,
+viser un port dédié (`PW_BASE_URL=http://localhost:5199 node_modules/.bin/playwright
+test`) : `reuseExistingServer` reprendrait sinon le serveur d'une AUTRE
+application qui occuperait le port (mesuré : ODF Manager sur 5174).
 
 
 ## Doctrine (à respecter)

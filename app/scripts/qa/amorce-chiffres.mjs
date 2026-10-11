@@ -148,7 +148,7 @@ for (const b of paie?.bulletins || []) {
 }
 
 // ── 3. La caisse : encaisser, puis clôturer ────────────────────────────────
-let terminal = un(await lire('pos_terminals?select=id,name&order=name&limit=1'))
+let terminal = un(await lire('pos_terminals?select=id,name,warehouse_id&order=name&limit=1'))
 if (terminal?.id) {
   console.log(`terminal (déjà là) = ${terminal.name} ${terminal.id}`)
 } else {
@@ -200,5 +200,96 @@ if (session.status === 'open') {
 } else {
   console.log(`clôture (déjà faite) = ${session.status}`)
 }
+
+// ── 4. L'article de stock : la vente doit SORTIR du stock ──────────────────
+// Sans article de catalogue, un ticket ne sort RIEN — le maillon le décide (« le
+// cas ordinaire d'abord »). Pour que « le stock suit » soit mesurable, il faut un
+// dépôt, un article de type `stock`, son stock initial — qui est un MOUVEMENT, la
+// base refusant qu'un écran pose `stock_quantity` — puis une vente de cet article.
+let depot = un(await lire('warehouses?select=id,name&order=name&limit=1'))
+if (depot?.id) {
+  console.log(`dépôt (déjà là) = ${depot.name} ${depot.id}`)
+} else {
+  depot = un(await ecrire('warehouses', { code: 'E2E-W1', name: 'Dépôt E2E', active: true }))
+  console.log('dépôt (créé) =', depot?.name, depot?.id)
+}
+if (!depot?.id) process.exit(1)
+
+const SKU_ARTICLE = 'E2E-ART-1'
+let article = un(await lire(`products?select=id,name&sku=eq.${SKU_ARTICLE}`))
+if (article?.id) {
+  console.log(`article (déjà là) = ${article.name} ${article.id}`)
+} else {
+  article = un(await ecrire('products', {
+    name: 'Article E2E', sku: SKU_ARTICLE, type: 'stock', unit: 'u',
+    sale_price: 100, purchase_price: 12, vat_rate: 20, active: true,
+  }))
+  if (!article?.id) {
+    console.error('article : création refusée —', article?.message || JSON.stringify(article))
+    process.exit(1)
+  }
+  const initial = un(await ecrire('stock_movements', {
+    product_id: article.id, warehouse_id: depot.id,
+    movement_type: 'initial', type: 'initial', quantity: 10, unit_cost: 12,
+    reference: 'Stock initial', reference_type: 'inventory', reference_id: null,
+    movement_date: new Date().toISOString().slice(0, 10), notes: null,
+  }))
+  console.log(`article (créé) = ${article.name} ${article.id} — stock initial 10 à 12,00 €`,
+    initial?.id ? '' : 'ÉCHEC ' + JSON.stringify(initial))
+  if (!initial?.id) process.exit(1)
+}
+
+// La caisse sort du dépôt de SON terminal : on rattache le terminal au dépôt.
+if (terminal.warehouse_id !== depot.id) {
+  const maj = un(await ecrire(`pos_terminals?id=eq.${terminal.id}`, { warehouse_id: depot.id }, 'PATCH'))
+  console.log(`terminal rattaché au dépôt =`,
+    maj?.warehouse_id === depot.id ? 'oui' : 'ÉCHEC ' + JSON.stringify(maj))
+}
+
+// La session qui vend l'article, repérée par sa note (idempotence).
+const NOTE_SESSION = 'Article E2E — sortie de stock'
+let sessionArticle = un(await lire(
+  `pos_sessions?select=id,status&notes=eq.${encodeURIComponent(NOTE_SESSION)}&limit=1`))
+if (sessionArticle?.id) {
+  console.log(`session article (déjà là) = ${sessionArticle.id} — ${sessionArticle.status}`)
+} else {
+  sessionArticle = un(await ecrire('pos_sessions', {
+    terminal_id: terminal.id, user_email: EMAIL, opening_amount: 100, status: 'open', notes: NOTE_SESSION,
+  }))
+  if (!sessionArticle?.id) {
+    console.error('session article : ouverture refusée —', JSON.stringify(sessionArticle))
+    process.exit(1)
+  }
+  const ticketArticle = await rpc('create_pos_ticket', {
+    p_ticket: {
+      number: 'TICKET-E2E-0002', session_id: sessionArticle.id, terminal_id: terminal.id,
+      date: new Date().toISOString(), payment_method: 'cash', amount_paid: 240,
+    },
+    p_lines: [{ product_id: article.id, description: 'Article E2E', quantity: 2, unit_price: 100, vat_rate: 20 }],
+    p_payments: null,
+  })
+  if (!ticketArticle?.id) {
+    console.error('ticket article : encaissement refusé —', ticketArticle?.message || JSON.stringify(ticketArticle))
+    process.exit(1)
+  }
+  console.log(`ticket article (créé) = ${ticketArticle.number} | TTC ${ticketArticle.total} — 2 articles vendus`)
+  const fermeArticle = un(await ecrire(`pos_sessions?id=eq.${sessionArticle.id}`, {
+    closing_amount: 340, status: 'closed', closed_at: new Date().toISOString(),
+  }, 'PATCH'))
+  console.log(`clôture article = ${fermeArticle?.status} | attendu ${fermeArticle?.expected_amount}`,
+    `| écart ${fermeArticle?.difference}`)
+}
+
+// La preuve que le stock a SUIVI : une sortie `out` sur le ticket, et un solde
+// qui vaut l'entrée initiale moins cette sortie. Ce qui doit se lire à l'écran.
+const sorties = await lire(`stock_movements?select=movement_type,quantity,reference&product_id=eq.${article.id}&movement_type=eq.out`)
+const soldes = await lire(`stock_quantities?select=quantity,warehouse_id&product_id=eq.${article.id}`)
+console.log('sorties de stock =', Array.isArray(sorties)
+  ? sorties.map((m) => `${m.reference} : ${m.quantity}`).join(', ') || 'aucune'
+  : JSON.stringify(sorties))
+console.log('solde en dépôt =', Array.isArray(soldes)
+  ? soldes.map((s) => `${s.quantity}`).join(', ') || 'aucun'
+  : JSON.stringify(soldes))
+
 
 console.log('AMORCE-CHIFFRES-DONE')

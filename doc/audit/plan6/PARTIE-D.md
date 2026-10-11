@@ -493,7 +493,7 @@ journaux, 1 exercice**).
 | **C1** | inscription → le plan comptable porte des comptes | ✅ **vert** | — (le plan comptable est semé à l'inscription) |
 | **C2** | la balance est équilibrée (débit = crédit) | ✅ **vert** | une écriture équilibrée **100 / 100** |
 | **C3** | bulletin : brut − retenues = net | ✅ **vert** | un salarié + un lot → **le moteur** calcule le bulletin |
-| **C4** | session de caisse : un total | ✅ **vert** | terminal + session → **encaissement** 120 → clôture |
+| **C4** | session de caisse : un total | ✅ **vert** | terminal + session → **encaissement** → clôture ; article de stock vendu — **le stock suit, mesuré** |
 
 **4 verts sur 4.** Mais ce que le passage réel a appris vaut plus que les verts —
 quatre défauts, tous dans **l'outillage de mesure**, aucun dans le produit :
@@ -533,6 +533,16 @@ trouvé, et il se défend encore ici.
 clôture avec un tiroir compté à **220** → attendu **220**, **écart 0**. L'attendu,
 l'écart et l'écriture de clôture sont posés par le **déclencheur de clôture** ;
 l'écran ne fait que relire.
+
+**Et « le stock suit », mesuré (complément du 11/10)** : un dépôt, un article de
+type `stock` (SKU `E2E-ART-1`) dont le stock initial est un **mouvement** de 10 à
+12,00 € (la base refuse qu'un écran pose `stock_quantity`), puis une vente de
+**2** articles en caisse (`TICKET-E2E-0002`, TTC 240). Le parcours C4 lit alors
+**trois nombres sur deux écrans** — l'entrée **+10** et la sortie **−2** sur
+`/stock/movements`, le solde **8** sur `/stock/quantities` — et vérifie
+`10 + (−2) = 8`. Si le stock ne suivait pas la vente, le solde mentirait : la
+sortie de la vente est la **seule** sortie du dépôt. Le ticket sans article ne
+sortait **rien** (le maillon le décide) ; avec l'article, il sort et c'est mesuré.
 
 **Un piège du banc, à savoir** : reconstruire un schéma `public` **efface les
 privilèges par défaut** que Supabase accorde aux nouvelles fonctions
@@ -578,4 +588,5 @@ suite naturelle — pas un contournement.
 | 11/10 | D.5 · base locale | recette | base locale **remontée à neuf** (`00_schema_dump` + **333 migrations, 0 erreur**) + compte recréé ; **C1 vert** ; C2/C3/C4 attendent la « société remplie » (le seed SQL est refusé par `journal_entry_guard`) | runner 333/333 ✅ · playwright **C1 ✅** | `420dff6` |
 | 11/10 | D.5 · parcours | recette | **4 parcours sur 4 VERTS** (C1 → C4). Trois défauts d'**outillage** trouvés par la mesure et corrigés : extracteur de montants (point décimal), visite guidée qui couvrait l'écran, lot de paie à choisir. Paie et caisse amorcées **par le produit** (moteur `calculate_payslip` ; `create_pos_ticket` + clôture) | playwright **4/4** · suite complète **78 verts** · oxlint | `e246de2` |
 | 11/10 | D.5 · rejouable | livrable | **`app/scripts/qa/amorce-chiffres.mjs`** : l'amorçage des trois jeux de chiffres **par l'API du produit** (écriture → `post_journal_entry` puis validation ; paie → le moteur ; caisse → encaissement puis clôture), **idempotent** et documenté (`scripts/qa/SKILL.md`). Le harnais pose `compta-onboarded` par `addInitScript`, **comme la tournée QA** (`worker.mjs`) | exécuté 2× (aucun doublon) · oxlint 0 · suite **78 verts** | `18f77e1` |
+| 11/10 | D.5 · stock | recette | **C4 complété : « le stock suit » est mesuré** — dépôt + article `stock` (initial **10** par un mouvement, la base refusant `stock_quantity`) + vente de **2** en caisse → C4 lit `+10` et `−2` sur `/stock/movements`, **8** sur `/stock/quantities`, et vérifie `10 + (−2) = 8`. Nouvelle lecture ciblée `celluleSousEnTete` (colonne désignée par son **en-tête**, ligne par un repère). **Collision de bancs trouvée** : un serveur d'UNE AUTRE application (ODF Manager) occupait 5174 et `reuseExistingServer` l'a repris — le piège E1 de la config ; remède documenté : `PW_BASE_URL` sur un port dédié (5199) | parcours **4/4** · oxlint 0 | `HASH_STOCK` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |
