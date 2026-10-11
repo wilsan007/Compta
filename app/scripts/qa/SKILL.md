@@ -70,6 +70,30 @@ Les artefacts vont dans `doc/audit/plan6/recette/` (`parcours.json`,
 notes de module de `app/.qa-out/findings.json` s'il existe — donc, idéalement,
 après `npm run qa:run` puis `npm run qa:validate`.
 
+## Amorçage « chiffres » — les parcours qui lisent un montant
+
+La tournée visite **tous** les écrans mais ne lit aucun **chiffre** : une société
+neuve a des listes vides. `amorce-chiffres.mjs` lui donne les **données métier**,
+et il les donne **par l'API du produit** — jamais en SQL, parce que le produit
+l'interdit et c'est tant mieux : le garde des écritures refuse un `posted` inséré
+directement, un bulletin ne se calcule que par le moteur, un ticket de caisse ne
+s'encaisse que sur une session ouverte.
+
+| Ce qu'il amorce | Par quelle fonction |
+|---|---|
+| une écriture **équilibrée** (100 / 100) | `post_journal_entry` → `validate_journal_entries` |
+| un **bulletin de paie** (2400 → 1842,76) | `generate_pay_run_slips` (le moteur `calculate_payslip`) |
+| une **session de caisse** clôturée (TTC 120, écart 0) | `create_pos_ticket` → clôture |
+
+```bash
+E2E_TEST_PASSWORD=… node scripts/qa/amorce-chiffres.mjs   # idempotent
+```
+
+Rejouable : relancé, il ne refait rien et le dit. C'est ce que lisent les quatre
+parcours chiffrés (`app/e2e/parcours-chiffres.spec.ts`, D.5) — balance équilibrée,
+`brut − retenues = net`, total de caisse.
+
+
 ## Doctrine (à respecter)
 
 1. **Local seulement.** `QA_BASE_URL` et `QA_API_URL` doivent être locaux ; le script refuse
