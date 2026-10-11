@@ -6,18 +6,18 @@
 --   T02  les deux tables NOMMÉES existent réellement (le registre ne doit pas
 --        désigner une table absente).
 --
--- Ce que cette suite NE prouve PAS : que la frise d'un devis montre une
--- chaîne. Le **lien** devis → commande n'est pas tracé (mesuré : la
--- transformation écrit dans `document_transformations`, aucun pont vers
--- `document_links`) — c'est un maillon NEUF, du ressort de A3/L16. La suite le
--- dit en T03 plutôt que de le laisser croire.
+-- Ce que cette suite NE prouve PAS : que la frise d'un devis montre une chaîne.
+-- Le **lien** devis → commande est bâti par A3 (`493_chain_l16_devis_commande`,
+-- maillon `convert_quote_to_order`) : c'est **lui** qui crée les liens, pas ce
+-- registre. On l'écrit ici pour que le vert de `475` ne soit pas pris pour un
+-- « la frise du devis marche ».
 -- ============================================================
 \ir ci/audit_helpers.sql
 SELECT set_config('audit.file', '475', false);
 DELETE FROM _audit_results WHERE file = '475';
 
 DO $t01$
-DECLARE r record; n_tables int; n_liens int;
+DECLARE r record; n_tables int;
 BEGIN
   SELECT code, table_name, ligne_table, libelle_fr INTO r
     FROM chain_document_types WHERE code = 'quotes';
@@ -35,14 +35,11 @@ BEGIN
   PERFORM _rec('T02', 'les deux tables nommées existent réellement en base',
     n_tables = 2, format('tables_trouvées=%s/2', n_tables));
 
-  -- ⚠️ T03 DIT CE QUI MANQUE, IL NE LE TAIT PAS. Aucun lien de chaîne ne porte
-  -- aujourd'hui `amont_type = 'quotes'` : la frise d'un devis est donc vide de
-  -- tout amont/aval. On inscrit le constat pour qu'il ne soit pas confondu avec
-  -- un défaut d'écran — c'est le maillon devis → commande (A3/L16) qui manque.
-  SELECT count(*) INTO n_liens FROM document_links WHERE amont_type = 'quotes' OR aval_type = 'quotes';
-  PERFORM _rec('T03', 'constat (à porter par A3/L16) : aucun lien de chaîne ne porte encore le type quotes',
-    n_liens = 0,
-    format('liens_quotes=%s — 0 attendu tant que le maillon devis → commande n''est pas tracé', n_liens));
+  -- ⚠️ ON N'ASSERTE RIEN SUR LES LIENS, ET C'EST DÉLIBÉRÉ. « Aucun lien de type
+  -- `quotes` » n'est **pas** un invariant : dès que le maillon devis → commande
+  -- (A3, `493`) a tourné, des liens existent — et une suite qui l'exigerait à
+  -- zéro deviendrait rouge selon l'**ordre** des suites en CI. Un constat se dit
+  -- dans le fichier de suivi, **jamais** dans une assertion.
 END $t01$;
 
 SELECT _audit_assert('475');

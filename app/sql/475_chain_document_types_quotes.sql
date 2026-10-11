@@ -15,20 +15,20 @@
 -- de la chaîne commerciale (« devis en amont », dit le commentaire de la
 -- commande de vente dans `SalesOrdersPage`).
 --
--- **CE QUE CETTE MIGRATION NE FAIT PAS — ET C'EST LE POINT.**
--- Inscrire le type donne le **libellé** ; il **ne crée aucun lien**. Or la
--- transformation devis → commande (`transformQuoteToSalesOrder`, côté écran)
--- écrit dans `document_transformations` — **pas** dans `document_links`
--- (mesuré le 05/10 : aucun pont en base entre les deux). La frise d'un devis
--- reste donc **« isolée »** tant que le lien **devis → commande n'est pas
--- tracé** : c'est un **maillon NEUF** (L16, « chaînages internes »), donc le
--- territoire de **A3** — pas un enregistrement au registre. **Demande
--- consignée dans `doc/audit/plan6/PARTIE-A1.md` (R3).**
+-- **CE QUE CETTE MIGRATION NE FAIT PAS.** Inscrire le type donne le **libellé** ;
+-- il **ne crée aucun lien**. Le lien devis → commande est un **maillon** — et
+-- **A3 l'a posé** (`493_chain_l16_devis_commande`, effet `sale.quote.to_order`,
+-- maillon `convert_quote_to_order`). Cette migration-ci ne pose **que** le
+-- registre.
 --
--- **Ce que l'inscription débloque DÉJÀ** : dès que le maillon existera, ses
--- nœuds devis porteront leur nom **sans autre changement** ; et l'écran du
--- devis (`QuotesPage`) peut appeler `getChain('quotes', id)` sans libellé de
--- repli forcé.
+-- **DOUBLON CONNU, SANS CONFLIT.** La `493` (A3) inscrit `quotes` avec **les
+-- mêmes valeurs** — c'est un préalable de son maillon. Deux upserts identiques :
+-- le second ne change rien. Les deux numéros sont licites (`475` plage A1,
+-- `493` plage A3) ; **l'intégration tranchera** s'il faut en retirer un.
+--
+-- **Ce que l'inscription débloque** : les nœuds devis de la Vue Chaîne portent
+-- leur nom (`chain_document_arborescence` lit `d.libelle_fr`), et l'écran du
+-- devis (`QuotesPage`) peut appeler `getChain('quotes', id)`.
 --
 -- **Doctrine reprise de la `450`** : la ligne est posée en
 -- `ON CONFLICT (code) DO UPDATE`, donc **rejouable** ; le registre reste la

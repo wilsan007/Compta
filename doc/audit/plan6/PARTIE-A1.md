@@ -95,7 +95,7 @@ sont **lues**). A2 n'a donc, a priori, qu'à **brancher la page**.
 | 1 | Ajouter une colonne numérique à `dsn_declarations` (ex. `gross_declared`), **écrite par la génération DSN** | **B** (paie) | rend **INV-10** mesurable |
 | 2 | **Choisir le calcul de marge projet unique** (PROJ-02), puis le figer | **E/F** | rend **INV-12** mesurable |
 | 3 | Bâtir le lien `lettrage_groups` ↔ `journal_lines` | **A3** (lettrage, L16 → L22) | rend **INV-07** mesurable |
-| 4 | **Tracer le lien devis → commande** (`document_links`) — aujourd'hui la transformation écrit dans `document_transformations` seul | **A3** (L16, chaînages internes) | rend la **frise du devis** utile (sinon « isolée ») ; le registre `475` est déjà prêt |
+| 4 | ✅ **SATISFAITE par A3** — le lien devis → commande est tracé (`493_chain_l16_devis_commande`, effet `sale.quote.to_order`) | **A3** (L16) | la frise du devis est utile **depuis** `493` ; `475` n'ajoute que le **libellé** (les deux inscrivent `quotes` : upserts identiques, sans conflit) |
 
 ## Ce que cette ligne débloque (à transmettre par l'intégration)
 
@@ -154,15 +154,28 @@ devis — il **ne crée aucun lien**. Or la transformation devis → commande
 devis reste donc « isolée »** — et la suite le **dit** (T03 : `liens_quotes = 0`)
 plutôt que de le laisser croire.
 
-**Conséquence.** Ce n'est pas un enregistrement au registre qui débloque la
-frise du devis, c'est un **maillon neuf** (devis → commande) — **territoire
-A3**, lot **L16**. **Demande n° 4** ci-dessus. Ce que `475` débloque **déjà** :
-dès que le maillon existera, les nœuds devis porteront leur nom **sans autre
-changement**.
+**Et la boucle est déjà fermée : A3 l'a fait.** Le maillon devis → commande
+**existe** (`493_chain_l16_devis_commande`, effet `sale.quote.to_order`, maillon
+`convert_quote_to_order`) — la **demande n° 4 est satisfaite**. La `493` inscrit
+`quotes` avec **les mêmes valeurs** que `475` : **deux upserts identiques, sans
+conflit** (numéros licites, plages A1 et A3 distinctes) ; **l'intégration
+tranche** s'il faut en retirer une.
 
-**Preuves** : `migration:verifier` (SOC-06) **0 collision** sur 253 numéros ·
-`check-test-suites` **151/151 branchées**, aucune fantôme · suite `475` **3/3**
-(jouée sur base complète, migration appliquée).
+**Ce que `475` débloque, dès maintenant** : les nœuds devis de la Vue Chaîne
+portent leur **nom** (`chain_document_arborescence` lit `d.libelle_fr`), et
+l'écran du devis peut appeler `getChain('quotes', id)`.
+
+**Preuves** : suite `475` **2/2** (T01 le registre, T02 les tables réelles —
+jouée sur base complète, migration appliquée) · `migration:verifier` (SOC-06)
+**0 collision** sur 253 numéros · `check-test-suites` **151/151 branchées**,
+aucune fantôme.
+
+> **Une assertion retirée, et pourquoi.** La première version de la suite
+> affirmait `liens_quotes = 0` (« la frise d'un devis est isolée »). C'était une
+> **faute d'instrument** : ce **n'est pas un invariant** — dès que le maillon
+> d'A3 tourne, des liens existent, et la suite serait devenue rouge selon
+> l'**ordre des suites en CI**. Un constat se dit **ici**, jamais dans une
+> assertion.
 
 ## Journal
 
