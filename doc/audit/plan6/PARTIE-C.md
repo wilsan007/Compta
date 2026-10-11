@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : POS `387`, stock/production `388`** ; **LOC1-08 : affectation/écarts `389`** ; reste → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : POS `387`, stock/production `388`** ; **LOC1-08 : affectation/écarts `389`, clôture `390`** ; reste → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -212,8 +212,15 @@ n'avait pas de rôle). **Écritures identiques** — la recette « balance d'ouv
 N+1 identique à l'actuelle au centime » est tenue par construction. Validé :
 `389` 5/5, suites `179`/`175` OK.
 
-**Ensuite (`390`)** : `close_fiscal_year` (journal `CL`, `AN`, comptes
-`120000`/`129000`) — même méthode, même résultat.
+**`390_roles_close_fiscal_year.sql` (+ suite)** — `close_fiscal_year` : journaux
+`CL` (clôture) et `AN` (à-nouveaux), et comptes de résultat `120000`/`129000`,
+**par les rôles**. **Écritures identiques**. Validé : `390` 4/4, suites `179`/`175`
+OK — la recette « balance d'ouverture N+1 identique à l'actuelle au centime » est
+tenue.
+
+⚠ **Ce que `390` ne touche pas** : la SÉLECTION des comptes à solder reste par
+**classe** (`~ '^[67]'`) — c'est `LOC1-11`, pas 08 (le cahier renvoie au gabarit
+`income_statement`, `LOC1-38`, non construit).
 
 **Non fait, et pourquoi** : `generate_depreciation_entry` — ses littéraux
 `280000`/`681000` ne correspondent **pas** aux rôles (`AMORTISSEMENTS` est par
@@ -308,4 +315,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 05/10 | LOT 1-B (LOC1-06) | 4 triggers | facture de vente, facture d'achat, encaissement et décaissement passent par les **rôles** (`resolve_account`/`resolve_journal`) ; **pont** « société sans pack → pack par défaut » ; recette `102_trigger_tests` **17/17 inchangé** ; suite `386` prouve l'absence de numéro en dur | base : `386` 5/5 ; **10 contrôles CI verts** ; suites d'écritures (170/175/178/180…) OK | c57a9d3 |
 | 05/10 | LOC1-07 (tranche POS) | `post_pos_session_on_close_multi` | la clôture de caisse demande ses rôles (`JOURNAL_POS`, `VENTES_MARCHANDISES`, `TVA_COLLECTEE`) ; **2 rôles de journaux ajoutés** au catalogue (`JOURNAL_POS`, `JOURNAL_PRODUCTION`) et au pack PCG | base : `387` 5/5 ; suites POS `219`/`250`/`281` OK ; **10 portes CI vertes** | 542f624 |
 | 06/10 | LOC1-07 (tranche stock/production) | `create_journal_on_stock_movement`, `create_stock_on_manufacturing_complete`, `resolve_stock_account` | stock et OF sur les rôles (journal `ST`/`OF`, comptes `601000`/`310000`/`355000`/`713500`) ; **écritures identiques** ; décisions du 06/10 documentées (pas de taxonomie d'article ; `613000` intact ; variation `603000`) | base : `388` 5/5 ; suites stock `173`/`240`/`241`/`230` + `102` OK ; **10 portes CI vertes** | 2b56d46 |
-| 06/10 | LOC1-08 (tranche affectation/écarts) | `allocate_result`, `generate_residual_entry` | affectation du résultat et écarts de lettrage sur les rôles ; **rôle `JOURNAL_CLOTURE`→`CL` ajouté** ; écritures identiques | base : `389` 5/5 ; suites `179`/`175` OK ; **10 portes CI vertes** | (ce commit) |
+| 06/10 | LOC1-08 (tranche affectation/écarts) | `allocate_result`, `generate_residual_entry` | affectation du résultat et écarts de lettrage sur les rôles ; **rôle `JOURNAL_CLOTURE`→`CL` ajouté** ; écritures identiques | base : `389` 5/5 ; suites `179`/`175` OK ; **10 portes CI vertes** | 29aac80 |
+| 06/10 | LOC1-08 (clôture d'exercice) | `close_fiscal_year` | journaux `CL`/`AN` et comptes de résultat `120000`/`129000` par les rôles ; écritures identiques ; la sélection par CLASSE reste (`LOC1-11`) | base : `390` 4/4 ; suites `179`/`175` OK ; **10 portes CI vertes** | (ce commit) |
