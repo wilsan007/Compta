@@ -121,6 +121,8 @@
     "amount": "Montant",
     "status": "Statut",
     "lines": "Lignes de commande",
+    "description": "Description",
+    "quantity": "Quantité",
     "addLine": "Ajouter une ligne",
     "confirm": "Confirmer la commande",
     "receive": "Réceptionner",

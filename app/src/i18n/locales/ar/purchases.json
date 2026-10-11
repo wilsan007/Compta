@@ -121,6 +121,8 @@
     "amount": "المبلغ",
     "status": "الحالة",
     "lines": "بنود الأمر",
+    "description": "الوصف",
+    "quantity": "الكمية",
     "addLine": "إضافة بند",
     "confirm": "تأكيد الأمر",
     "receive": "استلام",

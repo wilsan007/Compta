@@ -121,6 +121,8 @@
     "amount": "Amount",
     "status": "Status",
     "lines": "Order lines",
+    "description": "Description",
+    "quantity": "Quantity",
     "addLine": "Add a line",
     "confirm": "Confirm order",
     "receive": "Receive",
