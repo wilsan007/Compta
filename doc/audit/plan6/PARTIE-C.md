@@ -295,7 +295,8 @@ dans `db-integration`, **avant les suites** (ce sont elles qui créent des
 fixtures — même ordre que `check_bt_grid`).
 
 **Mesure du 11/10** (base neuve, 347 migrations) : **41** occurrences au front
-(20 fichiers) et **24** en SQL (14 fonctions).
+(20 fichiers) et **24** en SQL (14 fonctions) — **16 après la `394`** (voir la
+tranche 2 ci-dessous).
 
 | Gisement | Le gros du compte |
 |---|---|
@@ -309,6 +310,21 @@ côté SQL `seed_standard_chart(_unchecked)` — le **gabarit du plan comptable*
 dont les littéraux **sont** le plan semé (colonnes `code`/`name`). On ne
 « résout » pas le plan par lui-même : **son propriétaire est `LOC1-13`**.
 
+**Tranche 2 (`394_roles_comptes_1.sql`) — les six fonctions courtes.** Les
+correspondances étaient **exactes**, donc aucune écriture ne change :
+`treasury_for_payment` (530000 → `CAISSE`, 512000 → `BANQUE`, **et** ses journaux
+CA/BQ → rôles), `letter_advance_invoice` (419100 → `CLIENTS_AVANCES_RECUES`),
+`sync_customer_third_party_account` (411000 → `CLIENTS`),
+`sync_supplier_third_party_account` (401000 → `FOURNISSEURS`),
+`backfill_third_party_accounts` (411000 / 401000 / 421000 → `CLIENTS` /
+`FOURNISSEURS` / `PERSONNEL_REMUNERATIONS_DUES`),
+`sync_commitments_on_purchase_order` (607000 → `ACHATS_MARCHANDISES`).
+
+Le **compteur mesure la baisse tout seul** : SQL **24 → 16**, et le plafond a été
+abaissé dans le même commit — c'est exactement ce que la doctrine « le compteur
+ne peut que descendre » doit produire. `394` 4/4 ; suites
+`102`/`170`/`175`/`180`/`192`/`312` + chaînes `400`/`403`/`412` OK.
+
 **Ce qui manque pour vider les compteurs** (mesuré, pas supposé) :
 
 1. **Le résolveur côté front n'existe pas.** `resolveAccount` / `usePack` sont
@@ -316,10 +332,16 @@ dont les littéraux **sont** le plan semé (colonnes `code`/`name`). On ne
    remplacée avant qu'il existe. C'est la **tranche suivante** de `LOC1-10`, et
    elle vaut pour toutes les autres tâches qui produisent des comptes (LOC1-13,
    LOC1-26, LOC1-38…).
-2. **Les 24 occurrences SQL** sont dans les fonctions d'écriture — le territoire
-   de C. Elles se traitent **fonction par fonction**, comme `LOC1-09` : mêmes
-   rôles déjà en place, écritures à vérifier identiques, compteur qui **baisse**
-   à chaque tranche (le garde-fou le prouve).
+2. **Il reste 13 occurrences SQL** (sur les 24 mesurées) dans cinq fonctions
+   d'écriture — le territoire de C : `credit_note_guard` 3,
+   `purchase_credit_note_guard` 3, `propagate_analytic_section` 3,
+   `post_pos_session_on_close` 2, `post_exchange_gain_loss_on_payment` 2. Elles
+   se traitent **fonction par fonction**, comme `LOC1-09` : rôles déjà en place,
+   écritures à vérifier identiques, compteur qui **baisse** à chaque tranche.
+   Les **3 dernières** (`generate_depreciation_entry` 2,
+   `ensure_pos_payment_methods` 1) sont **arbitrées** : le pack ne porte pas les
+   mêmes numéros (681100 contre 681200 ; 511000 contre 511200) — les réécrire
+   **changerait les écritures**.
 3. **Six fichiers du front ne sont pas à C** (R3) : `queries/payroll.ts` (paie →
    **D1**, partie B), `ProductsPage` (**D2**, partie E), `InvoicesPage` /
    `CreditNotesPage` (ventes), `SuppliersPage` / `CustomersPage` (tiers). Les
@@ -490,4 +512,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 11/10 | LOC1-09 (tranche 1) | `bank_account_post_opening_balance`, `stock_initial_post_opening_entry`, `post_exchange_gain_loss_on_payment` | journaux `AN`/`OD` par les rôles ; écritures identiques ; **le reste (6 fonctions) est FIGÉ et gardé** par la suite `391` (T03) | base : `391` 4/4 ; suites `173`/`211`/`102` OK ; **10 portes CI vertes** | eb47800 |
 | 11/10 | LOC1-09 (tranche 3, **la dernière**) | `credit_note_guard`, `purchase_credit_note_guard`, `generate_depreciation_entry`, `revaluate_currency_balances` | journaux `VT`/`AC`/`OD` par les rôles ; écritures identiques ; **LOC1-09 TERMINÉ** — garde de `391` (T03) resserré à **liste blanche vide**, `392` (T02) borné, `393` (T02) constate **zéro restant** ; gardes rendus **insensibles aux fixtures** (`_…`, suites `325`/`462`) ; suites datées `383`/`384`/`385` réalignées sur l'état réel ; `105` doté d'un **semis dédié** à `legislation_packs` (son isolation est de nouveau **prouvée**) | base neuve : **347 migrations / 0 erreur** ; `393` 4/4, `391` 4/4, `392` 4/4, `383` 6/6, `384` 7/7, `385` 6/6, `105` 356/356 0 fuite ; suites d'écritures (`102`/`180`/`192`/`197`/`211`/`213`/`226`/`255`/`260`/`309`/`317`/`353`) et chaînes (`400`/`403`/`412`) OK ; **10 portes CI vertes** ; G5 164/164. ⚠ `check_bt_grid` **ROUGE** : dette de la `383` (`tenant_account_roles`, `tenant_journal_roles` non forcées), **à trancher** — voir « Trouvé en chemin » | 48a6c86 |
 | 11/10 | LOC1-10 (tranche 1) | `check-country-neutral.mjs` — garde-fou **E01** | Le cahier donne pour recette « le garde-fou E01 passe sur `app/src` » : il est **livré**. Règle E01 de l'annexe E sur **deux gisements** — `app/src/**/*.{ts,tsx}` et les définitions **effectives** (`pg_proc.prosrc`) ; plafond **gelé** (`app/.country-neutral-ceiling.json` : une hausse casse, une baisse abaisse) ; **deux registres d'exceptions motivées** (un `placeholder="12345"` côté front, le **gabarit de plan comptable** côté SQL → propriétaire `LOC1-13`) ; câblé dans `lint-typecheck` (`--front-only`) et `db-integration` (complet, **avant** les suites) | Mesure : **41 occurrences front / 24 SQL** (gelées) ; le garde-fou passe dans les deux modes et au 2ᵉ passage (idempotent) ; **347 migrations / 0 erreur** | 4bfff61 |
+| 11/10 | LOC1-10 (tranche 2) | `treasury_for_payment`, `letter_advance_invoice`, `sync_customer/supplier_third_party_account`, `backfill_third_party_accounts`, `sync_commitments_on_purchase_order` | Six fonctions courtes passent par les **rôles** — correspondances **exactes**, donc écritures identiques : `CAISSE` 530000, `BANQUE` 512000 (+ leurs journaux `CA`/`BQ` par `resolve_journal`), `CLIENTS` 411000, `FOURNISSEURS` 401000, `PERSONNEL_REMUNERATIONS_DUES` 421000, `CLIENTS_AVANCES_RECUES` 419100, `ACHATS_MARCHANDISES` 607000. Les replis sont résolus **là où ils servent** (une mise à jour de statut ne dépend pas du mappage du pack) | Le garde-fou **mesure la baisse** : **E01 SQL 24 → 16**, plafond abaissé dans le même commit ; `394` 4/4 ; suites `102`/`170`/`175`/`180`/`192`/`312` + chaînes `400`/`403`/`412` OK ; G5 165/165 | à venir |
 | 11/10 | LOC1-09 (tranche 2) | `integrate_expense_report_on_approval`, `post_deferred_charge` | journal `OD` par le rôle ; le garde `391` (T03) **verrouille l'ensemble** et empêche toute nouvelle occurrence ; **reste 4 fonctions** (tranche 3) | base : `392` 4/4, `391` 4/4 ; suites `211`/`102` OK ; **10 portes CI vertes** | (ce commit) |

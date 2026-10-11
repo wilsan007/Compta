@@ -2413,6 +2413,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      - name: 'LOC1-10 (tranche 1) : les comptes en dur des fonctions courtes'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/394_roles_comptes_1_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:d --- qualité des écrans, recette, livraison ---
       # Territoire : app/src/pages, app/src/components, e2e/, scripts/qa,
       #              app/src/__screen__, job Playwright
