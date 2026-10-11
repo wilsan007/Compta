@@ -2490,6 +2490,28 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.6 / ADM-04 — les modèles de documents (couleurs, logo, configuration).
+      # Mesuré avant : CINQ politiques sur `document_templates`, dont une `FOR ALL`
+      # qui recouvrait silencieusement les quatre par commande (famille ISO-03) ;
+      # aucune règle « un seul modèle par défaut et par TYPE » ; l'identité du
+      # modèle (nom vide, couleur « bleu » ou `#12345`, `template_config` tableau)
+      # n'était pas contrainte ; le logo n'était gardé par RIEN (une URL interne
+      # passait) ; et `authenticated` détenait `REFERENCES` et `TRIGGER` sur la
+      # table. Livré : index unique PARTIEL `uniq_document_templates_defaut`
+      # (un défaut par société et par type), RPC `set_default_document_template`
+      # (bascule transactionnelle, refus nommés), UNE politique par commande
+      # gardée par `can_perform`, quatre `CHECK` d'identité, déclencheur
+      # `validate_document_template` qui appelle la garde SSRF du dépôt
+      # (`is_allowed_webhook_url`, 154/167), retrait de `REFERENCES`/`TRIGGER`.
+      # Et une REPRISE des lignes déjà sales (nom vide, couleur non HEX, config
+      # non objet) — la table existante n'est pas laissée incohérente.
+      # Mesuré : 13 rouges / 1 vert AVANT (le vert est la non-régression — `anon`
+      # n'avait déjà aucun droit), 14/14 après.
+      - name: 'F.6 : modèles de documents (ADM-04) — un défaut par type, identité contrainte (713)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/713_modeles_documents_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
 
 
   # ─────────────────────────────────────────────

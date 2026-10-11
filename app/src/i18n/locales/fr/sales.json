@@ -402,6 +402,10 @@
     "color": "Couleurs",
     "empty": "Aucun modèle de document",
     "created": "Modèle créé avec succès",
+    "default": "Défaut",
+    "defaultLabel": "Défaut",
+    "setDefault": "Définir par défaut",
+    "defaultSet": "Modèle défini par défaut",
     "types": {
       "invoice": "Facture",
       "quote": "Devis",

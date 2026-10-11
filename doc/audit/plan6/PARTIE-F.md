@@ -23,7 +23,7 @@
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
 | F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | ✅ **livré le 05/10** — PRJ‑04 (`706`), PRJ‑02 (`708`), CRM‑01 (`709`), CRM‑02 (`710`) ; **PRJ‑08 (automatisations)** est un **moteur de règles** : **transféré à la partie A** (L22/L23 — R3/R7, voir ci‑dessous) |
-| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 (`707`) et API‑03 (`711`) livrés le 05/10, NOT‑01 (`712`) le 11/10** ; **NOT‑02, BI‑01, ADM‑04 restent** |
+| F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 (`707`) et API‑03 (`711`) livrés le 05/10, NOT‑01 (`712`) et ADM‑04 (`713`) le 11/10** ; **NOT‑02 et BI‑01 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
 
@@ -560,6 +560,56 @@ signatures **identiques** à celles d'avant la 712, donc les trois appels du fro
 `mark_all_notifications_read`) sont intacts.
 
 
+## F.6 — quatrième lot livré le 11/10 (ADM‑04, modèles de documents)
+
+**Le constat.** `document_templates` avait un index **unique sans condition** sur
+`(tenant_id, document_type, is_default)` : il interdisait deux modèles pour le
+même type, mais ne garantissait **pas** qu'un seul fût marqué « défaut » —
+`is_default` était un simple booléen que le front posait par `UPDATE` direct
+(cas d'égalité : deux `true` côte à côte, l'ancien système de validation ne
+faisait rien). La `FOR ALL` (`document_templates_tenant`) s'ajoutait aux autres
+politiques et les annulait (ISO‑03), et les trois commandes d'écriture n'avaient
+pas de garde de rôle (PERM‑01). `name`, `primary_color`/`secondary_color` et
+`config` n'étaient pas contraints. `logo_url` était une URL quelconque (SSRF).
+
+**Livré** : migration `713` — 7 gestes :
+
+1. **Index unique partiel** : `idx_document_templates_one_default` sur
+   `(tenant_id, document_type) WHERE is_default` — le `is_default` est retiré du
+   vieil index (qui reste pour la déduplication), un nouvel index partiel
+   garantit **un seul défaut par type** ;
+2. **Bascule transactionnelle** : `set_default_document_template(uuid)` —
+   `SECURITY DEFINER`, `can_perform` opposable, `anon` révoqué, démarquage de
+   l'ancien puis marquage du nouveau **dans la même requête** (pas de
+   fenêtre sans défaut) ;
+3. **`FOR ALL` retirée** (ISO‑03) + 3 commandes × `can_perform` (PERM‑01, D‑6 :
+   c'est un réglage de société) ;
+4. **CHECK** : `name` ≤ 100, couleurs hexa `^#[0-9a-fA-F]{6}$`, `config` JSONB
+   objet ;
+5. **SSRF** : déclencheur `zz_713_check_logo_url` qui refuse un `logo_url`
+   non approuvé (réutilise `is_allowed_webhook_url`) ;
+6. **Reprise** : couleurs invalides → valeurs par défaut (`#2563eb` / `#64748b`),
+   `config` non objet → `NULL` ;
+7. **Écran** : colonne « Défaut » + bouton « Définir par défaut » branché sur
+   la RPC (pas un INSERT direct — l'écran appelait jusqu'ici `supabase.from()`
+   pour tout), i18n fr/en/ar à parité.
+
+**Mesuré** : suite `713` **14/14** (T01→T14), et **11 rouges / 3 verts** sur
+l'état d'avant. Portes : G7 `check_forced_rls_writers` → tables_forcees
+318→332, muettes 18→21 ; G5 **164/164** ; tous les contrôles CI verts
+(`check_bt_grid`, `check_composite_fks`, `check_anon_grants`, `check_tenant_guard`,
+`check_status_writes`, `check_roles_opposables`, `check_policy_duplicates`,
+`check_global_rows_writable`).
+
+⚠️ **Limites dites** : (1) `is_default` n'est pas encore **lu** par un moteur de
+rendu — le PDF, les factures et les devis ne consultent pas le flag. Ce lot rend
+la donnée **vraie** ; il ne la rend pas encore **utile**. (2) `logo_url` peut
+être vide (le déclencheur ne s'active que si la colonne est non NULL). (3) Les
+`CHECK` sur les couleurs s'appliquent à l'écriture seule — les lignes déjà en
+base n'ont pas été vérifiées (la reprise ne corrige que `config` et les
+couleurs non-hexa). (4) `plpgsql_check` est absent de l'image locale (contrôle
+non exécutable ici, comme pour les lots voisins).
+
 ## PRJ‑08 (automatisations de projet) — **transféré à la partie A** (R3)
 
 Le suivi range `PRJ‑08` sous « ➜ **L22/L23** » : les automatisations de projet sont
@@ -609,3 +659,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.5 PRJ‑08 (automatisations de projet) | **transféré à la partie A** (L22/L23, moteur de règles — R3/R7 : un second moteur serait un doublon). Demandé dans ce fichier, à transmettre par l'intégration | — | — |
 | 05/10/2026 | F.6 connecteurs métier (API‑03) | **livré** : `711` (connecteur à type/auth contraints, jamais de secret — seulement son nom, URL validée par la garde SSRF du dépôt : HTTPS + hôte public) + suite 8/8 + écran Paramètres→Connecteurs métier + i18n. Plafonds : `tables_tenant` 373→374 ; `unused-tables` 64→63 | 1 j | `plan6/f-plateforme` |
 | 11/10/2026 | F.6 notifications personnelles (NOT‑01) | **livré** : `712` — les 4 politiques RLS bornées au **DESTINATAIRE**, appel sans argument = « moi », `user_id IS NULL` = diffusion (visible de tous, marquable par chacun), `anon` révoqué, `authenticated` en **lecture seule**, destinataire non‑membre ramené à la diffusion (déclencheur), bulletin de paie adressé au **compte** du salarié, marqueur serveur pour les déclencheurs du dépôt. Correctif **entièrement en base** (front intact) + suite `712` **13/13** et **10 rouges / 3 verts** sur l'état d'avant (reconstruit verbatim depuis la 93). G5 **163/163** ; plafonds **inchangés** (aucune table, aucun changement de schéma) | 1 j | `plan6/f-plateforme` |
+| 11/10/2026 | F.6 modèles de documents (ADM‑04) | **livré** : `713` — unicité partielle `(tenant_id, document_type) WHERE is_default` (un seul défaut par type), bascule transactionnelle `set_default_document_template` (SECURITY DEFINER, `can_perform` opposable, démarquage automatique de l'ancien), `FOR ALL` retirée (ISO‑03), 3 commandes × `can_perform` (PERM‑01/D‑6), CHECK (`name ≤ 100`, couleurs hexa `^#[0-9a-fA-F]{6}$`, `config` JSONB objet), SSRF sur `logo_url` (réutilisation de `is_allowed_webhook_url`), reprise des couleurs invalides et du config non‑objet. Suite **14/14** (T01→T14) et **11 rouges / 3 verts** sur l'état d'avant. Écran : colonne « Défaut » + bouton « Définir par défaut » (RPC, pas INSERT direct) + i18n fr/en/ar à parité. Plafonds G7 : `tables_forcees` 318→332, `muettes` 18→21 | 0,5 j | `plan6/f-plateforme` |

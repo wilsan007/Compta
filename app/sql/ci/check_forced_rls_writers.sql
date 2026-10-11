@@ -31,16 +31,29 @@
 -- diagnostic**, exécutable en une commande.
 --
 -- LA RÈGLE DU PLAFOND (celle de G1). Mesuré sur base neuve, 02/10/2026 :
---     * **318** tables sous `FORCE ROW LEVEL SECURITY` (03/10/2026 : 461 metric_definitions,
---       puis à l'harmonisation 414 chain_invariant_alertes et 433 chain_banc_maillons,
---       chain_banc_resultats ;
---       314 le 02/10 avec la 415 : webhook_delivery_queue) ;
---     * dont **18** (03/10/2026, harmonisation : +1 `chain_invariant_alertes` de la 414,
---       +2 `chain_banc_maillons` / `chain_banc_resultats` de la 433 ;
---       +1 `metric_definitions` de la 461 — dictionnaire en
---       lecture seule pour l'écran, écrit par les seules migrations ; 14 le 02/10)
---       sans AUCUNE politique d'écriture — c'est l'exposition : leur
---       propriétaire ne peut pas écrire dès qu'il n'est ni super ni bypass ;
+--     * **332** tables sous `FORCE ROW LEVEL SECURITY` — 318 au 03/10/2026
+--       (461 metric_definitions, puis à l'harmonisation 414 chain_invariant_alertes
+--       et 433 chain_banc_maillons / chain_banc_resultats ; 314 le 02/10 avec la
+--       415 : webhook_delivery_queue), **+14 le 05/10/2026** par la partie F
+--       (plan 6, branche plan6-f-plateforme) : 702 (`groups`, `group_members`,
+--       `intra_group_transactions` — le groupe, GRP-01/02), 704
+--       (`collective_agreements`, `collective_classifications` — deux tables de
+--       la 123 qui portaient RLS sans FORCE, corrigées ISO-04), 705
+--       (`job_postings`, `job_applications` — recrutement RH-03), 706
+--       (`custom_field_definitions`, `custom_field_values` — champs
+--       personnalisés PRJ-04), 708 (`resource_capacities` — PRJ-02), 709
+--       (`crm_sequences`, `crm_sequence_steps` — CRM-01), 710
+--       (`crm_scoring_rules` — CRM-02), 711 (`business_connectors` — API-03).
+--       Chaque table neuve est créée sous `FORCE ROW LEVEL SECURITY` : la hausse
+--       n'est pas une dérive, c'est la doctrine du dépôt appliquée aux tables
+--       neuves ;
+--     * dont **21** (03/10/2026 : 18 ; **+3 le 05/10/2026** par la 702 —
+--       `groups`, `group_members` et `intra_group_transactions`, MUETTES par
+--       dessein : leurs colonnes ne s'écrivent que par les RPC `SECURITY DEFINER`
+--       du groupe (`create_group`, `add_group_member`, …), jamais par le client —
+--       même doctrine que `chain_invariants`) sans AUCUNE politique d'écriture —
+--       c'est l'exposition : leur propriétaire ne peut pas écrire dès qu'il n'est
+--       ni super ni bypass ;
 --     * les **six** tables du socle en font partie, et c'est le lien avec L3.
 --     * +2 et +2 pour la **413** (L4, invariants) : `chain_invariants` et
 --       `chain_invariant_results`. Elles sont volontairement muettes — le
@@ -88,8 +101,8 @@ SELECT (SELECT count(*) FROM g7_exposition) AS tables_forcees,
 -- Plafond DATÉ (une ligne à mettre à jour, jamais à relever sans la mesurer)
 CREATE TEMP TABLE g7_plafond (nom text PRIMARY KEY, plafond int);
 INSERT INTO g7_plafond VALUES
-  ('tables_forcees', 318),
-  ('muettes',         18);
+  ('tables_forcees', 332),
+  ('muettes',         21);
 
 DO $$
 DECLARE
