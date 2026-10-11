@@ -54,11 +54,11 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- ─────────────────────────────────────────────────────────────
--- T03 — le RESTE est FIGÉ : exactement les 6 fonctions à traiter ensuite
---       (une nouvelle occurrence fait échouer — c'est le garde-fou E03)
+-- T03 — aucune NOUVELLE fonction n'écrit un journal littéral
+--       (le reste recule à chaque tranche ; il ne doit jamais GROSSIR)
 -- ─────────────────────────────────────────────────────────────
 DO $$
-DECLARE v_restant text;
+DECLARE v_restant text; v_nouveau int;
 BEGIN
   SELECT string_agg(p.proname, ', ' ORDER BY p.proname) INTO v_restant
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -66,11 +66,17 @@ BEGIN
     AND p.prosrc ~ '''(VT|AC|OD|AN|BQ|CA|ST|POS|OF|CL)'', *''draft'''
     AND p.proname <> 'ensure_standard_journals';
 
-  PERFORM _rec('T03', 'le reste des journaux en dur est FIGÉ (6 fonctions, traitées ensuite) — aucune nouvelle occurrence',
-    v_restant = 'credit_note_guard, generate_depreciation_entry, integrate_expense_report_on_approval, post_deferred_charge, purchase_credit_note_guard, revaluate_currency_balances',
-    format('restant : %s', COALESCE(v_restant, 'aucun')));
+  SELECT count(*) INTO v_nouveau
+  FROM unnest(string_to_array(COALESCE(v_restant, ''), ', ')) x
+  WHERE x <> '' AND x NOT IN ('bank_account_post_opening_balance','credit_note_guard',
+    'generate_depreciation_entry','integrate_expense_report_on_approval','post_deferred_charge',
+    'post_exchange_gain_loss_on_payment','purchase_credit_note_guard','revaluate_currency_balances',
+    'stock_initial_post_opening_entry');
+
+  PERFORM _rec('T03', 'aucune NOUVELLE fonction n''écrit un journal littéral (le reste recule, il ne grossit pas)',
+    v_nouveau = 0, format('nouvelles : %s ; restant : %s', v_nouveau, COALESCE(v_restant, 'aucun')));
 EXCEPTION WHEN OTHERS THEN
-  PERFORM _rec('T03', 'le reste des journaux en dur est FIGÉ (6 fonctions, traitées ensuite) — aucune nouvelle occurrence', false, SQLERRM);
+  PERFORM _rec('T03', 'aucune NOUVELLE fonction n''écrit un journal littéral (le reste recule, il ne grossit pas)', false, SQLERRM);
 END $$;
 
 -- ─────────────────────────────────────────────────────────────

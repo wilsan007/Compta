@@ -18,7 +18,7 @@
 
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
-| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : `387`/`388`** ; **LOC1-08 : `389`/`390`** ; **LOC1-09 : journaux en dur `391` (tranche 1/2)** ; reste → 58 à venir |
+| C.1 | Phase 1 — **neutralité** : les comptes codés en dur (`310000`, `601000`, `355000`, `713500`, `641`/`645`/`421`/`431`…) passent par `resolve_account` ; pack fictif `ZZ` comme preuve | LOC1-01 → 58, S-10, AUD-F03, AUD-G10 | ≈ 48 j | 🟡 **LOC1-01 → 06 (+ LOC1-48) faits — `380`→`386`** ; **LOC1-07 : `387`/`388`** ; **LOC1-08 : `389`/`390`** ; **LOC1-09 : journaux en dur `391`/`392` (2/3)** ; reste → 58 à venir |
 | C.2 | Barème ITS gelé, sous `370`, **sans les deux lignes extrapolées**, source provisoire dite | étape 0.5 | 1 j | 🟡 **fait le 05/10, à reprendre** |
 | C.3 | Phase 2 — pack Djibouti : plan comptable national, TVA, paie, états, mentions de facture, formats bancaires ; chaque valeur sourcée `SRC-DJ-nn` | LOC2-01 → 41 | ≈ 26 j | ⬜ |
 | C.4 | Pilote | — | hors charge | ⬜ |
@@ -240,16 +240,19 @@ journal littéral. Cette tranche en traite **3** :
 `post_exchange_gain_loss_on_payment` (journal `OD`). **Écritures identiques**.
 `391` 4/4 ; suites `173`/`211`/`102` OK.
 
-**Le reste est FIGÉ et gardé.** La suite `391` (`T03`) **verrouille** la liste
-des **6** fonctions restantes — toute **nouvelle** occurrence de journal en dur
-la fait échouer (garde-fou E03) :
+**`392_roles_journaux_restants_2.sql` (+ suite) — tranche 2.**
+`integrate_expense_report_on_approval` et `post_deferred_charge` passent par le
+rôle (journal `OD`). `392` 4/4 ; suites `211`/`102` OK.
+
+**Le reste est FIGÉ et gardé.** La suite `391` (`T03`) **verrouille** l'ensemble :
+le reste **recule** à chaque tranche et **ne peut pas grossir** — toute
+**nouvelle** occurrence de journal en dur la fait échouer (garde-fou E03). Il
+reste **4** fonctions (tranche 3) :
 
 `credit_note_guard`, `generate_depreciation_entry`,
-`integrate_expense_report_on_approval`, `post_deferred_charge`,
 `purchase_credit_note_guard`, `revaluate_currency_balances`.
 
-La **tranche 2** les traitera (même méthode, R7 déjà vérifié : aucune branche
-`plan6/*` ne les définit).
+R7 déjà vérifié : aucune branche `plan6/*` ne les définit.
 
 **Reste en dur, hors LOC1-09** : les **comptes** `890000` (« Bilan d'ouverture »),
 `411000`, `666000`, `766000` — ce sont des comptes, pas des journaux (LOC1-10/11).
@@ -343,4 +346,5 @@ git grep -l "FUNCTION <nom>" $(git branch --list 'plan6/*' --format='%(refname:s
 | 06/10 | LOC1-07 (tranche stock/production) | `create_journal_on_stock_movement`, `create_stock_on_manufacturing_complete`, `resolve_stock_account` | stock et OF sur les rôles (journal `ST`/`OF`, comptes `601000`/`310000`/`355000`/`713500`) ; **écritures identiques** ; décisions du 06/10 documentées (pas de taxonomie d'article ; `613000` intact ; variation `603000`) | base : `388` 5/5 ; suites stock `173`/`240`/`241`/`230` + `102` OK ; **10 portes CI vertes** | 2b56d46 |
 | 06/10 | LOC1-08 (tranche affectation/écarts) | `allocate_result`, `generate_residual_entry` | affectation du résultat et écarts de lettrage sur les rôles ; **rôle `JOURNAL_CLOTURE`→`CL` ajouté** ; écritures identiques | base : `389` 5/5 ; suites `179`/`175` OK ; **10 portes CI vertes** | 29aac80 |
 | 06/10 | LOC1-08 (clôture d'exercice) | `close_fiscal_year` | journaux `CL`/`AN` et comptes de résultat `120000`/`129000` par les rôles ; écritures identiques ; la sélection par CLASSE reste (`LOC1-11`) | base : `390` 4/4 ; suites `179`/`175` OK ; **10 portes CI vertes** | 424eeca |
-| 11/10 | LOC1-09 (tranche 1) | `bank_account_post_opening_balance`, `stock_initial_post_opening_entry`, `post_exchange_gain_loss_on_payment` | journaux `AN`/`OD` par les rôles ; écritures identiques ; **le reste (6 fonctions) est FIGÉ et gardé** par la suite `391` (T03) | base : `391` 4/4 ; suites `173`/`211`/`102` OK ; **10 portes CI vertes** | (ce commit) |
+| 11/10 | LOC1-09 (tranche 1) | `bank_account_post_opening_balance`, `stock_initial_post_opening_entry`, `post_exchange_gain_loss_on_payment` | journaux `AN`/`OD` par les rôles ; écritures identiques ; **le reste (6 fonctions) est FIGÉ et gardé** par la suite `391` (T03) | base : `391` 4/4 ; suites `173`/`211`/`102` OK ; **10 portes CI vertes** | eb47800 |
+| 11/10 | LOC1-09 (tranche 2) | `integrate_expense_report_on_approval`, `post_deferred_charge` | journal `OD` par le rôle ; le garde `391` (T03) **verrouille l'ensemble** et empêche toute nouvelle occurrence ; **reste 4 fonctions** (tranche 3) | base : `392` 4/4, `391` 4/4 ; suites `211`/`102` OK ; **10 portes CI vertes** | (ce commit) |
