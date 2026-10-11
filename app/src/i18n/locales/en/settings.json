@@ -77,6 +77,20 @@
     "no": "No",
     "types": { "text": "Text", "number": "Number", "date": "Date", "boolean": "True/False", "select": "List" }
   },
+  "resourceCapacity": {
+    "title": "Resource capacity",
+    "subtitle": "Declare an employee's availability periods (hours per week).",
+    "createTitle": "Declare a capacity",
+    "employee": "Employee",
+    "start": "From",
+    "end": "To",
+    "hours": "Hours per week",
+    "hoursUnit": "h/week",
+    "create": "Declare",
+    "empty": "No capacity declared",
+    "remove": "Delete capacity",
+    "confirmDelete": "Delete this capacity?"
+  },
   "tabs": {
     "chartAccounts": "Chart of accounts",
     "asset": "Asset",

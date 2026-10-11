@@ -22,7 +22,7 @@
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
-| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04 (champs personnalisés) livré le 05/10** (`706` + écran Paramètres → Champs personnalisés, projets) ; **CRM‑01/02, PRJ‑02 (capacité), PRJ‑08 (automatisations) restent** |
+| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04 et PRJ‑02 livrés le 05/10** (`706` champs personnalisés, `708` capacité par ressource, avec leurs écrans) ; **CRM‑01/02 (séquences, scoring) et PRJ‑08 (automatisations) restent** |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 livré le 05/10** (`707` : le rattachement de documents est **validé**) ; **NOT‑01/02, BI‑01, ADM‑04, API‑03 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
@@ -337,6 +337,43 @@ Et l'écriture est aujourd'hui **orpheline côté écran** (`DocumentList` /
 **réel**, elle ne le rend pas encore **visible** — brancher l'écran est le lot
 suivant.
 
+## F.5 — deuxième lot livré le 05/10 (PRJ‑02, la capacité par ressource)
+
+**Le constat.** La table d'un premier jet (`resource_capacities`) avait été
+**supprimée par la 164**. F.5 la rétablit : planifier un projet suppose de savoir
+**qui a combien d'heures disponibles sur quelle période**, et le produit ne le
+disait nulle part.
+
+**Le modèle, et ce qui le tient** (migration `708`) : une ligne = « ce salarié a N
+heures par semaine, de telle date à telle date ».
+- rattachement au salarié par une **clé composite** `(tenant_id, employee_id)` —
+  supprimer un salarié **emporte** ses capacités, et une capacité ne peut pas viser
+  le salarié d'une autre société (**ISO‑02**) ;
+- bornes **contraintes** (`period_end >= period_start`, `0 ≤ heures ≤ 168` — une
+  semaine n'a pas 200 heures) ;
+- un **déclencheur** interdit le **chevauchement** : deux capacités du même salarié
+  ne peuvent pas couvrir la même journée — la règle que **ni une clé ni un CHECK**
+  ne peuvent tenir (`EXCLUDE USING gist` demanderait `btree_gist`, que le socle
+  n'a pas ; le déclencheur fait le travail, et le dit dans la migration).
+
+**Livré** : migration `708` (RLS forcée, index de société, 4 politiques par table,
+`anon` révoqué) ; suite `708` **8/8** (RLS forcée ; capacité valide enregistrée ;
+plus de 168 h refusé ; période à l'envers refusée ; **chevauchement refusé** ;
+salarié d'une autre société refusé ; **périodes adjacentes acceptées** ;
+`anon` sans droits) ; **écran** `Paramètres → Capacité par ressource` + i18n
+fr/en/ar. Plafonds datés réinscrits : `check_bt_grid` `tables_tenant` 369 → **370** ;
+`unused-tables` 68 → **67**.
+
+⚠️ **Un défaut corrigé en écrivant la suite** : le déclencheur appelait
+`daterange(début, fin)` sur une **période inversée**, et PostgreSQL **lève**
+(« range lower bound must be less than or equal to range upper bound ») avant tout
+chevauchement — le refus n'était donc pas celui du CHECK de la table. Mesuré par
+T04 (rouge), corrigé par une garde qui laisse la période inversée au CHECK.
+
+⚠️ **Limite dite** : la capacité est **déclarée**, elle n'est pas encore **lue** par
+la planification (le rapprochement capacité ↔ charge d'un projet est un lot) —
+l'écran la saisit et la montre, c'est tout.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -369,3 +406,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.7 recrutement (RH‑03) | **livré** : `705` (postes + candidatures, clé composite ISO‑02, statuts contraints, RLS forcée, 4 politiques/table, `anon` révoqué) + suite 6/6 + écran RH→Recrutement + i18n. Plafonds : `tables_tenant` 365→367 ; `unused-tables` 72→70 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 champs personnalisés (PRJ‑04) | **livré** : `706` (définitions par module/entité + valeurs par enregistrement, clé composite ISO‑02, déclencheur qui tient le TYPE) + suite 8/8 + écran Paramètres→Champs personnalisés (module branché : projets) + i18n. Plafonds : `tables_tenant` 367→369 ; `unused-tables` 70→68 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.6 rattachement de documents (GED‑01) | **livré** : `707` — le rattachement polymorphe de `module_documents` devient VALIDÉ (les deux colonnes ou aucune ; type = code du registre `chain_document_types` ; existence dans la société), refus nommés + suite 7/7. Pas de nouvelle table, plafonds inchangés | 0,5 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.5 capacité par ressource (PRJ‑02) | **livré** : `708` (capacité par salarié et par période, clé composite ISO‑02, bornes contraintes, déclencheur de non‑chevauchement — la règle qu'aucune clé ne tient) + suite 8/8 + écran Paramètres→Capacité par ressource + i18n. Plafonds : `tables_tenant` 369→370 ; `unused-tables` 68→67 | 1 j | `plan6/f-plateforme` |

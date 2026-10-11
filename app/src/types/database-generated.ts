@@ -17764,6 +17764,57 @@ export interface Database {
         },
       ]
     }
+    resource_capacities: {
+      Row: {
+        id: string
+        tenant_id: string
+        employee_id: string
+        period_start: string
+        period_end: string
+        weekly_hours: number
+        note: string | null
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        employee_id: string
+        period_start: string
+        period_end: string
+        weekly_hours: number
+        note?: string
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        employee_id?: string
+        period_start?: string
+        period_end?: string
+        weekly_hours?: number
+        note?: string
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "resource_capacities_tenant_id_employee_id_fkey",
+          columns: ["tenant_id", "employee_id"],
+          isOneToOne: false,
+          referencedRelation: "employees",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "resource_capacities_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     revision_cycles: {
       Row: {
         id: string

@@ -2432,6 +2432,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.5 / PRJ-02 — la capacité par ressource. Une table neuve : « ce salarié a
+      # N heures par semaine, de telle date à telle date », rattachée au salarié
+      # par une clé COMPOSITE, bornes contraintes, et un DÉCLENCHEUR qui interdit
+      # le CHEVAUCHEMENT pour le même salarié — la règle qu'aucune clé ni CHECK ne
+      # peut tenir (le socle n'a pas `btree_gist` pour un `EXCLUDE`).
+      - name: 'F.5 : capacité par ressource (PRJ-02) — bornes et non-chevauchement (708)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/708_capacite_ressource_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

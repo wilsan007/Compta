@@ -77,6 +77,20 @@
     "no": "Non",
     "types": { "text": "Texte", "number": "Nombre", "date": "Date", "boolean": "Vrai/Faux", "select": "Liste" }
   },
+  "resourceCapacity": {
+    "title": "Capacité par ressource",
+    "subtitle": "Déclarez les périodes de disponibilité d'un salarié (heures par semaine).",
+    "createTitle": "Déclarer une capacité",
+    "employee": "Salarié",
+    "start": "Du",
+    "end": "Au",
+    "hours": "Heures par semaine",
+    "hoursUnit": "h/semaine",
+    "create": "Déclarer",
+    "empty": "Aucune capacité déclarée",
+    "remove": "Supprimer la capacité",
+    "confirmDelete": "Supprimer cette capacité ?"
+  },
   "tabs": {
     "chartAccounts": "Plan comptable",
     "asset": "Actif",

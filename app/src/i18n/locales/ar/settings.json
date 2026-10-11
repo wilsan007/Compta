@@ -77,6 +77,20 @@
     "no": "لا",
     "types": { "text": "نص", "number": "رقم", "date": "تاريخ", "boolean": "نعم/لا", "select": "قائمة" }
   },
+  "resourceCapacity": {
+    "title": "طاقة الموارد",
+    "subtitle": "أعلن فترات توفر الموظف (ساعات أسبوعيًا).",
+    "createTitle": "إعلان طاقة",
+    "employee": "الموظف",
+    "start": "من",
+    "end": "إلى",
+    "hours": "ساعات أسبوعيًا",
+    "hoursUnit": "س/أسبوع",
+    "create": "إعلان",
+    "empty": "لا توجد طاقة معلنة",
+    "remove": "حذف الطاقة",
+    "confirmDelete": "حذف هذه الطاقة؟"
+  },
   "tabs": {
     "chartAccounts": "دليل الحسابات",
     "asset": "أصول",
