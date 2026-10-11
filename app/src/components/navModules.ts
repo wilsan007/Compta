@@ -519,6 +519,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.dataExport', path: '/settings/data-export' },
           { labelKey: 'items.auditLog', path: '/system/audit-log' },
           { labelKey: 'items.coherence', path: '/system/coherence' },
+          { labelKey: 'items.robustesse', path: '/system/robustesse' },
         ],
       },
     ],

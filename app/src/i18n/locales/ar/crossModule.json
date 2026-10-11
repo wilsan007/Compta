@@ -191,5 +191,23 @@
     "verdictTenu": "محقّق",
     "verdictRompu": "منقطع",
     "verdictNonMesure": "غير مقيس"
+  },
+  "robustesse": {
+    "title": "متانة السلاسل",
+    "subtitle": "منصة الاختبار: لكل سلسلة، نتيجة الاختبارات الثمانية D1 → D8.",
+    "maillons": "سلاسل المنصة",
+    "tenues": "اختبارات ناجحة",
+    "rompues": "اختبارات منقطعة",
+    "nonJouees": "اختبارات غير مُنفَّذة",
+    "verdictTenu": "محقّق",
+    "verdictRompu": "منقطع",
+    "verdictNonJoue": "غير منفَّذ",
+    "colMaillon": "السلسلة",
+    "colTenues": "الناجحة",
+    "legend": "D1 إعادة · D2 تزامن · D3 الكل أو لا شيء · D4 إلغاء · D5 إعادة فتح · D6 تراجع · D7 الحجم · D8 العزل",
+    "passeLe": "آخر تشغيل للمنصة: {{date}}",
+    "jamaisJoue": "لم تُشغَّل المنصة بعد لهذه الشركة.",
+    "vide": "لا توجد سلسلة",
+    "videDescription": "كتالوج المنصة فارغ."
   }
 }

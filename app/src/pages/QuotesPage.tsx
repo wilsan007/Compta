@@ -14,6 +14,7 @@ import { ArticleInterrogationModal } from '@/components/ArticleInterrogationModa
 import { getProductStock } from '@/lib/queries/stock'
 import { confirmSync } from '@/lib/confirm'
 import { usePermission } from '@/hooks/usePermission'
+import { ChainTimeline } from '@/components/ChainTimeline'
 
 const statusKeys: string[] = ['draft', 'sent', 'accepted', 'rejected', 'expired']
 
@@ -201,6 +202,18 @@ const [quotes, setQuotes] = useState<Quote[]>([])
                     <TableCell />
                   </tr>
                 ))}
+                {expanded.has(quote.id) && (
+                  // I-01 — la Vue Chaîne du devis : l'ENTRÉE de la chaîne
+                  // commerciale (commande en aval, via `convert_quote_to_order`,
+                  // effet `sale.quote.to_order`). Le type `quotes` est au
+                  // registre `chain_document_types` (475 / 493) : les nœuds
+                  // devis d'une autre frise portent donc leur nom.
+                  <tr className="bg-[var(--color-neutral-50)]">
+                    <td colSpan={8} className="px-3 py-3">
+                      <ChainTimeline type="quotes" id={quote.id} libelle={t('quotes.title')} />
+                    </td>
+                  </tr>
+                )}
               </Fragment>
             ))}
           </Table>

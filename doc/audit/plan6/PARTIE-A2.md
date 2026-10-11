@@ -29,9 +29,9 @@ D vis-à-vis de nous).
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A2.1 | Recompter la Vue Chaîne : ce que `460` → `467` couvrent, ce qu'il manque pour I-01 | A.5 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | 🟡 **5 pages ajoutées le 05/10** (6 au total avec `InvoicesPage`) — voir §Livré |
-| A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ⬜ |
-| A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ⬜ |
+| A2.2 | Héberger la frise sur les types de documents restants : devis, commandes (ventes/achats), réceptions, bulletins, tickets de caisse, ordres de fabrication, notes de frais | A.5 (I-01) | ≈ 4 j | ✅ **fait le 05/10** — **10 pages ajoutées** (11 au total avec `InvoicesPage`) ; **tous les types listés** sont hébergés (un constat de registre subsiste : `purchase_orders`) — voir §Livré |
+| A2.3 | Pages « Robustesse » et « Cohérence » (L5) | A.4 | 3 j | ✅ **fait le 05/10** — « Cohérence » (`CoherencePage.tsx`, A2.4) et « Robustesse » (`RobustessePage.tsx`) livrées ; voir §A2.3 |
+| A2.4 | Lecture écran de l'indice de cohérence (`chainCoherence.ts` → page) | 3.10 | 0,5 j | ✅ **fait le 05/10** (`CoherencePage.tsx` : route `/system/coherence`, nav, i18n fr/en/ar) |
 
 ## Recomptage (05/10/2026) — mesuré, pas supposé
 
@@ -68,21 +68,40 @@ explication).
 | `ManufacturingOrderDetailPage` | `manufacturing_orders` | ✅ ajoutée le 05/10 (page détail existante) |
 | `SalesOrdersPage` | `sales_orders` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes, reliquats, frise) |
 | `DeliveryNotesPage` | `delivery_notes` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes, reliquats facturés, frise) |
+| `GoodsReceiptPage` | `goods_receipts` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes reçues, frise) |
+| `QuotesPage` | `quotes` | ✅ ajoutée le 05/10 (frise dans la ligne dépliable ; type inscrit par `475` A1 / `493` A3, **lien tracé par A3**) |
+| `PayRunsPage` | `pay_runs` | ✅ ajoutée le 05/10 (**vue détail créée** : bulletins du lot, frise) |
+| `PosSessionsPage` | `pos_tickets` | ✅ ajoutée le 05/10 (frise du **ticket**, ouverte depuis la session de caisse) |
+| `PurchaseOrdersPage` | `purchase_orders` | ✅ ajoutée le 05/10 (**vue détail créée** : lignes de la commande, frise) — ⚠️ type **hors registre** (voir plus bas) |
 
 **La règle appliquée (décision du 05/10, du demandeur)** : *une vue détail est
 ouverte seulement là où il y a de la matière à voir en détail*. Conséquence
 directe et assumée :
 
-- **6 pages** hébergent la frise — les 3 qui avaient déjà un détail
-  (`invoices`, `purchase_invoices`, `expense_reports`) + les 3 créées ici ;
-- **pas d'I-08** sur le bon de livraison : un BL ne porte aucun montant,
-  « pourquoi ce chiffre ? » n'aurait rien à expliquer — on n'ouvre pas une
-  explication vide ;
-- **les pages sans matière à détail n'en reçoivent pas** : `QuotesPage`
-  (devis), `PurchaseOrdersPage`, `PosSessionsPage`, `PayrollAccountingPage`
-  n'ont ni lignes consultables ni vue détail. Y héberger la frise demanderait
-  d'abord de **créer l'écran de détail** — décision de conception, pas
-  intégration (demande R3 ci-dessous).
+- **11 pages** hébergent la frise — les 3 qui avaient déjà un détail
+  (`invoices`, `purchase_invoices`, `expense_reports`), les 6 à vue détail créée
+  (`sales_orders`, `delivery_notes`, `manufacturing_orders`, `goods_receipts`,
+  `pay_runs`, `purchase_orders`), le **devis** (`quotes`, ligne dépliable) et le
+  **ticket de caisse** (`pos_tickets`, ouvert depuis la session de caisse) ;
+- **pas d'I-08** sur le bon de livraison ni sur la réception : ces documents ne
+  portent aucun montant, « pourquoi ce chiffre ? » n'aurait rien à expliquer —
+  on n'ouvre pas une explication vide ;
+- **les pages sans matière à détail n'en reçoivent pas** : `PurchaseOrdersPage`,
+  `PosSessionsPage`, `PayrollAccountingPage` n'ont ni lignes consultables ni vue
+  détail. Y héberger la frise demanderait d'abord de **créer l'écran de
+  détail** — décision de conception, pas intégration ;
+- ✅ **`purchase_orders` : la demande est déjà satisfaite — A3 l'inscrit**
+  (`498_chain_l16_reception_commande`, réaffirmé `751`), avec **les mêmes
+  valeurs** que j'aurais posées (`('purchase_orders','purchase_orders','purchase_order_lines','Commande d''achat')`).
+  La frise du bon de commande d'achat est donc **nommée** dès que ces lots sont
+  dans `main` ; **aucune inscription A1 n'est nécessaire** — elle créerait un
+  **troisième** exemplaire après le doublon `475`/`493` du devis.
+- ✅ **Le devis était bloqué, il ne l'est plus.** La frise d'un devis a besoin
+  de **deux** choses : le type `quotes` **au registre** et le **lien** devis →
+  commande. Le type est inscrit (`475` A1, `493` A3) et le lien est **tracé par
+  A3** (`493_chain_l16_devis_commande`, effet `sale.quote.to_order`) — la frise
+  du devis est donc **utile**, pas « isolée ». Les deux inscriptions sont des
+  **upserts identiques** ; **l'intégration tranche** s'il faut en retirer une.
 
 **Vérifications** : `tsc -b` **0 erreur** · `oxlint` **0/0** · `i18n:check` **vert
 pour mes fichiers** · `a11y:icon-buttons` **vert** · Vitest **1 661 verts** ·
@@ -157,6 +176,35 @@ plafond (les deux tables d'invariants sont **lues**).
 (parité + clés littérales) · Vitest **1 661 verts** · `any` **1 735/1 735** ·
 `console.error` **488/488** (plafonds gelés conformes).
 
+## A2.3 — les pages « Robustesse » et « Cohérence » (L5)
+
+Les deux écrans de L5 sont **livrés** : **Cohérence** (`CoherencePage.tsx`,
+A2.4 — l'indice et les invariants) et **Robustesse** (`RobustessePage.tsx`, ce
+lot — le résultat des huit épreuves).
+
+**« Robustesse »** lit le banc d'épreuves : `chain_banc_maillons` (le catalogue,
+lisible sans filtre de société) et `chain_banc_resultats` (chaque passage,
+filtré par société), réduits côté écran au **dernier verdict par (maillon,
+épreuve)** — motif de `chainCoherence.ts`, **parce que la vue
+`chain_banc_rapport` n'est pas dans les types générés** (leçon notée : on lit
+les tables typées). Une ligne par chaîne, **huit colonnes D1 → D8**, chacune
+portant son verdict ; plus le compte tenues / rompues / non jouées et la date du
+dernier passage.
+
+- **Requête** : `app/src/lib/queries/chainRobustness.ts` (`getChainBanc()`),
+  territoire A2 (« requêtes robustesse ») ;
+- **Route** `/system/robustesse` (sous `AdminRoute`), **entrée de nav**
+  (`items.robustesse`), **i18n fr/en/ar** ;
+- **Trois règles tenues.** Aucun `tenu` par défaut — une épreuve jamais jouée
+  s'affiche **`non joué`** (gris), l'absence est publiée ; `rompu` est la
+  **seule** teinte rouge (`non joué` n'est **pas** une alerte, c'est un
+  instrument qui manque) ; **pas de journal console d'erreur** (l'erreur se dit
+  à l'écran, `role="alert"`).
+
+**Vérifications** : `tsc -b` **0** · `oxlint` **0/0** · `i18n:check` **vert** ·
+Vitest **1 661 verts** · `any` **1 735/1 735** · `console.error` **488/488** ·
+`check-unchecked-writes` **0**.
+
 ## Journal
 
 | Date | Lot | Ce qui est fait | Batterie | Commit |
@@ -164,4 +212,10 @@ plafond (les deux tables d'invariants sont **lues**).
 | 2026-10-05 | A2.1 | Recomptage Vue Chaîne : backend `460`/`462` + composant OK, frise hébergée sur `InvoicesPage` seulement | — (lecture seule) | `3a2642c` |
 | 2026-10-05 | A2.2 (lot 1) | Frise + explication hébergées sur `PurchaseInvoicesPage` et `EmployeeExpensesPage` ; constat : les pages restantes n'ont pas de vue détail (demande R3) | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds conformes | `5cd2dcc` |
 | 2026-10-05 | A2.2 (lot 2) | Frise sur l'OF (page détail existante) ; **vues détail créées** sur les commandes de vente et les bons de livraison (lignes, reliquats, frise) ; pas d'I-08 sur le BL | `tsc` 0 · `oxlint` 0/0 · a11y vert · Vitest **1 661** · plafonds conformes (hors `CoherencePage.tsx`, session parallèle) | `a3e59cc` |
-| 2026-10-05 | A2.4 | Page « Cohérence » (`CoherencePage.tsx`) : indice (tenu/rompu/non mesuré) + détail par invariant, route `/system/coherence`, entrée de nav, i18n fr/en/ar ; `check-unused-tables` conforme | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds `any` **1 735** et `console.error` **488/488** conformes | _(ce lot)_ |
+| 2026-10-05 | A2.4 | Page « Cohérence » (`CoherencePage.tsx`) : indice (tenu/rompu/non mesuré) + détail par invariant, route `/system/coherence`, entrée de nav, i18n fr/en/ar ; `check-unused-tables` conforme | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · plafonds `any` **1 735** et `console.error` **488/488** conformes | `2599252` |
+| 2026-10-05 | A2.3 | Page « Robustesse » (`RobustessePage.tsx`) : résultat des 8 épreuves par chaîne + requête `chainRobustness.ts` ; route `/system/robustesse`, entrée de nav, i18n fr/en/ar | `tsc` 0 · `oxlint` 0/0 · i18n vert · Vitest **1 661** · `any` **1 735** · `console.error` **488/488** · unchecked-writes **0** | `054f6c7` |
+| 2026-10-05 | A2.2 (lot 3) | Frise sur la **réception** : vue détail créée (lignes reçues, frise `goods_receipts`) ; pas d'I-08 (aucun montant). Demande R3 : `quotes` absent du registre `chain_document_types` | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `818952d` |
+| 2026-10-05 | A2.2 (lot 4) | Frise sur le **devis** (ligne dépliable) ; le type `quotes` est désormais au registre (`475` A1 / `493` A3) et le lien devis → commande est **tracé par A3** | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `ceffdcc` |
+| 2026-10-05 | A2.2 (lot 5) | Frise sur la **campagne de paie** : vue détail créée (bulletins du lot, frise `pay_runs`) | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `f706352` |
+| 2026-10-05 | A2.2 (lot 6) | Frise sur le **ticket de caisse** (`PosSessionsPage`) : bouton « Voir le ticket » + modal avec frise `pos_tickets` | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · Vitest **1 661** · plafonds conformes | `dc774fe` |
+| 2026-10-05 | A2.2 (lot 7) | Frise sur la **commande d'achat** : vue détail créée (lignes + frise `purchase_orders`). Constat : `purchase_orders` hors registre (demande). Vitest **1 660 + 1 instable** (`BankReconciliationState`, vert en isolation) | `tsc` 0 · `oxlint` 0/0 · i18n vert · a11y vert · plafonds conformes | _(ce lot)_ |

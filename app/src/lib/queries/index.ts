@@ -22,6 +22,7 @@ export * from './sprintDE'
 export * from './sprintH'
 export * from './projectManagement'
 export * from './chainCoherence'
+export * from './chainRobustness'
 export {
   calculatePayslip,
   generateDsn,
