@@ -3,24 +3,8 @@ import { supabase } from '@/lib/supabase'
 import type { Joined, Row } from '@/types/dbRow'
 import { fetchAllRows, getTenantId, nextDocumentNumber, ti, tud } from './core'
 import { getManufacturingOrders, updateManufacturingOrder } from './production'
+import { runMRP } from './businessFunctions'
 import type { Product, StockMovement, Warehouse, StockQuantity, PriceList, PriceListLine, BOM, BOMLine, ManufacturingOrder, Routing, RoutingOperation, WorkCenter, Machine, Tooling, OFLabel, OFLot, OFConsumption, STOrder, STShipment, STShipmentLine, STReceipt, STReceiptLine, MRPRun, MRPProposal, ProductionForecast, PlanningSlot, ProductEquivalence, Workflow, OFDocumentAccess, ProductVariant, ProductSerialNumber, ProductBatch, WarehouseLocation, ProductSubstitute } from '@/types'
-
-// PRD-05 : `purchase_order_lines` est lu en select PARTIEL et inclut
-// `quantity_received`, qui n'est PAS une colonne de la table mais une **colonne
-// calculée PostgREST** (fonction `quantity_received(purchase_order_lines)`,
-// migration 195) — sélectionnable, mais absente des types générés (`Row` ne
-// porte que les vraies colonnes). D'où ce type dédié : les vraies colonnes
-// viennent du schéma, la calculée est déclarée ici. Renommer `product_id`,
-// `quantity` ou `purchase_order_id` en base fera donc échouer la compilation.
-type OpenPurchaseLine = Pick<
-  Row<'purchase_order_lines'>,
-  'product_id' | 'quantity'
-> & {
-  /** Colonne CALCULÉE PostgREST — cf. `sql/195_purchase_order_line_received.sql`. */
-  quantity_received: number
-  /** Embed `purchase_orders!inner(status)` — PostgREST renvoie un tableau. */
-  purchase_orders: Pick<Row<'purchase_orders'>, 'status'>[]
-}
 
 // ============ Products ============
 export async function getProducts() {
@@ -1350,8 +1334,16 @@ export async function deleteMRPPendingDoc(id: string) {
 }
 
 
-// ============ Production Module: MRP Calculation Algorithm ============
-export async function runMRPCalculation(): Promise<MRPRun> {
+// ============ Production Module: MRP Run (PRD-08, moteur unique) ============
+// PRD-08 : il n'y a plus qu'UN moteur de calcul des besoins nets — le RPC
+// `run_mrp` (651, garde de société 664) : OF + commandes clients + prévisions
+// CONSOMMÉES (p_consume_forecast), safety_stock, lead_time, min_order_qty,
+// qty_multiple. L'ancien moteur client (`runMRPCalculation`, supprimé) ne
+// lisait que les OF, ajoutait 7 jours en dur et arrondissait au Math.ceil nu :
+// deux boutons voisins à l'écran, deux réponses différentes à la même question.
+// Le client ne calcule plus rien ici — il PERSISTE ce que le serveur a
+// calculé : un `mrp_runs` et ses `mrp_proposals`.
+export async function runMRPAndSave(horizonDays = 90): Promise<MRPRun> {
   const tid = await getTenantId()
   const runNumber = await nextDocumentNumber('MRP')
 
@@ -1359,107 +1351,45 @@ export async function runMRPCalculation(): Promise<MRPRun> {
     run_number: runNumber,
     run_date: new Date().toISOString(),
     status: 'running',
-    parameters: { generated_at: new Date().toISOString() },
+    parameters: { engine: 'run_mrp', horizon_days: horizonDays, generated_at: new Date().toISOString() },
     summary: null,
   })
 
   try {
-    // LOT7-03 : le calcul des besoins nets doit voir TOUTES les nomenclatures, TOUT le
-    // stock et TOUS les en-cours. Tronqué à 1 000 lignes, le MRP proposait des
-    // approvisionnements pour des besoins déjà couverts (et en oubliait d'autres).
-    const [products, boms, bomLines, stockQtys, openMOs, openPOLines] = await Promise.all([
-      getProducts(),
-      getBOMs(),
-      fetchAllRows<Row<'bom_lines'>>(supabase.from('bom_lines').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/bom_lines' }),
-      fetchAllRows<Row<'stock_quantities'>>(supabase.from('stock_quantities').select('*').eq('tenant_id', tid).order('id'), { label: 'runMRPCalculation/stock_quantities' }),
-      fetchAllRows<Row<'manufacturing_orders'>>(supabase.from('manufacturing_orders').select('*').eq('tenant_id', tid).in('status', ['planned', 'in_progress']).order('id'), { label: 'runMRPCalculation/manufacturing_orders' }),
-      // PRD-05 : Lire les LIGNES de commande, pas l'en-tête — purchase_orders n'a pas de product_id
-      fetchAllRows<OpenPurchaseLine>(supabase.from('purchase_order_lines').select('product_id, quantity, quantity_received, purchase_orders!inner(status)').eq('tenant_id', tid).in('purchase_orders.status', ['draft', 'confirmed', 'partial']).order('id'), { label: 'runMRPCalculation/purchase_order_lines' }),
-    ])
+    // Le calcul est au serveur (`run_mrp`, SECURITY DEFINER, garde de société
+    // 664) — la société vient du contexte d'appel, jamais du client.
+    const needs = await runMRP(horizonDays)
 
-    // Build stock map: product_id -> total quantity
-    const stockMap: Record<string, number> = {}
-    for (const sq of stockQtys as any[]) {
-      stockMap[sq.product_id] = (stockMap[sq.product_id] || 0) + Number(sq.quantity || 0)
-    }
-
-    // PRD-05 : Build open MO map — déduire qty_produced (reste à produire)
-    const openMOMap: Record<string, number> = {}
-    for (const mo of openMOs as any[]) {
-      const remaining = Number(mo.quantity || 0) - Number(mo.qty_produced || 0)
-      if (remaining <= 0) continue
-      if (mo.product_id) openMOMap[mo.product_id] = (openMOMap[mo.product_id] || 0) + remaining
-      if (mo.bom_id) {
-        const bom = (boms as any[]).find((b) => b.id === mo.bom_id)
-        if (bom?.product_id) openMOMap[bom.product_id] = (openMOMap[bom.product_id] || 0) + remaining
-      }
-    }
-
-    // PRD-05 : Build open PO map from purchase_order_lines (reste à recevoir)
-    const openPOMap: Record<string, number> = {}
-    for (const pol of openPOLines as any[]) {
-      const remaining = Number(pol.quantity || 0) - Number(pol.quantity_received || 0)
-      if (remaining > 0 && pol.product_id) {
-        openPOMap[pol.product_id] = (openPOMap[pol.product_id] || 0) + remaining
-      }
-    }
-
-    // Build BOM line map: product_id -> [{component_id, quantity}]
-    const bomLineMap: Record<string, any[]> = {}
-    for (const bl of bomLines as any[]) {
-      if (!bomLineMap[bl.bom_id]) bomLineMap[bl.bom_id] = []
-      bomLineMap[bl.bom_id].push({ product_id: bl.product_id, quantity: Number(bl.quantity) })
-    }
-
-    // Build BOM map: product_id -> bom
+    // Enrichissement, pas calcul : le RPC ne retourne ni `supplier_id` ni
+    // `bom_id`, et le type de proposition se lit sur la nomenclature.
+    const [products, boms] = await Promise.all([getProducts(), getBOMs()])
     const bomByProduct: Record<string, any> = {}
-    for (const bom of boms as any[]) {
+    for (const bom of boms) {
       if (bom.product_id) bomByProduct[bom.product_id] = bom
     }
+    const productById: Record<string, any> = {}
+    for (const product of products) productById[product.id] = product
 
-    // Calculate gross needs: sum of all MO quantities * BOM line quantities
-    const grossNeeds: Record<string, number> = {}
-    for (const mo of openMOs as any[]) {
-      if (mo.bom_id && bomLineMap[mo.bom_id]) {
-        for (const line of bomLineMap[mo.bom_id]) {
-          grossNeeds[line.product_id] = (grossNeeds[line.product_id] || 0) + line.quantity * Number(mo.quantity || 0)
-        }
-      }
-      if (mo.product_id) {
-        grossNeeds[mo.product_id] = (grossNeeds[mo.product_id] || 0) + Number(mo.quantity || 0)
-      }
-    }
-
-    // Generate proposals
     const proposals: Omit<MRPProposal, 'id' | 'created_at'>[] = []
-    for (const product of products as any[]) {
-      if (product.exclude_from_mrp) continue
+    for (const need of needs) {
+      // Une ligne à besoin net nul (couvert par le stock et les en-cours)
+      // n'est pas une proposition — même règle que l'ancien moteur.
+      if (Number(need.net_need) <= 0) continue
 
-      const grossNeed = grossNeeds[product.id] || 0
-      if (grossNeed <= 0) continue
-
-      const stock = stockMap[product.id] || 0
-      const openOrders = (openMOMap[product.id] || 0) + (openPOMap[product.id] || 0)
-      const netNeed = Math.max(0, grossNeed - stock - openOrders)
-
-      if (netNeed <= 0) continue
-
-      const hasBOM = bomByProduct[product.id]
-      const proposalType = hasBOM ? 'manufacture' : 'purchase'
-      const suggestedQty = Math.ceil(netNeed)
-
+      const bom = bomByProduct[need.product_id]
+      const product = productById[need.product_id]
       proposals.push({
         mrp_run_id: run.id,
-        product_id: product.id,
-        proposal_type: proposalType as any,
-        gross_need: grossNeed,
-        stock_available: stock,
-        open_orders: openOrders,
-        net_need: netNeed,
-        suggested_quantity: suggestedQty,
-        suggested_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-        bom_id: hasBOM?.id || null,
-        supplier_id: product.supplier_id || null,
+        product_id: need.product_id,
+        proposal_type: bom ? 'manufacture' : 'purchase',
+        gross_need: Number(need.gross_need),
+        stock_available: Number(need.stock_available),
+        open_orders: Number(need.open_purchase_qty) + Number(need.open_production_qty),
+        net_need: Number(need.net_need),
+        suggested_quantity: Number(need.suggested_qty),
+        suggested_date: need.suggested_date,
+        bom_id: bom?.id || null,
+        supplier_id: product?.supplier_id || null,
         status: 'pending',
         notes: null,
       })
@@ -1471,14 +1401,14 @@ export async function runMRPCalculation(): Promise<MRPRun> {
       // affichait « propositions générées » sans compter les refus.
       const { error: propErr } = await supabase.from('mrp_proposals').insert(ti(p, 'mrp_proposals', tid))
       if (propErr) {
-        console.error('generateMrpProposals (proposition non enregistrée):', propErr)
+        console.error('runMRPAndSave (proposition non enregistrée):', propErr)
         throw new Error(`Proposition MRP non enregistrée : ${propErr.message}`)
       }
     }
 
     // Update run with summary
     const summary = {
-      total_products: products.length,
+      total_products: products.filter((p: any) => !p.exclude_from_mrp).length,
       products_with_needs: proposals.length,
       total_net_need: proposals.reduce((sum, p) => sum + p.net_need, 0),
       manufacture_count: proposals.filter((p) => p.proposal_type === 'manufacture').length,
