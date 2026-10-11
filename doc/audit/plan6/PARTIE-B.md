@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | B.1 | Inventaire des 62 règles d'état contre le schéma du jour : lesquelles existent déjà (W1 → W10, X1 → X6 en ont posé) | L8 → L15 | 2 j | 🟡 **compté le 05/10** — [rapport B.1](B1-INVENTAIRE-62-REGLES-2026-10-05.md) |
-| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **62/62 règles touchées (`500`→`524`) ; R-019 (avoir + relances) et R-047 (transfert lié) complétées — 91 scénarios verts** |
+| B.2 | Règles d'état, un lot par module, dans cet ordre : **ventes, achats, trésorerie, paie/RH, projets, production, conformité, budgets** | L8 → L15 | ≈ 40 j | 🔶 **62/62 règles touchées (`500`→`525`) ; R-019, R-043, R-047 complétées — 96 scénarios verts** |
 | B.3 | Paie : seuil **hebdomadaire** des heures supplémentaires, exonération d'impôt de 7 500 € | reste de 2.3 | 1,5 j | ⬜ |
 | B.4 | Paie : arrêt maladie (carence, maintien) | reste de 2.4 | 1,5 j | ⬜ |
 
@@ -220,6 +220,16 @@ idempotent ; sans contrepartie, il trace `sans_effet`. *Le schéma n'a **qu'un d
 mouvement** et **pas de dépôt de destination** : l'entrée en stock (la seconde jambe) est créée
 par l'écran / le noyau (partie E) ; ce fichier LIE, il ne crée pas.*
 
+## B.2 — lot 25 : R-043 (annulation d'OF → contre-passation) — livré le 11/10/2026
+
+**Migration `525` (suite 5 verts)** — **R-043** : au passage d'un OF à `cancelled`, il
+produit un **mouvement INVERSE** par mouvement de l'OF (`out` → `in`, `in` → `out`), **au
+même dépôt et au même coût** ; il LIE l'OF à ces mouvements et émet
+`manufacturing_orders.cancelled_reversed`. Idempotent (référence `ANN-OF-…`) ; sans
+mouvement, il trace `sans_effet` (pas de pièce fantôme). *La libération des composants
+réservés (pas de table dédiée côté OF) et la restitution comptable du coût restent la
+chaîne du stock.*
+
 ## B.2 — l'état réel : 62 / 62 règles touchées, 0 vierge
 
 **Vierges (0).** Les quatre dernières — **R-019** (facture client annulée), **R-044 / R-045**
@@ -228,11 +238,11 @@ par l'écran / le noyau (partie E) ; ce fichier LIE, il ne crée pas.*
 mouvements liés restent coordonnés).
 
 **Partielles restantes — l'accroche (ou la garde) existe, l'effet MÉTIER est coordonné :**
-- **stock / écrans (parties E, D)** : R-006, R-009, R-013, R-015, R-043, R-044/R-045 ;
+- **stock / écrans (parties E, D)** : R-006, R-009, R-013, R-015, R-044/R-045 ;
 - **comptabilité (noyau, expert-comptable)** : R-016, R-048→R-051, R-052/R-053, R-058 ;
 - **paie FR** : R-025/R-026/R-028 (écriture au `approved`), R-036 (règles par type) — **B.3/B.4** ;
 - **schéma** : R-046 (le schéma ne stocke pas la proposition MRP).
-*(R-020 est close : état inatteignable. R-019 et R-047 sont complétées — lots 23/24.)*
+*(R-020 est close : état inatteignable. R-019, R-043 et R-047 sont complétées — lots 23 à 25.)*
 
 **Complètes : R-001→R-005, R-007, R-010, R-012, R-014, R-017, R-018, R-021, R-022, R-027,
 R-030, R-033, R-034, R-035, R-048→R-061**, plus **R-062** (contrainte déjà au schéma).
@@ -400,4 +410,5 @@ comptable. Et la batterie complète est rejouée à chaque fusion (R8).
 | 11/10 | B.2 · paie-rh-2 | Paie/RH | **R-025/R-026/R-028** : lot approuvé, bulletin approuvé / payé → événements (le trou de paie reste une décision). Migration `521` + suite `521_…_tests.sql`. | base **355 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
 | 11/10 | B.2 · partielles | Ventes/Production/Paie | **R-029/R-032/R-043** : note de frais soumise / remboursée, OF annulé → événements ; **R-020 close** (état inatteignable, prouvé par test). Migration `522` + suite `522_…_tests.sql`. | base **356 migrations, 0 erreur** ; suite **4/4** (les 23 suites B : **86/86**) | _à venir_ |
 | 11/10 | B.2 · ventes-8 | Ventes | **R-019** : facture client annulée → **avoir** lié (`reversed_by`) + **arrêt des relances** + événement. Migration `523` + suite `523_…_tests.sql`. | base **357 migrations, 0 erreur** ; suite **6/6** | _à venir_ |
-| 11/10 | B.2 · stock-1 | Stock | **R-047** : les **deux jambes** d'un transfert (même `reference`) sont **liées** ; sans contrepartie → `sans_effet`. Migration `524` + suite `524_…_tests.sql`. | base **358 migrations, 0 erreur** ; suite **3/3** (les 25 suites B : **91/91**) | _à venir_ |
+| 11/10 | B.2 · stock-1 | Stock | **R-047** : les **deux jambes** d'un transfert (même `reference`) sont **liées** ; sans contrepartie → `sans_effet`. Migration `524` + suite `524_…_tests.sql`. | base **358 migrations, 0 erreur** ; suite **3/3** | _à venir_ |
+| 11/10 | B.2 · production-2 | Production | **R-043** : OF annulé → **contre-passation** des mouvements de stock (inverse, même dépôt/coût) + lien. Migration `525` + suite `525_…_tests.sql`. | base **359 migrations, 0 erreur** ; suite **5/5** (les 26 suites B : **96/96**) | _à venir_ |
