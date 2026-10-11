@@ -19,7 +19,7 @@
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | D.1 | Vrai dialogue de confirmation à la place de `confirmSync` (100 fichiers), **par module, un lot par jour** | 1.8, AUD-I01 | 4 j | ✅ **tous les usages migrés (05/10)** |
-| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | 🟡 **tranches 1–7 (05/10) : 77 états** |
+| D.2 | Typer les 80 états d'écran restants (RH, production, trésorerie, immobilisations, CRM) | DAT-02, suite de 2.16 | 5 j | ✅ **terminé — 80 états (05/10)** |
 | D.3 | Alignement des colonnes sur 10 écrans | étape 0.5 | 1 j | ✅ **4 restants faits (05/10) — 6 déjà en `main`** |
 | D.4 | Lectures du chemin de l'écran (159 fonctions non couvertes) ; immobilisations et tableaux de bord à l'écran | 4.5, 4.11, 4.12 | 5 j | ⬜ |
 | D.5 | Playwright sur chaque PR vers `main` ; 4 parcours qui lisent un chiffre | 4.3, 4.4, AUD-J01/J02 | 3 j | ⬜ |
@@ -321,10 +321,28 @@ Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 →
 Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 859**
 (**77 `any`** en moins sur les sept tranches).
 
-**Reste (tranche 8, 3 états)** — `OnboardingDashboardPage.state` (indexé
-dynamiquement), `hr/RhReportsPage.statsData` (union de 5 requêtes), et
-`components/employee/MobileApproval.items` (écran mobile **jamais peuplé** — la
-donnée n'est jamais chargée ; à traiter avec le bug amont).
+### Tranche 8 — 05/10 (3 états, 3 écrans — clôture)
+
+| Écran | État | Traitement |
+|---|---|---|
+| `OnboardingDashboardPage` | `state` | `OnboardingState | null`, et les **clés** typées (`keyof OnboardingState`) pour l'accès dynamique `state?.[step]` |
+| `hr/RhReportsPage` | `statsData` (+ `data` local) | **union** des 5 requêtes (`getEffectifEvolution | getSalaryAnalysis | …`) |
+| `components/employee/MobileApproval` | `items` | type `ApprovalItem` (congé ou note de frais) |
+
+**Preuve.** `tsc -b --noEmit` ✅ · `oxlint` **0** sur les 3 ✅ ·
+Vitest **1661 / 1699** (38 sautés) ✅ · plafond `any` de production **936 → 854**
+(**82 `any`** en moins sur les huit tranches).
+
+**Un écran mort, signalé** — `components/employee/MobileApproval` n'est **importé
+par aucune route** (mesuré : un seul `grep` le trouve, sa propre définition) et sa
+donnée n'est **jamais chargée** : les gardes d'approbation mobile n'existent pas.
+Son type ne fait que dire ce qu'il **prétend** lire — à reprendre comme **écran**
+(charger les congés et notes de frais en attente), pas comme type.
+
+### D.2 — terminé (80 états, 8 tranches)
+
+`useState<any>` : **62 → 0**. Plafond `any` de production **936 → 854**.
+Vitest **1661 / 1699** à chaque tranche.
 
 ## D.3 — alignement des colonnes (reprise gelée)
 
@@ -417,4 +435,5 @@ kit n'ajoute ni service, ni dépendance, ni étape — il **range** ce qui exist
 | 05/10 | D.2 · tranche 5 | RH/social/frais | 9 états typés (5 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→884 (cumul 52) | `dd65316` |
 | 05/10 | D.2 · tranche 6 | complémentaires/dashboard/audit/OF | 12 états typés (4 écrans) | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→872 (cumul 64) | `c544ec1` |
 | 05/10 | D.2 · tranche 7 | Phase3/5Pages + soldes | 13 états typés (3 écrans) + 1 défaut de colonnes corrigé | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→859 (cumul 77) | `cabf927` |
+| 05/10 | D.2 · tranche 8 | clôture | 3 états typés — `useState<any>` = **0** | tsc ✅ · oxlint 0 · Vitest 1661/1699 · any 936→854 (cumul 82) | `HASH_D2T8` |
 | 05/10 | D.6 | recette | kit P0-08 : référentiel 14 parcours + PV + certificat (empreinte `ce92316f…`, 112 passages) | script OK · oxlint 0 | `56892d6` |

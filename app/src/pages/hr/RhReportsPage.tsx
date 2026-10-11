@@ -6,6 +6,14 @@ import { getRhReports, createRhReport, deleteRhReport, calculateReportData, getE
 import { errorMessage, formatDate } from '@/lib/utils'
 import { useToast } from '@/lib/toast'
 
+/** Les cinq rapports rendent des formes différentes — l'union dit ce que l'écran sait lire. */
+type RhStats =
+  | Awaited<ReturnType<typeof getEffectifEvolution>>
+  | Awaited<ReturnType<typeof getSalaryAnalysis>>
+  | Awaited<ReturnType<typeof getAbsenceStats>>
+  | Awaited<ReturnType<typeof getTurnoverRate>>
+  | Awaited<ReturnType<typeof getCostByCenter>>
+
 export function RhReportsPage() {
   const { t } = useTranslation('hr')
   const { t: tCommon } = useTranslation('common')
@@ -14,7 +22,7 @@ export function RhReportsPage() {
   const [tab, setTab] = useState<'preset' | 'saved' | 'create'>('preset')
   const [reports, setReports] = useState<Awaited<ReturnType<typeof getRhReports>>>([])
   const [loading, setLoading] = useState(true)
-  const [statsData, setStatsData] = useState<any>(null)
+  const [statsData, setStatsData] = useState<RhStats | null>(null)
   const [activeReport, setActiveReport] = useState<string | null>(null)
   const [newReport, setNewReport] = useState({ name: '', report_type: 'effectifs', chart_type: 'bar' })
 
@@ -33,7 +41,7 @@ export function RhReportsPage() {
   async function handleGenerate(type: string) {
     setActiveReport(type)
     try {
-      let data: any
+      let data: RhStats | null
       switch (type) {
         case 'effectifs': data = await getEffectifEvolution(12); break
         case 'remuneration': data = await getSalaryAnalysis('department'); break
