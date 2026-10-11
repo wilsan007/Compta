@@ -2364,6 +2364,104 @@ jobs:
       - name: 'L16 : livraison → facture, rattachée et tracée (495)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/495_chain_l16_livraison_facture_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL (tronçon 4) : le RÈGLEMENT d'une FACTURE
+      # lui est rattaché et tracé (effet `sale.invoice.to_payment`).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre client, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → règlement, rattachée et tracée (497)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/497_chain_l16_facture_reglement_tests.sql
+
+      # L16 — chaînage interne ACHATS : la RÉCEPTION issue d'une COMMANDE D'ACHAT
+      # lui est rattachée et tracée (effet `purchase.order.to_receipt`) ; `purchase_orders`
+      # entre au registre chain_document_types.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (brouillon/annulée/annulée/autre
+      # fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : commande d''achat → réception, rattachée et tracée (498)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/498_chain_l16_reception_commande_tests.sql
+
+      # L16 — chaînage interne TRÉSORERIE : le VIREMENT (règlement fournisseur ou
+      # client) exécuté par un ORDRE DE PAIEMENT lui est rattaché et tracé
+      # (effet `treasury.order.to_payment`) ; `payment_orders` entre au registre.
+      # 16 verdicts : nominal achat + vente, idempotence (D1), quatre refus (annulé/
+      # déjà exécuté/introuvable/montant), frise (I-01), isolation (D8).
+      - name: 'L16 : ordre de paiement → virement, rattaché et tracé (499)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/499_chain_l16_ordre_virement_tests.sql
+
+      # L16 — chaînage interne STOCK/ACHATS : la COMMANDE D'ACHAT issue d'une
+      # PROPOSITION (MRP) lui est rattachée et tracée (effet `purchase.proposal.to_order`) ;
+      # `mrp_proposals` entre au registre chain_document_types.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (rejetée/convertie/
+      # fabrication/annulée/autre fournisseur), frise (I-01), isolation (D8).
+      - name: 'L16 : proposition (MRP) → commande d''achat, rattachée et tracée (751)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/751_chain_l16_proposition_commande_tests.sql
+
+      # L23-b — LES AUTOMATISATIONS branchées sur le journal d'événements unifié :
+      # le moteur `chain_l23_automatiser` joue, pour chaque événement entrant,
+      # les règles ACTIVES de sa société (catalogue FERMÉ `automation_actions`,
+      # idempotence structurelle `automation_runs`).
+      # 10 verdicts : nominal (déclenchement + lien), idempotence (D1), skipped,
+      # failed (erreur tracée, transaction survit), isolation (D8).
+      - name: 'L23-b : automatisations sur le journal d''événements, tracées (752)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/752_chain_l23_automatisations_tests.sql
+
+      # L16 — chaînage interne ACHATS : le RÈGLEMENT d'une FACTURE FOURNISSEUR lui
+      # est rattaché et tracé (effet `purchase.invoice.to_payment`) ; miroir de 497.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (facture/règlement
+      # annulés, autre fournisseur, règlement déjà affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → règlement, rattachée et tracée (753)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/753_chain_l16_reglement_fournisseur_tests.sql
+
+      # L16 — chaînage interne COMMERCIAL : l'AVOIR qui annule une FACTURE lui est
+      # rattaché et tracé (effet `sale.invoice.to_credit_note`) ; le lot différé
+      # `498` est enfin fermé (le harnais de validation du 753 l'a rendu possible).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre client/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → avoir, rattachée et tracée (754)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/754_chain_l16_facture_avoir_tests.sql
+
+      # L16 — chaînage interne ACHATS : la FACTURE FOURNISSEUR d'une RÉCEPTION lui
+      # est rattachée et tracée (effet `purchase.receipt.to_invoice`) ; le maillon
+      # ÉCRIT `purchase_invoices.goods_receipt_id`, que le rapprochement trois points
+      # (135/148) lisait sans que personne ne l'écrive.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (réception/facture
+      # annulées, autre fournisseur, facture déjà rattachée), frise (I-01), isolation (D8).
+      - name: 'L16 : réception → facture fournisseur, rattachée et tracée (755)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/755_chain_l16_reception_facturefournisseur_tests.sql
+
+      # L16 — chaînage interne ACHATS : l'AVOIR FOURNISSEUR qui annule une FACTURE
+      # FOURNISSEUR lui est rattaché et tracé (effet `purchase.invoice.to_credit_note`) ;
+      # `purchase_credit_notes` entre au registre chain_document_types. Dernier
+      # tronçon de la famille Achats.
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre fournisseur/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture fournisseur → avoir, rattachée et tracée (756)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/756_chain_l16_avoir_fournisseur_tests.sql
+
+      # L16 — chaînage interne COMMERCIAL : la RELANCE d'une FACTURE lui est
+      # rattachée et tracée (effet `sale.invoice.to_reminder`) ; `collection_reminders`
+      # entre au registre chain_document_types. Dernier tronçon du Commercial.
+      # 15 verdicts : nominal, idempotence (D1), cinq refus (introuvable/brouillon/
+      # annulée/autre client/déjà portée), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → relance, rattachée et tracée (757)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/757_chain_l16_relance_tests.sql
+
+      # L16 — chaînage interne COMPTABILITÉ : chaque LIGNE DE JOURNAL d'un groupe de
+      # lettrage est tracée vers son GROUPE (effet `rev.line.lettered`) ; `lettrage_groups`
+      # entre au registre. C'est la demande R3 d'A1 (« bâtir le lien lettrage_groups ↔
+      # journal_lines », pour INV-07). Direction LIGNE → GROUPE : link_documents fusionne
+      # deux liens de même amont, donc l'amont est la ligne (N liens tiennent).
+      # 12 verdicts : nominal (2 lignes), idempotence structurelle, trois refus,
+      # frise (I-01) dans les deux sens, isolation (D8).
+      - name: 'L16 : groupe de lettrage → ses lignes de journal, tracé (758)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/758_chain_l16_lettrage_groupes_tests.sql
+
+      # L16 — chaînage interne RH/PAIE : le BULLETIN DE PAIE rattache son ÉCRITURE
+      # comptable (effet `payroll.slip.posted`) ; `pay_slips` entre au registre.
+      # 12 verdicts : nominal, idempotence (D1), trois refus (introuvable/annulé/
+      # non comptabilisé), frise (I-01), isolation (D8).
+      - name: 'L16 : bulletin de paie → son écriture, tracé (759)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/759_chain_l16_bulletin_ecriture_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
