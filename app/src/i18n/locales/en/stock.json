@@ -423,7 +423,30 @@
     "manual": "Manual",
     "production": "Production",
     "referenceId": "Reference ID",
-    "referenceType": "Reference type"
+    "referenceType": "Reference type",
+    "plan": {
+      "title": "Applicable control plan",
+      "lotQuantity": "Lot quantity",
+      "check": "Check",
+      "specific": "product plan",
+      "generic": "generic plan",
+      "method": "Method",
+      "methods": {
+        "rate": "percentage",
+        "systematic": "systematic",
+        "table": "table"
+      },
+      "sampleSize": "Sample to inspect",
+      "points": "Control points",
+      "noPoints": "No control point on this plan.",
+      "mandatory": "Mandatory",
+      "types": {
+        "measure": "measure",
+        "visual": "visual",
+        "binary": "pass / fail"
+      },
+      "none": "No plan applies to this product."
+    }
   },
   "picking": {
     "title": "Pick lists",

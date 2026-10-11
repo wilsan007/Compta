@@ -269,10 +269,44 @@ opérations, et bouton **« Déclarer une opération »**.
 Suite `661` : **3/3**, rouge avant (aucune fonction n'existait) ; et
 **non-régression** : `302` 8/8, `254` 5/5.
 
+### `STK-13` — plans de contrôle qualité : `quality_control_plans` branchée (migration `662`)
+
+**Le trou.** L'écran `/stock/quality-checks` enregistre bien les **contrôles**
+(`quality_checks`), mais **rien** ne disait *quel* contrôle appliquer à un
+article, ni sur *combien* d'unités. C'est exactement ce que décrivent
+`quality_control_plans` et `quality_control_points` — deux coquilles depuis la
+`125` — et c'est ce qu'on branche.
+
+**Livré.**
+
+- `quality_plan_for(article)` — le plan applicable : **celui de l'article** s'il
+  en existe un, sinon le plan **générique** (`product_id IS NULL`) ;
+- `quality_sample_size(plan, quantité du lot)` — la taille de l'échantillon selon
+  la méthode du plan : `rate` = un pourcentage du lot, `systematic`/`table` = le
+  lot entier ;
+- `quality_plan_points(plan)` — les points de contrôle, obligatoires d'abord ;
+- `evaluate_quality_point(point, valeur)` — la valeur est-elle dans la
+  tolérance ? (`measure` / `binary` / `visual`, bornes ouvertes quand une
+  tolérance est `NULL`).
+
+**Un bug attrapé par le test.** La première version écrivait
+`(p.product_id = p_product_id)` : pour le plan **générique**, `product_id` est
+`NULL` et `NULL = x` vaut `NULL`, pas `false`. Le plan générique se classait donc
+*avant* le plan de l'article et `is_product_specific` sortait `NULL`. La règle
+est devenue `(p.product_id IS NOT NULL AND p.product_id = p_product_id)` — c'est
+le test `T02`/`T03` qui l'a montré, pas la relecture.
+
+**Écran.** Carte **« Plan de contrôle applicable »** en tête de
+`/stock/quality-checks` : article + quantité du lot → le plan qui s'applique,
+sa méthode, l'échantillon à contrôler et ses points.
+
+Suite `662` : **5/5**, rouge avant.
+
+
 
 ## E.5 — tables coquilles : brancher ou supprimer
 
-**Sept coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
+**Neuf coquilles de mon périmètre sont désormais branchées** (lues par un écran ou
 une fonction) :
 
 | Table | Branchée par |
@@ -284,6 +318,7 @@ une fonction) :
 | `maintenance_records` | `PRD-11`, carte « Interventions » |
 | `work_center_calendars` | `PRD-07`, `657` (`work_center_capacity`) |
 | `mo_operations` | `PRD-06`, `661` + onglet « Atelier » de la fiche OF |
+| `quality_control_plans` (+ `quality_control_points`) | `STK-13`, `662` + carte « Plan de contrôle applicable » |
 
 **Ce qui reste, et pourquoi** — aucune n'est laissée en suspens :
 
@@ -292,7 +327,6 @@ une fonction) :
 | `landed_cost_lines` (+ `landed_cost_receipts`) | **branchée** (STK-08, `658`) | le moteur corrigé et l'écran `/stock/landed-costs` |
 | `mo_operations` | **branchée** (PRD-06, `661`) | déclaration d'atelier : temps réel, produites, rebuts |
 | `mo_consumptions` | **brancher** (PRD-06) | écart matière prévu/réel — l'écart se calcule déjà (`manufacturing_requirements` + mouvements `production`), il reste à le figer |
-| `quality_control_plans`, `quality_control_points` | **brancher** (STK-13) | plans de contrôle et échantillonnage |
 | `fixed_asset_components` | **hors périmètre E** | immobilisations (`ACC-07`) — à l'intégration |
 | `resource_capacities` | **hors périmètre E** | capacité par ressource des projets (`PRJ`) — à l'intégration |
 
@@ -398,4 +432,5 @@ comme le reste.
 | 11/10/2026 | **E.4** — sous-OF (recomptage) | déjà câblé (onglet « sous-niveaux ») ; colonne produit corrigée | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `444d70d` |
 | 11/10/2026 | **E.3** — `STK-11` stock par casier | `659` affectations + `location_stock` + « Affecter » à l'écran | `659` 3/3 · non-régression 254/652/653/654/655 · tsc 0 · oxlint 0 · i18n OK | `3b17bf9` |
 | 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `1bfdba4` |
-| 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |
+| 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `5a9fd96` |
+| 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |

@@ -423,7 +423,30 @@
     "manual": "Manuel",
     "production": "Production",
     "referenceId": "ID de référence",
-    "referenceType": "Type de référence"
+    "referenceType": "Type de référence",
+    "plan": {
+      "title": "Plan de contrôle applicable",
+      "lotQuantity": "Quantité du lot",
+      "check": "Vérifier",
+      "specific": "plan de l'article",
+      "generic": "plan générique",
+      "method": "Méthode",
+      "methods": {
+        "rate": "pourcentage",
+        "systematic": "systématique",
+        "table": "table"
+      },
+      "sampleSize": "Échantillon à contrôler",
+      "points": "Points de contrôle",
+      "noPoints": "Aucun point de contrôle sur ce plan.",
+      "mandatory": "Obligatoire",
+      "types": {
+        "measure": "mesure",
+        "visual": "visuel",
+        "binary": "conforme / non conforme"
+      },
+      "none": "Aucun plan ne s'applique à cet article."
+    }
   },
   "picking": {
     "title": "Bons de préparation",

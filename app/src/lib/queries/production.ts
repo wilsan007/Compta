@@ -56,6 +56,42 @@ export async function updateQualityCheck(id: string, updates: Partial<QualityChe
   return data as QualityCheck
 }
 
+// STK-13 (662) : le plan de contrôle applicable et l'échantillonnage.
+export interface QualityPlanInfo {
+  plan_id: string
+  plan_name: string
+  sampling_method: string
+  sampling_rate: number
+  is_product_specific: boolean
+}
+export interface QualityPlanPoint {
+  point_id: string
+  point_name: string
+  check_type: string
+  tolerance_min: number | null
+  tolerance_max: number | null
+  unit: string | null
+  is_mandatory: boolean
+}
+
+export async function getQualityPlanFor(productId: string) {
+  const { data, error } = await supabase.rpc('quality_plan_for', { p_product_id: productId })
+  if (error) throw error
+  return ((data || []) as QualityPlanInfo[])[0] ?? null
+}
+
+export async function getQualitySampleSize(planId: string, lotQuantity: number) {
+  const { data, error } = await supabase.rpc('quality_sample_size', { p_plan_id: planId, p_lot_quantity: lotQuantity })
+  if (error) throw error
+  return data as number | null
+}
+
+export async function getQualityPlanPoints(planId: string) {
+  const { data, error } = await supabase.rpc('quality_plan_points', { p_plan_id: planId })
+  if (error) throw error
+  return (data || []) as QualityPlanPoint[]
+}
+
 
 // ============ Phase 2: Pick Lists ============
 export async function getPickLists() {

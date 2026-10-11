@@ -2409,6 +2409,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # STK-13 (662) — plans de contrôle : plan applicable, échantillonnage, verdict d'un point.
+      - name: 'E : STK-13 — plans de contrôle qualité (662)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/662_quality_control_plans_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

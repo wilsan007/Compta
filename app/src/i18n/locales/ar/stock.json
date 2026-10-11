@@ -423,7 +423,30 @@
     "manual": "يدوي",
     "production": "الإنتاج",
     "referenceId": "معرّف المرجع",
-    "referenceType": "نوع المرجع"
+    "referenceType": "نوع المرجع",
+    "plan": {
+      "title": "خطة الفحص المطبقة",
+      "lotQuantity": "كمية الدفعة",
+      "check": "تحقق",
+      "specific": "خطة المنتج",
+      "generic": "خطة عامة",
+      "method": "الطريقة",
+      "methods": {
+        "rate": "نسبة مئوية",
+        "systematic": "منهجي",
+        "table": "جدول"
+      },
+      "sampleSize": "العينة المطلوب فحصها",
+      "points": "نقاط الفحص",
+      "noPoints": "لا توجد نقاط فحص في هذه الخطة.",
+      "mandatory": "إلزامي",
+      "types": {
+        "measure": "قياس",
+        "visual": "بصري",
+        "binary": "مطابق / غير مطابق"
+      },
+      "none": "لا توجد خطة مطبقة على هذا المنتج."
+    }
   },
   "picking": {
     "title": "قوائم الانتقاء",
