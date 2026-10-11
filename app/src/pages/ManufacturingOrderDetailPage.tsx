@@ -369,7 +369,7 @@ export function ManufacturingOrderDetailPage() {
               {subMOs.map((sub) => (
                 <TableRow key={sub.id}>
                   <TableCell className="font-mono text-xs">{sub.number}</TableCell>
-                  <TableCell className="text-sm">—</TableCell>
+                  <TableCell className="text-sm">{sub.products?.name || '—'}</TableCell>
                   <TableCell className="font-mono text-xs">{sub.quantity}</TableCell>
                   <TableCell><Badge variant={statusVariants[sub.status] || 'neutral'}>{t('manufacturing.statuses.' + sub.status)}</Badge></TableCell>
                   <TableCell><Link to={`/production/of/${sub.id}`} className="text-[var(--color-primary)] text-xs hover:underline">{t('manufacturing.detail.sublevels.view')} →</Link></TableCell>

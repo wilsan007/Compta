@@ -1050,11 +1050,11 @@ export async function getManufacturingOrder(id: string) {
 
 export async function getSubManufacturingOrders(parentId: string) {
   const tid = await getTenantId()
-  let q = supabase.from('manufacturing_orders').select('*').eq('parent_mo_id', parentId).order('number')
+  let q = supabase.from('manufacturing_orders').select('*, products(name, sku)').eq('parent_mo_id', parentId).order('number')
   if (tid) q = q.eq('tenant_id', tid)
   const { data, error } = await q
   if (error) throw error
-  return data as ManufacturingOrder[]
+  return data as (ManufacturingOrder & { products?: { name: string; sku: string } | null })[]
 }
 
 

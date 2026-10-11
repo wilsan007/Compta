@@ -21,7 +21,7 @@
 | E.1 | **Recompter** les chantiers ❓ de son périmètre et **estimer** les ⬜ ; décider pour chacun : faire, reporter, écarter | ACC-01, ACC-03, PRD-03/04/05/08/10, ACH-01/02, VTE-01/03 | à chiffrer | 🟡 **compté le 05/10** — voir « E.1 — le recomptage » |
 | E.2 | Restes à l'écran : transfert entre dépôts, étiquettes, MRP jamais testés ; action « Modifier » d'une nomenclature | D13, reste de 2.5 | ≈ 3 j | ✅ **livré le 05/10** — « Modifier » une nomenclature ; **transferts inter-dépôts** (`652` + requêtes + écran `/stock/transfers`, suite 5/5) ; MRP testé (`651`) ; étiquettes OF déjà câblées (`of_labels`) |
 | E.3 | Stock avancé : FIFO/LIFO, unités de mesure, frais accessoires, réapprovisionnement et inventaire tournant, emplacements, transferts et variantes | STK-03/07/08/09/11/14 | ≈ 5 sem. | 🔶 **`STK-07`**, **`STK-08`** (`658`), **`STK-09`** (`653`/`654`), **`STK-11`** (socle `655`), **`STK-14`** livrés · reste le **stock par casier** de `STK-11` (changement de moteur) et rangement/prélèvement |
-| E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | 🔶 `PRD-07` (capacité `657`) et `PRD-11` (usure `656` + interventions, `maintenance_records` branchée) livrés le 06/10 · reste le sous-OF (`parent_mo_id`) |
+| E.4 | Production : capacité finie, maintenance, sous-OF (`parent_mo_id` inutilisé) | PRD-07, PRD-11 | ≈ 1,5 sem. | ✅ `PRD-07` (`657`), `PRD-11` (`656` + interventions) et le **sous-OF** (déjà câblé — onglet « sous-niveaux » ; colonne produit corrigée) |
 | E.5 | Tables coquilles de son périmètre — **brancher ou supprimer** : `uom_categories`, `landed_cost_lines`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `mo_consumptions`, `mo_operations`, `maintenance_records`, `work_center_calendars`, `quality_control_*`, `fixed_asset_components`, `resource_capacities` | ORPH-02 | ≈ 0,5 j | 🔶 **6 branchées** (`uom_categories`, `reorder_rules`, `stock_count_cycles`, `stock_transfer_lines`, `maintenance_records`, `work_center_calendars`) · les autres **décidées** (voir §E.5) |
 
 ## E.1 d'abord : pourquoi
@@ -193,10 +193,16 @@ leur durée de vie — et une carte **« Usure des outillages »** sur l'écran
 `/production/machines`. Suite `656` : **3/3**, rouge avant.
 
 **Reste de `E.4`.** L'incrémentation automatique du compteur à la production
-(`PRD-06`), le blocage du lancement d'OF sur outillage hors service, la maintenance
-préventive (brancher `maintenance_records`), l'**ordonnancement à capacité finie**
-(le calcul ci-dessous constate la surcharge, il ne l'étale pas) et le **sous-OF**
-(`parent_mo_id`).
+(`PRD-06`) et le blocage du lancement d'OF sur outillage hors service.
+
+### `E.4` — sous-OF : recomptage, **déjà câblé**
+
+Le plan notait « `parent_mo_id` inutilisé ». **Mesuré : il est utilisé.**
+`getSubManufacturingOrders` (query) alimente l'onglet **« sous-niveaux »** de
+`ManufacturingOrderDetailPage`, qui liste les sous-OF et pointe vers chacun. Seule
+la colonne « produit » affichait « — » (la requête ne joignait pas `products`) :
+**corrigé** (jointure + affichage). Le sous-OF est donc **fait** — le suivi était
+en retard, comme pour `ACC-01`/`PRD-03`.
 
 ### `PRD-07` — capacité finie : `work_center_capacity` (migration `657`)
 
@@ -333,4 +339,5 @@ comme le reste.
 | 06/10/2026 | **E.4** — `PRD-07` capacité finie | `657` `work_center_capacity`/`work_center_capacity_load` + carte « Charge / capacité » | `657` 4/4 · tsc 0 · oxlint 0 · i18n OK | `9b5f493` |
 | 06/10/2026 | **E.4** — `PRD-11` interventions de maintenance | requêtes + carte « Interventions » sur `/production/machines` ; branche `maintenance_records` | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | `b80d729` |
 | 06/10/2026 | **E.5** — décision par coquille | 6 branchées, 5 décidées (brancher via leur chantier / hors périmètre E) | doc seule | `2d09df5` |
-| 11/10/2026 | **E.3** — `STK-08` frais accessoires | `658` `landed_cost_receipts` + moteur corrigé + écran `/stock/landed-costs` | `658` 4/4 · tsc 0 · oxlint 0 · i18n OK | à committer |
+| 11/10/2026 | **E.3** — `STK-08` frais accessoires | `658` `landed_cost_receipts` + moteur corrigé + écran `/stock/landed-costs` | `658` 4/4 · tsc 0 · oxlint 0 · i18n OK | `e238842` |
+| 11/10/2026 | **E.4** — sous-OF (recomptage) | déjà câblé (onglet « sous-niveaux ») ; colonne produit corrigée | tsc 0 · oxlint 0 · i18n OK · vitest 86/86 | à committer |
