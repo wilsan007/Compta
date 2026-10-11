@@ -2454,6 +2454,17 @@ jobs:
       - name: 'L16 : exercice clos → son écriture d''affectation, tracé (760)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/760_chain_l16_cloture_resultat_tests.sql
 
+      # L16 — chaînage interne STOCK : le MOUVEMENT DE STOCK trace son LOT
+      # (effet `stock.movement.lot_traced`) ; `product_batches` entre au registre.
+      # Sens MOUVEMENT → LOT : link_documents fusionne deux liens de même amont,
+      # donc l'amont est le mouvement (N mouvements par lot tiennent), et la frise
+      # répond « lot → ses mouvements ». 13 verdicts : nominal (3), idempotence
+      # (D1), cinq refus (introuvable ×2, autre produit, sans produit, lot déjà
+      # posé), frise (I-01) dans les deux sens, isolation (D8).
+      - name: 'L16 : mouvement de stock → son lot, tracé (761)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/761_chain_l16_stock_lot_tests.sql
+
+
       # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
       # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
       # compris — et empreinte NF-525). Aucune écriture, aucun « tenu » inventé,
