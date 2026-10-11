@@ -2446,6 +2446,21 @@ jobs:
       - name: 'L16 : bulletin de paie → son écriture, tracé (759)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/759_chain_l16_bulletin_ecriture_tests.sql
 
+      # L16 — chaînage interne COMPTABILITÉ : l'EXERCICE CLOS rattache son ÉCRITURE
+      # d'affectation du résultat (effet `rev.fiscal_year.result_allocated`) ;
+      # `fiscal_years` entre au registre. Première migration de la plage 760→769.
+      # 12 verdicts : nominal, idempotence (D1), trois refus (introuvable/ouvert/
+      # non affecté), frise (I-01), isolation (D8).
+      - name: 'L16 : exercice clos → son écriture d''affectation, tracé (760)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/760_chain_l16_cloture_resultat_tests.sql
+
+      # P1 (A3.4) — l'ATTESTATION D'INTÉGRITÉ TECHNIQUE : un `jsonb` de FAITS
+      # (dernier relevé des invariants, écarts nommés, rapport du banc — non_joue
+      # compris — et empreinte NF-525). Aucune écriture, aucun « tenu » inventé,
+      # garde de société. 7 verdicts.
+      - name: 'P1 : attestation d''intégrité technique (770)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/770_chain_certificat_integrite_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559
