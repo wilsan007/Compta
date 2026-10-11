@@ -1192,6 +1192,114 @@ export interface Database {
         },
       ]
     }
+    automation_actions: {
+      Row: {
+        code: string
+        libelle: string
+        description: string | null
+      }
+      Insert: {
+        code: string
+        libelle: string
+        description?: string
+      }
+      Update: {
+        code?: string
+        libelle?: string
+        description?: string
+      }
+      Relationships: [
+      ]
+    }
+    automation_rules: {
+      Row: {
+        id: string
+        tenant_id: string
+        code: string
+        event_name: string
+        action_code: string
+        params: Json
+        active: boolean
+        created_at: string
+        created_by: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        code: string
+        event_name: string
+        action_code: string
+        params?: Json
+        active?: boolean
+        created_at?: string
+        created_by?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        code?: string
+        event_name?: string
+        action_code?: string
+        params?: Json
+        active?: boolean
+        created_at?: string
+        created_by?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "automation_rules_action_code_fkey",
+          columns: ["action_code"],
+          isOneToOne: true,
+          referencedRelation: "automation_actions",
+          referencedColumns: ["code"]
+        },
+        {
+          foreignKeyName: "automation_rules_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
+    automation_runs: {
+      Row: {
+        id: string
+        tenant_id: string
+        rule_id: string
+        event_id: number
+        statut: string
+        detail: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        rule_id: string
+        event_id: number
+        statut: string
+        detail?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        rule_id?: string
+        event_id?: number
+        statut?: string
+        detail?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "automation_runs_rule_fkey",
+          columns: ["tenant_id", "rule_id"],
+          isOneToOne: false,
+          referencedRelation: "automation_rules",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
     bank_accounts: {
       Row: {
         id: string
