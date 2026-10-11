@@ -546,6 +546,28 @@ fichiers SQL du job ont été rejoués en entier : **178 OK, 2 échecs**.
 
 Rejeu après correction : **180/180**.
 
+## État final de la CI sur `plan6/e-operations` (11/10/2026)
+
+`completed / success` — passage **38155294420** (`823ecd7`), **tous** les jobs verts :
+
+| Job | Verdict |
+|---|---|
+| `DB Integration Tests` | ✅ **197 étapes** — les 22 contrôles de schéma (dont clés composites et G7) **et** les suites qui n'avaient jamais été jouées (LOT7-04 contre PostgREST, W0/W10, SOC-01/02, B8/B9/B10, registres AUD) |
+| `Chemin de l'écran (PostgREST réel)` | ✅ — c'est ce job qui voyait `PGRST200` sur `/stock/transfers` |
+| `Lint & Type Check` · `Unit Tests` · `i18n` · `Edge Functions` · `Production Build` | ✅ tous |
+| `E2E Tests (Playwright)` · `Security Audit` | `skipped` — c'est leur **condition** (`schedule`, `workflow_dispatch`, label `run-e2e`), pas un échec |
+
+Les deux passages précédents disent l'histoire de la branche : `38126150912`
+(`ea72bc6`) s'arrêtait à `check_composite_fks` — c'est lui qui a fait sortir `665`
+et `666` ; `38154354528` (`f911306`) s'arrêtait **étape 24**, « Vérifier que les
+types sont à jour », sur les 7 lignes de `stock_transfer_lines` — corrigé en
+`823ecd7`. À chaque fois, **une seule** étape rouge à la fois : c'est ce qui a
+laissé dix-huit contrôles dans l'ombre pendant toute la partie E.
+
+Les deux plafonds `app/.any-ceiling.json` et `app/.console-error-ceiling.json` ne
+sont **pas** touchés par cette branche (R6) : ils se régénèrent à l'intégration,
+après fusion.
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
@@ -574,3 +596,5 @@ Rejeu après correction : **180/180**.
 | 11/10/2026 | **CI enfin déclenchée** — `ISO-01` : `run_mrp()`/`work_center_capacity()` prenaient la société du **client** (migration `664`) | Une session pouvait calculer les besoins ou la charge d'une société étrangère ; trouvé par `check_tenant_guard` | `664` 5/5 (T01/T03 rouges avant) · `check_tenant_guard` vert | `8d9274b` |
 | 11/10/2026 | **CI** — `ISO-02`/`ISO-04`/`BUD-04` : les 2 tables neuves de E (migration `665`) | Clé étrangère mono-colonne, pas de `FORCE RLS`, pas d'index société ; `check_composite_fks` échouait (le job s'arrêtait là) | `665` 4/4 (T02 prouve le refus `23503`) · `check_composite_fks`/`check_bt_grid` verts | `8d9274b` |
 | 11/10/2026 | **CI** — `LOT7-04` : `/stock/transfers` s'ouvrait **sans ses articles** (migration `666`) | L'embed `products(name, sku)` était impossible : `stock_transfer_lines.product_id` n'avait aucune clé étrangère (depuis la 125) → `PGRST200` | `check-embeds` : 1 requête refusée **avant** / 1582 acceptées **après** · `666` 3/3 · `652` 5/5 · non-régression 664/665 | `8d9274b` |
+| 11/10/2026 | **CI** — étape 24 : les types générés ne portaient pas la clé étrangère de la `666` | Ma régénération datait d'une base **sans** la `666` : 666 réparait le schéma **sans** réparer l'écran (`PGRST200` serait resté) | Diff de la CI reproduit à l'identique en local (`@@ -19543,6 +19543,13 @@`) puis régénéré depuis la base neuve : **7 insertions** · `tsc` 0 · étape 24 verte au passage suivant | `823ecd7` |
+| 11/10/2026 | **CI verte** sur la branche | Le job DB va de l'étape 1 à **197** sans un rouge ; les 22 contrôles de schéma passent, et les suites jamais jouées aussi | passage `38155294420` : **`completed / success`** — 8 jobs verts, 2 `skipped` par construction (`schedule` / `workflow_dispatch`) | `823ecd7` |
