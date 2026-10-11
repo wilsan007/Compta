@@ -2395,6 +2395,14 @@ jobs:
       - name: 'L16 : facture fournisseur → règlement, rattachée et tracée (753)'
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/753_chain_l16_reglement_fournisseur_tests.sql
 
+      # L16 — chaînage interne COMMERCIAL : l'AVOIR qui annule une FACTURE lui est
+      # rattaché et tracé (effet `sale.invoice.to_credit_note`) ; le lot différé
+      # `498` est enfin fermé (le harnais de validation du 753 l'a rendu possible).
+      # 14 verdicts : nominal, idempotence (D1), quatre refus (avoir introuvable/
+      # brouillon/autre client/déjà rattaché), frise (I-01), isolation (D8).
+      - name: 'L16 : facture → avoir, rattachée et tracée (754)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/754_chain_l16_facture_avoir_tests.sql
+
       # --- plan6:b --- règles d'état, paie française ---
       # Territoire : règles d'état par module ; app/src/lib/payroll*, écrans de paie
       # Plage : 500→559

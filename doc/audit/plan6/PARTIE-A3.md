@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **8 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), facture fournisseur → règlement (`753`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 8 ; l'**avoir** est différé (cf. lot 4) |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **9 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), facture fournisseur → règlement (`753`, **14/14**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 9 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟢 **débloqué le 05/10** — les cinq questions du §6 sont **tranchées** et l'expert-comptable référent est **désigné** (dossier `doc/validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md`, lot A1) ; ordre d'exécution : P1 → P3 → P2 → P4 → P5 → P7 → P8 → P6 |
 
@@ -196,7 +196,7 @@ facture dont `validation_status <> 'validated'` ; or `invoice_guard` (190) refus
 de valider une facture **sans ligne**. Tester l'avoir proprement demande donc de
 construire facture + lignes + validation + avoir + validation — un harnais à part.
 Plutôt qu'un lot fragile, le numéro **`498` est rendu** (`migration-numero.mjs
-rendre`) et le tronçon reste **au reste d'A3.2** (voir plus bas). Le journal le
+rendre`) et le tronçon restait au reste d'A3.2. **↳ Fermé le 06/10/2026 : le harnais monté pour les lots 753 et 754 l'a livré — voir §A3.2 lot 9.** Le journal le
 dit : c'est un report décidé, pas un oubli.
 
 ## A3.2 — lot 5 : la réception rattachée à la commande d'achat (migration `498`)
@@ -359,6 +359,36 @@ Portes : G2 **67 constats, 0 au registre** ; G8 / `check_tenant_guard` /
 **Reste de la famille Achats** : réception → facture fournisseur, avoir
 fournisseur (`purchase_credit_notes`, même garde que l'avoir client).
 
+## A3.2 — lot 9 : l'avoir rattaché à la facture (migration `754`) — le différé fermé
+
+**Le tronçon qui avait été DIFFÉRÉ** (lot 4, numéro `498` rendu), dans la famille
+**Commercial** — « facture ↔ **avoir** ↔ règlement ». La cause du report était le
+**harnais** : `credit_note_guard` (213) impose « brouillon PUIS validé » et exige
+la facture d'origine **validée** ; `invoice_guard` (190) refuse de valider une
+facture **sans ligne**. Le harnais a été monté au lot `753` (facture fournisseur
+approuvée) ; il sert ici — deux helpers (`_mk_validated_invoice`,
+`_mk_validated_credit_note`).
+
+**Ce qui est livré** — migration `754_chain_l16_facture_avoir.sql` : contrat
+d'effet `sale.invoice.to_credit_note` + maillon `chain_l16_invoice_credit_note` —
+l'avoir n'est pas un **brouillon**, même client, un avoir qui annule **déjà** une
+autre facture est refusé ; **idempotent** ; **lien** `link_documents`
+(`reversed_by`). Il **ne réécrit pas** `credit_notes.invoice_id` (posée par le
+trigger `213`, et la garde refuse de modifier un avoir validé).
+
+**⚠️ Décision mesurée** : le **statut de la facture n'est PAS un refus**. Un avoir
+qui la crédite en entier la fait **légitimement** passer à `cancelled`
+(`refresh_invoice_settlement`) — la première version refusait ce cas et **cassait
+le geste normal** (mesuré : `FAC-2026-000001 déjà annulée`). Corrigé, et testé.
+
+**Éprouvé** — suite `754` **14/14** sur base neuve : T01 nominal (3), T02
+idempotence (2), T03 quatre refus (avoir introuvable / brouillon / autre client /
+déjà rattaché — 4), T04 frise (2), T05 isolation (3). Portes : G2 **67 constats,
+0 au registre** ; G8 / `check_tenant_guard` / `check_anon_grants` **OK** ;
+rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Reste de la famille Commercial** : relance, marge prévisionnelle.
+
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
 | # | Demande | De | Ce qu'elle débloque |
@@ -379,4 +409,5 @@ fournisseur (`purchase_credit_notes`, même garde que l'avoir client).
 | 2026-10-06 | A3.2 (lot 6) | **L16 · Trésorerie · ordre de paiement → virement** : migration `499` (`payment_orders` au registre, contrat `treasury.order.to_payment`, maillon `chain_l16_order_payment` — auto-détection achat/vente, cohérence compte/montant, marque l'ordre `executed`, lien `paid_by`) + suite `499` enrôlée dans `ci.yml` | suite **16/16** sur base neuve · G2 65 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `560477c` |
 | 2026-10-06 | A3.2 (lot 7) | **L16 · Stock · proposition (MRP) → commande d'achat** : migration `751` (`mrp_proposals` au registre, contrat `purchase.proposal.to_order`, maillon `chain_l16_proposal_order` — type `purchase` seul, même fournisseur, marque la proposition `converted`, lien `created_from`) + suite `751` enrôlée dans `ci.yml` | suite **15/15** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `4bc9567` |
 | 2026-10-06 | A3.3 (L23-b) | **L23-b · le MOTEUR D'AUTOMATISATIONS** : migration `752` (`automation_actions` catalogue fermé, `automation_rules`, `automation_runs` — idempotence `(tenant, règle, événement)`, moteur `chain_l23_automatiser`, déclencheur `zz_l23_automatiser` sur `domain_events`) + suite `752` enrôlée dans `ci.yml` | suite **10/10** sur base neuve · G2/G8/tenant/anon/composite-FK **OK** · **plafond FORCE RLS 318→320 inscrit** · rejouable | `fd9a11b` |
-| 2026-10-11 | A3.2 (lot 8) | **L16 · Achats · facture fournisseur → règlement** : migration `753` (contrat `purchase.invoice.to_payment`, maillon `chain_l16_supplier_invoice_payment` — même fournisseur, statuts valides, idempotent, écrit `supplier_payments.purchase_invoice_id`, lien `paid_by`) + suite `753` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
+| 2026-10-11 | A3.2 (lot 8) | **L16 · Achats · facture fournisseur → règlement** : migration `753` (contrat `purchase.invoice.to_payment`, maillon `chain_l16_supplier_invoice_payment` — même fournisseur, statuts valides, idempotent, écrit `supplier_payments.purchase_invoice_id`, lien `paid_by`) + suite `753` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | `94cbc84` |
+| 2026-10-11 | A3.2 (lot 9) | **L16 · Commercial · facture → avoir** — le **DIFFÉRÉ fermé** : migration `754` (contrat `sale.invoice.to_credit_note`, maillon `chain_l16_invoice_credit_note` — avoir non brouillon, même client, ne réécrit pas `invoice_id`, lien `reversed_by`). **Décision mesurée** : le statut de la facture n'est PAS un refus (un avoir entier la passe légitimement à `cancelled`) — la 1ʳᵉ version le refusait et cassait le geste normal. Harnais `_mk_validated_invoice` / `_mk_validated_credit_note`. + suite `754` enrôlée dans `ci.yml` | suite **14/14** sur base neuve · G2 67 constats **0 au registre** · G8/tenant/anon **OK** · rejouable | _(ce lot)_ |
