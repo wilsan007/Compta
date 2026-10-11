@@ -37,7 +37,7 @@ BEGIN
   UPDATE manufacturing_orders SET status = 'cancelled' WHERE id = x.mo;
 
   SELECT count(*) INTO n_in FROM stock_movements sm
-  WHERE sm.tenant_id = x.t AND sm.reference LIKE 'ANN-OF-%' AND sm.reference_type = 'production'
+  WHERE sm.tenant_id = x.t AND sm.reference LIKE 'ANN-OF-%' AND sm.reference_type = 'production_reversal'
     AND sm.reference_id = x.mo AND sm.movement_type = 'in';
   PERFORM _rec('T01a', 'la contre-passation inverse la sortie (1 entrée ANN-OF-…)', n_in = 1, format('entrées=%s (1 attendue)', n_in));
 

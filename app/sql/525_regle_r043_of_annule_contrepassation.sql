@@ -19,6 +19,15 @@
 --   * SANS mouvement produit (OF jamais démarré) : il trace `sans_effet` — aucune pièce
 --     fantôme.
 --
+-- RÉCONCILIÉ AVEC MAIN (session d'intégration) — LES INVERSES ONT LEUR PROPRE reference_type.
+-- Les mouvements inverses portent `reference_type = 'production_reversal'`, PAS `'production'`.
+-- MESURÉ : la chaîne existante tient le modèle « UN jeu `production` par OF » — la clôture
+-- (`81`/`229`, `create_stock_on_manufacturing_complete`) écrit ce jeu, et sa garde d'idempotence
+-- (`229` T04 : « reclôturer un OF → refusé ») COMPTE ces mouvements. Écrire les inverses sous
+-- `production` faisait compter à la 229 des entrées qu'elle n'attendait pas (2 au lieu de 1,
+-- 30 au lieu de 10) : deux règles, deux jeux de mouvements, deux référence_types. La lecture
+-- ci-dessous, elle, reste sur `production` — c'est bien le jeu de l'OF qu'il faut inverser.
+--
 -- CE QUI RESTE À LA COORDINATION : la LIBÉRATION DES COMPOSANTS RÉSERVÉS (réservations de
 -- production : pas de table dédiée au schéma côté OF) et la RESTITUTION COMPTABLE du coût
 -- (écriture inverse) — la contre-passation de STOCK est faite ici, la pièce comptable suit
@@ -56,10 +65,11 @@ BEGIN
   IF NEW.tenant_id IS NULL THEN RETURN NULL; END IF;
 
   -- Idempotence : les contre-passations de cet OF existent-elles déjà ?
+  -- (reference_type DISTINCT de celui de la clôture : voir l'en-tête.)
   v_ref := 'ANN-OF-' || NEW.number;
   IF EXISTS (SELECT 1 FROM stock_movements sm
              WHERE sm.tenant_id = NEW.tenant_id AND sm.reference = v_ref
-               AND sm.reference_type = 'production' AND sm.reference_id = NEW.id) THEN
+               AND sm.reference_type = 'production_reversal' AND sm.reference_id = NEW.id) THEN
     RETURN NULL;
   END IF;
 
@@ -85,7 +95,7 @@ BEGIN
       lot_id, serial_id, reference, reference_type, reference_id, date, movement_date, notes
     ) VALUES (
       NEW.tenant_id, v_m.product_id, v_m.warehouse_id, v_opp, v_opp, v_m.quantity, v_m.unit_cost,
-      v_m.lot_id, v_m.serial_id, v_ref, 'production', NEW.id,
+      v_m.lot_id, v_m.serial_id, v_ref, 'production_reversal', NEW.id,
       COALESCE(v_m.movement_date, v_m.date), COALESCE(v_m.movement_date, v_m.date),
       'Contre-passation OF ' || NEW.number
     ) RETURNING id INTO v_new_id;
