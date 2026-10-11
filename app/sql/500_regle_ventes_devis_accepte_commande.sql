@@ -83,6 +83,14 @@ BEGIN
   IF COALESCE(NEW.transformed_to_order_id, OLD.transformed_to_order_id) IS NOT NULL THEN
     RETURN NULL;
   END IF;
+  -- RÉCONCILIATION D'INTÉGRATION (11/10) : la `493` (A3/L16) crée AUSSI la commande, par le
+  -- RPC explicite `convert_quote_to_order`. On ne double pas : si un LIEN ACTIF devis→commande
+  -- existe déjà, le devis est déjà transformé (même lecture que la `493`).
+  IF EXISTS (SELECT 1 FROM document_links dl
+             WHERE dl.tenant_id = NEW.tenant_id AND dl.amont_type = 'quotes' AND dl.amont_id = NEW.id
+               AND dl.aval_type = 'sales_orders' AND dl.etat = 'actif') THEN
+    RETURN NULL;
+  END IF;
 
   -- 1. Entrée du maillon — rejeu, contrat, drapeau de la société.
   IF NOT chain_avant(NEW.tenant_id, 'quotes', 'accepted', 'sale.quote.order',

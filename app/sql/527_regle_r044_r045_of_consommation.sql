@@ -103,6 +103,7 @@ AS $maillon$
 DECLARE
   v_debut timestamptz := clock_timestamp();
   v_lignes integer := 0;
+  v_ignore integer := 0;
   v_wh    uuid;
   v_mvt   uuid;
   v_l     record;
@@ -130,18 +131,24 @@ BEGIN
     SELECT bl.product_id, bl.quantity, COALESCE(bl.scrap_rate, 0) AS scrap_rate
     FROM bom_lines bl WHERE bl.bom_id = NEW.bom_id AND bl.tenant_id = NEW.tenant_id
   LOOP
-    INSERT INTO stock_movements (tenant_id, product_id, warehouse_id, movement_type, type, quantity,
-                                 reference, reference_type, reference_id, date, movement_date, notes)
-    VALUES (NEW.tenant_id, v_l.product_id, v_wh, 'out', 'out',
-            round(v_l.quantity * NEW.quantity * (1 + v_l.scrap_rate / 100.0), 4),
-            'OF-' || NEW.number, 'production', NEW.id, CURRENT_DATE, CURRENT_DATE,
-            'Consommation OF ' || NEW.number)
-    RETURNING id INTO v_mvt;
+    BEGIN
+      INSERT INTO stock_movements (tenant_id, product_id, warehouse_id, movement_type, type, quantity,
+                                   reference, reference_type, reference_id, date, movement_date, notes)
+      VALUES (NEW.tenant_id, v_l.product_id, v_wh, 'out', 'out',
+              round(v_l.quantity * NEW.quantity * (1 + v_l.scrap_rate / 100.0), 4),
+              'OF-' || NEW.number, 'production', NEW.id, CURRENT_DATE, CURRENT_DATE,
+              'Consommation OF ' || NEW.number)
+      RETURNING id INTO v_mvt;
 
-    PERFORM link_documents(NEW.tenant_id, 'manufacturing_orders', NEW.id, 'stock_movements', v_mvt,
-                           'production.order.components_consumed', 'consumed_by_absence',
-                           jsonb_build_object('product_id', v_l.product_id, 'reference', 'OF-' || NEW.number));
-    v_lignes := v_lignes + 1;
+      PERFORM link_documents(NEW.tenant_id, 'manufacturing_orders', NEW.id, 'stock_movements', v_mvt,
+                             'production.order.components_consumed', 'consumed_by_absence',
+                             jsonb_build_object('product_id', v_l.product_id, 'reference', 'OF-' || NEW.number));
+      v_lignes := v_lignes + 1;
+    EXCEPTION WHEN others THEN
+      -- Matière absente ou mouvement refusé : on NE BLOQUE PAS le démarrage de l'OF
+      -- (la 750, A3/L16, veut que « in_progress » reste franchissable). Le manque est compté.
+      v_ignore := v_ignore + 1;
+    END;
   END LOOP;
 
   -- Les réservations de l'OF passent à « consumed ».
@@ -151,12 +158,13 @@ BEGIN
 
   IF v_lignes = 0 THEN
     PERFORM chain_apres(NEW.tenant_id, 'production.order.components_consumed', 'manufacturing_orders', NEW.id,
-                        v_debut, 0, 'sans_effet', 'Nomenclature vide : rien à consommer.', NULL, NULL);
+                        v_debut, 0, 'sans_effet',
+                        format('Aucune consommation produite (%s ligne(s) sans matière disponible, ou nomenclature vide).', v_ignore), NULL, NULL);
     RETURN NULL;
   END IF;
 
   PERFORM emit_domain_event(NEW.tenant_id, 'manufacturing_orders.components_consumed', 'manufacturing_orders', NEW.id,
-                            jsonb_build_object('number', NEW.number, 'composants', v_lignes), NULL);
+                            jsonb_build_object('number', NEW.number, 'composants', v_lignes, 'ignores', v_ignore), NULL);
   PERFORM chain_apres(NEW.tenant_id, 'production.order.components_consumed', 'manufacturing_orders', NEW.id,
                       v_debut, v_lignes, 'applique', NULL, NULL, NULL);
   RETURN NULL;

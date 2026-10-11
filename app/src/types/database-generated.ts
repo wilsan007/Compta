@@ -10528,6 +10528,8 @@ export interface Database {
         qty_produced: number | null
         qty_scrapped: number | null
         cost_variance: number | null
+        mrp_run_id: string | null
+        mrp_proposal_id: string | null
       }
       Insert: {
         id?: string
@@ -10559,6 +10561,8 @@ export interface Database {
         qty_produced?: number
         qty_scrapped?: number
         cost_variance?: number
+        mrp_run_id?: string
+        mrp_proposal_id?: string
       }
       Update: {
         id?: string
@@ -10590,6 +10594,8 @@ export interface Database {
         qty_produced?: number
         qty_scrapped?: number
         cost_variance?: number
+        mrp_run_id?: string
+        mrp_proposal_id?: string
       }
       Relationships: [
         {

@@ -4,8 +4,10 @@
 -- Source : doc/audit/REFERENTIEL-CHAINAGES-TRANSVERSAUX-2026-09-24.md §B.2 (lignes 40-42) ;
 -- inventaire mesuré : doc/audit/plan6/B1-INVENTAIRE-62-REGLES-2026-10-05.md (R-040/041/042 = ⬜).
 --
---   R-040 — `projects.status = completed` → clôture : encours (WIP), facturation
---           finale, retenue de garantie, libération des engagements, immobilisation ;
+--   R-040 — `projects.status = completed` → ❗ DÉJÀ PORTÉE par la `496` (A3/L16, fusionnée
+--           sur `main`) : clôture de projet TRACÉE + événement (marge gelée). Ce fichier ne
+--           la refait PAS — il ne couvre que R-041 (`cancelled`) et R-042 (`on_hold`),
+--           que personne ne porte. (Réconciliation d'intégration, 11/10.)
 --   R-041 — `projects.status = cancelled` → contre-passation des coûts en attente,
 --           libération des engagements, analyse d'écart ;
 --   R-042 — `projects.status = on_hold` → alerte de dérive, blocage de la facturation
@@ -51,7 +53,7 @@ DECLARE
   v_debut timestamptz := clock_timestamp();
   v_event text;
 BEGIN
-  IF NEW.status IS NOT DISTINCT FROM OLD.status OR NEW.status NOT IN ('completed', 'cancelled', 'on_hold') THEN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status OR NEW.status NOT IN ('cancelled', 'on_hold') THEN
     RETURN NULL;
   END IF;
   IF NEW.tenant_id IS NULL THEN RETURN NULL; END IF;

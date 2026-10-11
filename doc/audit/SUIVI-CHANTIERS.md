@@ -35,12 +35,12 @@
 ## 0. Mesures (recalculées par le script)
 
 <!-- MESURES:DEBUT -->
-*Mesuré le **2026-10-05** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
+*Mesuré le **2026-10-11** par `node app/scripts/suivi-chantiers.mjs --write` — ne pas éditer à la main.*
 
 | Mesure | Valeur | Chantier |
 |---|---|---|
-| Branche de la copie de travail | `main` @ `010db14` | — |
-| Migrations / suites SQL dans `app/sql` | 234 / 152 | — |
+| Branche de la copie de travail | `integration/plan6-b` @ `a3d46e2` | — |
+| Migrations / suites SQL dans `app/sql` | 267 / 185 | — |
 | **Numéros de migration en collision entre branches** (SOC-06) | ✅ 0 | alerte |
 | Registre SQL `ci/expected_failures.sql` (lignes `INSERT`) | 1 | registre |
 | Registre écran `__screen__/expected_failures.json` | ✅ vide | registre |
