@@ -435,15 +435,31 @@ comme le reste.
 
 ## Demandes hors territoire (R3)
 
-- **`ci.yml` — une branche `plan6/*` ne déclenche aucune CI.** Le filtre
-  `on: push: branches` liste `main`, `master`, `develop`, `commercial-hr-paie`,
-  `qa/**`, `partie-*`, `fusion-*`, `harmonisation` — **pas `plan6/**`** (mesuré
-  le 05/10, `ci.yml:22-30`). Les six marqueurs `# --- plan6:<lettre> ---` sont bien
-  posés (R5) mais restent **inertes** : une suite ajoutée sous le marqueur E ne
-  sera jamais jouée tant que ces branches ne se déclenchent pas. C'est la même
-  porte que le « 0 passage sur la branche QA » du 02/10. **À corriger par
-  l'intégration** — ajouter `plan6/**` à `push.branches` et
-  `pull_request.branches` — **avant** que la partie E ne pousse sa première suite.
+- **`ci.yml` — une branche `plan6/*` ne déclenchait aucune CI** → ✅ **corrigé
+  dans cette partie** (11/10/2026). Le filtre `on: push: branches` listait
+  `main`, `master`, `develop`, `commercial-hr-paie`, `qa/**`, `partie-*`,
+  `fusion-*`, `harmonisation` — **pas `plan6/**`** (mesuré le 05/10,
+  `ci.yml:22-30`). Les six marqueurs `# --- plan6:<lettre> ---` étaient bien
+  posés (R5) mais restaient **inerces** : une suite ajoutée sous le marqueur E
+  n'était jamais jouée. C'est la même porte que le « 0 passage sur la branche
+  QA » du 02/10.
+
+  **Mesuré** : `gh run list --branch plan6/e-operations` → **liste vide**, alors
+  que la branche portait quatorze suites, toutes vertes et toutes branchées dans
+  `ci.yml` ; `main`, lui, avait bien ses passages.
+
+  **Corrigé autrement que demandé.** La demande était d'ajouter `plan6/**` à la
+  liste. On ne l'a pas fait : c'était la **troisième** fois que cette liste
+  blanche oubliait une famille de branches vivantes (`qa/**` puis `partie-*`
+  l'avaient précédée). `push` joue désormais **toutes** les branches
+  (`branches: ['**']`), et `pull_request` ne filtre plus la branche cible — il la
+  limitait à `main`/`develop`, ce qui laissait sans CI les PR d'une branche de
+  travail vers une autre (`integration/plan6-b` → `plan6/b-regles-etat`).
+
+  **Et pour que ça ne se reperde pas** : `scripts/check-test-suites.mjs` (G5)
+  vérifiait déjà que chaque suite est **branchée** ; il vérifie maintenant aussi
+  que le workflow **se déclenche**. Mesure rouge avant (ancienne liste blanche →
+  `exit 1`), verte après (`exit 0`).
 
 ## Journal
 
@@ -467,4 +483,5 @@ comme le reste.
 | 11/10/2026 | **E.3** — `STK-11` rangement/prélèvement | `660` `suggest_putaway_location` + `suggest_pick_location` + carte à l'écran | `660` 3/3 (rouge avant) · `659` 3/3 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `1bfdba4` |
 | 11/10/2026 | **E.5 / PRD-06** — déclaration d'atelier | `661` `mo_operations` branchée (`record_mo_operation` + `mo_operations_summary`) + onglet « Atelier » | `661` 3/3 (rouge avant) · `302` 8/8 · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `5a9fd96` |
 | 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `8eec80b` |
-| 11/10/2026 | **E.5 / PRD-06** — écart de matière | `663` `mo_consumptions` branchée (`refresh_mo_consumptions` + `mo_consumption_variance`) + carte « Écart de matière » | `663` 4/4 (rouge avant) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | à committer |
+| 11/10/2026 | **E.5 / PRD-06** — écart de matière | `663` `mo_consumptions` branchée (`refresh_mo_consumptions` + `mo_consumption_variance`) + carte « Écart de matière » | `663` 4/4 (rouge avant) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `6a40a99` |
+| 11/10/2026 | **R3** — la CI ne jouait pas les branches `plan6/*` | `push` joue **toutes** les branches (`['**']`), `pull_request` sans filtre ; `check-test-suites.mjs` (G5) refuse le retour d'une liste blanche | `gh run list --branch plan6/e-operations` : liste vide **avant**, passage déclenché **après** · G5 rouge avant (exit 1) / vert après (exit 0) · YAML valide | à committer |

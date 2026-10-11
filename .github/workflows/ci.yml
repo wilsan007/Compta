@@ -19,17 +19,31 @@ on:
     # si elle est bonne — c'est-à-dire trop tard. La règle vaut pour toute
     # branche de travail, pas seulement pour celles dont le nom commence par
     # « partie ».
+    # ⚠️ 11/10/2026 — TROISIÈME occurrence, et cette fois la liste blanche est
+    # SUPPRIMÉE au lieu d'être rallongée.
+    #
+    # Les dix branches `plan6/*` (`a-chainages` … `f-plateforme`) n'y figuraient
+    # pas. Mesuré sur `plan6/e-operations` : `gh run list --branch
+    # plan6/e-operations` ne renvoyait **rien**, alors que la branche portait
+    # quatorze suites de tests — toutes vertes, et toutes branchées dans ce même
+    # fichier. Le **câblage** des suites était vérifié (`check-test-suites.mjs`,
+    # G5) ; le **déclenchement** du workflow ne l'était pas. Une suite que
+    # personne ne joue ne protège rien, et un workflow qui ne démarre pas joue
+    # ses étapes pour personne.
+    #
+    # Deux fois déjà on a rallongé cette liste (`qa/**`, `partie-*`) ; la
+    # troisième branche oubliée serait une quatrième. `push` joue donc TOUTES les
+    # branches : c'est la règle du dépôt — « une branche de travail qui n'est pas
+    # jouée n'est pas vérifiée » — appliquée **sans exception**. Et pour qu'elle
+    # ne puisse pas se reperdre, `check-test-suites.mjs` refuse désormais toute
+    # liste blanche à cet endroit (quatrième moitié de G5), avec une mesure
+    # rouge avant / verte après.
     branches:
-      - main
-      - master
-      - develop
-      - commercial-hr-paie
-      - 'qa/**'
-      - 'partie-*'
-      - 'fusion-*'
-      - harmonisation
+      - '**'
   pull_request:
-    branches: [main, master, develop, commercial-hr-paie, 'qa/**', 'partie-*', 'fusion-*']
+    # `branches` filtre la branche **cible**, pas la branche poussée : la limiter
+    # à `main`/`develop` laissait sans CI les PR d'une branche de travail vers une
+    # autre (`integration/plan6-b` → `plan6/b-regles-etat`). On ne filtre plus.
   schedule:
     # Every night at 2:00 AM UTC (regular regression testing)
     - cron: '0 2 * * *'
