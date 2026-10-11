@@ -35,7 +35,7 @@ export function StockCountsPage() {
         getStockCountCycles(), getStockCountList(), getProducts(), getWarehouses(),
       ])
       setCycles(cc || []); setDue(du || []); setProducts(prods || []); setWarehouses(whs || [])
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 

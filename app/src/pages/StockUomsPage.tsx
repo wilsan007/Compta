@@ -32,7 +32,7 @@ export function StockUomsPage() {
       const [cats, us] = await Promise.all([getUomCategories(), getUoms()])
       setCategories(cats || [])
       setUoms(us || [])
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [tCommon, toast])
 

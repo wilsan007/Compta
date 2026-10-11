@@ -9761,6 +9761,45 @@ export interface Database {
         },
       ]
     }
+    landed_cost_receipts: {
+      Row: {
+        id: string
+        tenant_id: string
+        landed_cost_id: string
+        receipt_id: string
+        created_at: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        landed_cost_id: string
+        receipt_id: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        landed_cost_id?: string
+        receipt_id?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "landed_cost_receipts_landed_cost_fk",
+          columns: ["tenant_id", "landed_cost_id"],
+          isOneToOne: false,
+          referencedRelation: "landed_costs",
+          referencedColumns: ["tenant_id", "id"]
+        },
+        {
+          foreignKeyName: "landed_cost_receipts_receipt_fk",
+          columns: ["receipt_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "goods_receipts",
+          referencedColumns: ["id", "tenant_id"]
+        },
+      ]
+    }
     landed_costs: {
       Row: {
         id: string
@@ -19110,6 +19149,54 @@ export interface Database {
         created_at?: string
       }
       Relationships: [
+      ]
+    }
+    stock_location_assignments: {
+      Row: {
+        id: string
+        tenant_id: string
+        product_id: string
+        warehouse_id: string
+        location_id: string
+        quantity: number
+        created_at: string | null
+        updated_at: string | null
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        product_id: string
+        warehouse_id: string
+        location_id: string
+        quantity?: number
+        created_at?: string
+        updated_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        product_id?: string
+        warehouse_id?: string
+        location_id?: string
+        quantity?: number
+        created_at?: string
+        updated_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "sla_location_fk",
+          columns: ["location_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouse_locations",
+          referencedColumns: ["id", "tenant_id"]
+        },
+        {
+          foreignKeyName: "sla_warehouse_fk",
+          columns: ["warehouse_id", "tenant_id"],
+          isOneToOne: false,
+          referencedRelation: "warehouses",
+          referencedColumns: ["id", "tenant_id"]
+        },
       ]
     }
     stock_movement_phantoms: {

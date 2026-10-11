@@ -135,7 +135,7 @@ export function WarehouseLocationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ warehouse_id: '', zone: '', aisle: '', shelf: '', code: '', description: '', location_type: '' })
 
-  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st, ls, prods, whs] = await Promise.all([getWarehouseLocations(), getStockByLocation(), getLocationStock(), getProducts(), getWarehouses()]); setItems(locs || []); setStock(st || []); setLocStock(ls || []); setProducts(prods || []); setWarehouses(whs || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
+  const loadData = useCallback(async () => { setLoading(true); try { const [locs, st, ls, prods, whs] = await Promise.all([getWarehouseLocations(), getStockByLocation(), getLocationStock(), getProducts(), getWarehouses()]); setItems(locs || []); setStock(st || []); setLocStock(ls || []); setProducts(prods || []); setWarehouses(whs || []) } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [toast, tCommon])
 
   async function handleSuggest() {
     if (!suggProduct || !suggWarehouse) return
@@ -272,7 +272,7 @@ export function QualityCheckPage() {
   const [qcChecked, setQcChecked] = useState(false)
   const [products, setProducts] = useState<Awaited<ReturnType<typeof getProducts>>>([])
 
-  const loadData = useCallback(async () => { setLoading(true); try { const [qc, prods] = await Promise.all([getQualityChecks(), getProducts()]); setItems(qc || []); setProducts(prods || []) } catch (e) { console.error('catch:', e); toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
+  const loadData = useCallback(async () => { setLoading(true); try { const [qc, prods] = await Promise.all([getQualityChecks(), getProducts()]); setItems(qc || []); setProducts(prods || []) } catch (e) { toast('error', tCommon('toast.error'), errorMessage(e) || tCommon('toast.loadingError')) } finally { setLoading(false) } }, [tCommon, toast])
   useEffect(() => { loadData() }, [loadData])
 
   async function handlePlanCheck() {

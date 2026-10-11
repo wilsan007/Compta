@@ -2435,6 +2435,37 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # R3 / ISO-01 — la CI (`ci/check_tenant_guard.sql`) a trouvé deux fonctions
+      # de la partie E qui prenaient la société DU CLIENT : `work_center_capacity`
+      # (657) et `run_mrp` (651). Un appelant lisait l'atelier, les stocks et les
+      # commandes d'une société dont il n'est pas membre. Le trou a vécu des
+      # semaines : les suites 651 et 657 étaient vertes — ce qui l'a vu, c'est la
+      # CI enfin déclenchée sur la branche (R3). Cette suite exige désormais que
+      # la lecture ÉCHOUE (P0001) et que l'usage légitime continue de marcher.
+      - name: 'E : ISO-01 — garde de société sur le MRP et la capacité (664)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/664_tenant_guard_mrp_capacity_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+
+      # R3 / ISO-02, ISO-04, BUD-04 — la CI, une fois la garde de société franchie,
+      # a trouvé trois défauts de FORME dans les deux tables neuves de la partie E
+      # (658 landed_cost_receipts, 659 stock_location_assignments) : une clé
+      # étrangère mono-colonne entre deux tables cloisonnées, la RLS activée mais
+      # non forcée, aucun index de société. Aucun n'est visible par un scénario.
+      - name: 'E : ISO-02/04 + BUD-04 — les deux tables neuves de la partie E (665)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/665_landed_cost_location_guards_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
+      # LOT7-04 — la suite n'a pas d'étape propre : elle est jouée ici, après les
+      # contrôles de schéma, parce que son défaut (PGRST200) ne se voit que devant
+      # un vrai PostgREST — précisément ce que ce job installe.
+      - name: 'E : LOT7-04 — la ligne de transfert tient son article (666)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/666_stock_transfer_lines_product_fk_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
       # --- plan6:f --- plateforme : sécurité, groupe, CRM, projets, documents ---
       # Territoire : supabase/functions/, écrans CRM, projets, paramètres,
       #              notifications ; leurs tables coquilles

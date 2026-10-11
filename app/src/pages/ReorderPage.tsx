@@ -31,7 +31,7 @@ export function ReorderPage() {
         getStockQuantities(), getReorderRules(), getReorderSuggestions(), getProducts(), getWarehouses(),
       ])
       setStock(st); setRules(rs); setSuggestions(sug); setProducts(prods); setWarehouses(whs)
-    } catch (err) { console.error('Error:', err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+    } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     finally { setLoading(false) }
   }, [toast, tCommon])
 

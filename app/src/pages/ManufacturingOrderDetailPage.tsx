@@ -6,6 +6,7 @@ import { Card, Button, Input, Select, Table, TableRow, TableCell, EmptyState, Pa
 import { useToast } from '@/lib/toast'
 import { errorMessage, formatCurrency } from '@/lib/utils'
 import { getManufacturingOrder, getOFLabels, generateOFLabels, updateOFLabel, deleteOFLabel, getOFLots, createOFLot, deleteOFLot, getOFConsumptions, createOFConsumption, deleteOFConsumption, getSubManufacturingOrders, getProducts, getMoOperations, recordMoOperation, getMoOperationsSummary } from '@/lib/queries/stock'
+import type { MoOperation, MoOperationsSummary } from '@/lib/queries/stock'
 import { calculateProductionCost } from '@/lib/queries/businessFunctions'
 import { refreshMoConsumptions, getMoConsumptionVariance } from '@/lib/queries/production'
 import type { Product } from '@/types'
@@ -27,8 +28,9 @@ export function ManufacturingOrderDetailPage() {
   const [lots, setLots] = useState<any[]>([])
   const [consumptions, setConsumptions] = useState<any[]>([])
   const [subMOs, setSubMOs] = useState<any[]>([])
-  const [operations, setOperations] = useState<any[]>([])
-  const [opsSummary, setOpsSummary] = useState<any>(null)
+  // PRD-05 (661) : les opérations de gamme pointées à l'atelier.
+  const [operations, setOperations] = useState<MoOperation[]>([])
+  const [opsSummary, setOpsSummary] = useState<MoOperationsSummary | null>(null)
   const [showOpForm, setShowOpForm] = useState(false)
   // PRD-06 (663) : l'écart de matière (prévu vs réel) figé sur l'OF.
   const [variance, setVariance] = useState<Awaited<ReturnType<typeof getMoConsumptionVariance>>>([])
@@ -69,7 +71,7 @@ export function ManufacturingOrderDetailPage() {
       // Les deux appels restent **indépendants** : une panne de l'écart de
       // matière ne doit pas vider la liste des sorties de composants.
       try { setConsumptions(await getOFConsumptions(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
-      try { setVariance(await getMoConsumptionVariance(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+      try { setVariance(await getMoConsumptionVariance(id)) } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
     if (tab === 'sublevels' && subMOs.length === 0) {
       try { setSubMOs(await getSubManufacturingOrders(id)) } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
@@ -78,7 +80,7 @@ export function ManufacturingOrderDetailPage() {
       try {
         const [ops, sum] = await Promise.all([getMoOperations(id), getMoOperationsSummary(id)])
         setOperations(ops); setOpsSummary(sum)
-      } catch (err) { console.error(err); toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
+      } catch (err) { toast('error', tCommon('toast.error'), errorMessage(err) || tCommon('toast.loadingError')) }
     }
   }
 
