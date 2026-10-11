@@ -80,6 +80,9 @@ machine ; ces deux tables sont la vérité du dépôt.
 | `370` → `379` | lot K (localisation Djibouti) — `370` : le barème mensuel de l'I.T.S., grille « en table » de 393 tranches, portée de `claude/extract-tax-salary-table-2a3267` (ex-`65_seed_dj_its_payroll_grid.sql`) ; le moteur a été corrigé au passage | 2026-10-05 |
 | `470` → `474` | partie 2 (défauts métier) — dernier écrivain au-dessus des chaînages : `470`, tâche 2.17 — réécrit `cash_flow_forecast`, que la `420` réécrit aussi (en `35x`, la `420` l'écraserait sur base neuve) | 2026-10-05 |
 | `380` → `399` | **LIBRE** — à inscrire avant usage | — |
+| `750` → `759` | plan6 A3 L16 (familles restantes) — 1ʳᵉ extension, après saturation de `493` → `499` | 2026-10-06 |
+| `760` → `769` | plan6 A3 L16 (familles restantes) — 2ᵉ extension, après saturation de `750` → `759` (`760` : exercice clos → écriture d'affectation) | 2026-10-11 |
+
 
 *Numéros constatés hors de leur fichier de plan, au 02/10 : `414` alerte de
 dégradation, `430` paie versée, `431` invariants mesurables, `432` relevé

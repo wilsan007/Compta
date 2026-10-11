@@ -35,7 +35,7 @@ le **comportement** peut se contrer. Garde-fous :
 | # | Tâche | Repris de | Charge | État |
 |---|---|---|---|---|
 | A3.1 | Recompter L16 → L22 : inventaire de ce que `415` → `422` ont réellement posé (L23 tranche 1, L17 capacité ↔ absence, L18 consommation chantier, L19, L20, métriques, retour arrière) et ce qu'il reste par lot du plan d'implémentation | A.6 | 1 j | ✅ fait le 05/10 (voir §Recomptage) |
-| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **14 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 14 |
+| A3.2 | L16 → L22 : chaînages internes, couples inter-modules vides, régénération d'écriture, lettrage génératif, moteur de règles | A.6 | plafond du plan | 🟡 **15 maillons livrés** : L16 **Commercial** — devis → commande (`493`, **19/19**), commande → livraison (`494`, **14/14**), livraison → facture (`495`, **14/14**), facture → règlement (`497`, **14/14**), facture → avoir (`754`, **14/14**), facture → relance (`757`, **15/15**) ; L16 **Achats** — commande d'achat → réception (`498`, **14/14**), réception → facture fournisseur (`755`, **14/14**), facture fournisseur → règlement (`753`, **14/14**), facture fournisseur → avoir (`756`, **14/14**) ; L16 **Comptabilité** — groupe de lettrage → ses lignes (`758`, **12/12**), exercice clos → écriture d'affectation (`760`, **12/12**) ; L16 **RH/Paie** — bulletin → écriture (`759`, **12/12**) ; L16 **Trésorerie** — ordre de paiement → virement (`499`, **16/16**) ; L16 **Stock** — proposition MRP → commande d'achat (`751`, **15/15**) — voir §A3.2 lots 1 à 15 |
 | A3.3 | L23 (événements et webhooks unifiés, suite de la tranche 1) ; L24 (explicabilité, régularisation guidée) | A.7 | plafond du plan | 🟡 **L23-b livré le 06/10** : le **moteur d'automatisations** (`752`, suite **10/10**) — voir §A3.3 ; restent **L23-c** (lecture écran), **L24** |
 | A3.4 | P1 certificat d'intégrité, P3 audit de reprise, P2 banc sur données du prospect, puis P4, P5, P7, P8, P6 | A.8 (propositions P1 → P8) | ≈ 25 j | 🟡 **P1 : le SQL est livré** (`770`, suite **7/7** sur base neuve) — voir §A3.4 ; l'**écran** reste à **A2** ; puis P3 → P6 |
 
@@ -532,6 +532,36 @@ registre fait foi (R2).
 **Reste de la RH/Paie** : contrat ↔ salarié, absence (**les quatre sources** qui ne
 convergent pas), temps, variable ↔ bulletin, cumuls, virement (`sepa_payment_orders`,
 ≡ INV-09), DSN.
+
+## A3.2 — lot 15 : l'exercice clos rattaché à son écriture d'affectation (migration `760`)
+
+**La famille Comptabilité, suite du lot 13** — « provision pour dépréciation ↔
+**écriture de clôture** » (§B.3). **Première migration de la nouvelle plage A3
+`760 → 769`**, inscrite au registre le 06/10 après saturation de `750 → 759`.
+
+**Ce que la mesure a trouvé.** `fiscal_years.result_allocation_entry_id` **existe**
+(posée par `189`) et est **écrit** par la clôture (`189`, ligne 672) — mais **aucun
+lien de chaîne** n'est posé : l'écriture d'affectation d'un exercice est **invisible
+pour la frise**. Et `fiscal_years` **n'est pas au registre** `chain_document_types`.
+
+**Ce qui est livré** — migration `760_chain_l16_cloture_resultat.sql` :
+`fiscal_years` **entre au registre**, contrat d'effet
+`rev.fiscal_year.result_allocated`, maillon `chain_l16_fiscal_year_result` —
+exercice **clos** et au résultat **affecté** (refusé sinon), lien `link_documents`
+(`generated_entry`). Il **ne réécrit pas** `result_allocation_entry_id` (posée par la
+clôture `189`).
+
+**Éprouvé** — suite `760` **12/12** sur base neuve : T01 nominal (2), T02 idempotence
+(2), T03 trois refus (introuvable / ouvert / non affecté), T04 frise (2), T05
+isolation (3). Portes : G2 / G8 / `check_tenant_guard` / `check_anon_grants` **OK** ;
+rejouable ; enrôlée dans `ci.yml` (G5).
+
+**Régistration de plage** : `760 → 769` inscrite au registre **et** dans `AGENTS.md`
++ `doc/audit/NUMEROTATION-MIGRATIONS.md`, **dans ce commit** (la règle de l'outil).
+
+**Reste de la Comptabilité** : provision pour dépréciation → écriture ; à-nouveaux ;
+état de rapprochement ; la **FK composite** `journal_lines → lettrage_groups`
+(doctrine 237, territoire C).
 
 ## Demandes reçues (R3) — transmises par l'intégration du 05/10/2026
 
