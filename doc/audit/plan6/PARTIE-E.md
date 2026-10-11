@@ -468,6 +468,12 @@ des trois n'était visible par une suite de scénarios : il faut soit un contrô
 schéma, soit un **vrai PostgREST** devant un **vrai** schéma. Ils sont donc corrigés
 ici, avec leur mesure.
 
+La R3 a révélé un **quatrième** enseignement, qui n'est pas un défaut applicatif mais
+une conséquence du job lui-même : **il s'arrête à sa première étape rouge**. Les
+contrôles placés après n'avaient donc jamais tourné depuis le début de la partie E —
+leurs plafonds datés n'avaient jamais été relus. La répétition générale, en fin de
+section, les joue **tous**.
+
 ### `ISO-01` — `run_mrp()` et `work_center_capacity()` prenaient la société du client (migration `664`)
 
 Les deux fonctions recevaient `p_tenant_id` (paramètre **client**) et **ne
@@ -515,6 +521,31 @@ C'est l'illustration du principe : **ni `tsc`, ni `oxlint`, ni les tests unitair
 ne pouvaient voir celui-là** (Supabase y est simulé). Seul un vrai PostgREST devant
 un vrai schéma le dit — et c'est précisément ce que cette étape installe.
 
+### La répétition générale — les 180 fichiers du job DB, joués **en entier** (11/10/2026)
+
+Le correctif de la R3 a une conséquence qu'il fallait mesurer : **le job DB
+s'arrête à sa première étape rouge**. Les contrôles qui suivent n'avaient donc
+jamais tourné sur cette branche, et leurs plafonds datés étaient des inscriptions
+que personne n'avait relues.
+
+Sur une base **neuve** (`test_e664c`) portant toutes les migrations, les 180
+fichiers SQL du job ont été rejoués en entier : **178 OK, 2 échecs**.
+
+* `check_forced_rls_writers.sql` — **320** tables sous `FORCE ROW LEVEL SECURITY`
+  contre un plafond daté de **318** : ce sont exactement les deux tables de la
+  `665`. Le plafond est donc relevé **dans le même commit** que la migration qui
+  l'a fait monter (la règle du dépôt). `muettes` reste à **18** — vérifié : les
+  deux tables ont une politique d'écriture `ALL`, elles ne rejoignent pas
+  l'exposition ; l'auto-test du contrôle le reconfirme (refus `42501` sur sa
+  fixture).
+* `check_plpgsql.sql` — `function plpgsql_check_function_tb(oid) does not exist` :
+  l'extension est absente de la base **neuve** locale. C'est l'environnement, pas
+  le code — la CI l'installe explicitement (`.github/workflows/ci.yml`, étape
+  « Installer plpgsql_check »). Une fois installée : **0 erreur, 54
+  avertissements**.
+
+Rejeu après correction : **180/180**.
+
 ## Journal
 
 | Date | Chantier | Verdict (faire / reporter / écarter) | Charge estimée | Commit |
@@ -539,6 +570,7 @@ un vrai schéma le dit — et c'est précisément ce que cette étape installe.
 | 11/10/2026 | **E.5 / STK-13** — plans de contrôle qualité | `662` `quality_control_plans` + `points` branchées (plan applicable, échantillonnage, verdict) + carte à l'écran | `662` 5/5 (rouge avant, **1 bug NULL corrigé**) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `8eec80b` |
 | 11/10/2026 | **E.5 / PRD-06** — écart de matière | `663` `mo_consumptions` branchée (`refresh_mo_consumptions` + `mo_consumption_variance`) + carte « Écart de matière » | `663` 4/4 (rouge avant) · tsc 0 · oxlint 0 · i18n OK · vitest 1662 ✓ | `6a40a99` |
 | 11/10/2026 | **R3** — la CI ne jouait pas les branches `plan6/*` | `push` joue **toutes** les branches (`['**']`), `pull_request` sans filtre ; `check-test-suites.mjs` (G5) refuse le retour d'une liste blanche | `gh run list --branch plan6/e-operations` : liste vide **avant**, passage déclenché **après** · G5 rouge avant (exit 1) / vert après (exit 0) · YAML valide | `ea72bc6` |
-| 11/10/2026 | **CI enfin déclenchée** — `ISO-01` : `run_mrp()`/`work_center_capacity()` prenaient la société du **client** (migration `664`) | Un session pouvait calculer les besoins ou la charge d'une société étrangère ; trouvé par `check_tenant_guard` | `664` 5/5 (T01/T03 rouges avant) · `check_tenant_guard` vert | `189aaa2` |
-| 11/10/2026 | **CI** — `ISO-02`/`ISO-04`/`BUD-04` : les 2 tables neuves de E (migration `665`) | Clé étrangère mono-colonne, pas de `FORCE RLS`, pas d'index société ; `check_composite_fks` échouait (le job s'arrêtait là) | `665` 4/4 (T02 prouve le refus `23503`) · `check_composite_fks`/`check_bt_grid` verts | `189aaa2` |
-| 11/10/2026 | **CI** — `LOT7-04` : `/stock/transfers` s'ouvrait **sans ses articles** (migration `666`) | L'embed `products(name, sku)` était impossible : `stock_transfer_lines.product_id` n'avait aucune clé étrangère (depuis la 125) → `PGRST200` | `check-embeds` : 1 requête refusée **avant** / 1582 acceptées **après** · `666` 3/3 · `652` 5/5 · non-régression 664/665 | `189aaa2` |
+| 11/10/2026 | **Répétition générale** — base **neuve** + les **180** fichiers SQL du job DB, joués en entier (la CI s'arrête à la 1re étape rouge : les suivantes n'avaient jamais tourné) | `178 OK / 2 échecs` au 1er passage — `check_forced_rls_writers` (plafond 318 → **320** : mes 2 tables de la `665` ; `muettes` reste à 18) et `check_plpgsql` (extension absente de la base neuve — la CI l'installe) | Rejeu après correction : **180/180** · `check_plpgsql` 0 erreur / 54 avertissements · `check_forced_rls_writers` OK (320 tables, 18 muettes, auto-test `42501`) | `8d9274b` |
+| 11/10/2026 | **CI enfin déclenchée** — `ISO-01` : `run_mrp()`/`work_center_capacity()` prenaient la société du **client** (migration `664`) | Une session pouvait calculer les besoins ou la charge d'une société étrangère ; trouvé par `check_tenant_guard` | `664` 5/5 (T01/T03 rouges avant) · `check_tenant_guard` vert | `8d9274b` |
+| 11/10/2026 | **CI** — `ISO-02`/`ISO-04`/`BUD-04` : les 2 tables neuves de E (migration `665`) | Clé étrangère mono-colonne, pas de `FORCE RLS`, pas d'index société ; `check_composite_fks` échouait (le job s'arrêtait là) | `665` 4/4 (T02 prouve le refus `23503`) · `check_composite_fks`/`check_bt_grid` verts | `8d9274b` |
+| 11/10/2026 | **CI** — `LOT7-04` : `/stock/transfers` s'ouvrait **sans ses articles** (migration `666`) | L'embed `products(name, sku)` était impossible : `stock_transfer_lines.product_id` n'avait aucune clé étrangère (depuis la 125) → `PGRST200` | `check-embeds` : 1 requête refusée **avant** / 1582 acceptées **après** · `666` 3/3 · `652` 5/5 · non-régression 664/665 | `8d9274b` |
