@@ -107,6 +107,10 @@ sont **lues**). A2 n'a donc, a priori, qu'à **brancher la page**.
   [dossier de validation](../../validation-expert-comptable/DOSSIER-EXPERT-COMPTABLE-2026-10-05.md)
   — il débloque **B** (paie FR), **C.3** (Djibouti) et **A3.4** (`P1`).
 - **L'arbitrage de plage est tranché** : A démarre à `475` (ici **A1 = `475` → `486`**).
+- **P1 (A3.4) est PRÉPARÉ** : [note de préparation](../PREPARATION-P1-CERTIFICAT-INTEGRITE-2026-10-05.md)
+  — contrat de la fonction, dépendances vérifiées, suite rouge-avant, écran.
+  **Il bloque sur deux points matériels seulement** : la **plage d'A3 saturée**
+  (à étendre par l'intégration) et le **worktree A3 occupé** (R1).
 
 ## La batterie de la ligne A1 — rejouée le 05/10 sur base neuve complète
 
