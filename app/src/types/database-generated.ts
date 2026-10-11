@@ -4686,6 +4686,95 @@ export interface Database {
         },
       ]
     }
+    crm_sequence_steps: {
+      Row: {
+        id: string
+        tenant_id: string
+        sequence_id: string
+        step_order: number
+        delay_days: number
+        channel: string
+        subject: string | null
+        body: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        sequence_id: string
+        step_order: number
+        delay_days?: number
+        channel: string
+        subject?: string
+        body?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        sequence_id?: string
+        step_order?: number
+        delay_days?: number
+        channel?: string
+        subject?: string
+        body?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_sequence_steps_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+        {
+          foreignKeyName: "crm_sequence_steps_tenant_id_sequence_id_fkey",
+          columns: ["tenant_id", "sequence_id"],
+          isOneToOne: false,
+          referencedRelation: "crm_sequences",
+          referencedColumns: ["tenant_id", "id"]
+        },
+      ]
+    }
+    crm_sequences: {
+      Row: {
+        id: string
+        tenant_id: string
+        name: string
+        description: string | null
+        is_active: boolean
+        created_by: string | null
+        created_at: string
+      }
+      Insert: {
+        id?: string
+        tenant_id: string
+        name: string
+        description?: string
+        is_active?: boolean
+        created_by?: string
+        created_at?: string
+      }
+      Update: {
+        id?: string
+        tenant_id?: string
+        name?: string
+        description?: string
+        is_active?: boolean
+        created_by?: string
+        created_at?: string
+      }
+      Relationships: [
+        {
+          foreignKeyName: "crm_sequences_tenant_id_fkey",
+          columns: ["tenant_id"],
+          isOneToOne: true,
+          referencedRelation: "tenants",
+          referencedColumns: ["id"]
+        },
+      ]
+    }
     crm_territories: {
       Row: {
         id: string

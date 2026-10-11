@@ -1,4 +1,27 @@
 {
+  "sequences": {
+    "title": "Follow-up sequences",
+    "subtitle": "Describe a follow-up cadence: a channel, a delay, a message.",
+    "createTitle": "Create a sequence",
+    "name": "Name",
+    "description": "Description",
+    "create": "Create",
+    "empty": "No sequence",
+    "select": "Sequence",
+    "remove": "Delete sequence",
+    "confirmDelete": "Delete this sequence and all its steps?",
+    "steps": "Steps",
+    "noSteps": "No step — add the first one.",
+    "order": "Rank",
+    "delay": "Delay",
+    "days": "days",
+    "delayDays": "Delay (days)",
+    "channel": "Channel",
+    "subject": "Subject",
+    "addStep": "Add step",
+    "removeStep": "Delete step",
+    "channels": { "email": "Email", "call": "Call", "task": "Task", "sms": "SMS" }
+  },
   "opportunities": {
     "title": "Opportunities",
     "subtitle": "Manage your sales pipeline",

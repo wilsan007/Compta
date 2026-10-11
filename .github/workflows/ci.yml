@@ -2442,6 +2442,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
 
+      # F.5 / CRM-01 — les séquences de relance. Deux tables neuves : la CADENCE
+      # (une séquence, son nom unique par société) et ses ÉTAPES (rang unique
+      # dans la séquence, délai positif, canal contraint). Rattachement par clé
+      # COMPOSITE (ISO-02) : une étape ne vise que la séquence de sa société.
+      - name: 'F.5 : séquences de relance (CRM-01) — cadence, rangs et canaux (709)'
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f sql/709_crm_sequences_relance_tests.sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_compta
+
   # ─────────────────────────────────────────────
   # Job 6: Build verification
   # ─────────────────────────────────────────────

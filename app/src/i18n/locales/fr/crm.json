@@ -1,4 +1,27 @@
 {
+  "sequences": {
+    "title": "Séquences de relance",
+    "subtitle": "Décrivez une cadence de relance : un canal, un délai, un message.",
+    "createTitle": "Créer une séquence",
+    "name": "Nom",
+    "description": "Description",
+    "create": "Créer",
+    "empty": "Aucune séquence",
+    "select": "Séquence",
+    "remove": "Supprimer la séquence",
+    "confirmDelete": "Supprimer cette séquence et toutes ses étapes ?",
+    "steps": "Étapes",
+    "noSteps": "Aucune étape — ajoutez la première.",
+    "order": "Rang",
+    "delay": "Délai de",
+    "days": "jours",
+    "delayDays": "Délai (jours)",
+    "channel": "Canal",
+    "subject": "Objet",
+    "addStep": "Ajouter l'étape",
+    "removeStep": "Supprimer l'étape",
+    "channels": { "email": "E-mail", "call": "Appel", "task": "Tâche", "sms": "SMS" }
+  },
   "opportunities": {
     "title": "Opportunités",
     "subtitle": "Gérez votre pipeline de ventes",

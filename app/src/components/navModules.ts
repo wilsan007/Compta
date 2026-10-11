@@ -210,6 +210,7 @@ export const navModules: NavModule[] = [
           { labelKey: 'items.opportunities', path: '/crm/opportunities' },
           { labelKey: 'items.crmActivities', path: '/crm/activities' },
           { labelKey: 'items.crmCampaigns', path: '/crm/campaigns' },
+          { labelKey: 'items.crmSequences', path: '/crm/sequences' },
           { labelKey: 'items.territories', path: '/crm/territories' },
           { labelKey: 'items.salesForecasts', path: '/crm/forecasts' },
           { labelKey: 'items.tickets', path: '/crm/tickets' },

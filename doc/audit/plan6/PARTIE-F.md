@@ -22,7 +22,7 @@
 | F.2 | Authentification forte : suite SQL (émission, usage, révocation, rejeu d'une clé ; TOTP), test Edge « clé révoquée → 401 » | ORPH-01, SEC-02 | 1 j | ✅ **livré le 05/10** — migration `700`, suite `700` (T01→T13), test Edge « révoquée → 401 » |
 | F.3 | `generate-pdf`, voie A : convertisseur isolé, `GOTENBERG_URL`, un appelant | 1.13, D-4 | 1 j (code) + décision D-4 | 🔴 **attend de vous** — D‑4 §9 : le code est durci (503 honnête, bucket `317`), il reste A1 (convertisseur injoignable), le secret `GOTENBERG_URL`, un appelant, le déploiement |
 | F.4 | Groupe : structure, opérations intra-groupe, consolidation | GRP-01 → 03 | ≈ 5 j | ✅ **livré le 05/10** — `702` (structure + intra-groupe) et `703` (consolidation), + écran Paramètres → Groupes |
-| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04 et PRJ‑02 livrés le 05/10** (`706` champs personnalisés, `708` capacité par ressource, avec leurs écrans) ; **CRM‑01/02 (séquences, scoring) et PRJ‑08 (automatisations) restent** |
+| F.5 | CRM (séquences, scoring) ; projets (capacité par ressource, champs personnalisés, automatisations) | CRM-01/02, PRJ-02/04/08 | ≈ 5 j | 🟡 **PRJ‑04, PRJ‑02 et CRM‑01 livrés le 05/10** (`706`, `708`, `709`, avec leurs écrans : champs personnalisés, capacité par ressource, séquences de relance) ; **CRM‑02 (scoring) et PRJ‑08 (automatisations) restent** |
 | F.6 | Notifications et alertes ; rattachement universel de documents ; générateur d'états ; modèles de documents ; connecteurs métier | NOT-01/02, GED-01, BI-01, ADM-04, API-03 | ≈ 8 j | 🟡 **GED‑01 livré le 05/10** (`707` : le rattachement de documents est **validé**) ; **NOT‑01/02, BI‑01, ADM‑04, API‑03 restent** |
 | F.7 | RH hors paie : conventions collectives, recrutement ; mobile hors ligne | PAY-08, RH-03, PTL-03 | ≈ 4 j | ✅ **PAY‑08 et RH‑03 livrés le 05/10** (`704` conventions collectives + `705` recrutement, avec leurs écrans) ; **PTL‑03 (mobile hors ligne)** reste — hors lot base de données |
 | F.8 | Tables coquilles de son périmètre (les 25 autres), **brancher ou supprimer** | ORPH-02 | ≈ 5 j | 🟡 **premier lot livré le 05/10** — recomptage (5 tables réelles, pas 25) + `time_entries` supprimée (`701`) |
@@ -374,6 +374,37 @@ T04 (rouge), corrigé par une garde qui laisse la période inversée au CHECK.
 la planification (le rapprochement capacité ↔ charge d'un projet est un lot) —
 l'écran la saisit et la montre, c'est tout.
 
+## F.5 — troisième lot livré le 05/10 (CRM‑01, les séquences de relance)
+
+**Le constat.** `crm_sequences` et `crm_sequence_steps` avaient été **supprimées
+par la 164**. F.5 les rétablit : relancer un prospect, c'est une **cadence** — un
+e‑mail, puis un appel trois jours après, puis une tâche — et le produit ne savait
+pas la décrire.
+
+**Le modèle, et ce qui le tient** (migration `709`) :
+- une **séquence** : nom **unique par société** (deux « Relance devis » seraient un
+  doublon), description, état ;
+- une **étape** : rattachée à sa séquence par une **clé composite** `(tenant_id,
+  sequence_id)` — supprimer une séquence **emporte** ses étapes, et une étape ne
+  peut pas viser la séquence d'une autre société (**ISO‑02**) ;
+- le **rang** est **unique dans la séquence** (`(société, séquence, rang)`) et
+  strictement positif — deux étapes ne se disputent pas la même place ;
+- le **délai** est positif ou nul, le **canal** contraint (`email`, `call`, `task`,
+  `sms`) — la base refuse un canal hors vocabulaire, pas l'écran.
+
+**Livré** : migration `709` (RLS forcée, index de société, 4 politiques par table,
+`anon` révoqué) ; suite `709` **9/9** (RLS forcée ; séquence + étape enregistrées ;
+nom de séquence unique ; rang d'étape unique ; canal contraint ; rang/délai
+contraints ; étape inter‑société refusée ; **cascade** ; `anon` sans droits) ;
+**écran** `CRM → Séquences de relance` + i18n fr/en/ar (namespace `crm`).
+Plafonds datés réinscrits : `check_bt_grid` `tables_tenant` 370 → **372** ;
+`unused-tables` 67 → **65**.
+
+⚠️ **Ce que ce lot n'est pas** (écrit dans la migration) : le **catalogue** de la
+cadence, pas son **exécution**. « Qui entre dans quelle séquence, et quand part la
+prochaine étape » demande une horloge et un rattachement aux prospects — c'est un
+lot, pas un oubli.
+
 ## Attend de vous
 
 - La clé **`sb_secret_…` à tourner**.
@@ -407,3 +438,4 @@ autres. F n'est pas concernée, mais elle peut l'être indirectement par F.4
 | 05/10/2026 | F.5 champs personnalisés (PRJ‑04) | **livré** : `706` (définitions par module/entité + valeurs par enregistrement, clé composite ISO‑02, déclencheur qui tient le TYPE) + suite 8/8 + écran Paramètres→Champs personnalisés (module branché : projets) + i18n. Plafonds : `tables_tenant` 367→369 ; `unused-tables` 70→68 | 1 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.6 rattachement de documents (GED‑01) | **livré** : `707` — le rattachement polymorphe de `module_documents` devient VALIDÉ (les deux colonnes ou aucune ; type = code du registre `chain_document_types` ; existence dans la société), refus nommés + suite 7/7. Pas de nouvelle table, plafonds inchangés | 0,5 j | `plan6/f-plateforme` |
 | 05/10/2026 | F.5 capacité par ressource (PRJ‑02) | **livré** : `708` (capacité par salarié et par période, clé composite ISO‑02, bornes contraintes, déclencheur de non‑chevauchement — la règle qu'aucune clé ne tient) + suite 8/8 + écran Paramètres→Capacité par ressource + i18n. Plafonds : `tables_tenant` 369→370 ; `unused-tables` 68→67 | 1 j | `plan6/f-plateforme` |
+| 05/10/2026 | F.5 séquences de relance (CRM‑01) | **livré** : `709` (séquence à nom unique + étapes à rang unique, délai ≥ 0, canal contraint, clé composite ISO‑02) + suite 9/9 + écran CRM→Séquences de relance + i18n. Plafonds : `tables_tenant` 370→372 ; `unused-tables` 67→65 | 1 j | `plan6/f-plateforme` |
